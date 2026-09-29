@@ -168,7 +168,7 @@ test("measuring needs five samples, then shows the triage and the confirm step",
 });
 
 test("confirming sends the person's choices and shows the brand's new voice line", async () => {
-  listFingerprints.mockResolvedValue([DRAFT_ROW]);
+  listFingerprints.mockResolvedValueOnce([DRAFT_ROW]).mockResolvedValue([CONFIRMED_ROW, DRAFT_ROW]);
   confirmVoice.mockResolvedValue({
     fingerprint_id: "fp-draft",
     status: "confirmed",
@@ -197,6 +197,9 @@ test("confirming sends the person's choices and shows the brand's new voice line
   expect(container.querySelector('[data-testid="voice-saved"]')!.textContent).toBe(
     "Saved. The brand's voice line now reads: Professional voice; mixed sentence lengths of about 14 words per sentence (5 to 26).",
   );
+  // The older draft under the newer confirmed voice is history, not a second question.
+  expect(text()).not.toContain("Confirm before it is used");
+  expect(text()).toContain("Fix a draft's voice");
 });
 
 test("Fix voice shows a fixed draft and a draft returned with the failure header", async () => {

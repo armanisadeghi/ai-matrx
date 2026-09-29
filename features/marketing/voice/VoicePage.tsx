@@ -139,7 +139,10 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   };
 
   const current = rows?.[0] ?? null;
-  const toConfirm = rows?.find((r) => r.status === "draft") ?? null;
+  // Only the newest measurement asks for confirmation; an older draft under a
+  // newer confirmed voice is history, not a pending question.
+  const toConfirm = current?.status === "draft" ? current : null;
+  const [saved, setSaved] = useState<ConfirmedVoice | null>(null);
 
   const measure = async () => {
     setMeasuring(true);
@@ -202,6 +205,12 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
               </span>
             </div>
           )}
+          {saved ? (
+            <p className="mt-2 text-sm text-foreground" data-testid="voice-saved">
+              Saved. {scope === "brand" ? "The brand's voice line now reads: " : "Summary: "}
+              <span className="text-muted-foreground">{saved.summary_line}</span>
+            </p>
+          ) : null}
         </Card>
 
         <Card className="p-4">
@@ -295,9 +304,11 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
           <ConfirmCard
             key={toConfirm.id}
             row={toConfirm}
-            scope={scope}
             org={org}
-            onSaved={() => setNonce((n) => n + 1)}
+            onSaved={(result) => {
+              setSaved(result);
+              setNonce((n) => n + 1);
+            }}
           />
         ) : null}
 
@@ -385,14 +396,12 @@ function CheckList({
 
 function ConfirmCard({
   row,
-  scope,
   org,
   onSaved,
 }: {
   row: FingerprintRow;
-  scope: VoiceProfileScope;
   org: () => Promise<string>;
-  onSaved: () => void;
+  onSaved: (result: ConfirmedVoice) => void;
 }) {
   const fp = row.fingerprint as Fp;
   const openers = fp.openers?.observed ?? [];
@@ -407,7 +416,6 @@ function ConfirmCard({
   const [allowed, setAllowed] = useState<string[]>(fp.banned_words_global_allowed ?? []);
   const [register, setRegister] = useState<(typeof REGISTERS)[number]>(fp.register_label ?? "professional");
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState<ConfirmedVoice | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const save = async () => {
@@ -422,8 +430,7 @@ function ConfirmCard({
         banned_words_allowed: allowed,
         register_label: register,
       });
-      setSaved(result);
-      onSaved();
+      onSaved(result);
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -500,12 +507,6 @@ function ConfirmCard({
         </Button>
         {error ? <span className="text-sm text-destructive">{error}</span> : null}
       </div>
-      {saved ? (
-        <p className="text-sm text-foreground" data-testid="voice-saved">
-          Saved. {scope === "brand" ? "The brand's voice line now reads: " : "Summary: "}
-          <span className="text-muted-foreground">{saved.summary_line}</span>
-        </p>
-      ) : null}
     </Card>
   );
 }
