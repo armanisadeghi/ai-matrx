@@ -49,6 +49,8 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 | `org_admin_remove_member(org, user, reassign_to?)`           | Remove member; any non-null reassignment target is refused (last-owner + self guards)                |
 | `org_admin_list_audit(org, limit?)`                          | Governance audit log                                                                                 |
 | `org_admin_take_over_account(org, user, purpose, reason, new_password)` | ACCESS LADDER T-16 — the ONLY way into a member's private data (Google Workspace model): signs them out everywhere, voids reset links, removes second factors and outside sign-ins, sets the admin's password. Only an account in no other organization; never an owner; an admin only by an owner; never a platform admin. Reason knob `platform.access.account_takeover_reason_min_chars`. The person is told (`platform.access.account_taken_over`); recorded in `iam.access_audit` (their `/me/access-log`) and here as `member.account_takeover`; every refusal is recorded and RETURNED (`taken_over:false`, the database's sentence). UI: `TakeOverAccountDialog` on the member page. |
+| `org_admin_take_over_member_records(org, user, purpose, reason, to_user?)` | ACCESS LADDER T-16d — the second mode, for a member who also belongs to other organizations: moves ownership of everything they hold in THIS org (Private included, Confidential never; custom Tables via `custom.table_transfer_owner`) to `to_user` (null = caller), a member of the org. Sign-in, sessions, other orgs untouched. Same caller/target rules and reason knob as the account door. Told (`platform.access.records_taken_over`); recorded in `iam.access_audit` (`records_takeover`) and here as `member.records_takeover`; refusals recorded and RETURNED; tables that could not move are named (`not_moved`). |
+| `org_admin_take_over_options(org, user)` | Which take-over applies (`account` when the member is in no other org, else `records`) and per-type counts of what `records` would move. Owner/admin only; never names the other orgs. `TakeOverAccountDialog` reads it and offers the right mode. |
 
 **Registry-driven:** resource listing iterates `public.shareable_resource_registry` and includes only tables that physically have `organization_id`. The former bulk owner-rewrite lane is closed to clients because it could transfer private resources without an audited approval.
 
@@ -96,6 +98,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 ---
 
 ## Change Log
+- **2026-09-28** — ACCESS LADDER T-16d: `TakeOverAccountDialog` now offers the right take-over automatically — whole account for a member of this org alone, their records in this org (to a member you pick, default you, with what moves listed) for a member of other orgs too. New RPCs `org_admin_take_over_options` / `org_admin_take_over_member_records` (`migrations/access_ladder_t16d_take_over_member_records_in_one_org.sql`); access log shows "Records taken over". Verified on localhost as admin@admin.com.
 
 - **2026-09-21** — The member roster now uses `MatrxDataTable` for its shared
   grid affordances. The organization-scoped advanced search, five domain sort
