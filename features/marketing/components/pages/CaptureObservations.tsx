@@ -190,7 +190,6 @@ function CaptureObservationsDialog({
           },
         },
         organization_id: page.organization_id,
-        visibility: "internal",
       });
       const attached = await links.attach(
         "note",

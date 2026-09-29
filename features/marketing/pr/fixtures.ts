@@ -647,6 +647,9 @@ function buildAngles(now: number): StoryAngle[] {
       metadata: {},
       custom_fields: {},
       visibility: "internal",
+      published_to_web: false,
+      published_to_web_at: null,
+      published_to_web_by: null,
       shown_to: null,
     } satisfies StoryAngle;
   });
@@ -827,6 +830,9 @@ function buildRequests(now: number, angles: readonly StoryAngle[]): SourceReques
     metadata: {},
     custom_fields: {},
     visibility: "internal",
+    published_to_web: false,
+    published_to_web_at: null,
+    published_to_web_by: null,
     shown_to: null,
   })) satisfies SourceRequest[];
 }

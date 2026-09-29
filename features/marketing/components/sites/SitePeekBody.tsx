@@ -53,6 +53,7 @@ import {
   type GscPeekMetric,
 } from "@/features/marketing/components/sites/SiteKpiPeeks";
 import { siteKpiDelta } from "@/features/marketing/analytics/gsc-delta";
+import { publishedToWebLabel, shownToLabel } from "@/lib/row-access";
 
 const CHART_METRICS: Array<{ key: GscPeekMetric; label: string }> = [
   { key: "clicks", label: "Clicks" },
@@ -244,8 +245,11 @@ export default function SitePeekBody({ site }: SitePeekBodyProps) {
     <SiteConnectionChips site={site} />
 
     <div className="flex items-center justify-between border-t border-border/60 pt-2 text-[10px] text-muted-foreground">
-      <span className="capitalize">
-        {site.visibility} · updated {formatCompactDate(site.updated_at)}
+      <span>
+        {site.published_to_web
+          ? publishedToWebLabel(true)
+          : shownToLabel(site.shown_to)}{" "}
+        · updated {formatCompactDate(site.updated_at)}
       </span>
       <Button
         asChild

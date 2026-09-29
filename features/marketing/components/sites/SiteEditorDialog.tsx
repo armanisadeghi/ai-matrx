@@ -30,6 +30,10 @@ import type { MarketingSite } from "@/features/marketing/types";
 import type { SiteDraftPatch } from "@/features/marketing/lib/site-write-targets";
 import { extractErrorMessage } from "@/utils/errors";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { RowAccessControl } from "@/components/row-access/RowAccessControl";
+import { publishedToWebPatch } from "@/lib/row-access";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 const STATUS_OPTIONS: Array<{ value: MarketingSite["status"]; label: string }> =
   [
@@ -38,16 +42,6 @@ const STATUS_OPTIONS: Array<{ value: MarketingSite["status"]; label: string }> =
     { value: "error", label: "Error" },
   ];
 
-const VISIBILITY_OPTIONS: Array<{
-  value: MarketingSite["visibility"];
-  label: string;
-}> = [
-  { value: "personal", label: "Personal" },
-  { value: "internal", label: "Organization" },
-  { value: "link", label: "Anyone with link" },
-  { value: "public", label: "Public" },
-];
-
 interface SiteDraft {
   name: string;
   description: string;
@@ -55,7 +49,8 @@ interface SiteDraft {
   faviconUrl: string;
   ogImageUrl: string;
   status: MarketingSite["status"];
-  visibility: MarketingSite["visibility"];
+  shownTo: MarketingSite["shown_to"];
+  publishedToWeb: boolean;
 }
 
 function draftFrom(site: MarketingSite): SiteDraft {
@@ -66,7 +61,8 @@ function draftFrom(site: MarketingSite): SiteDraft {
     faviconUrl: site.favicon_url ?? "",
     ogImageUrl: site.og_image_url ?? "",
     status: site.status,
-    visibility: site.visibility,
+    shownTo: site.shown_to,
+    publishedToWeb: site.published_to_web,
   };
 }
 
@@ -143,6 +139,7 @@ function SiteEditorDialogBody({
   const moveMutation = useMoveSiteBrand();
   // access-errors: ok — move-brand picker options; a failed read only empties the picker, the site row being edited arrives as a prop
   const brandOptions = useBrandOptions(site.organization_id);
+  const userId = useAppSelector(selectUserId);
   const [draft, setDraft] = useState<SiteDraft>(() => draftFrom(site));
   const [brandId, setBrandId] = useState<string | null>(site.brand_id);
   const busy = updateMutation.isPending || moveMutation.isPending;
@@ -196,7 +193,10 @@ function SiteEditorDialogBody({
           favicon_url: draft.faviconUrl.trim() || null,
           og_image_url: draft.ogImageUrl.trim() || null,
           status: draft.status,
-          visibility: draft.visibility,
+          shown_to: draft.shownTo,
+          ...(draft.publishedToWeb !== site.published_to_web
+            ? publishedToWebPatch(draft.publishedToWeb, userId)
+            : {}),
         },
       });
       if (brandId && brandId !== site.brand_id) {
@@ -348,24 +348,27 @@ function SiteEditorDialogBody({
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Visibility</Label>
-              <Select
-                value={draft.visibility}
-                onValueChange={(value) =>
-                  set("visibility")(value as MarketingSite["visibility"])
-                }
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VISIBILITY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs">Who sees it</Label>
+              <div>
+                <RowAccessControl
+                  size="default"
+                  value={{
+                    shownTo: draft.shownTo,
+                    publishedToWeb: draft.publishedToWeb,
+                  }}
+                  save={async (patch) => {
+                    setDraft((current) => ({
+                      ...current,
+                      ...(patch.shownTo !== undefined
+                        ? { shownTo: patch.shownTo }
+                        : {}),
+                      ...(patch.publishedToWeb !== undefined
+                        ? { publishedToWeb: patch.publishedToWeb }
+                        : {}),
+                    }));
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>

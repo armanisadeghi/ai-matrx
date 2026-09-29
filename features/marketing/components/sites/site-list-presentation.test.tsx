@@ -65,7 +65,9 @@ const row: SiteListRow = {
   updated_at: "2026-08-29T00:00:00Z",
   updated_by: "user-1",
   version: 3,
-  visibility: "internal",
+  published_to_web: false,
+  published_to_web_at: null,
+  published_to_web_by: null,
   shown_to: null,
 };
 

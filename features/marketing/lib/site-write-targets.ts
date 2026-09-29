@@ -97,7 +97,7 @@ export function validateSiteEditorDraftWrite(
         (key) => `"${key}"`,
       ).join(
         ", ",
-      )} — a site's domain, root URL, owning brand, organization, lifecycle status, visibility and image URLs are deliberately not agent-writable. Nothing was staged.`,
+      )} — a site's domain, root URL, owning brand, organization, lifecycle status, who sees it and image URLs are deliberately not agent-writable. Nothing was staged.`,
     );
   }
 

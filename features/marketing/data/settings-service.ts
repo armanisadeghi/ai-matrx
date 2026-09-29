@@ -4,13 +4,16 @@ import type { MarketingSite } from "@/features/marketing/types";
 import { createClient } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import type { publishedToWebPatch } from "@/lib/row-access";
 
 export interface SiteSettingsInput {
   siteId: string;
   expectedVersion: number;
   name: string;
   status: MarketingSite["status"];
-  visibility: MarketingSite["visibility"];
+  shownTo: MarketingSite["shown_to"];
+  /** Present only when the owner flipped "Published to the web" in this save. */
+  publishedToWeb?: ReturnType<typeof publishedToWebPatch>;
   settings: Json;
 }
 
@@ -27,7 +30,8 @@ export async function updateSiteSettings(
         .update({
           name: input.name,
           status: input.status,
-          visibility: input.visibility,
+          shown_to: input.shownTo,
+          ...(input.publishedToWeb ?? {}),
           settings: input.settings,
           version: nextVersion,
         })

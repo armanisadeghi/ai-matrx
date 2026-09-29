@@ -67,7 +67,11 @@ import type {
   DetailRecordType,
   DetailRow,
 } from "@/lib/detail/types";
-import { visibilityWords } from "@/lib/record-words";
+import {
+  PUBLISHED_TO_WEB_LABEL,
+  SHOWN_TO_LABEL,
+  shownToLabel,
+} from "@/lib/row-access";
 
 /** The item-presentation type token — the SAME word as the entity token. */
 export const WEB_SITE_TYPE = "web_site" as const;
@@ -120,7 +124,12 @@ export function siteFields(row: DetailRow): DetailField[] {
       ref: { token: "web_brand", id: brandId },
     });
   }
-  push("visibility", "Who can see it", visibilityWords(row.visibility));
+  push("shown_to", SHOWN_TO_LABEL, shownToLabel(text(row, "shown_to")));
+  push(
+    "published_to_web",
+    PUBLISHED_TO_WEB_LABEL,
+    row.published_to_web === true ? "Yes" : "No",
+  );
   // Search Console's own last read of this site. Only 7 of 49 sites carry one
   // (read live 2026-09-18), and a site that has never synced simply has no
   // field here rather than a "Never" that reads like a failure.

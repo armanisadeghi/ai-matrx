@@ -3,6 +3,7 @@ import {
   buildStoredSeoMetrics,
   parseStoredSeoMetrics,
 } from "@/features/marketing/seo/serp/metrics";
+import { publishedToWebPatch } from "@/lib/row-access";
 import { parseStoredAuditMetrics } from "@/features/marketing/seo/audit/stored";
 import {
   parseSiteAuditRollup,
@@ -165,18 +166,6 @@ function booleanFilter(
   return filter?.kind === "boolean" ? filter.value : null;
 }
 
-function visibilityFilter(
-  state: MatrxDataTableQueryState,
-): MarketingSite["visibility"] | null {
-  const value = selectFilter(state, "visibility");
-  return value === "personal" ||
-    value === "internal" ||
-    value === "link" ||
-    value === "public"
-    ? value
-    : null;
-}
-
 export function assertData<T>(data: T | null, error: unknown): T {
   if (error) throw error;
   if (data === null) throw new Error("Supabase returned no data.");
@@ -266,7 +255,7 @@ export function assertMutated(
 
 /** Every `web.site` column — ONE list so selects can never drift per call site. */
 export const SITE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id, shown_to";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, root_url, domain, status, published_to_web, published_to_web_at, published_to_web_by, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id, shown_to";
 
 /**
  * VIEW LAW: listSites / listSiteOptions are DELIBERATE org-browse surfaces,
@@ -334,7 +323,7 @@ export async function listSites(
     name: "name",
     domain: "domain",
     status: "status",
-    visibility: "visibility",
+    published_to_web: "published_to_web",
     updated_at: "updated_at",
     created_at: "created_at",
   } as const;
@@ -369,12 +358,13 @@ export async function listSites(
   const domain = textFilter(state, "domain");
   const siteId = textFilter(state, "id");
   const status = selectFilter(state, "status");
-  const visibility = visibilityFilter(state);
+  const publishedToWeb = booleanFilter(state, "published_to_web");
   if (name) query = query.ilike("name", `%${name}%`);
   if (domain) query = query.ilike("domain", `%${domain}%`);
   if (siteId) query = query.eq("id", siteId);
   if (status) query = query.eq("status", status);
-  if (visibility) query = query.eq("visibility", visibility);
+  if (publishedToWeb !== null)
+    query = query.eq("published_to_web", publishedToWeb);
 
   if (kpiSort) {
     // KPI sorts live on web.v_site_kpis, so the ORDER BY has to happen there:
@@ -880,9 +870,8 @@ export async function createSite(
     p_domain: input.domain,
     p_settings: {},
     p_integrations: {},
-    // p_visibility deliberately omitted: web.create_site inherits
-    // platform.entity_types.default_visibility ('internal' for web_site) —
-    // hardcoding a visibility in a creation path is a defect (2026-08-08).
+    // No row-access argument: web.create_site leaves Shown to to the type's
+    // default knob — hardcoding who sees a new site is a defect (2026-08-08).
     // An explicit brand ALWAYS wins; name-match-or-create only when absent.
     ...(input.brandId ? { p_brand_id: input.brandId } : {}),
   });
@@ -2783,7 +2772,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, integrations, profile, shown_to";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, name, slug, previous_slugs, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, published_to_web, published_to_web_at, published_to_web_by, settings, integrations, profile, shown_to";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
@@ -3243,10 +3232,12 @@ export async function createBrand(
         og_image_url: input.ogImageUrl,
         notes: input.notes,
         status: input.status,
-        // Omitted visibility inherits the web.brand column default
-        // (platform.entity_default_visibility('web_brand')).
-        ...(input.visibility !== undefined
-          ? { visibility: input.visibility }
+        // Omitted Shown to stays null: the type's "Shown to by default" knob
+        // decides. Publishing to the web is only ever a deliberate choice
+        // (the database stamps who and when).
+        ...(input.shownTo !== undefined ? { shown_to: input.shownTo } : {}),
+        ...(input.publishedToWeb
+          ? publishedToWebPatch(true, null)
           : {}),
         ...(input.profile !== undefined ? { profile: input.profile } : {}),
       })
@@ -4278,7 +4269,7 @@ const BUSINESS_LOCATION_COLUMNS =
   "id, organization_id, brand_id, name, status, is_primary, street_address, address_line2, locality, region, postal_code, country_code, phone, email, website_url, latitude, longitude, business_type, categories, opening_hours, special_hours, attributes, identifiers, description, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields";
 
 const LISTING_PUBLISHER_COLUMNS =
-  "id, organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, shown_to";
+  "id, organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, published_to_web, published_to_web_at, published_to_web_by, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, shown_to";
 
 const LOCATION_LISTING_COLUMNS =
   "id, organization_id, location_id, publisher_id, status, listing_url, observed, nap_match, match_score, last_checked_at, source, notes, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields";
@@ -4474,7 +4465,7 @@ export interface AddDiscoveredPublisherResult {
  * `web.listing_publisher` row.
  *
  * The contract (common-docs/systems/marketing/local-listings/PLAN.md § WS7):
- * upsert by slug, system org, `visibility='public'`, and DEDUP BY DOMAIN FIRST
+ * upsert by slug, system org, published to the web, and DEDUP BY DOMAIN FIRST
  * — a domain already in the registry is returned as-is (`created: false`), never
  * inserted a second time under a different slug. The dedup re-runs here at write
  * time even though the UI already knows the answer: two operators (or two tabs)
@@ -4531,7 +4522,7 @@ export async function addDiscoveredPublisher(
       // org-fallback-deliberate: a directory/aggregator definition is public
       //   reference data the whole platform shares, not one organization's record
       organization_id: SYSTEM_ORGANIZATION_ID,
-      visibility: "public",
+      ...publishedToWebPatch(true, null),
       metadata: input.metadata,
     })
     .select(LISTING_PUBLISHER_COLUMNS)

@@ -38,36 +38,16 @@ import {
   parseBrandProfile,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { RowAccessControl } from "@/components/row-access/RowAccessControl";
+import { publishedToWebPatch, type ShownTo } from "@/lib/row-access";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
   { value: "paused", label: "Paused" },
   { value: "archived", label: "Archived" },
-];
-
-// Visibility is a read/manage grant, not a sharing-link state. Canonical share
-// links are separate token records and never change the brand's visibility.
-const VISIBILITY_OPTIONS: Array<{
-  value: MarketingBrand["visibility"];
-  label: string;
-  description: string;
-}> = [
-  {
-    value: "internal",
-    label: "Internal (default)",
-    description: "Everyone in your organization can view and manage this brand.",
-  },
-  {
-    value: "personal",
-    label: "Private",
-    description: "Only you can access this brand unless you share it explicitly.",
-  },
-  {
-    value: "public",
-    label: "Public",
-    description: "Anyone can view this brand; only your organization can manage it.",
-  },
 ];
 
 interface BrandDraft {
@@ -80,7 +60,9 @@ interface BrandDraft {
   ogImageUrl: string;
   notes: string;
   status: string;
-  visibility: MarketingBrand["visibility"];
+  /** The brand's two row controls (access ladder words). */
+  shownTo: ShownTo | null;
+  publishedToWeb: boolean;
   /** Editorial brand profile fields (web.brand.profile). Lists are one-per-line text. */
   profileAudience: string;
   profileVoiceTone: string;
@@ -118,7 +100,8 @@ function draftFrom(brand: MarketingBrand | null): BrandDraft {
     ogImageUrl: brand?.og_image_url ?? "",
     notes: brand?.notes ?? "",
     status: brand?.status ?? "active",
-    visibility: "internal",
+    shownTo: brand?.shown_to ?? null,
+    publishedToWeb: brand?.published_to_web ?? false,
     profileAudience: profile.audience ?? "",
     profileVoiceTone: profile.voice_tone ?? "",
     profilePositioning: profile.positioning ?? "",
@@ -185,6 +168,7 @@ function BrandEditorDialogBody({
   const orgs = useActiveOrganizationPicker();
   const createMutation = useCreateBrand();
   const updateMutation = useUpdateBrand();
+  const userId = useAppSelector(selectUserId);
   const [draft, setDraft] = useState<BrandDraft>(() => draftFrom(brand));
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   // Open the profile section by default when the brand already has one
@@ -221,7 +205,10 @@ function BrandEditorDialogBody({
             og_image_url: draft.ogImageUrl.trim() || null,
             notes: draft.notes.trim() || null,
             status: draft.status,
-            visibility: draft.visibility,
+            shown_to: draft.shownTo,
+            ...(draft.publishedToWeb !== brand.published_to_web
+              ? publishedToWebPatch(draft.publishedToWeb, userId)
+              : {}),
             profile: brandProfileToJson(profileFromDraft(draft)),
           },
         });
@@ -242,7 +229,8 @@ function BrandEditorDialogBody({
           ogImageUrl: draft.ogImageUrl.trim() || null,
           notes: draft.notes.trim() || null,
           status: draft.status,
-          visibility: draft.visibility,
+          ...(draft.shownTo !== null ? { shownTo: draft.shownTo } : {}),
+          ...(draft.publishedToWeb ? { publishedToWeb: true } : {}),
           profile: brandProfileToJson(profileFromDraft(draft)),
         });
         // `createBrand` returns the MarketingBrand; the mutation result was
@@ -396,45 +384,29 @@ function BrandEditorDialogBody({
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Visibility</Label>
-              <Select
-                value={draft.visibility}
-                onValueChange={(value) =>
-                  set("visibility")(value as MarketingBrand["visibility"])
-                }
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue>
-                    {
-                      VISIBILITY_OPTIONS.find(
-                        (option) => option.value === draft.visibility,
-                      )?.label
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent
-                  align="end"
-                  className="max-w-[calc(100vw-2rem)] sm:w-[28rem]"
-                >
-                  {VISIBILITY_OPTIONS.map((option) => (
-                    <SelectItem
-                      key={option.value}
-                      value={option.value}
-                      textValue={option.label}
-                      className="items-start py-2"
-                    >
-                      <span className="block pr-2">
-                        <span className="block font-medium">{option.label}</span>
-                        <span className="block text-xs text-muted-foreground">
-                          {option.description}
-                        </span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs">Who sees it</Label>
+              <div>
+                <RowAccessControl
+                  size="default"
+                  value={{
+                    shownTo: draft.shownTo,
+                    publishedToWeb: draft.publishedToWeb,
+                  }}
+                  save={async (patch) => {
+                    setDraft((current) => ({
+                      ...current,
+                      ...(patch.shownTo !== undefined
+                        ? { shownTo: patch.shownTo }
+                        : {}),
+                      ...(patch.publishedToWeb !== undefined
+                        ? { publishedToWeb: patch.publishedToWeb }
+                        : {}),
+                    }));
+                  }}
+                />
+              </div>
               <p className="text-[11px] text-muted-foreground">
-                Share links are managed separately and do not change visibility.
+                Applied when you save. Anyone links are made in Share.
               </p>
             </div>
           </div>

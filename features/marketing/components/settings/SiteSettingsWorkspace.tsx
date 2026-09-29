@@ -59,6 +59,16 @@ import {
 import { buildCrawlPolicyWriteHandlers } from "@/features/marketing/components/settings/crawl-policy-writes";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { RowAccessControl } from "@/components/row-access/RowAccessControl";
+import {
+  PUBLISHED_TO_WEB_LABEL,
+  SHOWN_TO_LABEL,
+  publishedToWebLabel,
+  publishedToWebPatch,
+  shownToLabel,
+} from "@/lib/row-access";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 // crawl_defaults round-trips ONLY through features/marketing/crawler/crawl-defaults.ts.
 
@@ -71,7 +81,12 @@ export function SiteSettingsWorkspace() {
   const queryClient = useQueryClient();
   const [name, setName] = useState(site.name);
   const [status, setStatus] = useState(site.status);
-  const [visibility, setVisibility] = useState(site.visibility);
+  const userId = useAppSelector(selectUserId);
+  const [shownTo, setShownTo] = useState(site.shown_to);
+  const [publishedToWeb, setPublishedToWeb] = useState(site.published_to_web);
+  const rowAccessWords = publishedToWeb
+    ? publishedToWebLabel(true)
+    : `${SHOWN_TO_LABEL}: ${shownToLabel(shownTo)}`;
   const [crawl, setCrawl] = useState<CrawlStartOptions>(() =>
     crawlOptionsFromSettings(site.settings),
   );
@@ -122,7 +137,10 @@ export function SiteSettingsWorkspace() {
       expectedVersion: site.version,
       name: name.trim(),
       status,
-      visibility,
+      shownTo,
+      ...(publishedToWeb !== site.published_to_web
+        ? { publishedToWeb: publishedToWebPatch(publishedToWeb, userId) }
+        : {}),
       settings: settingsWithCrawlDefaults(site.settings, pendingOptions),
     });
   };
@@ -131,13 +149,14 @@ export function SiteSettingsWorkspace() {
     kind: "web-site-settings",
     label: "Site settings",
     description:
-      "This managed site's settings: identity, lifecycle, visibility, and default crawl policy (current form state plus the stored settings JSON).",
+      "This managed site's settings: identity, lifecycle, who sees it, and default crawl policy (current form state plus the stored settings JSON).",
     surface: `Site settings — ${site.domain}`,
     data: {
       site_id: site.id,
       name,
       status,
-      visibility,
+      shown_to: shownTo,
+      published_to_web: publishedToWeb,
       root_url: site.root_url,
       crawl_defaults: pendingOptions,
       stored_settings: site.settings,
@@ -146,7 +165,8 @@ export function SiteSettingsWorkspace() {
       ["Site", name],
       ["Root URL", site.root_url],
       ["Lifecycle", status],
-      ["Visibility", visibility],
+      [SHOWN_TO_LABEL, shownToLabel(shownTo)],
+      [PUBLISHED_TO_WEB_LABEL, publishedToWeb ? "yes" : "no"],
       ["Respect robots.txt", pendingOptions.respect_robots ? "yes" : "no"],
       ["Seed from sitemap", pendingOptions.seed_from_sitemap ? "yes" : "no"],
       ["Follow subdomains", pendingOptions.follow_subdomains ? "yes" : "no"],
@@ -168,7 +188,8 @@ export function SiteSettingsWorkspace() {
   const dirty =
     name !== site.name ||
     status !== site.status ||
-    visibility !== site.visibility ||
+    shownTo !== site.shown_to ||
+    publishedToWeb !== site.published_to_web ||
     JSON.stringify(pendingOptions) !==
       JSON.stringify(crawlOptionsFromSettings(site.settings));
 
@@ -180,7 +201,7 @@ export function SiteSettingsWorkspace() {
         createMarketingSiteSettingsScope({
           ...getBaseValues(),
           site_status: status,
-          site_visibility: visibility,
+          site_visibility: rowAccessWords,
           crawl_policy: { ...pendingOptions },
           crawl_policy_issues: patternProblems.map((problem) => ({
             field: problem.field,
@@ -252,23 +273,17 @@ export function SiteSettingsWorkspace() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Visibility</Label>
-                <Select
-                  value={visibility}
-                  onValueChange={(value) =>
-                    setVisibility(value as typeof site.visibility)
-                  }
-                >
-                  <SelectTrigger size="sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="personal">Personal</SelectItem>
-                    <SelectItem value="internal">Organization</SelectItem>
-                    <SelectItem value="link">Anyone with link</SelectItem>
-                    <SelectItem value="public">Public</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs">Who sees it</Label>
+                <div>
+                  <RowAccessControl
+                    value={{ shownTo, publishedToWeb }}
+                    save={async (patch) => {
+                      if (patch.shownTo !== undefined) setShownTo(patch.shownTo);
+                      if (patch.publishedToWeb !== undefined)
+                        setPublishedToWeb(patch.publishedToWeb);
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </section>

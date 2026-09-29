@@ -103,6 +103,12 @@ import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  PUBLISHED_TO_WEB_LABEL,
+  SHOWN_TO_LABEL,
+  publishedToWebLabel,
+  shownToLabel,
+} from "@/lib/row-access";
 
 type InitPhase = "idle" | "connecting" | "running" | "failed";
 
@@ -281,7 +287,8 @@ export function SiteOverview() {
       ["Root URL", site.root_url],
       ["Description", site.description],
       ["Status", site.status],
-      ["Visibility", site.visibility],
+      [SHOWN_TO_LABEL, shownToLabel(site.shown_to)],
+      [PUBLISHED_TO_WEB_LABEL, site.published_to_web ? "yes" : "no"],
       [
         "Initialized",
         site.initialized_at ? formatDate(site.initialized_at) : "never",
@@ -751,8 +758,10 @@ function SiteHero({
 
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge value={site.status} />
-                <Badge variant="outline" className="capitalize">
-                  {site.visibility}
+                <Badge variant="outline">
+                  {site.published_to_web
+                    ? publishedToWebLabel(true)
+                    : shownToLabel(site.shown_to)}
                 </Badge>
               </div>
 

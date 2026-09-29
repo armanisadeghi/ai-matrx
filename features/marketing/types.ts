@@ -4,8 +4,14 @@ import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-tabl
 type WebTables = Database["web"]["Tables"];
 type WebViews = Database["web"]["Views"];
 
-export type MarketingSite = WebTables["site"]["Row"];
-export type MarketingBrand = WebTables["brand"]["Row"];
+/**
+ * A site / brand as this feature reads it: every column except the retiring row
+ * column (access ladder T-13) — its two row controls are `shown_to` and
+ * `published_to_web`.
+ */
+export type MarketingSite = Omit<WebTables["site"]["Row"], RetiredRowColumn>;
+export type MarketingBrand = Omit<WebTables["brand"]["Row"], RetiredRowColumn>;
+type RetiredRowColumn = "visibility";
 export type BrandProperty = WebTables["property"]["Row"];
 export type BrandAsset = WebTables["brand_asset"]["Row"];
 export type BusinessFact = WebTables["business_fact"]["Row"];
@@ -184,11 +190,12 @@ export interface CreateBrandInput {
   notes: string | null;
   status: string;
   /**
-   * Omit to inherit the registry default
-   * (`platform.entity_types.default_visibility` for `web_brand`, applied by
-   * the DB column default). Pass only a deliberate user choice.
+   * Omit to inherit the type's "Shown to by default" knob (null on the row).
+   * Pass only a deliberate user choice.
    */
-  visibility?: MarketingBrand["visibility"];
+  shownTo?: MarketingBrand["shown_to"];
+  /** Publish to the web at creation; omit to leave it unpublished. */
+  publishedToWeb?: boolean;
   /** Serialized `BrandProfile` (via `brandProfileToJson`); omit for `{}`. */
   profile?: Json;
 }
@@ -208,7 +215,10 @@ export interface UpdateBrandInput {
       | "og_image_url"
       | "notes"
       | "status"
-      | "visibility"
+      | "shown_to"
+      | "published_to_web"
+      | "published_to_web_at"
+      | "published_to_web_by"
       | "profile"
     >
   >;
@@ -363,7 +373,10 @@ export interface UpdateSiteIdentityInput {
       | "favicon_url"
       | "og_image_url"
       | "status"
-      | "visibility"
+      | "shown_to"
+      | "published_to_web"
+      | "published_to_web_at"
+      | "published_to_web_by"
     >
   >;
 }
@@ -747,7 +760,7 @@ export function isJsonRecord(value: Json): value is { [key: string]: Json } {
 // ─── Local & Listings (web.business_location / web.listing_publisher / web.location_listing) ───
 
 export type BusinessLocation = WebTables["business_location"]["Row"];
-export type ListingPublisher = WebTables["listing_publisher"]["Row"];
+export type ListingPublisher = Omit<WebTables["listing_publisher"]["Row"], RetiredRowColumn>;
 export type LocationListing = WebTables["location_listing"]["Row"];
 
 export const LOCATION_STATUSES = ["active", "closed", "temporarily_closed", "planned"] as const;
