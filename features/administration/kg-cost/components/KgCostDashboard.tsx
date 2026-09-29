@@ -20,7 +20,8 @@
  * (`features/administration/batch/FEATURE.md`). Do not grow a third cost
  * surface here; send the operator there.
  */
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { splitAdminCostColumns } from "@/components/cost/adminCostColumns";
 import { useEffect, useState } from "react";
 import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -217,7 +218,7 @@ function KpiTiles({
   summary: KgCostSummaryResponse | null;
   loading: boolean;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   // Defensive: `ner_coverage_pct` is being added on the Python side; until
   // it lands the tile renders "—" with the explainer copy. Once present,
   // the value flows through cleanly.
@@ -296,8 +297,8 @@ function OrgLeaderboard({
   onPick: (orgId: string) => void;
   read: ReadOutcome;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
-  const columns: MatrxColumnDef<OrgCostRow>[] = [
+  const fmtUsd = formatAdminCost;
+  const columns: MatrxColumnDef<OrgCostRow>[] = splitAdminCostColumns<OrgCostRow>([
     {
       id: "organization",
       header: "Organization",
@@ -363,7 +364,7 @@ function OrgLeaderboard({
         </span>
       ),
     },
-  ];
+  ], ["daily_auto_rag_cost_used_usd", "daily_auto_rag_budget_usd"]);
 
   return (
     <MatrxDataTable
@@ -417,8 +418,8 @@ function PendingBatchesTable({
   onPick: (batchRowId: string) => void;
   read: ReadOutcome;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
-  const columns: MatrxColumnDef<BatchRow>[] = [
+  const fmtUsd = formatAdminCost;
+  const columns: MatrxColumnDef<BatchRow>[] = splitAdminCostColumns<BatchRow>([
     {
       accessorKey: "custom_id",
       header: "Custom ID",
@@ -497,7 +498,7 @@ function PendingBatchesTable({
         <span className="tabular-nums">{fmtUsd(row.est_cost_usd)}</span>
       ),
     },
-  ];
+  ], ["est_cost_usd"]);
 
   return (
     <MatrxDataTable
@@ -655,7 +656,7 @@ function OrgDetailDialog({
   onClose: () => void;
   onDetailChange: (detail: OrgCostDetailResponse | null) => void;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   const [detail, setDetail] = useState<OrgCostDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -745,7 +746,7 @@ function OrgDetailDialog({
                   <MatrxDataTable
                     tableId="administration/kg-cost/org-detail/daily-cost"
                     data={detail.daily_series}
-                    columns={[
+                    columns={splitAdminCostColumns<OrgCostDetailResponse["daily_series"][number]>([
                       {
                         accessorKey: "date",
                         header: "Date",
@@ -765,7 +766,7 @@ function OrgDetailDialog({
                           </span>
                         ),
                       },
-                    ]}
+                    ], ["cost_usd"])}
                     getRowId={(row) => row.date}
                     density="condensed"
                     stickyHeader
@@ -787,7 +788,7 @@ function OrgDetailDialog({
                   <MatrxDataTable
                     tableId="administration/kg-cost/org-detail/top-sources"
                     data={detail.top_sources}
-                    columns={[
+                    columns={splitAdminCostColumns<OrgCostDetailResponse["top_sources"][number]>([
                       {
                         accessorKey: "source",
                         header: "Source",
@@ -816,7 +817,7 @@ function OrgDetailDialog({
                           <span className="tabular-nums">{row.count}</span>
                         ),
                       },
-                    ]}
+                    ], ["cost_usd"])}
                     getRowId={(row) => row.source}
                     density="condensed"
                     stickyHeader
@@ -838,7 +839,7 @@ function OrgDetailDialog({
                   <MatrxDataTable
                     tableId="administration/kg-cost/org-detail/batches-by-status"
                     data={detail.batch_summary}
-                    columns={[
+                    columns={splitAdminCostColumns<OrgCostDetailResponse["batch_summary"][number]>([
                       {
                         accessorKey: "status",
                         header: "Status",
@@ -865,7 +866,7 @@ function OrgDetailDialog({
                           </span>
                         ),
                       },
-                    ]}
+                    ], ["total_cost_usd"])}
                     getRowId={(row) => row.status}
                     density="condensed"
                     stickyHeader
@@ -902,7 +903,7 @@ function BatchDetailDialog({
   onClose: () => void;
   onDetailChange: (detail: BatchDetailResponse | null) => void;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   const [detail, setDetail] = useState<BatchDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1117,8 +1118,8 @@ function BySourceKindTable({
   loading: boolean;
   read: ReadOutcome;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
-  const columns: MatrxColumnDef<UnitEconomicsBySourceKindRow>[] = [
+  const fmtUsd = formatAdminCost;
+  const columns: MatrxColumnDef<UnitEconomicsBySourceKindRow>[] = splitAdminCostColumns<UnitEconomicsBySourceKindRow>([
     {
       accessorKey: "source_kind",
       header: "Kind",
@@ -1286,7 +1287,7 @@ function BySourceKindTable({
         </span>
       ),
     },
-  ];
+  ], ["p50_cost_usd", "p90_cost_usd", "max_cost_usd", "cost_per_1k_chars_usd", "embedding_cost_usd", "extraction_cost_usd", "cleanup_cost_usd", "enrichment_cost_usd"]);
 
   return (
     <MatrxDataTable
@@ -1322,8 +1323,8 @@ function RecentRunsTable({
   loading: boolean;
   read: ReadOutcome;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
-  const columns: MatrxColumnDef<UnitEconomicsRecentRun>[] = [
+  const fmtUsd = formatAdminCost;
+  const columns: MatrxColumnDef<UnitEconomicsRecentRun>[] = splitAdminCostColumns<UnitEconomicsRecentRun>([
     {
       accessorKey: "started_at",
       header: "Started",
@@ -1519,7 +1520,7 @@ function RecentRunsTable({
         </span>
       ),
     },
-  ];
+  ], ["embedding_cost_usd", "extraction_cost_usd", "cleanup_cost_usd", "enrichment_cost_usd", "total_cost_usd"]);
 
   return (
     <MatrxDataTable
@@ -1550,7 +1551,7 @@ function RecentRunsTable({
 const UNIT_ECON_DAY_OPTIONS = [7, 30, 90] as const;
 
 function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; onRetry: () => void }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   const [data, setData] = useState<UnitEconomicsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

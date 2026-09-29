@@ -7,18 +7,23 @@ export function adminCostColumns<T>({
   value,
   label = "Cost",
   mobileHidden,
+  sortable,
+  filter = "number",
 }: {
   id: string;
   value: (row: T) => number | null | undefined;
   label?: string;
   mobileHidden?: boolean;
+  sortable?: boolean;
+  filter?: "number" | false;
 }): MatrxColumnDef<T>[] {
   return [
     {
       id,
       header: `${label} (USD)`,
       accessorFn: value,
-      filter: "number",
+      filter,
+      sortable,
       defaultSortDirection: "desc",
       align: "right",
       width: 110,
@@ -29,7 +34,8 @@ export function adminCostColumns<T>({
       id: `${id}_points`,
       header: label === "Cost" ? "Points" : `${label} (points)`,
       accessorFn: (row) => adminCostPoints(value(row)),
-      filter: "number",
+      filter,
+      sortable,
       defaultSortDirection: "desc",
       align: "right",
       width: 140,
@@ -37,4 +43,26 @@ export function adminCostColumns<T>({
       cell: (row) => formatAdminPoints(value(row)),
     },
   ];
+}
+
+/** Expand existing admin cost fields without disturbing neighboring table columns. */
+export function splitAdminCostColumns<T>(
+  columns: MatrxColumnDef<T>[],
+  fields: readonly (keyof T & string)[],
+): MatrxColumnDef<T>[] {
+  return columns.flatMap((column) => {
+    const key = "accessorKey" in column ? column.accessorKey : undefined;
+    if (typeof key !== "string" || !fields.includes(key as keyof T & string)) return [column];
+    const label = typeof column.header === "string" ? column.header : "Cost";
+    return adminCostColumns<T>({
+      id: key,
+      label,
+      value: (row) => {
+        const raw = row[key as keyof T];
+        if (raw === null || raw === undefined || raw === "") return null;
+        const cost = typeof raw === "number" ? raw : Number(raw);
+        return Number.isFinite(cost) ? cost : null;
+      },
+    });
+  });
 }

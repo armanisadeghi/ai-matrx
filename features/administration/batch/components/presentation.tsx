@@ -8,7 +8,7 @@
  * tiles, the filter chips, the tables and the expanded rows — a queue where
  * "dead" reads one way in a chip and another way in a row is a lying screen.
  */
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { Badge } from "@/components/ui/badge";
 import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
@@ -168,7 +168,7 @@ export function CostCell({
   estimate: number;
   settled?: boolean;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   if (!settled) {
     return (
       <div className="leading-tight">

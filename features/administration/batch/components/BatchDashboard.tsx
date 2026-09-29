@@ -19,7 +19,7 @@
  * expand in place). Reads go straight to Supabase under RLS; the tables are
  * `ledger` — the server writes, admins read.
  */
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import {
@@ -76,7 +76,7 @@ function UndeliveredBand({
   onShow: () => void;
   loading: boolean;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   if (loading) return <Skeleton className="h-16 w-full rounded-lg" />;
 
   if (count === 0) {
@@ -142,7 +142,7 @@ function SavingsBand({
   window: SavingsWindow;
   onWindowChange: (w: SavingsWindow) => void;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   return (
     <section className="rounded-lg border border-border bg-card">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">

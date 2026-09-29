@@ -426,7 +426,8 @@ export function DigHerePanel({
     spec.numeric.splice(costIndex + 1, 0, true);
     for (const row of spec.rows) {
       const cost = row.values[costIndex] as number;
-      row.values.splice(costIndex + 1, 0, adminCostPoints(cost) ?? 0);
+      if (!Number.isFinite(cost)) row.values[costIndex] = "";
+      row.values.splice(costIndex + 1, 0, adminCostPoints(cost) ?? "");
       row.cells.splice(costIndex, 1, formatAdminUsd(cost), formatAdminPoints(cost));
     }
   }

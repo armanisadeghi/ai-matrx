@@ -11,7 +11,8 @@
  * list; the money column is Stripe's (what it cost, what it would have cost,
  * the discount stated out loud).
  */
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Inbox, Search, X } from "lucide-react";
 import {
@@ -42,7 +43,6 @@ import {
   WORK_ITEM_STATUSES,
 } from "../service/batchAdminService";
 import {
-  CostCell,
   DELIVERY,
   DeliveryBadge,
   StatusBadge,
@@ -350,27 +350,9 @@ export function WorkItemsPanel({
         sortable: false,
         cell: (row) => <DeliveryBadge handlerStatus={row.handler_status} />,
       },
-      {
-        id: "cost",
-        header: "Cost",
-        accessorFn: (row) => num(row.actual_cost_usd),
-        width: 150,
-        align: "right",
-        filter: false,
-        sortable: false,
-        cell: (row) => (
-          <CostCell
-            actual={num(row.actual_cost_usd)}
-            liveEquivalent={
-              row.live_equivalent_cost_usd === null
-                ? null
-                : num(row.live_equivalent_cost_usd)
-            }
-            estimate={num(row.est_live_cost_usd)}
-            settled={row.status === "completed"}
-          />
-        ),
-      },
+      ...adminCostColumns<WorkItem>({ id: "cost", label: "Billed", value: (row) => row.actual_cost_usd == null ? null : num(row.actual_cost_usd), sortable: false, filter: false }),
+      ...adminCostColumns<WorkItem>({ id: "live_equivalent_cost", label: "Live equivalent", value: (row) => row.live_equivalent_cost_usd == null ? null : num(row.live_equivalent_cost_usd), sortable: false, filter: false }),
+      ...adminCostColumns<WorkItem>({ id: "est_live_cost", label: "Est. live", value: (row) => row.est_live_cost_usd == null ? null : num(row.est_live_cost_usd), sortable: false, filter: false }),
       {
         id: "age",
         header: "Age",
@@ -607,7 +589,7 @@ function WorkItemDetail({
   row: WorkItem;
   onOpenBatch: (id: string) => void;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   const delivery = deliveryOf(row.handler_status);
   return (
     <div className="space-y-3">

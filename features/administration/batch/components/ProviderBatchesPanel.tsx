@@ -8,7 +8,8 @@
  * did the provider take, how many polls did it cost us, was it escalated or
  * cancelled, and what did the grouping actually save.
  */
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { formatAdminCost } from "@/components/cost/formatAdminCost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useState } from "react";
 import { ListFilter, PackageOpen } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -19,7 +20,6 @@ import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeView
 import { cn } from "@/lib/utils";
 import { num, type ProviderBatch } from "../service/batchAdminService";
 import {
-  CostCell,
   StatusBadge,
   fmtInt,
   fmtSpan,
@@ -119,7 +119,9 @@ export function ProviderBatchesPanel({
     { id: "poll_count", accessorKey: "poll_count", header: "Polls", filter: "number", width: 85, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtInt(row.poll_count)}</span> },
     { id: "turnaround", header: "Turnaround", accessorFn: turnaroundSeconds, filter: "number", width: 120, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtSpan(row.submitted_at, row.completed_at)}</span> },
     { id: "escalation", header: "Escalation", accessorFn: escalationLabel, width: 145, cell: (row) => <span className="text-muted-foreground">{escalationLabel(row)}</span> },
-    { id: "cost", header: "Cost", accessorFn: (row) => num(row.cost_usd) ?? num(row.est_live_cost_usd) ?? 0, filter: "number", width: 110, cell: (row) => <CostCell actual={num(row.cost_usd)} liveEquivalent={row.live_equivalent_cost_usd === null ? null : num(row.live_equivalent_cost_usd)} estimate={num(row.est_live_cost_usd)} settled={row.status === "completed"} /> },
+    ...adminCostColumns<ProviderBatch>({ id: "cost", label: "Billed", value: (row) => row.cost_usd == null ? null : num(row.cost_usd) }),
+    ...adminCostColumns<ProviderBatch>({ id: "live_equivalent_cost", label: "Live equivalent", value: (row) => row.live_equivalent_cost_usd == null ? null : num(row.live_equivalent_cost_usd) }),
+    ...adminCostColumns<ProviderBatch>({ id: "est_live_cost", label: "Est. live", value: (row) => row.est_live_cost_usd == null ? null : num(row.est_live_cost_usd) }),
   ];
 
   return (
@@ -157,7 +159,7 @@ function ProviderBatchDetail({
   row: ProviderBatch;
   onShowItems: (id: string) => void;
 }) {
-  const { format: fmtUsd } = useCostDisplay();
+  const fmtUsd = formatAdminCost;
   const estBatch = num(row.est_cost_usd);
   const actual = num(row.cost_usd);
   return (

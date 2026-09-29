@@ -86,7 +86,7 @@ describe("KgCostDashboard canonical tables", () => {
     const sourceKindColumns = table(
       "administration/kg-cost/by-source-kind",
     ).columns;
-    expect(sourceKindColumns.map((column) => column.accessorKey)).toEqual(
+    expect(sourceKindColumns.map((column) => column.id ?? column.accessorKey)).toEqual(
       expect.arrayContaining([
         "runs",
         "successes",
@@ -118,7 +118,7 @@ describe("KgCostDashboard canonical tables", () => {
     expect(
       table("administration/kg-cost/pending-batches").coverage,
     ).toMatchObject({ cap: 100 });
-    expect(runColumns.map((column) => column.accessorKey)).toEqual(
+    expect(runColumns.map((column) => column.id ?? column.accessorKey)).toEqual(
       expect.arrayContaining([
         "source_kind",
         "chunks_written",
@@ -181,17 +181,17 @@ describe("KgCostDashboard canonical tables", () => {
       [
         "administration/kg-cost/org-detail/daily-cost",
         "Last 30 days",
-        ["date", "cost_usd"],
+        ["date", "cost_usd", "cost_usd_points"],
       ],
       [
         "administration/kg-cost/org-detail/top-sources",
         "Top sources (30 days)",
-        ["source", "cost_usd", "count"],
+        ["source", "cost_usd", "cost_usd_points", "count"],
       ],
       [
         "administration/kg-cost/org-detail/batches-by-status",
         "Batches by status",
-        ["status", "count", "total_cost_usd"],
+        ["status", "count", "total_cost_usd", "total_cost_usd_points"],
       ],
     ];
 
@@ -207,7 +207,7 @@ describe("KgCostDashboard canonical tables", () => {
       expect(props.detail).toEqual({ enabled: false });
       expect(props.window).toEqual({ enabled: false });
       expect(props.coverage).toMatchObject({ answeredBy: "source" });
-      expect(props.columns.map((column) => column.accessorKey)).toEqual(columns);
+      expect(props.columns.map((column) => column.id ?? column.accessorKey)).toEqual(columns);
     }
   });
 
@@ -222,8 +222,13 @@ describe("KgCostDashboard canonical tables", () => {
       await Promise.resolve();
     });
 
-    expect(host.textContent).toContain("Organization receipt unavailable");
-    expect(host.textContent).toContain("Retry");
-    expect(table("administration/kg-cost/organizations").data).toEqual([]);
+    const organizationTable = table("administration/kg-cost/organizations");
+    expect(organizationTable.read).toMatchObject({
+      status: "error",
+      error: "Organization receipt unavailable",
+      what: "organizations",
+    });
+    expect(organizationTable.read?.onRetry).toEqual(expect.any(Function));
+    expect(organizationTable.data).toEqual([]);
   });
 });
