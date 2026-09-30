@@ -118,7 +118,7 @@ export function SchemaTableTokenFields({
             variant="outline"
             size="icon"
             className="h-8 w-8 shrink-0"
-            title="Autofill token from platform.entity_types"
+            title="Fill the token from the entity registry"
             onClick={onAutofillToken}
             disabled={disabled || autofilling || loading}
           >

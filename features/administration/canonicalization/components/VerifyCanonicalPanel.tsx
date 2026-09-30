@@ -422,17 +422,13 @@ export function VerifyCanonicalPanel() {
       {tokenMismatch ? (
         <div className="flex shrink-0 items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
           <AlertTriangle className="h-4 w-4 shrink-0" />
+          {/* Affected checks: entity_registered, policy_uses_has_access, sharing_token. */}
           <span className="flex-1 leading-relaxed">
-            <b>Token mismatch — not a DB problem.</b> “{token.trim()}” is not a
-            registered token for{" "}
+            <b>Token mismatch:</b> “{token.trim()}” is not registered for{" "}
             <code className="font-mono">
               {schema}.{table}
             </code>
-            . The registered token is{" "}
-            <code className="font-mono font-semibold">{registeredToken}</code>.
-            Any <code>entity_registered</code> /{" "}
-            <code>policy_uses_has_access</code> / <code>sharing_token</code>{" "}
-            FAILs below are caused by the wrong token, not a conformance gap.
+            . Token FAILs below come from this.
           </span>
           <Button
             size="sm"
@@ -501,7 +497,8 @@ export function VerifyCanonicalPanel() {
                     {result?.certifySnapshotNote ? (
                       <span
                         className="shrink-0 whitespace-nowrap font-mono text-[10px] text-muted-foreground"
-                        title="Freshness of iam.canonical_certify's inputs"
+                        // Freshness of iam.canonical_certify inputs.
+                        title="Age of the certification inputs"
                       >
                         {result.certifySnapshotNote}
                       </span>

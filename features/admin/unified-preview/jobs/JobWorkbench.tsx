@@ -168,10 +168,10 @@ export function JobWorkbench({
       ) : null}
 
       {/* ── THE GOAL EDITOR ─────────────────────────────────────────────────
-          The field that exists nowhere in the product today. */}
+          The field that exists nowhere in the product today.
+          Goal is frozen once set; changing it makes a different job. */}
       <PreviewSection
         title="Goal"
-        subtitle="What this job is for, in a sentence a non-technical expert would recognise. Frozen once set — changing it makes a different job."
         action={
           <div className="flex items-center gap-1.5">
             <GroundingBadge grounding={job.goal_grounding} />
@@ -227,10 +227,8 @@ export function JobWorkbench({
 
         <TabsContent value="workbench" className="mt-3 flex flex-col gap-3">
           {/* ── THE FROZEN TRIAD ────────────────────────────────────────── */}
-          <PreviewSection
-            title="The frozen triad"
-            subtitle="Goal, output kind and input contract are this job's identity. Everything behind the contract is swappable; these three are not."
-          >
+          {/* Goal, output kind and input contract are the job identity; not swappable. */}
+          <PreviewSection title="The frozen triad">
             <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {[
                 { label: "Goal", value: goalDraft, mono: false },
@@ -260,18 +258,12 @@ export function JobWorkbench({
                 </div>
               ))}
             </dl>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Consumption — which offered or known values the holder actually
-              uses — is per-binding and freely different. It is not part of the
-              triad.
-            </p>
+            {/* Consumption is per-binding and not part of the triad. */}
           </PreviewSection>
 
           {/* ── THE PRECEDENCE RIBBON, WITH ITS FALLBACK LEG ─────────────── */}
-          <PreviewSection
-            title="Who decides"
-            subtitle="Highest precedence first. The fallback is not a layer — it is what answers when no layer decided at all."
-          >
+          {/* Fallback is not a layer; it answers when no layer decided. */}
+          <PreviewSection title="Who decides">
             <MandateResolutionRibbon
               provenance={decidingLayer ?? undefined}
               className="bg-card"
@@ -312,8 +304,8 @@ export function JobWorkbench({
                 <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
                   {followerCount} job
-                  {followerCount === 1 ? "" : "s"} follow this one as their
-                  fallback. Rebinding here moves {followerCount === 1 ? "it" : "them"} too:{" "}
+                  {followerCount === 1 ? " follows" : "s follow"} this one;
+                  rebinding moves {followerCount === 1 ? "it" : "them"} too:{" "}
                   {at.follower_keys.map((key, i) => (
                     <span key={key}>
                       {i > 0 ? ", " : ""}
@@ -332,10 +324,7 @@ export function JobWorkbench({
           </PreviewSection>
 
           {/* ── THE GUARDED REBIND ──────────────────────────────────────── */}
-          <PreviewSection
-            title="Rebind the holder"
-            subtitle="Every swap runs an impact preflight first. Loud, itemised, and never blocking — you are told what breaks, then you decide."
-          >
+          <PreviewSection title="Rebind the holder">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground">Currently</span>
@@ -455,21 +444,17 @@ export function JobWorkbench({
                 </Badge>
               ))}
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              {job.discovery === "referenced"
-                ? "REFERENCED — a position in code or a surface slot names this key. The provision is that place's frozen manifest, and the normal path needs no user input."
-                : job.discovery === "discovered"
-                  ? "DISCOVERED — nothing names this job. It binds to known values by identity and appears wherever the keys it needs exist. Places acquire it; it never requires a place."
-                  : "BOTH — code references this key AND it is discovered wherever its keys exist. One mandate may be both."}
-            </p>
+            {/* Discovery modes: REFERENCED / DISCOVERED / BOTH — keep the three definitions here.
+                REFERENCED — a position in code or a surface slot names this key; the provision is
+                  that place's frozen manifest, and the normal path needs no user input.
+                DISCOVERED — nothing names this job; it binds to known values by identity and appears
+                  wherever the keys it needs exist. Places acquire it; it never requires a place.
+                BOTH — code references this key AND it is discovered wherever its keys exist. */}
           </PreviewSection>
         </TabsContent>
 
         <TabsContent value="bench" className="mt-3 flex flex-col gap-3">
-          <PreviewSection
-            title="Baseline vs candidate"
-            subtitle="Every saved exemplar runs through the current setup plus any candidate configurations, in one batch."
-          >
+          <PreviewSection title="Baseline vs candidate">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
@@ -509,14 +494,10 @@ export function JobWorkbench({
               Run comparison
             </Button>
           </PreviewSection>
-          <PreviewSection
-            title="Try it now"
-            subtitle="A cold-start ad-hoc run against a scaffolded typed form. No exemplar required; a good run becomes the first test case in one click."
-          >
+          <PreviewSection title="Try it now">
             <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-center text-xs text-muted-foreground">
-              The typed input form for{" "}
-              <span className="font-mono">{job.output_kind}</span> renders here,
-              scaffolded from the pinned version&apos;s declarations.
+              Input form for{" "}
+              <span className="font-mono">{job.output_kind}</span> · coming soon
             </div>
           </PreviewSection>
         </TabsContent>
@@ -524,7 +505,6 @@ export function JobWorkbench({
         <TabsContent value="drift" className="mt-3 flex flex-col gap-3">
           <PreviewSection
             title="Version drift"
-            subtitle="Running v4 → newest v7. Both remedies are offered here, at the drift, with what each one costs."
             tone="warn"
           >
             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -581,21 +561,20 @@ export function JobWorkbench({
             </div>
           </PreviewSection>
           <PreviewSection title="Code ↔ holder drift">
+            {/* Four named remedies will render here, never a guess. */}
             <p className="text-xs text-muted-foreground">
-              The code that calls this job offers{" "}
+              Code offers{" "}
               <span className="font-mono">keywords, locale, topic</span>; the
-              bound holder declares{" "}
-              <span className="font-mono">keywords, locale, subject</span>. Four
-              named remedies would appear here — never a guess.
+              holder declares{" "}
+              <span className="font-mono">keywords, locale, subject</span>.
             </p>
           </PreviewSection>
         </TabsContent>
       </Tabs>
 
       <p className="px-1 text-[11px] italic text-muted-foreground">
-        Preview — every control on this page reports what it would do and
-        changes nothing. Coverage at this altitude:{" "}
-        {COVERAGE_META[at.coverage].label.toLowerCase()}.
+        Preview — nothing here saves · Coverage:{" "}
+        {COVERAGE_META[at.coverage].label.toLowerCase()}
       </p>
     </div>
   );

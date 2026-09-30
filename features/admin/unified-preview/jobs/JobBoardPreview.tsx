@@ -436,8 +436,7 @@ export function JobBoardPreview() {
 
       {selectedJob ? null : (
         <p className="shrink-0 pb-2 text-[11px] italic text-muted-foreground">
-          Click any row to open the workbench. Nothing on this page writes
-          anything — every control reports what it would do.
+          Preview — nothing here saves
         </p>
       )}
     </div>

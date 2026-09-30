@@ -142,8 +142,7 @@ export function CoverageScoreboard({
         </ul>
       ) : (
         <p className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground">
-          Every job at this altitude has an explicit intelligence. Nothing is
-          running on a stand-in.
+          Every job has an explicit intelligence.
         </p>
       )}
     </div>

@@ -183,14 +183,7 @@ export function CanonicalizationOverview() {
             <ShieldCheck className="h-5 w-5 text-primary" />
             Canonicalization Toolkit
           </h1>
-          <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-            Live gate (<code>iam.verify_canonical</code> /{" "}
-            <code>canonical_certify</code>) + the batch <code>audit.*</code>{" "}
-            snapshot store over every registered table and plpgsql function.
-            Read-only except for the refresh action below. See{" "}
-            <code>docs/canonicalization_worklog.md</code> §5b for the full
-            toolkit reference.
-          </p>
+          {/* Live gate iam.verify_canonical / canonical_certify + audit.* snapshots; see docs/canonicalization_worklog.md §5b. */}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {overview ? (
@@ -342,14 +335,10 @@ export function CanonicalizationOverview() {
                   </div>
                 ))}
               </div>
+              {/* Reason is mandatory; docs-steward triages daily; release gate is pnpm check:ddl-guard-log. */}
               <p className="mt-1.5 text-[11px] text-muted-foreground">
-                Acknowledge with{" "}
-                <code>
-                  platform.ddl_guard_ack(p_reason =&gt; &apos;…&apos;, p_by =&gt;
-                  &apos;…&apos;, p_rule =&gt; &apos;…&apos;)
-                </code>{" "}
-                — the reason is mandatory. Triage runs as the docs-steward daily
-                step; the release gate is <code>pnpm check:ddl-guard-log</code>.
+                Acknowledge:{" "}
+                <code>platform.ddl_guard_ack(p_reason, p_by, p_rule)</code>
               </p>
             </div>
           ) : null}
@@ -385,8 +374,7 @@ export function CanonicalizationOverview() {
                 ][]
               )
                 .map(([severity, count]) => `${count} ${severity}`)
-                .join(" · ")}{" "}
-              — the tile above counts distinct functions, not findings
+                .join(" · ")}
             </span>
             {overview.lastRefresh?.note ? (
               <span className="truncate">
@@ -425,12 +413,9 @@ export function CanonicalizationOverview() {
               <li>Come back here and click "Refresh audit store".</li>
               <li>
                 Confirm <code>canonical_certify_ok</code> is <code>true</code>{" "}
-                on the Verify page. If not, fix the blocking rows and repeat.
+                on Verify; if not, fix and repeat.
               </li>
-              <li>
-                Only then touch app/client code, and log the change in the
-                worklog's Change Log.
-              </li>
+              <li>Then change app code and log it in the worklog.</li>
             </ol>
           </div>
         </>
@@ -442,7 +427,7 @@ export function CanonicalizationOverview() {
           if (!refreshing) setRefreshOpen(open);
         }}
         title="Refresh the audit store?"
-        description="Rebuilds every audit.* snapshot: the full canonicalization gate over all registered tables plus plpgsql_check over every function. This can take a while on the live database."
+        description="Rebuilds every audit snapshot across all tables and functions. This can take a while on the live database."
         confirmLabel="Refresh"
         busy={refreshing}
         onConfirm={runRefresh}

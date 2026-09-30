@@ -242,11 +242,10 @@ export function CandidatesPage() {
         ))}
       </div>
 
+      {/* A register, not a queue: rows keep history keyed on retired tokens resolvable. */}
       {view === "stale" ? (
         <p className="shrink-0 px-4 pb-2 text-xs text-muted-foreground">
-          A register, not a queue. Each row is a retired token whose table is
-          gone; the row is kept on purpose so history keyed on that token stays
-          resolvable. Nonzero is the expected steady state.
+          Retired tokens kept for history; nonzero is expected
         </p>
       ) : null}
 

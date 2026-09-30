@@ -76,9 +76,7 @@ export function CanonicalizationToolbar({
             ({age.stale ? `stale — ${age.label}` : age.label})
           </span>
         ) : null}
-        . Tables read <code className="text-[10px]">audit.*</code> — run{" "}
-        <span className="font-medium">Refresh audit store</span> after DB
-        changes, then Re-fetch.
+        {/* Tables read audit.*; refresh the audit store after DB changes, then re-fetch. */}
       </p>
       <div className="flex items-center gap-2">
         {actions}
@@ -89,7 +87,8 @@ export function CanonicalizationToolbar({
             className="h-7 text-xs"
             onClick={onRefreshAudit}
             disabled={busy}
-            title="Runs audit.refresh() — rebuilds broken_functions, deps, findings, …"
+            // Runs audit.refresh().
+            title="Rebuilds broken-function, dependency and findings snapshots."
           >
             {refreshingAudit ? (
               <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
