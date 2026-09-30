@@ -3014,6 +3014,11 @@ const SHAPE_BLOCK_DISPATCH = {
       key={index}
       content={block.content}
       metadata={block.metadata}
+      organizationId={
+        typeof block.metadata?.organization_id === "string"
+          ? block.metadata.organization_id
+          : null
+      }
     />
   ),
 } satisfies Record<ShapeBlockType, BlockRenderFn>;

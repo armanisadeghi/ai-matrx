@@ -89,6 +89,13 @@ export interface DbKindComponentImplProps {
   onResolve?: ResolveKindValue;
   /** Settings dictated by the mounting surface (e.g. selectionMode). */
   uiOptions?: KindComponentUiOptions;
+  /**
+   * The organization that owns the rendered record. Its sandbox setting decides
+   * where the component renders — never the active organization when the record
+   * belongs to another. Falls back to the value's own `organization_id`, then
+   * to the person's active organization (a record-less proposal).
+   */
+  organizationId?: string | null;
 }
 
 const screamedDefects = new Set<string>();
@@ -174,6 +181,7 @@ const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
   runAction = noopRunAction,
   onResolve,
   uiOptions,
+  organizationId,
 }) => {
   const generic = (
     <GenericStructuredBlock
@@ -188,7 +196,14 @@ const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
   // this file has always had; ON renders the same row inside /kind-sandbox.
   // It is read here, at the ONE react-flavor mount, so all three call sites
   // (chat, Kind Request, the directive window) inherit it together.
-  const sandbox = useKindSandboxSettings();
+  const valueOrganizationId =
+    value !== null && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>).organization_id
+      : null;
+  const sandbox = useKindSandboxSettings(
+    organizationId ||
+      (typeof valueOrganizationId === "string" ? valueOrganizationId : null),
+  );
   // 🚨 THE VERSION IS AN ARGUMENT, NEVER A DEPENDENCY (DD-215c). `void
   // registryVersion;` left this read's freshness to whether the React Compiler
   // happened not to memoize `resolveComponent(kind, …)` — and the compiler IS

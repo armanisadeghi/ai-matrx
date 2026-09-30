@@ -69,8 +69,13 @@ export type RecordSortKey =
   | `data:${string}`;
 
 export interface KindRecordsQuery {
-  /** `mine` = rows I created; `orgs` = my organizations (blended or one). */
-  scope: { kind: "mine" } | { kind: "orgs"; organizationId: string | null };
+  /** `mine` = rows I created; `orgs` = every organization I belong to. */
+  scope: { kind: "mine" } | { kind: "orgs" };
+  /**
+   * The page's organization filter (null = All organizations). It narrows
+   * EVERY lane — Mine as well as My Orgs — and is never the active organization.
+   */
+  orgId: string | null;
   search: string;
   confirmation: ConfirmationFilter;
   writer: WriterFilter;

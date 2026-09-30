@@ -8,7 +8,7 @@
 // ../instance-service.ts answers a different question ("my instances") and is
 // deliberately NOT reused here. Every query declares its own predicate:
 //   mine → created_by = me
-//   orgs → organization_id = one org, or IN (every org I belong to)
+//   orgs → organization_id IN (every org I belong to); the page org filter (orgId) narrows BOTH lanes
 // The blended set comes from the canonical membership read
 // (`getUserOrganizations`), never from RLS "probably doing the right thing"
 // and never from a Redux slice that may not have been hydrated.
@@ -220,7 +220,7 @@ function applyRecordFilters<Q extends RecordQueryShape>(
   query: Q,
   q: Pick<
     KindRecordsQuery,
-    "scope" | "archiveFilter" | "confirmation" | "writer" | "search" | "columnFilters"
+    "scope" | "orgId" | "archiveFilter" | "confirmation" | "writer" | "search" | "columnFilters"
   >,
   ctx: { userId: string; orgIds: string[]; searchKeys: string[] },
 ): Q {
@@ -229,10 +229,12 @@ function applyRecordFilters<Q extends RecordQueryShape>(
   // Scope — explicit, always. Never RLS alone (THE VIEW LAW).
   if (q.scope.kind === "mine") {
     out = out.eq("created_by", ctx.userId) as Q;
-  } else if (q.scope.organizationId) {
-    out = out.eq("organization_id", q.scope.organizationId) as Q;
   } else {
     out = out.in("organization_id", ctx.orgIds) as Q;
+  }
+  // The page's organization filter narrows every lane, Mine included.
+  if (q.orgId) {
+    out = out.eq("organization_id", q.orgId) as Q;
   }
 
   // Archive — THE ARCHIVED-ITEMS LAW axis, parameterised, default hides.
@@ -292,12 +294,9 @@ export async function listKindRecords(
   args: ListKindRecordsArgs,
 ): Promise<KindRecordsPage> {
   const userId = await currentUserId();
-  const orgIds =
-    args.scope.kind === "orgs" && !args.scope.organizationId
-      ? await blendedOrgIds()
-      : [];
+  const orgIds = args.scope.kind === "orgs" ? await blendedOrgIds() : [];
 
-  if (args.scope.kind === "orgs" && !args.scope.organizationId && orgIds.length === 0) {
+  if (args.scope.kind === "orgs" && orgIds.length === 0) {
     return { rows: [], total: 0 };
   }
 
@@ -385,7 +384,6 @@ async function attachProducedBy(rows: KindRecordRow[]): Promise<void> {
 export interface RecordScopeCounts {
   mine: number;
   orgs: number;
-  perOrg: { id: string; label: string; count: number }[];
 }
 
 /**
@@ -396,14 +394,13 @@ export async function countKindRecordsByScope(
   args: Omit<ListKindRecordsArgs, "sort" | "direction" | "page" | "pageSize" | "scope">,
 ): Promise<RecordScopeCounts> {
   const userId = await currentUserId();
-  const orgs = await readableOrganizations();
-  const orgIds = orgs.map((o) => o.id);
+  const orgIds = await blendedOrgIds();
 
 
   async function countFor(
     scope: KindRecordsQuery["scope"],
   ): Promise<number> {
-    if (scope.kind === "orgs" && !scope.organizationId && orgIds.length === 0) {
+    if (scope.kind === "orgs" && orgIds.length === 0) {
       return 0;
     }
     const base = db()
@@ -423,21 +420,12 @@ export async function countKindRecordsByScope(
     return count ?? 0;
   }
 
-  const [mine, blended, ...perOrgCounts] = await Promise.all([
+  const [mine, orgs] = await Promise.all([
     countFor({ kind: "mine" }),
-    countFor({ kind: "orgs", organizationId: null }),
-    ...orgs.map((o) => countFor({ kind: "orgs", organizationId: o.id })),
+    countFor({ kind: "orgs" }),
   ]);
 
-  return {
-    mine,
-    orgs: blended,
-    perOrg: orgs.map((o, i) => ({
-      id: o.id,
-      label: o.name,
-      count: perOrgCounts[i] ?? 0,
-    })),
-  };
+  return { mine, orgs };
 }
 
 /**
@@ -448,10 +436,7 @@ export async function countKindRecordsByArchiveState(
   args: Omit<ListKindRecordsArgs, "sort" | "direction" | "page" | "pageSize" | "archiveFilter">,
 ): Promise<Partial<Record<ArchiveFilterValue, number>>> {
   const userId = await currentUserId();
-  const orgIds =
-    args.scope.kind === "orgs" && !args.scope.organizationId
-      ? await blendedOrgIds()
-      : [];
+  const orgIds = args.scope.kind === "orgs" ? await blendedOrgIds() : [];
 
   async function countFor(archiveFilter: ArchiveFilterValue): Promise<number> {
     const base = db()

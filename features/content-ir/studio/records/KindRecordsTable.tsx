@@ -52,6 +52,7 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
@@ -146,8 +147,8 @@ export default function KindRecordsTable({
 
   const [fields] = useState<SchemaField[]>(() => schemaFields(emittedJsonSchema));
   const [scope, setScope] = useState<ListScope>(() => makeScope("orgs"));
-  /** The organization filter (null = All organizations) — never the active organization. */
-  const [orgFilter, setOrgFilter] = useState<string | null>(null);
+  /** The organization filter (`?org_filter=`, null = All organizations) — never the active organization. */
+  const [orgFilter, setOrgFilter] = useOrgFilterParam();
   /** True once the landing rule has run or the person picked a scope. */
   const scopeSettled = useRef(false);
   const [search, setSearch] = useState("");
@@ -229,15 +230,13 @@ export default function KindRecordsTable({
     const listScope =
       scope.kind === "mine"
         ? ({ kind: "mine" } as const)
-        : ({
-            kind: "orgs" as const,
-            organizationId: orgFilter,
-          } as const);
+        : ({ kind: "orgs" } as const);
 
     async function run() {
       const result = await listKindRecords({
         ...readerArgs,
         scope: listScope,
+        orgId: orgFilter,
         archiveFilter,
         sort: prefs.sort as RecordSortKey,
         direction: prefs.direction,
@@ -253,8 +252,8 @@ export default function KindRecordsTable({
       // different set than the rows underneath it.
       const [resolvedNames, scopes, archives] = await Promise.all([
         readCreatorNames(result.rows.map((r) => r.organizationId)),
-        countKindRecordsByScope({ ...readerArgs, archiveFilter }),
-        countKindRecordsByArchiveState({ ...readerArgs, scope: listScope }),
+        countKindRecordsByScope({ ...readerArgs, orgId: orgFilter, archiveFilter }),
+        countKindRecordsByArchiveState({ ...readerArgs, scope: listScope, orgId: orgFilter }),
       ]);
       if (generation.current !== mine) return;
       setNames(resolvedNames);
@@ -539,16 +538,14 @@ export default function KindRecordsTable({
             setSelectedIds([]);
           }}
         />
-        {scope.kind === "orgs" ? (
-          <EntityOrgFilter
-            orgId={orgFilter}
-            onChange={(next) => {
-              setOrgFilter(next);
-              setPage(1);
-              setSelectedIds([]);
-            }}
-          />
-        ) : null}
+        <EntityOrgFilter
+          orgId={orgFilter}
+          onChange={(next) => {
+            setOrgFilter(next);
+            setPage(1);
+            setSelectedIds([]);
+          }}
+        />
         <ArchiveFilter
           value={archiveFilter}
           onValueChange={(value) => {

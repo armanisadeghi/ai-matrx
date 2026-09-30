@@ -216,8 +216,15 @@ export function resetKindSandboxKnobAnnouncement(): void {
  * React binding. Starts OFF so the first paint is today's behavior; flips when
  * the resolver answers.
  */
-export function useKindSandboxSettings(): KindSandboxSettings {
-    const organizationId = useActiveOrganizationId();
+export function useKindSandboxSettings(
+    recordOrganizationId?: string | null,
+): KindSandboxSettings {
+    // The sandbox setting belongs to the org that OWNS what is being rendered:
+    // the record's own organization when the mount knows it, else — a fresh
+    // proposal or chat block that is no record yet — the organization the
+    // person is working in. Never the active org for a record from another org.
+    const activeOrganizationId = useActiveOrganizationId();
+    const organizationId = recordOrganizationId || activeOrganizationId;
     const { knobs, isLoading, error } = useScopedKnobs({
         organizationId,
         featurePrefix: "custom",
@@ -229,7 +236,7 @@ export function useKindSandboxSettings(): KindSandboxSettings {
                 enabled: false,
                 ceilings: null,
                 refusal:
-                    `no organization is active in this session, and the settings ` +
+                    `neither the rendered record nor this session names an organization, and the settings ` +
                     `resolver answers per organization.`,
             };
         }

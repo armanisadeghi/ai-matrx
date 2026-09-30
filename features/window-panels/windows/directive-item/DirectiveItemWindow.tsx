@@ -142,7 +142,14 @@ export default function DirectiveItemWindow({
             ) : itemKind ? (
               // The kind's OWN component — the seam paying off. No branch here for
               // a missing component row: DbKindComponent degrades internally.
-              <DbKindComponent content={JSON.stringify(item)} />
+              <DbKindComponent
+                content={JSON.stringify(item)}
+                organizationId={
+                  typeof item.organization_id === "string"
+                    ? item.organization_id
+                    : null
+                }
+              />
             ) : (
               // No registered kind. The floor, honestly reached.
               <StructuredValueView value={item} density="full" footer={false} />
