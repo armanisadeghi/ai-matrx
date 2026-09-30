@@ -376,8 +376,10 @@ export default function ShapeInstancesTab({
     const rows = entries
       .map((entry) => instanceDataAsRecord(entry.data))
       .filter((data): data is Record<string, unknown> => data !== null)
-      .map((data) => flatKeys.map((key) => cellValue(data[key])));
-    openSaveToTable({ grid: { headers: flatKeys, rows }, title: `${label} instances` });
+      .map((data) => Object.fromEntries(flatKeys.map((key) => [key, cellValue(data[key])])));
+    // The records themselves: the one shape reader names each column in words ("Wine name"),
+    // so a schema key ("wine_name") never reaches the person.
+    openSaveToTable({ value: rows, title: `${label} instances` });
   }
 
   if (list.status === "loading") {
@@ -427,7 +429,7 @@ export default function ShapeInstancesTab({
       <div className="grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_1fr]">
         {/* Instance list */}
         <section className="min-w-0">
-          <div className="mb-2 flex items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-foreground">
               {adminSeat
                 ? "System instances"
@@ -483,7 +485,7 @@ export default function ShapeInstancesTab({
               <button
                 type="button"
                 onClick={handleViewAsTable}
-                className="flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 title="Save these instances as a table"
               >
                 <Table2 className="h-3.5 w-3.5" />
