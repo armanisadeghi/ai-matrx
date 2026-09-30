@@ -25,6 +25,7 @@ import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { registerAction } from "../provider";
 import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
 import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
+import { liveSelectionShapeText } from "@/components/selection-toolbar/selection-shape";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
@@ -209,6 +210,10 @@ registerAction({
  * per-surface parse: chat, notes, every RichDocument and the right-click menu reach the same screen.
  */
 const tableShapeText = (ctx: RichDocumentActionContext): string => {
+  // BREAKER-3 B3-16: a selection over RENDERED content (a nested list, a table's rows) is read from
+  // the selected DOM, which keeps its shape; the flattened words are the fallback.
+  const rendered = liveSelectionShapeText();
+  if (rendered && hasTableShape(rendered)) return rendered;
   const selected = ctx.applicationScope?.selection;
   if (typeof selected === "string" && hasTableShape(selected)) return selected;
   return ctx.content;

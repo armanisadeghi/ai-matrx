@@ -15,7 +15,8 @@
  *   3. the two menus that carry the action for EVERY shape stop carrying it: the rich-document
  *      registry (chat ⋯ and right-click, notes, every RichDocument) must offer it by
  *      `hasTableShape`, and the selection toolbar must keep `selection:save-to-table` — sent to
- *      the COMMON host half (VERIFIER-30: under the annotation key it never showed in Read mode);
+ *      the COMMON host half (VERIFIER-30: under the annotation key it never showed in Read mode),
+ *      and both it and the registry read a rendered selection through `shapeTextOfNode`;
  *   4. a table is born anywhere but the two named homes (VERIFIER-30 #5: a heatmap, a PDF
  *      extraction and the older importer each made their own) — `createTable` from the data
  *      seam or records' `declareTable` outside `BIRTH_HOMES`.
@@ -117,6 +118,12 @@ export function judge(files: ReadonlyMap<string, string>): Finding[] {
   if (!selection.includes('"selection:save-to-table"')) {
     out.push({ rule: 3, file: "components/selection-toolbar/common-actions.ts", says: "the selection toolbar lost selection:save-to-table" });
   }
+  const shapeRead = files.get("components/selection-toolbar/selection-shape.ts") ?? "";
+  const toolbarRoot = files.get("components/selection-toolbar/SelectionToolbarRoot.tsx") ?? "";
+  const registryReads = /liveSelectionShapeText\(/.test(registry);
+  if (!/shapeTextOfNode\(/.test(shapeRead) || !/liveSelectionShapeText\(/.test(toolbarRoot) || !registryReads) {
+    out.push({ rule: 3, file: "components/selection-toolbar/selection-shape.ts", says: "a selection over rendered content is read flattened — the toolbar and the registry must read it through shapeTextOfNode (liveSelectionShapeText)" });
+  }
   const hosts = files.get("components/selection-toolbar/selection-actions.ts") ?? "";
   const keyLine = hosts.split("\n").find((l) => l.includes("return SELECTION_COMMON_HOST_KEY")) ?? "";
   if (!keyLine.includes('"selection:save-to-table"')) {
@@ -160,6 +167,9 @@ function selfTest(): void {
   const toolbar = new Map(base);
   toolbar.set("components/selection-toolbar/selection-actions.ts", (base.get("components/selection-toolbar/selection-actions.ts") ?? "").replace(' || id === "selection:save-to-table"', ""));
   if (!judge(toolbar).some((f) => f.rule === 3)) throw new Error("rule 3 did not fire when the toolbar key fell back to the annotation host");
+  const flat = new Map(base);
+  flat.set("components/selection-toolbar/selection-shape.ts", "export function liveSelectionShapeText() { return null; }");
+  if (!judge(flat).some((f) => f.rule === 3)) throw new Error("rule 3 did not fire when the selection was read flattened");
   const lost = new Map(base);
   lost.set("features/rich-document/actions/handlers/transfer.ts", (base.get("features/rich-document/actions/handlers/transfer.ts") ?? "").replace(/hasTableShape\(/g, "parseFirstMarkdownTable("));
   if (!judge(lost).some((f) => f.rule === 3)) throw new Error("rule 3 did not fire when the registry stopped reading every shape");

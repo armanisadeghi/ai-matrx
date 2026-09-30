@@ -53,14 +53,16 @@ import {
 import type { Rect } from "./SelectionToolbarFrame";
 // The common pair (copy, save to notes) declares itself on load.
 import "./common-actions";
+import { liveSelectionShapeText } from "./selection-shape";
 
 /**
- * The live selection written back as the shapes it was drawn from (VERIFIER-30 #1). Null until
- * records-ui's `shapeTextOfNode` is installed (the release that carries it is waiting on the
- * publisher); the flattened words are read meanwhile.
+ * The live selection written back as the shapes it was drawn from (VERIFIER-30 #1): a browser
+ * selection over a rendered table flattens its header cells one per line and drops a list's
+ * bullets, so the flattened text reads as no rows at all. Null for a selection inside a text field
+ * (its words are the source text already) or when there is none.
  */
 function selectionShapeText(): string | null {
-  return null;
+  return liveSelectionShapeText();
 }
 
 // The frame (the package's selection layout, the portal, positioning) loads
