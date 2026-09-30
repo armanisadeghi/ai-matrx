@@ -113,9 +113,11 @@ hardware with a production build before tuning further.
     centre); left/top handles move the origin. Pointer capture + a page-wide shield portalled to
     `body`, so an iframe or editor in the tile can never steal the drag, even while interacting.
     `useBoard.resizeTile` coalesces a resize into ONE undo step, like a move; `/board` persists it
-    through the board document. Wired on `/board` only (the demo, meeting and workflow boards pass
+    through the board document. At the overview tier (a tile a few px on screen) only the SELECTED
+    tile shows handles, so a drag there moves instead of resizes (Figma). Wired on `/board` only (the demo, meeting and workflow boards pass
     `onMove` but not yet `onResize`; War Room refuses resize by design).
-  - *Double-click (`doubleClickAction`):* on the header / chrome → fly to the tile and make it live
+  - *Double-click (`doubleClickAction`):* on the header / chrome (the frame edge — a resize handle —
+    counts as chrome) → fly to the tile and make it live
     (select + `fitItem`, the state `board_focus` "fly" produces); on the body of a tile you are NOT
     working in → fly and start interacting (tldraw: double-click enters a shape); inside content you
     ARE working in, or on a control → native (word selection, cell edit). A header press captures the
