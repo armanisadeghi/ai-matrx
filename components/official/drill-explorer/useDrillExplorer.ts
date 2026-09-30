@@ -26,7 +26,7 @@ import {
 
 import { supabase } from "@/utils/supabase/client";
 
-import { withAutoGrain } from "./grain";
+import { withAutoGrain, type DrillGrainLines } from "./grain";
 import { asOfAnswer, doorWhere, type DrillNameResolver } from "./types";
 import { carriedAsk, type DrillCarried } from "./questionParts";
 import { drillDoorLabels } from "./dimensionWords";
@@ -52,9 +52,9 @@ const NO_ANSWERS: MatrxDrillAnswers = {};
 
 /** One door row as the answer table reads it (a prior-only group keeps its values). */
 export function drillRowOf(
-  r: Pick<RawRow, "groups" | "measures" | "row_count"> & Partial<Pick<RawRow, "prior_groups" | "prior_measures" | "distinct_groups">>,
+  r: Pick<RawRow, "groups" | "measures" | "row_count"> & Partial<Pick<RawRow, "prior_groups" | "prior_measures" | "distinct_groups" | "kind">>,
   countMeasure?: string,
-): MatrxDrillAnswerRow {
+): MatrxDrillAnswerRow & { kind?: "group" | "other" | "total" } {
   const groups: Record<string, string | null> = {};
   // A group that only the PRIOR window had (a compare) arrives with groups null and its values in
   // prior_groups; reading groups alone turned every such group into the same empty key.
@@ -72,6 +72,8 @@ export function drillRowOf(
     row_count: countMeasure && r.measures?.[countMeasure] != null ? Number(r.measures[countMeasure]) : Number(r.row_count ?? 0),
     ...(r.prior_measures ? { prior_measures: num(r.prior_measures) } : {}),
     ...(r.distinct_groups !== undefined ? { distinct_groups: r.distinct_groups } : {}),
+    // the chart tells a group from the rest and the total by the door's own `kind`
+    ...(r.kind === "group" || r.kind === "other" || r.kind === "total" ? { kind: r.kind } : {}),
   };
 }
 
@@ -86,47 +88,18 @@ export function doorWindow(question: MatrxDrillQuestion, align?: "hour"): Pick<D
 }
 
 /**
- * The half-open moments a window covers. `align: "hour"` starts it on the hour (UTC) — a rollup
- * counts whole hours, so a window starting mid-hour would silently drop that hour's first minutes
- * while the Spend Explorer counted them (VERIFIER-32 F1). The end stays "now": the rollup's open hour
- * holds everything counted so far.
+ * The half-open moments a window covers (days, presets, or moments — the package reads them all since
+ * 0.49.40). `align: "hour"` starts it on the hour (UTC) — a rollup counts whole hours, so a window
+ * starting mid-hour would silently drop that hour's first minutes while the Spend Explorer counted
+ * them (VERIFIER-32 F1). The end stays "now": the rollup's open hour holds everything counted so far.
  */
 export function explorerWindowRange(window: string | null | undefined, align?: "hour", now: Date = new Date()): { from: string; to: string } | null {
-  const range = momentRange(window) ?? drillWindowRange(window, now);
+  const range = drillWindowRange(window, now);
   if (!range || align !== "hour") return range;
   const from = new Date(range.from);
   if (Number.isNaN(from.getTime())) return range;
   from.setUTCMinutes(0, 0, 0);
   return { from: from.toISOString(), to: range.to };
-}
-
-/**
- * A window of MOMENTS (`2026-09-28T14:00Z..2026-09-28T18:00Z`, a declared view's sub-day window —
- * VERIFY-DRILL-WAVE1 F3). The published design system (0.49.37) reads only day ranges and would
- * turn this into no window at all; read here until the version with moments is installed
- * (PROGRESS-DRILL-EXPLORER "After publish").
- */
-const MOMENT = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+\- ]\d{2}:\d{2})?`;
-const MOMENT_RANGE = new RegExp(`^(${MOMENT}|\\d{4}-\\d{2}-\\d{2})\\.\\.(${MOMENT}|\\d{4}-\\d{2}-\\d{2})$`);
-function momentRange(window: string | null | undefined): { from: string; to: string } | null {
-  if (!window || !window.includes("T")) return null;
-  const m = window.match(MOMENT_RANGE);
-  if (!m) return null;
-  const end = (v: string) => v.replace(/(T\d{2}:\d{2}(?::\d{2})?) (\d{2}:\d{2})$/, "$1+$2");
-  return { from: end(m[1]!), to: end(m[2]!) };
-}
-
-/** How a window reads — a window of moments with its clock ("Sep 28, 2026 14:00 – 18:00 UTC"), else the package's words. */
-export function explorerWindowLabel(window: string | null | undefined, packageLabel: (w: string | null | undefined) => string): string {
-  const range = momentRange(window);
-  if (!range) return packageLabel(window);
-  const words = (iso: string) => {
-    const d = new Date(iso);
-    return { day: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }), clock: d.toISOString().slice(11, 16) };
-  };
-  const a = words(range.from);
-  const b = words(range.to);
-  return `${a.day} ${a.clock} – ${a.day === b.day ? b.clock : `${b.day} ${b.clock}`} UTC`;
 }
 
 /**
@@ -176,8 +149,12 @@ export function useDrillExplorer(args: {
   carried?: DrillCarried | null | undefined;
   /** Measures the header says beside the total (asked on the total only, never as table columns). */
   headlineAlso?: readonly string[] | undefined;
+  /** The auto-grain lines (the knobs), or null for the package's own. */
+  grainLines?: DrillGrainLines | null | undefined;
+  /** False while the settings are still being read: nothing is asked until the grain is known. */
+  ready?: boolean | undefined;
 }): DrillExplorerData {
-  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried, headlineAlso } = args;
+  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried, headlineAlso, grainLines = null, ready = true } = args;
   const client = organizationId ? drillClientFor(organizationId, userId) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
@@ -203,17 +180,17 @@ export function useDrillExplorer(args: {
     };
   }, [client, sourceKey]);
 
-  const askKey = JSON.stringify({ by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null, sort: question.sort ?? null, carried: carried ?? null });
+  const askKey = JSON.stringify({ lines: grainLines, by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null, sort: question.sort ?? null, carried: carried ?? null });
   const resolverKeys = Object.keys(resolvers ?? {}).sort().join(",");
   const alsoKey = (headlineAlso ?? []).join(",");
 
   // THE ANSWERS — every request the table needs, plus the whole (no trail) for coverage.
   useEffect(() => {
     // Asked with no grouping too: the header's total and the trail's names are the same question.
-    if (!client || !def) return;
-    const parsed = JSON.parse(askKey) as MatrxDrillQuestion & { carried: DrillCarried | null };
+    if (!client || !def || !ready) return;
+    const parsed = JSON.parse(askKey) as MatrxDrillQuestion & { carried: DrillCarried | null; lines: DrillGrainLines | null };
     const door = parsed.carried;
-    const asked = withAutoGrain(def, parsed);
+    const asked = withAutoGrain(def, parsed, parsed.lines);
     const windowPart = doorWindow(asked, windowAlign);
     if (windowPart.window && door?.windowKey) windowPart.window = { ...windowPart.window, key: door.windowKey };
     // A RUN RATE NEEDS A WINDOW WITH A START (the door refuses one without, 22023): with "all time" it is
@@ -285,16 +262,6 @@ export function useDrillExplorer(args: {
         const rows = answer.rows
           .filter((row) => row.kind === kind && (kind === "group" || !row.groups || Object.keys(row.groups).length === 0))
           .map((row) => drillRowOf(row, countMeasure));
-        // A PIVOT ACROSS TIME KEEPS THE LATEST PERIODS (VERIFY-DRILL-WAVE1 F2). The installed design
-        // system (0.49.37) keeps the FIRST N across values it is handed, so the pivot's own totals go
-        // to it newest first and the cap keeps the latest periods; the rest column is the earlier
-        // ones. The design system with lane DRILL-WAVE1-FIXES' fix orders time columns itself
-        // (calendar order, latest kept, the rest said in words) — then this goes
-        // (PROGRESS-DRILL-EXPLORER "After publish").
-        const across = asked.across ?? null;
-        if (across && r.by.length === 1 && r.by[0] === across && timeKeys.has(parseDimensionRef(across).key)) {
-          rows.sort((a, b) => String(b.groups[across] ?? "").localeCompare(String(a.groups[across] ?? "")));
-        }
         out[r.key] = rows;
         for (const [key, map] of Object.entries(drillDoorLabels(answer.rows))) doorLabels[key] = { ...(doorLabels[key] ?? {}), ...map };
         for (const row of answer.rows) for (const [dim, value] of Object.entries(row.groups ?? {})) note(dim, value);
@@ -329,8 +296,40 @@ export function useDrillExplorer(args: {
     };
     // `resolvers` is read through `resolverKeys` (a host passes a fresh object each render).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, def, askKey, version, lane, sourceKey, resolverKeys, countMeasure, windowAlign, alsoKey]);
+  }, [client, def, askKey, version, lane, sourceKey, resolverKeys, countMeasure, windowAlign, alsoKey, ready]);
 
   const current = answered.key === `${askKey}#${version}`;
   return { def, answers: current ? answered.answers : NO_ANSWERS, whole: current ? answered.whole : null, names, says, error, asOf, client };
+}
+
+// Restored 2026-09-30: an in-flight edit deleted these while DrillExplorer.tsx:59 and
+// __tests__/drill-wave1-fixes.test.tsx still import explorerWindowLabel — the missing export
+// made the dev server 500 EVERY route in the shared checkout, sign-in included.
+/**
+ * A window of MOMENTS (`2026-09-28T14:00Z..2026-09-28T18:00Z`, a declared view's sub-day window —
+ * VERIFY-DRILL-WAVE1 F3). The published design system (0.49.37) reads only day ranges and would
+ * turn this into no window at all; read here until the version with moments is installed
+ * (PROGRESS-DRILL-EXPLORER "After publish").
+ */
+const MOMENT = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+\- ]\d{2}:\d{2})?`;
+const MOMENT_RANGE = new RegExp(`^(${MOMENT}|\\d{4}-\\d{2}-\\d{2})\\.\\.(${MOMENT}|\\d{4}-\\d{2}-\\d{2})$`);
+function momentRange(window: string | null | undefined): { from: string; to: string } | null {
+  if (!window || !window.includes("T")) return null;
+  const m = window.match(MOMENT_RANGE);
+  if (!m) return null;
+  const end = (v: string) => v.replace(/(T\d{2}:\d{2}(?::\d{2})?) (\d{2}:\d{2})$/, "$1+$2");
+  return { from: end(m[1]!), to: end(m[2]!) };
+}
+
+/** How a window reads — a window of moments with its clock ("Sep 28, 2026 14:00 – 18:00 UTC"), else the package's words. */
+export function explorerWindowLabel(window: string | null | undefined, packageLabel: (w: string | null | undefined) => string): string {
+  const range = momentRange(window);
+  if (!range) return packageLabel(window);
+  const words = (iso: string) => {
+    const d = new Date(iso);
+    return { day: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }), clock: d.toISOString().slice(11, 16) };
+  };
+  const a = words(range.from);
+  const b = words(range.to);
+  return `${a.day} ${a.clock} – ${a.day === b.day ? b.clock : `${b.day} ${b.clock}`} UTC`;
 }
