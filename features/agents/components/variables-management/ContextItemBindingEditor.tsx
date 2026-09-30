@@ -120,15 +120,12 @@ export function ContextItemBindingEditor({
     <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
       <div className="flex items-center justify-between">
         <div>
-          {/* The name is Arman's own and the live vocabulary term ("context
-              item"). On 2026-09-25 a sweep renamed it "Fill automatically"
-              and he could no longer find the feature he relied on — keep it. */}
           <Label className="text-sm font-medium cursor-pointer">
-            Bind to a context item
+            Fill automatically
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Auto-fills from a platform truth, the active scope, or a table you
-            keep in Data. Optional — left off, it&rsquo;s just a normal input.
+            Auto-fills from your own data, a platform truth, or the active
+            scope. Optional — left off, it&rsquo;s just a normal input.
           </p>
         </div>
         <Switch
