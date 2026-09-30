@@ -42,6 +42,8 @@ You were given one batch: files, findings, and the exact replacement for each. Y
 | A new term nobody sees elsewhere ("Dig-here lines"), or ambiguous shorthand ("colour is off") | Use words already on the screen |
 | `truncate` on a line that carries a formatted number | Let number lines wrap — truncation hides the value |
 | A link to another page removed with the prose | Keep it as a plain link, or name the removal in the commit |
+| Text deleted, its container kept (a lone icon row floating at the top of a page) | Remove the wrapper when the text was all it held |
+| A tooltip as a native `title=` on text | Use `components/official/InfoHint` (hover, keyboard **and** touch); `KpiTile`'s `title` renders through it |
 
 ## Recipes
 

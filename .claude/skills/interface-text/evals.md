@@ -58,6 +58,10 @@ Slice: `app/(admin)`, `features/admin`, `features/administration` (855 candidate
 
 | R2 batches 01–13 (536 units) | `quick` sonnet + validator | agents `a264af32600e9f707` (07 pilot), `a1a388554f398adb6`, `a346a561da343d97e`, `a63ce00bc39aa798d`, `abf7e05db2a19e89b`, `add110e771f8065de`, `a37b0756cf33cb60b`, `ae2a1fabfd3393afb`, `a92f29ea64b39f0c9`, `a7564615ce64c42b1`, `a1bbd2423ee78fc84`, `a510ce6151b481eea`, `a516e667c5d6617d1` | **PASS 13/13** validator exit 0; rewrites keep the point. Flagged by the agents themselves: dialog text scored against the 60 budget (→ detector `consequence` hosts), component-gallery docs (→ exempt). |
 
+## Scenario E3 — Review → Fix → Confirm on real admin code (P14 round 1, 2026-09-30)
+
+3 `standard` opus reviewers (agents `a4cd7f00fdacfea13`, `a2c05a134aa008314`, `aed3d00cb40ddc019`) overturned Discover on warnings deleted instead of cut to state (21), dialog text squeezed to 60 (25), live counts treated as prose (5) — but shipped 31 over-budget replacements of their own (→ `validate-discover.mjs` review mode). 12 fixers (2 sonnet, 10 opus) applied; one refused an untrue tooltip the code disproved. 12 independent opus confirms: **12/12 CERTIFIED, 11 with fixes** — misses harvested into `fix.md` § round-1 table (warnings about a control → its tooltip; subject kept; ternary branches are siblings; containers removed with their text; neighbours re-levelled). Measured: admin NOVEL 260 → 33.
+
 ## Detector self-test
 
 `pnpm check:interface-text:self-test` (matrx-frontend) — all five rules fire on the kg-cost

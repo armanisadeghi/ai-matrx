@@ -30,7 +30,8 @@ the code comment and `FEATURE.md` are for.
    never renders.
 2. **Label first.** Make the label carry the meaning (`Batch savings (7d)`). A number that needs
    a paragraph gets a better label; a definition that is still needed gets **one sentence in the
-   tooltip slot** (`title=` on `KpiTile`, an info icon elsewhere).
+   tooltip slot**: `title=` on `KpiTile`, `components/official/InfoHint` everywhere else (hover,
+   keyboard and touch — a native `title=` attribute on text is unreachable on phones).
 3. **Fit the slot.** Secondary text ≤ **60** chars, one line, never two sentences. Tooltip ≤
    **140**, one sentence. Placeholder ≤ **60**, an example value. Dialog description / empty /
    error state ≤ **140**, at most two sentences: what happened, what to do. No sentence under
