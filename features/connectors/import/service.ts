@@ -37,7 +37,7 @@ export interface OtherContactsAdmissionPending {
   message: string;
 }
 
-/** Server-derived gate for the unlinked, non-consent Other Contacts reviewer. */
+/** Server-derived admission for the internal-test Other Contacts reviewer. */
 export async function getOtherContactsAdmission(
   signal?: AbortSignal,
 ): Promise<OtherContactsAdmissionPending> {

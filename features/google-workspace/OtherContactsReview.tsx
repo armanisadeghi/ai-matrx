@@ -4,7 +4,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { Check, ChevronRight, CircleAlert, Loader2, RefreshCw, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +16,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { getUserMessage } from "@/lib/api/errors";
 import { toast } from "@/lib/toast";
@@ -68,7 +68,7 @@ function importOutcomeSentence(result: ContactImportResultPending): string {
 }
 
 /**
- * The screen is unlinked and a dedicated server admission result gates the UI.
+ * A dedicated server admission result gates the internal-test UI.
  * Aidream independently authorizes every preview, review, and import; this
  * component delegates consent to the canonical Google connector surface.
  */
@@ -81,6 +81,7 @@ export function OtherContactsReview() {
     staleTime: 30_000,
   });
   const inventory = useGoogleConnectionInventory();
+  const openGoogleConnect = useOpenGoogleConnectWindow();
   const connections = useMemo(
     () =>
       (inventory.data?.connections ?? []).filter(
@@ -102,6 +103,13 @@ export function OtherContactsReview() {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<ContactImportResultPending | null>(null);
+
+  const connectGoogleAccount = useCallback(() => {
+    openGoogleConnect({
+      reason: "to review a selected Google Other Contact",
+      onWindowClose: () => inventory.refetch(),
+    });
+  }, [inventory, openGoogleConnect]);
 
   const resetSelection = useCallback(() => {
     setSelected(null);
@@ -221,15 +229,13 @@ export function OtherContactsReview() {
       </header>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">1. Choose the already-authorized account</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">1. Choose a Google account</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {inventory.isLoading ? <p className="text-sm text-muted-foreground">Checking connected Google accounts…</p> : null}
           {!inventory.isLoading && connections.length === 0 ? (
             <div className="flex flex-wrap items-center gap-3">
               <p className="text-sm text-muted-foreground">No Google account is ready for Other Contacts.</p>
-              <Button asChild variant="outline">
-                <Link href="/user-settings/integrations">Connect a Google account</Link>
-              </Button>
+              <Button variant="outline" onClick={connectGoogleAccount}>Connect a Google account</Button>
             </div>
           ) : null}
           {connections.length ? (
