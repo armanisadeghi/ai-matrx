@@ -202,9 +202,6 @@ export default function VoicePadExpanded({
           <p className="text-[11px] text-muted-foreground">
             {isEngaged ? "Listening..." : "Tap the mic to start recording"}
           </p>
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-            Transcriptions persist across page navigation
-          </p>
         </div>
 
         {entries.length > 0 && (
