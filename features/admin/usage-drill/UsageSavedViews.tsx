@@ -23,6 +23,8 @@ import {
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import type { Json } from "@/types/database.types";
 
 export const USAGE_SAVED_VIEW_SURFACE = "drill/ai_usage";
@@ -61,14 +63,15 @@ function questionJson(q: MatrxDrillQuestion): Json {
 }
 
 export function UsageSavedViews({
-  organizationId,
   question,
   onOpen,
 }: {
-  organizationId: string | null;
   question: MatrxDrillQuestion;
   onOpen: (question: MatrxDrillQuestion) => void;
 }) {
+  // A Saved view is the person's own, kept in the organization they are working in (a saved view
+  // row needs one); the usage itself is counted in the platform lane whatever it is.
+  const { organizationId, organizationState } = useOrganizationRequired();
   const [views, setViews] = useState<UsageView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [naming, setNaming] = useState(false);
@@ -149,9 +152,15 @@ export function UsageSavedViews({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[16rem]">
-          <DropdownMenuItem data-usage-save-view onSelect={() => setNaming(true)}>
-            Save this question as a view…
-          </DropdownMenuItem>
+          {organizationState === "ready" ? (
+            <DropdownMenuItem data-usage-save-view onSelect={() => setNaming(true)}>
+              Save this question as a view…
+            </DropdownMenuItem>
+          ) : (
+            <div className="px-2 py-1.5">
+              <OrganizationContextNotice state={organizationState} what="Saved views" compact />
+            </div>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs text-muted-foreground">
             {error ?? (views === null ? "Reading your saved views…" : views.length === 0 ? "No saved views yet" : "Your saved views")}

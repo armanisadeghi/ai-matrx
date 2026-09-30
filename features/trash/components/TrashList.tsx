@@ -108,6 +108,13 @@ export interface TrashListProps {
   renderRowExtra?: (item: TrashListItem) => ReactNode;
   /** Extra row classes (the personal page tints rows in their warning window). */
   rowClassName?: (item: TrashListItem) => string | undefined;
+  /**
+   * The kinds this Trash shows (a module's own Trash view — the Knowledge hub's — shows the
+   * kinds it lists). Omit for every kind. Counts, the kind picker and rows all follow it.
+   */
+  includeKind?: (kind: string) => boolean;
+  /** Words that narrow the rows by title (a host's search box). */
+  filterText?: string;
 }
 
 function whenDeleted(iso: string): string {
@@ -127,6 +134,8 @@ export function TrashList({
   onRestored,
   renderRowExtra,
   rowClassName,
+  includeKind,
+  filterText,
 }: TrashListProps) {
   const org = scope.mode === "organization" ? scope : null;
   const organizationId = org?.organizationId ?? null;
@@ -164,6 +173,7 @@ export function TrashList({
         mergedRef.current = merging;
         next = (await merging).counts;
       }
+      if (includeKind) next = next.filter((c) => includeKind(c.artifact_kind));
       setCounts(next);
       onCountsRef.current?.(next);
     } catch (e) {
@@ -202,7 +212,7 @@ export function TrashList({
     setLoading(true);
     try {
       const rows = await fetchPage(0);
-      setItems(rows);
+      setItems(includeKind ? rows.filter((r) => includeKind(r.entity_token)) : rows);
       // Personal "Recent" is an overview (a few of each kind), never paged.
       setMore((organizationId !== null || kind !== null) && rows.length === TRASH_PAGE);
     } catch (e) {
@@ -224,10 +234,15 @@ export function TrashList({
     void loadItems();
   }, [loadItems, refreshKey]);
 
+  const words = (filterText ?? "").trim().toLowerCase();
+  const shownItems = words
+    ? items.filter((i) => `${i.title ?? ""} ${i.label ?? ""}`.toLowerCase().includes(words))
+    : items;
+
   const loadMore = async () => {
     try {
       const next = await fetchPage(items.length);
-      setItems((prev) => [...prev, ...next]);
+      setItems((prev) => [...prev, ...(includeKind ? next.filter((r) => includeKind(r.entity_token)) : next)]);
       setMore(next.length === TRASH_PAGE);
     } catch (e) {
       toast({
@@ -422,9 +437,9 @@ export function TrashList({
       {loading ? (
         <div className="text-muted-foreground flex items-center gap-2 py-12 text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading…
+          Loading your trash…
         </div>
-      ) : items.length === 0 ? (
+      ) : shownItems.length === 0 ? (
         <div className="text-muted-foreground py-16 text-center text-sm">
           <Trash2 className="mx-auto mb-3 h-8 w-8 opacity-40" />
           {org
@@ -435,7 +450,7 @@ export function TrashList({
         </div>
       ) : (
         <ul className="divide-border divide-y rounded-lg border">
-          {items.map((item) => {
+          {shownItems.map((item) => {
             const Icon = getResourceIcon(item.entity_token);
             const busy = restoring === item.id || busyId === item.id;
             return (

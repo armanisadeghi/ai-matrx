@@ -232,6 +232,15 @@ begin
   end if;
 end $$;
 
+-- C. One row per group: the unique index stands and two rebuilds of one window store each group once.
+select runtime.ai_usage_hourly_refresh(now() - interval '2 days', now());
+select runtime.ai_usage_hourly_refresh(now() - interval '2 days', now());
+select pg_temp.chk('C1 the rollup stores each group once (unique index present, no duplicate after two rebuilds)',
+  to_regclass('runtime._ai_usage_hourly_one_row_per_group') is not null
+  and not exists (select 1 from runtime._ai_usage_hourly
+                   group by bucket, organization_id, person_id, agent_id, provider, model, app, feature, origin, trigger, source
+                  having count(*) > 1));
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, detail from pg_temp.dur order by n;
 select format('%s passed, %s failed', count(*) filter (where ok), count(*) filter (where not ok)) as summary from pg_temp.dur;
 rollback;

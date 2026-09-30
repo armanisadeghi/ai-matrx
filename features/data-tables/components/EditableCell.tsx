@@ -414,6 +414,7 @@ export function EditableCell({
             fieldDisplayName,
             reason: verdict.reason,
             rules: validationRules,
+            format: format ?? null,
           }),
         );
         // A commit that came from BLUR has already taken focus out of the input. The

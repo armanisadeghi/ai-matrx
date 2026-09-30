@@ -17,7 +17,14 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
-import { drainOutcomeFromMetadata, pendingAcceptFromMetadata, type DrainOutcome, type PendingAccept } from "./model";
+import {
+  copySourceFromMetadata,
+  drainOutcomeFromMetadata,
+  pendingAcceptFromMetadata,
+  type CopySource,
+  type DrainOutcome,
+  type PendingAccept,
+} from "./model";
 
 type OpsTables = Database["ops"]["Tables"];
 type CheckCatalogRow = OpsTables["proof_check"]["Row"];
@@ -45,7 +52,10 @@ export type CheckRunSummary = Pick<
   | "malformed_count"
   | "applied"
   | "apply_note"
->;
+> & {
+  /** The nightly copy this run read (database-reading checks), from `metadata.db_target`; null otherwise. */
+  copy: CopySource | null;
+};
 
 export type CheckCatalogEntry = Pick<
   CheckCatalogRow,
@@ -125,7 +135,11 @@ export interface CheckFindingsSource {
 }
 
 const RUN_COLUMNS =
-  "id, status, verdict, headline, started_at, finished_at, duration_ms, exit_code, scan_complete, run_scope, skipped_reason, git_sha, host, new_count, known_count, findings_count, malformed_count, applied, apply_note";
+  "id, status, verdict, headline, started_at, finished_at, duration_ms, exit_code, scan_complete, run_scope, skipped_reason, git_sha, host, new_count, known_count, findings_count, malformed_count, applied, apply_note, metadata";
+
+function runSummary({ metadata, ...run }: Omit<CheckRunSummary, "copy"> & { metadata: unknown }): CheckRunSummary {
+  return { ...run, copy: copySourceFromMetadata(metadata) };
+}
 
 async function loadSnapshot(): Promise<CheckFindingsSnapshot> {
   const client = createClient();
@@ -163,7 +177,7 @@ async function loadSnapshot(): Promise<CheckFindingsSnapshot> {
 
   const checks: CheckCatalogEntry[] = catalog.map(({ check_run, ...check }) => ({
     ...check,
-    latest_run: check_run[0] ?? null,
+    latest_run: check_run[0] ? runSummary(check_run[0]) : null,
   }));
   return { checks, liveItems };
 }

@@ -374,3 +374,23 @@ export function drainOutcomeLabel(d: DrainOutcome): { label: string; tone: "succ
   if (d.outcome === "error") return { label: "Drain could not finish", tone: "destructive" };
   return { label: d.outcome === "refused" ? "Drain fix disproved" : "Drain fix rejected", tone: "warning" };
 }
+
+/** The nightly copy a database-reading run read (`check_run.metadata.db_target`), when it read one. */
+export interface CopySource {
+  ref: string;
+  promoted_at: string;
+}
+
+/**
+ * Where a run looked. Database-reading checks run ONLY on the nightly copy (checks-run-in-the-app
+ * decision 1); the ingest stamps `{db_target: {kind: "clone", ref, promoted_at}}` on every such
+ * run, so each finding can say it came from the copy and how old that copy was. Anything else
+ * (a repo-only run, a malformed stamp) is null — never guessed.
+ */
+export function copySourceFromMetadata(metadata: unknown): CopySource | null {
+  if (!isRecord(metadata) || !isRecord(metadata.db_target)) return null;
+  const { kind, ref, promoted_at } = metadata.db_target;
+  if (kind !== "clone" || typeof ref !== "string" || typeof promoted_at !== "string") return null;
+  if (Number.isNaN(Date.parse(promoted_at))) return null;
+  return { ref, promoted_at };
+}

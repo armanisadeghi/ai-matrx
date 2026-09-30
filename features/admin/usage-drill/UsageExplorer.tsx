@@ -40,8 +40,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectCanToggleCostUnit, selectCostUnit } from "@/components/cost/costUnit";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 import { NAMED_DIMENSIONS, useUsageDrill } from "./useUsageDrill";
 import { UsageSavedViews } from "./UsageSavedViews";
@@ -89,7 +88,10 @@ function usageAutoGrain(window: string | null | undefined): "day" | "week" | "mo
 }
 
 export function UsageExplorer() {
-  const { organizationId, organizationState } = useOrganizationRequired();
+  // THE PLATFORM LANE ASKS IN THE PLATFORM'S OWN ORGANIZATION. The door needs an organization only
+  // to know whose calendar cuts the periods; the admin seat never acts as itself (no active-org
+  // dependency in admin), and the platform organization's calendar is UTC — the rollup's own hours.
+  const organizationId = SYSTEM_ORGANIZATION_ID;
   const userId = useAppSelector(selectUserId);
   const { question: asked, setQuestion } = useDrillUrlState({ fallback: USAGE_FIRST_QUESTION });
   const { unit, canToggle, setUnit } = useUnit();
@@ -126,10 +128,6 @@ export function UsageExplorer() {
   const total = answers["∅"]?.[0] ?? null;
   const range = drillWindowRange(question.window ?? null);
   const paths = (def?.paths ?? []).map((p) => p.levels);
-
-  if (organizationState !== "ready") {
-    return <OrganizationContextNotice state={organizationState} what="AI usage" />;
-  }
 
   const onQuestionChange = (next: MatrxDrillQuestion) => {
     // Keep `at` without a grain in the address when the person did not pick one.
@@ -191,7 +189,7 @@ export function UsageExplorer() {
             ))}
           </div>
           ) : null}
-          <UsageSavedViews organizationId={organizationId} question={asked} onOpen={setQuestion} />
+          <UsageSavedViews question={asked} onOpen={setQuestion} />
           <AppLink href="/administration/users/usage" className="underline-offset-2 hover:underline">
             Old usage page
           </AppLink>

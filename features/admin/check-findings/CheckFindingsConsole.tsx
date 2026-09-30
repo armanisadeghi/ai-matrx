@@ -860,6 +860,15 @@ function CheckDetail({
               )}
               {run?.host ? ` · ${run.host}` : ""}
             </span>
+            {run?.copy ? (
+              <span className="sm:col-span-2 lg:col-span-4">
+                Read the nightly copy of the database made{" "}
+                <span className="text-foreground">
+                  {new Date(run.copy.promoted_at).toLocaleString()} ({formatRelativeTime(run.copy.promoted_at)})
+                </span>
+                , never the live database — every finding below comes from that copy.
+              </span>
+            ) : null}
             {run ? (
               <span className="hidden sm:col-span-2 sm:inline lg:col-span-4">
                 {formatCount(run.new_count)} new · {formatCount(run.known_count)} known

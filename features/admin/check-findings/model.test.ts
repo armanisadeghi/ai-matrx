@@ -3,6 +3,7 @@ import {
   acceptCommand,
   acceptInfoFor,
   acceptOutcomeTone,
+  copySourceFromMetadata,
   drainOutcomeFromMetadata,
   drainOutcomeLabel,
   hasAccept,
@@ -36,6 +37,7 @@ function run(overrides: Partial<CheckRunSummary> = {}): CheckRunSummary {
     malformed_count: 0,
     applied: true,
     apply_note: null,
+    copy: null,
     ...overrides,
   };
 }
@@ -205,5 +207,16 @@ describe("the cleanup drain's outcome on a finding", () => {
     expect(drainOutcomeFromMetadata(meta({ outcome: "committed", note: "" }))).toBeNull();
     expect(drainOutcomeFromMetadata(meta({ outcome: "fixed-ish", note: "x" }))).toBeNull();
     expect(drainOutcomeFromMetadata({})).toBeNull();
+  });
+});
+
+describe("copySourceFromMetadata", () => {
+  it("reads the nightly copy a database-reading run looked at, and nothing else", () => {
+    const db_target = { kind: "clone", ref: "nwvvyzngqicrmnbuzauy", promoted_at: "2026-09-30T09:00:00Z" };
+    expect(copySourceFromMetadata({ db_target })).toEqual({ ref: db_target.ref, promoted_at: db_target.promoted_at });
+    expect(copySourceFromMetadata({})).toBeNull();
+    expect(copySourceFromMetadata(null)).toBeNull();
+    expect(copySourceFromMetadata({ db_target: { ...db_target, kind: "live" } })).toBeNull();
+    expect(copySourceFromMetadata({ db_target: { ...db_target, promoted_at: "not a date" } })).toBeNull();
   });
 });

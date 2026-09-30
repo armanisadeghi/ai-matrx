@@ -115,6 +115,8 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
 
 ## Change Log
 
+- 2026-09-30 — A check's latest run that read the nightly copy (database-reading checks, `check_run.metadata.db_target`) says so in the check header, with the copy's date (`copySourceFromMetadata`, tested in `model.test.ts`). A run skipped because the copy was too old shows `skipped (copy_stale)` with the reason as its headline.
+
 - `2026-09-26` — Created: board, per-check findings by work unit, state filters, Mark OK via the
   allowlist command. Empty state verified live on localhost; populated state verified with an
   uncommitted fixture route (never shipped).

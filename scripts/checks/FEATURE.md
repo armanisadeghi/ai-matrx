@@ -160,6 +160,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
 | `node scripts/checks/run.mjs [--json f] [--lane x] [--only id] [--list]` / `pnpm check:release-checks` | the runner, by hand |
 | `node scripts/checks/run.mjs --skip-live-db` | what the release runs: every row but the declared live-db ones |
 | `node scripts/checks/run.mjs --repo-only` | ONLY rows declared `repo-only` (clone-db, live-db, undeclared left out; header `skipped_not_repo_only`) — what `.github/workflows/repo-only-checks.yml` runs (dispatch-only; the app's `platform_checks_ci_pull` ingests its `checks-findings` artifact) |
+| `node scripts/checks/run.mjs --db-only --target clone` | ONLY rows that read a database (live-db, clone-db, undeclared), every one pointed at the nightly copy: the environment is prepared by aidream `scripts/checks/clone_target.py`, `clone-target-guard.cjs` is preloaded into every row and refuses production by host or `pg` user (a `[clone-target] REFUSED` line is an ERROR finding even if the row swallows it); header `db_target`. Runs ONLY from aidream's private `.github/workflows/clone-db-checks.yml` — never from this public repo's Actions |
 | `pnpm checks:classify` / `pnpm check:release-row-classes[:self-test]` | regenerate the row-class manifest / the guard that it is current |
 | `bash scripts/run-release-gates.sh [--strict]` | the old sequential gate runner — still the manifest (`--list`), still usable for one-by-one triage |
 | `pnpm test:release-ship-path` | the sandbox guard: dirty checkout + diverged branch + push landing mid-release → tag on origin |
@@ -194,6 +195,10 @@ the after phase; the two things that made the build — migrations and the
 push — are the ship path.
 
 ## Change log
+
+- 2026-09-30 — `run.mjs --db-only --target clone` + `clone-target-guard.cjs` (checks-run-in-the-app P3, the
+  database-reading leg): the frontend's database rows run from aidream's private `clone-db-checks.yml`
+  against the nightly copy only. Tests in `run.test.mjs` (red against the old runner, green now).
 
 - 2026-09-28 — Measured every gate-db gate on live under the 30 s cap (slowest statement 6 s,
   door-rows' own probe ceiling). `check:door-rows[:wide]` (~23,800 statements, >20 min on live),

@@ -12,7 +12,7 @@
 //   ORIGIN=http://drillusage.localhost:3001 node scripts/drill-usage-page-walk.mjs
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { signIn, until, sleep } from "./lib/seat-browser.mjs";
+import { signIn, until, sleep, setOrganization } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://drillusage.localhost:3001";
 const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-usage-page";
@@ -67,6 +67,25 @@ page.on("response", async (r) => {
   doors.push({ door: r.url().split("/rpc/")[1]?.split("?")[0], status: r.status() });
 });
 
+// The shared preview parks an idle tab ("This preview was paused … Resume this preview"): press
+// Resume the way a person does, then carry on.
+const resumeIfPaused = async () => {
+  const resume = page.getByRole("button", { name: "Resume this preview" });
+  if (await resume.count()) {
+    step("the preview had parked this tab — pressed Resume");
+    await resume.click();
+    await page.waitForLoadState("domcontentloaded", { timeout: 180000 }).catch(() => undefined);
+    await sleep(3000);
+  }
+};
+const origGoto = page.goto.bind(page);
+page.goto = async (url, opts) => {
+  const r = await origGoto(url, opts);
+  await sleep(1500);
+  await resumeIfPaused();
+  return r;
+};
+
 const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
 step("signed in", { who: who?.v ?? who });
 
@@ -119,20 +138,23 @@ if (!r.coverage) friction("no coverage line on a narrowed answer");
 await page.screenshot({ path: `${SHOTS}/20-drilled-with-coverage.png` });
 
 // Copy CSV
-await page.locator('[data-matrx-drill-export-action="csv"]').click();
-await sleep(400);
-const csv = await page.evaluate(() => navigator.clipboard.readText().catch(() => null));
-step("Copy CSV", { lines: csv ? csv.split("\n").length : null, head: csv?.split("\n")[0] });
-if (!csv || !csv.includes("Total")) friction("Copy CSV put no grouped answer on the clipboard");
+if (await page.locator('[data-matrx-drill-export-action="csv"]').count()) {
+  await page.locator('[data-matrx-drill-export-action="csv"]').click();
+  await sleep(400);
+  const csv = await page.evaluate(() => navigator.clipboard.readText().catch(() => null));
+  step("Copy CSV", { lines: csv ? csv.split("\n").length : null, head: csv?.split("\n")[0] });
+  if (!csv || !csv.includes("Total")) friction("Copy CSV put no grouped answer on the clipboard");
+} else friction("no export controls drawn (the installed design-system predates the adoption)");
 
 // $ switch
-await page.locator('[data-usage-unit="usd"]').click();
+if (!(await page.locator('[data-usage-unit="usd"]').count())) friction("no $ switch offered to the admin");
+else await page.locator('[data-usage-unit="usd"]').click();
 await sleep(600);
 r = await read();
 step("the $ switch", { total: r.total });
 if (!r.total?.includes("$")) friction("the $ switch did not show dollars");
 await page.screenshot({ path: `${SHOTS}/21-dollars.png` });
-await page.locator('[data-usage-unit="points"]').click();
+if (await page.locator('[data-usage-unit="points"]').count()) await page.locator('[data-usage-unit="points"]').click();
 
 // Back undoes the drill
 await page.goBack();
@@ -145,6 +167,19 @@ await page.goto(`${ORIGIN}/administration/usage?by=provider,model&show=cost&sort
 await settle();
 const viewName = `Provider and model spend, last 90 days (walk ${new Date().toISOString().slice(11, 16)})`;
 await page.locator("[data-usage-saved-views]").click();
+await sleep(500);
+if (!(await page.locator("[data-usage-save-view]").count())) {
+  // Saved views live in the organization the person works in; with none chosen the menu says so
+  // and offers the picker (the held state) — pick one the way a person does.
+  await page.screenshot({ path: `${SHOTS}/22a-saved-views-need-an-organization.png` });
+  step("Saved views with no organization chosen: the menu holds and offers the picker");
+  await page.keyboard.press("Escape");
+  await setOrganization(page, "admin's Workspace");
+  await page.goto(`${ORIGIN}/administration/usage?by=provider,model&show=cost&sort=-cost&w=90d`, { waitUntil: "domcontentloaded" });
+  await settle();
+  await page.locator("[data-usage-saved-views]").click();
+  await sleep(500);
+}
 await page.locator("[data-usage-save-view]").click();
 await page.getByRole("dialog").locator("input, textarea").first().fill(viewName);
 await page.getByRole("button", { name: "Save view" }).click();

@@ -3228,6 +3228,7 @@ const UserTableViewer = ({
                   fieldDisplayName: field.display_name,
                   reason: verdict.reason,
                   rules,
+                  format: resolveFieldFormat(field.data_type, field.metadata),
                 }),
               );
             }
@@ -3940,6 +3941,9 @@ const UserTableViewer = ({
         ? {
             fieldName: menuField.field_name,
             displayName: menuField.display_name,
+            // The sort words fit the column (smallest first, oldest first …), never "A to Z" on a number (B2-28).
+            dataType: menuField.data_type,
+            formatId: resolveFieldFormat(menuField.data_type, menuField.metadata)?.id ?? null,
             sortedBy: sortField === menuField.field_name ? sortDirection : null,
             highlight: tableStyle.columns?.[menuField.field_name] ?? null,
             canColorBy: fieldCanColorBy(menuField),

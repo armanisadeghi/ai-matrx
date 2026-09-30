@@ -1290,6 +1290,27 @@ try {
     out.b3_table = process.env.TABLE;
   }
 
+  if (PHASE === "askai") {
+    // BREAKER-2 B2-22 / BREAKER-3 B3-12: Gallery on a table with no file column, Ask AI.
+    await open(process.env.TABLE, "?view=sheet");
+    await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=gallery`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    await until("the Ask AI offer", async () => (await page.getByRole("button", { name: "Ask AI", exact: true }).count()) > 0, 60000);
+    const offer = (await page.locator("main").innerText()).replace(/\s+/g, " ").match(/[^.]*(?:no|needs)[^.]*(?:file|photo|picture|image)[^.]*\./i)?.[0] ?? null;
+    await page.getByRole("button", { name: "Ask AI", exact: true }).first().click();
+    await sleep(9000);
+    await shot("askai-opened");
+    const composer = await page.evaluate(() => {
+      const boxes = [...document.querySelectorAll("textarea, [contenteditable=true]")];
+      return boxes.map((b) => (b instanceof HTMLTextAreaElement ? b.value : b.textContent ?? "").trim()).filter(Boolean);
+    });
+    const chips = await page.evaluate(() =>
+      [...document.querySelectorAll("[data-context-chip], [data-chip], [class*=chip]")].map((c) => c.textContent?.trim() ?? "").filter((t) => t && t.length < 60),
+    );
+    step("B2-22 Ask AI opens with the ask", { offer, composer, chips: [...new Set(chips)].slice(0, 8) });
+    if (!composer.some((t) => t.length > 10)) friction("Ask AI opened with an empty box");
+    if (chips.some((c) => /records_|Records T…|Records S…/.test(c))) friction(`Ask AI chips read as keys: ${chips.join(" | ")}`);
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");

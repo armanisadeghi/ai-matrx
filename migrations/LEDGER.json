@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-30T04:15:46.185Z",
+  "generated_at": "2026-09-30T04:43:07.574Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1909,6 +1909,18 @@
       "filename": "drillstd_one_door_answers_every_table.sql",
       "checksum": "a0c35ab7ba1d4947daf1799bcb50cbf5bf3f092e71346d396340e24e590a08ce",
       "applied_at": "2026-09-29 23:09:39.77926+00"
+    },
+    "migrations/campaign/drillusage_one_rollup_rebuild_at_a_time.sql": {
+      "source": "matrx-frontend",
+      "filename": "drillusage_one_rollup_rebuild_at_a_time.sql",
+      "checksum": "f6c5a01276a8bb49296cd98db429d0fba04377007791799a162d74e7f19742b2",
+      "applied_at": "2026-09-30 04:42:56.1974+00"
+    },
+    "migrations/campaign/drillusage_the_ledger_is_indexed_by_when.sql": {
+      "source": "matrx-frontend",
+      "filename": "drillusage_the_ledger_is_indexed_by_when.sql",
+      "checksum": "debd543fd2c44e928a36475f8f979afb45913753bb2c1e731bd6a574a636e9fb",
+      "applied_at": "2026-09-30 02:32:22.42289+00"
     },
     "migrations/campaign/drillusage_the_rollup_is_filled_from_the_ledger.sql": {
       "source": "matrx-frontend",
