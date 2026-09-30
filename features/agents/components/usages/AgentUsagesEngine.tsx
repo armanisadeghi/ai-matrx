@@ -147,10 +147,6 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
   const mandateCanAdvance = (verdict: ImpactVerdict) =>
     batchEligibilityOf(verdict).batchable;
 
-  const isRowSelectable = (row: UnifiedUsageRow) =>
-    (row.kind === "usage" && !!row.usage && usageCanUpdate(row.usage)) ||
-    (row.kind === "mandate" && !!row.verdict && mandateCanAdvance(row.verdict));
-
   const updateUsage = async (usage: AgentUsageRow) => {
     const meta = usageTypeMeta(usage.usageType);
     const ok = await confirm({
@@ -546,19 +542,26 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
             width: 560,
             height: 520,
           }}
-          selection={
-            visibleRows.some(isRowSelectable)
-              ? {
+          selection={{
             selectedIds: selected,
             onSelectedIdsChange: setSelected,
             noun: "usage",
-            isRowSelectable,
             actions: (selectedRows) => {
               const chosenVerdicts = selectedRows
-                .filter((row) => row.kind === "mandate" && row.verdict)
+                .filter(
+                  (row) =>
+                    row.kind === "mandate" &&
+                    !!row.verdict &&
+                    mandateCanAdvance(row.verdict),
+                )
                 .map((row) => row.verdict as ImpactVerdict);
               const chosenUsages = selectedRows
-                .filter((row) => row.kind === "usage" && row.usage)
+                .filter(
+                  (row) =>
+                    row.kind === "usage" &&
+                    !!row.usage &&
+                    usageCanUpdate(row.usage),
+                )
                 .map((row) => row.usage as AgentUsageRow);
               return (
                 <div className="flex items-center gap-1.5">
@@ -595,9 +598,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
                 </div>
               );
             },
-          }
-            : undefined
-          }
+          }}
           rowActions={(row) => (
             <RowActions
               row={row}
