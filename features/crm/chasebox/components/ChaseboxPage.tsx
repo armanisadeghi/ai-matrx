@@ -29,7 +29,7 @@ import {
   createCrmChaseboxScope,
 } from "@/features/surfaces/manifests/crm-chasebox.manifest";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { makeScope, type ListScope } from "@/lib/list-scope/types";
+import { makeScope, withTeamScope, type ListScope } from "@/lib/list-scope/types";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { cn } from "@/lib/utils";
 import { CHASEBOX_ASSIST_SURFACE } from "../../inbox/constants";
@@ -203,7 +203,10 @@ export function ChaseboxPage() {
         <div className="flex min-w-0 items-center justify-between gap-2">
           <EntityScopeTabs
             scope={scope}
-            scopes={CHASEBOX_SCOPES}
+            // crm_chasebox_* answers Mine / My team / My Orgs only — no All lane
+            // until that RPC learns it (the tabs would otherwise offer a lane it refuses).
+            scopes={withTeamScope(CHASEBOX_SCOPES)}
+            exact
             counts={scopeTotals}
             onChange={(next) => {
               setScope(next);
