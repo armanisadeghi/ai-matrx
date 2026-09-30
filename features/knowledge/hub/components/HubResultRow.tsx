@@ -78,6 +78,8 @@ export interface ResultHandlers {
   copyListProjection?: (hits: KnowledgeHit[]) => ResultCopyListProjection | undefined;
   /** The words being searched for: marked where they appear in a title or passage. */
   highlight?: string;
+  /** The row's own tags, read from where tags live (a list's own tag column can be stale). */
+  rowTags?: (hit: KnowledgeHit) => string[] | undefined;
   /** The view names the kind already (Transcripts): rows say only what differs (Session, Cleanup) in their facts. */
   hideKindWord?: boolean;
   /** The row being renamed inline, and what Enter / Esc do. */
@@ -294,7 +296,8 @@ export function ResultRow({
   const menu = handlers.rowMenu?.(hit);
   // A tag that repeats a fact already on the line (#Veritasium beside "Veritasium") is noise.
   const said = new Set(parts.map((p) => p.toLowerCase()));
-  const tags = compact ? [] : hitTags(hit).filter((t) => !said.has(t.replace(/^#/, "").toLowerCase()));
+  const own = handlers.rowTags?.(hit);
+  const tags = compact ? [] : (own ?? hitTags(hit)).filter((t) => !said.has(t.replace(/^#/, "").toLowerCase()));
   return (
     <div
       role="option"
@@ -457,7 +460,7 @@ export function ResultCard({
             <Highlight text={snippet} query={handlers.highlight} />
           </div>
         ) : null}
-        <TagChips tags={hitTags(hit)} onFilter={handlers.onFilterTag} />
+        <TagChips tags={handlers.rowTags?.(hit) ?? hitTags(hit)} onFilter={handlers.onFilterTag} />
         <div className="mt-auto flex min-w-0 text-xs text-muted-foreground">
           <span className="truncate">{[...facts, when ? formatRelativeTime(when) : null].filter(Boolean).join(" · ")}</span>
         </div>

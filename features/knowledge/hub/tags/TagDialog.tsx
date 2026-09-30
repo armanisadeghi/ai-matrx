@@ -60,12 +60,23 @@ export function TagDialog({
       <DialogContent className="max-w-md p-0">
         <DialogHeader className="px-4 pt-4">
           <DialogTitle>Tag {count === 1 ? "1 item" : `${count} items`}</DialogTitle>
-          <DialogDescription>
-            Type a tag and press Enter. Each item is filed under it; typing #name in the search box finds them again.
-          </DialogDescription>
+          <DialogDescription className="sr-only">Type a tag and press Enter.</DialogDescription>
         </DialogHeader>
         <Command shouldFilter={false} className="border-t border-border">
-          <CommandInput value={text} onValueChange={setText} placeholder="Tag name…" autoFocus />
+          <CommandInput
+            value={text}
+            onValueChange={setText}
+            placeholder="Tag name…"
+            autoFocus
+            // The command list keeps Escape for itself (clearing its highlight): here Escape closes.
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setText("");
+                onOpenChange(false);
+              }
+            }}
+          />
           <CommandList className="max-h-72">
             <CommandEmpty>Type a name to create a tag.</CommandEmpty>
             {typed && !exists ? (

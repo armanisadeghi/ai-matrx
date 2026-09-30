@@ -15,7 +15,7 @@
  */
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExternalLink, Lightbulb, Star, X } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAssociations, useEntityTitles } from "@ai-matrx/associations/react";
@@ -25,6 +25,7 @@ import { PeekSourceSegments } from "./PeekSourceSegments";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { FiledRef, KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { actionTarget } from "@/features/knowledge/hub/hubActions";
+import { tagScopeIdsAmong } from "@/features/knowledge/hub/tags/tagApi";
 import { embedFor } from "@/features/knowledge/hub/embeds/embedFor";
 import { HubDetailEmbed } from "@/features/knowledge/hub/embeds/HubDetailEmbed";
 import {
@@ -89,11 +90,28 @@ function FiledChip({ f }: { f: FiledRef }) {
 /** Live outward associations for a real record. */
 function LiveFiledUnder({ entity, id }: { entity: string; id: string }) {
   const { edges, status, error } = useAssociations({ type: entity, id });
-  const outgoing = edges.filter((e) => e.direction === "outgoing");
+  // Tags have their own section above: a tag is not also "filed under" here.
+  const scopeIds = edges.filter((e) => e.direction === "outgoing" && e.otherType === "scope").map((e) => e.otherId);
+  const scopeKey = scopeIds.sort().join("|");
+  const [tagIds, setTagIds] = useState<Set<string> | null>(scopeIds.length ? null : new Set());
+  useEffect(() => {
+    let cancelled = false;
+    if (!scopeKey) {
+      setTagIds(new Set());
+      return;
+    }
+    tagScopeIdsAmong(scopeKey.split("|"))
+      .then((ids) => !cancelled && setTagIds(ids))
+      .catch(() => !cancelled && setTagIds(new Set()));
+    return () => {
+      cancelled = true;
+    };
+  }, [scopeKey]);
+  const outgoing = edges.filter((e) => e.direction === "outgoing" && !(e.otherType === "scope" && tagIds?.has(e.otherId)));
   const { titleFor } = useEntityTitles(
     outgoing.map((e) => ({ token: e.otherType, id: e.otherId, label: e.label })),
   );
-  if (status === "loading" || status === "idle")
+  if (status === "loading" || status === "idle" || tagIds === null)
     return <p className="text-xs text-muted-foreground">Reading where it is filed…</p>;
   if (status === "error")
     return (

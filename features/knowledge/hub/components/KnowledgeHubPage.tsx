@@ -164,6 +164,7 @@ import { tagItems, TAG_REF_TYPE } from "@/features/knowledge/hub/tags/tagActions
 import { useHubTags } from "@/features/knowledge/hub/tags/useHubTags";
 import { TagDialog } from "@/features/knowledge/hub/tags/TagDialog";
 import { PeekTags } from "@/features/knowledge/hub/tags/PeekTags";
+import { useRowTags } from "@/features/knowledge/hub/tags/useRowTags";
 import { TagsSidebarGroup } from "@/features/knowledge/hub/tags/TagsSidebarGroup";
 import {
   DropdownMenu,
@@ -1011,6 +1012,9 @@ export function KnowledgeHubPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hits.length, listSections.map((s) => `${s.status}${s.loadingMore}`).join()]);
 
+  // Every row's tags from where tags live — the same the peek shows.
+  const rowTags = useRowTags(hits, !sample && !trashView, filedVersion);
+
   const handlers: ResultHandlers = {
     selected,
     focusedKey,
@@ -1022,6 +1026,7 @@ export function KnowledgeHubPage({
     onFilterTag: (name) => filterByTag(name),
     rowMenu: rowMenuNode,
     hideKindWord: transcriptsView,
+    rowTags,
     rowFacts: (h) =>
       isTranscriptHit(h) ? transcriptRowFacts(factFor(h), transcriptFacts.contentFor(h)) : [],
     rowContent: (h) => {
@@ -1081,8 +1086,33 @@ export function KnowledgeHubPage({
               }),
         labelFor: tokenLabel,
       });
-      if (outcome.failed.length) toast.error(outcome.sentence);
-      else toast.success(outcome.sentence);
+      // Undo takes every item filed now back out of that place (the same association, removed).
+      const undo =
+        isAssociationTargetType(container.token) && outcome.ok
+          ? {
+              label: "Undo",
+              onClick: () =>
+                void (async () => {
+                  const back = await Promise.all(
+                    uniqueTargets(items).map((t) =>
+                      associationsService.remove({
+                        sourceType: t.entity,
+                        sourceId: t.id,
+                        targetType: container.token,
+                        targetId: container.id,
+                      }),
+                    ),
+                  );
+                  const failed = back.filter((r) => r && typeof r === "object" && "error" in r && (r as { error?: unknown }).error);
+                  if (failed.length) toast.error(`${failed.length} of ${back.length} stayed filed under ${container.title}.`);
+                  else toast.success(`Took ${back.length === 1 ? "it" : `${back.length} items`} out of ${container.title}.`);
+                  setFiledVersion((n) => n + 1);
+                  refreshResults();
+                })(),
+            }
+          : undefined;
+      if (outcome.failed.length) toast.error(outcome.sentence, undo ? { action: undo } : undefined);
+      else toast.success(outcome.sentence, undo ? { action: undo } : undefined);
       if (outcome.ok) {
         setFiledVersion((n) => n + 1);
         refreshResults();
@@ -2072,7 +2102,11 @@ export function KnowledgeHubPage({
       isFavorite={peekHit ? favoriteKeys.has(`${actionTarget(peekHit).entity}:${actionTarget(peekHit).id}`) : false}
       onToggleFavorite={(h) => void toggleFavorite(h)}
       extraActions={peekHit ? rowMenuNode(peekHit) : null}
-      tagsSection={peekHit ? <PeekTags hit={peekHit} live={!sample} onFilter={filterByTag} /> : null}
+      tagsSection={
+        peekHit ? (
+          <PeekTags hit={peekHit} live={!sample} onFilter={filterByTag} onChanged={() => setFiledVersion((n) => n + 1)} />
+        ) : null
+      }
     />
   ) : null;
 

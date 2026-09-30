@@ -233,3 +233,86 @@ export async function listItemTags(entityToken: string, entityId: string): Promi
     .map((r) => ({ id: r.id, name: r.name ?? null, slug: r.slug ?? null, organization_id: r.organization_id }));
   return [...new Set(((data ?? []) as ScopeRow[]).map((r) => toTag(r).name))].sort((a, b) => a.localeCompare(b));
 }
+
+/** A tag on one record: the scope it is filed under, and its name. */
+export interface ItemTagRef {
+  scopeId: string;
+  name: string;
+}
+
+let tagTypesOnce: Promise<string[]> | null = null;
+/** The tag scope types, read once per page load (they change when an organization is created). */
+function cachedTagTypeIds(): Promise<string[]> {
+  tagTypesOnce ??= tagTypeIds().catch((e) => {
+    tagTypesOnce = null;
+    throw e;
+  });
+  return tagTypesOnce;
+}
+
+/**
+ * The tags every listed record carries — one read for the whole page (the row shows them, the
+ * same as the peek): key `entity:id` → its tags, by name, one per name.
+ */
+export async function listTagsForItems(items: { entity: string; id: string }[]): Promise<Map<string, ItemTagRef[]>> {
+  const out = new Map<string, ItemTagRef[]>();
+  if (!items.length) return out;
+  const types = await cachedTagTypeIds();
+  if (!types.length) return out;
+  const edges: { source_type: string; source_id: string; target_id: string }[] = [];
+  const byType = new Map<string, string[]>();
+  for (const it of items) byType.set(it.entity, [...(byType.get(it.entity) ?? []), it.id]);
+  for (const [type, ids] of byType)
+    for (let i = 0; i < ids.length; i += 100) {
+      const { data, error } = await supabase
+        .schema("platform")
+        .from("associations")
+        .select("source_type, source_id, target_id")
+        .eq("source_type", type)
+        .in("source_id", ids.slice(i, i + 100))
+        .eq("target_type", "scope")
+        .is("deleted_at", null)
+        .limit(2000);
+      if (error) throw new Error(refusalMessage(error, "Reading the rows' tags"));
+      edges.push(...((data ?? []) as typeof edges));
+    }
+  const scopeIds = [...new Set(edges.map((e) => e.target_id))];
+  const names = new Map<string, string>();
+  for (let i = 0; i < scopeIds.length; i += 100) {
+    // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT), the same pre-store read listItemTags uses
+    const { data, error } = await contextDb(supabase)
+      .from("scopes")
+      .select("id, name, slug, organization_id")
+      .in("id", scopeIds.slice(i, i + 100))
+      .in("scope_type_id", types)
+      .is("deleted_at", null);
+    if (error) throw new Error(refusalMessage(error, "Reading the rows' tags"));
+    for (const r of (data ?? []) as ScopeRow[]) names.set(r.id, toTag(r).name);
+  }
+  for (const e of edges) {
+    const name = names.get(e.target_id);
+    if (!name) continue;
+    const key = `${e.source_type}:${e.source_id}`;
+    const list = out.get(key) ?? [];
+    if (!list.some((t) => t.name.toLowerCase() === name.toLowerCase())) list.push({ scopeId: e.target_id, name });
+    out.set(key, list);
+  }
+  return out;
+}
+
+/** Which of these scope ids are tags (the peek's Filed under leaves them to its Tags section). */
+export async function tagScopeIdsAmong(scopeIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (!scopeIds.length) return out;
+  const types = await cachedTagTypeIds();
+  if (!types.length) return out;
+  // eslint-disable-next-line no-restricted-syntax -- read switch OFF path (lane SCOPES-WEB-REVERT), the same pre-store read listItemTags uses
+  const { data, error } = await contextDb(supabase)
+    .from("scopes")
+    .select("id")
+    .in("id", scopeIds.slice(0, 200))
+    .in("scope_type_id", types);
+  if (error) throw new Error(refusalMessage(error, "Reading which are tags"));
+  for (const r of (data ?? []) as { id: string }[]) out.add(r.id);
+  return out;
+}

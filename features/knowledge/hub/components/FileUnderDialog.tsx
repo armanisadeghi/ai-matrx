@@ -36,9 +36,7 @@ export function FileUnderDialog({ open, onOpenChange, count, orgId, onPick }: Fi
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>File {count === 1 ? "1 item" : `${count} items`} under…</DialogTitle>
-          <DialogDescription>
-            Pick a project, scope, research topic or other place. Each item is filed there; nothing is moved or copied.
-          </DialogDescription>
+          <DialogDescription className="sr-only">Pick where to file it.</DialogDescription>
         </DialogHeader>
         <UniversalAssociationPicker
           tokens={[...SAVE_TARGET_TOKENS] as EntityTypeToken[]}
