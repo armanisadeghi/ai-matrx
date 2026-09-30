@@ -1,5 +1,11 @@
 -- chair-step: the inverse of migrations/campaign/scopesreadstree_the_scope_tree_and_values_read_the_store.sql (lane SCOPES-READS-TREE) — puts public.get_scope_tree, list_scope_types, list_scope_type_items, get_scope_context, get_user_full_context, resolve_full_context and __scope_access_membrane_conformance back exactly as production held them before it (pg_get_functiondef, 2026-09-29; the same bodies on the dev clone), and drops the seven custom helpers and the six context.*_from_the_image copies. The switch's knob row (scopesreadstree_the_scope_readers_switch.sql) stays, OFF. Nothing of anybody's data is touched.
--- based-on: BASEDON_PLACEHOLDER
+-- based-on: public.__scope_access_membrane_conformance() e40a3e84e70eda2873673ea2c8aa7b6fc69397b68ede2aab8be50c702a1cd79b
+-- based-on: public.get_scope_context(uuid, uuid[], boolean) 45684a2bb47cce4151c0c7b00983b6f222f2d0174dbef614dfcf5676841900d5
+-- based-on: public.get_scope_tree(uuid, uuid) 2783445eaa04b108a01700c764a147def62fc6e66c9d630a5c91c0a65447227a
+-- based-on: public.get_user_full_context(uuid) 13e59453b78bedd3e845c95d9a1b1fc698a6a3e1b8e72cadf1562df0bb6759ca
+-- based-on: public.list_scope_type_items(uuid) d277475a3a2c1a8f6ae2dd325dd9b2ed31b8ff3f6473a42ac6034e5433c7c737
+-- based-on: public.list_scope_types(uuid) d2e80c40f431e9816f87762ca155c6cddbdb7fd766fb62992734fb8fcf7418b8
+-- based-on: public.resolve_full_context(uuid, text, uuid, uuid[], text[]) e1d3db7de5501bcb31b60cf9f8918802adcad434f9abbf23999b6959b4c500a1
 
 set local lock_timeout = '2s';
 
