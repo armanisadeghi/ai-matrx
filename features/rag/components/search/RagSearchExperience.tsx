@@ -84,7 +84,7 @@ import {
   canonicalSourceNameForHit,
   hitViewFromSearchHit,
 } from "@/features/rag/components/hit-card/adapters";
-import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
+import { QueryTermCoverage, SearchSummaryText } from "@/features/rag/components/search/searchExplain";
 import { RagPageReferences } from "@/features/rag/components/search/RagPageReferences";
 import { RagReviewRepairWorkspace } from "@/features/rag/components/search/RagReviewRepairWorkspace";
 import {
@@ -752,60 +752,6 @@ function SearchScopeSummary({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Query-term coverage — "did each word I typed actually land in any result?"
-// Computed from the returned hits (NOT a corpus count), honestly labeled, so
-// the user can see at a glance that e.g. "indemnification" appeared in zero
-// results even though 5 hits came back. Answers the user's "am I getting what
-// I put in?" directly.
-// ---------------------------------------------------------------------------
-
-function QueryTermCoverage({
-  query,
-  hits,
-}: {
-  query: string;
-  hits: { snippet: string | null }[];
-}) {
-  const terms = getHighlightTerms(query);
-  if (terms.length < 2 || hits.length === 0) return null;
-
-  const haystacks = hits.map((h) => (h.snippet ?? "").toLowerCase());
-  const coverage = terms.map((t) => ({
-    term: t,
-    count: haystacks.filter((s) => s.includes(t)).length,
-  }));
-  const missing = coverage.filter((c) => c.count === 0);
-
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
-      <span className="text-muted-foreground uppercase tracking-wide text-[10px]">
-        Terms in results
-      </span>
-      {coverage.map((c) => (
-        <Badge
-          key={c.term}
-          variant={c.count === 0 ? "warning" : "secondary"}
-          className="text-[10px] px-1.5 py-0 font-normal"
-          title={
-            c.count === 0
-              ? `"${c.term}" did not appear in any returned result — these hits matched on the other terms or on meaning, not this word.`
-              : `"${c.term}" appears in ${c.count} of ${hits.length} results.`
-          }
-        >
-          {c.term} {c.count}
-        </Badge>
-      ))}
-      {missing.length > 0 && (
-        <span className="text-muted-foreground/80">
-          · {missing.length} term{missing.length === 1 ? "" : "s"} matched
-          nothing here
-        </span>
-      )}
-    </div>
-  );
-}
-
 function SearchTab({
   scope,
   onReviewModeChange,
@@ -1310,10 +1256,14 @@ function SearchTab({
             >
               <div className="text-xs text-muted-foreground tabular-nums">
                 {/* read-gate-exempt: figures of the search that just returned; response is null until a search succeeds */}
-                {response.hits.length} hits · {response.total_candidates}{" "}
-                candidates · {response.latency_ms} ms
-                {response.reranker_model &&
-                  ` · reranked by ${response.reranker_model}`}
+                <SearchSummaryText
+                  summary={{
+                    hits: response.hits.length,
+                    candidates: response.total_candidates,
+                    latencyMs: response.latency_ms,
+                    reranked: response.reranker_model,
+                  }}
+                />
                 {response.rerank_status === "low_confidence" && (
                   <span
                     className="text-amber-600 dark:text-amber-500"
@@ -1476,6 +1426,65 @@ interface ChunkPlayout {
   loading: boolean;
   data: AgentToolGetChunkResponse | null;
   error: string | null;
+}
+
+/**
+ * What the real `knowledge_search` tool returns beside the passages: the typed sections
+ * (notes, files, chats withheld …), their failures, and the text the model reads for them.
+ * The server sends these since the simulation runs the registered tool itself; the committed
+ * generated types predate them, so they are declared here until `pnpm sync-types` carries them.
+ */
+interface AgentToolSections {
+  sections?: {
+    section: string;
+    count?: number;
+    items?: { entity?: string; id?: string; title?: string }[];
+    withheld?: string | null;
+    note?: string | null;
+    has_more?: boolean;
+  }[];
+  section_errors?: { section: string; message: string }[];
+  sections_text?: string | null;
+  relevance_note?: string | null;
+}
+
+function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne & AgentToolSections }) {
+  const sections = result.sections ?? [];
+  const errors = result.section_errors ?? [];
+  if (!sections.length && !errors.length && !result.relevance_note) return null;
+  return (
+    <div className="px-3 py-2 border-t space-y-1.5" data-testid="agent-sim-sections">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        Everything else the agent sees (same search as the hub)
+      </div>
+      {result.relevance_note ? <p className="text-[11px] text-muted-foreground">{result.relevance_note}</p> : null}
+      {sections.map((sec) => (
+        <div key={sec.section} className="text-xs">
+          <span className="font-medium">{sec.section.replace(/_/g, " ")}</span>{" "}
+          <span className="text-muted-foreground tabular-nums">
+            {sec.withheld
+              ? `withheld — ${sec.withheld}`
+              : `${sec.count ?? sec.items?.length ?? 0}${sec.has_more ? "+" : ""}`}
+          </span>
+          {sec.note ? <span className="text-muted-foreground"> · {sec.note}</span> : null}
+          {(sec.items ?? []).length ? (
+            <ul className="ml-4 list-disc text-[11px] text-foreground/80">
+              {(sec.items ?? []).slice(0, 5).map((it) => (
+                <li key={`${it.entity}-${it.id}`}>
+                  {it.title || "Untitled"} <span className="text-muted-foreground">{it.entity}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ))}
+      {errors.map((e) => (
+        <p key={e.section} className="text-xs text-destructive">
+          {e.section.replace(/_/g, " ")} could not be searched — {e.message}
+        </p>
+      ))}
+    </div>
+  );
 }
 
 function AgentToolResultBlock({
@@ -1675,6 +1684,8 @@ function AgentToolResultBlock({
         })}
       </div>
 
+      <AgentToolSectionsBlock result={result as AgentToolSearchOne & AgentToolSections} />
+
       <div className="px-3 py-2 border-t">
         <button
           type="button"
@@ -1688,6 +1699,9 @@ function AgentToolResultBlock({
         {rawOpen && (
           <pre className="mt-2 max-h-72 overflow-auto rounded bg-muted/40 p-2 text-[10px] font-mono whitespace-pre-wrap break-all">
             {result.tool_result_text}
+            {(result as AgentToolSearchOne & AgentToolSections).sections_text
+              ? `\n\n--- the model also reads ---\n${(result as AgentToolSearchOne & AgentToolSections).sections_text}`
+              : ""}
           </pre>
         )}
       </div>

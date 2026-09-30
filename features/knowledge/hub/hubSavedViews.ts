@@ -47,10 +47,11 @@ export interface HubPreset {
 export const HUB_PRESETS: readonly HubPreset[] = [
   { key: "everything", name: "Everything", query: { mode: "find" }, layout: "list" },
   {
-    // Transcript records AND transcript Sources (aidream 1400; 1396 stamps source_kind on the records).
+    // What the view lists: transcript records and studio sessions (the transcripts list's own
+    // read), not transcript Sources.
     key: "transcripts",
     name: "Transcripts",
-    query: { mode: "find", types: ["transcript", "processed_document"], source_kinds: ["transcript"] },
+    query: { mode: "find", types: ["transcript", "studio_session"] },
     layout: "list",
   },
   {

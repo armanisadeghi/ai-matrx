@@ -20,6 +20,7 @@ import {
   type QueryChip,
 } from "@/features/knowledge/api/knowledgeQueryText";
 import type { EntityRef, KnowledgeQuery } from "@/features/knowledge/api/knowledgeSearch";
+import { HowSearchWorksButton } from "@/features/knowledge/hub/components/HubHowSearchWorks";
 import {
   ORIGIN_WORDS,
   SOURCE_KIND_WORDS,
@@ -145,6 +146,7 @@ export const HubSearchBox = forwardRef<HTMLInputElement, HubSearchBoxProps>(func
           aria-label={placeholder}
           className="h-9 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm"
         />
+        <HowSearchWorksButton />
         <button
           type="button"
           onClick={onOpenFilters}

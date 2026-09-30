@@ -21,6 +21,7 @@ import {
   kindLabel,
   originLabel,
 } from "@/features/knowledge/hub/hubPresentation";
+import { WhyMatchedPopover } from "@/features/knowledge/hub/components/HubSearchExplain";
 import { TagChips } from "@/features/knowledge/hub/tags/TagChips";
 import { hitTags } from "@/features/knowledge/hub/tags/tagActions";
 
@@ -363,10 +364,13 @@ export function ResultRow({
             <Highlight text={snippet} query={handlers.highlight} />
           </p>
         ) : null}
-        {parts.length || tags.length ? (
+        {parts.length || tags.length || (handlers.highlight && (hit as KnowledgeHit & { matched?: boolean }).matched) ? (
           <div className="flex min-w-0 items-center gap-2 text-xs leading-4 text-muted-foreground/80">
             <span className="min-w-0 truncate">{parts.join(" · ")}</span>
             <TagChips tags={tags} onFilter={handlers.onFilterTag} className="shrink-0 flex-nowrap" />
+            {handlers.highlight && (hit as KnowledgeHit & { matched?: boolean }).matched ? (
+              <WhyMatchedPopover hit={hit} text={handlers.highlight} />
+            ) : null}
           </div>
         ) : null}
       </div>

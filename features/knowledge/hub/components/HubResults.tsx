@@ -42,6 +42,7 @@ import {
   titleLinesFor,
   type ResultHandlers,
 } from "@/features/knowledge/hub/components/HubResultRow";
+import { SearchExplainHeader } from "@/features/knowledge/hub/components/HubSearchExplain";
 import type { HubMenuGroup } from "@/features/knowledge/hub/components/HubRowMenu";
 import { dateGroupOf, dateInGroup, groupByDate, type DatedItem } from "@/features/knowledge/hub/dateGroups";
 
@@ -832,6 +833,11 @@ export function browseHits(sections: SectionState[]): KnowledgeHit[] {
  * belongs to (its text becomes the row's snippet, so the match shows) — a
  * passage whose item is not listed yet becomes that item's row.
  */
+/** What a passage says about why it matched — carried onto the row it became, for "Why matched". */
+function whyOf(h: KnowledgeHit) {
+  return { vector_rank: h.vector_rank, lexical_rank: h.lexical_rank, rerank_score: h.rerank_score, score: h.score };
+}
+
 export function searchHitsByItem(sections: SectionState[]): KnowledgeHit[] {
   const out: KnowledgeHit[] = [];
   const at = new Map<string, number>();
@@ -842,7 +848,7 @@ export function searchHitsByItem(sections: SectionState[]): KnowledgeHit[] {
         const i = at.get(key);
         if (i !== undefined) {
           if (!(out[i] as KnowledgeHit & { matched?: boolean }).matched)
-            out[i] = { ...out[i], snippet: h.snippet ?? out[i].snippet, matched: true } as KnowledgeHit;
+            out[i] = { ...out[i], snippet: h.snippet ?? out[i].snippet, matched: true, ...whyOf(h) } as KnowledgeHit;
           continue;
         }
         at.set(key, out.length);
@@ -857,6 +863,7 @@ export function searchHitsByItem(sections: SectionState[]): KnowledgeHit[] {
           created_at: h.created_at ?? null,
           updated_at: h.updated_at ?? null,
           matched: true,
+          ...whyOf(h),
         } as KnowledgeHit);
         continue;
       }
@@ -959,10 +966,13 @@ export function BrowseResults({
   );
   const dim = updating ? "pointer-events-none opacity-50 transition-opacity" : "transition-opacity";
 
+  const explain = searching ? <SearchExplainHeader text={highlight} sections={sections} /> : null;
+
   if (layout === "table")
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         {updatingBar}
+        {explain}
         {/* With nothing loaded the table says the failure itself (read=), once;
             the per-section strip is for a partial failure beside rows that did load. */}
         {hits.length > 0 ? failures : null}
@@ -985,6 +995,7 @@ export function BrowseResults({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {updatingBar}
+      {explain}
       {failures}
       {loading && hits.length === 0 ? <RowsSkeleton rows={8} label="Loading your knowledge" /> : null}
       {!loading && hits.length === 0 && !failed.length ? (

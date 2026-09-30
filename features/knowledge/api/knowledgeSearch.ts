@@ -137,6 +137,13 @@ export interface KnowledgeHit {
   file_id?: string | null;
   /** Recent/frequent score from the view-event writer; absent until it has data. */
   frecency?: number | null;
+  /** Segments: the relevance score the search ranked the passage by. */
+  score?: number | null;
+  /** Segments: why the passage matched — its rank in the meaning lane and in the word lane
+   *  (absent = that lane did not find it), and the relevance model's own score. */
+  vector_rank?: number | null;
+  lexical_rank?: number | null;
+  rerank_score?: number | null;
   top_segments?: { id: string; text: string; locator?: string | null }[];
   suggestions?: { target: FiledRef; reason: string }[];
   segment?: {
@@ -165,6 +172,12 @@ export interface KnowledgeSection {
   error?: { message: string; retryable: boolean } | null;
   /** Private-class rule: the lane ran but withheld rows, with the reason. */
   withheld?: string | null;
+  /** What narrowed or changed this section, in words (Segments: notes on scope and rerank). */
+  note?: string | null;
+  /** Segments: the relevance model that re-ordered the passages; absent = the fused order stands. */
+  reranker_model?: string | null;
+  /** Segments: why a requested rerank did not apply (`timeout`, `failed`, `low_confidence`). */
+  rerank_status?: string | null;
 }
 
 /** Which engine answered — every surface announces anything but `server`. */
@@ -304,6 +317,9 @@ export function adaptServerSearchEvent(
         items,
         next_cursor: str(data.next_cursor) ?? str(data.cursor),
         withheld: str(data.withheld),
+        note: str(data.note),
+        reranker_model: str(data.reranker_model),
+        rerank_status: str(data.rerank_status),
         error: null,
       },
     };

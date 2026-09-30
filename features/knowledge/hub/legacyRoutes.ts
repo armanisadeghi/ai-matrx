@@ -12,7 +12,7 @@
  * renders live for every signed-in user; /rag/search reaches it through the
  * `/rag/:path*` config redirect with its query string intact. The admin lab
  * (SEARCH_LAB_ADMIN_PATH) is the same component on the admin lane (ACL bypass).
- *   /knowledge/visualization (and /rag/visualization) → /knowledge
+ *   /knowledge/visualization (and /rag/visualization) → /knowledge/flow (the animation)
  *
  * H6b — the list pages whose job is now a hub container group
  * (`view=group:<token>`, containerGroups/groupFilters.ts). Each one's RECORD

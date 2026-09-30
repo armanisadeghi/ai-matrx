@@ -14,6 +14,7 @@ jest.mock("@/features/auth/components/module-landing/landings/KnowledgeLanding",
 import LibraryRoute from "@/app/(core)/knowledge/library/page";
 import SearchRoute from "@/app/(core)/knowledge/search/page";
 import VisualizationRoute from "@/app/(core)/knowledge/visualization/page";
+import RagVisualizationRoute from "@/app/(core)/rag/visualization/page";
 import { hubStateFromParams } from "@/features/knowledge/hub/hubState";
 import { HUB_SOURCES_HREF, libraryToHubHref, SEARCH_LAB_ADMIN_PATH, SEARCH_LAB_PATH, searchLabHref } from "@/features/knowledge/hub/legacyRoutes";
 
@@ -72,10 +73,13 @@ describe("the Search Lab is a kept, live user page (Arman, 2026-09-29)", () => {
 });
 
 describe("the graph demo and the /rag aliases", () => {
-  it("/knowledge/visualization lands on the hub", async () => {
+  it("/knowledge/visualization lands on the flow animation", async () => {
     redirect.mockClear();
     expect(() => (VisualizationRoute as () => void)()).toThrow("NEXT_REDIRECT");
-    expect(redirect).toHaveBeenCalledWith("/knowledge");
+    expect(redirect).toHaveBeenCalledWith("/knowledge/flow");
+    redirect.mockClear();
+    expect(() => (RagVisualizationRoute as () => void)()).toThrow("NEXT_REDIRECT");
+    expect(redirect).toHaveBeenCalledWith("/knowledge/flow");
   });
   it("every /rag/* path redirects to its /knowledge/* twin (query kept by Next)", () => {
     expect(nextConfigText).toContain('{ source: "/rag", destination: "/knowledge", permanent: true }');
