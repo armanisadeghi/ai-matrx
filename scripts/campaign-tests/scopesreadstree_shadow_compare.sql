@@ -77,11 +77,20 @@ $clone$;
 set local session_replication_role = replica;   -- no DDL guard fires on the scratch copies
 create schema l6_old;
 do $copy$
-declare f text;
+declare f text; v_def text;
 begin
   foreach f in array array['get_scope_tree', 'list_scope_types', 'list_scope_type_items', 'get_scope_context',
                            'get_user_full_context'] loop
-    execute replace(pg_get_functiondef(('public.' || f)::regproc), 'FUNCTION public.' || f || '(', 'FUNCTION l6_old.' || f || '(');
+    -- Once the campaign file is on this database the old body lives on as context.<name>_from_the_image
+    -- (SECURITY INVOKER); before, it is the live public body.
+    if to_regproc('context.' || f || '_from_the_image') is not null then
+      v_def := replace(pg_get_functiondef(('context.' || f || '_from_the_image')::regproc),
+                       'FUNCTION context.' || f || '_from_the_image(', 'FUNCTION l6_old.' || f || '(');
+      v_def := regexp_replace(v_def, '\n STABLE\n', E'\n STABLE SECURITY DEFINER\n');
+    else
+      v_def := replace(pg_get_functiondef(('public.' || f)::regproc), 'FUNCTION public.' || f || '(', 'FUNCTION l6_old.' || f || '(');
+    end if;
+    execute v_def;
   end loop;
 end
 $copy$;
@@ -95,7 +104,11 @@ grant execute on all functions in schema l6_old to authenticated, service_role;
 set local session_replication_role = origin;
 
 \i migrations/campaign/scopesreadstree_the_scope_readers_switch.sql
+select to_regproc('custom.scope_rows_of') is null as l6_need_up \gset
+\if :l6_need_up
 \i migrations/campaign/scopesreadstree_the_scope_tree_and_values_read_the_store.sql
+\endif
+\i migrations/campaign/scopesreadstree_a_file_reference_names_the_file.sql
 -- THE SWITCH OFF: every door answers exactly as its old body (checked on the service seat of every
 -- organization for the list doors, and 300 scopes' values).
 create temp table l6_off on commit drop as
@@ -492,6 +505,13 @@ select p.scope_id,
        (pg_temp.l6_call(format('select public.get_scope_tree(%L::uuid)', p.organization_id)) ? '__error') as tree_refuses
   from (select * from l6_plant_copy) p;
 reset role;
+\echo ==== FILE REFERENCES: every File-column value names the same live file on both sides (no masking by store_newer)
+select count(*) as file_cells,
+       count(*) filter (where pg_temp.l6_ref_ids(o.e ->> 'value_text') = pg_temp.l6_ref_ids(n.e ->> 'value_text')) as same_file
+  from l6_result r
+  cross join lateral jsonb_array_elements(case when jsonb_typeof(r.old) = 'array' then r.old else '[]' end) o(e)
+  join lateral jsonb_array_elements(case when jsonb_typeof(r.new) = 'array' then r.new else '[]' end) n(e) on n.e ->> 'item_id' = o.e ->> 'item_id'
+ where r.fn = 'get_scope_context' and o.e ->> 'value_text' like '%"file_id"%';
 \echo ==== order_only: the ties behind each (old order key equal on both neighbours)
 select fn, why, organization_id, arg from l6_verdict where verdict = 'order_only';
 \echo ==== MISMATCHES (first 12, both sides)
