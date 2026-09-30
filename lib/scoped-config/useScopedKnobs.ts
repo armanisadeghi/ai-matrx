@@ -44,9 +44,12 @@ export function useScopedKnobs(options: {
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
   useEffect(() => {
-    if (!organizationId) return;
+    // 🚨 A KNOB NEVER BLOCKS A READ: with no organization the index is asked
+    // with a null organization and answers the platform defaults (the user and
+    // organization layers are skipped). A selected organization still adds its
+    // own layer.
     let cancelled = false;
-    void fetchKnobIndex({ organizationId, featurePrefix, userId, overriddenOnly })
+    void fetchKnobIndex({ organizationId: organizationId ?? null, featurePrefix, userId, overriddenOnly })
       .then((knobs) => {
         if (!cancelled) setSnapshot({ requestKey, knobs, isLoading: false, error: null });
       })
@@ -57,9 +60,9 @@ export function useScopedKnobs(options: {
     return () => { cancelled = true; };
   }, [organizationId, featurePrefix, userId, overriddenOnly, requestKey, generation]);
 
-  const current = organizationId && snapshot?.requestKey === requestKey ? snapshot : null;
+  const current = snapshot?.requestKey === requestKey ? snapshot : null;
   const knobs = current?.knobs ?? [];
-  const isLoading = Boolean(organizationId) && !current;
+  const isLoading = !current;
   const error = current?.error ?? null;
   const missing = knobs.filter((knob) => knob.origin === "missing");
 

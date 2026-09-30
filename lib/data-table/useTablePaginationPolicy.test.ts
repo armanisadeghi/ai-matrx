@@ -98,4 +98,12 @@ describe("useTablePaginationPolicy", () => {
       reason: "Automatic loading is paused while scrolling preferences load.",
     });
   });
+
+  it("with NO organization selected the policy still resolves from the knobs — never held for an org", () => {
+    state.organization = null;
+    state.scoped.knobs = knobs({ mode: "scroll", threshold_px: 96, intent_timeout_ms: 1200 });
+    const policy = useTablePaginationPolicy();
+    expect(policy.scroll).toMatchObject({ mode: "scroll", valid: true });
+    expect(policy.notice).toBeNull();
+  });
 });

@@ -37,7 +37,8 @@ export type KnobRungOverrideRow = {
 };
 
 export async function fetchKnobIndex(options: {
-  organizationId: string;
+  /** `null` = no organization selected: the platform defaults answer. */
+  organizationId: string | null;
   featurePrefix?: string;
   userId?: string;
   deviceId?: string;
@@ -46,7 +47,7 @@ export async function fetchKnobIndex(options: {
 }): Promise<ScopedKnob[]> {
   const supabase = createClient();
   const { data, error } = await supabase.schema("platform").rpc("knob_index", {
-    p_organization_id: options.organizationId,
+    p_organization_id: options.organizationId ?? undefined,
     p_feature_prefix: options.featurePrefix,
     p_user_id: options.userId,
     p_device_id: options.deviceId,

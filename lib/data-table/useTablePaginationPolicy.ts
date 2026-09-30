@@ -14,9 +14,8 @@ export function useTablePaginationPolicy() {
     organizationId, featurePrefix: "tables.pagination", userId: userId || undefined,
   });
   const value = (key: string) => knobs.find((knob) => knob.feature === "tables.pagination" && knob.key === key)?.effective_value;
-  const scroll = !organizationId
-    ? suspendScrollPaginationPolicy("Automatic loading is paused until an organization is selected.")
-    : isLoading
+  // A knob never blocks a read: with no organization the platform defaults answer.
+  const scroll = isLoading
       ? suspendScrollPaginationPolicy("Automatic loading is paused while scrolling preferences load.")
       : error
         ? suspendScrollPaginationPolicy(`Automatic loading is paused because scrolling preferences could not load: ${error}.`)

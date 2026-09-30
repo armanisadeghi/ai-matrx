@@ -37,13 +37,14 @@ it("masks the old user's policy immediately and ignores a stale request", async 
   await act(async () => third.resolve([{ ...row, effective_value: "manual" }]));
   expect(current.knobs[0]?.effective_value).toBe("manual");
 });
-it("clears configuration and error without an organization, and retries a failure", async () => {
-  fetchIndex.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce([row]);
+it("retries a failure, and with NO organization still asks (null organization) instead of holding the read", async () => {
+  fetchIndex.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce([row]).mockResolvedValueOnce([row]);
   await act(async () => root.render(<Harness />));
   expect(current.error).toBe("offline");
   await act(async () => current.refresh());
   expect(current.knobs).toHaveLength(1);
-  act(() => root.render(<Harness organizationId={null} />));
-  expect(current).toMatchObject({ knobs: [], error: null, isLoading: false });
-  expect(fetchIndex).toHaveBeenCalledTimes(2);
+  await act(async () => root.render(<Harness organizationId={null} />));
+  expect(fetchIndex).toHaveBeenLastCalledWith(expect.objectContaining({ organizationId: null }));
+  expect(current).toMatchObject({ error: null, isLoading: false });
+  expect(current.knobs).toHaveLength(1);
 });
