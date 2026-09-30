@@ -182,6 +182,59 @@ async function readPromptingRequest(messageId: string): Promise<string | null> {
   }
 }
 
+/** The artifact's cards: structured kind value first, else Front:/Back: markdown. */
+function artifactCards(info: MaterializedArtifactInfo): NewCardInput[] {
+  const structured = structuredFlashcardSet(info);
+  if (structured) return cardsFromStructured(structured);
+  const raw = typeof info.rawContent === "string" ? info.rawContent : "";
+  if (!raw.trim()) return [];
+  try {
+    return parseFlashcards(raw).flashcards.map((c) => ({
+      front: c.front,
+      back: c.back,
+    }));
+  } catch (e) {
+    console.warn("[FLASHCARDS_CANONICAL_ADAPTER] parseFlashcards failed:", e);
+    return [];
+  }
+}
+
+function normalizeFront(front: unknown): string {
+  return typeof front === "string"
+    ? front.trim().replace(/\s+/g, " ").toLowerCase()
+    : "";
+}
+
+/**
+ * True when the saved set holds the same deck as `cards`: at least half of the
+ * smaller side's card fronts appear in both. A surface save and the stream's
+ * render block persist the same envelope, so the run's own deck matches
+ * fully; a different follow-up set shares none. A read failure answers false
+ * (a new deck, announced) — a wrong link is worse than a duplicate.
+ */
+async function isSameDeck(
+  setId: string,
+  cards: NewCardInput[],
+): Promise<boolean> {
+  const mine = new Set(cards.map((c) => normalizeFront(c.front)).filter(Boolean));
+  if (mine.size === 0) return false;
+  const saved = await fcService.getSetWithCards(setId);
+  if (!saved.data) {
+    console.warn(
+      "[FLASHCARDS_CANONICAL_ADAPTER] could not read the surface-saved deck to compare; creating this set its own deck:",
+      saved.error,
+    );
+    return false;
+  }
+  const theirs = new Set(
+    saved.data.cards.map((c) => normalizeFront(c.front)).filter(Boolean),
+  );
+  if (theirs.size === 0) return false;
+  let shared = 0;
+  for (const front of mine) if (theirs.has(front)) shared += 1;
+  return shared > 0 && shared * 2 >= Math.min(mine.size, theirs.size);
+}
+
 export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<FlashcardsCanonicalState> =
   {
     async onMaterialize(
@@ -220,18 +273,23 @@ export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<Flashcards
       // D-WP3 single-writer contract: a generation SURFACE (from-topic /
       // from-source / convert deck) may have already saved this run's deck,
       // stamped with the run's conversation identity. Link to it — never
-      // create a twin. Only surface saves stamp cx_conversation, so ordinary
-      // multi-deck chat conversations never hit this branch.
+      // create a twin — but ONLY when this artifact IS that run's deck: no
+      // other artifact claims it and its cards are the same cards. A later
+      // follow-up in the same conversation ("now make 5 on mitosis") is a
+      // different deck; linking it sent its "Open in Flashcards" door to the
+      // surface's deck (2026-09-30).
       if (info.source.system === "cx_message" && info.conversationId) {
         const surfaceSaved =
           await fcService.findSurfaceSavedSetForConversation(
             info.conversationId,
           );
-        if (surfaceSaved.data?.id) {
-          return {
-            externalSystem: EXTERNAL_SYSTEM,
-            externalId: surfaceSaved.data.id,
-          };
+        const surfaceSetId = surfaceSaved.data?.id;
+        if (
+          surfaceSetId &&
+          (await firstUnclaimedSet([surfaceSetId], info.artifactId)) &&
+          (await isSameDeck(surfaceSetId, artifactCards(info)))
+        ) {
+          return { externalSystem: EXTERNAL_SYSTEM, externalId: surfaceSetId };
         }
       }
       // Legacy fallback: chat-era sets carry only metadata.source_message_id.
@@ -259,26 +317,8 @@ export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<Flashcards
       //    reprocessing — front/back/card_kind/difficulty/topic map directly,
       //    tags ride card metadata); else the legacy Front:/Back: markdown
       //    parse — identical to the block.
-      let cards: NewCardInput[] = [];
       const structured = structuredFlashcardSet(info);
-      if (structured) {
-        cards = cardsFromStructured(structured);
-      } else {
-        const raw = typeof info.rawContent === "string" ? info.rawContent : "";
-        if (raw.trim()) {
-          try {
-            cards = parseFlashcards(raw).flashcards.map((c) => ({
-              front: c.front,
-              back: c.back,
-            }));
-          } catch (e) {
-            console.warn(
-              "[FLASHCARDS_CANONICAL_ADAPTER] parseFlashcards failed:",
-              e,
-            );
-          }
-        }
-      }
+      const cards = artifactCards(info);
       if (cards.length === 0) {
         console.warn(
           "[FLASHCARDS_CANONICAL_ADAPTER] no cards parsed; creating empty set",

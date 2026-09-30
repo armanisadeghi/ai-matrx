@@ -39,15 +39,17 @@ import {
 import {
   resolveCanvasType,
   resolveArtifactDefByKind,
-  type ArtifactTypeDef,
 } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import {
   readEnvelope,
   reconstructRegionValue,
 } from "@/features/content-ir/redux/render-block-envelope";
-import { readObjectKind } from "@ai-matrx/content-ir";
 import { wrapArtifactText } from "./artifactWire";
+import {
+  detectKindInJsonText,
+  type KindValueDetection,
+} from "@/features/canvas/artifact-types/storedKindValue";
 import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 
 export interface PlannedArtifact {
@@ -130,12 +132,7 @@ function firstNonEmptyString(...values: unknown[]): string | null {
   return null;
 }
 
-interface StructuredDetection {
-  def: ArtifactTypeDef;
-  kind: string;
-  /** Zero-loss value object (carries `__kind` — self-describing). */
-  structured: Record<string, unknown>;
-}
+type StructuredDetection = KindValueDetection;
 
 /** Enrich a diagram without discarding kind discriminators or residue. */
 function materializeDiagramValue(
@@ -215,25 +212,15 @@ function detectStructuredArtifact(sb: {
   // store instead of fc_set).
   if (envelope?.root.kind && envelope.root.kindState === "raw") return null;
 
-  // Parse fallback — only for JSON blocks (fenced ```json or bare-object
-  // regions; the splitter stamps language "json" on both).
-  if (sb.type !== "code" || sb.language !== "json") return null;
-  const raw = (sb.content ?? "").trim();
-  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return null;
-  }
-  const kind = readObjectKind(parsed as Record<string, unknown>);
-  if (!kind) return null;
-  const def = resolveArtifactDefByKind(kind);
-  if (!def?.materializable) return null;
-  return { def, kind, structured: parsed as Record<string, unknown> };
+  // Parse fallback — JSON blocks (fenced ```json or bare-object regions; the
+  // splitter stamps language "json" on both) AND `<artifact>`-tagged bodies.
+  // A model that wraps a kind payload in a tag with a non-UUID id
+  // (`<artifact type="flashcards" id="mitosis-deck">{"__kind":…}</artifact>`)
+  // gets no envelope; skipping it here stored the value as a JSON STRING with
+  // no metadata.kind — a row that rendered zero cards (2026-09-30).
+  const isJsonBlock = sb.type === "code" && sb.language === "json";
+  if (!isJsonBlock && sb.type !== "artifact") return null;
+  return detectKindInJsonText(sb.content);
 }
 
 export function planMaterialization(

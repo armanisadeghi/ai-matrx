@@ -49,6 +49,7 @@ import IframeArtifact from "./renderers/IframeArtifact";
 
 import ImageArtifact from "./renderers/ImageArtifact";
 import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
+import { storedKindValue } from "./storedKindValue";
 import type { ArtifactRendererProps } from "./types";
 
 type ArtifactRendererComponent = React.ComponentType<ArtifactRendererProps>;
@@ -115,10 +116,14 @@ export function ArtifactRender({
   // derive serverData through the kind registry's legacy bridge
   // (`kindServerDataFromStoredValue`, the same seam ArtifactRefBlock uses)
   // so every adapter's `serverData ?? data ?? parse(raw)` resolution renders
-  // the bridge output, identical to the live stream. No-ops for string
-  // payloads, non-kind objects, and callers that already supplied serverData.
+  // the bridge output, identical to the live stream. A JSON-STRING kind value
+  // (a row that missed the structured write) reads as its object
+  // (`storedKindValue`); no-ops for other strings, non-kind objects, and
+  // callers that already supplied serverData.
   const structuredServerData =
-    props.serverData == null ? kindServerDataFromStoredValue(props.data) : null;
+    props.serverData == null
+      ? kindServerDataFromStoredValue(storedKindValue(props.data))
+      : null;
   const finalProps = structuredServerData
     ? { ...props, serverData: structuredServerData }
     : props;
