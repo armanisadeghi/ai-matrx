@@ -1114,6 +1114,182 @@ try {
     if (!offered || !hs.includes("Referring Clinic") || toasts.some((x) => /not as relation/i.test(x))) friction("the Relation column was not made with its table");
   }
 
+  if (PHASE === "b3") {
+    // BREAKER-3's app-side findings, walked on the lane's own table (TABLE), through the page's UI.
+    const n = String(Date.now()).slice(-4);
+    await open(process.env.TABLE, "?view=sheet");
+    const addDialog = async (colName) => {
+      await page.getByRole("button", { name: /^Column$/ }).first().click();
+      const dlg = page.getByRole("dialog").filter({ hasText: "Add New Column" });
+      await dlg.waitFor({ timeout: 20000 });
+      await dlg.getByPlaceholder("e.g. Total Revenue").fill(colName);
+      return dlg;
+    };
+    const showsAs = async (dlg, look) => {
+      await dlg.getByRole("combobox").nth(1).click();
+      await sleep(500);
+      await page.getByRole("option", { name: new RegExp(`^${look}`) }).first().click();
+      await sleep(800);
+    };
+    const made = [];
+    const cellAt = async (i, col) => page.locator("tbody tr").nth(i).locator("td").nth(await colIndex(col));
+    // ── B3-14: a choice default that is none of the choices is asked ─────────────────────────
+    if (!process.env.SKIP_B314) {
+      const col = `Priority ${n}`;
+      const dlg = await addDialog(col);
+      await showsAs(dlg, "Choice");
+      for (const w of ["Routine", "Urgent", "Elective"]) {
+        await dlg.getByPlaceholder("Add an option…").fill(w);
+        await page.keyboard.press("Enter");
+        await sleep(250);
+      }
+      await dlg.locator("#defaultValue").fill("Rutine");
+      await sleep(600);
+      const asked = (await dlg.locator("[data-matrx-choice-nudge]").allInnerTexts()).join(" | ").replace(/\s+/g, " ");
+      await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+      await sleep(1500);
+      const heldOpen = await dlg.isVisible();
+      await shot("b3-14a-default-asked");
+      await dlg.locator("[data-matrx-choice-nudge] button", { hasText: /^Add$/ }).first().click();
+      await sleep(600);
+      await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+      await sleep(6000);
+      made.push(col);
+      const d = await columnSettings(col);
+      const choices = await d.locator('input[aria-label="Option value"]').evaluateAll((xs) => xs.map((x) => x.value));
+      await shot("b3-14b-choice-added");
+      await page.keyboard.press("Escape");
+      await sleep(800);
+      step("B3-14 a choice default that is none of the choices", { asked, held_open_until_answered: heldOpen, choices_after_add: choices });
+      if (!/Add "Rutine" to the choices/.test(asked) || !heldOpen || !choices.includes("Rutine")) friction("the off-list default was not asked, or Add did not make it a choice");
+    }
+    // ── B3-02: a Text column of comma lists changed to several choices ───────────────────────
+    if (!process.env.SKIP_B302) {
+      const col = `Areas ${n}`;
+      const dlg = await addDialog(col);
+      await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+      await sleep(5000);
+      made.push(col);
+      const firstTitle = (await rowTexts())[0]?.split(" ")[0] ?? "";
+      const c = await cellAt(0, col);
+      await c.click();
+      await sleep(300);
+      await page.keyboard.type("Lower back, Hip", { delay: 25 });
+      await page.keyboard.press("Enter");
+      await sleep(3500);
+      const d = await columnSettings(col);
+      await d.getByRole("combobox").nth(1).click();
+      await sleep(600);
+      await page.getByRole("option").filter({ hasText: /^Multi-choice/ }).first().click();
+      await sleep(3000);
+      const offer = (await d.innerText()).replace(/\s+/g, " ").match(/Already in this column[^]{0,160}/)?.[0] ?? null;
+      await shot("b3-02a-offer");
+      await d.getByRole("button", { name: /^Add all/ }).first().click().catch(() => {});
+      await sleep(500);
+      await d.getByRole("button", { name: "Save", exact: true }).click();
+      await sleep(1200);
+      const ok = page.getByRole("alertdialog").getByRole("button").filter({ hasNotText: "Cancel" });
+      if (await ok.count().catch(() => 0)) await ok.first().click().catch(() => {});
+      await sleep(6000);
+      const cellText = await (await cellAt(0, col)).innerText().catch(() => "");
+      await shot("b3-02b-two-chips");
+      step("B3-02 Text to Multi-choice", { first_row: firstTitle, offer, cell: cellText.replace(/\s+/g, " ") });
+      if (!offer || /Lower back, Hip/.test(offer) || /\[/.test(cellText) || !/Lower back/.test(cellText) || !/Hip/.test(cellText)) friction(`comma list not split: offer=${offer} cell=${cellText}`);
+    }
+    // ── B3-01: a Relation cell picks records with the Grid's picker ─────────────────────────
+    if (!process.env.SKIP_B301) {
+      const hs = await headers();
+      let rel = hs.find((h) => /^Referring Clinic/.test(h))?.replace(/\s*[↑↓]$/, "") ?? null;
+      if (!rel) {
+        rel = `Referring Clinic ${n}`;
+        const dlg = await addDialog(rel);
+        await showsAs(dlg, "Relation");
+        const pointsAt = dlg.getByRole("combobox", { name: "Points at the records of" });
+        await until("Points at", async () => (await pointsAt.count()) > 0, 30000);
+        await pointsAt.click();
+        await sleep(600);
+        await page.getByRole("option", { name: "Clinic Supplies Count", exact: true }).first().click();
+        await sleep(500);
+        await dlg.getByRole("button", { name: "Add Column", exact: true }).click();
+        await sleep(6000);
+        made.push(rel);
+      }
+      const c = await cellAt(0, rel);
+      await c.dblclick();
+      await sleep(2500);
+      const editor = await page.locator("[data-sheet-relation-editor]").count();
+      const choiceWords = await page.getByText("No options declared yet").count();
+      await shot("b3-01a-relation-editor");
+      await page.locator("[data-sheet-relation-editor] button").filter({ hasText: /^(Pick|Change)$/ }).first().click().catch(() => {});
+      await sleep(2500);
+      const candidates = await page.locator("[data-relation-candidate]").allInnerTexts();
+      await shot("b3-01b-relation-picker");
+      if (candidates.length > 0) await page.locator("[data-relation-candidate]").first().click();
+      await sleep(4000);
+      await page.keyboard.press("Escape").catch(() => {});
+      await sleep(1500);
+      const chip = await (await cellAt(0, rel)).locator("[data-sheet-reference] a, [data-records-reference-chip]").count();
+      const cellWords = (await (await cellAt(0, rel)).innerText()).replace(/\s+/g, " ");
+      // Typed words on a Relation cell are never offered as choices.
+      const c2 = await cellAt(1, rel);
+      await c2.click();
+      await sleep(300);
+      await page.keyboard.type("Call Sean", { delay: 30 });
+      await sleep(1200);
+      const offeredAsChoice = await page.getByText(/to the choices for/).count();
+      await page.keyboard.press("Escape");
+      await sleep(1000);
+      await shot("b3-01c-relation-chip");
+      step("B3-01 the Sheet's Relation cell", { records_picker: editor, choice_list_text: choiceWords, candidates: candidates.slice(0, 4), chip, cell: cellWords, typed_offered_as_choice: offeredAsChoice });
+      if (!editor || choiceWords || candidates.length === 0 || !chip || offeredAsChoice) friction("the Relation cell did not pick records with the records picker and chip");
+    }
+    // ── B3-24: an edit made offline is kept and sent again ──────────────────────────────────
+    if (!process.env.SKIP_B324) {
+      const col = made.find((m) => /^Areas/.test(m)) ?? null;
+      const target = col ? null : (await headers()).find((h) => /^Notes|^Title/.test(h));
+      const c = await cellAt(1, "Title");
+      const before = (await c.innerText()).trim();
+      // The same gesture online first, so every piece of the page it needs is already loaded
+      // (offline, a piece loaded on first use cannot arrive — a dev server shows its overlay).
+      await c.click();
+      await sleep(300);
+      await page.keyboard.type(before, { delay: 20 });
+      await page.keyboard.press("Enter");
+      await sleep(3500);
+      await (await cellAt(1, "Title")).click();
+      await sleep(400);
+      await page.context().setOffline(true);
+      await page.keyboard.type(`${before} (offline)`, { delay: 25 });
+      await page.keyboard.press("Enter");
+      await sleep(4000);
+      const notice = (await page.locator("[data-matrx-cell-unsent]").allInnerTexts()).join(" | ").replace(/\s+/g, " ");
+      await shot("b3-24a-offline-kept");
+      await page.context().setOffline(false);
+      await sleep(8000);
+      const after = (await page.locator("[data-matrx-cell-unsent]").count());
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await sleep(12000);
+      const stored = ((await rowTexts()).find((r) => r.includes("(offline)")) ?? null);
+      await shot("b3-24b-sent-when-back");
+      step("B3-24 an edit made offline", { before, notice, notice_left_after_online: after, stored_after_reload: stored, unused: target ?? null });
+      if (!/Not saved yet/.test(notice) || after || !stored) friction(`offline edit: notice=${notice} after=${after} stored=${stored}`);
+      // Put the title back the way a person would.
+      if (stored) {
+        const c3 = await cellAt(1, "Title");
+        await c3.click();
+        await sleep(300);
+        await page.keyboard.type(before, { delay: 20 });
+        await page.keyboard.press("Enter");
+        await sleep(3500);
+      }
+    }
+    // Leave the table as it was: remove the columns this walk made (Delete column…).
+    const gone = {};
+    for (const col of made) gone[col] = await deleteColumn(col).catch(() => false);
+    step("the walk's columns removed", gone);
+    out.b3_table = process.env.TABLE;
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");
