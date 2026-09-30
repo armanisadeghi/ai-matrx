@@ -448,7 +448,7 @@ export function FinalSwitchScreen() {
                   board.needsContextCopy.length === 0 &&
                   board.orphans.every((o) => o.resolution !== "organization")
                     ? "Nothing to copy; everything is current."
-                    : `It will copy the tables again for ${board.totals.need_copy_again} ${board.totals.need_copy_again === 1 ? "organization" : "organizations"} and run the context copy for ${board.needsContextCopy.length} (the edits waiting for it carried, then parity measured again).`}
+                    : `Copies tables again for ${board.totals.need_copy_again} ${board.totals.need_copy_again === 1 ? "organization" : "organizations"} and runs the context copy for ${board.needsContextCopy.length}.`}
                 </p>
                 {needsContext && (
                   <p

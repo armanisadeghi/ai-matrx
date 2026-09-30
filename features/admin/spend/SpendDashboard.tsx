@@ -321,13 +321,13 @@ export function SpendDashboard() {
 
       {knobsState.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          Alarm threshold unreadable ({knobsState.error.message}) — headline
-          colour is off. Seed
+          Alarm threshold unreadable ({knobsState.error.message}); headline
+          colour won&apos;t change. Seed
           <span className="font-mono">
             {" "}
-            platform.spend_popover.scare_threshold_usd{" "}
+            platform.spend_popover.scare_threshold_usd
           </span>
-          to restore.
+          .
           <ErrorAlchemyMenu />
         </div>
       ) : null}

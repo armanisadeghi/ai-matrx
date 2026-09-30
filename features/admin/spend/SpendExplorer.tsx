@@ -249,8 +249,8 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
 
       {knobs.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          Dig-here lines unreadable ({knobs.error.message}) — nothing below is
-          computed. Seed the five
+          Explorer thresholds unreadable ({knobs.error.message}); nothing
+          below is computed. Seed the five
           <span className="font-mono"> platform.spend_explorer.* </span>
           knobs.
           <ErrorAlchemyMenu />

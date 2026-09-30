@@ -306,7 +306,7 @@ export function ProducerYieldConsole() {
             icon={<Coins className="h-3.5 w-3.5" />}
             label="Total spend"
             value={formatCostDisplay(totals.cost_usd)}
-            hint={`${formatCount(totals.producers)} producers on the register.`}
+            hint={`${formatCount(totals.producers)} producers on the register`}
           />
           <StatCard
             icon={<Target className="h-3.5 w-3.5" />}
@@ -314,7 +314,7 @@ export function ProducerYieldConsole() {
             value={formatRate(totals.yield_rate)}
             hint={`${formatCount(totals.accepted)} accepted of ${formatCount(
               totals.produced,
-            )} produced, across measured producers only.`}
+            )} produced, measured only`}
           />
           <StatCard
             icon={<TrendingDown className="h-3.5 w-3.5" />}
@@ -334,11 +334,14 @@ export function ProducerYieldConsole() {
       )}
 
       {floors && (
-        <p className="text-xs text-muted-foreground">
-          {/* Hourly task producer_yield_floor; below the sample floor there is no verdict. */}
-          Alarm floors: yield &lt; <strong>{formatRate(floors.yield_floor)}</strong> after{" "}
-          <strong>{floors.min_produced_for_verdict}</strong> outcomes · undecided{" "}
-          <strong>{floors.never_decided_min_age_days}</strong> days · no-signal spend ≥{" "}
+        <p
+          className="text-xs text-muted-foreground"
+          title={`Yield alarms only after ${floors.min_produced_for_verdict} outcomes; below that there is no verdict.`}
+        >
+          {/* Hourly task producer_yield_floor. */}
+          Alarms: yield &lt; <strong>{formatRate(floors.yield_floor)}</strong> ·
+          undecided <strong>{floors.never_decided_min_age_days}d</strong> ·
+          unmeasured ≥{" "}
           <strong>{formatAdminCost(floors.no_signal_min_cost_usd)}</strong>
         </p>
       )}

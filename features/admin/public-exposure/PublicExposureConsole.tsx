@@ -157,11 +157,10 @@ export function PublicExposureConsole() {
               <Row key={rowKey(r)} row={r} />
             ))}
             <p className="px-4 pb-3 text-xs text-muted-foreground">
-              Declare it in{" "}
+              Fix it, or declare why in{" "}
               <code className="rounded bg-muted px-1 py-0.5">
                 lib/security/public-exposure.ts
-              </code>{" "}
-              with a reason, or fix the policy.
+              </code>
             </p>
           </Section>
         ) : null}
