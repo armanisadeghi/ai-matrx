@@ -102,9 +102,7 @@ export function ProviderBatchesPanel({
           No provider batch has been submitted
         </p>
         <p className="max-w-md text-xs text-muted-foreground">
-          The flusher groups queued work by provider, model and cached prefix,
-          then sends one provider batch per group. With an empty queue there is
-          nothing to group — this stays empty until background work is enqueued.
+          Batches appear once background work is enqueued.
         </p>
       </section>
     );

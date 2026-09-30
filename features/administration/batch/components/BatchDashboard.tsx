@@ -83,7 +83,7 @@ function UndeliveredBand({
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
         <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-        Every answer that came back was delivered to the consumer that ordered it.
+        Every answer was delivered.
       </div>
     );
   }
@@ -98,9 +98,7 @@ function UndeliveredBand({
             : `${fmtInt(count)} answers came back and were never delivered`}
         </p>
         <p className="mt-0.5 text-xs text-destructive/90">
-          The provider returned a result and we were billed for it, but every
-          delivery attempt failed and the item was dead-lettered. Nothing
-          downstream ever received these answers.
+          Billed, but every delivery failed.
           {wastedUsd > 0 ? (
             <>
               {" "}
@@ -186,9 +184,7 @@ function SavingsBand({
         </div>
       ) : savings.items === 0 ? (
         <p className="px-4 py-5 text-xs text-muted-foreground">
-          No work completed in this window, so there is nothing to compare. The
-          batch queue is idle most of the time — this is its resting state, not
-          a failure.
+          No work completed in this window.
         </p>
       ) : (
         <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -229,27 +225,20 @@ function SavingsBand({
         </div>
       )}
 
-      {savings && savings.items > 0 && (
+      {/* Pre-submission estimate uses guessed tokens, never the saving basis; same figures lead platform spend dashboard. */}
+      {savings && savings.items > 0 && savings.unpricedItems > 0 && (
         <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
-          Pre-submission estimate for these items: {fmtUsd(savings.preSubmissionEstimateUsd)} — an
-          estimate from guessed tokens, never the saving basis.
-          {savings.unpricedItems > 0
-            ? ` ${fmtInt(savings.unpricedItems)} completed ${savings.unpricedItems === 1 ? "item has" : "items have"} no catalog price and ${savings.unpricedItems === 1 ? "is" : "are"} left out of these numbers.`
-            : ""}{" "}
-          The same figures lead the{" "}
-          <AppLink href="/administration/billing/spend" className="underline">
-            platform spend dashboard
-          </AppLink>
-          .
+          {fmtInt(savings.unpricedItems)} completed{" "}
+          {savings.unpricedItems === 1 ? "item has" : "items have"} no catalog
+          price and {savings.unpricedItems === 1 ? "is" : "are"} excluded.
         </p>
       )}
 
       {savings && savings.undeliveredItems > 0 && (
         <p className="border-t border-border px-4 py-2 text-xs text-destructive">
-          {fmtUsd(savings.undeliveredUsd)} of that spend bought answers that
-          were never delivered ({fmtInt(savings.undeliveredItems)}{" "}
-          {savings.undeliveredItems === 1 ? "item" : "items"}). A discount on
-          work nobody received is not a saving.
+          {fmtUsd(savings.undeliveredUsd)} of that spend went to{" "}
+          {fmtInt(savings.undeliveredItems)} undelivered{" "}
+          {savings.undeliveredItems === 1 ? "item" : "items"}.
         </p>
       )}
     </section>
@@ -505,11 +494,6 @@ export function BatchDashboard() {
             <ServerCog className="h-4 w-4 text-muted-foreground" />
             Batch
           </h1>
-          <p className="truncate text-xs text-muted-foreground">
-            Background AI work run through provider Batch APIs at roughly half
-            price — every item, every submission, and what actually reached its
-            consumer.
-          </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <AppLink

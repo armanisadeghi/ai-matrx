@@ -669,27 +669,20 @@ export function AccountAddonsPanel() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="max-w-2xl rounded-lg border border-border bg-muted/40 p-4 text-sm">
-            <p className="font-medium">
+            <p
+              className="font-medium"
+              title="Lower, self-imposed ceilings are guardrails, set by the org or person in their own settings."
+            >
               An add-on only ever raises an allowance.
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              The plan grid says what every account on that plan gets. An add-on
-              lifts one org above its plan for one capability — more points,
-              more provider spend — for as long as it is in effect. It can never
-              lower anything. A lower, self-imposed ceiling is a{" "}
-              <strong>guardrail</strong>, and the org or the person sets that on
-              their own settings page, not here.
             </p>
           </div>
         </div>
 
         {assignmentsError && (
+          // Source: billing.org_plan_list.
           <p className="text-xs text-warning">
-            Could not read which plan each org is on (
-            <span className="font-mono">billing.org_plan_list</span> refused:{" "}
-            {assignmentsError}). The add-on values below are real; the
-            &ldquo;plan gives&rdquo; column cannot be filled in for this
-            session.
+            Couldn&apos;t read each org&apos;s plan: {assignmentsError}. The
+            Plan gives column is blank.
             <ErrorAlchemyMenu error={assignmentsError} />
           </p>
         )}
@@ -700,12 +693,7 @@ export function AccountAddonsPanel() {
               No add-ons have been granted yet.
             </p>
             <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-              Every org is on exactly what its plan includes. When one account
-              needs more of a single capability than its plan gives — a customer
-              who paid for extra AI points, a pilot that needs more provider
-              spend — grant it here and it shows up in this list with who
-              granted it, why, and until when. Expired grants stay in the list,
-              marked expired.
+              Grant one to lift an org above its plan for one capability.
             </p>
             <Button
               className="mt-4"
@@ -878,8 +866,7 @@ function GrantAddonDialog({
           <DialogTitle>Grant an add-on</DialogTitle>
           <DialogDescription>
             Raise one organization&apos;s allowance for one capability above
-            what its plan gives. This never lowers anything. Requires
-            super-admin.
+            its plan. Requires super-admin.
           </DialogDescription>
         </DialogHeader>
 

@@ -168,16 +168,11 @@ export function PlanAllowancesPanel() {
   return (
     <div className="space-y-8">
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
-        <p className="font-medium">This grid is the free tier.</p>
-        <p className="mt-1 text-muted-foreground">
-          These are the numbers every gate on the platform asks for. A blank cell
-          means <strong>unlimited</strong>; <strong>0</strong> means the plan does
-          not include the capability at all — they are not the same thing. Money
-          dimensions are entered in dollars; the AI budget is entered in points
-          (20,000 points = $1 of model spend) and shows its dollar equivalent
-          beside it. A capability marked <strong>tracking only</strong> is
-          counted but not stopped — its number does not block anyone yet.
-          Saving requires super-admin.
+        <p
+          className="font-medium"
+          title="Blank means unlimited; 0 means the plan excludes it."
+        >
+          This grid is the free tier.
         </p>
       </div>
 
@@ -210,8 +205,7 @@ export function PlanAllowancesPanel() {
             </div>
             {!cap.enforced && (
               <p className="text-xs text-warning">
-                Tracking only — this limit does not stop anything yet. Usage is
-                counted against it, but nobody is blocked when they pass it.
+                Tracking only — nobody is blocked at this limit.
               </p>
             )}
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

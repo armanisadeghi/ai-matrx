@@ -16,7 +16,7 @@ export function AdminMeetingDetail({ meetingId }: { meetingId: string }) {
         <Link href="/administration/users/meetings?tab=history" className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs hover:bg-muted">
           <ArrowLeft className="h-3.5 w-3.5" /> All meetings
         </Link>
-        <span className="text-xs text-muted-foreground">Viewing as platform admin — any change here acts on the meeting&apos;s own organization.</span>
+        <span className="text-xs text-muted-foreground">Admin view — changes apply to the meeting&apos;s organization.</span>
       </div>
       <div className="min-h-0 flex-1">
         <MeetingDetail meetingId={meetingId} at={null} section={null} chrome="embedded" />

@@ -444,7 +444,7 @@ export function KnobOverridesAdmin({
         Platform default <span className="font-medium text-foreground">{knobValueWords(knob, knob.platform_default)}</span>
         {" · "}
         {overrideCountWords(rows)}
-        {platformLocked && " · this setting is platform-only, so no organization or person can hold its own value"}
+        {platformLocked && " · platform-only"}
       </p>
 
       {rows.length > 0 && (

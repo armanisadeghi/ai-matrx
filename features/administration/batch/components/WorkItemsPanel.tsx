@@ -501,8 +501,7 @@ export function WorkItemsPanel({
             </div>
             {facetsFailed ? (
               <p className="text-xs text-muted-foreground">
-                Couldn&apos;t load the purpose and provider lists, so those
-                filters offer nothing to pick.
+                Couldn&apos;t load the purpose and provider filters.
                 <ErrorAlchemyMenu operation="Load the work-item filter lists" />
               </p>
             ) : null}

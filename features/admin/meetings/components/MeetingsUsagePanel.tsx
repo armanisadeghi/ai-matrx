@@ -94,7 +94,7 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
             </button>
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">Meetings that started in the last {period} days, every organization. Minutes run to now for a meeting still live.</span>
+        <span className="text-xs text-muted-foreground">Started in the last {period} days · all organizations</span>
         <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => setNonce((n) => n + 1)}>Refresh</Button>
       </div>
 

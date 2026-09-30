@@ -128,10 +128,9 @@ export function MeetingsRetentionPanel() {
                 : "The retention sweep is switched off, so nothing below is deleted today — the rules take effect only when it is turned on."}
           </div>
         )}
+        {/* Rules are platform data-lifecycle rows; edits need a DB change by the platform team. */}
         <p className="mt-1 text-xs text-muted-foreground">
-          Meet keeps no retention settings of its own: these are rows in the platform data-lifecycle system, the same rules every other kind of data follows.
-          They are read-only here — browsers are refused writes to them and the lifecycle system has no admin editing screen yet, so a change is made
-          by the platform team through a database change (any rule that would delete data also waits out the settling period before it takes effect).{" "}
+          Read-only · set in the platform data-lifecycle system{" "}
           <Link href={`/administration/automation/scheduling/tasks/${RETENTION_SWEEP_TASK_ID}`} className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline">
             Open the sweep task <ArrowUpRight className="h-3 w-3" />
           </Link>

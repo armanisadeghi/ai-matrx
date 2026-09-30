@@ -221,7 +221,7 @@ export function MeetingsHistoryPanel({
             </button>
           </span>
         ) : (
-          <span className="text-xs text-muted-foreground">Every organization — open one from Usage, or filter the Organization column.</span>
+          <span className="text-xs text-muted-foreground">All organizations</span>
         )}
         {filtersActive ? (
           <Button

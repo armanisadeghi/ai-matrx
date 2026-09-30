@@ -39,12 +39,6 @@ export function LimitsAdminClient() {
     <div className="space-y-6 p-6">
       <header>
         <h2 className="text-xl font-semibold">Limits &amp; Knobs</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Plan allowances are what a plan gives every account on it. Account
-          add-ons raise one org above its plan. Feature knobs are the
-          operational ceilings and defaults that belong to no account. All of
-          it is data — changing any of it is a row, never a deploy.
-        </p>
         <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span>What accounts have actually used:</span>
           {SIBLING_SURFACES.map((surface) => (
