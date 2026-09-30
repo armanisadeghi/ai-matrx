@@ -14,6 +14,7 @@ import type { Database } from "@/types/database.types";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+import { followRemovalWithToast } from "@/features/trash/cascade";
 
 export type TrashItem =
   Database["public"]["Functions"]["trash_list"]["Returns"][number];
@@ -122,6 +123,8 @@ export async function restoreFromTrash(
       "Restore was refused — you may no longer have edit access.",
     );
   }
+  // A large record's parts come back in the background; follow them here.
+  void followRemovalWithToast(entityToken, id, "Item");
 }
 
 // ── ORGANIZATION TRASH (lane TRASH-2) ─────────────────────────────────────────────────────────
@@ -327,5 +330,7 @@ export async function archiveRecord(token: string, id: string, noun = "this"): P
     { action: "archive", noun },
   );
   if (error) throw error;
+  // A large record's parts follow in the background; follow them here.
+  void followRemovalWithToast(token, id, "Item");
 }
 

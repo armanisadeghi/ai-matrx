@@ -5,6 +5,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { followRemovalWithToast } from "@/features/trash/cascade";
 
 interface ResourceActionRequestAction {
   label: string;
@@ -32,6 +33,7 @@ async function deleteResource(context: {
       await cancelCrawl(session.id);
     }
     await deleteSite(context.resourceId);
+    void followRemovalWithToast("web_site", context.resourceId, "Website");
     return;
   }
 
@@ -42,6 +44,7 @@ async function deleteResource(context: {
   });
   if (error) throw error;
   if (!data) throw new Error("The item could not be deleted.");
+  void followRemovalWithToast(context.resourceType, context.resourceId, "Item");
 }
 
 const ACTIONS: Record<string, ResourceActionRequestAction> = {

@@ -3436,10 +3436,11 @@ export async function deleteBrand(brandId: string): Promise<void> {
 }
 
 /**
- * Soft-delete a site (its crawl history stays; the row leaves every list).
- * The DB trigger `web.site_cascade_website_property` soft-deletes the site's
- * `property(kind='website')` row in the same statement, so the two lifecycle
- * authorities can never drift.
+ * Soft-delete a site: the row leaves every list and its schedules, presets,
+ * crawl sessions and property are removed in the same statement. Its bulk parts
+ * (pages, links, crawl history…) are `cascade_deferred` edges in
+ * `platform.soft_delete_edge` and follow in bounded background batches, so a
+ * large crawl never times the request out (`features/trash/cascade.ts`).
  */
 export async function deleteSite(siteId: string): Promise<void> {
   const response = await (

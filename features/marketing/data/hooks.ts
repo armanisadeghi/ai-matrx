@@ -1,6 +1,8 @@
 "use client";
 
+import { crawlActivityRefetchInterval } from "@/features/marketing/data/crawl-activity-refresh";
 import { useEffect, useMemo, useRef } from "react";
+import { followRemovalWithToast } from "@/features/trash/cascade";
 import {
   keepPreviousData,
   useMutation,
@@ -598,7 +600,13 @@ export function useActiveCrawlSessions(
     queryKey: marketingKeys.activeSessions(siteId),
     queryFn: ({ signal }) => listActiveCrawlSessions(siteId, signal),
     enabled: Boolean(siteId),
-    refetchInterval: fallbackPolling ? 3_000 : false,
+    // A live run is re-read on its heartbeat even while realtime claims to be
+    // connected — Postgres Changes drops rows silently (2026-09-30).
+    refetchInterval: (query) =>
+      crawlActivityRefetchInterval({
+        realtimeDegraded: fallbackPolling,
+        liveSessions: query.state.data?.length ?? 0,
+      }),
   });
 }
 
@@ -616,7 +624,11 @@ export function useRecentLiveCrawlEvents(
       return listRecentLiveCrawlEvents(siteId, crawlId, signal);
     },
     enabled: Boolean(siteId && crawlId),
-    refetchInterval: fallbackPolling ? 3_000 : false,
+    // Only enabled for a live run: follow its heartbeat, realtime or not.
+    refetchInterval: crawlActivityRefetchInterval({
+      realtimeDegraded: fallbackPolling,
+      liveSessions: crawlId ? 1 : 0,
+    }),
   });
 }
 
@@ -933,6 +945,9 @@ export function useDeleteSite() {
   return useMutation({
     mutationFn: deleteSite,
     onSuccess: (_result, siteId) => {
+      // The site is gone at once; a large crawl's pages, links and history
+      // follow in bounded background batches — show them finishing.
+      void followRemovalWithToast("web_site", siteId, "Website");
       // Drop the deleted site's own subtree WITHOUT refetching it — an open
       // view racing this invalidation must not re-request a dead row (the
       // PGRST116 class). List keys refetch; the entity key is only removed

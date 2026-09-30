@@ -80,6 +80,17 @@ const EXPECTED_CHECKS = [
   // Zero live rows under a removed parent on any declared cascade edge — the
   // original defect, measured rather than assumed.
   "no_live_orphans",
+  // No in-line (`cascade`) edge whose largest live fan-out under one parent is
+  // over knob platform.soft_delete_cascade/sync_fanout_ceiling. Above it the
+  // removing request times out — deleting a website with a 31,474-page crawl took
+  // 24.9 s against the 8 s signed-in limit (2026-09-30). Such an edge is declared
+  // `cascade_deferred` and drained by platform.soft_delete_cascade_job.
+  "sync_cascade_fanout_bounded",
+  // The deferred queue drains: no job pending past knob stale_minutes, none
+  // failed, and no live deferred part under a removed parent with no job coming.
+  // PROVEN FAILING 2026-09-30 on the clone: kg_chunks flipped back to `cascade`
+  // (fan-out 10,319) and a job enqueued an hour ago each turned their check red.
+  "deferred_cascade_draining",
   // The six inbound foreign keys of `mandate.definition` and what each was ruled
   // to mean. A seventh FK, or a row flipped from cascade to keep, lands here as a
   // mismatch instead of as silence.
