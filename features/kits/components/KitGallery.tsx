@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import { Package, PackagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
-import { fetchKits } from "../service";
+import { fetchAccessibleKits } from "../service";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { cn } from "@/utils/cn";
@@ -20,10 +18,12 @@ import { ErrorNotice } from "./ErrorNotice";
 
 const ALL = "All";
 
-/** The kits the organization the person SET saved for itself. */
-function useOrgKits() {
-  const org = useOrganizationRequired();
-  const organizationId = org.organizationState === "ready" ? org.organizationId : null;
+/**
+ * The kits the person can reach in EVERY organization they belong to (access
+ * belongs to the person — the selected organization never narrows this list).
+ * The platform's own kits are the gallery's other section.
+ */
+function useOrgKits(platformOrganizationId: string | null) {
   const [state, setState] = useState<{ kits: KitEntry[]; error: string | null; loading: boolean }>({
     kits: [],
     error: null,
@@ -31,38 +31,38 @@ function useOrgKits() {
   });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (!organizationId) return;
     let cancelled = false;
     setState((s) => ({ ...s, loading: true }));
-    void fetchKits(createClient(), organizationId).then((r) => {
+    void fetchAccessibleKits(createClient(), platformOrganizationId).then((r) => {
       if (!cancelled) setState({ kits: r.kits, error: r.error, loading: false });
     });
     return () => {
       cancelled = true;
     };
-  }, [organizationId, attempt]);
+  }, [platformOrganizationId, attempt]);
   useEffect(() => {
     const onChanged = () => setAttempt((n) => n + 1);
     window.addEventListener(KITS_CHANGED_EVENT, onChanged);
     return () => window.removeEventListener(KITS_CHANGED_EVENT, onChanged);
   }, []);
-  return {
-    ...state,
-    organizationId,
-    // No workspace is not "still looking": the section says so and offers
-    // the picker (OrganizationContextNotice), never an endless wait.
-    organizationState: org.organizationState,
-    retryOrganization: org.retry,
-    retry: () => setAttempt((n) => n + 1),
-  };
+  return { ...state, retry: () => setAttempt((n) => n + 1) };
 }
 
-export function KitGallery({ kits, error }: { kits: KitEntry[]; error: string | null }) {
+export function KitGallery({
+  kits,
+  error,
+  platformOrganizationId = null,
+}: {
+  kits: KitEntry[];
+  error: string | null;
+  /** The system organization's id, so "your kits" leaves the platform's own to the other section. */
+  platformOrganizationId?: string | null;
+}) {
   const router = useRouter();
-  const orgKits = useOrgKits();
+  const orgKits = useOrgKits(platformOrganizationId);
   const openSave = useOpenSaveKitDialog();
   const { organizations } = useUserOrganizations();
-  const orgName = organizations.find((o) => o.id === orgKits.organizationId)?.name ?? "Your organization";
+  const orgNameOf = (id: string) => organizations.find((o) => o.id === id)?.name ?? null;
   const [category, setCategory] = useState<string>(ALL);
   const categories = [ALL, ...Array.from(new Set(kits.map((k) => k.manifest.category))).sort()];
   const shown = category === ALL ? kits : kits.filter((k) => k.manifest.category === category);
@@ -91,24 +91,14 @@ export function KitGallery({ kits, error }: { kits: KitEntry[]; error: string | 
           <section className="mt-8">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {orgName}&rsquo;s {KIT_WORD.manyLower}
+                Your organizations&rsquo; {KIT_WORD.manyLower}
               </h2>
               <Button size="sm" variant="outline" onClick={() => openSave()}>
                 <PackagePlus className="mr-1.5 h-3.5 w-3.5" />
                 Create a {KIT_WORD.oneLower} from my setup
               </Button>
             </div>
-            {orgKits.organizationState !== "ready" ? (
-              <OrganizationContextNotice
-                state={orgKits.organizationState}
-                what={`your organization's ${KIT_WORD.manyLower}`}
-                title={`Pick a workspace to see the ${KIT_WORD.manyLower} it saved`}
-                description={`${KIT_WORD.many} are saved by a workspace. Choose the one you are working in — the ${KIT_WORD.manyLower} from AI Matrx below work either way.`}
-                onRetry={orgKits.retryOrganization}
-                compact
-                className="mt-3 max-w-xl rounded-md border border-border bg-card"
-              />
-            ) : orgKits.error ? (
+            {orgKits.error ? (
               <ErrorNotice className="mt-3 max-w-xl" title={`Your organization's ${KIT_WORD.manyLower} could not be loaded.`} error={orgKits.error} onRetry={orgKits.retry} />
             ) : orgKits.kits.length === 0 ? (
               <p className="mt-3 max-w-xl text-sm text-muted-foreground">
@@ -119,7 +109,14 @@ export function KitGallery({ kits, error }: { kits: KitEntry[]; error: string | 
             ) : (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {orgKits.kits.map((kit) => (
-                  <KitCard key={kit.key} kit={kit} />
+                  <div key={`${kit.organizationId}:${kit.key}`}>
+                    <KitCard kit={kit} />
+                    {organizations.length > 1 && orgNameOf(kit.organizationId) && (
+                      <p className="mt-1 truncate px-1 text-[11px] text-muted-foreground">
+                        {orgNameOf(kit.organizationId)}
+                      </p>
+                    )}
+                  </div>
                 ))}
               </div>
             )}

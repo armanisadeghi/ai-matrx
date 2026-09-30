@@ -14,11 +14,9 @@
 // "Try the new usage page", and nothing of theirs changed.
 //
 // Money: stored in dollars, shown in CREDITS (points) — a system admin may switch to dollars
-// (Arman, 2026-09-27); the choice rides the address (`unit=usd`) so a shared link reads the same.
+// (Arman, 2026-09-27) with the platform's one switch (the header menu's preference), offered here too.
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import AppLink from "@/components/navigation/AppLink";
 import { RefreshCw } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 import {
@@ -36,11 +34,12 @@ import {
   type MatrxDrillMeasure,
   type MatrxDrillQuestion,
 } from "@ai-matrx/design-system/data-table";
-import { commitUrlParams } from "@ai-matrx/kit/url-state";
 
 import { Button } from "@/components/ui/button";
 import { formatAdminPoints, formatAdminUsd } from "@/components/cost/formatAdminCost";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
+import { selectCanToggleCostUnit, selectCostUnit } from "@/components/cost/costUnit";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -59,26 +58,35 @@ export const USAGE_FIRST_QUESTION: MatrxDrillQuestion = {
 
 type Unit = "points" | "usd";
 
-function useUnit(): [Unit, (u: Unit) => void] {
-  const params = useSearchParams();
-  const unit: Unit = params.get("unit") === "usd" ? "usd" : "points";
-  return [unit, (u) => commitUrlParams({ unit: u === "usd" ? "usd" : null }, "replace")];
+/**
+ * THE ONE COST-UNIT SWITCH (Arman, 2026-09-27: credits for everyone, a system admin may switch to
+ * dollars): the same synced preference the header menu's "Show costs in dollars" flips
+ * (`userPreferences.system.showCostInUsd`, read through `selectCostUnit`), so the page and every
+ * `<Cost>` elsewhere always agree. Offered only to someone who may flip it.
+ */
+function useUnit(): { unit: Unit; canToggle: boolean; setUnit: (u: Unit) => void } {
+  const dispatch = useAppDispatch();
+  const unit = useAppSelector(selectCostUnit);
+  const canToggle = useAppSelector(selectCanToggleCostUnit);
+  return {
+    unit,
+    canToggle,
+    setUnit: (u) => dispatch(setModulePreferences({ module: "system", preferences: { showCostInUsd: u === "usd" } })),
+  };
 }
 
-const compact = (v: number | null) => (v === null ? "—" : formatCount(v, { style: "compact" } as never));
+const compact = (v: number | null) => formatCount(v, { style: "compact" });
 
 export function UsageExplorer() {
   const { organizationId, organizationState } = useOrganizationRequired();
   const userId = useAppSelector(selectUserId);
   const { question: asked, setQuestion } = useDrillUrlState({ fallback: USAGE_FIRST_QUESTION });
-  const [unit, setUnit] = useUnit();
+  const { unit, canToggle, setUnit } = useUnit();
 
   // A time group asked with no grain (`by=at`) reads at the grain its window reads best at.
   const autoGrain = drillAutoGrain(asked.window ?? null);
-  const question = useMemo<MatrxDrillQuestion>(() => {
-    const withGrain = (ref: string) => (ref === "at" ? `at:${autoGrain}` : ref);
-    return { ...asked, by: asked.by.map(withGrain), across: asked.across ? withGrain(asked.across) : asked.across };
-  }, [asked, autoGrain]);
+  const withGrain = (ref: string) => (ref === "at" ? `at:${autoGrain}` : ref);
+  const question: MatrxDrillQuestion = { ...asked, by: asked.by.map(withGrain), across: asked.across ? withGrain(asked.across) : asked.across };
   const grainWasChosen = asked.by.includes("at") || asked.across === "at";
 
   const drill = useUsageDrill({ organizationId, userId, question });
@@ -86,9 +94,7 @@ export function UsageExplorer() {
 
   const money = (v: number | null) => (v === null ? "—" : unit === "usd" ? formatAdminUsd(v) : formatAdminPoints(v));
 
-  const dimensions = useMemo<MatrxDrillDimension[]>(() => {
-    if (!def) return [];
-    return def.dimensions.map((d) => {
+  const dimensions: MatrxDrillDimension[] = (def?.dimensions ?? []).map((d) => {
       const dim: MatrxDrillDimension = { key: d.key, label: d.label, kind: d.kind };
       if (d.cardinality) dim.cardinality = d.cardinality;
       if (d.grains) dim.grains = d.grains.filter((g): g is NonNullable<MatrxDrillDimension["grains"]>[number] => g !== "hour");
@@ -97,24 +103,18 @@ export function UsageExplorer() {
         dim.labelFor = (value) => (value === null || value === "" ? (d.key === "person" ? "No person" : "None") : map[value] ?? `${value.slice(0, 8)}…`);
       }
       return dim;
-    });
-  }, [def, names]);
+  });
 
-  const measures = useMemo<MatrxDrillMeasure[]>(() => {
-    if (!def) return [];
-    return def.measures.map((m) => ({
+  const measures: MatrxDrillMeasure[] = (def?.measures ?? []).map((m) => ({
       key: m.key,
       label: m.unit === "usd" ? (unit === "usd" ? `${m.label} ($)` : `${m.label} (credits)`) : m.label,
       additive: m.additive ?? true,
       ...(m.unit === "usd" ? { format: money, lowerIsBetter: true } : m.unit === "tokens" ? { format: compact } : {}),
-    }));
-    // money depends on unit only
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `money` is derived from `unit`, which is listed
-  }, [def, unit]);
+  }));
 
   const total = answers["∅"]?.[0] ?? null;
   const range = drillWindowRange(question.window ?? null);
-  const paths = useMemo(() => (def?.paths ?? []).map((p) => p.levels), [def]);
+  const paths = (def?.paths ?? []).map((p) => p.levels);
 
   if (organizationState !== "ready") {
     return <OrganizationContextNotice state={organizationState} what="AI usage" />;
@@ -163,6 +163,7 @@ export function UsageExplorer() {
               <RefreshCw className="h-3 w-3" /> Recount
             </Button>
           ) : null}
+          {canToggle ? (
           <div role="radiogroup" aria-label="Show cost in" className="inline-flex rounded-md border border-border p-0.5">
             {(["points", "usd"] as const).map((u) => (
               <button
@@ -178,10 +179,11 @@ export function UsageExplorer() {
               </button>
             ))}
           </div>
+          ) : null}
           <UsageSavedViews organizationId={organizationId} question={asked} onOpen={setQuestion} />
-          <Link href="/administration/users/usage" className="underline-offset-2 hover:underline">
+          <AppLink href="/administration/users/usage" className="underline-offset-2 hover:underline">
             Old usage page
-          </Link>
+          </AppLink>
         </div>
       </div>
 
@@ -230,9 +232,9 @@ export function UsageExplorer() {
                 {freshness.error ? <span className="text-destructive">{freshness.error}</span> : null}
                 <span>
                   The calls behind a number open in the{" "}
-                  <Link href={spendHref(question)} className="underline underline-offset-2">
+                  <AppLink href={spendHref(question)} className="underline underline-offset-2">
                     Spend Explorer
-                  </Link>
+                  </AppLink>
                   .
                 </span>
               </>

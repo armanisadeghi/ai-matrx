@@ -32,6 +32,7 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from "crypto";
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { TEST_HANDSET_PROGRAM_KEY } from "@/lib/sms/test-handset-inbox";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 /**
  * The wording a pairing text uses. Deliberately NOT OTP-shaped — see the note
@@ -247,20 +248,37 @@ export async function checkTestHandsetVerification(
     expected.length === actual.length && timingSafeEqual(expected, actual);
 
   if (!matches) {
-    await supabase
-      .schema("communication")
-      .from("test_handset_verification")
-      .update({ attempts: (row.attempts ?? 0) + 1 })
-      .eq("id", row.id);
+    const { error: attemptError } = await tryWriteOne(
+      supabase
+        .schema("communication")
+        .from("test_handset_verification")
+        .update({ attempts: (row.attempts ?? 0) + 1 })
+        .eq("id", row.id)
+        .select("id"),
+      { action: "update", noun: "verification attempt" },
+    );
+    if (attemptError) {
+      // The attempt counter is the brute-force limit: an uncounted miss is loud.
+      console.error("[test-handset-otp] attempt not counted:", attemptError.message);
+    }
     return { success: false, status: "pending", error: "incorrect code" };
   }
 
-  // Single use: burn it in the same breath as approving it.
-  await supabase
-    .schema("communication")
-    .from("test_handset_verification")
-    .update({ consumed_at: new Date().toISOString() })
-    .eq("id", row.id);
+  // Single use: burn it in the same breath as approving it — compare-and-set,
+  // so two concurrent checks of one code can never both approve.
+  const { error: burnError } = await tryWriteOne(
+    supabase
+      .schema("communication")
+      .from("test_handset_verification")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("id", row.id)
+      .is("consumed_at", null)
+      .select("id"),
+    { action: "update", noun: "verification code", compareAndSet: true },
+  );
+  if (burnError) {
+    return { success: false, status: "denied", error: "code already used" };
+  }
 
   return { success: true, status: "approved" };
 }

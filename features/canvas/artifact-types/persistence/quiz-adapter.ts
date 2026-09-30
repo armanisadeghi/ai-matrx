@@ -42,6 +42,7 @@ import type {
   ArtifactLink,
   MaterializedArtifactInfo,
 } from "./artifact-adapters";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 // ── State shape ────────────────────────────────────────────────────────────────
 
@@ -179,16 +180,20 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
 
       if (existingSessionId) {
         // UPDATE existing session.
-        const { error } = await supabase
-          .schema("education")
-          .from("quiz_sessions")
-          .update({
-            state: quizState as unknown as import("@/types/database.types").Json,
-            is_completed: isCompleted,
-            ...(completedAt ? { completed_at: completedAt } : {}),
-          })
-          .eq("id", existingSessionId)
-          .eq("created_by", userId);
+        const { error } = await tryWriteOne(
+          supabase
+            .schema("education")
+            .from("quiz_sessions")
+            .update({
+              state: quizState as unknown as import("@/types/database.types").Json,
+              is_completed: isCompleted,
+              ...(completedAt ? { completed_at: completedAt } : {}),
+            })
+            .eq("id", existingSessionId)
+            .eq("created_by", userId)
+            .select("id"),
+          { action: "save", noun: "quiz session" },
+        );
 
         if (error) {
           console.error("[QUIZ_ADAPTER.saveState] update error:", error);

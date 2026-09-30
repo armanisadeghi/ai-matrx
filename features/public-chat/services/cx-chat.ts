@@ -16,6 +16,7 @@ import type {
   CxToolCall,
   CxConversationWithMessages,
 } from "../types/cx-tables";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 type CxDatabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -107,11 +108,15 @@ export async function deleteCxConversation(
   conversationId: string,
 ): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase
-    .schema("chat")
-    .from("conversation")
-    .update({ deleted_at: new Date().toISOString(), status: "archived" })
-    .eq("id", conversationId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("chat")
+      .from("conversation")
+      .update({ deleted_at: new Date().toISOString(), status: "archived" })
+      .eq("id", conversationId)
+      .select("id"),
+    { action: "delete", noun: "conversation" },
+  );
 
   if (error) {
     console.error("deleteCxConversation error:", error);

@@ -79,24 +79,10 @@ export interface AgendaValue {
   /** True once the connector state is known and no account can serve Calendar. */
   noAccount: boolean;
   /**
-   * The organization question's answer, as ONE value the panel switches on:
-   * `resolving` (still being asked), `required` (settled with nothing
-   * selected), `unavailable` (the read FAILED — nobody looked, R37) or `ready`.
-   * `readAgendaEvents` / `refreshCalendarWindow` fail closed
-   * (`requireOrganizationContext`) with no organization to send, so this panel
-   * never calls them outside `ready` — it renders the ONE notice instead of a
-   * screen that would otherwise say "your calendar is connected and empty",
-   * which is a confident and wrong claim for a person who has not picked an
-   * organization at all, and doubly wrong for one whose memberships nobody
-   * managed to read.
-   *
-   * 🚨 It replaces the `organizationRequired` / `organizationResolving` pair
-   * (F-76, then 2026-09-18). Each fix in turn closed one state and left the
-   * next open: forwarding only `organizationRequired` showed "nothing on it"
-   * during boot, and the pair that followed could not see the fourth state at
-   * all — under a failed read `organizationRequired` was false while the legacy
-   * `resolving` stayed true, so `isLoading` held the agenda skeleton up for as
-   * long as the panel was open. Four states, one value, one `switch`.
+   * The organization question's answer (`resolving` / `required` / `unavailable` /
+   * `ready`). It gates ONLY the Google refresh, which is filed under an
+   * organization. The mirror READ never depends on it: the agenda is the
+   * person's own day across every organization they belong to.
    */
   organizationState: OrganizationState;
   /**
@@ -182,7 +168,8 @@ export function useAgenda(options?: {
 
   // ── The window read ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (!organizationId || !userId) {
+    // The mirror READ needs only the person — never the selected organization.
+    if (!userId) {
       setLoadedWindowKey(null);
       return;
     }
@@ -193,7 +180,6 @@ export function useAgenda(options?: {
       let rows: CalendarEventRow[] = [];
       try {
         rows = await readAgendaEvents({
-          organizationId,
           userId,
           days: options?.windowDays ?? days,
           now: new Date(),
@@ -230,7 +216,7 @@ export function useAgenda(options?: {
       cancelled = true;
       controller.abort();
     };
-  }, [organizationId, userId, days, readWindowKey, options?.windowStart?.getTime(), options?.windowDays]);
+  }, [userId, days, readWindowKey, options?.windowStart?.getTime(), options?.windowDays]);
 
   // ── Refresh ───────────────────────────────────────────────────────────────
   const refresh = useCallback(async () => {
@@ -298,9 +284,8 @@ export function useAgenda(options?: {
     // which is the same law-4 defect pointing the other way. `resolving` ends
     // either way: boot either lands on a selection or on "none".
     isLoading:
-      organizationState === "resolving" ||
       loadedWindowKey !== readWindowKey ||
-      (events === null && Boolean(organizationId && userId)),
+      (events === null && Boolean(userId)),
     isRefreshing,
     days,
     timeZone,

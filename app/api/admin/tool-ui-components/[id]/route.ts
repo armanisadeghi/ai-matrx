@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import type { TablesUpdate } from "@/types/database.types";
 import { extractErrorMessage } from "@/utils/errors";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -142,17 +143,32 @@ export async function DELETE(
 
     // Delete means archive (Arman, 2026-09-27): the component moves to Trash
     // and stays restorable; its versions and incidents are kept.
-    const { error } = await supabase
-      .schema("tool")
-      .from("ui")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("tool")
+        .from("ui")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "component",
+        alreadyDone: {
+          reread: () =>
+            supabase.schema("tool").from("ui")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
 
     if (error) {
       return NextResponse.json(
         { error: "Failed to move component to Trash", details: error.message },
-        { status: 500 },
+        { status: writeFailureStatus(error) },
       );
     }
 

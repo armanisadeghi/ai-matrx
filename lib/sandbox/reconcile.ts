@@ -24,6 +24,7 @@ import type {
   SandboxProbeResponse,
   SandboxTier,
 } from "@/types/sandbox";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 const ACTIVE_STATUSES = ["creating", "starting", "ready", "running"] as const;
 const ORCHESTRATOR_DEAD_STATUSES = new Set(["stopped", "destroyed", "error"]);
@@ -144,15 +145,19 @@ export async function probeAndReconcileSandboxRow(
 
   // 'gone' — mark the row destroyed so it stops counting against the active
   // limit and stops appearing as a connect target.
-  const { error: updateErr } = await supabase
-    .from("sandbox_instances")
-    .update({
-      status: "destroyed",
-      stopped_at: new Date().toISOString(),
-      stop_reason: "reconcile_orphan",
-    })
-    .eq("id", row.id)
-    .eq("user_id", userId);
+  const { error: updateErr } = await tryWriteOne(
+    supabase
+      .from("sandbox_instances")
+      .update({
+        status: "destroyed",
+        stopped_at: new Date().toISOString(),
+        stop_reason: "reconcile_orphan",
+      })
+      .eq("id", row.id)
+      .eq("user_id", userId)
+      .select("id"),
+    { action: "update", noun: "sandbox" },
+  );
 
   if (updateErr) {
     console.error("[reconcile] update failed:", updateErr);

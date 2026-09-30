@@ -25,6 +25,7 @@ import type {
   StudioSession,
   UpdateSessionInput,
 } from "../types";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 // The studio_* tables were created after the last DB types regeneration.
 // Cast `from("studio_sessions")` through `unknown` to silence the strict
@@ -281,11 +282,15 @@ export async function updateSession(
  * Soft delete — stamps deleted_at. Hard delete is reserved for admin.
  */
 export async function softDeleteSession(id: string): Promise<void> {
-  const { error } = await db
-    .schema("transcripts")
-    .from("studio_sessions")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    db
+      .schema("transcripts")
+      .from("studio_sessions")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "studio session" },
+  );
   if (error) {
     throw new Error(`[studio] softDeleteSession failed: ${error.message}`);
   }
@@ -462,11 +467,15 @@ export async function updateRawSegmentText(
 
 /** Move a raw segment to Trash (stamps deleted_at; restorable). Use case: corrective edits on noisy chunks. */
 export async function deleteRawSegment(id: string): Promise<void> {
-  const { error } = await db
-    .schema("transcripts")
-    .from("studio_raw_segments")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    db
+      .schema("transcripts")
+      .from("studio_raw_segments")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "raw segment" },
+  );
   if (error) {
     throw new Error(`[studio] deleteRawSegment failed: ${error.message}`);
   }
@@ -662,11 +671,15 @@ export async function listRecordingSegmentsServer(
  * Trash restores exactly those rows.
  */
 export async function deleteRecordingSegment(id: string): Promise<void> {
-  const { error } = await db
-    .schema("transcripts")
-    .from("studio_recording_segments")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    db
+      .schema("transcripts")
+      .from("studio_recording_segments")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "recording segment" },
+  );
   if (error) {
     throw new Error(`[studio] deleteRecordingSegment failed: ${error.message}`);
   }
@@ -1007,11 +1020,15 @@ export async function bindAgentRunConversation(
   id: string,
   conversationId: string,
 ): Promise<void> {
-  const { error } = await db
-    .schema("transcripts")
-    .from("studio_runs")
-    .update({ conversation_id: conversationId })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    db
+      .schema("transcripts")
+      .from("studio_runs")
+      .update({ conversation_id: conversationId })
+      .eq("id", id)
+      .select("id"),
+    { action: "update", noun: "studio run" },
+  );
   if (error) {
     throw new Error(
       `[studio] bindAgentRunConversation failed: ${error.message}`,
@@ -1238,11 +1255,15 @@ export async function updateCleanedSegmentText(
 
 /** Move a cleaned segment to Trash (stamps deleted_at; restorable). Audit trail (`studio_runs`) is unaffected. */
 export async function deleteCleanedSegment(id: string): Promise<void> {
-  const { error } = await db
-    .schema("transcripts")
-    .from("studio_cleaned_segments")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    db
+      .schema("transcripts")
+      .from("studio_cleaned_segments")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "cleaned segment" },
+  );
   if (error) {
     throw new Error(`[studio] deleteCleanedSegment failed: ${error.message}`);
   }
@@ -1401,11 +1422,15 @@ export async function updateConceptItem(
 
 /** Move a concept item to Trash (stamps deleted_at; restorable). */
 export async function deleteConceptItem(id: string): Promise<void> {
-  const { error } = await db
-    .schema("transcripts")
-    .from("studio_concept_items")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    db
+      .schema("transcripts")
+      .from("studio_concept_items")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "concept item" },
+  );
   if (error) {
     throw new Error(`[studio] deleteConceptItem failed: ${error.message}`);
   }
@@ -1549,11 +1574,15 @@ export async function updateModuleSegmentPayload(
 
 /** Move a module segment to Trash (stamps deleted_at; restorable). */
 export async function deleteModuleSegment(id: string): Promise<void> {
-  const { error } = await db
-    .schema("transcripts")
-    .from("studio_module_segments")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    db
+      .schema("transcripts")
+      .from("studio_module_segments")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "module segment" },
+  );
   if (error) {
     throw new Error(`[studio] deleteModuleSegment failed: ${error.message}`);
   }

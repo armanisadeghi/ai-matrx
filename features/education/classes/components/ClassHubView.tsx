@@ -30,8 +30,6 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useClasses } from "../hooks/useClasses";
 import { useClassContent } from "../hooks/useClassContent";
 import { useClassAccess } from "../hooks/useClassAccess";
@@ -112,7 +110,7 @@ interface ClassHubViewProps {
 
 export function ClassHubView({ classParam }: ClassHubViewProps) {
   const router = useRouter();
-  const { classes, archived, loading, updateClass, orgId } = useClasses();
+  const { classes, archived, loading, updateClass } = useClasses();
 
   const cls: StudyClass | undefined = [...classes, ...archived].find(
     (c) => c.id === classParam || c.slug === classParam,
@@ -131,14 +129,10 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
     cls?.id ?? joinedMatch?.classId ?? (UUID_RE.test(classParam) ? classParam : null);
   const access = useClassAccess(resolvedId);
 
-  // Owned classes load from the active organization's scope tree, which never
-  // loads with no organization chosen — so that wait only counts once one is.
-  // A joined class (cross-org) still resolves through useMyClasses without it.
-  const { organizationState } = useOrganizationRequired();
-  const orgReady = organizationState === "ready";
-
+  // Owned classes come from every organization's scope tree the person is in,
+  // so nothing here waits on (or depends on) the selected organization.
   const stillLoading =
-    (orgReady && loading && !cls) ||
+    (loading && !cls) ||
     (!cls && !resolvedId && myClassesLoading) ||
     (access.loading && !access.state);
 
@@ -169,47 +163,15 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
         classParam={classParam}
         cls={cls}
         allOwned={[...classes, ...archived]}
-        orgId={orgId}
+        orgId={cls.organizationId}
         access={access}
         onUpdate={updateClass}
       />
     );
   }
 
-  // The OWNER's own class, but `useClasses()` (which needs a workspace) hasn't
-  // resolved it — never fall through to the plain member view here (no Edit,
-  // no Archive, no roster/assignment management, and no "Assigned to you",
-  // since the RPC has no assignment to show its own owner): ask for the
-  // workspace instead, the same held-not-failed pattern the list page uses.
-  if (access.state?.isOwner && !orgReady) {
-    return (
-      <ClassHubPlaceholderSurface view="needs_workspace" classParam={classParam}>
-        <EducationToolHeader title={access.state.name} />
-        <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
-          <BackToClasses />
-          <OrganizationContextNotice
-            state={organizationState}
-            what="This class (you own it — choose the workspace to manage it)"
-          />
-        </div>
-      </ClassHubPlaceholderSurface>
-    );
-  }
-
   if (access.state) {
     return <MemberClassView classParam={classParam} access={access} />;
-  }
-
-  if (!orgReady) {
-    return (
-      <ClassHubPlaceholderSurface view="needs_workspace" classParam={classParam}>
-        <EducationToolHeader title="Class" />
-        <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
-          <BackToClasses />
-          <OrganizationContextNotice state={organizationState} what="This class" />
-        </div>
-      </ClassHubPlaceholderSurface>
-    );
   }
 
   // Denied / deleted / never existed / signed-out all land here — a class is a

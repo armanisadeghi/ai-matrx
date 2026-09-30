@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne, writeFailureStatus, type WriteOneAction } from "@/utils/supabase/writeOne";
+import type { TablesUpdate } from '@/types/database.types';
 
 /**
  * GET /api/sms/conversations
@@ -115,40 +117,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    switch (action) {
-      case 'close':
-        await adminSupabase
-          .schema('communication').from('sms_conversations')
-          .update({ status: 'closed' })
-          .eq('id', conversationId);
-        break;
-
-      case 'block':
-        await adminSupabase
-          .schema('communication').from('sms_conversations')
-          .update({ status: 'blocked' })
-          .eq('id', conversationId);
-        break;
-
-      case 'reopen':
-        await adminSupabase
-          .schema('communication').from('sms_conversations')
-          .update({ status: 'active' })
-          .eq('id', conversationId);
-        break;
-
-      case 'mark_read':
-        await adminSupabase
-          .schema('communication').from('sms_conversations')
-          .update({ unread_count: 0 })
-          .eq('id', conversationId);
-        break;
-
-      default:
-        return NextResponse.json(
-          { success: false, msg: `Unknown action: ${action}` },
-          { status: 400 }
-        );
+    const ACTION_PATCH: Record<string, { patch: TablesUpdate<{ schema: 'communication' }, 'sms_conversations'>; verb: WriteOneAction }> = {
+      close: { patch: { status: 'closed' }, verb: 'change' },
+      block: { patch: { status: 'blocked' }, verb: 'change' },
+      reopen: { patch: { status: 'active' }, verb: 'change' },
+      mark_read: { patch: { unread_count: 0 }, verb: 'update' },
+    };
+    const planned = ACTION_PATCH[action];
+    if (!planned) {
+      return NextResponse.json(
+        { success: false, msg: `Unknown action: ${action}` },
+        { status: 400 }
+      );
+    }
+    const { error: actionError } = await tryWriteOne(
+      adminSupabase
+        .schema('communication').from('sms_conversations')
+        .update(planned.patch)
+        .eq('id', conversationId)
+        .select('id'),
+      { action: planned.verb, noun: 'conversation' },
+    );
+    if (actionError) {
+      return NextResponse.json(
+        { success: false, msg: actionError.message },
+        { status: writeFailureStatus(actionError) }
+      );
     }
 
     return NextResponse.json({

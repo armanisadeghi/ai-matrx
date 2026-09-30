@@ -69,8 +69,9 @@ export function buildEducationClassesScope(input: {
   dialogOpen: boolean;
   draft: NewClassDraftScope | null;
 }): SurfaceScopePayload {
-  const ownedLoaded =
-    input.organizationState === "ready" && !input.ownedLoading;
+  // The list is every class the person can reach in every organization; the
+  // selected organization is only where a NEW class lands.
+  const ownedLoaded = !input.ownedLoading;
   return createEducationClassesScope({
     organization_state: input.organizationState,
     class_dialog_open: input.dialogOpen,

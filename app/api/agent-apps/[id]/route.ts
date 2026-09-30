@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { NextRequest, NextResponse } from "next/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 export async function GET(
   _request: NextRequest,
@@ -152,16 +153,31 @@ export async function DELETE(
       const admin = createAdminClient();
       // Delete means archive (Arman, 2026-09-27): the app moves to Trash and
       // stays restorable; its parts follow via the soft-delete cascade.
-      const { error } = await admin
-        .schema("app")
-        .from("definition")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", id)
-        .is("deleted_at", null);
+      const { error } = await tryWriteOne(
+        admin
+          .schema("app")
+          .from("definition")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id)
+          .is("deleted_at", null)
+          .select("id, deleted_at"),
+        {
+          action: "delete",
+          noun: "app",
+          alreadyDone: {
+            reread: () =>
+              admin.schema("app").from("definition")
+                .select("id, deleted_at")
+                .eq("id", id)
+                .maybeSingle(),
+            isDone: (row) => row.deleted_at != null,
+          },
+        },
+      );
       if (error) {
         return NextResponse.json(
           { error: "Failed to move system agent app to Trash", details: error.message },
-          { status: 500 },
+          { status: writeFailureStatus(error) },
         );
       }
       return NextResponse.json({ success: true });

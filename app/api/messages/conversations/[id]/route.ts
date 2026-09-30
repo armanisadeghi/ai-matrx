@@ -14,6 +14,7 @@ import { z } from "zod";
 import type { TablesUpdate } from "@/types/database.types";
 import { isDurableMediaUrl } from "@/lib/media/durability";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 // ============================================
 // Validation Schemas
@@ -271,11 +272,21 @@ export async function PUT(
       if (group_image_url !== undefined)
         convUpdate.group_image_url = group_image_url;
 
-      await supabase
-        .schema("communication")
-        .from("dm_conversations")
-        .update(convUpdate)
-        .eq("id", conversationId);
+      const { error: settingsError } = await tryWriteOne(
+        supabase
+          .schema("communication")
+          .from("dm_conversations")
+          .update(convUpdate)
+          .eq("id", conversationId)
+          .select("id"),
+        { action: "save", noun: "group" },
+      );
+      if (settingsError) {
+        return NextResponse.json(
+          { success: false, msg: settingsError.message },
+          { status: writeFailureStatus(settingsError) },
+        );
+      }
     }
 
     return NextResponse.json({
@@ -339,16 +350,31 @@ export async function DELETE(
     // the soft-delete cascade and come back if it is restored.
     // component-created-by-ok: communication.dm_conversations is an entity — its created_by is the group's creator
     if (conversation.type === "group" && conversation.created_by === userId) {
-      const { error: archiveError } = await supabase
-        .schema("communication")
-        .from("dm_conversations")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", conversationId)
-        .is("deleted_at", null);
+      const { error: archiveError } = await tryWriteOne(
+        supabase
+          .schema("communication")
+          .from("dm_conversations")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", conversationId)
+          .is("deleted_at", null)
+          .select("id, deleted_at"),
+        {
+          action: "delete",
+          noun: "conversation",
+          alreadyDone: {
+            reread: () =>
+              supabase.schema("communication").from("dm_conversations")
+                .select("id, deleted_at")
+                .eq("id", conversationId)
+                .maybeSingle(),
+            isDone: (row) => row.deleted_at != null,
+          },
+        },
+      );
       if (archiveError) {
         return NextResponse.json(
           { success: false, msg: "Could not move the conversation to Trash" },
-          { status: 500 },
+          { status: writeFailureStatus(archiveError) },
         );
       }
       return NextResponse.json({

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import type { TablesUpdate } from "@/types/database.types";
 import { extractErrorMessage } from "@/utils/errors";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -88,17 +89,32 @@ export async function DELETE(
     const supabase = createAdminClient();
 
     // Delete means archive (Arman, 2026-09-27): the incident moves to Trash.
-    const { error } = await supabase
-      .schema("tool")
-      .from("ui_incident")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("tool")
+        .from("ui_incident")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "incident",
+        alreadyDone: {
+          reread: () =>
+            supabase.schema("tool").from("ui_incident")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
 
     if (error) {
       return NextResponse.json(
         { error: "Failed to move incident to Trash", details: error.message },
-        { status: 500 },
+        { status: writeFailureStatus(error) },
       );
     }
 

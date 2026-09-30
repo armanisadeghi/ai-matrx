@@ -5,6 +5,7 @@ import {
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
 import { extractErrorMessage } from "@/utils/errors";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 /**
  * POST /api/sandbox/[id]/heartbeat
@@ -56,10 +57,18 @@ export async function POST(
 
     // Mirror the heartbeat in our DB so listing queries see fresh activity.
     const supabase = await createClient();
-    await supabase
-      .from("sandbox_instances")
-      .update({ last_heartbeat_at: new Date().toISOString() })
-      .eq("id", id);
+    const { error: landError } = await tryWriteOne(
+      supabase
+        .from("sandbox_instances")
+        .update({ last_heartbeat_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "update", noun: "sandbox heartbeat" },
+    );
+    if (landError) {
+      // Best-effort bookkeeping; a write that did not land is still said.
+      console.error("[write-did-not-land] sandbox heartbeat:", landError.message);
+    }
 
     const orchestratorPayload = await resp.json().catch(() => ({}));
     return NextResponse.json({

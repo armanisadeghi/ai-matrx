@@ -246,7 +246,7 @@ export function AssistantMessageFooter(props: AssistantMessageFooterProps) {
             "opacity-0 group-hover/assistant-msg:opacity-100 focus-within:opacity-100",
         )}
       >
-        <div className="flex items-center gap-2">
+        <div className="@container/message-footer w-full min-w-0">
           <RichDocumentActions
             content={config.content}
             source={config.source}
@@ -254,7 +254,9 @@ export function AssistantMessageFooter(props: AssistantMessageFooterProps) {
             hideOverflow={!showOptions}
             className="px-0"
           />
-          <MessageTimestamp timestamp={record?.createdAt} />
+          <div className="flex justify-end">
+            <MessageTimestamp timestamp={record?.createdAt} />
+          </div>
         </div>
 
         {/* Negative-verdict follow-up — reads the SAME output-feedback store

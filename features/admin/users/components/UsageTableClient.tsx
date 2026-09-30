@@ -7,6 +7,7 @@
 // Canonical MatrxDataTable: sort/filter every column, Copy-for-AI, timeframe
 // facet, and ?user=<id> focus from the Accounts cross-link.
 
+import AppLink from "@/components/navigation/AppLink";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { X } from "lucide-react";
@@ -306,6 +307,17 @@ export function UsageTableClient() {
   return (
     <div className="flex h-full flex-col gap-3 p-4">
       {/* The read's failure is said once, by the table (read=). */}
+      {/* COPY MODE (lane DRILL-USAGE-PAGE): the new explorer sits beside this page until Arman
+          validates it; nothing redirects. */}
+      <div className="flex items-center justify-end text-xs">
+        <AppLink
+          href="/administration/usage"
+          data-usage-try-new
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
+          Try the new usage page
+        </AppLink>
+      </div>
 
       {focusUser ? (
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs">

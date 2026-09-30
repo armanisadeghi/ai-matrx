@@ -10,6 +10,9 @@ describe("MessageTimestamp", () => {
     expect(display?.absolute).toMatch(/42:07/);
     expect(display?.absolute).toMatch(/\b(?:AM|PM)\b/);
     expect(display?.relative).not.toBe(display?.absolute);
+    expect(display?.short).toMatch(/Sep 14.*3:42 PM/);
+    expect(display?.short).not.toContain("2026");
+    expect(display?.compact).toBe("3:42 PM");
   });
 
   it("renders nothing for an invalid timestamp", () => {

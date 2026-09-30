@@ -129,6 +129,98 @@ try {
     }
   }
 
+  if (PHASE === "b2") {
+    // BREAKER-2 B2-19 / B2-22 / B2-29 / B2-30 and BREAKER-3's drag, on BREAKER-2's own fixture.
+    const FIXTURE = "031d3690-4a02-4cee-a575-454ffd96c992";
+    const board = async () =>
+      page.locator("section[data-board-column]").evaluateAll((els) =>
+        els.map((e) => ({ name: e.getAttribute("data-board-column"), cards: [...e.querySelectorAll("li")].map((l) => (l.textContent ?? "").trim().slice(0, 40)) })),
+      );
+    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await sleep(8000);
+    const back = page.getByRole("button", { name: "Bring it back" });
+    if (await back.count()) {
+      await back.click();
+      await sleep(8000);
+      step("restored the fixture");
+    }
+    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await page.locator("#view-field-kanban").waitFor({ timeout: 120000 });
+    await page.selectOption("#view-field-kanban", { label: "Visit Status" });
+    await sleep(6000);
+    await shot("b2-19a-by-visit-status");
+    step("B2-19 by Visit Status", { columns: await board() });
+    // BREAKER-3: drag the first card of the first column onto the second column, then Undo.
+    const cols = await board();
+    const from = cols.find((c) => c.cards.length > 0 && c.name !== "No value");
+    const to = cols.find((c) => c.name !== from?.name && c.name !== "No value");
+    if (from && to) {
+      await page.locator(`section[data-board-column="${from.name}"] li`).first().dragTo(page.locator(`section[data-board-column="${to.name}"]`));
+      await sleep(6000);
+      await shot("b3-dragged");
+      step("BREAKER-3 drag", { from: from.name, to: to.name, said: (await text()).match(/[^.]*moved to [^.]*\./)?.[0] ?? null, columns: await board() });
+      const undo = page.getByRole("button", { name: "Undo" }).first();
+      if (await undo.count()) {
+        await undo.click();
+        await sleep(6000);
+        await shot("b3-undone");
+        step("BREAKER-3 undo", { columns: await board() });
+      }
+    }
+    await page.selectOption("#view-field-kanban", { label: "Body Areas" });
+    await sleep(6000);
+    await shot("b2-19b-by-body-areas");
+    step("B2-19 by Body Areas", { columns: await board(), ofThem: (await text()).includes("of them") });
+    // B2-30: the table's settings, at the bottom.
+    const settings = page.getByRole("button", { name: /^Settings$|Table settings|Configure/ }).first();
+    if (await settings.count()) {
+      await settings.click();
+      await sleep(5000);
+      const body = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+      await page.mouse.wheel(0, 4000);
+      await sleep(1500);
+      await shot("b2-30-settings");
+      step("B2-30 settings", { says: body.match(/Rules for (entering|moving)[^.]*\.[^.]*\./)?.[0] ?? null, denies: body.includes("no board to draw") });
+      await page.keyboard.press("Escape");
+    } else step("B2-30 settings button not found", { buttons: (await page.locator("button:visible").allInnerTexts()).filter(Boolean).slice(0, 30) });
+    // B2-22: the Calendar's Ask AI (Visit Date is text here, so the calendar needs a date column).
+    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=calendar`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await sleep(8000);
+    const ask = page.getByRole("button", { name: "Ask AI" }).first();
+    if (await ask.count()) {
+      await ask.click();
+      const box = page.getByPlaceholder("Type your message...").last();
+      await box.waitFor({ timeout: 60000 });
+      await sleep(4000);
+      await shot("b2-22-ask-ai");
+      const typed = await box.evaluate((e) => (e.value ?? e.textContent ?? "").trim()).catch(() => "");
+      const chips = (await page.locator("body").innerText()).match(/records_(ta|w|su)/g) ?? [];
+      step("B2-22 Ask AI", { typed: typed.slice(0, 160), rawChips: chips });
+      await page.keyboard.press("Escape");
+    } else step("B2-22: no Ask AI on the calendar (the table has a date column?)", { text: (await text()).slice(0, 300) });
+    // B2-29: a record's history, from the grid.
+    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await sleep(8000);
+    const open = page.locator("tbody tr[data-row-id]").first().getByRole("button", { name: /⤢|Open/ }).first();
+    if (await open.count()) {
+      await open.click();
+      await sleep(5000);
+      const hist = page.getByRole("tab", { name: /History/ }).or(page.getByRole("button", { name: /History/ })).first();
+      if (await hist.count()) { await hist.click(); await sleep(5000); }
+      await shot("b2-29-history");
+      const body = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+      step("B2-29 history", { retype: /\bretype\b/.test(body), sample: body.match(/(Created|Edited|Column type changed|Archived|Restored)[^·]{0,60}/g)?.slice(0, 4) ?? null });
+    }
+  }
+
+  if (PHASE === "b2probe") {
+    const FIXTURE = "031d3690-4a02-4cee-a575-454ffd96c992";
+    await page.goto(`${ORIGIN}/data-v2/${FIXTURE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await sleep(12000);
+    await shot("b2-probe-fixture");
+    step("fixture page", { text: (await text()).slice(0, 500), buttons: (await page.locator("main button:visible").allInnerTexts()).filter(Boolean).slice(0, 30) });
+  }
+
   if (PHASE === "boardshot") {
     await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("the board", async () => (await text()).includes("No value"), 180000);

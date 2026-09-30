@@ -190,3 +190,31 @@ export async function tryWriteOne<Row>(
     return { row: null, error };
   }
 }
+
+/**
+ * The HTTP status a route handler answers with for a failed write: the
+ * refusal's own status (403 refused / 409 taken) for `WriteDidNotLandError`,
+ * 500 for anything else. Server twin of the client's toast path.
+ */
+export function writeFailureStatus(error: unknown): number {
+  return error instanceof WriteDidNotLandError ? error.status : 500;
+}
+
+/**
+ * Several single-record writes where some did not land. The message names how
+ * many of how many failed and why (the first reason); `failures` keeps each
+ * record id with its own sentence so a screen can mark exactly those rows.
+ */
+export class BulkWriteError extends Error {
+  readonly failures: { id: string; message: string }[];
+  readonly attempted: number;
+
+  constructor(failures: { id: string; message: string }[], attempted: number) {
+    super(
+      `${failures.length} of ${attempted} ${attempted === 1 ? "change was" : "changes were"} not saved. ${failures[0]?.message ?? ""}`.trim(),
+    );
+    this.name = "BulkWriteError";
+    this.failures = failures;
+    this.attempted = attempted;
+  }
+}

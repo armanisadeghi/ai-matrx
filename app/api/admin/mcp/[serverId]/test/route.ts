@@ -25,6 +25,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 interface RouteParams {
   params: Promise<{ serverId: string }>;
@@ -73,16 +74,24 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   // Persist outcome (best-effort; failure here doesn't fail the test response).
   // tool_mcp_server is RLS-protected with no write policy — use the admin client.
   const admin = createAdminClient();
-  await admin
-    .schema("tool").from("mcp_server")
-    .update({
-      last_tested_at: new Date().toISOString(),
-      last_test_ok: result.ok,
-      last_test_status_code: result.statusCode,
-      last_test_latency_ms: result.latencyMs,
-      last_test_error: result.error,
-    })
-    .eq("id", serverId);
+  const { error: landError } = await tryWriteOne(
+    admin
+      .schema("tool").from("mcp_server")
+      .update({
+        last_tested_at: new Date().toISOString(),
+        last_test_ok: result.ok,
+        last_test_status_code: result.statusCode,
+        last_test_latency_ms: result.latencyMs,
+        last_test_error: result.error,
+      })
+      .eq("id", serverId)
+      .select("id"),
+    { action: "save", noun: "MCP server test result" },
+  );
+  if (landError) {
+    // Best-effort bookkeeping; a write that did not land is still said.
+    console.error("[write-did-not-land] MCP server test result:", landError.message);
+  }
 
   return NextResponse.json(result);
 }

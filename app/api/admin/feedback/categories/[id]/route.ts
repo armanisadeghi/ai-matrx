@@ -17,6 +17,7 @@ import {
   platformCategoryToFeedbackRow,
 } from "../_lib/categoryRow";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -188,16 +189,31 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     // Delete means archive (Arman, 2026-09-27): the category moves to Trash.
     // Its slug is unique only among live categories (uq_categories_slug is
     // partial on deleted_at IS NULL), so a new category may reuse it.
-    const { error } = await supabase
-      .schema("platform")
-      .from("categories")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("dimension", "feedback")
-      .eq("id", id)
-      .is("deleted_at", null);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("platform")
+        .from("categories")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("dimension", "feedback")
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "category",
+        alreadyDone: {
+          reread: () =>
+            supabase.schema("platform").from("categories")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: writeFailureStatus(error) });
     }
 
     return NextResponse.json({ success: true });

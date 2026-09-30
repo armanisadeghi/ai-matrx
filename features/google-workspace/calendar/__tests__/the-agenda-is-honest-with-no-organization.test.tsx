@@ -1,17 +1,10 @@
 /**
- * 🚨 F-76 — CI's `check-org-refusal-honesty` found `calendar/service.ts` resolving
- * an organization (`requireOrganizationContext` inside `readAgendaEvents` /
- * `refreshCalendarWindow`) and leaving the person with NOTHING when the answer is
- * "none selected": with `organizationId` null, `useAgenda`'s window-read effect
- * never ran (`if (!organizationId || !userId) return;`), `isLoading` read false
- * (its own guard requires an organization), and the panel fell through to
- * "Your Google Calendar is connected and there is nothing on it" — a confident,
- * wrong claim for a person who has not picked an organization at all (law 4: a
- * screen is absent or honest, never lying).
- *
- * This proves the fix: with no organization selected, the agenda shows the ONE
- * honest "choose an organization" notice, and calls no network door — never the
- * empty-calendar sentence, never a Google refresh, never a Supabase read.
+ * ACCESS BELONGS TO THE PERSON (Arman, 2026-09-25). The agenda is the person's own
+ * day across every organization they belong to. Its mirror READ never depends on
+ * the selected organization — with none selected, still resolving, or a failed
+ * organization read, the agenda still reads and shows the person's events, and
+ * never stands behind a "choose an organization" gate. Only a Google REFRESH
+ * (filed under an organization) is held: it calls no network door without one.
  */
 
 import * as React from "react";
@@ -203,23 +196,24 @@ beforeEach(() => {
 });
 
 describe("with no organization selected", () => {
-  it("shows the ONE honest notice instead of the empty-calendar sentence", async () => {
+  it("still READS the person's agenda — no organization gate stands in front of it", async () => {
     state.organizationRequired = true;
+    state.accounts = [{ id: "acct-1" }];
     const m = await mount(<AgendaPanel />);
     try {
-      expect(m.container.querySelector("[data-organization-required-notice]")).not.toBeNull();
-      expect(m.text).not.toContain("there is nothing on it");
-      expect(m.text).not.toContain("Your Google Calendar is connected");
+      expect(state.readCalls).toBeGreaterThan(0);
+      expect(m.container.querySelector("[data-organization-required-notice]")).toBeNull();
+      expect(m.container.querySelector("[data-organization-unavailable-notice]")).toBeNull();
     } finally {
       m.unmount();
     }
   });
 
-  it("calls no network door — no read, no refresh — while boot is unresolved", async () => {
+  it("calls no Google refresh — a refresh is filed under an organization", async () => {
     state.organizationRequired = true;
+    state.accounts = [{ id: "acct-1" }];
     const m = await mount(<AgendaPanel />);
     try {
-      expect(state.readCalls).toBe(0);
       expect(state.refreshCalls).toBe(0);
     } finally {
       m.unmount();
@@ -227,83 +221,30 @@ describe("with no organization selected", () => {
   });
 });
 
-describe("while the organization question is still being answered", () => {
-  /**
-   * 🚨 F-85 / Bugbot MEDIUM — the gap F-76 left. `useOrganizationRequired`
-   * exposes THREE states and `useAgenda` forwarded two: `organizationRequired`
-   * is true ONLY once boot has settled, and `isLoading` required an
-   * `organizationId` that does not exist yet. So during boot both read false
-   * and `AgendaBody` fell through to the empty-calendar sentence — the exact
-   * lie F-76 closed, reopened for the seconds before anyone knows the answer.
-   */
-  it("shows the skeleton, never the empty-calendar sentence", async () => {
-    state.organizationRequired = false;
-    state.organizationId = null; // boot in flight: not loadable, not refused
-    state.accounts = [{ id: "acct-1" }];
-    const m = await mount(<AgendaPanel />);
-    try {
-      expect(m.text).not.toContain("there is nothing on it");
-      expect(m.text).not.toContain("Your Google Calendar is connected");
-      expect(m.container.querySelector('[aria-label="Reading your agenda"]')).not.toBeNull();
-      // Not the terminal notice either — nobody has been refused yet.
-      expect(m.container.querySelector("[data-organization-required-notice]")).toBeNull();
-    } finally {
-      m.unmount();
-    }
-  });
-
-  it("calls no network door while the answer is unknown", async () => {
+describe("while the organization question is still being answered, or its read failed", () => {
+  it("still reads the agenda (resolving)", async () => {
     state.organizationRequired = false;
     state.organizationId = null;
     state.accounts = [{ id: "acct-1" }];
     const m = await mount(<AgendaPanel />);
     try {
-      expect(state.readCalls).toBe(0);
+      expect(state.readCalls).toBeGreaterThan(0);
+      expect(m.container.querySelector("[data-organization-required-notice]")).toBeNull();
       expect(state.refreshCalls).toBe(0);
     } finally {
       m.unmount();
     }
   });
-});
 
-describe("when the organization read FAILED (the fourth state, R37)", () => {
-  /**
-   * 🚨 THE FOREVER SKELETON. `useAgenda` forwarded the boolean pair, and under
-   * a failed read BOTH readings point at "keep waiting": `organizationRequired`
-   * is false (the nudge is a claim about memberships nobody read) and the
-   * legacy `resolving` stays true, so `isLoading` held the agenda skeleton up
-   * for as long as the panel was open — a screen that never resolves, which is
-   * law 4's dead screen. On the prior bytes this case rendered the skeleton and
-   * no notice at all; now it says we could not check, with Try again.
-   */
-  it("says we could not check — never the refusal, never the skeleton forever", async () => {
+  it("still reads the agenda (the organization read FAILED) and shows no notice or forever-skeleton", async () => {
     state.organizationRequired = false;
     state.organizationUnavailable = true;
     state.accounts = [{ id: "acct-1" }];
     const m = await mount(<AgendaPanel />);
     try {
-      expect(
-        m.container.querySelector("[data-organization-unavailable-notice]"),
-      ).not.toBeNull();
-      // Not the refusal: nobody read this person's memberships.
-      expect(
-        m.container.querySelector("[data-organization-required-notice]"),
-      ).toBeNull();
-      // And not the skeleton that used to sit there forever.
+      expect(state.readCalls).toBeGreaterThan(0);
+      expect(m.container.querySelector("[data-organization-unavailable-notice]")).toBeNull();
       expect(m.container.querySelector('[aria-label="Reading your agenda"]')).toBeNull();
-      expect(m.text).not.toContain("there is nothing on it");
-    } finally {
-      m.unmount();
-    }
-  });
-
-  it("calls no network door — the organization it would send is unknown", async () => {
-    state.organizationRequired = false;
-    state.organizationUnavailable = true;
-    state.accounts = [{ id: "acct-1" }];
-    const m = await mount(<AgendaPanel />);
-    try {
-      expect(state.readCalls).toBe(0);
       expect(state.refreshCalls).toBe(0);
     } finally {
       m.unmount();
@@ -312,7 +253,7 @@ describe("when the organization read FAILED (the fourth state, R37)", () => {
 });
 
 describe("once an organization is selected", () => {
-  it("goes back to reading the agenda normally", async () => {
+  it("goes on reading the agenda normally", async () => {
     state.organizationRequired = false;
     state.organizationId = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
     const m = await mount(<AgendaPanel refreshOnOpen={false} />);

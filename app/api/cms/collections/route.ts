@@ -44,6 +44,7 @@ import type {
   SiteCollection,
 } from "@/features/cms/types";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,62}$/;
 
@@ -678,10 +679,14 @@ export async function POST(request: NextRequest) {
           .single();
         if (siteRow && !siteRow.data_api_key) {
           mintedKey = mintDataApiKey();
-          const { error: keyError } = await db
-            .from("client_sites")
-            .update({ data_api_key: mintedKey })
-            .eq("id", siteId);
+          const { error: keyError } = await tryWriteOne(
+            db
+              .from("client_sites")
+              .update({ data_api_key: mintedKey })
+              .eq("id", siteId)
+              .select("id"),
+            { action: "update", noun: "site" },
+          );
           if (keyError) {
             console.error(
               "[cms/collections] data_api_key mint FAILED for site",

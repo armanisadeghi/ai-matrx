@@ -346,9 +346,9 @@ export async function createSeoChange(
     if (itemResult.error) throw itemResult.error;
     return changeId;
   } catch (error) {
-    // write-lands-exempt: rollback cleanup inside catch; the original error is what reaches the person
     // Delete means archive: the half-written change set moves to Trash (its
     // parts follow via the soft-delete cascade) instead of being destroyed.
+    // write-lands-exempt: rollback cleanup inside catch; the original error is what reaches the person
     const cleanup = await db
       .from("change_set")
       .update({ deleted_at: new Date().toISOString() })

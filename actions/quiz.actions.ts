@@ -6,6 +6,7 @@ import type { Json } from "@/types/database.types";
 import type { QuizSession } from "@/types/quiz-session";
 import { mapQuizSessionRow } from "@/utils/quiz-session-mapper";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 export type { QuizSession } from "@/types/quiz-session";
 
@@ -354,12 +355,16 @@ export async function deleteQuizSession(
       return { success: false, error: "Not authenticated" };
     }
 
-    const { error } = await supabase
-      .schema("education")
-      .from("quiz_sessions")
-      .delete()
-      .eq("id", id)
-      .eq("created_by", user.id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("education")
+        .from("quiz_sessions")
+        .delete()
+        .eq("id", id)
+        .eq("created_by", user.id)
+        .select("id"),
+      { action: "delete", noun: "quiz session" },
+    );
 
     if (error) {
       console.error("Error deleting quiz session:", error);
@@ -392,12 +397,16 @@ export async function updateQuizTitle(
       return { success: false, error: "Not authenticated" };
     }
 
-    const { error } = await supabase
-      .schema("education")
-      .from("quiz_sessions")
-      .update({ title })
-      .eq("id", id)
-      .eq("created_by", user.id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("education")
+        .from("quiz_sessions")
+        .update({ title })
+        .eq("id", id)
+        .eq("created_by", user.id)
+        .select("id"),
+      { action: "rename", noun: "quiz session" },
+    );
 
     if (error) {
       console.error("Error updating quiz title:", error);

@@ -17,6 +17,7 @@ import {
   ownerPayload,
   type BillingOwnerRef,
 } from "./billingOwner";
+import { writeOne } from "@/utils/supabase/writeOne";
 
 export interface ConnectAccountRow {
   /**
@@ -280,16 +281,20 @@ export async function fulfillClassPurchase(
     return false;
   }
 
-  await admin
-    .schema("billing")
-    .from("class_purchase")
-    .update({
-      status: "paid",
-      stripe_payment_intent_id: paymentIntentId,
-      paid_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", sale.id);
+  await writeOne(
+    admin
+      .schema("billing")
+      .from("class_purchase")
+      .update({
+        status: "paid",
+        stripe_payment_intent_id: paymentIntentId,
+        paid_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sale.id)
+      .select("id"),
+    { action: "update", noun: "class purchase" },
+  );
 
   // Confer the enrolment via the service_role-only RPC (the ONLY grant path).
   const { error } = await admin.rpc("edu_class_confer_purchase", {
@@ -336,13 +341,17 @@ export async function revokeClassPurchaseByPaymentIntent(
     throw new Error(error.message);
   }
 
-  await admin
-    .schema("billing")
-    .from("class_purchase")
-    .update({
-      status: reason,
-      refunded_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", sale.id);
+  await writeOne(
+    admin
+      .schema("billing")
+      .from("class_purchase")
+      .update({
+        status: reason,
+        refunded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sale.id)
+      .select("id"),
+    { action: "update", noun: "class purchase" },
+  );
 }

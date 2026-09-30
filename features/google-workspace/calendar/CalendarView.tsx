@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useOpenDetail } from "@/lib/detail/useOpenDetail";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 import {
@@ -53,10 +52,6 @@ export function CalendarView() {
   );
   const today = dayKeyInZone(new Date(), agenda.timeZone);
   const step = mode === "day" ? 1 : 7;
-
-  if (agenda.organizationState === "required" || agenda.organizationState === "unavailable") {
-    return <OrganizationContextNotice compact state={agenda.organizationState} what="Your calendar" />;
-  }
 
   return (
     <section className="flex min-h-0 flex-1 flex-col" data-calendar-view={mode}>

@@ -30,6 +30,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 export type GuestPromotionResult =
   | { promoted: true; userId: string }
@@ -170,13 +171,17 @@ export async function promoteGuestToUser({
 
   // 4. Stamp the conversion on the guest row (the `link_guest_to_user`
   //    equivalent). Non-fatal: promotion already succeeded.
-  const { error: linkErr } = await admin
-    .schema("users").from("guest_executions")
-    .update({
-      converted_to_user_id: promotedId,
-      converted_at: new Date().toISOString(),
-    })
-    .eq("id", row.id);
+  const { error: linkErr } = await tryWriteOne(
+    admin
+      .schema("users").from("guest_executions")
+      .update({
+        converted_to_user_id: promotedId,
+        converted_at: new Date().toISOString(),
+      })
+      .eq("id", row.id)
+      .select("id"),
+    { action: "update", noun: "guest run" },
+  );
   if (linkErr) {
     console.error(
       "[guest-promotion] LOUD: conversion succeeded but stamping guest_executions failed:",

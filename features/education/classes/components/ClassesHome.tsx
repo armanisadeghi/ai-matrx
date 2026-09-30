@@ -17,8 +17,9 @@ import { Skeleton, ArchivedDisclosure } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { useClasses } from "../hooks/useClasses";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { useMyClasses } from "../hooks/useMyClasses";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AccessModeBadge } from "./AccessModeBadge";
@@ -51,16 +52,24 @@ function ClassRow({
   name,
   settings,
   statusChip,
+  organizationName,
 }: {
   id: string;
   slug: string | null;
   name: string;
   settings: ClassSettings;
   statusChip?: ReactNode;
+  /** Shown only when the person belongs to several organizations. */
+  organizationName?: string | null;
 }) {
   const today = todayIso();
   const next = nextExamDate(settings, today);
-  const meta = [settings.teacher, settings.term, settings.period && `Period ${settings.period}`]
+  const meta = [
+    settings.teacher,
+    settings.term,
+    settings.period && `Period ${settings.period}`,
+    organizationName,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -102,8 +111,17 @@ function ClassRow({
 }
 
 function OwnedRow({ cls }: { cls: StudyClass }) {
+  const orgs = useAppSelector(selectOrganizationsList);
+  const organizationName =
+    orgs.length > 1 ? (orgs.find((o) => o.id === cls.organizationId)?.name ?? null) : null;
   return (
-    <ClassRow id={cls.id} slug={cls.slug} name={cls.name} settings={cls.settings} />
+    <ClassRow
+      id={cls.id}
+      slug={cls.slug}
+      name={cls.name}
+      settings={cls.settings}
+      organizationName={organizationName}
+    />
   );
 }
 
@@ -129,6 +147,8 @@ export function ClassesHome() {
     loading: joinedLoading,
     error: joinedError,
   } = useMyClasses();
+  // Reported to the agent surface only: where a NEW class would land. Never
+  // gates the list (access belongs to the person, not the selected org).
   const { organizationState } = useOrganizationRequired();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -262,15 +282,7 @@ export function ClassesHome() {
         </Button>
       </div>
 
-      {organizationState !== "ready" ? (
-        // Owned classes live in an organization's scope tree; with none chosen
-        // the list can never load, so say so with the picker instead of a
-        // skeleton that never resolves.
-        <OrganizationContextNotice
-          state={organizationState}
-          what="Your classes"
-        />
-      ) : loading ? (
+      {loading ? (
         <div className="space-y-2">
           <Skeleton className="h-14 w-full" />
           <Skeleton className="h-14 w-full" />
@@ -301,7 +313,7 @@ export function ClassesHome() {
 
       {/* Archived classes — hidden by default, restorable in one click
           (never gone for good: the archived-items-law reveal half). */}
-      {organizationState === "ready" && archived.length > 0 && (
+      {archived.length > 0 && (
         <ArchivedDisclosure
           count={archived.length}
           open={showArchived}

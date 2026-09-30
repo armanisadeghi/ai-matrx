@@ -6,6 +6,7 @@ import { organizationRequired } from "@/lib/organizations/organizationRequiredSe
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { CreateListItemInput } from "../types";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 // ─── Create ────────────────────────────────────────────────────────────────────
 
@@ -109,12 +110,16 @@ export async function deleteListAction(listId: string) {
   }
   if (!user) throw new Error("Not authenticated");
 
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_lists")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", listId)
-    .eq("user_id", user.id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_lists")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", listId)
+      .eq("user_id", user.id)
+      .select("id"),
+    { action: "delete", noun: "list" },
+  );
 
   if (error) throw new Error(`Failed to delete list: ${error.message}`);
   revalidatePath("/lists");
@@ -248,12 +253,16 @@ export async function deleteItemAction(itemId: string, listId: string) {
   }
   if (!user) throw new Error("Not authenticated");
 
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_list_items")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", itemId)
-    .eq("user_id", user.id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_list_items")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", itemId)
+      .eq("user_id", user.id)
+      .select("id"),
+    { action: "delete", noun: "list item" },
+  );
 
   if (error) throw new Error(`Failed to delete item: ${error.message}`);
   revalidatePath(`/lists/${listId}`);

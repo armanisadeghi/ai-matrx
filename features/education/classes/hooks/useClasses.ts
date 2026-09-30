@@ -22,10 +22,10 @@ import { setAccessMode } from "../service";
 import type { ClassSettings, StudyClass } from "../types";
 import type { ScopeNode as Scope } from "@/features/scopes/types";
 import {
+  selectAllScopeTypes,
+  selectScopeTreeSettled,
   selectScopeTypesByOrg,
   selectScopeTypesLoadedForOrg,
-  selectScopesByType,
-  selectScopesLoadedForType,
 } from "@/features/scopes/redux/selectors/admin";
 import {
   selectTreeError,
@@ -91,41 +91,29 @@ export function useClasses(): UseClassesReturn {
   const dispatch = useAppDispatch();
   const orgId = useAppSelector(selectOrganizationId);
 
-  const typesLoaded = useAppSelector((s) =>
-    orgId ? selectScopeTypesLoadedForOrg(s, orgId) : false,
-  );
-  const scopeTypes = useAppSelector((s) =>
-    orgId ? selectScopeTypesByOrg(s, orgId) : EMPTY_TYPES,
-  );
+  // THE LAW (access belongs to the person): "My classes" is every Class the
+  // person can reach in EVERY organization of their tree — never only the
+  // selected one. The selected org is only where a NEW class lands.
+  const treeSettled = useAppSelector(selectScopeTreeSettled);
+  const allTypes = useAppSelector(selectAllScopeTypes);
+  const classTypes = allTypes.filter((t) => t.slug === CLASS_SCOPE_TYPE_SLUG);
+  const scopeRows: Scope[] = classTypes.flatMap((t) => t.scopes);
+  const classTypeId =
+    (orgId ? classTypes.find((t) => t.organization_id === orgId)?.id : null) ??
+    null;
+  const typesLoaded = treeSettled;
+  const scopesLoaded = treeSettled;
 
-  const classType =
-    scopeTypes.find((t) => t.slug === CLASS_SCOPE_TYPE_SLUG) ?? null;
-  const classTypeId = classType?.id ?? null;
-
-  const scopesLoaded = useAppSelector((s) =>
-    orgId && classTypeId ? selectScopesLoadedForType(s, orgId, classTypeId) : false,
-  );
-  const scopeRows = useAppSelector((s) =>
-    classTypeId ? selectScopesByType(s, classTypeId) : EMPTY_SCOPES,
-  );
-
-  // Load the org's scope types once.
+  // Load the tree once (no-refetch policy inside the thunk).
   useEffect(() => {
-    if (orgId && !typesLoaded) void dispatch(ensureScopeTree());
-  }, [dispatch, orgId, typesLoaded]);
-
-  // Load the classes (scopes of the Class type) once it's known.
-  useEffect(() => {
-    if (orgId && classTypeId && !scopesLoaded) {
-      void dispatch(ensureScopeTree());
-    }
-  }, [dispatch, orgId, classTypeId, scopesLoaded]);
+    if (!treeSettled) void dispatch(ensureScopeTree());
+  }, [dispatch, treeSettled]);
 
   const all = scopeRows.map(scopeToClass).sort((a, b) => a.name.localeCompare(b.name));
   const classes = all.filter((c) => !c.settings.archived);
   const archived = all.filter((c) => c.settings.archived);
 
-  const loading = !typesLoaded || (classTypeId != null && !scopesLoaded);
+  const loading = !typesLoaded || !scopesLoaded;
   const treeStatus = useAppSelector(selectTreeStatus);
   const treeError = useAppSelector(selectTreeError);
   const error: unknown = treeStatus === "error" ? (treeError ?? true) : null;
@@ -223,9 +211,8 @@ export function useClasses(): UseClassesReturn {
   );
 
   const refresh = useCallback(async (): Promise<void> => {
-    if (!orgId) return;
     await dispatch(ensureScopeTree({ refresh: true }));
-  }, [dispatch, orgId]);
+  }, [dispatch]);
 
   return {
     classes,
@@ -242,6 +229,3 @@ export function useClasses(): UseClassesReturn {
   };
 }
 
-// Stable empty references so selectors don't churn re-renders.
-const EMPTY_TYPES: never[] = [];
-const EMPTY_SCOPES: never[] = [];

@@ -27,6 +27,7 @@ import { logCmsActivity } from "../_lib/activityLog";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { readAllRows } from "@ai-matrx/data/db";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 // Durable public hosts a library asset URL may live on. Anything else — an
 // arbitrary external https URL — is refused so
@@ -164,7 +165,15 @@ async function scanUsage(
   const currentIds = usedInPages.map((u) => u.page_id).sort();
   const storedIds = [...(asset.used_in_pages ?? [])].map(String).sort();
   if (JSON.stringify(currentIds) !== JSON.stringify(storedIds)) {
-    await db.from("client_assets").update({ used_in_pages: currentIds }).eq("id", asset.id);
+    const { error: landError } = await tryWriteOne(
+      db.from("client_assets").update({ used_in_pages: currentIds }).eq("id", asset.id)
+        .select("id"),
+      { action: "update", noun: "asset usage cache" },
+    );
+    if (landError) {
+      // Best-effort bookkeeping; a write that did not land is still said.
+      console.error("[write-did-not-land] asset usage cache:", landError.message);
+    }
   }
   return { usedInPages, usedInComponents, inUse: usedInPages.length > 0 || usedInComponents.length > 0 };
 }
@@ -426,7 +435,7 @@ export async function POST(request: NextRequest) {
         const { error } = await archiveRow(db, "client_assets", assetId);
         if (error) {
           console.error("[cms/assets] archive error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          return NextResponse.json({ error: error.message }, { status: error.status });
         }
         await logCmsActivity(db, {
           siteId: asset.client_id,

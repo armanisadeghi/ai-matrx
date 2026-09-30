@@ -24204,6 +24204,22 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_scope_context_from_the_image: {
+        Args: {
+          p_include_empty?: boolean
+          p_item_ids?: string[]
+          p_scope_id: string
+        }
+        Returns: Json
+      }
+      get_scope_tree_from_the_image: {
+        Args: { p_org_id: string; p_type_id?: string }
+        Returns: Json
+      }
+      get_user_full_context_from_the_image: {
+        Args: { p_user_id?: string }
+        Returns: Json
+      }
       index_reference_value: {
         Args: {
           p_item_id: string
@@ -24212,6 +24228,14 @@ export type Database = {
           p_value_text: string
         }
         Returns: undefined
+      }
+      list_scope_type_items_from_the_image: {
+        Args: { p_scope_type_id: string }
+        Returns: Json
+      }
+      list_scope_types_from_the_image: {
+        Args: { p_org_id: string }
+        Returns: Json
       }
       named_system_context_items: {
         Args: { p_refs: string[] }
@@ -24260,6 +24284,16 @@ export type Database = {
       reference_item_ref_key: {
         Args: { p_item: Json; p_type: string }
         Returns: string
+      }
+      resolve_full_context_from_the_image: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_scope_ids?: string[]
+          p_system_item_refs?: string[]
+          p_user_id: string
+        }
+        Returns: Json
       }
       slugify: { Args: { p: string }; Returns: string }
       system_item_refs_or_defaults: {
@@ -30540,7 +30574,19 @@ export type Database = {
         Args: { p_org: string; p_parent: string; p_type: string }
         Returns: undefined
       }
+      _ctx_scope_settings: {
+        Args: { p_data: Json; p_org: string; p_table: string }
+        Returns: Json
+      }
       _ctx_scope_slug: { Args: { p: string }; Returns: string }
+      _ctx_setting_back: {
+        Args: { p_behavior: string; p_value: Json }
+        Returns: Json
+      }
+      _ctx_setting_of: {
+        Args: { p_field: string; p_note: string; p_table: string }
+        Returns: string
+      }
       _ctx_slug: {
         Args: { p_fallback?: string; p_name: string }
         Returns: string
@@ -35313,6 +35359,40 @@ export type Database = {
         Args: { p_value: string; p_when_there_is_none: string }
         Returns: string
       }
+      scope_item_row_of: {
+        Args: { p_field: Record<string, unknown> }
+        Returns: Json
+      }
+      scope_item_value_type: {
+        Args: { p_carried: Json; p_field: Json }
+        Returns: string
+      }
+      scope_items_of: {
+        Args: { p_org: string; p_table: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          data_class: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          table_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       scope_member_reaches: {
         Args: {
           p_record_id: string
@@ -35320,6 +35400,22 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      scope_rows_of: {
+        Args: { p_org: string; p_types?: string[] }
+        Returns: {
+          id: string
+          name: string
+          row_doc: Json
+          sort_order: number
+          table_id: string
+          type_doc: Json
+          type_sort: number
+        }[]
+      }
+      scope_setting_back: {
+        Args: { p_behavior: string; p_value: Json }
+        Returns: Json
       }
       scope_table_provision: {
         Args: {
@@ -35329,6 +35425,19 @@ export type Database = {
           p_scope_id: string
         }
         Returns: string
+      }
+      scope_type_row_of: {
+        Args: { p_table: Record<string, unknown> }
+        Returns: Json
+      }
+      scope_value_columns: {
+        Args: {
+          p_field: Json
+          p_org: string
+          p_value: Json
+          p_value_type: string
+        }
+        Returns: Json
       }
       sensitivity_rank: { Args: { p_sensitivity: string }; Returns: number }
       share_access: {
@@ -35707,6 +35816,10 @@ export type Database = {
         Returns: boolean
       }
       table_is_options_table: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
+      table_is_platform_context: {
         Args: { p_organization_id: string; p_table_id: string }
         Returns: boolean
       }
@@ -86275,6 +86388,14 @@ export type Database = {
         }
         Returns: Json
       }
+      ai_usage_names: {
+        Args: { p_ids: Json; p_organization_id: string }
+        Returns: Json
+      }
+      ai_usage_recount: {
+        Args: { p_from: string; p_organization_id: string; p_to: string }
+        Returns: Json
+      }
       anon_function_birth_notice: {
         Args: {
           p_identity_args: string
@@ -87014,6 +87135,7 @@ export type Database = {
       drill_declared: { Args: { p_key: string }; Returns: Json }
       drill_declared_all: { Args: never; Returns: Json }
       drill_def__agents_by_model: { Args: never; Returns: Json }
+      drill_def__ai_usage: { Args: never; Returns: Json }
       drill_definition_problems: { Args: { p_def: Json }; Returns: string[] }
       drill_describe: {
         Args: { p_organization_id: string; p_source: Json }
@@ -91198,10 +91320,19 @@ export type Database = {
           scope_type_id: string
         }[]
       }
-      _edu_access_mode: {
-        Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
-        Returns: string
-      }
+      _edu_access_mode:
+        | {
+            Args: { p_scope: unknown[] }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public._edu_access_mode(p_scope => scopes), public._edu_access_mode(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public._edu_access_mode(p_scope => scopes), public._edu_access_mode(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
       _edu_can_read_via_assignment:
         | { Args: { p_id: string; p_type: string }; Returns: boolean }
         | {
@@ -91218,21 +91349,69 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      _edu_ensure_owner_membership: {
-        Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
-        Returns: undefined
+      _edu_class_find: {
+        Args: { p_class: string }
+        Returns: unknown[]
+        SetofOptions: {
+          from: "*"
+          to: "_edu_class_row"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
+      _edu_class_of: {
+        Args: { p_class: string }
+        Returns: unknown[]
+        SetofOptions: {
+          from: "*"
+          to: "_edu_class_row"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _edu_ensure_owner_membership:
+        | {
+            Args: { p_scope: unknown[] }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public._edu_ensure_owner_membership(p_scope => scopes), public._edu_ensure_owner_membership(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public._edu_ensure_owner_membership(p_scope => scopes), public._edu_ensure_owner_membership(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
       _edu_generate_join_code: { Args: never; Returns: string }
       _edu_is_active_member: {
         Args: { p_scope: string; p_user: string }
         Returns: boolean
       }
       _edu_is_assignable_token: { Args: { p_token: string }; Returns: boolean }
-      _edu_is_owner: {
-        Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
-        Returns: boolean
-      }
+      _edu_is_owner:
+        | {
+            Args: { p_scope: unknown[] }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public._edu_is_owner(p_scope => scopes), public._edu_is_owner(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public._edu_is_owner(p_scope => scopes), public._edu_is_owner(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
       _edu_is_scope_member: { Args: { p_scope: string }; Returns: boolean }
+      _edu_live_class_by_code: {
+        Args: { p_code: string }
+        Returns: unknown[]
+        SetofOptions: {
+          from: "*"
+          to: "_edu_class_row"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       _edu_resource_progress: {
         Args: { p_resource: string; p_token: string; p_user: string }
         Returns: Json
@@ -101412,6 +101591,16 @@ export type Database = {
         | "linked_gsheet"
     }
     CompositeTypes: {
+      _edu_class_row: {
+        id: string | null
+        organization_id: string | null
+        name: string | null
+        description: string | null
+        slug: string | null
+        settings: Json | null
+        created_by: string | null
+        deleted_at: string | null
+      }
       operation_record: {
         table_name: string | null
         operation: Database["public"]["Enums"]["operation_type"] | null
@@ -105482,6 +105671,78 @@ export type Database = {
   }
   runtime: {
     Tables: {
+      _ai_usage_hourly: {
+        Row: {
+          agent_id: string | null
+          app: string
+          bucket: string
+          calls: number
+          cost: number
+          feature: string | null
+          id: string
+          model: string | null
+          organization_id: string
+          origin: string
+          paid_calls: number
+          person_id: string | null
+          provider: string | null
+          refreshed_at: string
+          requests: number
+          source: string | null
+          tokens_cached: number
+          tokens_in: number
+          tokens_out: number
+          trigger: string
+          unpriced_calls: number
+        }
+        Insert: {
+          agent_id?: string | null
+          app: string
+          bucket: string
+          calls?: number
+          cost?: number
+          feature?: string | null
+          id?: string
+          model?: string | null
+          organization_id: string
+          origin: string
+          paid_calls?: number
+          person_id?: string | null
+          provider?: string | null
+          refreshed_at?: string
+          requests?: number
+          source?: string | null
+          tokens_cached?: number
+          tokens_in?: number
+          tokens_out?: number
+          trigger: string
+          unpriced_calls?: number
+        }
+        Update: {
+          agent_id?: string | null
+          app?: string
+          bucket?: string
+          calls?: number
+          cost?: number
+          feature?: string | null
+          id?: string
+          model?: string | null
+          organization_id?: string
+          origin?: string
+          paid_calls?: number
+          person_id?: string | null
+          provider?: string | null
+          refreshed_at?: string
+          requests?: number
+          source?: string | null
+          tokens_cached?: number
+          tokens_in?: number
+          tokens_out?: number
+          trigger?: string
+          unpriced_calls?: number
+        }
+        Relationships: []
+      }
       execution_event_cursor: {
         Row: {
           last_seq: number
@@ -106150,6 +106411,10 @@ export type Database = {
           total_cost: number
           total_tokens: number
         }[]
+      }
+      ai_usage_hourly_refresh: {
+        Args: { p_from: string; p_to: string }
+        Returns: number
       }
       spine_restore_conversation_requests: {
         Args: { p_conversation_id: string; p_stamp: string }

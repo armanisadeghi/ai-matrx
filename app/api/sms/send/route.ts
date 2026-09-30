@@ -13,6 +13,7 @@ import { sendAndLogSms } from '@/lib/sms/send';
 import { findOrCreateConversation } from '@/lib/sms/receive';
 import { normalizePhoneNumber, isValidE164 } from '@/lib/sms/phoneUtils';
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,10 +83,18 @@ export async function POST(request: NextRequest) {
 
       // If the conversation was created with no user, assign this user
       if (!conv.userId) {
-        await adminSupabase
-          .schema('communication').from('sms_conversations')
-          .update({ user_id: user.id, conversation_type: 'user_initiated' })
-          .eq('id', convId);
+        const { error: landError } = await tryWriteOne(
+          adminSupabase
+            .schema('communication').from('sms_conversations')
+            .update({ user_id: user.id, conversation_type: 'user_initiated' })
+            .eq('id', convId)
+            .select("id"),
+          { action: "update", noun: "SMS conversation owner" },
+        );
+        if (landError) {
+          // Best-effort bookkeeping; a write that did not land is still said.
+          console.error("[write-did-not-land] SMS conversation owner:", landError.message);
+        }
       }
     }
 

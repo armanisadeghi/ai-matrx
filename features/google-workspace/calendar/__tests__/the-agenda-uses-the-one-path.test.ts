@@ -192,7 +192,6 @@ describe("readAgendaEvents", () => {
   it("reads the right table, through readAllRows, scoped to MINE", async () => {
     state.rows = [event({ id: "e1" })];
     const rows = await readAgendaEvents({
-      organizationId: ORG,
       userId: USER,
       days: 7,
       now: new Date("2026-09-18T09:00:00Z"),
@@ -206,7 +205,8 @@ describe("readAgendaEvents", () => {
     expect(call.table).toBe("calendar_event");
     // THE VIEW LAW — the list declares its own scope, it does not lean on RLS.
     expect(call.filters["eq:created_by"]).toBe(USER);
-    expect(call.filters["eq:organization_id"]).toBe(ORG);
+    // ...and NOT by the selected organization: a person's day spans all of theirs.
+    expect(call.filters["eq:organization_id"]).toBeUndefined();
     expect(call.filters["is:deleted_at"]).toBe(null);
     // `{ count: "exact" }` is what makes a truncated page provable.
     expect(call.filters["select:*"]).toEqual({ count: "exact" });
@@ -215,16 +215,12 @@ describe("readAgendaEvents", () => {
     expect(call.filters["order:id"]).toBeDefined();
   });
 
-  it("refuses to read with no organization rather than guessing one", async () => {
+  it("never narrows by organization, so it needs none", async () => {
+    state.rows = [event({ id: "e1" })];
     await expect(
-      readAgendaEvents({
-        organizationId: "",
-        userId: USER,
-        days: 7,
-        now: new Date(),
-      }),
-    ).rejects.toThrow();
-    expect(state.supabaseCalls).toHaveLength(0);
+      readAgendaEvents({ userId: USER, days: 7, now: new Date() }),
+    ).resolves.toHaveLength(1);
+    expect(state.supabaseCalls[0].filters["eq:organization_id"]).toBeUndefined();
   });
 });
 

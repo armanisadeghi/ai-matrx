@@ -68,6 +68,7 @@ export async function deleteRun(runId: string): Promise<void> {
   );
   const jobId = trashed.job_id ?? null;
   if (jobId) {
+    // write-lands-exempt: compare-and-clear of the job's pointer; zero rows means it already points at another run
     const { error } = await docproc
       .from("page_extraction_jobs")
       .update({ latest_run_id: null })

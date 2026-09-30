@@ -4,6 +4,7 @@ import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { extractErrorMessage } from "@/utils/errors";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 /**
  * POST /api/admin/agent-builtins/convert-from-agent
@@ -150,15 +151,19 @@ export async function POST(request: Request) {
         );
       }
 
-      const { error: updateError } = await supabase
-        .schema("agent")
-        .from("definition")
-        .update({
-          ...snapshot,
-          source_agent_id: agent_id,
-          source_snapshot_at: new Date().toISOString(),
-        })
-        .eq("id", system_agent_id);
+      const { error: updateError } = await tryWriteOne(
+        supabase
+          .schema("agent")
+          .from("definition")
+          .update({
+            ...snapshot,
+            source_agent_id: agent_id,
+            source_snapshot_at: new Date().toISOString(),
+          })
+          .eq("id", system_agent_id)
+          .select("id"),
+        { action: "update", noun: "system agent" },
+      );
 
       if (updateError) {
         console.error("[convert-from-agent] update failed:", updateError);
@@ -166,9 +171,9 @@ export async function POST(request: Request) {
           {
             error: "Failed to update system agent",
             details: updateError.message,
-            code: updateError.code,
+            code: "code" in updateError ? updateError.code : undefined,
           },
-          { status: 500 },
+          { status: writeFailureStatus(updateError) },
         );
       }
 

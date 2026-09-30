@@ -3,7 +3,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { BulkWriteError, tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
 import { toast } from "@/lib/toast";
 import type { Database, Json } from "@/types/database.types";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
@@ -1483,17 +1483,29 @@ export const aiModelService = {
       value: AiModel[keyof AiModel];
     }>,
   ): Promise<void> {
+    // Every row proves it landed; a failure on one model never hides behind
+    // the others — the person is told exactly which models were not changed.
     const results = await Promise.all(
-      patches.map(({ id, field, value }) =>
-        supabase
-          .schema("ai")
-          .from("model_definition")
-          .update(modelFieldUpdate(field, value))
-          .eq("id", id),
-      ),
+      patches.map(async ({ id, field, value }) => ({
+        id,
+        ...(await tryWriteOne(
+          supabase
+            .schema("ai")
+            .from("model_definition")
+            .update(modelFieldUpdate(field, value))
+            .eq("id", id)
+            .select("id"),
+          { action: "update", noun: "model" },
+        )),
+      })),
     );
-    const firstError = results.find((r) => r.error);
-    if (firstError?.error) throw firstError.error;
+    const failed = results.filter((r) => r.error);
+    if (failed.length > 0) {
+      throw new BulkWriteError(
+        failed.map((r) => ({ id: r.id, message: r.error?.message ?? "" })),
+        patches.length,
+      );
+    }
   },
 
   /** Patch one of the inline audit fields on a single model. The runtime

@@ -55,7 +55,6 @@ const REFRESH_PATH = "/google-sync/calendar/refresh";
  * a word.
  */
 export async function readAgendaEvents(args: {
-  organizationId: string;
   userId: string;
   days: number;
   /** `now` is passed so the caller's clock is the only clock. */
@@ -68,7 +67,6 @@ export async function readAgendaEvents(args: {
   windowStart?: Date;
   signal?: AbortSignal;
 }): Promise<CalendarEventRow[]> {
-  const organizationId = requireOrganizationContext(args.organizationId);
   const span = agendaDays(args.days);
   // A generous floor and ceiling around the window: the day boundary itself is
   // decided in the VIEWER's zone by `groupAgenda`, so this read must not clip a
@@ -88,8 +86,10 @@ export async function readAgendaEvents(args: {
         // own (PLAN §5.6 / R1: calendar events are a Private table), and RLS
         // above this would also admit shared ones — which is exactly the
         // "org-wide readability poisons a personal space" the law forbids.
+        // NOT narrowed by the selected organization: a person's day is their
+        // day across every organization they belong to (access belongs to the
+        // person; the organization is only where a refresh is filed).
         .eq("created_by", args.userId)
-        .eq("organization_id", organizationId)
         .is("deleted_at", null)
         // An event that started yesterday and ends today belongs on today's
         // calendar too. The old start-only predicate silently hid every

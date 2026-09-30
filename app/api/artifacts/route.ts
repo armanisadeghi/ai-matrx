@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { TablesUpdate } from "@/types/database.types";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 export async function POST(request: NextRequest) {
   try {
@@ -265,16 +266,31 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { error } = await supabase
-          .schema("chat")
-          .from("artifact")
-          .update({ status: "archived", deleted_at: new Date().toISOString() })
-          .eq("id", id)
-          .is("deleted_at", null);
+        const { error } = await tryWriteOne(
+          supabase
+            .schema("chat")
+            .from("artifact")
+            .update({ status: "archived", deleted_at: new Date().toISOString() })
+            .eq("id", id)
+            .is("deleted_at", null)
+            .select("id, deleted_at"),
+          {
+            action: "archive",
+            noun: "artifact",
+            alreadyDone: {
+              reread: () =>
+                supabase.schema("chat").from("artifact")
+                  .select("id, deleted_at")
+                  .eq("id", id)
+                  .maybeSingle(),
+              isDone: (row) => row.deleted_at != null,
+            },
+          },
+        );
 
         if (error) {
           console.error("[artifacts API] archive error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+          return NextResponse.json({ error: error.message }, { status: writeFailureStatus(error) });
         }
 
         return NextResponse.json({ success: true });

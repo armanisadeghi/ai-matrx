@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 // ============================================
 // Validation Schemas
@@ -364,10 +365,18 @@ export async function POST(request: NextRequest) {
     if (participantsError) {
       // Rollback: archive the half-made conversation (delete means archive;
       // no client hard delete on a soft-deletable table).
-      await supabase
-        .schema("communication").from("dm_conversations")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", newConversation.id);
+      const { error: landError } = await tryWriteOne(
+        supabase
+          .schema("communication").from("dm_conversations")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", newConversation.id)
+          .select("id"),
+        { action: "archive", noun: "half-made conversation" },
+      );
+      if (landError) {
+        // Best-effort bookkeeping; a write that did not land is still said.
+        console.error("[write-did-not-land] half-made conversation:", landError.message);
+      }
       console.error(
         "[DM Conversations API] Failed to add participants:",
         participantsError,

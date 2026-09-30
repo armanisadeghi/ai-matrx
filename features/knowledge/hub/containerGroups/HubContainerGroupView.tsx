@@ -37,9 +37,6 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
 import {
@@ -266,10 +263,6 @@ interface LibrariesRead {
 
 function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: string | null, replace?: boolean) => void }) {
   const dispatch = useAppDispatch();
-  const organizationId = useAppSelector(selectOrganizationId);
-  // Four states, one reading: still resolving, none chosen, the read FAILED
-  // (never told "choose one"), or signed out.
-  const { organizationState, retry: retryOrganization } = useOrganizationRequired();
   const lane = libraryLane(group);
   const adapters = libraryAdapters(group);
   const words = groupWords(group);
@@ -278,11 +271,11 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
   const [laneCounts, setLaneCounts] = useState<Partial<Record<LibraryLane, number>>>({});
   const [attempt, setAttempt] = useState(0);
   const [more, setMore] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
-  const filterKey = `${organizationId ?? ""}|${lane}|${adapters.join(",")}|${words}|${attempt}`;
+  const filterKey = `${lane}|${adapters.join(",")}|${words}|${attempt}`;
 
   useEffect(() => {
-    // The transport refuses until the active organization resolves (one beat after first render).
-    if (!organizationId) return;
+    // A Libraries read is decided by the person's access, never by the selected
+    // organization: it runs with none chosen and does not rerun when it changes.
     let cancelled = false;
     setRead((r) => ({ ...r, status: "loading", error: null }));
     listLibraries(dispatch, libraryListRequest(group, { limit: PAGE, offset: 0 }))
@@ -373,16 +366,7 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
         </Link>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Libraries">
-        {!organizationId && organizationState === "required" ? (
-          <Notice>
-            Libraries are listed for the organization you are working in, and none is chosen yet. Choose one with the
-            organization button in the header and they appear here.
-          </Notice>
-        ) : !organizationId && (organizationState === "unavailable" || organizationState === "signed_out") ? (
-          <OrganizationContextNotice state={organizationState} what="Libraries" compact onRetry={retryOrganization} />
-        ) : !organizationId ? (
-          <Notice>Opening your workspace…</Notice>
-        ) : read.status === "loading" ? (
+        {read.status === "loading" ? (
           <Notice>Reading your Libraries…</Notice>
         ) : null}
         {read.status === "error" ? (

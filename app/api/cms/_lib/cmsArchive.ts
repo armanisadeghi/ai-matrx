@@ -22,6 +22,7 @@
 
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 export type CmsArchiveTable =
   | "client_sites"
@@ -32,6 +33,16 @@ export type CmsArchiveTable =
   | "html_pages";
 
 export const ARCHIVE_COLUMN = "deleted_at";
+
+/** What each archivable CMS table holds, in the person's words. */
+const CMS_ARCHIVE_NOUN: Record<CmsArchiveTable, string> = {
+  client_sites: "site",
+  client_pages: "page",
+  client_components: "component",
+  client_assets: "asset",
+  client_redirects: "redirect",
+  html_pages: "page",
+};
 const ABSENT_RECHECK_MS = 60_000;
 
 const present = new Set<CmsArchiveTable>();
@@ -91,13 +102,26 @@ export async function archiveRow(
   db: SupabaseClient,
   table: CmsArchiveTable,
   id: string,
-): Promise<{ error: { message: string } | null }> {
-  const { error } = await db
-    .from(table)
-    .update({ [ARCHIVE_COLUMN]: new Date().toISOString() })
-    .eq("id", id)
-    .is(ARCHIVE_COLUMN, null);
-  return { error };
+): Promise<{ error: { message: string; status: number } | null }> {
+  // Zero rows is a success only when the row is ALREADY archived (idempotent);
+  // otherwise it is gone or refused, and the caller says so in words.
+  const { error } = await tryWriteOne<Record<string, unknown>>(
+    db
+      .from(table)
+      .update({ [ARCHIVE_COLUMN]: new Date().toISOString() })
+      .eq("id", id)
+      .is(ARCHIVE_COLUMN, null)
+      .select("id"),
+    {
+      action: "archive",
+      noun: CMS_ARCHIVE_NOUN[table],
+      alreadyDone: {
+        reread: () => db.from(table).select(`id, ${ARCHIVE_COLUMN}`).eq("id", id).maybeSingle(),
+        isDone: (row) => row[ARCHIVE_COLUMN] != null,
+      },
+    },
+  );
+  return { error: error ? { message: error.message, status: writeFailureStatus(error) } : null };
 }
 
 /** For tests only: forget what the probe learned. */

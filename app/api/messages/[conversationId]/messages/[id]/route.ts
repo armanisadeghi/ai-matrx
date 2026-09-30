@@ -13,6 +13,7 @@ import { createClient } from "@/utils/supabase/server";
 import type { TablesUpdate } from "@/types/database.types";
 import { z } from "zod";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 // ============================================
 // Validation Schemas
@@ -285,21 +286,25 @@ export async function DELETE(
     }
 
     // Soft delete: set deleted_at and replace content
-    const { error: deleteError } = await supabase
-      .schema("communication")
-      .from("dm_messages")
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_for_everyone: true,
-        content: "[Message deleted]",
-      })
-      .eq("id", messageId);
+    const { error: deleteError } = await tryWriteOne(
+      supabase
+        .schema("communication")
+        .from("dm_messages")
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_for_everyone: true,
+          content: "[Message deleted]",
+        })
+        .eq("id", messageId)
+        .select("id"),
+      { action: "delete", noun: "message" },
+    );
 
     if (deleteError) {
       console.error("[DM Message API] Failed to delete:", deleteError);
       return NextResponse.json(
         { success: false, msg: deleteError.message },
-        { status: 500 },
+        { status: writeFailureStatus(deleteError) },
       );
     }
 

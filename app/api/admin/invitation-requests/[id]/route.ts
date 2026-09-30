@@ -5,6 +5,7 @@ import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { sendInvitationRequestApprovalEmail, sendInvitationRequestRejectionEmail } from "@/features/invitations/emailService";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
 /**
  * PATCH /api/admin/invitation-requests/[id]
@@ -115,21 +116,25 @@ export async function PATCH(
       }
 
       // Update invitation request status
-      const { error: updateError } = await adminSupabase
-        .schema("users").from("invitation_requests")
-        .update({
-          status: "approved",
-          reviewed_by: authUser.id,
-          reviewed_at: new Date().toISOString(),
-          notes: notes || null,
-        })
-        .eq("id", params.id);
+      const { error: updateError } = await tryWriteOne(
+        adminSupabase
+          .schema("users").from("invitation_requests")
+          .update({
+            status: "approved",
+            reviewed_by: authUser.id,
+            reviewed_at: new Date().toISOString(),
+            notes: notes || null,
+          })
+          .eq("id", params.id)
+          .select("id"),
+        { action: "update", noun: "invitation request" },
+      );
 
       if (updateError) {
         console.error("Error updating invitation request:", updateError);
         return NextResponse.json(
           { success: false, msg: "Failed to update invitation request" },
-          { status: 500 }
+          { status: writeFailureStatus(updateError) }
         );
       }
 
@@ -154,21 +159,25 @@ export async function PATCH(
       });
     } else {
       // Reject
-      const { error: updateError } = await adminSupabase
-        .schema("users").from("invitation_requests")
-        .update({
-          status: "rejected",
-          reviewed_by: authUser.id,
-          reviewed_at: new Date().toISOString(),
-          notes: notes || null,
-        })
-        .eq("id", params.id);
+      const { error: updateError } = await tryWriteOne(
+        adminSupabase
+          .schema("users").from("invitation_requests")
+          .update({
+            status: "rejected",
+            reviewed_by: authUser.id,
+            reviewed_at: new Date().toISOString(),
+            notes: notes || null,
+          })
+          .eq("id", params.id)
+          .select("id"),
+        { action: "update", noun: "invitation request" },
+      );
 
       if (updateError) {
         console.error("Error updating invitation request:", updateError);
         return NextResponse.json(
           { success: false, msg: "Failed to update invitation request" },
-          { status: 500 }
+          { status: writeFailureStatus(updateError) }
         );
       }
 

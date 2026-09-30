@@ -16,6 +16,7 @@ import { mayRunNoteConflictCommand } from "./conflictCommandLock";
  *   saveNoteField            — quick single-field save + optimistic update
  */
 
+import { WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { noteEditBaseFromRecord } from "../utils/saveVerification";
 import { resolveNewNoteOrganization } from "../hooks/useNewNoteOrganization";
 import { readAllRows } from "@ai-matrx/data/db";
@@ -1619,6 +1620,7 @@ export const restoreNote = createAsyncThunk<void, string>(
 
     if (error) throw error;
     let restored = data;
+    let folderRefused = false;
     if (restored?.folder_id) {
       const { data: folder, error: folderError } = await supabase
         .schema("workbench")
@@ -1628,11 +1630,17 @@ export const restoreNote = createAsyncThunk<void, string>(
         .maybeSingle();
       if (folderError) throw folderError;
       if (folder?.deleted_at) {
-        const { error: reviveError } = await supabase
+        const { data: revived, error: reviveError } = await supabase
           .schema("workbench")
           .from("note_folders")
           .update({ deleted_at: null })
-          .eq("id", folder.id);
+          .eq("id", folder.id)
+          .select("id");
+        if (!reviveError && (revived ?? []).length === 0) {
+          // The note is back, but its folder stays in Trash: the person may
+          // restore the note, not the folder. Said after the note is shown.
+          folderRefused = true;
+        }
         if (reviveError?.code === "23505" && folder.created_by) {
           // A same-name folder is live again — file the note there.
           const { data: live, error: liveError } = await supabase
@@ -1663,6 +1671,9 @@ export const restoreNote = createAsyncThunk<void, string>(
     }
     if (restored) {
       dispatch(upsertNoteFromServer({ note: restored, fetchStatus: "full" }));
+    }
+    if (folderRefused) {
+      throw new WriteDidNotLandError({ action: "restore", noun: "folder" });
     }
   },
 );

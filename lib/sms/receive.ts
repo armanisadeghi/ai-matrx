@@ -19,6 +19,7 @@ import {
   type SmsInboundContextInput,
   type SmsInboundContextResolution,
 } from "./identity";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 const RECEIPT_LEASE_MS = 60_000;
 
@@ -184,18 +185,22 @@ export async function completeInboundSmsReceipt(
   messageId: string | null,
   processingError: string | null = null,
 ): Promise<void> {
-  const { error } = await createAdminClient()
-    .schema("communication")
-    .from("sms_webhook_logs")
-    .update({
-      processed: true,
-      processed_at: new Date().toISOString(),
-      message_id: messageId,
-      processing_error: processingError,
-      claimed_at: null,
-      lease_expires_at: null,
-    })
-    .eq("id", receiptId);
+  const { error } = await tryWriteOne(
+    createAdminClient()
+      .schema("communication")
+      .from("sms_webhook_logs")
+      .update({
+        processed: true,
+        processed_at: new Date().toISOString(),
+        message_id: messageId,
+        processing_error: processingError,
+        claimed_at: null,
+        lease_expires_at: null,
+      })
+      .eq("id", receiptId)
+      .select("id"),
+    { action: "update", noun: "SMS webhook receipt" },
+  );
   if (error) {
     throw new Error(`Failed to finalize inbound SMS receipt: ${error.message}`);
   }
@@ -205,16 +210,20 @@ export async function releaseInboundSmsReceipt(
   receiptId: string,
   errorMessage: string,
 ): Promise<void> {
-  const { error } = await createAdminClient()
-    .schema("communication")
-    .from("sms_webhook_logs")
-    .update({
-      processing_error: errorMessage.slice(0, 2000),
-      claimed_at: null,
-      lease_expires_at: null,
-    })
-    .eq("id", receiptId)
-    .eq("processed", false);
+  const { error } = await tryWriteOne(
+    createAdminClient()
+      .schema("communication")
+      .from("sms_webhook_logs")
+      .update({
+        processing_error: errorMessage.slice(0, 2000),
+        claimed_at: null,
+        lease_expires_at: null,
+      })
+      .eq("id", receiptId)
+      .eq("processed", false)
+      .select("id"),
+    { action: "update", noun: "SMS webhook receipt", compareAndSet: true },
+  );
   if (error) {
     console.error("Failed to release inbound SMS receipt:", error);
   }
@@ -575,11 +584,15 @@ export async function resolveSmsInboundContext(
       drift.contact_point_id = crmBinding.contactPointId;
     }
     if (Object.keys(drift).length > 0) {
-      const { error: restampError } = await supabase
-        .schema("communication")
-        .from("sms_conversations")
-        .update(drift)
-        .eq("id", conversation.id);
+      const { error: restampError } = await tryWriteOne(
+        supabase
+          .schema("communication")
+          .from("sms_conversations")
+          .update(drift)
+          .eq("id", conversation.id)
+          .select("id"),
+        { action: "update", noun: "SMS conversation" },
+      );
       if (restampError) {
         // Loud, and NOT fatal: the message is still worth storing. What is
         // fatal is doing this silently — an unstamped thread means the turn is

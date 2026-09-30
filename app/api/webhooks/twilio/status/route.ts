@@ -14,6 +14,7 @@ import {
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { StatusCallbackPayload } from "@/lib/sms/types";
 import type { TablesUpdate } from "@/types/database.types";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 const WEBHOOK_PATH = "/api/webhooks/twilio/status";
 // Status progression order — only update if the new status is "more advanced"
@@ -155,19 +156,27 @@ export async function POST(request: NextRequest) {
     // Any signed callback proves Twilio created this Message resource, even
     // when its status is equal to or behind our monotonic status. Clear a
     // stranded delivery lease independently of status progression.
-    await supabase
-      .schema("communication")
-      .from("sms_messages")
-      .update({
-        twilio_sid: payload.MessageSid,
-        claimed_at: null,
-        lease_expires_at: null,
-        processing_worker_id: null,
-        outcome_uncertain_at: null,
-        provider_status_at: new Date().toISOString(),
-      })
-      .eq("id", existingMessage.id)
-      .or(`twilio_sid.is.null,twilio_sid.eq.${payload.MessageSid}`);
+    const { error: landError } = await tryWriteOne(
+      supabase
+        .schema("communication")
+        .from("sms_messages")
+        .update({
+          twilio_sid: payload.MessageSid,
+          claimed_at: null,
+          lease_expires_at: null,
+          processing_worker_id: null,
+          outcome_uncertain_at: null,
+          provider_status_at: new Date().toISOString(),
+        })
+        .eq("id", existingMessage.id)
+        .or(`twilio_sid.is.null,twilio_sid.eq.${payload.MessageSid}`)
+        .select("id"),
+      { action: "update", noun: "SMS message lease" },
+    );
+    if (landError) {
+      // Best-effort bookkeeping; a write that did not land is still said.
+      console.error("[write-did-not-land] SMS message lease:", landError.message);
+    }
 
     // Only update if the new status is more advanced in the lifecycle
     const currentOrder = STATUS_ORDER[existingMessage.status] ?? -1;
@@ -193,11 +202,19 @@ export async function POST(request: NextRequest) {
         updateData.error_message = payload.ErrorMessage;
       }
 
-      await supabase
-        .schema("communication")
-        .from("sms_messages")
-        .update(updateData)
-        .eq("id", existingMessage.id);
+      const { error: landError } = await tryWriteOne(
+        supabase
+          .schema("communication")
+          .from("sms_messages")
+          .update(updateData)
+          .eq("id", existingMessage.id)
+          .select("id"),
+        { action: "update", noun: "SMS message status" },
+      );
+      if (landError) {
+        // Best-effort bookkeeping; a write that did not land is still said.
+        console.error("[write-did-not-land] SMS message status:", landError.message);
+      }
     }
 
     // Mark webhook as processed

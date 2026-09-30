@@ -8,6 +8,7 @@ import { getTwilioClient, getAppBaseUrl } from './client';
 import { createAdminClient } from '@/utils/supabase/adminClient';
 import type { PhoneNumberPurchaseOptions, PhoneNumberInfo } from './types';
 import { extractErrorMessage } from "@/utils/errors";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 /**
  * Search for available phone numbers to purchase.
@@ -130,14 +131,18 @@ export async function assignPhoneNumberToUser(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = createAdminClient();
 
-  const { error } = await supabase
-    .schema('communication').from('sms_phone_numbers')
-    .update({
-      user_id: userId,
-      assigned_at: new Date().toISOString(),
-    })
-    .eq('id', phoneNumberId)
-    .is('user_id', null);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema('communication').from('sms_phone_numbers')
+      .update({
+        user_id: userId,
+        assigned_at: new Date().toISOString(),
+      })
+      .eq('id', phoneNumberId)
+      .is('user_id', null)
+      .select("id"),
+    { action: "change", noun: "phone number", compareAndSet: true },
+  );
 
   if (error) {
     return { success: false, error: error.message };
@@ -154,13 +159,17 @@ export async function releasePhoneNumber(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = createAdminClient();
 
-  const { error } = await supabase
-    .schema('communication').from('sms_phone_numbers')
-    .update({
-      user_id: null,
-      released_at: new Date().toISOString(),
-    })
-    .eq('id', phoneNumberId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema('communication').from('sms_phone_numbers')
+      .update({
+        user_id: null,
+        released_at: new Date().toISOString(),
+      })
+      .eq('id', phoneNumberId)
+      .select("id"),
+    { action: "remove", noun: "phone number" },
+  );
 
   if (error) {
     return { success: false, error: error.message };

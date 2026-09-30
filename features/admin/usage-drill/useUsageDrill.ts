@@ -16,7 +16,7 @@
 // `platform.ai_usage_recount` for the last 48 hours once (no schedule exists until Arman
 // approves one), then asks again.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import type { DrillDefinition, DrillQuestion, DrillSource } from "@ai-matrx/records";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -96,13 +96,49 @@ function rowOf(r: { groups: Record<string, unknown> | null; measures: Record<str
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringMap(value: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!isRecord(value)) return out;
+  for (const [k, v] of Object.entries(value)) if (typeof v === "string") out[k] = v;
+  return out;
+}
+
+/** The names door's answer, read defensively (a jsonb the database shapes). */
+function namesOf(data: unknown): Record<NamedDimension, Record<string, string>> {
+  const d = isRecord(data) ? data : {};
+  return { organization: stringMap(d.organization), person: stringMap(d.person), agent: stringMap(d.agent) };
+}
+
+async function readFreshness(organizationId: string): Promise<{ ok: true; countedThrough: string | null; countedSince: string | null } | { ok: false; message: string }> {
+  const { data, error } = await supabase.schema("platform").rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: {} });
+  if (error) return { ok: false, message: `How fresh the usage is could not be read: ${error.message}` };
+  const d = isRecord(data) ? data : {};
+  return {
+    ok: true,
+    countedThrough: typeof d.counted_through === "string" ? d.counted_through : null,
+    countedSince: typeof d.counted_since === "string" ? d.counted_since : null,
+  };
+}
+
+/** Rebuild the rollup for a window (at most 100 days; the door refuses more in words). */
+async function askRecount(organizationId: string, range: { from: string; to: string }): Promise<{ ok: true; countedThrough: string } | { ok: false; message: string }> {
+  const { data, error } = await supabase.schema("platform").rpc("ai_usage_recount", { p_organization_id: organizationId, p_from: range.from, p_to: range.to });
+  if (error) return { ok: false, message: `The usage could not be recounted: ${error.message}` };
+  const d = isRecord(data) ? data : {};
+  return { ok: true, countedThrough: typeof d.counted_through === "string" ? d.counted_through : new Date().toISOString() };
+}
+
 export function useUsageDrill(args: {
   organizationId: string | null;
   userId: string | null;
   question: MatrxDrillQuestion;
 }): UsageDrill {
   const { organizationId, userId, question } = args;
-  const client = useMemo(() => (organizationId ? clientFor(organizationId, userId) : null), [organizationId, userId]);
+  const client = organizationId ? clientFor(organizationId, userId) : null;
   const [def, setDef] = useState<DrillDefinition | null>(null);
   const [answers, setAnswers] = useState<MatrxDrillAnswers>({});
   const [whole, setWhole] = useState<MatrxDrillAnswerRow | null>(null);
@@ -127,53 +163,41 @@ export function useUsageDrill(args: {
     };
   }, [client]);
 
-  const recount = useMemo(
-    () => async (range: { from: string; to: string }) => {
-      if (!organizationId) return;
-      setFreshness((f) => ({ ...f, recounting: true, error: null }));
-      const { data, error: e } = await supabase.schema("platform").rpc("ai_usage_recount" as never, {
-        p_organization_id: organizationId,
-        p_from: range.from,
-        p_to: range.to,
-      } as never);
-      if (e) {
-        setFreshness((f) => ({ ...f, recounting: false, error: `The usage could not be recounted: ${e.message}` }));
-        return;
-      }
-      const counted = (data as { counted_through?: string } | null)?.counted_through ?? new Date().toISOString();
-      setFreshness((f) => ({ ...f, recounting: false, countedThrough: counted }));
-      setVersion((v) => v + 1);
-    },
-    [organizationId],
-  );
-
-  // FRESHNESS — the names door also says when the rollup was last counted; stale → recount once.
+  // FRESHNESS — the names door also says when the rollup was last counted; stale → recount the
+  // last 48 hours once, then every answer is asked again (`version`).
   useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
-    void supabase
-      .schema("platform")
-      .rpc("ai_usage_names" as never, { p_organization_id: organizationId, p_ids: {} } as never)
-      .then(({ data, error: e }) => {
-        if (cancelled) return;
-        if (e) {
-          setFreshness((f) => ({ ...f, error: `How fresh the usage is could not be read: ${e.message}` }));
-          return;
-        }
-        const d = data as { counted_through: string | null; counted_since: string | null } | null;
-        setFreshness((f) => ({ ...f, countedThrough: d?.counted_through ?? null, countedSince: d?.counted_since ?? null }));
-        const age = d?.counted_through ? Date.now() - new Date(d.counted_through).getTime() : Infinity;
-        if (age > STALE_AFTER_MS && !recountedOnce.current) {
-          recountedOnce.current = true;
-          void recount({ from: new Date(Date.now() - 48 * 3_600_000).toISOString(), to: new Date().toISOString() });
-        }
-      });
+    void readFreshness(organizationId).then(async (got) => {
+      if (cancelled) return;
+      if (!got.ok) {
+        setFreshness((f) => ({ ...f, error: got.message }));
+        return;
+      }
+      setFreshness((f) => ({ ...f, countedThrough: got.countedThrough, countedSince: got.countedSince }));
+      const age = got.countedThrough ? Date.now() - new Date(got.countedThrough).getTime() : Infinity;
+      if (age <= STALE_AFTER_MS || recountedOnce.current) return;
+      recountedOnce.current = true;
+      setFreshness((f) => ({ ...f, recounting: true, error: null }));
+      const done = await askRecount(organizationId, { from: new Date(Date.now() - 48 * 3_600_000).toISOString(), to: new Date().toISOString() });
+      if (cancelled) return;
+      setFreshness((f) => ({ ...f, recounting: false, ...(done.ok ? { countedThrough: done.countedThrough } : { error: done.message }) }));
+      if (done.ok) setVersion((v) => v + 1);
+    });
     return () => {
       cancelled = true;
     };
-  }, [organizationId, recount]);
+  }, [organizationId]);
 
-  const askKey = JSON.stringify({ by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null });
+  const recount = async (range: { from: string; to: string }) => {
+    if (!organizationId) return;
+    setFreshness((f) => ({ ...f, recounting: true, error: null }));
+    const done = await askRecount(organizationId, range);
+    setFreshness((f) => ({ ...f, recounting: false, ...(done.ok ? { countedThrough: done.countedThrough } : { error: done.message }) }));
+    if (done.ok) setVersion((v) => v + 1);
+  };
+
+  const askKey = JSON.stringify({ by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null, sort: question.sort ?? null });
 
   // THE ANSWERS — every request the table needs, plus the whole (no trail) for coverage.
   useEffect(() => {
@@ -187,11 +211,23 @@ export function useUsageDrill(args: {
         }
       : {};
     const where = usageWhere(asked);
+    const sortKey = asked.sort && asked.show.includes(asked.sort.key) ? asked.sort.key : asked.show[0];
     const requests = drillRequests(asked);
     let cancelled = false;
     setError(null);
     const ask = (by: string[], w: Record<string, unknown>) =>
-      client.drillAsk({ source: USAGE_SOURCE, question: { by, show: asked.show, where: w, lane: "platform", ...windowPart } });
+      client.drillAsk({
+        source: USAGE_SOURCE,
+        question: {
+          by,
+          show: asked.show,
+          where: w,
+          lane: "platform",
+          ...windowPart,
+          // the door keeps the top groups BY THIS (the rest fold into Other), so it ranks as the table sorts
+          ...(sortKey ? { sort: { key: sortKey, direction: asked.sort?.direction ?? "desc" } } : {}),
+        },
+      });
     void Promise.all([
       ...requests.map(async (request) => ({ key: request.key, by: request.by, got: await ask(request.by, where) })),
       ...(asked.where.length > 0 ? [ask([], {}).then((got) => ({ key: "__whole__", by: [] as string[], got }))] : []),
@@ -236,14 +272,14 @@ export function useUsageDrill(args: {
       if (wanted.organization.length + wanted.person.length + wanted.agent.length === 0) return;
       void supabase
         .schema("platform")
-        .rpc("ai_usage_names" as never, { p_organization_id: organizationId, p_ids: wanted } as never)
+        .rpc("ai_usage_names", { p_organization_id: organizationId!, p_ids: wanted })
         .then(({ data, error: e }) => {
           if (cancelled) return;
           if (e) {
             setSays((s) => [...s, `The names behind these groups could not be read (${e.message}), so they show as ids.`]);
             return;
           }
-          const d = data as Record<NamedDimension, Record<string, string>> | null;
+          const d = namesOf(data);
           setNames((held) => ({
             organization: { ...held.organization, ...(d?.organization ?? {}) },
             person: { ...held.person, ...(d?.person ?? {}) },

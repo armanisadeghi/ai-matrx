@@ -74,10 +74,35 @@ export interface KitsRead {
   error: string | null;
 }
 
+type KitRow = {
+  key: string;
+  payload: unknown;
+  sort_order: number | null;
+  organization_id: string;
+  created_by: string | null;
+};
+
+function kitsFromRows(rows: KitRow[] | null): KitEntry[] {
+  const kits: KitEntry[] = [];
+  for (const row of rows ?? []) {
+    const manifest = parseKitManifest(row.key, row.payload);
+    if (manifest) {
+      kits.push({
+        key: row.key,
+        sortOrder: row.sort_order ?? 0,
+        manifest,
+        organizationId: row.organization_id,
+        createdBy: row.created_by,
+      });
+    }
+  }
+  return kits;
+}
+
 /**
- * The active kits ONE organization publishes (THE VIEW LAW: every list declares its
- * own scope — never "whatever RLS lets me see", which for a platform admin is every
- * organization's kits). The platform's kits are the system organization's.
+ * The active kits ONE organization publishes. Used for the PLATFORM's kits (the
+ * system organization's) — an organization that IS the subject. A person's own
+ * kits are read with `fetchAccessibleKits`, never narrowed to the selected org.
  */
 export async function fetchKits(client: Client, organizationId: string): Promise<KitsRead> {
   const { data, error } = await client
@@ -91,20 +116,31 @@ export async function fetchKits(client: Client, organizationId: string): Promise
     .order("sort_order", { ascending: true })
     .order("key", { ascending: true });
   if (error) return { kits: [], error: error.message };
-  const kits: KitEntry[] = [];
-  for (const row of data ?? []) {
-    const manifest = parseKitManifest(row.key, row.payload);
-    if (manifest) {
-      kits.push({
-        key: row.key,
-        sortOrder: row.sort_order ?? 0,
-        manifest,
-        organizationId: row.organization_id,
-        createdBy: row.created_by,
-      });
-    }
-  }
-  return { kits, error: null };
+  return { kits: kitsFromRows(data), error: null };
+}
+
+/**
+ * Every active kit the person can reach across ALL of their organizations,
+ * except the platform's own (the gallery's "From AI Matrx" section shows those).
+ * Access is decided by RLS as the person; the selected organization plays no part.
+ */
+export async function fetchAccessibleKits(
+  client: Client,
+  excludeOrganizationId: string | null,
+): Promise<KitsRead> {
+  let q = client
+    .from("catalog_entries")
+    .select("key, payload, sort_order, organization_id, created_by")
+    .eq("app", KIT_CATALOG.app)
+    .eq("kind", KIT_CATALOG.kind)
+    .eq("is_active", true)
+    .is("deleted_at", null);
+  if (excludeOrganizationId) q = q.neq("organization_id", excludeOrganizationId);
+  const { data, error } = await q
+    .order("sort_order", { ascending: true })
+    .order("key", { ascending: true });
+  if (error) return { kits: [], error: error.message };
+  return { kits: kitsFromRows(data), error: null };
 }
 
 export async function fetchKit(

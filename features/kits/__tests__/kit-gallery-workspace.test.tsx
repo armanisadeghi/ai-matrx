@@ -29,7 +29,7 @@ jest.mock("@/features/overlays/openers/saveKitDialog", () => ({
   useOpenSaveKitDialog: () => jest.fn(),
 }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
-jest.mock("../service", () => ({ fetchKits: (...args: unknown[]) => fetchKits(...args) }));
+jest.mock("../service", () => ({ fetchAccessibleKits: (...args: unknown[]) => fetchKits(...args) }));
 jest.mock("@/features/shell/components/header/PageHeader", () => ({
   __esModule: true,
   default: () => null,
@@ -43,7 +43,7 @@ jest.mock("../components/KitCard", () => ({ KitCard: () => null }));
 
 import { KitGallery } from "../components/KitGallery";
 
-describe("KitGallery with no active workspace (RC-B12 r13)", () => {
+describe("KitGallery lists by access, never by the selected organization", () => {
   let host: HTMLDivElement;
   let root: Root;
 
@@ -59,24 +59,23 @@ describe("KitGallery with no active workspace (RC-B12 r13)", () => {
     host.remove();
   });
 
-  it("shows the workspace picker, never an endless 'Looking for kits…'", async () => {
+  it("with NO organization selected, still reads every kit the person can reach", async () => {
     orgState = "required";
     await act(async () => {
-      root.render(<KitGallery kits={[]} error={null} />);
+      root.render(<KitGallery kits={[]} error={null} platformOrganizationId="sys-org" />);
     });
-    const text = host.textContent ?? "";
-    expect(text).not.toContain("Looking for kits");
-    expect(host.querySelector('[data-testid="org-notice"]')?.textContent).toContain("required: Pick a workspace");
-    expect(fetchKits).not.toHaveBeenCalled();
+    expect(host.querySelector('[data-testid="org-notice"]')).toBeNull();
+    expect(fetchKits).toHaveBeenCalledWith(expect.anything(), "sys-org");
+    expect(host.textContent).toContain("None yet.");
   });
 
-  it("with a workspace, reads that workspace's kits", async () => {
+  it("with an organization selected, the read is the same — the selection never narrows it", async () => {
     orgState = "ready";
     await act(async () => {
-      root.render(<KitGallery kits={[]} error={null} />);
+      root.render(<KitGallery kits={[]} error={null} platformOrganizationId="sys-org" />);
     });
-    expect(fetchKits).toHaveBeenCalledWith(expect.anything(), "org-1");
-    expect(host.querySelector('[data-testid="org-notice"]')).toBeNull();
+    expect(fetchKits).toHaveBeenCalledTimes(1);
+    expect(fetchKits).toHaveBeenCalledWith(expect.anything(), "sys-org");
     expect(host.textContent).toContain("None yet.");
   });
 });
