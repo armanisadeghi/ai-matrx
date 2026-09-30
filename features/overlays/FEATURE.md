@@ -366,6 +366,8 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- 2026-09-30 — **Page-bound overlays close on navigation.** Catalogue field `closesOnNavigation` marks a window that shows a piece of the page that opened it; `useCloseOverlaysOnNavigation` (mounted once in the OverlayController) dispatches `closeOverlaysBoundToPage` on every pathname change. First member: `flashcardItemWindow` (a deck card kept floating over Study). Every other overlay still survives navigation. Guard `__tests__/pageBoundOverlaysCloseOnNavigation.test.ts` (red on a no-op reducer).
+
 - **2026-09-12** — **Fullscreen editor saves settle before close.** `callbackManager.triggerGroupCommand` awaits one durable `fullScreenEditor` command and retains it on rejection; `disposeFullScreenEditorCallbackGroup` releases it on every terminal bridge or imperative-handle path. The markdown and HTML editors share `FullScreenOverlay`'s pending/error/retry boundary; pending work hides the canonical close affordance. Public content-action saves reject synchronous returns before wrapper code can acknowledge them. Rich-document save adapters return actual promises and rethrow failures. Covered by callback settlement and rendered overlay/editor/bridge tests.
 
 - 2026-09-11 — **`referencePicker` overlay.** Singleton dialog/drawer (`components/ReferencePickerOverlay.tsx`) hosting the matrx-envelope reference picker; opener `openers/referencePicker.tsx` + callback group `callbacks/referencePicker.ts` (findReplace contract — only the group id rides Redux).

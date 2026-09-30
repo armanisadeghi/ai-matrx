@@ -16,6 +16,14 @@ export interface OverlayCatalogueEntry {
   instanceMode: "singleton" | "multi";
   /** True if the component renders a WindowPanel chrome. */
   isWindow: boolean;
+  /**
+   * True when the overlay shows a piece of the page that opened it (one row,
+   * one card) rather than a tool of its own: it closes when the person
+   * navigates to another route (`closeOverlaysBoundToPage`). Omitted = the
+   * overlay is a workbench window and survives navigation, which is the
+   * default for every window.
+   */
+  closesOnNavigation?: boolean;
 }
 
 export const OVERLAY_CATALOGUE = {
@@ -530,10 +538,13 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // One card of the deck page on screen — it belongs to that page, so it
+  // closes when the person goes to Study (or anywhere else).
   flashcardItemWindow: {
     label: "Flashcard Item Window",
     instanceMode: "singleton",
     isWindow: true,
+    closesOnNavigation: true,
   },
   flashcardsBlockWindow: {
     label: "Flashcards Block Window",

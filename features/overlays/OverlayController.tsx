@@ -33,6 +33,7 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { readDetailOverlayData } from "@/features/window-panels/detail/detailOverlayData";
+import { useCloseOverlaysOnNavigation } from "@/features/overlays/useCloseOverlaysOnNavigation";
 
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
@@ -1291,6 +1292,7 @@ const WhatsAppShellWindow = lazyOverlay(
 
 export default function OverlayController() {
   const dispatch = useAppDispatch();
+  useCloseOverlaysOnNavigation();
 
   // useEffect(() => {
   //   if (!_confirmedNewMount) {

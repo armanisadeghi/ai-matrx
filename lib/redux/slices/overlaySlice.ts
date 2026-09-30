@@ -14,7 +14,11 @@
 // All existing callers that omit instanceId continue to work with zero changes.
 
 import { createSlice, createSelector } from "@reduxjs/toolkit";
-import type { OverlayId } from "@/features/overlays/catalogue";
+import {
+  OVERLAY_CATALOGUE,
+  type OverlayCatalogueEntry,
+  type OverlayId,
+} from "@/features/overlays/catalogue";
 
 export const DEFAULT_INSTANCE_ID = "default";
 
@@ -219,6 +223,33 @@ const overlaySlice = createSlice({
     },
 
     /**
+     * Route change: close every open overlay whose catalogue entry says it is
+     * bound to the page that opened it (`closesOnNavigation`). Such a window
+     * shows a piece of THAT page (one card of the deck on screen), so after
+     * the person navigates away it would float over a page it does not
+     * belong to. Every other overlay is a workbench tool and stays open.
+     * Dispatched by `useCloseOverlaysOnNavigation` (mounted once, in the
+     * OverlayController).
+     */
+    closeOverlaysBoundToPage: (state) => {
+      for (const [overlayId, bucket] of Object.entries(state.overlays)) {
+        const entry: OverlayCatalogueEntry | undefined =
+          (OVERLAY_CATALOGUE as Record<string, OverlayCatalogueEntry>)[overlayId];
+        if (!entry?.closesOnNavigation) continue;
+        for (const [instanceId, instance] of Object.entries(bucket)) {
+          if (!instance.isOpen) continue;
+          if (instanceId === DEFAULT_INSTANCE_ID) {
+            instance.isOpen = false;
+            instance.data = null;
+          } else {
+            delete bucket[instanceId];
+          }
+        }
+        if (Object.keys(bucket).length === 0) delete state.overlays[overlayId];
+      }
+    },
+
+    /**
      * GC pass — removes closed instances last used more than
      * `olderThanMs` ago. Singleton slots are preserved regardless so the
      * selectors that return stable references don't thrash.
@@ -377,5 +408,6 @@ export const toggleOverlay = (payload: ToggleOverlayPayload) =>
 export const closeAllInstancesOfOverlay = (payload: CloseAllInstancesPayload) =>
   _rawCloseAllInstances(payload);
 
-export const { closeAllOverlays, pruneStaleInstances } = overlaySlice.actions;
+export const { closeAllOverlays, closeOverlaysBoundToPage, pruneStaleInstances } =
+  overlaySlice.actions;
 export default overlaySlice.reducer;
