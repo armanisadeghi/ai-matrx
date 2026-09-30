@@ -6,7 +6,7 @@
 
 ## What it is
 
-A **study kit** is one piece of the learner's material plus every study tool generated from it —
+A **study kit** is one piece of the learner's material plus every study tool generated from or manually added to it —
 flashcards, summary, quiz, practice test, mind map, memory aids, notes, audio study.
 
 The kit builder (`features/education/onboard`) has always produced eight artifacts from one
@@ -24,8 +24,8 @@ So:
 
 | The kit's… | is…                                                                                                               |
 | ---------- | ----------------------------------------------------------------------------------------------------------------- |
-| identity   | its **source material** — the kit id IS the anchor id (a `file` in every ingested kit)                            |
-| membership | the anchor's incoming `source` edges                                                                              |
+| identity   | its **source material** — the kit id IS the anchor id (`file` for an ingested kit)                                 |
+| membership | the anchor's incoming generated `source` edges and flagged manual `member` edges                                  |
 | name       | `metadata.sourceTitle` on those edges — written once per run by `onboard/kitTitle.ts`, identical on every sibling |
 | chronology | the edges' `created_at`                                                                                           |
 
@@ -36,13 +36,13 @@ No kit table, no kit column, no migration. Reads go through the registered assoc
 thing" is the point; splitting a learner's material into "kit #1" and "kit #2" because they came
 back the next day would recreate the scattering this feature exists to end.
 
-## 🚨 WHAT THIS DOES NOT YET SOLVE — one kit is still ONE upload
+## 🚨 WHAT THIS DOES NOT YET SOLVE — one kit is still ONE source
 
 Arman's words that prompted this feature were plural: _"they're uploading **a bunch of stuff**
 that's for one thing... give them a place they can go where all they look at is one thing, but
 **everything for that one thing**."_
 
-What shipped closes the easier half: one upload's artifacts stop scattering. It does **not**
+The kit groups aids made from or manually attached to one source. It does **not**
 close the half he actually described — a unit made of several sources (the chapter PDF, the
 recorded lecture, the photographed worksheet) still becomes three separate kit pages, which
 reproduces the same fragmentation one layer up. For anything past a single PDF that is the
@@ -70,8 +70,8 @@ exactly the "add a layer on your own authority" the platform forbids. It is on h
   access-scoped library RPC lists the learner's artifacts, then ONE `assoc_for_sources` call per
   artifact type (never per artifact) resolves their origins, grouped by anchor.
 
-🚨 **`targetKind` is the honest discriminator.** `recordSourceLineage` is the only writer that
-stamps it, so a `source` edge without one belongs to a different system on the same anchor — most
+🚨 **`targetKind` is the honest discriminator.** `recordSourceLineage` stamps generated edges and
+`createManualKit` stamps flagged manual membership. A `source` edge without one belongs to a different system on the same anchor — most
 importantly the **per-card** `fc_card → file` edges a deck writes, which would otherwise flood a
 kit with hundreds of rows. Filter on the stamp, never on a type blocklist.
 
@@ -102,10 +102,19 @@ A kit is reachable from every direction a learner can arrive from:
 | The run that just finished      | **Open your kit** on `KitBoard` — the first time a kit outlives its tab               |
 | Any artifact page (all 8 kinds) | **Open the kit** on `convert/MadeFromSource`                                          |
 | The education tools grid + hub  | The `kits` entry in `data/tools.ts`                                                   |
-| A kit page                      | **The material** (the source file) and **Make more from it**                          |
+| A kit page                      | **The material** (the source record), **Make more from it**, and **Add saved aid**    |
 | The education home's one nudge  | `?add=<kind>` — the chip for a format the kit lacks (`home/nudges.ts` → `kitAddHref`) |
 
 ## MAKING MORE STAYS IN THE KIT
+
+**Add saved aid** opens `/education/kits/new?source=<id>&from=<type>` with the current kit
+preselected. The creator lists saved Education Library items, including flashcard decks saved
+from chat. New manual kits start from a file; an existing `file`, `note`,
+`processed_document`, `fc_set`, `assessment`, or `conversation` kit accepts manual members.
+The writer checks the current membership fingerprint and re-reads selected library records
+before writing flagged `member` edges. Switching sources clears the prior kit's title and
+selections; a draft restores only within its own source URL. The picker uses the platform's
+record doors so every listed aid remains openable.
 
 🚨 **"Make more from it" converts the kit's OWN material — never the generic ingest.** It used to
 link `/education/start`, which asks the learner to upload the same document again and builds a
@@ -140,6 +149,12 @@ same anchor and whatever is made lands in THIS kit.
   name is the name of the MATERIAL, which is what the hub is about.
 
 ## Change log
+
+- **2026-09-29 — saved-aid membership.** The kit hub opens a source-aware picker for saved
+  study aids, including chat-saved decks. Existing non-file kits no longer route through file
+  metadata or write file-targeted edges. Source changes isolate drafts and selections; agent
+  add writes carry source type and id. Focused tests and independent review passed; the
+  authenticated localhost picker showed file, note, and processed-document kit sources.
 
 - **2026-09-28 — creator values declared; stale "no surface" note corrected.** The one
   `matrx-user/education-kits` surface (list / detail / new views, prefix-routed at
