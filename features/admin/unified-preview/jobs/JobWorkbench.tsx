@@ -179,6 +179,7 @@ export function JobWorkbench({
               size="sm"
               variant={editingGoal ? "default" : "outline"}
               className="h-6 px-2 text-[11px]"
+              title="Goal is frozen once set; changing it makes a different job"
               onClick={() => {
                 if (editingGoal) {
                   previewToast("Would save the goal and stamp it human-written.");
