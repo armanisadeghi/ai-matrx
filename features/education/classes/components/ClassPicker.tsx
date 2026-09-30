@@ -24,6 +24,11 @@ interface ClassPickerProps {
   /** Any registered entity token (fc_set, assessment, note, study_media, …). */
   entityType: EntityTypeToken;
   entityId: string;
+  /**
+   * The tagged record's OWN organization. Classes are offered from that org;
+   * the active organization is only a fallback for a record with none yet.
+   */
+  organizationId?: string | null;
   className?: string;
   /** Tagger display variant. Defaults to the compact dropdown (best in forms). */
   variant?: "sidebar" | "compact" | "dropdown";
@@ -33,32 +38,34 @@ interface ClassPickerProps {
 export function ClassPicker({
   entityType,
   entityId,
+  organizationId,
   className,
   variant = "dropdown",
   onAfterSave,
 }: ClassPickerProps) {
-  const { classTypeId, classes, error, orgId } = useClasses();
+  const { classTypeIds, classes, error, orgId: activeOrgId } = useClasses();
+  const orgId = organizationId ?? activeOrgId;
   const { organizations, refresh } = useScopeTree();
 
   // The class scope type + its classes are created through the legacy scope
   // path; make sure the canonical tree the tagger reads has caught up once.
   const refreshed = useRef(false);
   useEffect(() => {
-    if (refreshed.current || !classTypeId) return;
+    if (refreshed.current || classTypeIds.length === 0) return;
     const personal = organizations.find((o) => o.id === orgId);
-    const hasType = personal?.scope_types.some((t) => t.id === classTypeId);
+    const hasType = personal?.scope_types.some((t) => classTypeIds.includes(t.id));
     if (!hasType) {
       refreshed.current = true;
       void refresh();
     }
-  }, [classTypeId, organizations, orgId, refresh]);
+  }, [classTypeIds, organizations, orgId, refresh]);
 
   // The one-line affordance until there is a class to pick. The Class type
   // outlives its classes (it is created with the first one and stays when they
   // are deleted or archived), so "no type" alone is not the test: a type with
   // no active classes would render a dropdown whose only choice is "None".
   // A failed tree read falls through so the tagger shows the failure.
-  if (!classTypeId || (classes.length === 0 && !error)) {
+  if (classTypeIds.length === 0 || (classes.length === 0 && !error)) {
     return (
       <div className={className}>
         <Link
@@ -84,7 +91,7 @@ export function ClassPicker({
       entityType={entityType as EntityType}
       entityId={entityId}
       organizationId={orgId}
-      scopeTypeAllowlist={[classTypeId]}
+      scopeTypeAllowlist={classTypeIds}
       variant={variant}
       title="Classes"
       className={className}

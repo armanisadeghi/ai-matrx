@@ -195,15 +195,9 @@ export function useQuizPersistence(
    */
   useEffect(() => {
     const checkForDuplicate = async () => {
-      // Only check once, and only if no session ID provided. The lookup is
-      // scoped to the selected organization, so it waits for one to be known
-      // instead of spending its single attempt on a refusal.
-      if (
-        hasCheckedDuplicate ||
-        initialSessionId ||
-        !contentHash ||
-        !selectedOrganizationId
-      ) {
+      // Only check once, and only if no session ID provided. The lookup reads
+      // across every organization the person is in, so it needs no active org.
+      if (hasCheckedDuplicate || initialSessionId || !contentHash) {
         return;
       }
       // Never over the person's own work: if they have already started
@@ -222,10 +216,7 @@ export function useQuizPersistence(
       // Don't set isLoading - this is a background operation
 
       try {
-        const result = await findExistingQuizByHash(
-          contentHash,
-          selectedOrganizationId ?? "",
-        );
+        const result = await findExistingQuizByHash(contentHash);
         if (result.success && result.data) {
           // Found existing session - load it in background
           setLoadedSession(result.data);
@@ -242,7 +233,6 @@ export function useQuizPersistence(
     contentHash,
     initialSessionId,
     hasCheckedDuplicate,
-    selectedOrganizationId,
     quizState.progress.answers,
     quizState.results,
   ]);

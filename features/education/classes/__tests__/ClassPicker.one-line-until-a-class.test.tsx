@@ -23,6 +23,7 @@ import { ClassPicker } from "../components/ClassPicker";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockUseClasses = jest.fn();
+const taggerProps: Record<string, unknown>[] = [];
 jest.mock("@/features/education/classes/hooks/useClasses", () => ({
   useClasses: () => mockUseClasses(),
 }));
@@ -31,7 +32,10 @@ jest.mock("@/features/scopes/hooks/useScopeTree", () => ({
 }));
 // The canonical tagger has its own suites; here it only has to be visibly present.
 jest.mock("@/features/scopes/components/entity-context/EntityScopeTagger", () => ({
-  EntityScopeTagger: () => <div data-testid="tagger">tagger</div>,
+  EntityScopeTagger: (props: unknown) => {
+    taggerProps.push(props as Record<string, unknown>);
+    return <div data-testid="tagger">tagger</div>;
+  },
 }));
 jest.mock("next/link", () => ({
   __esModule: true,
@@ -44,8 +48,8 @@ jest.mock("next/link", () => ({
 
 const ONE_LINER = "Add a class to organize this";
 
-function state(over: Partial<{ classTypeId: string | null; classes: unknown[]; error: unknown }>) {
-  return { classTypeId: null, classes: [], error: null, orgId: "org-1", ...over };
+function state(over: Partial<{ classTypeIds: string[]; classes: unknown[]; error: unknown }>) {
+  return { classTypeIds: [], classes: [], error: null, orgId: "org-1", ...over };
 }
 
 let root: Root;
@@ -73,7 +77,7 @@ it("shows the one-liner when there is no Class type", () => {
 });
 
 it("shows the one-liner when the Class type exists but has no active classes", () => {
-  mockUseClasses.mockReturnValue(state({ classTypeId: "type-1", classes: [] }));
+  mockUseClasses.mockReturnValue(state({ classTypeIds: ["type-1"], classes: [] }));
   render();
   expect(host.textContent).toContain(ONE_LINER);
   expect(host.querySelector("a")?.getAttribute("href")).toBe("/education/classes");
@@ -82,7 +86,7 @@ it("shows the one-liner when the Class type exists but has no active classes", (
 
 it("shows the class tagger once there is a class to pick", () => {
   mockUseClasses.mockReturnValue(
-    state({ classTypeId: "type-1", classes: [{ id: "c1", name: "Biology 101" }] }),
+    state({ classTypeIds: ["type-1"], classes: [{ id: "c1", name: "Biology 101" }] }),
   );
   render();
   expect(host.querySelector('[data-testid="tagger"]')).not.toBeNull();
@@ -91,8 +95,23 @@ it("shows the class tagger once there is a class to pick", () => {
 
 it("hands a failed tree read to the tagger (which shows the failure) instead of hiding it", () => {
   mockUseClasses.mockReturnValue(
-    state({ classTypeId: "type-1", classes: [], error: new Error("read failed") }),
+    state({ classTypeIds: ["type-1"], classes: [], error: new Error("read failed") }),
   );
   render();
   expect(host.querySelector('[data-testid="tagger"]')).not.toBeNull();
+});
+
+it("offers the classes of EVERY organization and tags in the record's own org, not the active one", () => {
+  taggerProps.length = 0;
+  mockUseClasses.mockReturnValue({
+    ...state({ classes: [{ id: "c1", name: "Biology 101" }] }),
+    classTypeIds: ["type-a", "type-b"],
+    orgId: "active-org",
+  });
+  act(() =>
+    root.render(<ClassPicker entityType="fc_set" entityId="set-1" organizationId="record-org" />),
+  );
+  const props = taggerProps.at(-1)!;
+  expect(props.scopeTypeAllowlist).toEqual(["type-a", "type-b"]);
+  expect(props.organizationId).toBe("record-org");
 });

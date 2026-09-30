@@ -51,8 +51,12 @@ export interface UseClassesReturn {
   classes: StudyClass[];
   /** Archived classes (soft-hidden). */
   archived: StudyClass[];
-  /** The resolved Class scope type id, once known. */
-  classTypeId: string | null;
+  /**
+   * EVERY Class scope type the person can reach, across all their organizations
+   * (one per org that has classes). Never just the active org's — the active org
+   * is only where a NEW class lands (`ensureClassType`).
+   */
+  classTypeIds: string[];
   loading: boolean;
   /**
    * The scope-tree read's failure (null when it succeeded or is in flight).
@@ -101,6 +105,7 @@ export function useClasses(): UseClassesReturn {
   const classTypeId =
     (orgId ? classTypes.find((t) => t.organization_id === orgId)?.id : null) ??
     null;
+  const classTypeIds = classTypes.map((t) => t.id);
   const typesLoaded = treeSettled;
   const scopesLoaded = treeSettled;
 
@@ -217,7 +222,7 @@ export function useClasses(): UseClassesReturn {
   return {
     classes,
     archived,
-    classTypeId,
+    classTypeIds,
     loading,
     error,
     orgId,

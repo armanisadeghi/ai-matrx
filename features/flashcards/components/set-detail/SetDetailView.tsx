@@ -887,7 +887,7 @@ export function SetDetailView({
                           )
                         }
                       />
-                      <ClassPicker entityType="fc_set" entityId={setId} />
+                      <ClassPicker entityType="fc_set" entityId={setId} organizationId={data.set.organization_id} />
                     </div>
                   )}
                   {viewOnly && (
