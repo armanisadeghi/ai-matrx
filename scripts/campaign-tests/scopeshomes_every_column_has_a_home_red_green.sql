@@ -33,6 +33,7 @@
 --       live Matter with the same slug in a plain sentence (lane SCOPES-STORE-HOMES, third file)
 --   H7  a copied type, field and scope whose store copy lost its author gets back the author its old
 --       row names when copied again (L8's trash census, 2026-09-29)
+--   H8  one whose old row names NOBODY is copied naming nobody — never the writer or the owner fallback
 
 \set ON_ERROR_STOP on
 \timing off
@@ -225,6 +226,18 @@ begin
   if (select count(*) from custom.record r where r.organization_id = v_org and r.id in (v_type, v_item, v_scope)
         and r.created_by = c_admin) <> 3 then
     raise exception 'H7 RED: a copied type, field or scope did not get back the author its old row names: %',
+      (select jsonb_object_agg(r.id, r.created_by) from custom.record r where r.organization_id = v_org and r.id in (v_type, v_item, v_scope));
+  end if;
+
+  -- ══ H8: an old row that names nobody is copied naming nobody (chair ruling from L7) ══
+  update context.scope_types set created_by = null where id = v_type;
+  update context.context_items set created_by = null where id = v_item;
+  update context.scopes set created_by = null where id = v_scope;
+  perform custom._ctx_store_type(v_org, t.id, to_jsonb(t)) from context.scope_types t where t.id = v_type;
+  perform custom._ctx_store_item(v_org, i.scope_type_id, i.id, to_jsonb(i)) from context.context_items i where i.id = v_item;
+  perform custom._ctx_store_scope(v_org, s.scope_type_id, s.id, to_jsonb(s)) from context.scopes s where s.id = v_scope;
+  if exists (select 1 from custom.record r where r.organization_id = v_org and r.id in (v_type, v_item, v_scope) and r.created_by is not null) then
+    raise exception 'H8 RED: a copy whose old row names nobody still names someone (an owner''s reach nobody has): %',
       (select jsonb_object_agg(r.id, r.created_by) from custom.record r where r.organization_id = v_org and r.id in (v_type, v_item, v_scope));
   end if;
   raise notice 'GREEN H1–H5: a scope type''s, a context field''s and a scope''s own words live in the Table''s, the Field''s and the Record''s own documents, the slug stays unique among a type''s live scopes, a cleared word and a shortened list reach the copy, the switch names a copy that disagrees and copying again clears it, and switching back carries every word back, erasing nothing and naming what the old table would refuse.';
