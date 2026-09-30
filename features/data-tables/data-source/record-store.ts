@@ -47,7 +47,6 @@ import { declareTable, personActor, recordsDataSource, resolveTableStyle, type N
 import { withheldCells, type WithheldCells } from "../withheld-cells";
 
 import { createClient } from "@/utils/supabase/client";
-import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { FieldChoice } from "@ai-matrx/design-system/field-formats";
 
 import type {
@@ -132,6 +131,8 @@ function clientFor(home: RecordStoreHome): RecordsClient {
  * papered over with a one-organization list.
  */
 async function spanningClientFor(home: RecordStoreHome): Promise<RecordsClient> {
+  // Loaded on use: only the switcher list needs membership, every other call stays light.
+  const { membershipsService } = await import("@/features/organizations/service/membershipsService");
   const read = await membershipsService.forUser("organization");
   if (!read.ok) throw new Error(`Could not read your organizations: ${read.error.message}`);
   const organizationIds = [...new Set(read.data.memberships.map((m) => m.containerId))].sort();
