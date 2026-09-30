@@ -9,8 +9,8 @@
  * board through these functions, so there is ONE path — and one undo stack
  * (⌘Z / ⇧⌘Z). Persistence serialises exactly this state.
  *
- * History: every change is one step, except moves, which coalesce — a drag of
- * one item is one step however many frames it took (Figma, FigJam).
+ * History: every change is one step, except moves and resizes, which coalesce —
+ * a drag or resize of one item is one step however many frames it took (Figma).
  */
 
 import { useRef, useState } from "react";
@@ -75,6 +75,9 @@ export interface Board<T extends BoardTileBase> {
   undo: () => void;
   redo: () => void;
   moveTile: (id: string, x: number, y: number) => void;
+  /** Set a tile's whole rect (a resize handle drag). Coalesces like a move:
+   * one gesture is one undoable step. */
+  resizeTile: (id: string, rect: Rect) => void;
   /** Move many tiles (and/or frames) as ONE undoable step — an arrangement. */
   moveMany: (moves: { id: string; x: number; y: number }[]) => void;
   connections: BoardConnection[];
@@ -185,7 +188,9 @@ export function useBoard<T extends BoardTileBase>(
   const { tiles, parked } = viewOf(now);
   const read = () => viewOf(live.current.now);
 
-  const moveTile = (id: string, x: number, y: number) =>
+  /** One gesture step on one item's rect. Successive steps on the same item
+   * within MOVE_COALESCE_MS are ONE undo step (a drag, a resize). */
+  const gestureRect = (id: string, patch: (r: Rect) => Rect) =>
     setState((st) => {
       const tile = st.now.byId[id];
       const frame = st.now.frames.find((f) => f.id === id);
@@ -193,10 +198,10 @@ export function useBoard<T extends BoardTileBase>(
       const t = performance.now();
       const coalesce = st.moving?.id === id && t - st.moving.at < MOVE_COALESCE_MS;
       const next: Snapshot<T> = tile
-        ? { ...st.now, byId: { ...st.now.byId, [id]: { ...tile, rect: { ...tile.rect, x, y } } } }
+        ? { ...st.now, byId: { ...st.now.byId, [id]: { ...tile, rect: patch(tile.rect) } } }
         : {
             ...st.now,
-            frames: st.now.frames.map((f) => (f.id === id ? { ...f, rect: { ...f.rect, x, y } } : f)),
+            frames: st.now.frames.map((f) => (f.id === id ? { ...f, rect: patch(f.rect) } : f)),
           };
       return {
         now: next,
@@ -205,6 +210,9 @@ export function useBoard<T extends BoardTileBase>(
         moving: { id, at: t },
       };
     });
+
+  const moveTile = (id: string, x: number, y: number) => gestureRect(id, (r) => ({ ...r, x, y }));
+  const resizeTile = (id: string, rect: Rect) => gestureRect(id, () => ({ ...rect }));
 
   const moveMany = (moves: { id: string; x: number; y: number }[]) =>
     change((s) => {
@@ -345,6 +353,7 @@ export function useBoard<T extends BoardTileBase>(
     undo,
     redo,
     moveTile,
+    resizeTile,
     moveMany,
     connections: now.connections,
     connect,

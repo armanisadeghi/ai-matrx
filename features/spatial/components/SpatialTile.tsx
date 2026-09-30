@@ -14,6 +14,10 @@
  *      with the action named before release.
  *   5. Focus: when focused its live card portals into the focus layer, full
  *      size, growing out of its on-board rect; a dashed outline holds its place.
+ *   6. Frame gestures every item type inherits (engine/tile-gestures.ts):
+ *      eight resize handles with a constant screen-size hit area, and the
+ *      double-click rule (header → fly + live; idle body → fly + interact;
+ *      content you are working in → native).
  * The body is a render prop that receives the tile's pace tier, so each
  * content type decides how to use it (a stream paces commits, a video pauses
  * off-screen, an image swaps to a thumbnail…).
@@ -24,6 +28,14 @@ import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Rect } from "../engine/camera";
+import {
+  RESIZE_CURSOR,
+  RESIZE_HANDLES,
+  RESIZE_HANDLE_SCREEN_PX,
+  type ResizeHandle,
+  doubleClickAction,
+  resizeRect,
+} from "../engine/tile-gestures";
 import type { PaceTier } from "../engine/lod";
 import {
   FocusHostContext,
@@ -75,6 +87,9 @@ export interface SpatialTileProps {
   actions?: ReactNode;
   /** Moves the tile, in world px. Header drag calls it; omit to pin the tile. */
   onMove?: (id: string, x: number, y: number) => void;
+  /** Resizes the tile to a world rect. The eight handles call it; omit to fix
+   * the tile's size. Persist it the way a move persists (`useBoard.resizeTile`). */
+  onResize?: (id: string, rect: Rect) => void;
   /** A header drag released with speed. The tile has already flown off and
    * returned to where the drag began; the host carries out the action (and
    * may keep the tile, e.g. when a delete is declined). */
@@ -121,6 +136,7 @@ export function SpatialTile({
   statusFrom = IDLE_STATUS,
   actions,
   onMove,
+  onResize,
   onThrow,
   throwActions = DEFAULT_THROW_ACTIONS,
   children,
@@ -138,6 +154,10 @@ export function SpatialTile({
   const tileRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [hint, setHint] = useState<ThrowAction>("none");
+  // Where the last press landed. A header press captures the pointer, so the
+  // browser fires the following dblclick at the TILE — the double-click rule
+  // reads the real target from here.
+  const lastPressRef = useRef<HTMLElement | null>(null);
 
   // The drag listeners read the latest props through refs. If the effect
   // depended on them, the first move would re-render the tile, tear the
@@ -183,6 +203,8 @@ export function SpatialTile({
     const down = (e: PointerEvent) => {
       if (e.button !== 0 || store.getFocused() === id) return;
       const target = e.target as HTMLElement;
+      lastPressRef.current = target;
+      if (target.closest("[data-spatial-resize]")) return; // the handle owns it
       const inHeader = !!headerRef.current?.contains(target);
       if (target.closest(INTERACTIVE_SELECTOR)) {
         if (!inHeader) store.setEditing(id);
@@ -282,7 +304,7 @@ export function SpatialTile({
       data-spatial-card={id}
       data-spatial-title={title}
       className={cn(
-        "flex h-full w-full flex-col overflow-hidden rounded-xl border bg-card",
+        "flex h-full w-full flex-col overflow-hidden overscroll-contain rounded-xl border bg-card",
         focused ? "border-border shadow-2xl" : selected ? "border-primary" : "border-border",
       )}
     >
@@ -345,14 +367,24 @@ export function SpatialTile({
       data-spatial-tile={id}
       data-spatial-title={title}
       onDoubleClick={(e) => {
-        const target = e.target as HTMLElement;
-        if (focused || target.closest(INTERACTIVE_SELECTOR)) return;
-        // Header: fly to it. Body: start interacting with it.
-        if (headerRef.current?.contains(target)) store.fitItem(id);
-        else if (!interacting) {
-          window.getSelection()?.removeAllRanges();
-          store.setEditing(id);
-        }
+        const direct = e.target as HTMLElement;
+        const pressed = lastPressRef.current;
+        // Pointer capture retargets the dblclick to the tile itself; the
+        // press that began it knows where it really landed.
+        const target = direct === tileRef.current && pressed && tileRef.current?.contains(pressed) ? pressed : direct;
+        if (target.closest("[data-spatial-resize]")) return;
+        const action = doubleClickAction({
+          focused,
+          inHeader: !!headerRef.current?.contains(target),
+          onControl: !!target.closest(INTERACTIVE_SELECTOR),
+          interacting,
+        });
+        if (action === "native") return;
+        window.getSelection()?.removeAllRanges();
+        // The state board_focus "fly" produces: selected (live), camera fitted.
+        store.select(id);
+        if (action === "fly-and-interact") store.setEditing(id);
+        store.fitItem(id);
       }}
       className={cn(
         "absolute max-w-none rounded-xl transition-shadow",
@@ -375,7 +407,113 @@ export function SpatialTile({
     >
       {focused && focusHost ? createPortal(card, focusHost) : card}
       {hint !== "none" && <ThrowHint action={hint} />}
+      {onResize && !focused && (
+        <ResizeHandles id={id} rect={rect} selected={selected || interacting} onResize={onResize} />
+      )}
     </div>
+  );
+}
+
+/**
+ * The eight resize handles. Each hit area is RESIZE_HANDLE_SCREEN_PX on screen
+ * at any zoom (sized in world px as `px / --spatial-z`), straddling the edge
+ * mostly outside so it never covers a scrollbar. A drag captures the pointer
+ * and lays a shield over the whole page, so an iframe or editor inside the
+ * tile can never steal it.
+ */
+function ResizeHandles({
+  id,
+  rect,
+  selected,
+  onResize,
+}: {
+  id: string;
+  rect: Rect;
+  selected: boolean;
+  onResize: (id: string, rect: Rect) => void;
+}) {
+  const store = useSpatialStore();
+  const [active, setActive] = useState<ResizeHandle | null>(null);
+  const drag = useRef<{ handle: ResizeHandle; px: number; py: number; start: Rect; pointer: number } | null>(null);
+
+  const begin = (handle: ResizeHandle) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { handle, px: e.clientX, py: e.clientY, start: rect, pointer: e.pointerId };
+    store.select(id);
+    setActive(handle);
+  };
+  const move = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || e.pointerId !== d.pointer) return;
+    e.stopPropagation();
+    onResize(
+      id,
+      resizeRect(d.start, d.handle, e.clientX - d.px, e.clientY - d.py, {
+        z: store.getCamera().z,
+        keepAspect: e.shiftKey,
+      }),
+    );
+  };
+  const end = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current || e.pointerId !== drag.current.pointer) return;
+    drag.current = null;
+    setActive(null);
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  const edge = `calc(${RESIZE_HANDLE_SCREEN_PX}px / var(--spatial-z, 1))`;
+  const out = `calc(${-RESIZE_HANDLE_SCREEN_PX * 0.7}px / var(--spatial-z, 1))`;
+  const corner = `calc(${RESIZE_HANDLE_SCREEN_PX * 1.5}px / var(--spatial-z, 1))`;
+  const cornerOut = `calc(${-RESIZE_HANDLE_SCREEN_PX}px / var(--spatial-z, 1))`;
+  const place: Record<ResizeHandle, React.CSSProperties> = {
+    n: { top: out, left: corner, right: corner, height: edge },
+    s: { bottom: out, left: corner, right: corner, height: edge },
+    w: { left: out, top: corner, bottom: corner, width: edge },
+    e: { right: out, top: corner, bottom: corner, width: edge },
+    nw: { top: cornerOut, left: cornerOut, width: corner, height: corner },
+    ne: { top: cornerOut, right: cornerOut, width: corner, height: corner },
+    sw: { bottom: cornerOut, left: cornerOut, width: corner, height: corner },
+    se: { bottom: cornerOut, right: cornerOut, width: corner, height: corner },
+  };
+  const dot = `calc(8px / var(--spatial-z, 1))`;
+
+  return (
+    <>
+      {RESIZE_HANDLES.map((h) => (
+        <div
+          key={h}
+          data-spatial-resize={h}
+          aria-hidden
+          onPointerDown={begin(h)}
+          onPointerMove={move}
+          onPointerUp={end}
+          onPointerCancel={end}
+          className="absolute z-10 flex max-w-none touch-none items-center justify-center"
+          style={{ ...place[h], cursor: RESIZE_CURSOR[h] }}
+        >
+          {selected && h.length === 2 && (
+            <span
+              className="pointer-events-none block max-w-none rounded-[2px] border border-primary bg-card"
+              style={{ width: dot, height: dot, borderWidth: `calc(1.5px / var(--spatial-z, 1))` }}
+            />
+          )}
+        </div>
+      ))}
+      {active &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            data-spatial-resize-shield
+            aria-hidden
+            className="fixed inset-0 z-[2147483647]"
+            style={{ cursor: RESIZE_CURSOR[active] }}
+          />,
+          document.body,
+        )}
+    </>
   );
 }
 

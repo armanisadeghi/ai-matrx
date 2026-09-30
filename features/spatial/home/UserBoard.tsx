@@ -443,6 +443,7 @@ export function UserBoard({
                 tile={t}
                 itemSurfaces={itemSurfaces}
                 onMove={board.moveTile}
+                onResize={board.resizeTile}
                 onThrow={onThrow}
                 onSource={(source, nextTitle) =>
                   board.updateTile(t.id, nextTitle ? { source, title: nextTitle } : { source }, { history: false })
@@ -477,12 +478,14 @@ function BoardItemTile({
   tile,
   itemSurfaces,
   onMove,
+  onResize,
   onThrow,
   onSource,
 }: {
   tile: UserBoardTile;
   itemSurfaces: ItemSurfaceIndex;
   onMove: (id: string, x: number, y: number) => void;
+  onResize: (id: string, rect: Rect) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
   onSource: (source: NodeSource, title?: string) => void;
 }) {
@@ -507,6 +510,7 @@ function BoardItemTile({
       subtitle={type?.label ?? "Unavailable"}
       icon={type?.icon}
       onMove={onMove}
+      onResize={onResize}
       onThrow={onThrow}
       throwActions={BOARD_THROWS}
       actions={

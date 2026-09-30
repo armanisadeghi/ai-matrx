@@ -12,8 +12,9 @@
  *   enter ......................... focus selected   esc ...................... leave focus / tool, then deselect
  *   V H T F N P R O L ⇧L .......... tools (engine/tools.ts)   ⇧G ........... layout guides
  *   arrows ........................ nudge the view (in focus: previous / next tile)
- * The one exception to "scroll moves the board": the INTERACTING tile, under
- * the pointer, with room to scroll that way, scrolls itself.
+ * Scroll over a TILE never moves the board (engine/wheel-input.ts `routeWheel`):
+ * content that can scroll scrolls, content that can't doesn't. Pinch and
+ * ctrl/⌘+scroll zoom the board everywhere, tiles included (Figma).
  * Tiles: click selects (drag moves from anywhere), double-click or a press on a
  * control inside starts interacting (native input), Esc steps back out.
  *
@@ -33,7 +34,7 @@ import {
   zoomAt,
 } from "../engine/camera";
 import { type Insets, SpatialStore } from "../engine/spatial-store";
-import type { WheelMode } from "../engine/wheel-input";
+import { type WheelMode, routeWheel } from "../engine/wheel-input";
 import { isCreationTool, toolForKey } from "../engine/tools";
 import { FocusHostContext, SpatialStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
@@ -173,13 +174,20 @@ export function SpatialViewport({
     if (!root) return;
     const onWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement | null;
-      // Focus mode and chrome own their own scrolling.
-      if (target?.closest("[data-spatial-focus], [data-spatial-chrome]")) return;
-      const intent = store.wheel.intent(e);
-      // THE ONE EXCEPTION: the selected tile, under the pointer, with room to
-      // scroll in that direction, scrolls itself instead of moving the board.
-      if (!(e.ctrlKey || e.metaKey) && selectedTileScrolls(e, store.getEditing())) return;
+      const tile = target?.closest<HTMLElement>("[data-spatial-tile], [data-spatial-card]") ?? null;
+      const route = routeWheel({
+        // Focus mode and chrome own their own scrolling.
+        overChrome: !!target?.closest("[data-spatial-focus], [data-spatial-chrome]"),
+        overTile: !!tile,
+        zoomGesture: e.ctrlKey || e.metaKey,
+        innerCanScroll: !!tile && contentScrolls(e, tile),
+      });
+      if (route === "ignore" || route === "native") return;
+      // "block": over a tile that cannot scroll this way — nothing moves, and
+      // the scroll must not chain out to the page.
       e.preventDefault();
+      if (route === "block") return;
+      const intent = store.wheel.intent(e);
       const bounds = root.getBoundingClientRect();
       const cam = store.getCamera();
       if (intent === "zoom") {
@@ -420,16 +428,11 @@ function isTyping(target: EventTarget | null): boolean {
   return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
 }
 
-/** True when the wheel should scroll the interacting tile's own content: the
- * pointer is inside the INTERACTING tile (or its focused card) and the nearest
- * scrollable element between the pointer and the tile has room to scroll that
- * way. Any scroll container counts — tile bodies need no special marker. */
-function selectedTileScrolls(e: WheelEvent, selected: string | null): boolean {
-  if (!selected) return false;
+/** True when some scroll container between the pointer and the tile has room
+ * to scroll in the wheel's direction. Any scroll container counts — tile
+ * bodies need no special marker. */
+function contentScrolls(e: WheelEvent, tile: HTMLElement): boolean {
   const target = e.target as HTMLElement | null;
-  const tile = target?.closest<HTMLElement>("[data-spatial-tile], [data-spatial-card]");
-  const id = tile?.dataset.spatialTile ?? tile?.dataset.spatialCard;
-  if (!tile || id !== selected) return false;
   const vertical = Math.abs(e.deltaY) >= Math.abs(e.deltaX);
   const delta = vertical ? e.deltaY : e.deltaX;
   for (let el: HTMLElement | null = target; el && el !== tile.parentElement; el = el.parentElement) {

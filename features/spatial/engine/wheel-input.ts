@@ -69,6 +69,35 @@ export class WheelInterpreter {
   }
 }
 
+/**
+ * Who a wheel event belongs to.
+ *
+ *   camera — the board pans / zooms (empty space; or a pinch / ctrl-⌘-wheel
+ *            anywhere on the board, tiles included — Figma: pinch always
+ *            zooms the canvas).
+ *   native — the content under the pointer scrolls itself.
+ *   block  — over a tile whose content cannot scroll that way: nothing moves,
+ *            and the scroll must not chain out to the page (preventDefault).
+ *   ignore — chrome and the focus layer own their input entirely.
+ *
+ * THE RULE: a plain wheel or trackpad scroll over a tile NEVER moves the
+ * camera, whether the tile is idle, selected or being worked in.
+ */
+export type WheelRoute = "camera" | "native" | "block" | "ignore";
+
+export function routeWheel(at: {
+  overTile: boolean;
+  overChrome: boolean;
+  /** Pinch, or a wheel with ctrl / ⌘ held. */
+  zoomGesture: boolean;
+  /** Some element between the pointer and the tile can scroll this way. */
+  innerCanScroll: boolean;
+}): WheelRoute {
+  if (at.overChrome) return "ignore";
+  if (!at.overTile || at.zoomGesture) return "camera";
+  return at.innerCanScroll ? "native" : "block";
+}
+
 export const WHEEL_MODE_LABEL: Record<WheelMode, string> = {
   auto: "Mouse zooms, trackpad pans",
   zoom: "Scroll always zooms",
