@@ -8,7 +8,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const rpc = jest.fn(async (fn: string, _args: Record<string, unknown>) => {
+const rpc = jest.fn(async (fn: string, _args: Record<string, unknown>): Promise<{ data: unknown; error: null }> => {
   if (fn === "trx_list_facets") return { data: [], error: null };
   if (fn === "trx_list_scoped")
     return { data: [{ id: "r1", kind: "transcript", title: "T", total_count: 7, tags: [] }], error: null };
