@@ -13,6 +13,10 @@
 
 "use client";
 
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -133,13 +137,23 @@ export function useUserFormProfile(): UseUserFormProfileReturn {
       if (Object.keys(patch).length === 0) return true;
       setSaving(true);
       try {
-        // Stamped through the sanctioned kernel, never a hand-built header.
-        const headers = organizationId
-          ? applyOrganizationContextHeader(
-              { "Content-Type": "application/json" },
-              organizationId,
-            )
-          : { "Content-Type": "application/json" };
+        // EVERY SERVER CALL CARRIES AN ORGANIZATION (active-org law, rule 4).
+        // With none selected the save is HELD and the person picks one — never
+        // sent bare for the server to refuse or guess. Stamped through the
+        // sanctioned kernel, never a hand-built header.
+        let requestOrganizationId = organizationId;
+        if (!requestOrganizationId) {
+          try {
+            requestOrganizationId = await ensureOrganizationContext();
+          } catch (error) {
+            if (isOrganizationSelectionCancelled(error)) return false;
+            throw error;
+          }
+        }
+        const headers = applyOrganizationContextHeader(
+          { "Content-Type": "application/json" },
+          requestOrganizationId,
+        );
         const res = await fetch(ENDPOINT, {
           method: "PATCH",
           headers,
