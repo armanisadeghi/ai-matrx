@@ -21,9 +21,6 @@ export function RelationshipExplorerClient({ rules }: Props) {
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <Search className="h-4 w-4" />
           Entity explorer
-          <span className="font-normal text-muted-foreground">
-            — sources on the left, targets on the right, for any entity type
-          </span>
         </h2>
         <EntityExplorerEntry rules={rules} />
       </section>

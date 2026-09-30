@@ -118,12 +118,12 @@ export function EntityTypeForm({
         ) : tokenTaken ? (
           <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
             <TriangleAlert className="h-3 w-3" />
-            This token is already registered — edit it from the table instead.
+            Already registered — edit it from the table.
           </p>
         ) : (
+          // Token is the FK target for platform.associations and every registry consumer.
           <p className="text-xs text-muted-foreground">
-            The FK target for platform.associations and every registry
-            consumer. Cannot be renamed once registered.
+            Cannot be renamed once registered.
           </p>
         )}
       </div>
@@ -151,9 +151,9 @@ export function EntityTypeForm({
             style={{ fontSize: "16px" }}
           />
         </div>
+        {/* Save is rejected for a missing table so a typo cannot register a phantom entity. */}
         <p className="col-span-2 text-xs text-muted-foreground">
-          The physical table must already exist — the save is rejected
-          otherwise, so a typo can&apos;t register a phantom entity.
+          The table must already exist.
         </p>
       </div>
 
@@ -213,10 +213,11 @@ export function EntityTypeForm({
           </Select>
         </div>
         <div className="col-span-2 flex flex-col gap-1.5">
+          {/* Overrides the iam.apply_rls variant for this token. */}
           <span className="text-xs font-medium">
             RLS variant{" "}
             <span className="font-normal text-muted-foreground">
-              (optional — iam.apply_rls override)
+              (optional)
             </span>
           </span>
           <Input
@@ -260,12 +261,10 @@ export function EntityTypeForm({
       </div>
 
       <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+        {/* Governs the reference "Allowed types" chooser. Pickers read the
+            generated registry (listableTokens, REFERENCE_CATEGORY_DISPLAY), so
+            run pnpm gen:entity-types after saving. */}
         <span className="text-xs font-semibold">Reference picker</span>
-        <p className="text-[10px] text-muted-foreground">
-          Governs the &ldquo;Allowed types&rdquo; chooser on reference context
-          items (scope context fields). Changes are live for pickers on the
-          next page load — no type regeneration needed for the chooser itself.
-        </p>
         <div className="flex items-center justify-between">
           <span className="flex flex-col">
             <span className="text-xs font-medium">Reference pickable</span>
@@ -293,8 +292,7 @@ export function EntityTypeForm({
               style={{ fontSize: "16px" }}
             />
             <p className="text-[10px] text-muted-foreground">
-              Human-readable column pickers read for candidate titles. The
-              save is rejected if it doesn&apos;t exist on the table.
+              Column used as the title; must exist on the table
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -348,11 +346,9 @@ export function EntityTypeForm({
                 </option>
               ))}
             </datalist>
+            {/* A new slug is auto-registered in platform.reference_categories on save. */}
             <p className="text-[10px] text-muted-foreground">
-              Chooser bucket in the reference &ldquo;Allowed types&rdquo; UI. A
-              new slug is registered automatically on save
-              (platform.reference_categories); empty falls back to the
-              schema&apos;s pretty name.
+              Allowed-types bucket; blank uses the schema name
             </p>
           </div>
         </div>

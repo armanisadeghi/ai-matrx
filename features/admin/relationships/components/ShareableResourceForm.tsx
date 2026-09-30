@@ -87,11 +87,7 @@ export function ShareableResourceForm({
         ) : (
           <EntityTypeChip token={editor.resourceType} showToken />
         )}
-        <p className="text-xs text-muted-foreground">
-          Registering this makes the type shareable and — for association
-          container types — clears the Relationship Manager&apos;s
-          &quot;container not shareable&quot; drift for it.
-        </p>
+        {/* Registering clears the Relationship Manager "container not shareable" drift for container types. */}
       </div>
 
       <details className="rounded-md border border-border">
@@ -204,10 +200,9 @@ export function ShareableResourceForm({
             ID belongs.
           </p>
         ) : (
+          // No-login links always open on the generic share page.
           <p className="text-xs text-muted-foreground">
-            Where signed-in users should open this record. Leave blank when no
-            dedicated page exists. No-login links still open on the
-            platform&apos;s generic share page.
+            Where signed-in users open it; blank if no page exists
           </p>
         )}
       </div>
@@ -247,11 +242,8 @@ export function ShareableResourceForm({
         </div>
         <div className="flex items-center justify-between">
           <span className="flex flex-col">
+            {/* Direct-grant sharing (ShareModal / iam.permissions) is wired for this table. */}
             <span className="text-xs font-medium">RLS uses has_permission</span>
-            <span className="text-[10px] text-muted-foreground">
-              Direct-grant sharing (ShareModal / iam.permissions) is wired for
-              this table.
-            </span>
           </span>
           <Switch
             checked={editor.rlsUsesHasPermission}
@@ -274,11 +266,8 @@ export function ShareableResourceForm({
         </div>
         <div className="flex items-center justify-between">
           <span className="flex flex-col">
+            {/* Same lever as the per-row Link policy editor. */}
             <span className="text-xs font-medium">No-login link sharing</span>
-            <span className="text-[10px] text-muted-foreground">
-              Offers &quot;Anyone with the link&quot;. Same lever as the per-row
-              Link policy editor.
-            </span>
           </span>
           <Switch
             checked={editor.isLinkShareable}
@@ -292,8 +281,7 @@ export function ShareableResourceForm({
           <div>
             <span className="text-xs font-medium">Shared page content</span>
             <p className="text-xs text-muted-foreground">
-              Choose exactly which fields appear for anyone who opens a no-login
-              share link. Unchecked fields stay private.
+              Fields shown on no-login share links; the rest stay private
             </p>
           </div>
           <SharePolicyColumnEditor
@@ -322,7 +310,7 @@ export function ShareableResourceForm({
           value={editor.notes}
           onChange={(e) => onChange({ ...editor, notes: e.target.value })}
           rows={3}
-          placeholder="Why this is registered; grant-model caveats (e.g. ownership-asymmetric read)."
+          placeholder="Why registered; any grant caveats"
           style={{ fontSize: "16px" }}
         />
       </div>

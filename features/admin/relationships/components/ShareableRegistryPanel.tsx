@@ -566,9 +566,6 @@ export function ShareableRegistryPanel({
           Shareable resource registry
           <Badge variant="outline">{registry.length}</Badge>
         </h2>
-        <p className="text-xs text-muted-foreground">
-          What can be shared — sharing/ownership/RLS shape per entity type.
-        </p>
         <Button
           size="sm"
           className="ml-auto"
@@ -713,7 +710,7 @@ export function ShareableRegistryPanel({
       {policyRow ? (
         <SidePanelSurface
           title={`Link policy: ${policyRow.display_label}`}
-          description={`${policyRow.schema_name}.${policyRow.table_name} — no-login link sharing and the anonymous-viewer column allowlist.`}
+          description={`${policyRow.schema_name}.${policyRow.table_name}`}
           onClose={() => setPolicyRow(null)}
           defaultWidth={560}
         >
@@ -725,8 +722,7 @@ export function ShareableRegistryPanel({
                   No-login link sharing
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  Whether &quot;Anyone with the link&quot; panels are offered
-                  and existing tokens resolve.
+                  Off also stops existing links from opening.
                 </span>
               </span>
               <div className="flex items-center gap-2">
@@ -762,10 +758,10 @@ export function ShareableRegistryPanel({
         </SidePanelSurface>
       ) : null}
 
+      {/* Registers a row in platform.shareable_resource_registry, checked by the reachability cascade. */}
       {editor?.mode === "create" ? (
         <SidePanelSurface
           title="New shareable resource"
-          description="Registers a row in platform.shareable_resource_registry — the container type the reachability cascade checks."
           onClose={() => setEditor(null)}
           defaultWidth={480}
         >

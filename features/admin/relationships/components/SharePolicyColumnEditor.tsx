@@ -111,10 +111,8 @@ export function SharePolicyColumnEditor({
       <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          Checked columns are visible to <strong>anyone with the link</strong> —
-          never expose secrets, PII, or storage locations. Columns that look
-          sensitive are flagged with a lock. Default is deny: only what you
-          check is exposed.
+          Checked columns are visible to <strong>anyone with the link</strong>.
+          Never check secrets or PII.
         </span>
       </div>
 

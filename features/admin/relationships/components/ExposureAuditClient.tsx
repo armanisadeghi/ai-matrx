@@ -445,11 +445,6 @@ export function ExposureAuditClient() {
             <ShieldQuestion className="h-5 w-5 text-primary" />
             Exposure Audit
           </h1>
-          <p className="max-w-4xl text-xs text-muted-foreground">
-            Cross-user inventory for files and notes. Each row explains whether
-            it is reachable through public visibility, an organization, a link,
-            an explicit grant, or a conveying container.
-          </p>
         </div>
         <Button
           type="button"
@@ -470,9 +465,7 @@ export function ExposureAuditClient() {
         <SearchCheck className="h-4 w-4" />
         <AlertTitle>Discovery is stricter than access</AlertTitle>
         <AlertDescription className="text-xs">
-          Public notes can enter agent/Knowledge search. Public files are anonymously
-          readable by ID, but the canonical personal file tree and search now
-          enumerate only owned or explicitly granted files.
+          Public notes appear in agent search. Public files open by ID but are not listed.
         </AlertDescription>
       </Alert>
 

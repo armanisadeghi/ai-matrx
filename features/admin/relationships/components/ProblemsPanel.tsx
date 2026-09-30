@@ -147,8 +147,7 @@ export function ProblemsPanel({
     return (
       <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
         <ShieldCheck className="h-4 w-4" />
-        No drift detected — every association shape is registered, directions
-        are clean, and every conveying container is shareable.
+        No drift detected.
       </div>
     );
   }

@@ -848,10 +848,6 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                 tables decided
               </Badge>
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Decide once where every table gets access; verify everything a
-              share reaches.
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <CopyButtons
@@ -1214,9 +1210,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                     <Eye className="h-4 w-4" />
                     <AlertTitle>Derived view — nothing to decide</AlertTitle>
                     <AlertDescription>
-                      Access to a view follows the RLS of the tables in its
-                      underlying query. Views are never registered as entities
-                      and never carry ownership columns.
+                      A view's access follows the RLS of its underlying tables.
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -1279,9 +1273,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                         />
                         {selectedTable.token && (
                           <p className="text-xs text-destructive">
-                            This is an active entity. Deactivate it in the
-                            Entity registry before classifying it as
-                            infrastructure.
+                            Deactivate this entity in the registry first.
                           </p>
                         )}
                       </div>
@@ -1336,8 +1328,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                             )}
                             {mode === "nested" && !hasVisibility && (
                               <p className="text-xs text-destructive">
-                                This table needs a visibility column before it
-                                can inherit and remain directly shareable.
+                                Add a visibility column first.
                               </p>
                             )}
                           </div>
@@ -1345,8 +1336,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                         {(mode === "root" || mode === "nested") &&
                           !hasOwnershipColumns && (
                             <p className="text-xs text-destructive">
-                              A table that owns access needs organization_id and
-                              created_by columns first.
+                              Add organization_id and created_by columns first.
                             </p>
                           )}
                       </div>

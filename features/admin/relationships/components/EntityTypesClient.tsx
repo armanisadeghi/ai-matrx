@@ -130,8 +130,8 @@ function DataClassPanel({ row }: { row: EntityTypeRow }) {
     return (
       <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
         {row.is_component
-          ? "This is a component: its access IS its parent's, so it holds no data class of its own."
-          : "This table has no data class yet, so nothing can generate policies for it — iam.apply_rls refuses an unclassified token."}
+          ? "A component: access follows its parent, so no data class."
+          : "No data class yet, so no access policies can be generated."}
       </div>
     );
   }
@@ -168,11 +168,9 @@ function DataClassPanel({ row }: { row: EntityTypeRow }) {
           {row.data_class_reason}
         </p>
       )}
+      {/* Class change rewrites access policies; migration must pass per-identity access delta. List scope is the harmless half. */}
       <p className="text-[11px] text-muted-foreground">
-        The class is not editable here. Changing it rewrites this table&rsquo;s access policies in
-        the same commit, so it goes through a migration with a per-identity access delta that refuses
-        any change letting somebody read a row they could not read before. Where a list opens is the
-        harmless half and is shown beside it so the two stay visibly separate.
+        Changes only through a migration.
         <ErrorAlchemyMenu />
       </p>
     </div>
@@ -667,11 +665,8 @@ export function EntityTypesClient({ entityTypes }: Props) {
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span className="flex-1">
             Generated types are out of date ({drift.added.length} added /{" "}
-            {drift.removed.length} removed vs the registry) — run{" "}
-            <span className="font-mono text-xs">pnpm gen:entity-types</span> and
-            commit, or{" "}
-            <span className="font-mono text-xs">pnpm check:entity-types</span>{" "}
-            will fail CI.
+            {drift.removed.length} removed) — run{" "}
+            <span className="font-mono text-xs">pnpm gen:entity-types</span>
             {drift.added.length > 0 ? (
               <span className="block font-mono text-xs">
                 + {drift.added.join(", ")}
@@ -702,10 +697,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
         <Badge variant="outline">
           {activeCount} active / {entityTypes.length}
         </Badge>
-        <p className="text-xs text-muted-foreground">
-          platform.entity_types — the canonical token vocabulary every registry
-          consumer resolves against. Deletion is deactivate-only.
-        </p>
+        {/* platform.entity_types: canonical token vocabulary; deletion is deactivate-only. */}
         <Button size="sm" className="ml-auto" onClick={openCreate}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           New entity type
@@ -840,11 +832,10 @@ export function EntityTypesClient({ entityTypes }: Props) {
         </NonEditableContextMenu>
       </div>
 
-      {/* Create — SidePanelSurface */}
+      {/* Create — SidePanelSurface. Registers a token in platform.entity_types. */}
       {editor?.mode === "create" ? (
         <SidePanelSurface
           title="New entity type"
-          description="Registers a token in platform.entity_types — the canonical vocabulary for associations, sharing, and scopes."
           onClose={() => setEditor(null)}
           defaultWidth={480}
         >
@@ -871,8 +862,8 @@ export function EntityTypesClient({ entityTypes }: Props) {
         }
         description={
           activeTarget?.is_active
-            // destroy-label-ok: says hard deletes are NOT offered; the action is deactivate
-            ? `The token disappears from entity_types_list() and the generated TS vocabulary (after pnpm gen:entity-types), but existing platform.associations rows referencing it remain. Hard deletes are not offered — tokens are FK targets. You can reactivate at any time.`
+            // Hard deletes not offered: tokens are FK targets.
+            ? `Hidden from pickers and generated types; existing links stay. You can reactivate it anytime.`
             : `The token returns to entity_types_list() and the generated TS vocabulary on the next pnpm gen:entity-types run.`
         }
         confirmLabel={activeTarget?.is_active ? "Deactivate" : "Reactivate"}

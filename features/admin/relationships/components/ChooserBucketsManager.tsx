@@ -312,19 +312,16 @@ export function ChooserBucketsManager() {
   return (
     <div className="flex flex-col gap-2 px-4 pb-6">
       <div>
+        {/* Tier-1 buckets of the reference "Allowed types" chooser: a type's
+            category if set, else its schema display name. Chooser UIs read the
+            generated registry: run pnpm gen:entity-types after editing buckets. */}
         <h2 className="text-sm font-semibold">Chooser buckets</h2>
-        <p className="text-xs text-muted-foreground">
-          The tier-1 buckets in the reference &ldquo;Allowed types&rdquo;
-          chooser. A type with a category uses it; otherwise its schema&apos;s
-          display name. Chooser UIs read the generated registry — run{" "}
-          <span className="font-mono">pnpm gen:entity-types</span> after editing
-          so users see the change.
-        </p>
       </div>
       <div className="flex flex-col gap-3 lg:flex-row">
+        {/* Rows live in platform.reference_categories. */}
         <BucketPanel
           title="Reference categories"
-          description="Admin-defined buckets (platform.reference_categories). Assign one to a type in its editor."
+          description="Admin-defined; assign one in a type's editor"
           keyHeader="Slug"
           rows={categories}
           loading={loading}
@@ -334,9 +331,10 @@ export function ChooserBucketsManager() {
           }
           onSave={saveCategory}
         />
+        {/* Rows live in platform.schemas; keys are live DB schemas. */}
         <BucketPanel
           title="Schema display names"
-          description="Fallback bucket names (platform.schemas). Keys are the live DB schemas."
+          description="Fallback when a type has no category"
           keyHeader="Schema"
           rows={schemas}
           loading={loading}

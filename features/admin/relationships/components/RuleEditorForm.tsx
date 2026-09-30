@@ -233,10 +233,9 @@ export function RuleEditorForm({
 
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium">Container side</span>
+        {/* Edges are stored little→big, so the target is normally the container. */}
         <p className="text-xs text-muted-foreground">
-          Convention: the edge is stored little→big, so the{" "}
-          <span className="font-medium text-foreground">target</span> (
-          {label(editor.targetType) || "container"}) is normally the container.
+          Normally the target ({label(editor.targetType) || "container"})
         </p>
         {(
           [
@@ -266,15 +265,19 @@ export function RuleEditorForm({
         ))}
         {editor.containerSide === "source" ? (
           <p className="text-xs text-amber-600 dark:text-amber-500">
-            This declares the edge stored big→little. Every writer must store it
-            that way, and the notes field must say why.
+            Stored big→little: every writer must match. Say why in notes.
           </p>
         ) : null}
       </div>
 
       {conveys ? (
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium">Maximum conveyed level</span>
+          <span
+            className="text-xs font-medium"
+            title="Permission is the lowest along a path; admin on a container never grants admin on its contents."
+          >
+            Maximum conveyed level
+          </span>
           <Select
             value={editor.conveysMax}
             onValueChange={(v) =>
@@ -296,10 +299,6 @@ export function RuleEditorForm({
               </SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">
-            Composes as LEAST along a path. Admin on a container never silently
-            confers admin on contents.
-          </p>
         </div>
       ) : null}
 
