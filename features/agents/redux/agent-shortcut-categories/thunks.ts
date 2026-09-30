@@ -90,6 +90,37 @@ export const fetchCategoriesForScope = createAsyncThunk<
   }
 });
 
+/**
+ * ONE request for every shortcut category the person can read — global, their
+ * own, and every organization they belong to (RLS as the person decides).
+ * Replaces a per-organization fetch loop.
+ */
+export const fetchAllReadableCategories = createAsyncThunk<
+  AgentShortcutCategoryDef[],
+  void,
+  ThunkApi
+>("agentShortcutCategory/fetchAllReadable", async (_arg, { dispatch }) => {
+  dispatch(setCategoriesStatus("loading"));
+  dispatch(setCategoriesError(null));
+  try {
+    const response = await fetch("/api/agent-shortcut-categories?scope=readable", {
+      method: "GET",
+      credentials: "include",
+    });
+    const payload = await parseJsonOrThrow<{ data: CategoryApiRow[] }>(response);
+    const defs = payload.data.map(categoryRowToDef);
+    dispatch(upsertCategories(defs));
+    dispatch(setCategoriesStatus("succeeded"));
+    return defs;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load categories";
+    dispatch(setCategoriesError(message));
+    dispatch(setCategoriesStatus("failed"));
+    throw error;
+  }
+});
+
 export const createCategory = createAsyncThunk<
   AgentShortcutCategoryDef,
   CreateCategoryPayload,

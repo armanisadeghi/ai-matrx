@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUserOrganizations } from "@/features/agent-context/hooks/useHierarchy";
 import { AlertTriangle, Loader2, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -17,7 +16,7 @@ import { useAgentShortcutCrud } from "@/features/agent-shortcuts/hooks/useAgentS
 import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { fetchFullShortcut } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { fetchCategoriesForScope } from "@/features/agents/redux/agent-shortcut-categories/thunks";
+import { fetchAllReadableCategories } from "@/features/agents/redux/agent-shortcut-categories/thunks";
 
 import { SurfacePicker } from "./SurfacePicker";
 import { WidgetPicker } from "./WidgetPicker";
@@ -62,7 +61,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { takeShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";
 import { cn } from "@/lib/utils";
 
-const EMPTY_ORGS: { id: string; name: string }[] = [];
 const DEFAULT_SURFACE_NAME = "matrx-default/default";
 
 /**
@@ -145,21 +143,11 @@ export function ShortcutEditorNext({
   // global + their personal + their active org. Single-scope fetches
   // miss two-thirds of what's available.
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  // Every organization the person belongs to — never just the header's
-  // selected one (access-by-person law): a category in any of their
-  // organizations is theirs to pick.
-  const memberOrgs = useUserOrganizations().data ?? EMPTY_ORGS;
-  const memberOrgIds = useMemo(() => memberOrgs.map((o) => o.id), [memberOrgs]);
 
+  // ONE request: every category the person can read (global, own, every org).
   useEffect(() => {
-    void dispatch(fetchCategoriesForScope({ scope: "global", scopeId: null }));
-    void dispatch(fetchCategoriesForScope({ scope: "user", scopeId: null }));
-    for (const orgId of memberOrgIds) {
-      void dispatch(
-        fetchCategoriesForScope({ scope: "organization", scopeId: orgId }),
-      );
-    }
-  }, [dispatch, memberOrgIds]);
+    void dispatch(fetchAllReadableCategories());
+  }, [dispatch]);
 
   const allLoadedCategories = useAppSelector(selectAllCategoriesArray);
   const categories = useMemo(
@@ -173,10 +161,10 @@ export function ShortcutEditorNext({
           c.taskId == null;
         if (isGlobal) return true;
         if (currentUserId && c.userId === currentUserId) return true;
-        if (c.organizationId && memberOrgIds.includes(c.organizationId)) return true;
+        if (c.organizationId && !c.projectId && !c.taskId) return true;
         return false;
       }),
-    [allLoadedCategories, currentUserId, memberOrgIds],
+    [allLoadedCategories, currentUserId],
   );
 
   // ── Agent-surface bindings (used to seed mappings) ────────────────────

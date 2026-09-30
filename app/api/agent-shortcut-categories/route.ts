@@ -71,6 +71,10 @@ export async function GET(request: NextRequest) {
         );
       }
       query = query.eq("metadata->>task_id" as never, scopeId);
+    } else if (scope === "readable") {
+      // Every category the caller can read — global, their own, every
+      // organization they belong to. NO narrowing here: RLS as the person
+      // decides (access belongs to the person, never the selected org).
     } else if (scope) {
       return NextResponse.json(
         { error: `Unknown scope: ${scope}` },
