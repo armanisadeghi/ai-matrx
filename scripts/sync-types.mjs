@@ -13,15 +13,16 @@
  * (DD-128). Generating from the checkout makes that impossible by construction.
  *
  * Modes:
- *   pnpm sync-types          → all 3 steps, API contract from the ../aidream CHECKOUT
+ *   pnpm sync-types          → refuses until Aidream exposes a non-writing complete-bundle emitter;
+ *                              use `--api-only` for the fresh OpenAPI pair or a supported server mode
  *   pnpm sync-types:live     → all 3 steps, API contract from the LIVE server,
  *                              REFUSED unless that server contains the commit pinned
  *                              in scripts/aidream-contract-pin.json AND its generated API contract
  *                              matches the checkout (including environment-gated routes)
  *   pnpm sync-types:local    → all 3 steps against the LOCAL backend (http://localhost:8000)
  *   pnpm sync-types:fast     → ONLY step 2 against the LOCAL backend (no db-types, no typecheck)
- *   pnpm sync-types --api-only → ONLY step 2 (+ drop guard + typecheck) from the CHECKOUT — for when
- *                              step 1 is blocked by something unrelated (a package vocabulary drift)
+ *   pnpm sync-types --api-only → ONLY the fresh OpenAPI/API-types pair (+ drop guard + typecheck)
+ *                              from the CHECKOUT; bundled contracts are intentionally untouched
  *   pnpm sync-types --no-typecheck → run the selected contract steps, but deliberately skip Step 3.
  *                              This is for a bounded contract refresh when the caller owns
  *                              type-checking separately; it never skips the contract pin or drop guard.
@@ -89,7 +90,6 @@ const outDir = resolve(PROJECT_ROOT, 'types/python-generated');
 
 const AIDREAM_ROOT = resolve(getArg('--aidream-root', resolve(PROJECT_ROOT, '../aidream')));
 const AIDREAM_SYNC_SCRIPT = resolve(AIDREAM_ROOT, 'scripts/sync-types.mjs');
-const AIDREAM_GENERATED_DIR = resolve(AIDREAM_ROOT, 'aidream/api/generated');
 const DROP_GUARD = resolve(__dirname, 'typegen-drop-guard.mjs');
 const BACKEND_SYNC_MAX_ATTEMPTS = 3;
 const BACKEND_SYNC_RETRY_DELAY_MS = 3_000;
@@ -167,15 +167,6 @@ function generateFromCheckout(stagingDir) {
         if (reference) rmSync(reference.dir, { recursive: true, force: true });
     }
 
-    // These supplemental bundles are read-only snapshots supplied by Aidream.
-    // The OpenAPI pair above is freshly emitted; never invoke Aidream's legacy
-    // `generate_types.py all --direct` here because it dirties that shared checkout.
-    for (const [from, to] of Object.entries({ 'openapi.json': 'openapi.json', ...BUNDLE_FILES })) {
-        if (from === 'openapi.json') continue;
-        const source = join(AIDREAM_GENERATED_DIR, from);
-        if (!existsSync(source)) continue;
-        copyFileSync(source, join(stagingDir, to));
-    }
 }
 
 /** Fetch the contract from a running server via aidream's own sync script. */
@@ -242,6 +233,19 @@ if (useCheckout) {
 if (preflightOnly) {
     console.log('  ✓ Contract-source preflight complete; generation intentionally skipped.\n');
     process.exit(0);
+}
+
+// `emit_openapi.py` is deliberately read-only but emits only the OpenAPI source.
+// The legacy Aidream `generate_types.py all --direct` emits every supplemental
+// bundle by writing into that shared checkout, which this consumer must never do.
+// Refuse a full checkout sync rather than quietly copying whatever stale bundle
+// happens to be there. Server modes already write every bundle into our staging dir.
+if (useCheckout && !apiOnly) {
+    console.error('\n  ✗ A complete non-writing Aidream bundle emitter is not available.');
+    console.error('    Checkout mode can safely refresh only openapi.json and api-types.ts.');
+    console.error('    Use --api-only for that pair, or use a supported server mode that stages every bundle.');
+    console.error('    Nothing was generated or written.\n');
+    process.exit(2);
 }
 
 // ── Step 1: Supabase database types ────────────────────────────────────────
