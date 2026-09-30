@@ -33,10 +33,8 @@ import { readOf } from "@/components/read-state/ReadGate";
 
 export function CataloguedSourcesList({
     libraryId,
-    organizationId,
 }: {
     libraryId: string;
-    organizationId: string | null;
 }) {
     const router = useRouter();
     const [rows, setRows] = useState<SourceListRow[]>([]);
@@ -101,7 +99,7 @@ export function CataloguedSourcesList({
         return () => {
             cancelled = true;
         };
-    }, [libraryId, organizationId, nonce]);
+    }, [libraryId, nonce]);
 
 
     const columns: MatrxColumnDef<SourceListRow>[] = [

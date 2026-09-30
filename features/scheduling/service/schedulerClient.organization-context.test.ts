@@ -26,7 +26,7 @@ import {
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
-import { getStatus, listDuplicateSchedules, createTask } from "./schedulerClient";
+import { getStatus, listDuplicateSchedules, listTasks, createTask } from "./schedulerClient";
 
 function setSelectedOrganization(organizationId: string | null): void {
   getState.mockReturnValue({ appContext: { organization_id: organizationId } });
@@ -54,14 +54,14 @@ describe("scheduler client organization admission", () => {
     }));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    await listDuplicateSchedules();
+    await listTasks();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [
       string,
       RequestInit,
     ];
-    expect(url).toBe("https://server.example.test/scheduler/tasks/duplicates");
+    expect(url).toBe("https://server.example.test/scheduler/tasks");
     const headers = new Headers(init.headers);
     expect(headers.get("Authorization")).toBe("Bearer jwt-token");
     expect(headers.get("X-Organization-Id")).toBeNull();
@@ -75,7 +75,7 @@ describe("scheduler client organization admission", () => {
     }));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    await expect(listDuplicateSchedules()).resolves.toEqual({ groups: [] });
+    await expect(listTasks()).resolves.toEqual({ groups: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -176,7 +176,19 @@ describe("scheduler client organization admission", () => {
       queueMicrotask(() => settleOrganizationSelection("33333333-3333-4333-8333-333333333333"));
     });
 
-    await listDuplicateSchedules();
+    await listTasks();
     expect(openPicker).not.toHaveBeenCalled();
+  });
+
+  it("the duplicate check names the organization it compares within", async () => {
+    const fetchMock = jest.fn(async () => ({ ok: true, json: async () => ({ groups: [] }) }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await listDuplicateSchedules("22222222-2222-4222-8222-222222222222");
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(new Headers(init.headers).get("X-Organization-Id")).toBe(
+      "22222222-2222-4222-8222-222222222222",
+    );
   });
 });

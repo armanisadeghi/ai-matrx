@@ -13,8 +13,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { MediaApiError, listActions } from "../api";
 import type { ActionDeclaration } from "../types";
 
@@ -29,12 +28,8 @@ export interface ActionRegistryState {
 
 export function useActionRegistry(): ActionRegistryState {
     const dispatch = useAppDispatch();
-    // 🚨 THE ACTIVE ORGANIZATION RESOLVES AFTER THE FIRST RENDER, and every call
-    // through `callApi` refuses without it ("Select an organization before
-    // sending this request"). A read fired once on mount therefore fails and
-    // never retries — measured live on the Library page. Naming it as a
-    // dependency is the whole fix: the read re-runs the moment it lands.
-    const organizationId = useAppSelector(selectOrganizationId);
+    // The registry is read by access alone: no organization is named, and a switch of the
+    // header organization never re-reads or empties it.
     const [actions, setActions] = useState<ActionDeclaration[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -69,7 +64,7 @@ export function useActionRegistry(): ActionRegistryState {
     useEffect(() => {
         void reload();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reload, organizationId]);
+    }, [reload]);
 
     return { actions, loading, error, remedy, reload };
 }

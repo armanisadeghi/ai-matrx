@@ -26,7 +26,6 @@ import { CircleAlert, RefreshCw } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -68,7 +67,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     const router = useRouter();
     const params = useSearchParams();
     const live = useAppSelector((state) => selectLibraryLive(state, libraryId));
-    const organizationId = useAppSelector(selectOrganizationId);
 
     const [loadError, setLoadError] = useState<string | null>(null);
     // D5: true whenever the most recent Library-ROW read (mount or the
@@ -144,9 +142,8 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                     : "The numbers for this Library could not be read from the server.",
             );
         }
-        // `organizationId` is NOT a gate — a switch simply re-reads, so the
-        // numbers on screen are never older than the workspace around them.
-    }, [dispatch, libraryId, organizationId]);
+        // The header organization is neither a gate nor a dependency: a switch never re-reads.
+    }, [dispatch, libraryId]);
 
     const sync = useLibrarySync(libraryId, () => {
         void refreshMetrics();
@@ -209,7 +206,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, libraryId, organizationId, refreshMetrics, loadLibraryRow]);
+    }, [dispatch, libraryId, refreshMetrics, loadLibraryRow]);
 
     // 🚨 THE JOB-DISCOVERY MOUNT READ — the server is the door back to a job,
     // and this page had never opened it.
@@ -393,7 +390,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             createCatalogListConfig({
                 dispatch,
                 libraryId,
-                organizationId,
                 bulkActions: runner.bulkActions,
                 onOpenRow: setOpenVideo,
                 // §4.3 — the Action labels come from the SERVER'S registry, the
@@ -423,7 +419,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             sourceCells,
             dispatch,
             libraryId,
-            organizationId,
             runner.bulkActions,
             listGeneration,
             registry.actions,
@@ -458,7 +453,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 <PageHeader>
                     <h1 className="truncate text-sm font-medium">{library.name}</h1>
                 </PageHeader>
-                <CataloguedSourcesList libraryId={libraryId} organizationId={organizationId} />
+                <CataloguedSourcesList libraryId={libraryId} />
             </>
         );
     }

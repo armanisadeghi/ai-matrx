@@ -37,12 +37,6 @@ import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  OrganizationRequiredNotice,
-} from "@/features/organizations/components/OrganizationRequiredNotice";
-import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 import { descend, describeWalkError, findingFromWalk } from "../api";
 import {
@@ -152,18 +146,9 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
     setOverrides({});
   };
 
-  /** Set when a layer never left the browser because no organization is
-   *  selected — it also names what to re-run once one is picked. */
-  const [orgBlocked, setOrgBlocked] = useState<{
-    kind: WalkUnitKind;
-    id: string;
-    index: number;
-  } | null>(null);
-  const organizationId = useAppSelector(selectOrganizationId);
 
   const loadLayer = useCallback(
     async (kind: WalkUnitKind, id: string, atIndex: number) => {
-      setOrgBlocked(null);
       setLayers((prev) => [
         ...prev.slice(0, atIndex),
         {
@@ -184,9 +169,6 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
         );
       } catch (error) {
         const { status, detail } = describeWalkError(error);
-        if (isOrganizationRequiredError(error)) {
-          setOrgBlocked({ kind, id, index: atIndex });
-        }
         setLayers((prev) =>
           prev.map((layer, i) =>
             i === atIndex
@@ -215,15 +197,6 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   const current = layers[layers.length - 1] ?? null;
   const currentIndex = layers.length - 1;
   const root = layers[0] ?? null;
-
-  // Picking an organization in the inline notice re-runs the blocked layer.
-  useEffect(() => {
-    if (!orgBlocked || !organizationId) return;
-    const retry = window.setTimeout(() => {
-      void loadLayer(orgBlocked.kind, orgBlocked.id, orgBlocked.index);
-    }, 0);
-    return () => window.clearTimeout(retry);
-  }, [organizationId, orgBlocked, loadLayer]);
 
   // Load the turn model once the root layer names its conversation.
   const turnsRequested = useRef(false);
@@ -577,10 +550,6 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
             <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               Loading what this step received…
-            </div>
-          ) : current.status === "error" && orgBlocked ? (
-            <div className="m-3">
-              <OrganizationRequiredNotice description="This review walk reads recorded runs from one organization. Pick one below and the walk continues automatically." />
             </div>
           ) : current.status === "error" ? (
             <StopStatePanel

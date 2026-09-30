@@ -156,10 +156,17 @@ export function createTask(
  * (THE SCHEDULER DUPLICATE GUARD). Paused and trigger-less schedules are
  * excluded server-side: they cannot fire, so they cost nothing.
  */
-export function listDuplicateSchedules(): Promise<DuplicateScheduleResponse> {
-  return request<DuplicateScheduleResponse>("/scheduler/tasks/duplicates", {
-    method: "GET",
-  });
+export function listDuplicateSchedules(
+  organizationId?: string,
+): Promise<DuplicateScheduleResponse> {
+  // Duplicates are compared WITHIN one organization and the server route still requires it
+  // (live: 400 organization_required without the header), so this one read names the
+  // organization the caller is working in. Every other scheduler read stays organization-free.
+  return request<DuplicateScheduleResponse>(
+    "/scheduler/tasks/duplicates",
+    { method: "GET" },
+    organizationId,
+  );
 }
 
 export function listTasks(

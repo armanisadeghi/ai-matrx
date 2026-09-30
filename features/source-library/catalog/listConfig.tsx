@@ -30,9 +30,6 @@ import type { LibraryRow, VideoRow } from "../types";
 export function createCatalogListConfig(options: {
     dispatch: AppDispatch;
     libraryId: string;
-    /** The active organization — part of what this service was built FROM, so a
-     *  list built before it resolved re-asks the moment it lands. */
-    organizationId: string | null;
     bulkActions: EntityBulkAction<VideoRow>[];
     onOpenRow: (row: VideoRow) => void;
     /** §8's labels, keyed by Action key — the SERVER'S words, never a list held
@@ -51,7 +48,7 @@ export function createCatalogListConfig(options: {
      * new rows (`library.sync.completed`). `serviceKey` is what actually makes
      * this shell re-ask a service — see `lib/entity-list/useEntityList.ts`'s
      * own header comment on `serviceKey`. This screen's row read used to be
-     * keyed only by `libraryId`/`organizationId`, so a page that just watched
+     * keyed only by `libraryId`, so a page that just watched
      * the sync banner count to 507 kept showing the FIRST read's zero rows
      * forever: nothing in the query ever changed, so nothing ever re-asked.
      * Folding this in is the fix, in the shell's own idiom.
@@ -78,7 +75,6 @@ export function createCatalogListConfig(options: {
     const {
         dispatch,
         libraryId,
-        organizationId,
         bulkActions,
         onOpenRow,
         actionLabels,
@@ -166,7 +162,7 @@ export function createCatalogListConfig(options: {
         // No scope tabs: the Library IS the scope. See ./service.ts.
         scopes: [],
         service: createCatalogService(dispatch, libraryId),
-        serviceKey: `media-catalog:${libraryId}:${organizationId ?? "none"}:${refreshToken ?? 0}`,
+        serviceKey: `media-catalog:${libraryId}:${refreshToken ?? 0}`,
         columns: catalogColumns({ actionLabels, vocabulary, kindKnown, renderSource }),
         prefsVersion: 1,
         getRowId: (row) => row.id,
