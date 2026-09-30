@@ -36,7 +36,8 @@ import { Cost } from "@/components/cost/Cost";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   COVERED_DOORS,
@@ -267,6 +268,7 @@ function CandidateCard({
   onChanged: () => void;
 }) {
   const counts = countsOf(candidate);
+  const viewerId = useAppSelector(selectUserId);
   const bad = counts.runs_failed > 0 || (counts.verdicts?.regressed ?? 0) > 0;
   return (
     <div
@@ -325,7 +327,11 @@ function CandidateCard({
         {!compact ? (
           <span className="flex items-center gap-1 text-muted-foreground">
             Set by
-            <MatrxUuidCell value={candidate.set_by} token="user" label="Set by" />
+            {candidate.set_by === viewerId ? (
+              <span className="text-foreground">you</span>
+            ) : (
+              <MatrxUuidCell value={candidate.set_by} token="user" label="Set by" />
+            )}
             {formatRelativeTime(candidate.created_at)}
           </span>
         ) : null}
@@ -595,6 +601,8 @@ function PairsTable({ runs }: { runs: LiveCandidateRun[] | null }) {
       getRowId={(run) => run.id}
       defaultSort={{ id: "number", direction: "asc" }}
       pageSize={10}
+      // A row opens its Detail record (F3), never the table's own inspector.
+      detail={{ enabled: false }}
       onRowOpen={(run) => openRun(run.id, { name: `Pair ${run.number}`, siblings: runs.map((r) => r.id) })}
       getRowHref={(run) => `/detail/mandate_candidate_run/${run.id}`}
       emptyState={{ title: "No pairs yet — the next real run brings one" }}
@@ -786,6 +794,8 @@ function HistoryTable({
       getRowId={(c) => c.id}
       defaultSort={{ id: "decided", direction: "desc" }}
       pageSize={10}
+      // A row opens its Detail record (F3), never the table's own inspector.
+      detail={{ enabled: false }}
       onRowOpen={(c) => openSummary(c.id, { name: c.holder_name, siblings: history.map((h) => h.id) })}
       getRowHref={(c) => `/detail/mandate_candidate/${c.id}`}
       emptyState={{ title: "No past candidates" }}
