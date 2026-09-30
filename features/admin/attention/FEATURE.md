@@ -92,6 +92,15 @@ is reconciled onto `sch_task.metadata.impact` at worker boot (aidream
 `0686` seeded the first five). A job with no declaration shows "has not said
 which pages it feeds" — honest, and the nudge.
 
+## Dated changes (when they speak)
+
+Quiet until the lead window, loud inside it — decided in the database, rendered here and by
+`components/admin/CredentialExpiryNotifier.tsx` (same items, toast + dock). Rule and reasons in
+the 2026-09-29 change log entry. Sources: `sources/dated-changes.ts` (pure),
+`sources/useDatedChangeSource.ts`; words in `features/admin/dated-changes/describe.ts`; tests
+`__tests__/dated-change-items.test.ts` and
+`components/admin/__tests__/CredentialExpiryNotifier.dated-changes.test.tsx`.
+
 ## Review page
 
 `/administration/automation/scheduling/scanner-health` renders the SAME
@@ -117,10 +126,23 @@ request, loud vs silent failure, never an all-clear, expired mute ignored).
 
 ## Change log
 
+- **2026-09-29** — Dated changes: quiet until the lead window, loud inside it (owner's ruling
+  joining Arman's "super annoying, always gets my attention" with the 2026-09-28 rule below, whose
+  reason still holds: no permanent global alert months before the date). The database decides
+  (`platform.dated_changes_for_attention`): a scheduled change raises NOTHING until
+  `dated_changes.remind_days` before its effective time (the knob, read live per organization and
+  person — never a constant); inside the window it is `upcoming`, loud on the dock and as a
+  never-timing-out toast in `CredentialExpiryNotifier` (restored); `drift` and `zone_unconfirmed`
+  also speak only inside the window; refused, failed and overdue speak at once and cannot be
+  dismissed or muted until resolved; applied is a notice for `dated_changes.notice_hours`. A
+  change whose time zone was never stated alerts in its window with "Confirm the time zone this
+  change uses" and a door (`Confirm time zone` on the Dated Changes page, new door
+  `platform.dated_change_set_time_zone`); months ahead it stays on that list only. The
+  "created" notice is deleted (it was a global alert on day one).
 - **2026-09-28** — Future changes with an unstated time zone stay on the Dated
   Changes page without a global alert. Removed the duplicate permanent toast;
   the dock continues to show actionable dated changes even without an active
-  organization.
+  organization. (Superseded in part 2026-09-29: the reason stands, the rule is now the lead window.)
 - **2026-09-14** — Built. Replaces `features/scheduling/components/alarm/SystemScheduleAlarmBanner.tsx`,
   `features/scheduling/lib/{system-schedule-alarm-notice,alarm-snooze}.ts` and
   `features/admin/system-errors/{PlatformOutageBanner.tsx,outage-mute.ts}` (deleted, no shims).

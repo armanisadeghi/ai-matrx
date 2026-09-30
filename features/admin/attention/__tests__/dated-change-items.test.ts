@@ -39,7 +39,7 @@ function change(over: Partial<DatedChange>): DatedChange {
     createdAt: "2026-09-28T21:00:00Z",
     resolvedAt: null,
     resolutionNote: null,
-    attention: "created",
+    attention: "upcoming",
     mutable: true,
     ...over,
   };
@@ -62,7 +62,7 @@ function source(items: ReturnType<typeof datedChangeItems>): AttentionSourceStat
 }
 
 describe("dated change attention items", () => {
-  it.each(["refused", "failed", "overdue", "drift"] as const)(
+  it.each(["refused", "failed", "overdue", "drift", "zone_unconfirmed"] as const)(
     "%s has no mute and a local mute cannot hide it",
     (attention) => {
       const [item] = datedChangeItems([change({ attention, mutable: false, status: attention === "refused" || attention === "failed" ? attention : "scheduled" })], deps());
@@ -73,8 +73,15 @@ describe("dated change attention items", () => {
     },
   );
 
-  it("keeps an unconfirmed future time zone off the global attention dock", () => {
-    expect(datedChangeItems([change({ attention: "zone_unconfirmed", timeZone: null, mutable: false })], deps())).toEqual([]);
+  it("a change whose time zone was never stated, inside its lead window, alerts with the ask and a door to set it", () => {
+    const [item] = datedChangeItems(
+      [change({ attention: "zone_unconfirmed", timeZone: null, mutable: false, effectiveAt: "2026-10-03T00:00:00Z", effectiveLocal: "2026-10-03T00:00:00" })],
+      deps(),
+    );
+    expect(item).toBeDefined();
+    expect(item.sentence).toContain("Confirm the time zone this change uses");
+    expect(item.record?.href).toBe("/administration/automation/scheduling/dated-changes#c1");
+    expect(item.mute).toBeNull();
   });
 
   it("a scheduled change can be muted locally, and the mute hides it", async () => {
@@ -87,7 +94,7 @@ describe("dated change attention items", () => {
   });
 
   it("the database's `mutable: false` wins even for a normally mutable kind", () => {
-    const [item] = datedChangeItems([change({ attention: "created", mutable: false })], deps());
+    const [item] = datedChangeItems([change({ attention: "upcoming", mutable: false })], deps());
     expect(item.mute).toBeNull();
   });
 

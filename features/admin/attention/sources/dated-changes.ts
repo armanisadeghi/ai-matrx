@@ -3,9 +3,15 @@
  *
  * A dated change is a database change stored now and applied on a set date (first use: a model
  * price a provider announced for later). The database decides what needs saying and whether it
- * may be muted (`platform.dated_changes_for_attention`): created / upcoming / applied may be muted
- * in this browser; refused, failed, overdue and drift cannot. An unstated time zone is shown on
- * the change's own page, but is not a global interruption months before the change is due.
+ * may be muted (`platform.dated_changes_for_attention`): upcoming / applied may be muted
+ * in this browser; refused, failed, overdue, drift and an unconfirmed time zone can NOT — their
+ * `mute` is `null`, so the row renders no Mute control, no stale local mute hides them, and the
+ * whole-dock snooze still shows them (DATED-CHANGES-ATTACK B4).
+ *
+ * WHEN a change appears at all is the database's call, not this file's: quiet until
+ * `dated_changes.remind_days` before its effective time, then loud; refused / failed / overdue at
+ * once (features/admin/attention/FEATURE.md, "Dated changes"). A change whose time zone was never
+ * stated appears only inside that window, with the ask "confirm the time zone this change uses".
  */
 
 import {
@@ -31,7 +37,7 @@ export function datedChangeItems(
 ): AttentionItem[] {
   const now = deps.now ?? Date.now();
   return changes
-    .filter((change) => change.attention !== null && change.attention !== "zone_unconfirmed")
+    .filter((change) => change.attention !== null)
     .map((change) => {
       const words = describeDatedChange(change, now);
       // A new attention kind for the same change is a new key: muting "scheduled" never mutes

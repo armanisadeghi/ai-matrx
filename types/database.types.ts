@@ -31576,6 +31576,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      archived_tables_everywhere: {
+        Args: { p_lane?: string; p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       assert_client_may_change: {
         Args: {
           p_door: string
@@ -33849,6 +33853,7 @@ export type Database = {
           title: string
         }[]
       }
+      list_portals_everywhere: { Args: { p_archived?: string }; Returns: Json }
       lookup_value: {
         Args: {
           p_field_data: Json
@@ -35822,7 +35827,7 @@ export type Database = {
         Returns: Json
       }
       table_facts: {
-        Args: { p_organization_id: string }
+        Args: { p_organization_id?: string }
         Returns: {
           keeper_group: string
           keeper_says: string
@@ -36454,7 +36459,7 @@ export type Database = {
           p_include_decided?: boolean
           p_limit?: number
           p_offset?: number
-          p_organization_id: string
+          p_organization_id?: string
           p_view?: string
         }
         Returns: {
@@ -86872,6 +86877,10 @@ export type Database = {
       }
       dated_change_resolve: {
         Args: { p_change_id: string; p_note: string }
+        Returns: undefined
+      }
+      dated_change_set_time_zone: {
+        Args: { p_change_id: string; p_time_zone: string }
         Returns: undefined
       }
       dated_changes_for_attention: {

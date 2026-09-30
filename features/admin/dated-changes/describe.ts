@@ -149,19 +149,18 @@ export function describeDatedChange(change: DatedChange, now: number = Date.now(
       return {
         title,
         state: `changes in ${distance(change.effectiveAt, now)}`,
-        sentence: `The ${title} changes from ${expected} to ${next} per million tokens on ${when}. The source names no time zone, so it applies at midnight UTC for now; if the provider bills on another clock, cancel it and schedule it again with that zone.`,
+        sentence: `Confirm the time zone this change uses. The ${title} changes from ${expected} to ${next} per million tokens on ${when}, but the source names no time zone, so it will apply at midnight UTC unless you say otherwise. Open it and set the provider's time zone (or UTC) before then.`,
         severity,
-        headline: `Time zone to confirm: ${title} change`,
+        headline: `${title} change: time zone not stated`,
         dismissible,
       };
-    case "created":
     case "upcoming":
       return {
         title,
-        state: kind === "created" ? "scheduled" : `changes in ${distance(change.effectiveAt, now)}`,
+        state: `changes in ${distance(change.effectiveAt, now)}`,
         sentence: `The ${title} changes from ${expected} to ${next} per million tokens on ${when}. ${change.reason}`,
         severity,
-        headline: kind === "created" ? `Scheduled: ${title} change on ${when.split(" (")[0]}` : `Coming up: ${title} change`,
+        headline: `Coming up: ${title} change`,
         dismissible,
       };
     case "applied": {

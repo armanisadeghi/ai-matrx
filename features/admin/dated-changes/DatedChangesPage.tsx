@@ -27,6 +27,7 @@ import {
   cancelDatedChange,
   fetchDatedChanges,
   resolveDatedChange,
+  setDatedChangeTimeZone,
   type DatedChange,
 } from "./service";
 import { OFFERINGS_PAGE_HREF, describeDatedChange, formatEffective, formatPricing } from "./describe";
@@ -41,7 +42,7 @@ const STATUS_LABEL: Record<DatedChange["status"], string> = {
   cancelled: "Cancelled",
 };
 
-type Pending = { kind: "cancel" | "resolve"; change: DatedChange } | null;
+type Pending = { kind: "cancel" | "resolve" | "zone"; change: DatedChange } | null;
 
 export default function DatedChangesPage() {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -69,6 +70,9 @@ export default function DatedChangesPage() {
       if (pending.kind === "cancel") {
         await cancelDatedChange(pending.change.id, note.trim());
         toast.success("Cancelled. The price will not change on that date.");
+      } else if (pending.kind === "zone") {
+        await setDatedChangeTimeZone(pending.change.id, note.trim());
+        toast.success("Time zone confirmed. The change now applies at midnight in that zone.");
       } else {
         await resolveDatedChange(pending.change.id, note.trim());
         toast.success("Marked resolved. It leaves the reminder, with your note kept on the change.");
@@ -132,7 +136,7 @@ export default function DatedChangesPage() {
         {changes.map((change) => {
           const words = describeDatedChange(change, now);
           const critical = words.severity === "critical" && change.attention !== null;
-          const needsAttention = change.attention !== null && change.attention !== "zone_unconfirmed";
+          const needsAttention = change.attention !== null;
           const Icon =
             change.status === "applied"
               ? CheckCircle2
@@ -214,6 +218,16 @@ export default function DatedChangesPage() {
                     The provider&apos;s page
                   </a>
                 ) : null}
+                {change.status === "scheduled" && !change.timeZone ? (
+                  <Button
+                    size="sm"
+                    variant={change.attention === "zone_unconfirmed" ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => setPending({ kind: "zone", change })}
+                  >
+                    Confirm time zone
+                  </Button>
+                ) : null}
                 {change.status === "scheduled" ? (
                   <Button
                     size="sm"
@@ -246,19 +260,29 @@ export default function DatedChangesPage() {
           if (!open && !busy) setPending(null);
         }}
         title={
-          pending?.kind === "cancel"
-            ? `Cancel the ${pending.change.targetLabel ?? "model"} price change?`
-            : `Mark the ${pending?.change.targetLabel ?? "model"} price change resolved?`
+          pending?.kind === "zone"
+            ? `Which time zone does the ${pending.change.targetLabel ?? "model"} price change use?`
+            : pending?.kind === "cancel"
+              ? `Cancel the ${pending.change.targetLabel ?? "model"} price change?`
+              : `Mark the ${pending?.change.targetLabel ?? "model"} price change resolved?`
         }
         description={
-          pending?.kind === "cancel"
+          pending?.kind === "zone"
+            ? `The source names no time zone, so the change is read as ${formatEffective(pending.change).split(" (")[0]} UTC. Enter the zone the provider bills on (for example America/Los_Angeles, or UTC to keep it). The moment it applies is recomputed from that; it can be set once — to change a stated zone, cancel the change and schedule it again.`
+            : pending?.kind === "cancel"
             ? `On ${formatEffective(pending.change)} the price will stay ${formatPricing(pending.change.expected)} instead of becoming ${formatPricing(pending.change.newValue)}. This cannot be undone — schedule a new change if it is still needed. Say why.`
             : "It leaves the reminder for every super admin. Say what was done — for example, the price was set by hand or a corrected change was scheduled."
         }
-        placeholder={pending?.kind === "cancel" ? "e.g. Google extended the introductory price." : "e.g. Set the new price by hand on the offerings page."}
-        multiline
+        placeholder={
+          pending?.kind === "zone"
+            ? "e.g. America/Los_Angeles"
+            : pending?.kind === "cancel"
+              ? "e.g. Google extended the introductory price."
+              : "e.g. Set the new price by hand on the offerings page."
+        }
+        multiline={pending?.kind !== "zone"}
         rows={3}
-        confirmLabel={pending?.kind === "cancel" ? "Cancel the change" : "Mark resolved"}
+        confirmLabel={pending?.kind === "zone" ? "Confirm time zone" : pending?.kind === "cancel" ? "Cancel the change" : "Mark resolved"}
         busy={busy}
         onConfirm={onConfirm}
       />

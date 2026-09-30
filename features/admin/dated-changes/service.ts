@@ -21,7 +21,6 @@ export type DatedChangeAttention =
   | "overdue"
   | "drift"
   | "zone_unconfirmed"
-  | "created"
   | "upcoming"
   | "applied";
 
@@ -51,7 +50,7 @@ export interface DatedChange {
   resolvedAt: string | null;
   resolutionNote: string | null;
   attention: DatedChangeAttention | null;
-  /** Only created / upcoming / applied may be muted or dismissed. */
+  /** Only upcoming / applied may be muted or dismissed. */
   mutable: boolean;
 }
 
@@ -61,7 +60,6 @@ const ATTENTION_KINDS = new Set<DatedChangeAttention>([
   "overdue",
   "drift",
   "zone_unconfirmed",
-  "created",
   "upcoming",
   "applied",
 ]);
@@ -126,5 +124,14 @@ export async function resolveDatedChange(id: string, note: string): Promise<void
   const { error } = await supabase
     .schema("platform")
     .rpc("dated_change_resolve", { p_change_id: id, p_note: note });
+  if (error) throw pgErrorToError(error);
+}
+
+/** Confirms the zone of a scheduled change whose source stated none; the instant is re-derived. */
+export async function setDatedChangeTimeZone(id: string, timeZone: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .schema("platform")
+    .rpc("dated_change_set_time_zone", { p_change_id: id, p_time_zone: timeZone });
   if (error) throw pgErrorToError(error);
 }

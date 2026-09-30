@@ -495,7 +495,7 @@ describe("AdminAttentionDock", () => {
     fetchDatedChanges.mockResolvedValue([
       { ...base, id: "refused-1", status: "refused", attention: "refused", mutable: false,
         outcome: { reason: "drift", observed: [{ input_price: 0.9, output_price: 3.75 }], sentence: "Nothing was changed." } },
-      { ...base, id: "created-1", status: "scheduled", attention: "created", mutable: true, outcome: {} },
+      { ...base, id: "upcoming-1", status: "scheduled", attention: "upcoming", mutable: true, outcome: {} },
     ]);
     fetchSystemScheduleAlarms.mockResolvedValue([alarm()]);
     fetchOpenOutages.mockResolvedValue([]);
