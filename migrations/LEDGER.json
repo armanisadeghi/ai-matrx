@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-30T01:09:42.189Z",
+  "generated_at": "2026-09-30T01:29:08.175Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -703,6 +703,12 @@
       "filename": "databasics2_a_value_set_aside_comes_back.sql",
       "checksum": "1ec0d5c11db32e70ddaf07fca5e818b47e66cda83c225b0b897770655ff1f990",
       "applied_at": "2026-09-28 02:40:16.804805+00"
+    },
+    "migrations/campaign/databasics2_an_agent_acts_for_its_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "databasics2_an_agent_acts_for_its_person.sql",
+      "checksum": "7e3f823c8a0d21d08ffbdc09f27ce79fadadb88b35d2d78b831789c9bf9bc693",
+      "applied_at": "2026-09-30 01:29:06.891091+00"
     },
     "migrations/campaign/databasics2_an_archive_under_way_says_so.sql": {
       "source": "matrx-frontend",
@@ -2365,6 +2371,12 @@
       "filename": "followbatch3_a_copy_step_never_deadlocks_with_a_migration.sql",
       "checksum": "23c565220aed3a3e9c8e0c0903992c393b500309ef75b7bb1366cda1403d0c54",
       "applied_at": "2026-09-30 00:02:12.078979+00"
+    },
+    "migrations/campaign/followbatch3_saving_a_booking_page_never_pauses_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "followbatch3_saving_a_booking_page_never_pauses_the_store.sql",
+      "checksum": "5ca81cffd633506e56c8a5b8586d066630d5967f6ee3cc2b3d674e90ab608938",
+      "applied_at": "2026-09-30 01:23:54.854166+00"
     },
     "migrations/campaign/forms_a_form_is_a_view_on_a_table.sql": {
       "source": "matrx-frontend",
