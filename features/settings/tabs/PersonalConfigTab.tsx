@@ -39,7 +39,7 @@ export default function PersonalConfigTab() {
     string | null
   >(null);
   const organizationId =
-    chosenOrganizationId ?? activeOrganizationId ?? memberships[0]?.id ?? null;
+    chosenOrganizationId ?? activeOrganizationId ?? null;
 
   const { knobs, isLoading, error, refresh } = useScopedKnobs({
     organizationId,

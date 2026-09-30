@@ -56,6 +56,7 @@ export function WorkflowRunsExplorer({ lane }: { lane: "platform" | "mine" }) {
   // floating run window, right here on the admin page — never the admin's personal runs list, which
   // holds only the runs he started. In the mine lane her run opens on its own page.
   const openRunWindow = useOpenWorkflowRunWindow();
+  // org-fallback-deliberate: the platform lane reads the platform's own organization by name; the mine lane carries the selected organization
   const organizationId = lane === "platform" ? SYSTEM_ORGANIZATION_ID : active.organizationId;
   if (lane === "mine" && active.organizationState !== "ready") {
     return (

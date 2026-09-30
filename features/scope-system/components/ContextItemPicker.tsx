@@ -171,6 +171,7 @@ export function ContextItemPicker({
 
   // The org is the value's, else the scope type's owner, else the sole
   // membership; otherwise unset until the person picks (never the active org).
+  // org-fallback-deliberate: exactly one membership is the answer (boot-ladder rung 3), nothing is guessed; with several the picker stays unset
   const orgId =
     value.orgId || ownerOrgId || (orgs.length === 1 ? orgs[0].id : "");
   const scopeTypeId = value.scopeTypeId || "";

@@ -490,6 +490,7 @@ export function KnowledgeHubPage({
     enabled: transcriptsView && !sample && !trashView,
     text: state.query.text ?? "",
     selection: facetSel,
+    // org-fallback-deliberate: organizations here is the person's own chosen organization filter (URL), not a membership list; one chosen organization is passed through
     orgId: effectiveQuery.organizations?.length === 1 ? effectiveQuery.organizations[0] : null,
     sort: state.query.sort === "title" ? "title" : "updated",
     initialDepth: listRestore.saved?.depth,

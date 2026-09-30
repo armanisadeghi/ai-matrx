@@ -16,6 +16,7 @@ export default async function KitsPage() {
   let platform: Awaited<ReturnType<typeof fetchKits>>;
   let platformOrganizationId: string | null = null;
   try {
+    // org-fallback-deliberate: the platform kits gallery reads the platform's own organization by name, not a stand-in for the person's
     platformOrganizationId = await resolveSystemOrgId(supabase);
     platform = await fetchKits(supabase, platformOrganizationId);
   } catch (err) {

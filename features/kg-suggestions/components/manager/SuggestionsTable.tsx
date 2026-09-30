@@ -17,6 +17,7 @@ import {
 import {
   MatrxDataTable,
   type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
   type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -244,6 +245,43 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
     }
     if (Object.keys(patch).length) patchQuery(patch);
   };
+  const copy: MatrxDataTableCopyConfig<KgEnrichedSuggestionRow> = {
+    label: "Knowledge suggestion",
+    listLabel: "Knowledge suggestions (loaded page)",
+    location: "AI Matrx — Knowledge suggestions manager (/suggestions)",
+    rowKind: "knowledge-suggestion",
+    listKind: "knowledge-suggestions-loaded-page",
+    rowDescription:
+      "One knowledge suggestion with the source context, unseen marker, and proposed-versus-current value shown in the manager.",
+    listDescription:
+      "The currently loaded server page of knowledge suggestions. Matching rows on other pages are not included.",
+    humanRow: (row) => suggestionCopyHuman(row, sourceTitles),
+    agentRow: (row) => suggestionCopyRow(row, sourceTitles),
+    rowAttributes: (row) => ({
+      suggestion_id: row.id,
+      status: row.status,
+      stage: row.stage,
+      source_kind: row.source_kind,
+      unseen: !row.viewed_at,
+      starred: row.is_starred,
+    }),
+    listAttributes: (visible, all) => suggestionCopyListMetadata({
+      query,
+      loadedPageCount: all.length,
+      copiedViewCount: visible.length,
+      matchingTotal: total,
+      selectedInCopiedViewCount: visible.filter((row) => selected.has(row.id)).length,
+      selectedForBulkActionCount: selected.size,
+    }),
+    listContext: (visible, all) => suggestionCopyListMetadata({
+      query,
+      loadedPageCount: all.length,
+      copiedViewCount: visible.length,
+      matchingTotal: total,
+      selectedInCopiedViewCount: visible.filter((row) => selected.has(row.id)).length,
+      selectedForBulkActionCount: selected.size,
+    }),
+  };
   const runBulk = async (
     label: string,
     ids: string[],
@@ -281,6 +319,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
         },
       }}
       toolbar={{
+        title: "Knowledge suggestions",
         search: false,
         leading: (
           <SuggestionsFilterBar
@@ -351,6 +390,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
           restore={restore}
         />
       )}
+      copy={copy}
       emptyState={{ title: "No suggestions match these filters." }}
       className="min-w-[72rem]"
     />
@@ -390,6 +430,105 @@ function fieldLabel(row: KgEnrichedSuggestionRow) {
     (row.stage === "association" ? "Scope link" : "—")
   );
 }
+
+function suggestionCopyRow(
+  row: KgEnrichedSuggestionRow,
+  titles: Map<string, string>,
+) {
+  return {
+    id: row.id,
+    source: {
+      kind: row.source_kind,
+      id: row.source_id,
+      title: sourceTitle(row, titles),
+      context_snippet: row.context_snippet,
+    },
+    scope: {
+      name: row.scopeName,
+      type: row.scopeTypeLabel,
+      organization: row.orgName,
+      is_new: !row.viewed_at,
+    },
+    field: fieldLabel(row),
+    proposed_value: row.suggested_value,
+    current_value_snapshot: row.current_value_snapshot,
+    confidence: row.confidence,
+    status: row.status,
+    stage: row.stage,
+    match_kind: row.match_kind,
+    starred: row.is_starred,
+    detected_at: row.created_at,
+  };
+}
+
+function suggestionCopyHuman(
+  row: KgEnrichedSuggestionRow,
+  titles: Map<string, string>,
+) {
+  return [
+    `${sourceTitle(row, titles)} (${sourceKindLabel(row.source_kind)})`,
+    row.context_snippet ? `Context: “${row.context_snippet}”` : null,
+    `Scope: ${row.scopeName ?? "—"}${!row.viewed_at ? " (New)" : ""}`,
+    `Scope type: ${row.scopeTypeLabel ?? "—"}`,
+    `Organization: ${row.orgName ?? "—"}`,
+    `Field: ${fieldLabel(row)}`,
+    `Proposed value: ${row.suggested_value ?? "—"}`,
+    row.current_value_snapshot
+      ? `Current value: ${row.current_value_snapshot}`
+      : null,
+    `Confidence: ${Math.round(Math.max(0, Math.min(1, row.confidence)) * 100)}%`,
+    `Status: ${row.status}`,
+    `Starred: ${row.is_starred ? "Yes" : "No"}`,
+    `Detected: ${formatRelativeTime(row.created_at, { style: "short" })}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function suggestionCopyListMetadata({
+  query,
+  loadedPageCount,
+  copiedViewCount,
+  matchingTotal,
+  selectedInCopiedViewCount,
+  selectedForBulkActionCount,
+}: {
+  query: KgSuggestionsQuery;
+  loadedPageCount: number;
+  copiedViewCount: number;
+  matchingTotal: number;
+  selectedInCopiedViewCount: number;
+  selectedForBulkActionCount: number;
+}) {
+  return {
+    copy_scope: "current_view_of_loaded_server_page_only",
+    loaded_row_count: loadedPageCount,
+    copied_view_row_count: copiedViewCount,
+    matching_total: matchingTotal,
+    page_number: (query.page ?? 0) + 1,
+    page_size: query.pageSize ?? 50,
+    selected_rows_in_copied_view: selectedInCopiedViewCount,
+    selected_rows_for_bulk_actions: selectedForBulkActionCount,
+    bulk_action_selection_scope:
+      "persists across server pages; rows outside this copied view are not included in this copy",
+    status_filter: query.statuses?.join(", ") || "all statuses",
+    stage_filter: query.stage ?? "all",
+    organization_filter: query.orgId ?? "all organizations",
+    scope_type_filter: query.scopeTypeId ?? "all types",
+    scope_filter: query.scopeId ?? "all scopes",
+    field_filter: query.itemId ?? "all fields",
+    source_kind_filter: query.sourceKind ?? "all source kinds",
+    match_kind_filter: query.matchKind ?? "all match kinds",
+    min_confidence_filter: query.minConfidence ?? null,
+    max_confidence_filter: query.maxConfidence ?? null,
+    starred_only: query.starredOnly ?? false,
+    unseen_only: query.unseenOnly ?? false,
+    search_filter: query.search ?? null,
+    sort_by: query.sortBy ?? "created_at",
+    sort_direction: query.sortDir ?? "desc",
+  };
+}
+
 function SourceCell({
   row,
   sourceTitle: title,

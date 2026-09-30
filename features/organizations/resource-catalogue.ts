@@ -19,7 +19,15 @@
  * kill. The org workspace count grid no longer reads from here; it renders
  * `AssociationCard`s driven by the registry.
  *
- * THIS FILE PERSISTS FOR ONE REASON ONLY: the legacy access-control / sharing
+ * IT ALSO DEFINES which kinds are Sources: the org page's Resources grid groups
+ * these entries by `role`, and the Source input's "Use existing" offers exactly
+ * the grid's "Sources" + "Sources & Outputs" entries (`sourceRoleEntries`). The
+ * registry's `platform.entity_types.content_role` marks more kinds as source /
+ * hybrid (Deals, People & Companies, Folders, Code Files, Rulebooks, Recordings,
+ * Data Stores, Cloud documents, Saved sources…) — the grid's list wins (Arman,
+ * 2026-09-30).
+ *
+ * AND IT PERSISTS for the legacy access-control / sharing
  * surface (`iam.permissions`). The `shareKey`, `contributableEntries`,
  * `getEntryByShareKey`, and `moduleKey` helpers feed the "share your own" /
  * org-grants UI, which is a DIFFERENT domain from content associations and has
@@ -187,6 +195,13 @@ export interface OrgResourceEntry {
    * listed once per id.
    */
   alsoInTheNewSystem?: "pick_lists";
+  /**
+   * A kind with no registry token whose items a person holds as saved Sources
+   * of this Sources-library kind group (`features/sources/sourceRows.ts`
+   * `SOURCE_KIND_GROUP_KINDS`). Set on Websites: the Source input's "Use
+   * existing" lists the web pages the person saved.
+   */
+  savedSourceGroup?: "web_page";
 
   /**
    * The canonical entity token stored in `permissions.resource_type` for grants
@@ -453,6 +468,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     table: null,
     hasOrgColumn: false,
     shareKey: "scraper.sites",
+    savedSourceGroup: "web_page",
     titleColumn: null,
     orgRoute: null,
     scopeable: true,
@@ -650,6 +666,25 @@ export function contributableEntries(): OrgResourceEntry[] {
 
 export function entriesByRole(role: ContentRole): OrgResourceEntry[] {
   return ORG_RESOURCE_CATALOGUE.filter((e) => e.role === role);
+}
+
+/**
+ * The content roles a Source can come from: the Resources grid's "Sources" and
+ * "Sources & Outputs" sections (Arman, 2026-09-30: "Just a list of the things
+ * that are in either sources or sources and outputs").
+ */
+export const SOURCE_CONTENT_ROLES = ["source", "hybrid"] as const satisfies readonly ContentRole[];
+
+/**
+ * THE kinds a Source can be picked from — exactly the entries the organization
+ * page's Resources grid shows under "Sources" and "Sources & Outputs", in the
+ * grid's order (`CONTENT_ROLES` order, then catalogue order). The Source
+ * input's "Use existing" reads this; the grid renders `entriesByRole` per role
+ * — the same entries, so the two can never disagree.
+ */
+export function sourceRoleEntries(): OrgResourceEntry[] {
+  const roles = new Set<ContentRole>(SOURCE_CONTENT_ROLES);
+  return CONTENT_ROLES.filter((r) => roles.has(r.id)).flatMap((r) => entriesByRole(r.id));
 }
 
 export function getEntry(key: string): OrgResourceEntry | undefined {

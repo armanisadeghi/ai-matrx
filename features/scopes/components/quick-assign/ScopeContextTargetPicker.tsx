@@ -99,6 +99,7 @@ export function ScopeContextTargetPicker({
 
   // Unset until the person picks (a sole membership is auto-selected) — the
   // active org never seeds what a picker shows.
+  // org-fallback-deliberate: exactly one membership is the answer (boot-ladder rung 3), nothing is guessed; with several the picker stays unset
   const orgId = value.orgId || (orgs.length === 1 ? orgs[0].id : "");
   const scopeTypeId = value.scopeTypeId || "";
   const scopeId = value.scopeId || "";

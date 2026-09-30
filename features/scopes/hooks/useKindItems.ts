@@ -60,8 +60,14 @@ export function useKindItems(
   options?: {
     /** The organization the screen stands in, for resolving the page-size knob on a "mine" list. */
     organizationId?: string | null;
+    /**
+     * Reads a page some other way than the kind inventory (same paging, search, knob and state) —
+     * e.g. the Source input's saved web pages, a kind with no registry token. Keep it stable.
+     */
+    fetchPage?: typeof fetchKindItemsPage;
   },
 ): UseKindItemsResult {
+  const fetchPage = options?.fetchPage ?? fetchKindItemsPage;
   const userId = useAppSelector(selectUserId);
   const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
   const scopeKey = kindScopeKey(scope);
@@ -94,7 +100,7 @@ export function useKindItems(
     const stableScope = kindScopeFromKey(scopeKey);
     if (!listKey || !kind || !stableScope || !pageSize) return undefined;
     let cancelled = false;
-    fetchKindItemsPage({ token: kind, scope: stableScope, query: settledQuery, offset: 0, limit: pageSize })
+    fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset: 0, limit: pageSize })
       .then(
         (page) => {
           if (cancelled) return;
@@ -115,7 +121,7 @@ export function useKindItems(
     return () => {
       cancelled = true;
     };
-  }, [listKey, kind, scopeKey, pageSize, settledQuery]);
+  }, [listKey, kind, scopeKey, pageSize, settledQuery, fetchPage]);
 
   const current = state.key !== "" && state.key === listKey;
 
@@ -125,7 +131,7 @@ export function useKindItems(
     const key = listKey;
     const offset = state.items.length;
     setState((s) => ({ ...s, loadingMore: true }));
-    fetchKindItemsPage({ token: kind, scope: stableScope, query: settledQuery, offset, limit: pageSize })
+    fetchPage({ token: kind, scope: stableScope, query: settledQuery, offset, limit: pageSize })
       .then(
         (page) => {
           if (liveKey.current !== key) return;

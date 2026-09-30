@@ -1466,6 +1466,34 @@ try {
     if (!count || !/Admin/.test(said) || !/Copied|page address/.test(copied)) friction(`viewer share: control=${count} said=${said}`);
   }
 
+  if (PHASE === "b401") {
+    // BREAKER-4 B4-01: from the table page's header, can a person reach Settings, Archive, Import,
+    // Export, Forms and Dashboards — on the Grid and on the Sheet?
+    const found = {};
+    for (const view of ["grid", "sheet"]) {
+      await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await until(`the ${view}`, async () => (await page.locator("tbody tr").count()) > 0, 240000);
+      await sleep(5000);
+      const triggers = await page.locator('[data-table-menu], button[aria-label="Table menu"]').count();
+      let items = [];
+      if (triggers) {
+        await page.locator('[data-table-menu], button[aria-label="Table menu"]').first().click();
+        await sleep(1500);
+        items = (await page.locator("[data-table-menu-content] [role^=menuitem]").allInnerTexts()).map((t) => t.trim());
+        await shot(`b401-${view}-menu`);
+        await page.keyboard.press("Escape");
+        await sleep(800);
+      }
+      found[view] = { triggers, items };
+    }
+    step("B4-01 the table menu from the header", found);
+    const want = ["Dashboards", "Archived", "Forms", "Import", "Export", "Settings"];
+    for (const [view, f] of Object.entries(found)) {
+      const missing = want.filter((w) => !f.items.includes(w));
+      if (missing.length) friction(`${view}: the table menu lacks ${missing.join(", ")} (trigger count ${f.triggers})`);
+    }
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");

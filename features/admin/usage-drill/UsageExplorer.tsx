@@ -42,6 +42,7 @@ export function UsageExplorer() {
   // THE PLATFORM LANE ASKS IN THE PLATFORM'S OWN ORGANIZATION. The door needs an organization only
   // to know whose calendar cuts the periods; the admin seat never acts as itself (no active-org
   // dependency in admin), and the platform organization's calendar is UTC — the rollup's own hours.
+  // org-fallback-deliberate: the platform lane of the admin usage drill is the platform's own organization by design, never a substitute for a selection
   const organizationId = SYSTEM_ORGANIZATION_ID;
   const freshness = useUsageFreshness(organizationId);
   return (

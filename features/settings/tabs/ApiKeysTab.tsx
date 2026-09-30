@@ -95,6 +95,7 @@ export default function ApiKeysTab() {
   const orgOptions = organizations.map((o) => ({ value: o.id, label: o.name }));
 
   // One organization: it is the answer, so it is chosen for the person.
+  // org-fallback-deliberate: exactly one membership is the answer (boot-ladder rung 3), nothing is guessed; with several the person must pick
   const chosenOrgId =
     orgId || (organizations.length === 1 ? organizations[0].id : "");
 
