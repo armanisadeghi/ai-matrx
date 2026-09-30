@@ -564,7 +564,6 @@ export default function CostDashboard() {
           density="condensed"
           pageSize={0}
           viewTabs={false}
-          copy={false}
           detail={{ enabled: false }}
           window={{ enabled: false }}
           toolbar={{ title: "By pipeline phase", search: false }}
@@ -607,7 +606,6 @@ export default function CostDashboard() {
           density="condensed"
           pageSize={0}
           viewTabs={false}
-          copy={false}
           detail={{ enabled: false }}
           window={{ enabled: false }}
           toolbar={{ title: "By model", search: false }}
@@ -629,7 +627,6 @@ export default function CostDashboard() {
         density="condensed"
         pageSize={0}
         viewTabs={false}
-        copy={false}
         detail={{ enabled: false }}
         window={{ enabled: false }}
         toolbar={{

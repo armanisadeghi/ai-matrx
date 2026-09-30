@@ -329,7 +329,6 @@ function OrgLeaderboard({
       density="condensed"
       stickyHeader
       pageSize={0}
-      copy={false}
       toolbar={{
         title: "Organizations",
         search: true,
@@ -463,7 +462,6 @@ function PendingBatchesTable({
       density="condensed"
       stickyHeader
       pageSize={0}
-      copy={false}
       toolbar={{
         title: "In-flight batches",
         search: true,
@@ -1250,7 +1248,6 @@ function BySourceKindTable({
       density="condensed"
       stickyHeader
       pageSize={0}
-      copy={false}
       toolbar={{
         title: "By source kind",
         search: true,
@@ -1483,7 +1480,6 @@ function RecentRunsTable({
       density="condensed"
       stickyHeader
       pageSize={0}
-      copy={false}
       toolbar={{
         title: "Recent runs",
         search: true,
