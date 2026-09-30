@@ -129,6 +129,25 @@ try {
     }
   }
 
+  if (PHASE === "b222") {
+    // B2-22 on the preview: the Calendar's Ask AI opens with the ask typed and the chips in words.
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=calendar`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the calendar's offer", async () => (await text()).includes("Make it work"), 120000);
+    await sleep(2000);
+    await page.getByRole("button", { name: "Ask AI" }).first().click();
+    const box = page.getByPlaceholder("Type your message...").last();
+    await box.waitFor({ timeout: 60000 }).catch(() => undefined);
+    await sleep(5000);
+    await shot("b2-22-ask-ai");
+    const body = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+    const typed = await page.locator("textarea:visible, [contenteditable=true]:visible").evaluateAll((els) => els.map((e) => (e.value ?? e.textContent ?? "").trim()).filter(Boolean));
+    step("B2-22 Ask AI", {
+      typed,
+      rawChips: body.match(/records_(ta|w|su)[a-z_…]*/g) ?? [],
+      wordChips: ["This table", "A column", "The ask"].filter((w) => body.includes(w)),
+    });
+  }
+
   if (PHASE === "b2") {
     // BREAKER-2 B2-19 / B2-22 / B2-29 / B2-30 and BREAKER-3's drag, on BREAKER-2's own fixture.
     const FIXTURE = "031d3690-4a02-4cee-a575-454ffd96c992";
