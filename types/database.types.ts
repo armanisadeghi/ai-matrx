@@ -113898,6 +113898,7 @@ export type Database = {
           offering_match: string | null
           organization_id: string
           site_id: string
+          topic_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -113919,6 +113920,7 @@ export type Database = {
           offering_match?: string | null
           organization_id: string
           site_id: string
+          topic_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -113940,12 +113942,28 @@ export type Database = {
           offering_match?: string | null
           organization_id?: string
           site_id?: string
+          topic_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
           worth_points?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "site_offering_value_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "map_topic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_offering_value_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_map_topic_stats"
+            referencedColumns: ["topic_id"]
+          },
+        ]
       }
       site_topic_value: {
         Row: {
@@ -118065,7 +118083,13 @@ export type Database = {
         Returns: string
       }
       map_topic_associations: {
-        Args: { p_kinds?: string[]; p_map_id: string; p_slug: string }
+        Args: {
+          p_after?: string
+          p_kinds?: string[]
+          p_limit?: number
+          p_map_id: string
+          p_slug: string
+        }
         Returns: Json
       }
       map_topic_facets: {
@@ -118108,6 +118132,10 @@ export type Database = {
       multi_location_knob: {
         Args: { p_default: number; p_key: string }
         Returns: number
+      }
+      offering_map_topic: {
+        Args: { p_create?: boolean; p_depth?: number; p_offering_id: string }
+        Returns: string
       }
       page_intent_status: {
         Args: { p_site_id: string }
