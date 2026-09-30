@@ -512,9 +512,9 @@ function TileArea({
             onSelect={(content, landed) => {
               if (refuseOverMax()) return;
               void intake.addScrapedPage({
-                url: content.url,
-                title: content.title,
-                text: content.textContent,
+                url: content.url ?? "",
+                title: content.title ?? "",
+                text: content.textContent ?? "",
                 processedDocumentId: landed.processedDocumentId,
               });
             }}

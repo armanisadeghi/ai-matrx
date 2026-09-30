@@ -470,7 +470,7 @@ export function WebpageResourcePickerCore({
                           textContent: text,
                           charCount: text.length,
                           scrapedAt: new Date().toISOString(),
-                        });
+                        }, { processedDocumentId: null });
                         setPasteOpen(false);
                         setPastedText("");
                         setUrl("");
