@@ -28,7 +28,7 @@ export default function MessagesShowcase() {
   const host = useMessagingHost();
   const [category, setCategory] = useState("Everything");
   const [search, setSearch] = useState("");
-  const [header, setHeader] = useState("compact");
+  const [header, setHeader] = useState("centered");
   const [theme, setTheme] = useState("light");
   const [direction, setDirection] = useState("both");
   const [notice, setNotice] = useState(

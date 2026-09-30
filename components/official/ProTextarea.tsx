@@ -400,6 +400,8 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   onSubmit?: () => void;
   /** Force-disable the submit button regardless of content. */
   submitDisabled?: boolean;
+  /** Permit submission without text when the host has attachments or other content. */
+  allowEmptySubmit?: boolean;
   /** Show a spinner inside the submit button. */
   isSubmitting?: boolean;
   /** Accessible/tooltip label for the submit button. Default: "Send". */
@@ -482,6 +484,7 @@ export const ProTextarea = React.forwardRef<
       defaultShowTextStatsBar = true,
       onSubmit,
       submitDisabled,
+      allowEmptySubmit = false,
       isSubmitting = false,
       submitLabel = "Send",
       submitOnCmdEnter,
@@ -798,7 +801,7 @@ export const ProTextarea = React.forwardRef<
     const valueAsString = String(value ?? "");
     const hasContent = valueAsString.trim().length > 0;
     const canSubmit =
-      !!onSubmit && hasContent && !submitDisabled && !isSubmitting && !disabled;
+      !!onSubmit && (hasContent || allowEmptySubmit) && !submitDisabled && !isSubmitting && !disabled;
     const cmdEnterEnabled = submitOnCmdEnter ?? !!onSubmit;
 
     const triggerSubmit = useCallback(() => {

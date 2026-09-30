@@ -177,19 +177,6 @@
   line-height: 20px;
   box-shadow: none;
 }
-.messages-native .messages-call-row {
-  min-width: 0;
-  position: relative;
-}
-.messages-native .messages-call-row > .mx-msg__row {
-  padding-right: 34px;
-}
-.messages-native .messages-call-row > :last-child:not(.mx-msg__row) {
-  position: absolute;
-  right: 2px;
-  transform: scale(0.7);
-  transform-origin: right center;
-}
 @media (pointer: coarse), (max-width: 767px) {
   .messages-native {
     --mx-msg-touch-target: 44px;
@@ -203,12 +190,6 @@
   }
   .messages-native .messages-composer textarea {
     font-size: 16px;
-  }
-  .messages-native .messages-call-row > :last-child:not(.mx-msg__row) {
-    transform: none;
-  }
-  .messages-native .messages-call-row > .mx-msg__row {
-    padding-right: 48px;
   }
 }
 
@@ -241,16 +222,16 @@
 .messages-native .mx-msg__bubble--tail::after {
   content: "";
   position: absolute;
-  bottom: 0;
-  left: -4px;
-  width: 10px;
-  height: 12px;
+  bottom: -2px;
+  left: -5px;
+  width: 14px;
+  height: 18px;
   background: var(--mx-msg-bubble-theirs-bg);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%, 45% 65%);
+  clip-path: path("M 14 0 C 12 8 8 13 0 17 C 8 18 12 14 14 10 Z");
 }
 .messages-native .mx-msg__bubble--mine.mx-msg__bubble--tail::after {
   left: auto;
-  right: -4px;
+  right: -5px;
   transform: scaleX(-1);
   background: var(--mx-msg-bubble-mine-bg);
 }
@@ -466,8 +447,9 @@
   font-size: 11px;
 }
 .messages-native .mx-msg__favorite .mx-msg__avatar {
-  width: 72px;
-  height: 72px;
+  width: min(72px, 100%);
+  height: auto;
+  aspect-ratio: 1;
   font-size: 26px;
   box-shadow: 0 4px 12px #0001;
 }
@@ -617,4 +599,23 @@
 .messages-custom-data-picker__more {
   padding: 10px;
   font-size: 12px;
+}
+
+.messages-media-frame {
+  width: 320px;
+  max-width: 100%;
+}
+
+.messages-custom-data-picker__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.messages-native .mx-msg__bubble--tail {
+  border-bottom-left-radius: 15px;
+}
+.messages-native .mx-msg__bubble--mine.mx-msg__bubble--tail {
+  border-bottom-right-radius: 15px;
 }

@@ -38,7 +38,7 @@ metadata, scrolling, and the composer all collapse into raw document flow.
    `ConversationPane`, or the package's own components. A second bubble renderer is the failure
    the package exists to prevent.
 3. 🚨 **A fix that belongs in the package is made IN the package** (`aidream/apps/shared/messaging`),
-   released, and adopted here in the same session — never massaged in this folder. The adoption
+   and adopted here from the registry; dedicated release agents own publication. The adoption
    session made nine such fixes; the handoff lists every one.
 4. **One realtime manager.** `MessagingHost` sits under `RealtimeHost` and the package detects it.
    Do not mount a second `RealtimeProvider` anywhere.
@@ -78,9 +78,7 @@ specifications to build are in the cross-repo handoff.
 
 ## What this app deliberately does not have yet
 
-- **Reactions, per-message read receipts, edit history, pinning, attachment upload** — the
-  canonical `communication.dm_*` schema has no columns for the first four, and upload belongs on
-  `@ai-matrx/data/files`. This app never had them either.
+- **Reactions, per-message read receipts and edit history** remain unsupported. Conversation pins use the platform favorites service; files use the existing Resource Picker and authenticated media pipeline.
 
 ## Not messaging, but next door
 
@@ -92,7 +90,7 @@ area, and its own header says why it is not on `@ai-matrx/realtime` yet.
 
 `messages-native.css` is the shared app presentation used by both panes, including
 floating windows and the side sheet. It sets compact desktop typography, a
-single-line action strip, a 40px contact header and a 44px growing composer;
+single-line action strip, a centered glass contact header and a 36px growing composer;
 touch inputs retain 16px text and 44px action targets. Package data and rendering
 ownership are unchanged.
 
@@ -101,8 +99,11 @@ synthetic catalogue in `demo/examples.ts`, including all registered host action
 kinds and meet invitations. It provides light/dark, incoming/outgoing and two
 contact-header previews. Bubble action clicks are intercepted before handlers
 run; the explicit real-conversation/window links are outside that boundary.
-Attachment payloads and quoted-parent replies currently have no bubble renderer;
-the corresponding examples label those gaps for the content-renderer owner.
+Attachment payloads render through the host `MessagingAttachment` port; the catalogue uses synthetic local media. Quoted replies resolve their loaded parent or show an explicit earlier-message label.
+
+`useMessagePins` stores `dm_conversation` pins through the platform favorites service. The package places the three most recently active pins in circular tiles, further pins above ordinary rows, and loads older inbox pages to find pinned conversations. Right-click and the thread header both toggle the same pins.
+
+`MessagesComposerInput` keeps the package in charge of drafts, additions, replies and sending. Text and attachments survive view changes and reloads through the package’s per-user session draft store. The plus menu uses the existing file picker, canonical reference picker, and custom table-row picker; emoji insert at the saved caret. The app does not create a second message or outbox path.
 
 The shared Assists clearance pass must never inset editable fields: doing so
 changes textarea auto-grow measurements. `clearance-preserves-editable-fields.test.ts`
