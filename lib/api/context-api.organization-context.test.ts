@@ -26,22 +26,24 @@ describe("fetchContextState organization admission (sender-side, fail-closed)", 
     jest.clearAllMocks();
   });
 
-  it("REFUSAL: never calls fetch when no organization is selected", async () => {
-    const fetchMock = jest.fn();
+  it("READ: with no organization selected the GET is still sent, without X-Organization-Id", async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ conversation_id: "conv-1" }), { status: 200 }),
+    );
     global.fetch = fetchMock as unknown as typeof fetch;
     const dispatch = jest.fn();
 
-    const action = await fetchContextState({ conversationId: "conv-1" })(
+    await fetchContextState({ conversationId: "conv-1" })(
       dispatch,
       () => fakeState(null),
       undefined,
     );
 
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(action.type).toBe("contextState/fetch/rejected");
-    expect((action as { payload?: unknown }).payload).toBe(
-      "organization_context_required",
-    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(
+      (init.headers as Record<string, string>)["X-Organization-Id"],
+    ).toBeUndefined();
   });
 
   it("CONTROL: attaches X-Organization-Id and calls fetch when an organization is selected", async () => {

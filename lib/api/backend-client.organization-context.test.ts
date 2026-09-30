@@ -28,7 +28,27 @@ describe("BackendClient organization admission (sender-side, fail-closed)", () =
     jest.clearAllMocks();
   });
 
-  it("REFUSAL: an authenticated (token) client with no organization scope never calls fetch", async () => {
+  it("READ: an authenticated (token) client with no organization scope SENDS the GET without X-Organization-Id — a read is never refused for a missing organization", async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = createAuthenticatedClient(
+      "test-token",
+      "https://server.example.test",
+    );
+    await expect(client.getJson("/some/endpoint")).resolves.toEqual({ ok: true });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(
+      (init.headers as Record<string, string>)["X-Organization-Id"],
+    ).toBeUndefined();
+  });
+
+  it("REFUSAL: an authenticated (token) client with no organization scope never sends a WRITE", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -36,7 +56,7 @@ describe("BackendClient organization admission (sender-side, fail-closed)", () =
       "test-token",
       "https://server.example.test",
     );
-    await expect(client.getJson("/some/endpoint")).rejects.toThrow(
+    await expect(client.rawPost("/some/endpoint", {})).rejects.toThrow(
       OrganizationContextError,
     );
     expect(fetchMock).not.toHaveBeenCalled();

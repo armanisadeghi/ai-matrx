@@ -157,7 +157,7 @@ export class BackendClient {
 
     const response = await fetch(url, {
       method: "GET",
-      headers: this.buildHeaders(),
+      headers: this.buildHeaders(true, "GET"),
       signal,
     });
 
@@ -301,7 +301,10 @@ export class BackendClient {
    * same rule the gate itself documents ("Guest and JWT lanes are held to
    * the same rule").
    */
-  private buildHeaders(includeContentType = true): Record<string, string> {
+  private buildHeaders(
+    includeContentType = true,
+    method: "GET" | "POST" = "POST",
+  ): Record<string, string> {
     let headers: Record<string, string> = {};
 
     if (includeContentType) {
@@ -311,6 +314,13 @@ export class BackendClient {
     switch (this.auth.type) {
       case "token":
         headers["Authorization"] = `Bearer ${this.auth.token}`;
+        // 🚨 A READ IS NEVER REFUSED FOR A MISSING ORGANIZATION (Arman,
+        // 2026-09-23/25: access belongs to the person, not the selected
+        // organization). A GET with nothing selected is sent without
+        // `X-Organization-Id`; the server's read doors decide. Writes and
+        // actions stay fail-closed. Same rule as `lib/python-client.ts` and
+        // `lib/api/call-api.ts`.
+        if (method === "GET" && !this.scope.organization_id) break;
         headers = applyOrganizationContextHeader(
           headers,
           requireOrganizationContext(this.scope.organization_id ?? null),

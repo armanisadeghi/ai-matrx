@@ -81,23 +81,24 @@ export const fetchContextState = createAsyncThunk<
       return rejectWithValue("no_session");
     }
 
-    // Mandatory, fail-closed, same kernel as call-api.ts's resolveScope and
-    // python-client.ts's resolveRequestOrganizationId — this thunk carries a
-    // real Bearer token (an authenticated request) but had NO organization
-    // concept anywhere in the file, so it always reached the server unscoped.
-    // aidream commit 8e5ee0b93's AuthMiddleware admission gate now 400s that
-    // before routing; refuse here instead, before any networking, with no
-    // fallback organization ever chosen.
-    let organizationId: string;
-    try {
-      organizationId = requireOrganizationContext(
-        adminLaneOrganizationId() ?? selectOrganizationId(state),
-      );
-    } catch (error) {
-      if (error instanceof OrganizationContextError) {
-        return rejectWithValue(error.code);
+    // 🚨 A READ IS NEVER REFUSED FOR A MISSING ORGANIZATION (Arman,
+    // 2026-09-23/25: access belongs to the person, not the selected
+    // organization). This is a GET: with an organization selected it rides
+    // along; with none, the request is sent without `X-Organization-Id` and the
+    // server's read door decides. Only a selection that is present-but-invalid
+    // is still refused by the shared kernel.
+    const selectedOrganizationId =
+      adminLaneOrganizationId() ?? selectOrganizationId(state);
+    let organizationId: string | null = null;
+    if (selectedOrganizationId) {
+      try {
+        organizationId = requireOrganizationContext(selectedOrganizationId);
+      } catch (error) {
+        if (error instanceof OrganizationContextError) {
+          return rejectWithValue(error.code);
+        }
+        throw error;
       }
-      throw error;
     }
 
     const env = selectEffectiveServer(state);
@@ -109,13 +110,18 @@ export const fetchContextState = createAsyncThunk<
     const url = `${baseUrl}${ENDPOINTS.cx.contextState(conversationId)}`;
     const response = await fetch(url, {
       method: "GET",
-      headers: applyOrganizationContextHeader(
-        {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-        organizationId,
-      ),
+      headers: organizationId
+        ? applyOrganizationContextHeader(
+            {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            organizationId,
+          )
+        : {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
       signal,
     });
 
