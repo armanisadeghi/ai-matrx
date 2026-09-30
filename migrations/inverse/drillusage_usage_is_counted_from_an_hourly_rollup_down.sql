@@ -1,14 +1,13 @@
--- chair-step: the inverse of migrations/campaign/drillusage_usage_is_counted_from_an_hourly_rollup.sql (lane DRILL-USAGE-PAGE) — unschedules its two pg_cron jobs, drops platform.ai_usage_names (+ its door row), the two rollup functions, the registry row ai_usage_hourly and the derived table runtime._ai_usage_hourly (a summary rebuilt from the ledger; no source data lives only there), and puts back lane DRILL-STANDARD-DOOR's platform._drill_resolve and platform._drill_plan exactly as they were.
+-- chair-step: the inverse of migrations/campaign/drillusage_usage_is_counted_from_an_hourly_rollup.sql (lane DRILL-USAGE-PAGE) — drops platform.ai_usage_names and platform.ai_usage_recount (+ their door rows), the rollup function, the registry row ai_usage_hourly and the derived table runtime._ai_usage_hourly (a summary rebuilt from the ledger; no source data lives only there), and puts back lane DRILL-STANDARD-DOOR's platform._drill_resolve and platform._drill_plan exactly as they were.
 -- lane: DRILL-USAGE-PAGE
 -- lock: platform
 -- based-on: platform._drill_resolve(uuid, text) 4a22c2cd28a6644c6f223fb0eed74a0a30768ef0a74573ce5cb05490f2ddfb87
 -- based-on: platform._drill_plan(uuid, jsonb, jsonb, text) e3f4e3e4a971621ebc69057b383eea54ff2a2e675ad9a4d67accdaf4d428d0e6
 
 
-select cron.unschedule(j.jobid) from cron.job j where j.jobname in ('runtime-ai-usage-hourly', 'runtime-ai-usage-nightly');
-delete from platform.client_callable_door where (schema_name, function_name) in (('platform', 'ai_usage_names'), ('runtime', 'ai_usage_hourly_refresh'), ('runtime', 'ai_usage_hourly_tick'));
+delete from platform.client_callable_door where (schema_name, function_name) in (('platform', 'ai_usage_names'), ('platform', 'ai_usage_recount'), ('runtime', 'ai_usage_hourly_refresh'));
 drop function if exists platform.ai_usage_names(uuid, jsonb);
-drop function if exists runtime.ai_usage_hourly_tick(integer);
+drop function if exists platform.ai_usage_recount(uuid, timestamptz, timestamptz);
 drop function if exists runtime.ai_usage_hourly_refresh(timestamptz, timestamptz);
 delete from platform.entity_types where token = 'ai_usage_hourly';
 drop table if exists runtime._ai_usage_hourly;

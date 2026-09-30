@@ -1,4 +1,4 @@
--- chair-step: lane DRILL-USAGE-PAGE (DRILL-DOWN-DESIGN.md lane D5) — the usage page's fact. It CREATES one server-only table runtime._ai_usage_hourly (row security on, no client grant) and registers it as System machinery (token ai_usage_hourly), two server-only functions that rebuild it from the ledger and two pg_cron jobs that call them (left inactive on a database without pg_net, i.e. the dev clone), and one signed-in door platform.ai_usage_names (platform admins inside the admin apps only) with its client_callable_door row and GRANT to authenticated. It REPLACES two drill-door bodies of lane DRILL-STANDARD-DOOR by one guarded clause each: platform._drill_resolve lets a DECLARED definer definition's fact be a table the seat cannot read (the definer step reads it, every lane's rule compiled in), and platform._drill_plan refuses that fact's records in words. Nothing of anybody's data is read into the new table here (the fill is its own file) and no live table is locked beyond ACCESS SHARE.
+-- chair-step: lane DRILL-USAGE-PAGE (DRILL-DOWN-DESIGN.md lane D5) — the usage page's fact. It CREATES one server-only table runtime._ai_usage_hourly (row security on, no client grant) and registers it as System machinery (token ai_usage_hourly), one server-only function that rebuilds it from the ledger, and two signed-in doors, platform.ai_usage_names and platform.ai_usage_recount (platform admins inside the admin apps only), with their client_callable_door rows and GRANTs to authenticated. It schedules nothing (a schedule is Arman's to approve). It REPLACES two drill-door bodies of lane DRILL-STANDARD-DOOR by one guarded clause each: platform._drill_resolve lets a DECLARED definer definition's fact be a table the seat cannot read (the definer step reads it, every lane's rule compiled in), and platform._drill_plan refuses that fact's records in words. Nothing of anybody's data is read into the new table here (the fill is its own file) and no live table is locked beyond ACCESS SHARE.
 -- lane: DRILL-USAGE-PAGE
 -- lock: platform
 -- based-on: platform._drill_resolve(uuid, text) 76b37b601a4bd80274d9159609a8de0a70026f95293b5820983a0ee957d2a456
@@ -68,11 +68,13 @@ create index _ai_usage_hourly_bucket_idx on runtime._ai_usage_hourly (bucket);
 create index _ai_usage_hourly_org_bucket_idx on runtime._ai_usage_hourly (organization_id, bucket);
 create index _ai_usage_hourly_person_bucket_idx on runtime._ai_usage_hourly (person_id, bucket);
 
-alter table runtime._ai_usage_hourly enable row level security;
+-- (row security is switched on as the LAST statement of this file: Supabase's policy hook takes
+-- ACCESS EXCLUSIVE on 22 auth/storage/realtime relations when it runs and holds them to COMMIT,
+-- so the hold lasts one statement instead of the whole file. Nobody sees the table before COMMIT.)
 revoke all on runtime._ai_usage_hourly from public, anon, authenticated;
 
 comment on table runtime._ai_usage_hourly is
-  'DRILL-USAGE-PAGE: AI usage summed per UTC hour by organization, person, agent, provider, model, app, feature, origin, manual/automated and source — the fact of the declared drill definition ai_usage. Built from runtime.global_execution + chat.user_request + chat.request by the rules of public.admin_spend_breakdown (its parity oracle). Server-only: refreshed by runtime.ai_usage_hourly_refresh (pg_cron runtime-ai-usage-hourly every 10 minutes for the last 48 hours; nightly for the last 35 days); read only through platform.drill_ask.';
+  'DRILL-USAGE-PAGE: AI usage summed per UTC hour by organization, person, agent, provider, model, app, feature, origin, manual/automated and source — the fact of the declared drill definition ai_usage. Built from runtime.global_execution + chat.user_request + chat.request by the rules of public.admin_spend_breakdown (its parity oracle). Server-only: rebuilt by runtime.ai_usage_hourly_refresh (through platform.ai_usage_recount, which the usage page calls when the rollup is older than ten minutes); read only through platform.drill_ask.';
 comment on column runtime._ai_usage_hourly.requests is
   'Requests whose FIRST execution falls in this hour (a request is counted once over its life; public.admin_spend_breakdown counts a request once per window instead, so the two differ only for a request whose executions straddle a window edge).';
 
@@ -86,7 +88,7 @@ values (
   'ai_usage_hourly', 'runtime', '_ai_usage_hourly', 'AI usage by hour', 1, false, false, true,
   'Hourly rollup of the AI usage ledger; the fact of the declared drill definition ai_usage.',
   false, false, false, 'system', false, 'machinery',
-  'A derived summary rebuilt from runtime.global_execution by pg_cron; never written by a person or a client.',
+  'A derived summary rebuilt from runtime.global_execution by runtime.ai_usage_hourly_refresh; never written by a person or a client.',
   'table', 'organization',
   'System machinery with no client lane; read only through the drill door''s definer step with each lane''s rule compiled in.',
   'organization', 'standard', 'system',
@@ -185,39 +187,59 @@ insert into platform.client_callable_door
 values ('runtime', 'ai_usage_hourly_refresh', 'p_from timestamp with time zone, p_to timestamp with time zone', array['timestamptz'::regtype, 'timestamptz'::regtype]::oid[],
   'Takes no entity id; rebuilds hours of the derived usage rollup from the ledger.',
   'migrations/campaign/drillusage_usage_is_counted_from_an_hourly_rollup.sql (lane DRILL-USAGE-PAGE)', false,
-  'server_only: called only by runtime.ai_usage_hourly_tick (pg_cron) and the one-time fill file; it takes no entity id and rewrites only the derived rollup runtime._ai_usage_hourly.', false)
+  'server_only: called only by platform.ai_usage_recount (after its own reach and platform-admin checks) and the one-time fill file; it takes no entity id and rewrites only the derived rollup runtime._ai_usage_hourly.', false)
 on conflict (schema_name, function_name, identity_argtypes) do nothing;
 revoke all on function runtime.ai_usage_hourly_refresh(timestamptz, timestamptz) from public, anon, authenticated;
 comment on function runtime.ai_usage_hourly_refresh(timestamptz, timestamptz) is
-  'DRILL-USAGE-PAGE: rebuilds every UTC hour of [p_from, p_to) of runtime._ai_usage_hourly from the ledger, by public.admin_spend_breakdown''s rules. Server-only (pg_cron and the backfill); returns the rows written.';
+  'DRILL-USAGE-PAGE: rebuilds every UTC hour of [p_from, p_to) of runtime._ai_usage_hourly from the ledger, by public.admin_spend_breakdown''s rules. Server-only (platform.ai_usage_recount and the fill file); returns the rows written.';
 
-create or replace function runtime.ai_usage_hourly_tick(p_hours integer default 48)
-returns bigint
-language sql
+-- NO SCHEDULE is created here: every automated schedule is Arman's to approve by name and
+-- interval (common-docs/operations/scheduled-tasks.md). Until he approves the proposed pg_cron
+-- job, the rollup is brought up to date by the one who reads it: the usage page asks
+-- platform.ai_usage_recount for the last hours whenever the rollup is older than ten minutes,
+-- and a platform admin may recount any window of up to 100 days from the page.
+create or replace function platform.ai_usage_recount(p_organization_id uuid, p_from timestamptz, p_to timestamptz)
+returns jsonb
+language plpgsql
+volatile
 security definer
 set search_path to 'pg_catalog'
 as $function$
-  select runtime.ai_usage_hourly_refresh(now() - make_interval(hours => greatest(p_hours, 1)), now());
+declare
+  v_n  bigint;
+  v_t0 timestamptz := clock_timestamp();
+begin
+  perform custom.assert_client_may_reach(p_organization_id, 'platform.ai_usage_recount');
+  if not public.is_platform_admin() then
+    raise exception 'AI usage is recounted only inside the admin apps, by a platform admin.' using errcode = '42501';
+  end if;
+  if p_from is null or p_to is null or p_to <= p_from then
+    raise exception 'A recount needs a window: from before to.' using errcode = '22023';
+  end if;
+  if p_to - p_from > interval '100 days' then
+    raise exception 'A recount covers at most 100 days at a time (asked for %).', p_to - p_from
+      using errcode = '22023', hint = 'Recount a shorter window; the rollup keeps every hour it has already counted.';
+  end if;
+  v_n := runtime.ai_usage_hourly_refresh(p_from, least(p_to, now() + interval '1 hour'));
+  return jsonb_build_object('rows', v_n, 'from', date_trunc('hour', p_from, 'UTC'), 'to', p_to,
+                            'ms', round(extract(epoch from clock_timestamp() - v_t0) * 1000),
+                            'counted_through', now());
+end
 $function$;
+
+comment on function platform.ai_usage_recount(uuid, timestamptz, timestamptz) is
+  'DRILL-USAGE-PAGE: rebuilds the AI usage rollup for [p_from, p_to) (at most 100 days) from the ledger. Asks custom.assert_client_may_reach first; a platform admin inside the admin apps only. The usage page calls it for the last 48 hours when the rollup is older than ten minutes (no schedule exists until one is approved).';
+
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, signed_in_callers, non_client_lane, anonymous_callers)
-values ('runtime', 'ai_usage_hourly_tick', 'p_hours integer', array['int4'::regtype]::oid[],
-  'Takes no entity id; rebuilds hours of the derived usage rollup from the ledger.',
-  'migrations/campaign/drillusage_usage_is_counted_from_an_hourly_rollup.sql (lane DRILL-USAGE-PAGE)', false,
-  'server_only: the pg_cron entry point of the usage rollup (jobs runtime-ai-usage-hourly and runtime-ai-usage-nightly); no client ever calls it.', false)
+values
+  ('platform', 'ai_usage_recount', 'p_organization_id uuid, p_from timestamp with time zone, p_to timestamp with time zone',
+   array['uuid'::regtype, 'timestamptz'::regtype, 'timestamptz'::regtype]::oid[],
+   'Asks custom.assert_client_may_reach(p_organization_id) first, then refuses anyone but a platform admin inside the admin apps (public.is_platform_admin()). Rewrites only the derived rollup runtime._ai_usage_hourly for a window of at most 100 days; reads the ledger, changes no source row.',
+   'migrations/campaign/drillusage_usage_is_counted_from_an_hourly_rollup.sql (lane DRILL-USAGE-PAGE)', true, null, false)
 on conflict (schema_name, function_name, identity_argtypes) do nothing;
-revoke all on function runtime.ai_usage_hourly_tick(integer) from public, anon, authenticated;
-comment on function runtime.ai_usage_hourly_tick(integer) is
-  'DRILL-USAGE-PAGE: pg_cron entry point. Every 10 minutes rebuilds the last 48 hours (a cost can land after its execution starts); nightly at 09:20 UTC (02:20 PT, the maintenance window) the last 35 days (840 hours).';
 
-select cron.schedule('runtime-ai-usage-hourly', '*/10 * * * *', 'select runtime.ai_usage_hourly_tick(48);');
-select cron.schedule('runtime-ai-usage-nightly', '20 9 * * *', 'select runtime.ai_usage_hourly_tick(840);');
--- THE DEV CLONE STAYS QUARANTINED: on a database without pg_net the jobs are scheduled but left
--- inactive, exactly like the clone's copy of every other job.
-select cron.alter_job(j.jobid, active := false)
-  from cron.job j
- where j.jobname in ('runtime-ai-usage-hourly', 'runtime-ai-usage-nightly')
-   and not exists (select 1 from pg_extension where extname = 'pg_net');
+grant execute on function platform.ai_usage_recount(uuid, timestamptz, timestamptz) to authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 3. THE NAMES — who an organization, a person and an agent are, for the platform lane only.
@@ -769,3 +791,8 @@ begin
     'columns', q -> 'columns', 'offset', coalesce((q ->> 'offset')::integer, 0));
 end
 $function$;
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+-- 5. ROW SECURITY ON — last, so the policy hook's auth/storage locks are held for one statement.
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+alter table runtime._ai_usage_hourly enable row level security;
