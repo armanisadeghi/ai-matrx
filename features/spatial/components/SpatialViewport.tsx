@@ -38,11 +38,15 @@ import { type WheelMode, routeWheel } from "../engine/wheel-input";
 import { isCreationTool, toolForKey } from "../engine/tools";
 import { boardOwnsKey, isTyping } from "../engine/key-target";
 import { isAccidentalScroll } from "../engine/native-scroll";
+import { panToReveal, shouldReveal } from "../engine/reveal";
 import { FocusHostContext, SpatialStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
 
 const GRID_WORLD_PX = 24;
 const HASH_THROTTLE_MS = 400;
+/** Screen px kept between a revealed element and the board's edge. */
+const REVEAL_MARGIN_PX = 24;
+const REVEAL_MS = 140;
 
 interface SpatialViewportProps {
   initialCamera?: Camera;
@@ -186,6 +190,71 @@ export function SpatialViewport({
     document.addEventListener("scroll", onScroll, true);
     return () => document.removeEventListener("scroll", onScroll, true);
   }, []);
+
+  // ── what has focus stays on screen (engine/reveal.ts) ────────────────────
+  // What a native scroll would have done, the camera does: keyboard focus (a
+  // grid cell, find-next) or an editor caret moving off the visible board
+  // pans by the smallest amount, never a zoom. Not for a click's focus, and
+  // not while a pointer is down (drag, pan, pinch).
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const down = new Set<number>();
+    let pressedAt = -Infinity;
+    let frame = 0;
+    const onDown = (e: PointerEvent) => {
+      down.add(e.pointerId);
+      pressedAt = performance.now();
+    };
+    const onUp = (e: PointerEvent) => {
+      down.delete(e.pointerId);
+    };
+    const reveal = (from: Node | null, measure: () => DOMRect | null) => {
+      const el = from instanceof Element ? from : from?.parentElement ?? null;
+      const inTile = !!el && root.contains(el) && !!el.closest("[data-spatial-tile]");
+      if (!shouldReveal({ inTile, pointersDown: down.size, msSincePress: performance.now() - pressedAt })) return;
+      cancelAnimationFrame(frame);
+      // After layout settles (a grid scrolls its own cell into view first).
+      frame = requestAnimationFrame(() => {
+        const r = measure();
+        if (!r || (r.width === 0 && r.height === 0)) return;
+        const box = root.getBoundingClientRect();
+        const inset = store.getInsets();
+        const { dx, dy } = panToReveal(
+          r,
+          { left: box.left + inset.left, top: box.top + inset.top, right: box.right - inset.right, bottom: box.bottom - inset.bottom },
+          REVEAL_MARGIN_PX,
+        );
+        if (dx !== 0 || dy !== 0) store.flyTo(panBy(store.getCamera(), dx, dy), REVEAL_MS);
+      });
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      const el = e.target as Element | null;
+      reveal(el, () => el?.getBoundingClientRect() ?? null);
+    };
+    const onSelection = () => {
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
+      const node = sel.anchorNode;
+      const host = node instanceof Element ? node : node?.parentElement;
+      if (!host?.closest("[contenteditable='true'], [contenteditable='']")) return;
+      const range = sel.getRangeAt(0);
+      reveal(node, () => range.getClientRects()[0] ?? range.getBoundingClientRect());
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("pointercancel", onUp, true);
+    root.addEventListener("focusin", onFocusIn);
+    document.addEventListener("selectionchange", onSelection);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("pointercancel", onUp, true);
+      root.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("selectionchange", onSelection);
+    };
+  }, [store]);
 
   // ── wheel (non-passive: we own the gesture) ──────────────────────────────
   useEffect(() => {
