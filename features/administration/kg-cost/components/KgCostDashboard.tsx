@@ -27,23 +27,16 @@ import { formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import {
-  Wallet,
-  Receipt,
-  AlertTriangle,
-  Clock,
   RefreshCw,
   ChevronRight,
   ExternalLink,
   Brain,
   Lightbulb,
-  TrendingUp,
-  Layers,
-  Database,
-  Gauge,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,7 +74,6 @@ import {
 } from "../service/kgCostService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 import { KgCostExplorer } from "./KgCostExplorer";
 
@@ -166,47 +158,11 @@ function percentColorClass(percent: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// KPI tiles
+// KPI tiles — the official KpiTile: one-line hint, definition in the `title` tooltip.
 // ---------------------------------------------------------------------------
 
-function KpiTile({
-  label,
-  value,
-  icon,
-  loading,
-  highlight,
-  hint,
-}: {
-  label: string;
-  value: string | null;
-  icon: React.ReactNode;
-  loading: boolean;
-  highlight?: boolean;
-  hint?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <span className="opacity-60">{icon}</span>
-      </div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">
-        {loading ? (
-          <Skeleton className="h-7 w-20" />
-        ) : (
-          <span className={highlight ? "text-destructive" : "text-foreground"}>
-            {value ?? "—"}
-          </span>
-        )}
-      </div>
-      {hint && !loading && (
-        <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
-          {hint}
-        </p>
-      )}
-    </div>
-  );
-}
+/** Six tiles fit one row only where "$0.0000 · 00,000 points" fits a tile. */
+const KPI_GRID_CLASS = "lg:grid-cols-3 2xl:grid-cols-6";
 
 function ReadFailure({ message, onRetry }: { message: string; onRetry: () => void }) {
   return <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"><span>{message}</span><Button variant="outline" size="sm" onClick={onRetry}>Retry</Button><ErrorAlchemyMenu /></div>;
@@ -230,62 +186,46 @@ function KpiTiles({
   loading: boolean;
 }) {
   const fmtUsd = formatAdminCost;
-  // Defensive: `ner_coverage_pct` is being added on the Python side; until
-  // it lands the tile renders "—" with the explainer copy. Once present,
-  // the value flows through cleanly.
-  const nerCoverage = summary?.ner_coverage_pct;
-  const nerValue = fmtPercent(nerCoverage);
-  const nerHint =
-    nerCoverage === undefined
-      ? "Backfill brings this up to 100%."
-      : nerValue
-        ? "of indexed chunks have entities extracted. Backfill brings this up to 100%."
-        : "Live coverage not yet reported by the backend.";
+  const orgsOverCap = summary?.orgs_over_80pct ?? 0;
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+    <KpiGrid className={KPI_GRID_CLASS}>
       <KpiTile
-        label="Spend today (all orgs)"
+        label="Spend (24h)"
         value={summary ? fmtUsd(summary.spend_today_usd) : null}
-        icon={<Wallet className="h-3.5 w-3.5" />}
         loading={loading}
       />
       <KpiTile
-        label="Spend last 7 days"
+        label="Spend (7d)"
         value={summary ? fmtUsd(summary.spend_7d_usd) : null}
-        icon={<Receipt className="h-3.5 w-3.5" />}
         loading={loading}
       />
       <KpiTile
         label="Orgs over 80% of cap"
         value={summary ? `${summary.orgs_over_80pct}` : null}
-        icon={<AlertTriangle className="h-3.5 w-3.5" />}
+        tone={orgsOverCap > 0 ? "bad" : "neutral"}
         loading={loading}
-        highlight={(summary?.orgs_over_80pct ?? 0) > 0}
       />
       <KpiTile
         label="Pending batches"
         value={summary ? `${summary.pending_batches}` : null}
-        icon={<Clock className="h-3.5 w-3.5" />}
         loading={loading}
       />
+      {/* batch.savings_summary — the same actual tokens at the live catalog rate minus the
+          batch bill, completed batch items, last 7 days; Platform Spend leads with it too. */}
       <KpiTile
         label="Batch savings (7d)"
-        value={
-          summary ? fmtUsd(summary.batch_savings_7d_usd ?? 0) : null
-        }
-        icon={<Receipt className="h-3.5 w-3.5" />}
+        value={summary ? fmtUsd(summary.batch_savings_7d_usd ?? 0) : null}
+        title="Live-rate cost of the same tokens, minus the batch bill."
         loading={loading}
-        hint="The same actual tokens at the live catalog rate, minus the batch bill — completed batch items, last 7 days (batch.savings_summary, the figure the platform spend dashboard leads with)."
       />
       <KpiTile
-        label="Live NER coverage"
-        value={nerValue}
-        icon={<AGENT_ICON className="h-3.5 w-3.5" />}
+        label="NER coverage"
+        value={fmtPercent(summary?.ner_coverage_pct)}
+        title="Indexed chunks with entities extracted."
         loading={loading}
-        hint={nerHint}
       />
-    </div>
+    </KpiGrid>
   );
 }
 
@@ -601,10 +541,10 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
             <Brain className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
             <div className="space-y-0.5 min-w-0">
               <Label htmlFor="admin-org-auto-rag" className="text-sm">
-                Auto knowledge-graph (master)
+                Auto-ingest into the knowledge graph
               </Label>
               <p className="text-xs text-muted-foreground">
-                Org-wide on/off for auto-ingest into the knowledge graph.
+                Applies to the whole organization
               </p>
             </div>
           </div>
@@ -628,10 +568,9 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
               <Label htmlFor="admin-org-suggestion-sweeps" className="text-sm">
                 Suggest scope values from existing content
               </Label>
+              {/* On when a scope field is added; off by default; every suggestion waits for confirmation. */}
               <p className="text-xs text-muted-foreground">
-                On = when a scope/field is added, suggest values from
-                already-indexed content. Always requires confirmation. Off by
-                default.
+                From indexed content — you confirm each one
               </p>
             </div>
           </div>
@@ -1637,65 +1576,41 @@ function UnitEconomicsSection({ refreshTick, onRetry }: { refreshTick: number; o
           answer — no "$0" tiles, no second and third "could not load" in the tables. */}
       {error && !data ? null : (
       <>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+      <KpiGrid className={KPI_GRID_CLASS}>
         <KpiTile
           label={`Window total (${days}d)`}
           value={data ? fmtUsd(num(data.totals.total_cost_usd)) : null}
-          icon={<Wallet className="h-3.5 w-3.5" />}
           loading={loading}
         />
         <KpiTile
           label="Projected monthly"
-          value={
-            data ? fmtUsd(num(data.totals.projected_monthly_usd)) : null
-          }
-          icon={<TrendingUp className="h-3.5 w-3.5" />}
+          value={data ? fmtUsd(num(data.totals.projected_monthly_usd)) : null}
+          title={data ? `At 10× load: ${fmtUsd(num(data.totals.projected_monthly_10x_usd))}` : undefined}
           loading={loading}
-          hint={
-            data
-              ? `10x load: ${fmtUsd(num(data.totals.projected_monthly_10x_usd))}`
-              : undefined
-          }
         />
         <KpiTile
           label="Enrichment multiplier"
-          value={
-            data
-              ? multiplierValue !== null
-                ? `${multiplierValue.toFixed(1)}x`
-                : "n/a"
-              : null
-          }
-          icon={<Layers className="h-3.5 w-3.5" />}
+          value={data && multiplierValue !== null ? `${multiplierValue.toFixed(1)}x` : null}
+          title={data && multiplierValue === null ? "Needs runs both with and without enrichment." : undefined}
           loading={loading}
-          hint={
-            data && multiplierValue === null
-              ? "n/a — need runs both with and without enrich"
-              : undefined
-          }
         />
         <KpiTile
           label="Embedding cache-hit rate"
-          value={
-            data ? (cacheHitPct !== null ? `${cacheHitPct.toFixed(1)}%` : "—") : null
-          }
-          icon={<Database className="h-3.5 w-3.5" />}
+          value={data && cacheHitPct !== null ? `${cacheHitPct.toFixed(1)}%` : null}
           loading={loading}
         />
         <KpiTile
           label="Stuck running"
           value={data ? `${stuckRunning}` : null}
-          icon={<AlertTriangle className="h-3.5 w-3.5" />}
+          tone={stuckRunning > 0 ? "bad" : "neutral"}
           loading={loading}
-          highlight={stuckRunning > 0}
         />
         <KpiTile
           label="Inexact-cost runs"
           value={data ? `${data.totals.inexact_cost_runs}` : null}
-          icon={<Gauge className="h-3.5 w-3.5" />}
           loading={loading}
         />
-      </div>
+      </KpiGrid>
 
       <div className="mt-4">
         <BySourceKindTable rows={data?.by_source_kind ?? []} loading={loading} read={tablesRead} />
@@ -1795,10 +1710,6 @@ export function KgCostDashboard() {
       <header className="flex items-center justify-between border-b border-border px-4 py-2">
         <div>
           <h1 className="text-lg font-semibold">KG Cost</h1>
-          <p className="text-xs text-muted-foreground">
-            Auto-ingest spend per org and in-flight provider Batch API
-            submissions.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <AppLink

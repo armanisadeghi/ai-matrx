@@ -152,8 +152,10 @@
   --font-size-8xl: 6.4rem;
   --font-size-9xl: 8.2rem;
 
-  /* Container breakpoints */
-  --breakpoint-2xl: 1400px;
+  /* Container breakpoints. rem, never px: Tailwind cannot order a px breakpoint against the
+     rem defaults, and emitted every 2xl: rule BEFORE lg:/xl: — so `lg:grid-cols-3 2xl:grid-cols-6`
+     rendered 3 columns at any width (found 2026-09-30 on /administration/knowledge/kg-cost). */
+  --breakpoint-2xl: 87.5rem; /* 1400px */
 
   /* Box shadows */
   --shadow-input:
