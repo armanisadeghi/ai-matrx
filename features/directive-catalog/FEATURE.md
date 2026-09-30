@@ -47,9 +47,15 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
   `schemaFields.ts::deriveSchemaFields` maps every property of `noun.schemas[verb]` to a typed
   field (text, number, yes/no, pick-list, date/time, record search, JSON); required + the
   noun's `title_column` lead, the rest sit under "More fields" ordered by kind. Id fields
-  resolve to a record search via `identityPicker.ts::payloadFieldEntityInfo`. An update sends
-  **only touched fields**. Validation **offers, never blocks**: `buildSchemaPayload` returns
-  warnings beside the payload and always builds it. The same `SchemaFieldsForm` serves the
+  resolve to a record search via `identityPicker.ts::payloadFieldEntityInfo` (`assignee_id` →
+  a people search). A **blank field is never sent** — not `""`, not `null`: an update schema
+  marks every field optional, which says nothing about whether the column may be emptied, so
+  clearing is an explicit act in the JSON view. An update sends only what was set. The
+  user-facing picker offers **only human controls** (`humanFormFields`: no raw-JSON or
+  bare-id boxes; a required field is never dropped). The title column always reads "Title".
+  Validation **offers, never blocks**: `buildSchemaPayload` returns warnings beside the
+  payload and always builds it; what is missing is said beside the action button, a bad
+  value beside its field (`splitWarnings`). The same `SchemaFieldsForm` serves the
   admin builder and the user-facing reference picker's Create/Update
   (`features/matrx-envelope/components/reference-picker/`). Guard: `__tests__/schemaFields.test.ts`
   runs every writable noun's real schema from the committed catalog snapshot.
