@@ -2,6 +2,11 @@ import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { getManifest } from "@/features/surfaces/manifests/registry";
+import {
+  BASELINE_VALUES,
+  PAGELESS_CONTENT_INLINE_CEILING,
+  POINTER_INLINE_CEILINGS,
+} from "@/features/surfaces/manifests/_baseline.manifest";
 
 const EMPTY_CONTEXT_ENTRIES: InstanceContextEntry[] = [];
 
@@ -74,27 +79,49 @@ export function toWireContextValue(entry: InstanceContextEntry): unknown {
 }
 
 /**
- * A surface value's declared inline ceiling (`SurfaceValue.inlineUpTo`), sent
- * the way the server already reads a ceiling: the rich envelope's
- * `max_inline_chars` (aidream `ContextManifest.build`). Without it every value
- * over the 200-char system default arrives as a lookup, and agents open every
- * run by calling `context` for the thing they were asked about.
+ * The inline ceiling a context value is sent with — the rich envelope's
+ * `max_inline_chars`, which the server reads (aidream `ContextManifest.build`).
+ * Without one, every value over the server's 200-char default arrives as a
+ * lookup, and agents open every run by calling `context` for the very thing
+ * they were asked about.
  *
- * Only for entries NO agent slot claimed (`slotMatched`): a slot's own ceiling
- * wins, and an explicit value here would clobber it via the server's
- * `min(agent, surface)` rule. An already-rich envelope is left untouched.
+ * In order:
+ *  1. THE PERSON'S POINTER — `selection`, `text_before`, `text_after` — always
+ *     get `POINTER_INLINE_CEILINGS`, page or no page (the larger of that and
+ *     the page's own), with the baseline's description so the agent knows the
+ *     person is pointing at it.
+ *  2. A page's declared value (`SurfaceValue.inlineUpTo`).
+ *  3. A launch with no page: its `content` up to
+ *     `PAGELESS_CONTENT_INLINE_CEILING`.
+ *
+ * Never for entries an agent slot claimed (`slotMatched`): the slot's own
+ * ceiling wins, and a value here would clobber it via the server's
+ * `min(agent, surface)` rule. An envelope that already names a ceiling is left
+ * alone.
  */
 export function withSurfaceInlineCeiling(
   entry: InstanceContextEntry,
   wire: unknown,
   surfaceName: string | null | undefined,
 ): unknown {
-  if (!surfaceName || entry.slotMatched) return wire;
-  const declared = getManifest(surfaceName)?.values.find(
-    (v) => v.name === entry.key,
-  );
-  const ceiling = declared?.inlineUpTo;
-  if (!ceiling || wire == null) return wire;
+  if (entry.slotMatched || wire == null) return wire;
+  const declared = surfaceName
+    ? getManifest(surfaceName)?.values.find((v) => v.name === entry.key)
+    : undefined;
+  const baseline = (BASELINE_VALUES as Record<string, { description?: string }>)[
+    entry.key
+  ];
+  const pointer = POINTER_INLINE_CEILINGS[entry.key];
+  const ceiling = pointer
+    ? Math.max(pointer, declared?.inlineUpTo ?? 0)
+    : (declared?.inlineUpTo ??
+      (!surfaceName && entry.key === "content"
+        ? PAGELESS_CONTENT_INLINE_CEILING
+        : undefined));
+  if (!ceiling) return wire;
+  const description = pointer
+    ? baseline?.description
+    : (declared?.description ?? baseline?.description);
   // An existing envelope is `{ content, type, label }` (toWireContextValue or a
   // rich builder). A RECORD that merely has a `content` field (a note, a study
   // guide: `{ id, title, content, … }`) is data and gets wrapped — reading it as
@@ -107,13 +134,20 @@ export function withSurfaceInlineCeiling(
     typeof (wire as Record<string, unknown>).label === "string"
   ) {
     const env = wire as Record<string, unknown>;
-    return "max_inline_chars" in env ? env : { ...env, max_inline_chars: ceiling };
+    if ("max_inline_chars" in env) return env;
+    return {
+      ...env,
+      // Only the pointer gains a description here: it is what tells the agent
+      // the person is pointing at this text.
+      ...(pointer && description && !("description" in env) ? { description } : {}),
+      max_inline_chars: ceiling,
+    };
   }
   return {
     content: wire,
     type: entry.type,
     label: entry.label,
-    ...(declared?.description ? { description: declared.description } : {}),
+    ...(description ? { description } : {}),
     max_inline_chars: ceiling,
   };
 }

@@ -14,13 +14,37 @@
 
 import type { SurfaceValue } from "@/features/surfaces/types";
 
+/**
+ * THE PERSON'S POINTER (Arman, 2026-09-30). What someone highlighted — and the
+ * text right around it — is how an agent knows what they are asking about. It
+ * is shown to the agent in full, never behind a `context` lookup, on EVERY page
+ * and every launch (with or without a surface), and it never counts against a
+ * page's `PAGE_CONTEXT_BUDGET`: it exists only when the person selects, and it
+ * is theirs, not the page's. The server inlines up to these many characters
+ * (its default for anything undeclared is 200, which sent every real selection
+ * to a lookup).
+ */
+export const POINTER_INLINE_CEILINGS: Readonly<Record<string, number>> = {
+  selection: 10_000,
+  text_before: 2_500,
+  text_after: 2_500,
+};
+
+/**
+ * A launch with NO page behind it (Custom Agent, Send to another agent) has no
+ * page bundle carrying the document, so its `content` is shown in full up to
+ * this size instead of costing a lookup. With a page, the page's own values
+ * decide (`SurfaceValue.inlineUpTo`) — they usually carry the body already.
+ */
+export const PAGELESS_CONTENT_INLINE_CEILING = 6_000;
+
 /** Universally-recognized values. Surfaces opt in by spreading. */
 export const BASELINE_VALUES = {
   selection: {
     name: "selection",
     label: "Current selection",
     description:
-      "The user's currently selected text on the surface. Empty string when nothing is selected.",
+      "The text the person highlighted before asking — they are pointing you at it. Treat it as the focus of their request unless they say otherwise. Empty when nothing is selected.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -30,7 +54,7 @@ export const BASELINE_VALUES = {
     name: "text_before",
     label: "Text before selection",
     description:
-      "Text immediately preceding the selection within the same editable region. Empty when there is no selection or no preceding text.",
+      "The text immediately before the person's selection, in the same document — read it to understand what the selection means where it sits. Empty when there is no selection or nothing before it.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -40,7 +64,7 @@ export const BASELINE_VALUES = {
     name: "text_after",
     label: "Text after selection",
     description:
-      "Text immediately following the selection within the same editable region. Empty when there is no selection or no trailing text.",
+      "The text immediately after the person's selection, in the same document — read it to understand what the selection means where it sits. Empty when there is no selection or nothing after it.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 500,
