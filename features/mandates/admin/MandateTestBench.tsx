@@ -111,6 +111,9 @@ import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
+import { TryAsCandidateButton } from "@/features/mandates/candidate-dialog/TryAsCandidateButton";
+import { targetOfBenchResult } from "@/features/mandates/candidate-dialog/target";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -209,6 +212,7 @@ function ResultRow({
   const [promoting, setPromoting] = useState(false);
   const structural = result.structural;
   const agentId = result.definition_agent_id ?? result.agent_id ?? null;
+  const benchTarget = targetOfBenchResult(result);
 
   async function saveNote() {
     if (!result.id || !result.exemplar_id) {
@@ -358,6 +362,18 @@ function ResultRow({
               )}
               Set as reference
             </Button>
+            {/* P18: what this run ran becomes the live candidate — it then runs
+                beside the live one on the next real runs. */}
+            {!result.error && benchTarget ? (
+              <TryAsCandidateButton
+                mandateKey={storedMandateKey(result.mandate_key)}
+                mandateName={mandateDisplayName(storedMandateKey(result.mandate_key), null)}
+                target={benchTarget}
+                rung={{ rung: "global", principalId: null }}
+                label="Set as live candidate"
+                className="h-7 border border-border text-[11px]"
+              />
+            ) : null}
           </div>
         </div>
       </div>

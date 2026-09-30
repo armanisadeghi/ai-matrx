@@ -39,7 +39,7 @@ import styles from "@/features/mandates/workspace/MandateWorkspace.module.css";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { displayResolutionOrgId, usePageOrgFilter } from "@/features/mandates/display-org";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/slices/userSlice";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { featureLabelOf } from "@/features/mandates/admin-list/rows";
@@ -113,6 +113,7 @@ import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateW
 import { RecordAdminPanels } from "./RecordAdminPanels";
 import { MandateTryPanel } from "./MandateTryPanel";
 import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
+import { MandateCandidatesPanel } from "./MandateCandidatesPanel";
 import {
   OwnerDefinitionEditor,
   useDefinitionRights,
@@ -221,6 +222,7 @@ function OneMandateRecordBody({
   const { organizations } = useUserOrganizations();
   const pageOrgFilter = usePageOrgFilter();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const viewerId = useAppSelector(selectUserId);
   const nameOfOrg = useMemo(() => {
     const byId = new Map(organizations.map((o) => [o.id, o.name]));
     return (id: string) => byId.get(id) ?? null;
@@ -358,12 +360,16 @@ function OneMandateRecordBody({
   // is this page's addition, so it exports as the Overrides tab it mirrors.
   const tabIds = (tabs ?? visibleRecordTabs(showAdmin))
     .map((tab) => tab.id)
-    .filter((id): id is MandateWorkspaceTab => id !== "overrides-simple" && id !== "runs");
-  // Runs is a live read, not saved mandate data — it exports as Definition.
+    .filter(
+      (id): id is MandateWorkspaceTab =>
+        id !== "overrides-simple" && id !== "runs" && id !== "candidates",
+    );
+  // Runs and Candidates are live reads, not saved mandate data — they export
+  // as Definition.
   const exportTab: MandateWorkspaceTab =
     activeTab === "overrides-simple"
       ? "overrides"
-      : activeTab === "runs"
+      : activeTab === "runs" || activeTab === "candidates"
         ? "definition"
         : activeTab;
   const orgName =
@@ -620,6 +626,35 @@ function OneMandateRecordBody({
           ) : null}
         </div>
       ) : null}
+      {/* THE CANDIDATES TAB (every seat) — beside the ten, never inside one
+          (Mandate Candidates, PLAN §2.6). The seat decides the default rung:
+          the admin route tries for Everyone, an organization page for that
+          organization, a person's page for that person. */}
+      <div
+        role="tabpanel"
+        id="mandate-panel-candidates"
+        hidden={activeTab !== "candidates"}
+        className={activeTab === "candidates" ? "space-y-3" : "hidden"}
+      >
+        {activeTab === "candidates" ? (
+          <MandateCandidatesPanel
+            mandateKey={storedMandateKey(data.mandate.mandate_key)}
+            mandateName={mandateDisplayName(
+              storedMandateKey(data.mandate.mandate_key),
+              data.mandate.label,
+            )}
+            outputKind={data.mandate.output_kind ?? null}
+            readOnly={readOnly}
+            rung={
+              perspective === "system"
+                ? { rung: "global", principalId: null }
+                : principal.kind === "org"
+                  ? { rung: "org", principalId: principal.orgId }
+                  : { rung: "user", principalId: viewerId }
+            }
+          />
+        ) : null}
+      </div>
       <div
         role="tabpanel"
         id="mandate-panel-notes"

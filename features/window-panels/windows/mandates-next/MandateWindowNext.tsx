@@ -45,10 +45,12 @@ import { adminDoorOpen } from "@/lib/api/adminDoor";
 import { SYSTEM_HOME } from "@/features/mandates/list-door";
 import { MandateRecordBody } from "@/features/mandates/record-next/MandateRecordBody";
 import { RecordTabStrip } from "@/features/mandates/record-next/RecordTabStrip";
+import { useCandidateCount } from "@/features/mandates/record-next/useCandidateCount";
 import {
   mandateRecordPreviewHref,
   parseRecordTab,
   visibleRecordTabs,
+  withTabCount,
   type RecordTabId,
 } from "@/features/mandates/record-next/record-tabs";
 import { windowSelectionOf } from "./window-selection";
@@ -204,6 +206,8 @@ function MandateWindowNextInner({
         ? storedMandateKey(selection.key)
         : null;
   const derivedName = useMandateDisplayName(openKey ?? "", selected?.label);
+  // The Candidates tab's badge — the same read the record page shows.
+  const candidateCount = useCandidateCount(openKey);
   const selectedName =
     selection.status === "not-found"
       ? "Mandate not found"
@@ -397,7 +401,7 @@ function MandateWindowNextInner({
       <div className="flex h-full min-w-0 flex-1 flex-col bg-background">
         <div className="shrink-0 border-b border-border px-2 py-1">
           <RecordTabStrip
-            tabs={visibleRecordTabs(isSuperAdmin)}
+            tabs={withTabCount(visibleRecordTabs(isSuperAdmin), "candidates", candidateCount)}
             value={tab}
             onChange={setTab}
           />

@@ -246,6 +246,7 @@ function buildPageRows(
       homeLabel: answer.owner_label ?? answer.home_label,
       ownerLevel: answer.owner_level ?? row.ownerLevel,
       contractCheck: answer.contract_check ?? row.contractCheck,
+      candidate: answer.candidate,
       sources: listState.sourceFacts.get(answer.mandate_key) ?? null,
       sourcesPending: !checked,
       sourcesFailed: checked && Boolean(listState.failures.sources),

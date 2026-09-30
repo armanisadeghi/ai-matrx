@@ -16,7 +16,8 @@
 
 import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Bot, Workflow } from "lucide-react";
+import { Workflow } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -42,16 +43,19 @@ import {
   parseRecordTabFrom,
   recordTabsForLevel,
   tabRowOf,
+  withTabCount,
   type RecordLevel,
   type RecordTabId,
 } from "./record-tabs";
 import { useRecordBackHref } from "./useRecordBackHref";
+import { useCandidateCount } from "./useCandidateCount";
+import { readMandateAddress } from "@/features/mandates/mandate-address";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { useRecordTitle } from "@/lib/record-title/record-title";
 import { MandateVisibilityControl } from "./MandateVisibilityControl";
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * Which seat opens the record. `system` (the default) is the admin route,
@@ -106,6 +110,11 @@ function MandateRecordPageInner({
   const tabs = recordTabsForLevel(level, { readOnly });
   const activeTab = parseRecordTabFrom(searchParams.get("tab"), tabs);
   const backHref = useRecordBackHref(listHref);
+  // The Candidates tab's badge — read by key (the support lookup opens by id,
+  // and its badge waits for the tab body instead).
+  const candidateCount = useCandidateCount(
+    readMandateAddress(mandateKeyOrId) === "key" ? storedMandateKey(mandateKeyOrId) : null,
+  );
 
   const hrefFor = (tab: RecordTabId) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -177,7 +186,7 @@ function MandateRecordPageInner({
                     every tab shows there; a member page shows only the tabs
                     its seat may use (record-tabs.ts `recordTabsForLevel`). */}
                 <RecordTabStrip
-                  tabs={tabRowOf(tabs)}
+                  tabs={tabRowOf(withTabCount(tabs, "candidates", candidateCount))}
                   value={activeTab}
                   onChange={onTabChange}
                   className="mb-3"
@@ -292,7 +301,7 @@ function RecordHeader({
           ? [
               {
                 label: "New agent",
-                icon: Bot,
+                icon: AGENT_ICON,
                 showLabel: true,
                 onPress: () => onTabChange("create-agent"),
               },

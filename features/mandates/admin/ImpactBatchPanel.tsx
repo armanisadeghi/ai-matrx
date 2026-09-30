@@ -105,6 +105,12 @@ import {
 } from "./impact-cells";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { TryAsCandidateButton } from "@/features/mandates/candidate-dialog/TryAsCandidateButton";
+import {
+  rungOfImpactVerdict,
+  targetOfImpactVerdict,
+} from "@/features/mandates/candidate-dialog/target";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 
 export type ImpactBatchMode = "dry_run" | "post_batch";
 
@@ -665,7 +671,7 @@ export function ImpactBatchPanel({
       {
         id: "actions",
         header: "",
-        width: 200,
+        width: 300,
         sortable: false,
         cell: (r) => (
           <div className="flex flex-wrap items-center gap-1" onClick={(event) => event.stopPropagation()}>
@@ -717,6 +723,18 @@ export function ImpactBatchPanel({
                 <FastForward className="h-3 w-3" />
                 Advance
               </Button>
+            ) : null}
+            {/* Try before you advance (Mandate Candidates): the version this
+                row would move to runs beside the live one first. */}
+            {mode === "post_batch" && isBatchActionable(r.verdict, writeContext) ? (
+              <TryAsCandidateButton
+                mandateKey={r.mandateKey}
+                mandateName={mandateDisplayName(r.mandateKey, null)}
+                target={targetOfImpactVerdict(r.verdict)}
+                rung={rungOfImpactVerdict(r.verdict)}
+                disabled={busy}
+                className="h-6 px-1.5 text-[11px]"
+              />
             ) : null}
           </div>
         ),

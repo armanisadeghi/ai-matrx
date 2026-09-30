@@ -57,6 +57,12 @@ import type {
 import { VerdictDetail } from "@/features/mandates/admin/impact-cells";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
+import { TryAsCandidateButton } from "@/features/mandates/candidate-dialog/TryAsCandidateButton";
+import {
+  rungOfImpactVerdict,
+  targetOfImpactVerdict,
+} from "@/features/mandates/candidate-dialog/target";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 import {
   batchEligibilityOf,
   isBehindLatest,
@@ -734,10 +740,24 @@ function RowActions({
           Put back
         </Button>
       ) : canAdvanceMandate ? (
-        <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={busy} onClick={onAdvanceMandate} title={`Move this mandate's pin to ${row.newestLabel}.`}>
-          <RotateCw className="h-3 w-3" />
-          Move to {row.newestLabel}
-        </Button>
+        <>
+          <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={busy} onClick={onAdvanceMandate} title={`Move this mandate's pin to ${row.newestLabel}.`}>
+            <RotateCw className="h-3 w-3" />
+            Move to {row.newestLabel}
+          </Button>
+          {/* Try before you advance (Mandate Candidates): the same newest
+              version runs beside the live one on the next real runs. */}
+          {row.verdict ? (
+            <TryAsCandidateButton
+              mandateKey={storedMandateKey(row.verdict.mandate_key)}
+              mandateName={row.name}
+              target={targetOfImpactVerdict(row.verdict)}
+              rung={rungOfImpactVerdict(row.verdict)}
+              disabled={busy}
+              title={`Run ${row.newestLabel} beside the live one on the next real runs, then decide.`}
+            />
+          ) : null}
+        </>
       ) : canUpdateUsage ? (
         <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={busy || updating} onClick={onUpdateUsage} title={`Re-pin this ${dimensionMeta(row.dimension).label.toLowerCase()} to ${row.newestLabel}.`}>
           {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCw className="h-3 w-3" />}

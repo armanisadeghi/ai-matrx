@@ -28,14 +28,18 @@
 //   runs → "Runs" — the mandate's run history at this seat
 //   (features/mandates/run-history/). The admin route keeps its ten protected
 //   tabs and shows the platform-wide history inside Health instead.
+// And one on EVERY seat, beside the ten (Mandate Candidates, PLAN §2.6):
+//   candidates → "Candidates" — the live candidate for this seat's rung, its
+//   pairs, Promote / Put back / Discard, and past candidates
+//   (./MandateCandidatesPanel.tsx). Carries a count badge (`count`).
 
 import { ADMIN_MANDATES_HOME, adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import {
   Activity,
-  Bot,
   Code2,
   FileText,
   FlaskConical,
+  GitCompareArrows,
   History,
   ListChecks,
   Link2,
@@ -45,10 +49,22 @@ import {
   SlidersHorizontal,
   type LucideIcon,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
-export type RecordTabId = MandateWorkspaceTab | "overrides-simple" | "runs";
+export type RecordTabId = MandateWorkspaceTab | "overrides-simple" | "runs" | "candidates";
+
+/**
+ * A small badge beside a tab's name (the Candidates tab's "2/3"). `tone`
+ * colours it: danger = a pair failed or regressed, warning = stalled.
+ */
+export interface RecordTabCount {
+  value: string;
+  tone: "neutral" | "danger" | "warning";
+  /** One sentence for the tooltip. */
+  title?: string;
+}
 
 export interface RecordTab {
   id: RecordTabId;
@@ -64,12 +80,14 @@ export interface RecordTab {
   action?: boolean;
   /** Member seats only (person / organization) — never on the admin route. */
   member?: boolean;
+  /** Optional badge beside the name — set by the host per mandate. */
+  count?: RecordTabCount | null;
 }
 
 export const RECORD_TABS: readonly RecordTab[] = [
   { id: "definition", label: "Definition", icon: FileText },
   { id: "holder", label: "Binding", icon: Link2 },
-  { id: "create-agent", label: "New agent", icon: Bot, action: true },
+  { id: "create-agent", label: "New agent", icon: AGENT_ICON, action: true },
   { id: "overrides", label: "Overrides", icon: SlidersHorizontal },
   { id: "overrides-simple", label: "Overrides (simple)", icon: ListChecks },
   { id: "display", label: "Display", icon: MonitorCog },
@@ -79,7 +97,18 @@ export const RECORD_TABS: readonly RecordTab[] = [
   { id: "diagnostics", label: "Health", icon: Activity, admin: true },
   { id: "notes", label: "Notes", icon: NotebookPen },
   { id: "runs", label: "Runs", icon: History, member: true },
+  { id: "candidates", label: "Candidates", icon: GitCompareArrows },
 ];
+
+/** The hosts' one way to put a per-mandate badge on a tab. Pure. */
+export function withTabCount(
+  tabs: readonly RecordTab[],
+  id: RecordTabId,
+  count: RecordTabCount | null,
+): readonly RecordTab[] {
+  if (!count) return tabs;
+  return tabs.map((tab) => (tab.id === id ? { ...tab, count } : tab));
+}
 
 export const DEFAULT_RECORD_TAB: RecordTabId = "definition";
 
@@ -127,7 +156,7 @@ export type RecordLevel = "system" | "person" | "organization";
 /** Tabs a read-only seat (an organization member who does not manage it)
  * sees. Test is among them: trying a job runs it as the viewer, charged to
  * the viewer, and changes nothing. */
-const READ_ONLY_TAB_IDS: readonly RecordTabId[] = ["definition", "holder", "test", "notes", "runs"];
+const READ_ONLY_TAB_IDS: readonly RecordTabId[] = ["definition", "holder", "test", "notes", "runs", "candidates"];
 
 /**
  * The tabs for a seat. Pure. A member seat gets its OWN Test tab (the

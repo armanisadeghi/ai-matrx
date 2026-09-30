@@ -58,6 +58,11 @@ import {
 import { CODE_STATE_LABEL, FIELDS, NONE_FOUND } from "./fields";
 import type { MandateAdminRow } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import Link from "next/link";
+import {
+  adminMandateRecordHref,
+  adminMandateSupportRecordHref,
+} from "@/features/mandates/admin-routes";
 
 type Spec = EntityColumnSpec<MandateAdminRow>;
 
@@ -329,6 +334,54 @@ function SourceCell({
   return <span className="text-xs tabular-nums">{value}</span>;
 }
 
+/**
+ * THE CANDIDATES CELL (Mandate Candidates, PLAN §2.6; Arman, 2026-09-28: "each
+ * one that comes in showing up as a count on the mandate list"). "2 of 3 in";
+ * red when a pair failed or regressed; amber when stalled; empty when no
+ * candidate is open. It opens the record's Candidates tab.
+ */
+function CandidateCell({ row }: { row: MandateAdminRow }) {
+  const cell = row.candidate;
+  if (cell === undefined) {
+    return (
+      <span className="text-muted-foreground" title="The list read did not carry candidates.">
+        —
+      </span>
+    );
+  }
+  if (!cell) return null;
+  const bad = cell.runs_failed > 0 || cell.runs_regressed > 0;
+  const base = row.isSystem
+    ? adminMandateRecordHref(row.mandateKey)
+    : adminMandateSupportRecordHref(row.id);
+  const title = bad
+    ? `${cell.runs_failed} failed, ${cell.runs_regressed} worse than live.`
+    : cell.stalled
+      ? "No new run for a while."
+      : cell.open_count > 1
+        ? `${cell.open_count} candidates open; this is the one collecting.`
+        : undefined;
+  return (
+    <Link
+      href={`${base}?tab=candidates`}
+      data-testid="mandate-candidate-cell"
+      onClick={(event) => event.stopPropagation()}
+      title={title}
+      className={
+        "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium tabular-nums hover:underline " +
+        (bad
+          ? "bg-destructive/10 text-destructive"
+          : cell.stalled
+            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            : "bg-primary/10 text-primary")
+      }
+    >
+      {cell.runs_in} of {cell.runs_wanted} in
+      {cell.open_count > 1 ? <span className="opacity-70">+{cell.open_count - 1}</span> : null}
+    </Link>
+  );
+}
+
 export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   {
     id: "name",
@@ -439,6 +492,18 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     <BlockerCell row={row} />
   )),
   facetColumn("health", "Health", 190, (row) => <HealthCell row={row} />),
+  {
+    id: "candidate",
+    label: "Candidates",
+    column: {
+      id: "candidate",
+      header: "Candidates",
+      filter: false,
+      sortable: false,
+      width: 110,
+      cell: (row) => <CandidateCell row={row} />,
+    },
+  },
   facetColumn("contractCheck", "Contract", 110, (row) => <ContractCell row={row} />),
   {
     id: "inputSummary",

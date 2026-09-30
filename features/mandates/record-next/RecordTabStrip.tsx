@@ -19,7 +19,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { RecordTab, RecordTabId } from "./record-tabs";
+import type { RecordTab, RecordTabCount, RecordTabId } from "./record-tabs";
+
+/** A tab's optional badge ("2/3"), toned by what it counts. */
+function TabCount({ count }: { count: RecordTabCount }) {
+  return (
+    <span
+      data-testid="record-tab-count"
+      title={count.title}
+      className={cn(
+        "ml-0.5 rounded px-1 text-[10px] font-semibold tabular-nums leading-4",
+        count.tone === "danger"
+          ? "bg-destructive/15 text-destructive"
+          : count.tone === "warning"
+            ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+            : "bg-primary/10 text-primary",
+      )}
+    >
+      {count.value}
+    </span>
+  );
+}
 
 /** Room kept for the "More" trigger when the row overflows. */
 const MORE_WIDTH = 72;
@@ -70,6 +90,8 @@ export function RecordTabStrip({
   const measureRef = useRef<HTMLDivElement>(null);
   const [inRow, setInRow] = useState<RecordTabId[]>(() => tabs.map((t) => t.id));
   const tabsKey = tabs.map((t) => t.id).join("|");
+  // A badge changes a tab's width, so the row is re-measured when one does.
+  const countsKey = tabs.map((t) => t.count?.value ?? "").join("|");
 
   useLayoutEffect(() => {
     const cell = cellRef.current;
@@ -97,7 +119,7 @@ export function RecordTabStrip({
     const observer = new ResizeObserver(compute);
     observer.observe(cell);
     return () => observer.disconnect();
-  }, [tabsKey, value]);
+  }, [tabsKey, countsKey, value]);
 
   const shown = tabs.filter((t) => inRow.includes(t.id));
   const hidden = tabs.filter((t) => !inRow.includes(t.id));
@@ -113,6 +135,7 @@ export function RecordTabStrip({
       >
         <Icon className="h-3 w-3" />
         {tab.label}
+        {tab.count ? <TabCount count={tab.count} /> : null}
       </TabsTrigger>
     );
   };
@@ -164,6 +187,7 @@ export function RecordTabStrip({
                 >
                   <tab.icon className="h-3.5 w-3.5" />
                   {tab.label}
+                  {tab.count ? <TabCount count={tab.count} /> : null}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

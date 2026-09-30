@@ -39,6 +39,28 @@ export interface MandateAdminPageRow {
   owner_label: string;
   /** "Mismatch" | "Matches" | "Not checked" — the persisted contract verdicts. */
   contract_check: MandateContractState;
+  /**
+   * The mandate's open live candidate (Mandate Candidates — added by
+   * migrations/mnd_admin_list_candidates_column_2026_09_30.sql). `null` = none
+   * open; absent = a database older than that migration.
+   */
+  candidate?: MandateCandidateCell | null;
+}
+
+/** One page row's open-candidate cell — counts derived from its pairs. */
+export interface MandateCandidateCell {
+  id: string;
+  status: "collecting" | "ready";
+  runs_wanted: number;
+  runs_in: number;
+  runs_failed: number;
+  runs_stopped: number;
+  runs_regressed: number;
+  /** Still collecting and nothing new for `mandates.candidate_stall_days`. */
+  stalled: boolean;
+  /** Open candidates on this mandate (one per rung); the cell speaks for one. */
+  open_count: number;
+  recommendation: "promote" | "hold" | "reject" | null;
 }
 
 export type MandateContractState = "Mismatch" | "Matches" | "Not checked";

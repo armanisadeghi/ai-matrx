@@ -17,7 +17,7 @@ import type {
 import type { UngradedReason } from "@/features/mandates/admin/impact-cells";
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
 import type { MandateSourceFacts } from "@/features/mandates/code-references/data";
-import type { MandateContractState } from "./rpc";
+import type { MandateCandidateCell, MandateContractState } from "./rpc";
 import type { MandateStatus } from "@/features/mandates/status/mandate-status";
 
 /** Code-backed (declared in repo code) or soft (exists only as a DB row). */
@@ -116,4 +116,9 @@ export interface MandateAdminRow extends MandateRow {
   /** The scan read for this page has not answered yet — cells say so. */
   sourcesPending: boolean;
   sourcesFailed: boolean;
+  /**
+   * The open live candidate from the list read (`null` = none open; absent =
+   * the database answer did not carry it).
+   */
+  candidate?: MandateCandidateCell | null;
 }
