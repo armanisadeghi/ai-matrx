@@ -20,7 +20,7 @@
 
 import { useRecordActors } from "@/components/official/record-stamps/useRecordActors";
 import { resolveUserName } from "@/components/user/UserIdentity";
-import type { DetailRow } from "@/lib/detail/types";
+import type { DetailRow } from "@ai-matrx/detail";
 
 /**
  * The organization whose members are the directory we may legitimately read: the

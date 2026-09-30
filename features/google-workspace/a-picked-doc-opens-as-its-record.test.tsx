@@ -96,7 +96,8 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
 }));
 // THE ONE OPENER, observed rather than mounted: the host binding lives in
 // app/Providers.tsx and this test is about what the click dispatches.
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => (request: unknown) => {
     mockOpenDetail(request);
     return Promise.resolve("window");

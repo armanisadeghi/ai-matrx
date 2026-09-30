@@ -25,7 +25,8 @@ const openDetail = jest.fn();
 jest.mock("@/features/overlays/openers/siteQuickViewWindow", () => ({
   useOpenSiteQuickViewWindow: () => openSiteQuickView,
 }));
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => openDetail,
 }));
 jest.mock("@/features/overlays/openers/agentRunWindow", () => ({

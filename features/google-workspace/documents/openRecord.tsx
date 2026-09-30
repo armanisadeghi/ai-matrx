@@ -53,7 +53,7 @@ import { FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
-import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+import { useOpenDetail } from "@ai-matrx/detail/react";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import type { GoogleConnectionResource } from "@/features/marketing/google/types";
 

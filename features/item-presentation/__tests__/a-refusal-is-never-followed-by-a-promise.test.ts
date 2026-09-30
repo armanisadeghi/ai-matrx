@@ -14,7 +14,7 @@
  * the class: Calendar's promise below, Docs' promise in the Doc panel's own suite.
  */
 
-import type { DetailRow } from "@/lib/detail/types";
+import type { DetailRow } from "@ai-matrx/detail";
 
 import { sourceHealthProducerFor } from "../sourceHealth";
 

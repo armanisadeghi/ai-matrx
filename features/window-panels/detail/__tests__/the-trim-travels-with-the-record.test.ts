@@ -7,9 +7,9 @@
 // surface presents 200 records as the whole list, silently. Two fields.
 
 import { readDetailOverlayData, toDetailInstanceData } from "../detailOverlayData";
-import { decodeListQuery, encodeListQuery } from "@/lib/detail/presentation";
+import { decodeListQuery, encodeListQuery } from "@ai-matrx/detail";
 import { overlayPayloadForDetail } from "../openDetailSingleton";
-import type { DetailInstanceData } from "@/lib/detail/types";
+import type { DetailInstanceData } from "@ai-matrx/detail";
 
 const refs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({

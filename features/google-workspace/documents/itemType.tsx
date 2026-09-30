@@ -26,7 +26,7 @@ import { FileText } from "lucide-react";
 
 import type { ItemTypeConfig } from "@/features/item-presentation/registry";
 import type { EnrichedItem } from "@/features/item-presentation/types";
-import type { DetailRecordType, DetailRow, DetailSeed } from "@/lib/detail/types";
+import type { DetailRecordType, DetailRow, DetailSeed } from "@ai-matrx/detail";
 
 import {
   grantDetailSentence,

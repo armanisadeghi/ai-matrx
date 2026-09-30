@@ -153,7 +153,8 @@ jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () =
     ),
 }));
 
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => async () => "window",
 }));
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({

@@ -124,7 +124,8 @@ jest.mock("@/features/connectors/health", () => ({
 jest.mock("@/features/connectors/ConnectorPromptHost", () => ({
   ConnectorPromptHost: () => <div data-prompt-card />,
 }));
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => async () => "window",
 }));
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({

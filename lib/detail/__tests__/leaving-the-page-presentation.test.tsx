@@ -12,8 +12,8 @@
 import * as React from "react";
 import { act } from "react";
 
-import { useDetailCore, type DetailCore } from "../core/useDetailCore";
-import { DetailPagePresentation } from "../presentations";
+import { useDetailCore, type DetailCore } from "@ai-matrx/detail/react";
+import { DetailPagePresentation } from "@ai-matrx/detail/react";
 import { clickByLabel, instance, makePorts, mount, StubPageShell } from "./harness";
 
 function Harness({ core }: { core: (c: DetailCore) => void }) {

@@ -32,8 +32,8 @@
  * fix that reading, and this file does not touch `title`.
  */
 
-import type { DetailField, DetailRow, DetailRecordType } from "@/lib/detail/types";
-import { formatWhen } from "@/lib/detail/format";
+import type { DetailField, DetailRow, DetailRecordType } from "@ai-matrx/detail";
+import { formatWhen } from "@ai-matrx/detail";
 import {
   PUBLISHED_TO_WEB_LABEL,
   SHOWN_TO_LABEL,

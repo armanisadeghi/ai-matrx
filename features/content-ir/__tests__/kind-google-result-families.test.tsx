@@ -57,7 +57,7 @@ import {
 } from "@/components/mardown-display/blocks/google-kinds/google-result-shared";
 // The platform's ONE timestamp formatter — the same function the Detail
 // primitive prints every stored instant with. Never a second one here.
-import { formatWhen } from "@/lib/detail/format";
+import { formatWhen } from "@ai-matrx/detail";
 // The real registry — the door's own gate (F-87 asserts the token it opens on).
 import { getItemConfig } from "@/features/item-presentation/registry";
 

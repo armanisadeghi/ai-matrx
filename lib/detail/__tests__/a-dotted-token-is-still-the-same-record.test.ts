@@ -12,13 +12,13 @@
 // decode — one encoder, one decoder, both spellings, and the round trip returns
 // the record that went in.
 
-import { decodeListItems, encodeListItems } from "../listContext";
+import { decodeListItems, encodeListItems } from "@ai-matrx/detail";
 import {
   decodePanelArgValue,
   detailInstanceKey,
   encodePanelArgValue,
   parseDetailInstanceKey,
-} from "../presentation";
+} from "@ai-matrx/detail";
 
 const AWKWARD = [
   { type: "gr.ant", id: "x.y" },

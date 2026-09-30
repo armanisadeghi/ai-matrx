@@ -20,11 +20,11 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
-import { DetailBody } from "@/lib/detail/core/DetailBody";
-import { useDetailCore } from "@/lib/detail/core/useDetailCore";
-import { DetailHostProvider, type DetailHostPorts } from "@/lib/detail/host";
+import { DetailBody } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import { DetailHostProvider, type DetailHostPorts } from "@ai-matrx/detail/react";
 import { GOOGLE_CAPABILITY_HEALTH_KIND } from "@/features/connectors/google-capability-health";
-import type { DetailRow } from "@/lib/detail/types";
+import type { DetailRow } from "@ai-matrx/detail";
 
 import { sourceHealthProducerFor } from "../sourceHealth";
 

@@ -29,7 +29,7 @@ import {
   selectOverlay,
   type StateWithOverlays,
 } from "@/lib/redux/slices/overlaySlice";
-import type { DetailInstanceData, DetailPresentation } from "@/lib/detail/types";
+import type { DetailInstanceData, DetailPresentation } from "@ai-matrx/detail";
 import { announceSingletonReplacement } from "./singletonReplacement";
 
 export type InPlaceDetailPresentation = Exclude<DetailPresentation, "page">;

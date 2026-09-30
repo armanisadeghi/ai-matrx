@@ -15,7 +15,7 @@
 
 import { calendarEventHealthOverride } from "../record";
 import { calendarEventRow } from "./fixtures";
-import type { DetailSourceHealth } from "@/lib/detail/types";
+import type { DetailSourceHealth } from "@ai-matrx/detail";
 
 describe("the open-at-source control on a calendar event", () => {
   it("names Google Calendar when no generic producer could answer", () => {

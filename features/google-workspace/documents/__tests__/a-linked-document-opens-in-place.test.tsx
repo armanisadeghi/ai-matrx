@@ -24,13 +24,13 @@ import {
   DetailDockedPresentation,
   DetailPagePresentation,
   DetailWindowPresentation,
-} from "@/lib/detail/presentations";
-import { DetailHostProvider, type DetailHostPorts } from "@/lib/detail/host";
+} from "@ai-matrx/detail/react";
+import { DetailHostProvider, type DetailHostPorts } from "@ai-matrx/detail/react";
 import type {
   DetailDockedShellProps,
   DetailPageShellProps,
   DetailWindowShellProps,
-} from "@/lib/detail/host";
+} from "@ai-matrx/detail/react";
 import { resolveItemDetailType } from "@/features/item-presentation/detail";
 
 import { CONNECTION_ID, DOC_ID, googleDocumentRow } from "./fixtures";

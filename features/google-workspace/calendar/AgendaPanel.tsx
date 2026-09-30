@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
-import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+import { useOpenDetail } from "@ai-matrx/detail/react";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { extractErrorMessage } from "@/utils/errors";
 

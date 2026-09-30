@@ -15,9 +15,9 @@
 import * as React from "react";
 import { act } from "react";
 
-import { DetailBody } from "../core/DetailBody";
-import { useDetailCore } from "../core/useDetailCore";
-import type { DetailHistoryEntry, DetailRow } from "../types";
+import { DetailBody } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import type { DetailHistoryEntry, DetailRow } from "@ai-matrx/detail";
 import { instance, makePorts, mount } from "./harness";
 
 const ACTOR = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";

@@ -249,7 +249,7 @@ export function useSmartCodeEditor({
   const diffStats = useMemo(() => {
     if (!modifiedCode) return null;
     const { additions, deletions } = computeLineChanges(currentCode, modifiedCode);
-    return { additions, deletions };
+    return { additions, deletions, changes: additions + deletions };
   }, [currentCode, modifiedCode]);
 
   return {

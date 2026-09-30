@@ -41,7 +41,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ENTITY_TYPE_METADATA } from "@ai-matrx/associations";
 
 import type { EnrichedItem, ItemType, KnownItemType } from "./types";
-import type { DetailRecordType } from "@/lib/detail/types";
+import type { DetailRecordType } from "@ai-matrx/detail";
 import { GOOGLE_DOCUMENT_ITEM_TYPE } from "@/features/google-workspace/documents/itemType";
 import { CALENDAR_EVENT_ITEM_TYPE } from "@/features/google-workspace/calendar/itemType";
 import { WEB_SITE_ITEM_TYPE } from "@/features/marketing/site-item-type";

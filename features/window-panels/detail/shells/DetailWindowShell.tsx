@@ -19,13 +19,13 @@
 "use client";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import type { DetailWindowShellProps } from "@/lib/detail/host";
+import type { DetailWindowShellProps } from "@ai-matrx/detail/react";
 import {
   DETAIL_URL_AS_ARG,
   DETAIL_URL_TYPE_KEY,
   detailListToUrlArgs,
   panelUrlReserveBytes,
-} from "@/lib/detail/presentation";
+} from "@ai-matrx/detail";
 import { resolvedListContextMax } from "../listContextCap";
 import { useShellChromeEscape } from "./useShellChromeEscape";
 

@@ -22,7 +22,7 @@ import {
   parseDetailInstanceKey,
   presentationFromUrlArg,
   detailListFromUrlArgs,
-} from "@/lib/detail/presentation";
+} from "@ai-matrx/detail";
 import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
 import { parseVariableEditorInstanceId } from "@/features/agents/components/variables-management/variableEditorAddress";
 import { dispatchThunk } from "@/lib/redux/hooks";

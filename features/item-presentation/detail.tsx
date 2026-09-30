@@ -21,13 +21,13 @@ import { isEntityTypeToken } from "@ai-matrx/associations";
 
 import { supabase } from "@/utils/supabase/client";
 import { awaitOrganizationForRecordRead } from "@/features/organizations/awaitWorkspace";
-import { fieldsFromRow } from "@/lib/detail/format";
+import { fieldsFromRow } from "@ai-matrx/detail";
 import type {
   DetailLoadResult,
   DetailRecordType,
   DetailRow,
   DetailSeed,
-} from "@/lib/detail/types";
+} from "@ai-matrx/detail";
 import { isUuidValue, tokenFromColumnName } from "@/components/official/entity-ref/doors";
 
 import { entityTokenForItemType, getItemConfig, type ItemTypeConfig } from "./registry";

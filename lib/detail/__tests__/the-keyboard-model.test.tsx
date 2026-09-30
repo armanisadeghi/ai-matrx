@@ -12,7 +12,7 @@
 import * as React from "react";
 import { act } from "react";
 
-import { useDetailKeyboard, type DetailKeyboard } from "../useDetailKeyboard";
+import { useDetailKeyboard, type DetailKeyboard } from "@ai-matrx/detail/react";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

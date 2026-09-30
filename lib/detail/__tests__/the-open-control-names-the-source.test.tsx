@@ -18,9 +18,9 @@
 import * as React from "react";
 import { act } from "react";
 
-import { DetailBody } from "../core/DetailBody";
-import { useDetailCore } from "../core/useDetailCore";
-import type { DetailRecordType, DetailSourceHealth } from "../types";
+import { DetailBody } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import type { DetailRecordType, DetailSourceHealth } from "@ai-matrx/detail";
 import { FILE_TYPE, instance, makePorts, mount } from "./harness";
 
 const ROW = { file_name: "Q3 plan.gdoc", provider: "google" };

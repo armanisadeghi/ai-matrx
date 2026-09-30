@@ -39,7 +39,7 @@ import {
   type DetailEffectivePresentation,
   type DetailHostPorts,
   type DetailPresentationSetting,
-} from "@/lib/detail/host";
+} from "@ai-matrx/detail/react";
 import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import {
   DETAIL_LIST_CONTEXT_MAX_KNOB,
@@ -51,7 +51,7 @@ import {
   type DetailListContext,
   type DetailPresentation,
   type DetailRef,
-} from "@/lib/detail/types";
+} from "@ai-matrx/detail";
 import {
   getSessionKnob,
   resolveSessionKnob,
@@ -72,7 +72,7 @@ import { supabase } from "@/utils/supabase/client";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { useCloseDetailDocked, useOpenDetailDocked } from "@/features/overlays/openers/detailDocked";
 import { useCloseDetailWindow, useOpenDetailWindow } from "@/features/overlays/openers/detailWindow";
-import { encodeListQuery } from "@/lib/detail/presentation";
+import { encodeListQuery } from "@ai-matrx/detail";
 import { resolvedListContextMax } from "./listContextCap";
 import { stashPageSeed } from "./pageSeedHandoff";
 

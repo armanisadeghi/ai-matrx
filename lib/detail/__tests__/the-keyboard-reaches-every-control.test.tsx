@@ -18,8 +18,8 @@
 import * as React from "react";
 import { act } from "react";
 
-import { DetailWindowPresentation, DetailDockedPresentation, DetailPagePresentation } from "../presentations";
-import type { DetailDockedShellProps, DetailPageShellProps, DetailWindowShellProps } from "../host";
+import { DetailWindowPresentation, DetailDockedPresentation, DetailPagePresentation } from "@ai-matrx/detail/react";
+import type { DetailDockedShellProps, DetailPageShellProps, DetailWindowShellProps } from "@ai-matrx/detail/react";
 import { instance, makePorts, mount, StubPageShell } from "./harness";
 
 function StubWindowShell({ titleNode, actions, children }: DetailWindowShellProps) {

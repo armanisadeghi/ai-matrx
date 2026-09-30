@@ -83,7 +83,8 @@ jest.mock("@/features/google-workspace/GoogleAgentToolsSection", () => ({
 // A picked Doc or Sheet in the resource roster offers its Record (F-58). THE ONE
 // opener's host binding lives in app/Providers.tsx; this suite mounts the body
 // alone, so the opener is observed rather than bound.
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => () => Promise.resolve("window"),
 }));
 

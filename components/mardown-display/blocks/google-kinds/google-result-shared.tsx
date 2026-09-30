@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatWhen } from "@/lib/detail/format";
+import { formatWhen } from "@ai-matrx/detail";
 import {
   DETACHED_EVENT_SENTENCE,
   UNAVAILABLE_EVENT_SENTENCE,

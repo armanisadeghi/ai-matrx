@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+import { useOpenDetail } from "@ai-matrx/detail/react";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { extractErrorMessage } from "@/utils/errors";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";

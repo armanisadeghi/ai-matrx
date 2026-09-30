@@ -15,9 +15,9 @@
 
 "use client";
 
-import { DetailHostProvider } from "@/lib/detail/host";
-import { DetailWindowPresentation } from "@/lib/detail/presentations";
-import type { DetailRef } from "@/lib/detail/types";
+import { DetailHostProvider } from "@ai-matrx/detail/react";
+import { DetailWindowPresentation } from "@ai-matrx/detail/react";
+import type { DetailRef } from "@ai-matrx/detail";
 import { DetailWindowShell } from "@/features/window-panels/detail/shells/DetailWindowShell";
 import { toDetailInstanceData } from "@/features/window-panels/detail/detailOverlayData";
 import { DETAIL_TYPE_BINDING } from "@/features/window-panels/detail/detailTypeBinding";

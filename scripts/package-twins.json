@@ -26,7 +26,40 @@
       "name": "isUuidShape",
       "package": "@ai-matrx/kit/uuid",
       "why": "The LAX UUID-shape predicate ('id or slug?'). It moved out of @ai-matrx/associations/core into kit on 2026-09-07 (associations 0.8.0, C28) so a Next.js route handler could reach it without the association store. Four host copies were deleted 2026-09-07; two host re-export doors (features/scopes/{service/associationGuards,utils/slugify}) alias it as `isUuid` for ~20 historical callers.",
-      "allow": []
+      "shapeRule": "uuid",
+      "shapeWhy": "An anchored regex that validates a WHOLE string as one UUID is this capability whatever it is called, or with no name at all. The name lane read GREEN on isUuidShape and isRfc4122Uuid while 2026-09-30's census found 109 non-test matrx-frontend files carrying their own `/^[0-9a-f]{8}-\u2026$/i` under UUID, UUID_RE, UUID_TEXT, RECORD_ID, ENTITY_REF_ID, uuidRegex, or inline in `.test(`. Pattern and its proof: scripts/uuid-shape.mjs. It reads the pattern's STRUCTURE (every spelling of the hex class, `{8}` or repeated classes, `(?:\u2026{4}-){3}`, a wrapping group, regex literals and `new RegExp` strings) and names the CONTRACT in every finding: any-version case-insensitive = isUuidShape, version [1-5] + variant [89ab] = isRfc4122Uuid (one lane, both rows \u2014 strict stays strict), anything else = no kit export yet, which is a kit option and a census entry with that contract as its blocker, never a local copy. An extractor (no ^\u2026$ anchors, a g/m flag), a composite key or route anchored around a UUID, a SQL pattern in a SQL string and a test fixture can never match. `shapeCensus` below is debt, reported every run and ratcheted shrink-only.",
+      "allow": [],
+      "shapeAllow": [],
+      "shapeCensus": [
+        {
+          "file": "app/(core)/code/page.tsx",
+          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
+        },
+        {
+          "file": "components/official/entity-ref/doors.ts",
+          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
+        },
+        {
+          "file": "features/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
+        },
+        {
+          "file": "features/marketing/data/analysis-query.ts",
+          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
+        },
+        {
+          "file": "features/marketing/data/integrations-schema.ts",
+          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
+        },
+        {
+          "file": "features/rag/components/hit-card/adapters.ts",
+          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
+        },
+        {
+          "file": "app/(public)/free/uuid/generator/page.tsx",
+          "reason": "Contract NO kit export carries: version 4 only + variant [89ab]. This is the public UUID-generator tool validating the v4 ids it just minted; isUuidShape would accept any version and isRfc4122Uuid any of v1-v5. Blocked on a kit version option; one site today."
+        }
+      ]
     },
     {
       "name": "uniqueChannelTopic",
@@ -412,6 +445,10 @@
         {
           "file": "scripts/filtergroups/seat-proof.mjs",
           "why": "PROVABLY NOT A DISPLAY: `${c.cards}/$${c.total}` builds an equality KEY compared against the expected \"3/$1255\" and \"4/$2345\" pipeline-board answers of this seat proof. formatUsd would print \"$1,255.00\" and break the comparison; a missing total fails the comparison rather than reading as money."
+        },
+        {
+          "file": "features/action-requests/components/spendAmount.ts",
+          "reason": "Not a money DISPLAY: initialAmountText seeds the editable approval amount box with a bare '12.34' that parseApprovalUsd reads straight back. formatUsd would add '$' and grouping to an input value."
         }
       ],
       "shapeCensus": [
@@ -2991,6 +3028,54 @@
       "name": "base64ByteLength",
       "package": "@ai-matrx/kit/base64",
       "why": "THE decoded byte length of base64 text (kit 0.13.5, 2026-09-12). There is exactly ONE honest way to compute it and five live sites had written it five ways: `b64.length * 3 / 4` OVERSTATES every padded payload by one or two bytes, because four base64 characters carry three bytes and a trailing `=` / `==` is exactly the bytes that were never there. A sixth adversarial review fixed three sites by hand; a seventh found a FOURTH still wrong (matrx-extend tools/handlers/read.ts, feeding size_bytes) and two of the repairs living as private copies under this same name in aidream's dashboard and in matrx-local. A capability re-derived from memory at every call site is a package export nobody had written yet. The number it returns is real BYTES, which is what formatFileSize wants \u2014 the input lane exists because a base64 STRING LENGTH reaching that formatter prints a confident, wrong \" KB\". NOTE 2026-09-12: the module landed in this repo for kit 0.13.5 but is NOT in the published 0.13.5 tarball \u2014 that release was cut from a tree that predated it. The two npm consumers (matrx-extend, matrx-local) therefore still carry censused local copies, and they are blocked on a kit release that actually contains the module, not on a version number.",
+      "allow": []
+    },
+    {
+      "name": "computeLineChanges",
+      "package": "@ai-matrx/diff/text",
+      "why": "frontend audit 2026-09-29 diff-001: three hand-rolled line-LCS engines (two unbounded code-editor generateDiff.ts copies and the notes conflict analyzer's body) were deleted 2026-09-30 when @ai-matrx/diff 0.3.10 grew computeLineChanges / analyzeTextChange; features/notes/utils/diffAnalysis.ts is now a wrapper that binds the notes 250,000-cell cap and writes the summary sentence.",
+      "allow": []
+    },
+    {
+      "name": "analyzeTextChange",
+      "package": "@ai-matrx/diff/text",
+      "why": "frontend audit 2026-09-29 diff-001: three hand-rolled line-LCS engines (two unbounded code-editor generateDiff.ts copies and the notes conflict analyzer's body) were deleted 2026-09-30 when @ai-matrx/diff 0.3.10 grew computeLineChanges / analyzeTextChange; features/notes/utils/diffAnalysis.ts is now a wrapper that binds the notes 250,000-cell cap and writes the summary sentence.",
+      "allow": []
+    },
+    {
+      "name": "diffRecordFields",
+      "package": "@ai-matrx/diff/structural",
+      "why": "frontend audit 2026-09-29 review-diff-001: the table row-history viewer's local top-level field comparator (VersionHistoryViewer computeDiff + shallowEqual) was deleted 2026-09-30 when @ai-matrx/diff 0.3.10 grew diffRecordFields with its exact semantics.",
+      "allow": []
+    },
+    {
+      "name": "useDetailCore",
+      "package": "@ai-matrx/detail/react",
+      "why": "frontend audit 2026-09-29 detail-001: lib/detail/** was a maintained 15-module MIRROR of @ai-matrx/detail held even by a byte-parity test; the mirror and the parity mechanism were deleted 2026-09-30 when the frontend adopted the package (0.1.3). A local body of the Detail primitive is a re-grown mirror.",
+      "allow": []
+    },
+    {
+      "name": "useOpenDetail",
+      "package": "@ai-matrx/detail/react",
+      "why": "frontend audit 2026-09-29 detail-001: lib/detail/** was a maintained 15-module MIRROR of @ai-matrx/detail held even by a byte-parity test; the mirror and the parity mechanism were deleted 2026-09-30 when the frontend adopted the package (0.1.3). A local body of the Detail primitive is a re-grown mirror.",
+      "allow": []
+    },
+    {
+      "name": "trimListContext",
+      "package": "@ai-matrx/detail",
+      "why": "frontend audit 2026-09-29 detail-001: lib/detail/** was a maintained 15-module MIRROR of @ai-matrx/detail held even by a byte-parity test; the mirror and the parity mechanism were deleted 2026-09-30 when the frontend adopted the package (0.1.3). A local body of the Detail primitive is a re-grown mirror.",
+      "allow": []
+    },
+    {
+      "name": "finalPanelUrlLength",
+      "package": "@ai-matrx/detail",
+      "why": "frontend audit 2026-09-29 detail-001: lib/detail/** was a maintained 15-module MIRROR of @ai-matrx/detail held even by a byte-parity test; the mirror and the parity mechanism were deleted 2026-09-30 when the frontend adopted the package (0.1.3). A local body of the Detail primitive is a re-grown mirror.",
+      "allow": []
+    },
+    {
+      "name": "fieldsFromRow",
+      "package": "@ai-matrx/detail",
+      "why": "frontend audit 2026-09-29 detail-001: lib/detail/** was a maintained 15-module MIRROR of @ai-matrx/detail held even by a byte-parity test; the mirror and the parity mechanism were deleted 2026-09-30 when the frontend adopted the package (0.1.3). A local body of the Detail primitive is a re-grown mirror.",
       "allow": []
     }
   ]

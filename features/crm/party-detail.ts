@@ -46,8 +46,8 @@ import type {
   DetailRecordType,
   DetailRow,
   DetailSeed,
-} from "@/lib/detail/types";
-import { formatWhen } from "@/lib/detail/format";
+} from "@ai-matrx/detail";
+import { formatWhen } from "@ai-matrx/detail";
 import { hasAnyDoor } from "@/components/official/entity-ref/doors";
 import { supabase } from "@/utils/supabase/client";
 import {

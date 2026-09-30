@@ -18,9 +18,9 @@ import {
   detailListFromUrlArgs,
   encodePanelArgValue,
   decodePanelArgValue,
-} from "@/lib/detail/presentation";
+} from "@ai-matrx/detail";
 import { parseParams, serializeParams } from "../../url-sync/UrlPanelManager";
-import { DETAIL_URL_BUDGET_BYTES } from "@/lib/detail/types";
+import { DETAIL_URL_BUDGET_BYTES } from "@ai-matrx/detail";
 
 const refs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({

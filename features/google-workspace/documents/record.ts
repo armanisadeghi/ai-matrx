@@ -10,7 +10,7 @@ import type {
   GoogleDocumentSyncStatus,
 } from "./types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import type { DetailField, DetailRow } from "@/lib/detail/types";
+import type { DetailField, DetailRow } from "@ai-matrx/detail";
 
 /** The item-presentation / entity token. Google's own noun (PLAN Amendment A2). */
 export const GOOGLE_DOCUMENT_TYPE = "google_document";

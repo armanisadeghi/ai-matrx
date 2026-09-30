@@ -13,7 +13,7 @@
  */
 
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import type { DetailField, DetailRow, DetailSourceHealth } from "@/lib/detail/types";
+import type { DetailField, DetailRow, DetailSourceHealth } from "@ai-matrx/detail";
 
 import {
   CALENDAR_EVENT_ATTENDEES_KIND,

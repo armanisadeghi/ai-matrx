@@ -13,7 +13,7 @@
 // `refineDetail` in `features/item-presentation/registry.tsx`) is what the
 // page actually renders.
 import { researchTemplateDetailFields } from "./template-detail";
-import type { DetailRow } from "@/lib/detail/types";
+import type { DetailRow } from "@ai-matrx/detail";
 
 const ROW: DetailRow = {
   id: "dd53f982-a851-4701-9368-505982260271",

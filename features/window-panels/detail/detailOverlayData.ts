@@ -5,7 +5,7 @@
 // name; the page route builds it from its params. ONE spelling, here.
 //
 // The page presentation's `?l=&i=&lt=` QUERY spelling used to live here too. It
-// is now `encodeListQuery` / `decodeListQuery` in `@/lib/detail/presentation`,
+// is now `encodeListQuery` / `decodeListQuery` in `@ai-matrx/detail`,
 // beside the `?panels=detail:` token's spelling, so both are cut by the ONE trim
 // and the ONE byte budget — where `@ai-matrx/detail` put it when the primitive
 // became a package. Only the REDUX payload shape is host-side, and that is this
@@ -15,7 +15,7 @@ import {
   type DetailInstanceData,
   type DetailListContext,
   type DetailRef,
-} from "@/lib/detail/types";
+} from "@ai-matrx/detail";
 
 export interface DetailOverlayData {
   type: string;

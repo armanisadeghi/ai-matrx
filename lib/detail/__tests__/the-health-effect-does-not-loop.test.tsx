@@ -21,9 +21,9 @@
 import * as React from "react";
 import { act } from "react";
 
-import { DetailBody } from "../core/DetailBody";
-import { useDetailCore } from "../core/useDetailCore";
-import type { DetailSourceHealth } from "../types";
+import { DetailBody } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import type { DetailSourceHealth } from "@ai-matrx/detail";
 import { FILE_TYPE, instance, makePorts, mount } from "./harness";
 
 const HEALTH: DetailSourceHealth = {

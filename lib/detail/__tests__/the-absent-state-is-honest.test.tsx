@@ -15,10 +15,10 @@
 
 import * as React from "react";
 
-import { DetailBody } from "../core/DetailBody";
-import { DetailActions, DetailTitle } from "../core/DetailHeader";
-import { useDetailCore } from "../core/useDetailCore";
-import type { DetailRecordType } from "../types";
+import { DetailBody } from "@ai-matrx/detail/react";
+import { DetailActions, DetailTitle } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import type { DetailRecordType } from "@ai-matrx/detail";
 import { FILE_TYPE, instance, makePorts, mount } from "./harness";
 
 const SOURCELESS: DetailRecordType = { ...FILE_TYPE, load: null };

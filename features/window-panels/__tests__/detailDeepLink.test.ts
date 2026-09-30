@@ -16,8 +16,8 @@ import {
   presentationFromUrlArg,
   DETAIL_URL_AS_ARG,
   DETAIL_URL_TYPE_KEY,
-} from "@/lib/detail/presentation";
-import { decodeListQuery, encodeListQuery } from "@/lib/detail/presentation";
+} from "@ai-matrx/detail";
+import { decodeListQuery, encodeListQuery } from "@ai-matrx/detail";
 import { readDetailOverlayData, toDetailInstanceData } from "../detail/detailOverlayData";
 import { parseParams, serializeParams } from "../url-sync/UrlPanelManager";
 import { initUrlHydration } from "../url-sync/initUrlHydration";

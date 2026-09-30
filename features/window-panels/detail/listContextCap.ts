@@ -14,7 +14,7 @@
 import {
   DETAIL_LIST_CONTEXT_MAX_KNOB,
   detailListContextMax,
-} from "@/lib/detail/types";
+} from "@ai-matrx/detail";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 export function resolvedListContextMax(): number {

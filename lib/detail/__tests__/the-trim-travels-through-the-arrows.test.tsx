@@ -14,9 +14,9 @@
 
 import * as React from "react";
 
-import { DetailActions, DetailRecordMeta } from "../core/DetailHeader";
-import { useDetailCore } from "../core/useDetailCore";
-import type { DetailPresentation } from "../types";
+import { DetailActions, DetailRecordMeta } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import type { DetailPresentation } from "@ai-matrx/detail";
 import { clickByLabel, instance, makePorts, mount } from "./harness";
 
 const TRIMMED_FROM = 500;

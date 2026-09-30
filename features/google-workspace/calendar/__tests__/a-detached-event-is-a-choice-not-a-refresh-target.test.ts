@@ -21,7 +21,7 @@ import {
   calendarEventHealthOverride,
 } from "../record";
 import { calendarEventRow } from "./fixtures";
-import type { DetailSourceHealth } from "@/lib/detail/types";
+import type { DetailSourceHealth } from "@ai-matrx/detail";
 
 describe("calendarEventHealthOverride", () => {
   it("states the choice with grant ok and offers no Refresh, no Reconnect, for a detached event", () => {

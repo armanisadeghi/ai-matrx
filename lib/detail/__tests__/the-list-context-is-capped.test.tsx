@@ -13,16 +13,16 @@
 
 import * as React from "react";
 
-import { DetailActions, DetailRecordMeta } from "../core/DetailHeader";
-import { useDetailCore } from "../core/useDetailCore";
-import { trimListContext, listQueryBytes } from "../listContext";
+import { DetailActions, DetailRecordMeta } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import { trimListContext, listQueryBytes } from "@ai-matrx/detail";
 import {
   DEFAULT_DETAIL_LIST_CONTEXT_MAX,
   DETAIL_LIST_CONTEXT_MAX_IDS_CEILING,
   DETAIL_URL_BUDGET_BYTES,
   detailListContextMax,
-} from "../types";
-import { decodeListQuery, encodeListQuery } from "../presentation";
+} from "@ai-matrx/detail";
+import { decodeListQuery, encodeListQuery } from "@ai-matrx/detail";
 import { instance, makePorts, mount } from "./harness";
 
 const refs = (n: number) =>

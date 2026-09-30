@@ -11,7 +11,7 @@
 import {
   DETAIL_PRESENTATION_BY_TYPE_KNOB,
   type DetailPresentation,
-} from "@/lib/detail/types";
+} from "@ai-matrx/detail";
 import { sessionKnobPrincipals } from "@/lib/scoped-config/sessionKnob";
 import {
   knobRefusalSentence,

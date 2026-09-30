@@ -13,8 +13,8 @@
 
 import * as React from "react";
 
-import { DetailActions } from "../core/DetailHeader";
-import { useDetailCore } from "../core/useDetailCore";
+import { DetailActions } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
 import { clickByLabel, instance, makePorts, mount } from "./harness";
 
 const refs = (n: number) =>

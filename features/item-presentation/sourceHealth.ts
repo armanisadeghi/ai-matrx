@@ -57,7 +57,7 @@ import type {
   DetailHealthContext,
   DetailRow,
   DetailSourceHealth,
-} from "@/lib/detail/types";
+} from "@ai-matrx/detail";
 
 import {
   ACCOUNT_COLUMNS,

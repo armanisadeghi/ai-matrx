@@ -92,7 +92,8 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => activeOrganizationId,
 }));
 
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => jest.fn(async () => "window"),
 }));
 

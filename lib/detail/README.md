@@ -17,45 +17,25 @@ the arrows move between records — `[` / `]` are aliases — and Cmd/Ctrl+Enter
 Champions: Notion (side peek / center peek / full page, per-database "open pages in") and Linear
 (peek, keyboard-first). Bones matched, skin ours.
 
-## 🚨 This directory is a COPY of `@ai-matrx/detail`, and a guard keeps it even
+## Adoption — the package IS the code (2026-09-30)
 
-**The package exists.** The `mv` was performed: `@ai-matrx/detail` 0.1.0 lives at aidream
-`apps/shared/detail`, and its own `pnpm typecheck`, `pnpm test` and `pnpm check:package`
-(exports agreement, publint, tarball canary) pass there. **It is not on npm.** The frontend
-adopted it (`ec7ce701`) and the adoption was **reverted** (`32ce9170`, ruling R21), because a
-`"latest"` spec for a package the registry does not have kills the ONE
-`pnpm install --frozen-lockfile` every workspace project shares. Publishing is a human step.
+`@ai-matrx/detail` is installed from npm at `latest`; import `@ai-matrx/detail` (pure, legal in a
+Server Component) or `@ai-matrx/detail/react` (client). The in-repo copy and its parity guard were
+retired once the package carried the last host difference: the not-found state now renders
+design-system's `ErrorActions` slot, which this app fills with the Alchemy menu through
+`ErrorActionsProvider` in `AlchemyHost`. The host binding and the shells stay in this repo
+(`features/window-panels/detail/`); the jest seat is `__tests__/harness.tsx`. A fix to the
+primitive goes in the package, is released, and arrives here by version.
 
-So **this directory is the LIVE code and the package's `src/` is the source of truth for what it
-should say.** A fix goes into BOTH, in the same session. What makes that enforceable rather than
-a promise is `__tests__/the-in-repo-copy-matches-the-package.test.ts`: it diffs all fifteen
-module pairs against the package and fails BY NAME on any difference outside the module-path
-header and relative import specifiers — and it fails as **UNMEASURED**, never green, when the
-aidream checkout is absent. `core/icons.ts` is the ONE deliberate difference (the package inlines
-its glyphs because a package takes no icon-library dependency; this repo is Lucide-only) and its
-own header says so.
+The boundary still holds, now enforced by the package's own `the-boundary-holds` suite:
 
-That guard exists because of what happened without it: in the fifteen days after the cut, the
-package fixed a reviewed defect — a health producer answering `onReconnect: null` ("a reconnect
-cannot repair this refusal") still got a Reconnect button — and the revert restored the `??` that
-caused it here, so a person was shown a button that could not fix their problem while every suite
-in both repos stayed green (VERIFY-U-P1-R5, N1 / N2).
-
-The boundary the extraction rode on still holds, and is still worth stating:
-
-- **No imports from `features/**` or `@/…` app modules.** Allowed: `react`, `lucide-react`,
-  `@ai-matrx/design-system` (`cn`, `Skeleton`), `@ai-matrx/associations` (+ `/react`).
-- **Everything app-specific is a port** (`host.tsx` → `DetailHostPorts`): the record-type map,
-  the presentation setting, open/close, navigation, the three shells, doors, associations
-  policy, history, notifications, clipboard. The host binds them once
-  (`features/window-panels/detail/DetailHost.tsx`, mounted in `app/Providers.tsx`); each
-  presentation's entry adds its own shell and the type map right above the presentation, so
-  the window shell never reaches a boot bundle.
+- **No imports from `features/**` or `@/…` app modules.** Allowed: `react`,
+  `@ai-matrx/design-system`, `@ai-matrx/associations`, `@ai-matrx/kit`.
+- **Everything app-specific is a port** (`DetailHostPorts`): the record-type map, the
+  presentation setting, open/close, navigation, the three shells, doors, associations policy,
+  history, notifications, clipboard. The host binds them once
+  (`features/window-panels/detail/DetailHost.tsx`, mounted in `app/Providers.tsx`).
 - A missing port **throws naming itself** — never a blank surface.
-
-When the publish lands, adoption is deleting these files and importing `@ai-matrx/detail` /
-`/react` instead; the host binding and the shells stay in this repo. Until then the drift guard
-is the adoption's stand-in.
 
 ## The contract
 

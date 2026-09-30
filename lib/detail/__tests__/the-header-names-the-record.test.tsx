@@ -20,9 +20,9 @@
 import * as React from "react";
 import { act } from "react";
 
-import { DetailActions, DetailRecordMeta, DetailTitle } from "../core/DetailHeader";
-import { useDetailCore, type DetailCore } from "../core/useDetailCore";
-import type { DetailLoadResult, DetailRecordType } from "../types";
+import { DetailActions, DetailRecordMeta, DetailTitle } from "@ai-matrx/detail/react";
+import { useDetailCore, type DetailCore } from "@ai-matrx/detail/react";
+import type { DetailLoadResult, DetailRecordType } from "@ai-matrx/detail";
 import { FILE_TYPE, instance, makePorts, mount } from "./harness";
 
 const ID = instance().id;

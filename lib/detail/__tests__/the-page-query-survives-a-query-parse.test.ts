@@ -20,15 +20,15 @@
 // This is the verifier's own node-level probe, kept: the REAL encoder text driven
 // through the REAL parse, not a direct round trip.
 
-import { decodeListItems, encodeListItems, encodeRefPart } from "../listContext";
+import { decodeListItems, encodeListItems, encodeRefPart } from "@ai-matrx/detail";
 import {
   decodePanelArgValue,
   detailInstanceKey,
   encodeListQuery,
   encodePanelArgValue,
   parseDetailInstanceKey,
-} from "../presentation";
-import type { DetailRef } from "../types";
+} from "@ai-matrx/detail";
+import type { DetailRef } from "@ai-matrx/detail";
 
 /** What `?l=<value>` comes back as after the parse the page route goes through. */
 function throughAQueryParse(query: string): string {

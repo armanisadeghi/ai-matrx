@@ -137,7 +137,8 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
 }));
 // THE ONE opener is observed rather than mounted (host binding lives in
 // app/Providers.tsx) — this suite is about what the row shows, not the click.
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => () => Promise.resolve("window"),
 }));
 

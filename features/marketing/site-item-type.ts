@@ -61,12 +61,12 @@ import { Globe } from "lucide-react";
 
 import type { ItemTypeConfig } from "@/features/item-presentation/registry";
 import type { EnrichedItem } from "@/features/item-presentation/types";
-import { formatWhen } from "@/lib/detail/format";
+import { formatWhen } from "@ai-matrx/detail";
 import type {
   DetailField,
   DetailRecordType,
   DetailRow,
-} from "@/lib/detail/types";
+} from "@ai-matrx/detail";
 import {
   PUBLISHED_TO_WEB_LABEL,
   SHOWN_TO_LABEL,

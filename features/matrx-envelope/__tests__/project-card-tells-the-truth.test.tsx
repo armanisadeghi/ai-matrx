@@ -48,7 +48,7 @@ import CreateProjectWithTasksRenderer from "@/features/matrx-envelope/directives
 // killed this suite at render before it could read a single sentence. The stub
 // ports are the shared seat every other Detail-touching suite uses; the card's
 // open action is not what this suite asserts, only its words are.
-import { DetailHostProvider } from "@/lib/detail/host";
+import { DetailHostProvider } from "@ai-matrx/detail/react";
 import { makePorts } from "@/lib/detail/__tests__/harness";
 
 (

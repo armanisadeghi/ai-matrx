@@ -18,9 +18,9 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
-import { DetailBody } from "@/lib/detail/core/DetailBody";
-import { useDetailCore } from "@/lib/detail/core/useDetailCore";
-import { DetailHostProvider, type DetailHostPorts } from "@/lib/detail/host";
+import { DetailBody } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import { DetailHostProvider, type DetailHostPorts } from "@ai-matrx/detail/react";
 import { resolveItemDetailType } from "@/features/item-presentation/detail";
 
 import { CONNECTION_ID, DOC_ID, FILE_ID, googleDocumentRow } from "./fixtures";

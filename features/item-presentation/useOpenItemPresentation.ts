@@ -28,7 +28,7 @@ import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindo
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
-import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+import { useOpenDetail } from "@ai-matrx/detail/react";
 
 import { getItemConfig } from "./registry";
 import type { ItemType } from "./types";

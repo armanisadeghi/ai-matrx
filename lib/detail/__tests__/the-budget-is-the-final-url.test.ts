@@ -19,18 +19,18 @@
 // from 139 up behaved identically, while the knob's live basis text told an
 // administrator 200 records would travel).
 
-import { trimListContext } from "../listContext";
+import { trimListContext } from "@ai-matrx/detail";
 import {
   detailListToUrlArgs,
   finalPanelUrlLength,
   panelListValueBytes,
   panelUrlReserveBytes,
-} from "../presentation";
+} from "@ai-matrx/detail";
 import {
   DETAIL_LIST_CONTEXT_MAX_IDS_CEILING,
   DETAIL_URL_BUDGET_BYTES,
   type DetailRef,
-} from "../types";
+} from "@ai-matrx/detail";
 
 const items = (n: number, type = "file"): DetailRef[] =>
   Array.from({ length: n }, (_, i) => ({

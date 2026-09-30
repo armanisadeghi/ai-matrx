@@ -19,7 +19,7 @@
  * FEWER products, which the ranking would never choose.
  */
 
-import type { DetailRow } from "@/lib/detail/types";
+import type { DetailRow } from "@ai-matrx/detail";
 
 import { sourceHealthProducerFor } from "../sourceHealth";
 

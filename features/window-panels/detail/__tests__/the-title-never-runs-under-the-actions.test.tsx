@@ -32,14 +32,14 @@ import adminDebug from "@/lib/redux/preferences/adminDebugSlice";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 import { PanelHeader } from "@/features/overlays/surfaces/SidePanelSurface";
-import { DetailActions, DetailTitle } from "@/lib/detail/core/DetailHeader";
-import { useDetailCore } from "@/lib/detail/core/useDetailCore";
+import { DetailActions, DetailTitle } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
 import { instance, makePorts, mount } from "@/lib/detail/__tests__/harness";
 import {
   DETAIL_HEADER_COMPACT_BELOW,
   DETAIL_HEADER_CONTAINER,
   DETAIL_TITLE_MIN_WIDTH_CLASS,
-} from "@/lib/detail/core/headerGeometry";
+} from "@ai-matrx/detail/react";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

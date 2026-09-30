@@ -15,7 +15,7 @@
 import { useCallback, useEffect } from "react";
 import { dispatchThunk, useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { DetailInstanceData } from "@/lib/detail/types";
+import type { DetailInstanceData } from "@ai-matrx/detail";
 import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
 
 const OVERLAY_ID = "detailWindow" as const;

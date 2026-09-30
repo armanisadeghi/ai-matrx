@@ -5,7 +5,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+import { useOpenDetail } from "@ai-matrx/detail/react";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

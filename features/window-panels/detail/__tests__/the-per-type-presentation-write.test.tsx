@@ -16,13 +16,13 @@
 import * as React from "react";
 import { act } from "react";
 
-import { DetailPresentationPane } from "@/lib/detail/core/DetailPresentationPane";
-import { useDetailCore } from "@/lib/detail/core/useDetailCore";
+import { DetailPresentationPane } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
 import { instance, makePorts, mount } from "@/lib/detail/__tests__/harness";
 import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { createClient } from "@/utils/supabase/client";
 
-import type { DetailPresentation } from "@/lib/detail/types";
+import type { DetailPresentation } from "@ai-matrx/detail";
 
 import { savePresentation } from "../savePresentation";
 

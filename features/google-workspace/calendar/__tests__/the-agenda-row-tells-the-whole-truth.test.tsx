@@ -131,7 +131,8 @@ jest.mock("@/features/connectors/ConnectorPromptHost", () => ({
 }));
 
 const opened: { type: string; id: string }[] = [];
-jest.mock("@/lib/detail/useOpenDetail", () => ({
+jest.mock("@ai-matrx/detail/react", () => ({
+  ...jest.requireActual("@ai-matrx/detail/react"),
   useOpenDetail: () => async (request: { type: string; id: string }) => {
     opened.push({ type: request.type, id: request.id });
     return "window";

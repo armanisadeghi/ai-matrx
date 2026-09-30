@@ -12,10 +12,10 @@
 
 import { useState } from "react";
 
-import { DetailHostProvider } from "@/lib/detail/host";
-import { DetailPagePresentation } from "@/lib/detail/presentations";
-import type { DetailInstanceData } from "@/lib/detail/types";
-import { decodeListQuery } from "@/lib/detail/presentation";
+import { DetailHostProvider } from "@ai-matrx/detail/react";
+import { DetailPagePresentation } from "@ai-matrx/detail/react";
+import type { DetailInstanceData } from "@ai-matrx/detail";
+import { decodeListQuery } from "@ai-matrx/detail";
 import { DETAIL_TYPE_BINDING } from "./detailTypeBinding";
 import { takePageSeed } from "./pageSeedHandoff";
 import { DetailPageShell } from "./shells/DetailPageShell";

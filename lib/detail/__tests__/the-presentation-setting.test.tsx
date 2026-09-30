@@ -18,9 +18,9 @@
 import * as React from "react";
 import { act } from "react";
 
-import { DetailPresentationPane } from "../core/DetailPresentationPane";
-import { useDetailCore } from "../core/useDetailCore";
-import { presentationForTypeFromMap } from "../types";
+import { DetailPresentationPane } from "@ai-matrx/detail/react";
+import { useDetailCore } from "@ai-matrx/detail/react";
+import { presentationForTypeFromMap } from "@ai-matrx/detail";
 import { clickByLabel, instance, makePorts, mount } from "./harness";
 
 describe("presentationForTypeFromMap", () => {

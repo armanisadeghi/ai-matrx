@@ -28,7 +28,7 @@ import { CalendarDays } from "lucide-react";
 
 import type { ItemTypeConfig } from "@/features/item-presentation/registry";
 import type { EnrichedItem } from "@/features/item-presentation/types";
-import type { DetailRecordType, DetailSection } from "@/lib/detail/types";
+import type { DetailRecordType, DetailSection } from "@ai-matrx/detail";
 
 import {
   CalendarEventAttendeesSection,
