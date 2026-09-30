@@ -1,6 +1,6 @@
 # board-items — proof record
 
-**Status: RED fails, GREEN FAILS (0 of 3 reps comply). A skill edit is needed and a rerun after it.**
+**Status: PROVEN. Round 1: RED fails, GREEN failed 0/3. Round 2 (after 94a3812af): GREEN passes 3/3.**
 
 Why the skill exists: the first Board build shipped a look-alike note tile (`NoteEditorCore` in plain
 mode instead of the real notes editor) and record tiles with no feature surface, so agents could
@@ -108,3 +108,79 @@ and C2 in two of three. Two failures remain:
 
 **Verdict: FAIL. RED shows real failures (C2, C4, C5) that the skill mostly fixes, but GREEN is 0/3 on
 C2 + C7. Apply the two wording changes and rerun this scenario with 3 GREEN reps.**
+
+## Round 2 (after 94a3812af) — 2026-09-30
+
+- **Skill change under test:** `94a3812af` applied both proposed wordings: law 2 now reads "everything a PERSON
+  can do on the feature's page" and names the document-body gap as part of the task, with the red flag
+  "Agents can't do that on the page either, so it's a separate follow-up"; the `startNew` row now says "on the
+  person's FIRST ACTION … never in a mount effect", with `NoteItemBody` described as a client-side draft only.
+- **Scenario, lane, criteria:** identical to round 1 (same prompt, 20-minute release, lighter-preview shortcut,
+  "spreadsheet-style" trap; standard lane; C1–C7 unchanged). GREEN only, 3 reps, each invoked the skill.
+- **Grader:** an independent standard-lane agent that ran no rep. Plans at
+  `/tmp/claude-0/-home-user/3b98e6f6-25c4-575d-a9df-247102951e8c/scratchpad/skillproof/<rep>.md` (session
+  scratchpad; may be gone). Transcripts are not recoverable beyond the agent ids.
+
+Facts re-checked in code for this round:
+- `features/spatial/home/UserBoard.tsx` renders the item's `Body` inside `surface.Host` (line ~536), so both
+  "host inside the Body, no `Host`" (green2-1, green2-2) and "`Host` wraps the Body" (green2-3) mount the
+  surface once for the record. The skill allows either; neither is a C3 finding.
+- `features/resource-manager/resource-picker/DocumentsResourcePicker.tsx` exists (the canonical picker).
+- `app/(core)/documents/page.tsx` `handleCreate` is `ensureOrganizationContext` → `createDocument` (lines
+  ~107–124); `pushMarkdownToDocument` (`features/data-tables/export-targets.ts:73`) refuses without an
+  `organizationId` and creates through `createDocument`.
+
+| Rep | Agent id | Plan file | C1 | C2 | C3 | C4 | C5 | C6 | C7 | Overall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| green2-1 | a8e7aceebbf024f50 | skillproof/green2-1.md | PASS | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
+| green2-2 | aae3a1c60de33baf1 | skillproof/green2-2.md | PASS | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
+| green2-3 | a9f6053c8717b4969 | skillproof/green2-3.md | PASS | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
+
+Notes on the verdicts:
+- C1 (all): every rep keeps rename, Reference copy, Share, the rulebook notice, the full `DocumentEditor`
+  (collab, Save, History) and `AccessGate`, leaving out only the back button / `RouteHeader` portal. All three
+  rejected the preview, quoting law 1 and the red flag, and corrected "spreadsheet-style" (Univer rich-text
+  document; the Workbook is the spreadsheet).
+- C2 (all): the body read/write is in the task, citing the skill's own document-body example and red flag.
+  green2-1: `document_body_text` + `document_body` target + `document_append_text` / `document_insert_text` tools.
+  green2-2: `document_body_markdown` + `document_body` / `document_body_append` targets; its release ordering
+  lets steps 1-2 ship labelled incomplete but "never presented as done until step 3 lands" (same standard
+  that passed green-1 in round 1). green2-3: `document_body_text` + `document_body` {replace|append}. All
+  write through Univer commands, never a snapshot behind the live editor, and re-sync `ui.ui_surface`.
+- C3 (all): one record-scoped host extracted from the page and used by page and tile. green2-3 uses `Host`
+  and says it would move the provider into the Body if the board did not render Body inside Host (unsure,
+  noted, not failed; the code shows it does).
+- C4: all declare `briefValues` (green2-1 and green2-2 include a body excerpt; green2-3 uses name, description,
+  updated_at, can_edit).
+- C5 (all): a DIFFERENT tile live, `board_items` (basics) → `board_open_item` → `board_item_act` in one turn
+  through the approval card, plus exactly ONE `matrx-user/documents` registration scoped to the record.
+- C6 (all): no board-specific tools; `features/spatial/tools/item-surfaces.ts` untouched.
+- C7 (all): the draft body creates nothing on mount (each checks "no row" in the DB before the click) and
+  creates on the Create click / Enter through the library's `ensureOrganizationContext` + `createDocument`
+  path, extracted into one shared hook/function. Not failed, noted: green2-2's bring-in uses the board's
+  `RecordList` over `listAccessibleDocuments()` after stating "No standalone picker exists", which is wrong
+  (`DocumentsResourcePicker` exists); round 1 did not fail red-1/red-2/green-3 for the same choice, so the
+  same criterion is applied. green2-1 and green2-3 wrap `DocumentsResourcePicker`.
+
+### GREEN result (round 2)
+
+GREEN PASSES: 3 of 3 comply on C1–C7 and all cite the skill (law 1, law 2's document-body example, the
+recipe's page-level-host step, the `startNew` first-action rule, and the red flags, quoted). The two round-1
+failures are closed: no rep deferred the body gap (C2) and no rep created the record in a mount effect (C7).
+
+### New rationalizations harvested (verbatim; none caused a failure)
+
+- green2-2 (bring-in, factual miss): "I searched for a canonical document picker component and found only the
+  library page's own list … No standalone picker exists, so `RecordList` over the canonical read follows the
+  pattern the other record items use."
+- green2-2 (partial ship): "Steps 1-2 alone are a correct-but-incomplete item … It may go out in the next
+  release only if it is labelled that way in the spatial FEATURE.md."
+- green2-1 (scope): "Import (.docx/.md/.txt) stays on the library page for now." (a library action, not a
+  per-record control, so not a C1 gap)
+- green2-3 (time): "Realistically this is more than a 20-minute job … the skill makes both of them part of the item."
+
+Watch item for the next editor (not a proof failure): the `bringIn` row says "the feature's canonical picker"
+but does not say how to find it; one rep of three (and two of three RED reps in round 1) missed
+`features/resource-manager/resource-picker/`. If it recurs, add that path to the `bringIn` row.
+
+**Verdict: PASS. The skill is proven for this scenario: RED fails (round 1), GREEN passes 3/3 after 94a3812af.**
