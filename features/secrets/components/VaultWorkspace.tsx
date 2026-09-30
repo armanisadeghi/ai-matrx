@@ -39,6 +39,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useAppSelector } from "@/lib/redux/hooks";
 // object-org-exempt: only the Organization list tab and item-state keying read it; a routed credential opens by useCredentialHome
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -189,8 +190,13 @@ export function VaultWorkspace({
     scope.kind === "organization" && scope.organizationId
       ? availableOrganizations.find((org) => org.id === scope.organizationId)
       : undefined;
+  // Each credential row names its organization; two organizations that share a name are told
+  // apart by their address (UI-FIX-19), so the label is never ambiguous in the all-organizations view.
   const organizationNameById = new Map(
-    availableOrganizations.map((org) => [org.id, org.name] as const),
+    availableOrganizations.map((org) => {
+      const distinguisher = orgNameDistinguisher(org, availableOrganizations);
+      return [org.id, distinguisher ? `${org.name} · ${distinguisher}` : org.name] as const;
+    }),
   );
   /** Organizations where the person is an owner/admin — each credential is judged by its own. */
   const orgAdminIds = availableOrganizations
