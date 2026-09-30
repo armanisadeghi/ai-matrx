@@ -20,7 +20,7 @@
  * paste text · import a transcript. A row opens the document viewer.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -82,7 +82,10 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
-import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
+import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
+import type { EntityScopeCounts } from "@/lib/entity-list/types";
+import { DEFAULT_LIST_SCOPE, makeScope, type ListScope } from "@/lib/list-scope/types";
+import { fetchMyTeamReach, teamReachOrFilter } from "@/lib/list-scope/teamReach";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { writeOne } from "@/utils/supabase/writeOne";
@@ -112,6 +115,7 @@ import {
   type SaveSourceItem,
 } from "@/features/sources/SaveSourcePanel";
 import {
+  readSourceLaneCounts,
   useSources,
   type SourcesScope,
 } from "@/features/sources/hooks/useSources";
@@ -129,6 +133,7 @@ import {
   sourceKindGroup,
   sourceListedAt,
   sourceStage,
+  type SourcesLane,
   stageCellState,
   STAGE_CELL_LABEL,
   transcriptLengthWords,
@@ -146,7 +151,14 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 /** Canonical `ui_surface.name` this page emits (unchanged from the old library). */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
 
-type ScopeChoice = "mine" | "org";
+/**
+ * The lanes this page answers, in the shell's vocabulary and order. A Source is read straight
+ * from the table, so Shared / Public / System (which need their own readers) are not offered; a
+ * lane that is absent never shows a number it could not measure.
+ */
+const SOURCES_LANES: readonly SourcesLane[] = ["all", "mine", "team", "orgs"];
+const isSourcesLane = (v: string | null | undefined): v is SourcesLane =>
+  !!v && (SOURCES_LANES as readonly string[]).includes(v);
 type AddMode = null | "url" | "text";
 
 interface SaveTarget {
@@ -353,7 +365,7 @@ export function SourcesPage() {
   const userId = useAppSelector(selectUserId);
   // The ACTIVE org is only where new Sources are saved — it never narrows this list.
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const [scopeChoice, setScopeChoice] = useState<ScopeChoice>("mine");
+  // The lane: `?scope=` names one of SOURCES_LANES; absent opens on All (the platform default).
   // `?show=all` / `?show=saved` opens the page on that view (the Knowledge
   // home's count cards link here with it).
   const searchParams = useSearchParams();
@@ -410,10 +422,58 @@ export function SourcesPage() {
       `${window.location.pathname}${qs ? `?${qs}` : ""}`,
     );
   };
-  const scope: SourcesScope = {
-    kind: scopeChoice === "mine" ? "mine" : "orgs",
-    organizationId: orgFilter,
+  const [lane, setLane] = useState<SourcesLane>(() => {
+    const word = searchParams?.get("scope");
+    return isSourcesLane(word) ? word : (DEFAULT_LIST_SCOPE.kind as SourcesLane);
+  });
+  const changeLane = (next: ListScope) => {
+    if (!isSourcesLane(next.kind)) return;
+    setSelectedIds([]);
+    setLane(next.kind);
+    const params = new URLSearchParams(window.location.search);
+    if (next.kind === DEFAULT_LIST_SCOPE.kind) params.delete("scope");
+    else params.set("scope", next.kind);
+    const qs = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
   };
+  // MY TEAM: the people I share a live team with, read once (`my_teammates`).
+  const [teamReach, setTeamReach] = useState<
+    | { phase: "loading" }
+    | { phase: "ready"; filter: string | null }
+    | { phase: "failed"; message: string }
+  >({ phase: "loading" });
+  const [teamReachKey, setTeamReachKey] = useState(0);
+  useEffect(() => {
+    if (!userId) return undefined;
+    let cancelled = false;
+    setTeamReach({ phase: "loading" });
+    fetchMyTeamReach(null).then(
+      (reach) => {
+        if (!cancelled)
+          setTeamReach({ phase: "ready", filter: teamReachOrFilter(reach, userId) });
+      },
+      (e: unknown) => {
+        if (!cancelled)
+          setTeamReach({
+            phase: "failed",
+            message: e instanceof Error ? e.message : "Your teams could not be read.",
+          });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, teamReachKey]);
+  const teamFilter = teamReach.phase === "ready" ? teamReach.filter : null;
+  // The team lane cannot be asked until the reach is known; every other lane never waits for it.
+  const scope: SourcesScope | null =
+    lane === "team" && teamReach.phase !== "ready"
+      ? null
+      : { kind: lane, organizationId: orgFilter, teamFilter };
   const {
     rows,
     facts,
@@ -437,6 +497,41 @@ export function SourcesPage() {
     saved: savedFilter === "saved",
     search: serverSearch,
   });
+  // The lane tabs' numbers: one head count per lane under the org filter and the view.
+  const [laneCounts, setLaneCounts] = useState<{
+    byKind: EntityScopeCounts["byKind"];
+    settled: boolean;
+  }>({ byKind: {}, settled: false });
+  const laneCountsKey = `${orgFilter ?? "all"}|${savedFilter}|${userId}|${refreshKey}|${teamReach.phase}|${teamFilter ?? ""}`;
+  useEffect(() => {
+    if (!userId || teamReach.phase === "loading") return undefined;
+    let cancelled = false;
+    setLaneCounts((c) => ({ ...c, settled: false }));
+    const lanes = teamReach.phase === "failed" ? SOURCES_LANES.filter((l) => l !== "team") : SOURCES_LANES;
+    void readSourceLaneCounts(
+      lanes,
+      { organizationId: orgFilter, saved: savedFilter === "saved", teamFilter },
+      userId,
+    ).then((counts) => {
+      if (cancelled) return;
+      const byKind: EntityScopeCounts["byKind"] = {};
+      let failed = false;
+      for (const [kind, n] of Object.entries(counts)) {
+        if (typeof n === "number") byKind[kind as SourcesLane] = n;
+        else failed = true;
+      }
+      setLaneCounts({ byKind, settled: !failed && teamReach.phase === "ready" });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // laneCountsKey carries every input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [laneCountsKey]);
+  const laneTabCounts = useMemo<EntityScopeCounts>(
+    () => ({ byKind: laneCounts.byKind, narrow: {} }),
+    [laneCounts.byKind],
+  );
   const readOf = (id: string) => ({
     loading: factsLoading,
     failed: factsFailed.has(id),
@@ -897,8 +992,6 @@ export function SourcesPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  const scopeLabel = "My Orgs";
-
   return (
     <SurfaceRuntimeProvider
       surfaceName={RAG_LIBRARY_SURFACE}
@@ -998,15 +1091,31 @@ export function SourcesPage() {
             onRetry={refresh}
           />
         ) : null}
-        <div className="flex justify-end">
+        {/* THE SHELL'S LANE ROW: All | Mine | My team | My Orgs, and the organization filter at
+            its right end. A failed count shows no number (never 0). */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <EntityScopeTabs
+            scope={makeScope(lane)}
+            scopes={[...SOURCES_LANES]}
+            exact
+            counts={laneTabCounts}
+            countsLoading={!laneCounts.settled}
+            onChange={changeLane}
+          />
           <EntityOrgFilter
             orgId={orgFilter}
             onChange={changeOrgFilter}
-            counts={EMPTY_SCOPE_COUNTS}
+            counts={laneTabCounts}
           />
         </div>
 
-        {error && rows.length === 0 ? (
+        {lane === "team" && teamReach.phase === "failed" ? (
+          <ReadFailure
+            error={teamReach.message}
+            what="your team"
+            onRetry={() => setTeamReachKey((n) => n + 1)}
+          />
+        ) : error && rows.length === 0 ? (
           // The list read failed: say so — the table's "No Sources yet." would be a lie.
           <ReadFailure error={error} what="your Sources" onRetry={refresh} />
         ) : (
@@ -1046,21 +1155,6 @@ export function SourcesPage() {
                   { value: "all", label: `All captures (${countWords(allTotal)})` },
                 ],
                 onChange: (v) => setSavedFilter(v === "all" ? "all" : "saved"),
-              },
-              {
-                type: "button-group",
-                id: "scope",
-                label: "Captured by",
-                value: scopeChoice,
-                defaultValue: "mine",
-                options: [
-                  { value: "mine", label: "Me" },
-                  { value: "org", label: scopeLabel },
-                ],
-                onChange: (v) => {
-                  setSelectedIds([]);
-                  setScopeChoice(v === "org" ? "org" : "mine");
-                },
               },
             ],
             refresh: { onRefresh: refresh },

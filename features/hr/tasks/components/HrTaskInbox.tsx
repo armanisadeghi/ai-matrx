@@ -44,12 +44,12 @@ import {
 } from "@/features/hr/tasks/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { HrLaneTabs } from "@/features/hr/shared/HrLaneTabs";
 
-const SCOPES: { key: HrInboxScope; label: string; hint: string }[] = [
-    { key: "mine", label: "Mine", hint: "Waiting on you" },
-    { key: "team", label: "My team", hint: "Waiting on someone who reports to you" },
-    { key: "queue", label: "HR queue", hint: "Everything open in this organization" },
-];
+// The lanes are the shell's words (Mine, My team). The HR queue is a work queue, not an access
+// lane, so it is a FILTER beside them (`QUEUE_FILTER`): on, it overrides the lane.
+const TASK_LANES = ["mine", "team"] as const;
+const QUEUE_FILTER = { key: "queue" as const, label: "HR queue", hint: "Everything open in this organization" };
 
 function Section({
     icon: Icon,
@@ -240,24 +240,25 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
             */}
             <HrEmployerSubstitutionNotice className="mx-4 mt-3 shrink-0" />
             <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
-                {SCOPES.map((option) => {
-                    // §5.9: scopes are shown only where the persona has them.
-                    // The HR queue is ABSENT — not disabled — without standing.
-                    if (option.key === "queue" && inbox && !inbox.can_view_queue) return null;
-                    const active = option.key === scope;
-                    return (
-                        <Button
-                            key={option.key}
-                            size="sm"
-                            variant={active ? "default" : "outline"}
-                            title={option.hint}
-                            disabled={pending}
-                            onClick={() => setScope(option.key)}
-                        >
-                            {option.label}
-                        </Button>
-                    );
-                })}
+                <HrLaneTabs
+                    lanes={TASK_LANES}
+                    active={scope === "queue" ? null : scope}
+                    onChange={(lane) => setScope(lane === "team" ? "team" : "mine")}
+                />
+                {/* §5.9: the HR queue is shown only where the persona has standing — ABSENT, not
+                    disabled, without it. */}
+                {inbox && !inbox.can_view_queue ? null : (
+                    <Button
+                        size="sm"
+                        variant={scope === "queue" ? "default" : "outline"}
+                        aria-pressed={scope === "queue"}
+                        title={QUEUE_FILTER.hint}
+                        disabled={pending}
+                        onClick={() => setScope(scope === "queue" ? "mine" : "queue")}
+                    >
+                        {QUEUE_FILTER.label}
+                    </Button>
+                )}
                 {flowKey ? (
                     <Button size="sm" variant="ghost" asChild>
                         <Link href={hrTasksHref(orgRef, { scope })} onClick={() => setSelectedIds([])}>

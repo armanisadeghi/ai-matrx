@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { cn } from "@/lib/utils";
+import { usagePersonHref } from "@/features/admin/usage-drill/usageLinks";
 
 export interface AdminUserRefProps {
   userId: string;
@@ -126,7 +127,7 @@ function doorsFor(userId: string): UserDoor[] {
       Icon: SlidersHorizontal,
     },
     {
-      href: `/administration/users/usage?user=${id}`,
+      href: usagePersonHref(id),
       label: "Usage & cost",
       Icon: Gauge,
     },

@@ -39,9 +39,9 @@ import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount"
 
 export function RagHomePage() {
   const userId = useAppSelector(selectUserId);
-  // The Sources page opens on "Captured by Me"; the home counts that same view.
+  // The Sources page opens on the All lane; the home counts that same view.
   const { savedTotal, allTotal, loading, failed } = useSourcesCounts(
-    { kind: "mine" },
+    { kind: "all" },
     userId,
   );
 

@@ -36,6 +36,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { HrLaneTabs } from "@/features/hr/shared/HrLaneTabs";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Pencil, RefreshCw, TriangleAlert } from "lucide-react";
@@ -416,18 +417,13 @@ export function LeaveBalancesSurface() {
                 THE VIEW LAW, rendered in the server's own words. The buttons ASK for a scope;
                 the label states what the server actually returned.
               */}
-              {(["mine", "team", "organization"] as const).map((option) => (
-                <Button
-                  key={option}
-                  type="button"
-                  size="sm"
-                  variant={option === scope ? "secondary" : "ghost"}
-                  className="h-8"
-                  onClick={() => navigate({ scope: option })}
-                >
-                  {option === "mine" ? "Mine" : option === "team" ? "My team" : "Organization"}
-                </Button>
-              ))}
+              <HrLaneTabs
+                lanes={["mine", "team", "orgs"]}
+                active={scope === "organization" ? "orgs" : scope}
+                onChange={(lane) =>
+                  navigate({ scope: lane === "orgs" ? "organization" : lane === "team" ? "team" : "mine" })
+                }
+              />
               {list?.scopeLabel ? (
                 <span className="text-xs text-muted-foreground">
                   Showing: {list.scopeLabel}

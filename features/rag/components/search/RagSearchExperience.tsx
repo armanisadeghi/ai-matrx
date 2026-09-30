@@ -2663,7 +2663,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                     </Badge>
                   )}
                 </div>
-                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                   <Stat
                     label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
                     value={inv.total_visible_chunks.toLocaleString()}
@@ -2675,10 +2675,6 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                   <Stat
                     label="Is admin"
                     value={inv.scope.is_admin ? "yes" : "no"}
-                  />
-                  <Stat
-                    label="Organization"
-                    value={inv.scope.organization_id ?? "—"}
                   />
                 </div>
               </div>

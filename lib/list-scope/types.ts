@@ -162,10 +162,31 @@ export function isTeamScope(
   return scope.kind === "team";
 }
 
-/** What a surface declares about the standard lanes (`EntityListConfig.teamLane`). */
+/** The lanes a type can structurally be unable to hold (All and Mine always exist). */
+export type DeclarableLane = "team" | "orgs" | "shared" | "industry" | "public" | "system";
+
+/**
+ * THE ONE DECLARED STATEMENT of which lanes a surface's type cannot hold
+ * (`EntityListConfig.lanes`, `EntityScopeTabs lanes`): `{ public: false }` = this type has no
+ * publish path, so Public would only ever say 0. A lane that is possible but empty for this
+ * person is NOT declared: it stays and shows an honest 0. Omitted = every lane the surface's
+ * `scopes` names is offered (and the shell adds My team beside My Orgs).
+ *
+ * The facts come from the type, never from who is looking: team needs a team concept on its
+ * records, shared needs a `platform.shareable_resource_registry` row, public needs a publish path
+ * (`is_link_shareable`, or a public-card path as agents and workflows have), system needs a
+ * platform corpus of that type.
+ */
+export type LaneSupport = Partial<Record<DeclarableLane, false>>;
+
+/** What a surface declares about the standard lanes (`EntityListConfig.lanes`). */
 export interface StandardLanesOptions {
-  /** `false` = this surface's records have no team concept, so My team never appears. */
-  teamLane?: boolean;
+  lanes?: LaneSupport;
+}
+
+/** The lanes a surface declared it cannot hold. */
+export function declaredAbsentLanes(lanes: LaneSupport | undefined): ListScopeKind[] {
+  return (Object.keys(lanes ?? {}) as DeclarableLane[]).filter((k) => lanes?.[k] === false);
 }
 
 /**
@@ -183,11 +204,13 @@ export function withTeamScope(
   scopes: readonly ListScopeKind[],
   lanes: StandardLanesOptions = {},
 ): ListScopeKind[] {
-  // A surface whose records have no team concept DECLARES it (`teamLane: false`): a lane that
+  // A surface DECLARES the lanes its type cannot hold (`lanes: { public: false }`): a lane that
   // can never hold anything is absent, never an empty tab (a screen never lies).
-  if (lanes.teamLane === false) return scopes.filter((k) => k !== "team");
-  if (!scopes.includes("orgs") || scopes.includes("team")) return [...scopes];
-  const out = [...scopes];
+  const absent = declaredAbsentLanes(lanes.lanes);
+  const declared = scopes.filter((k) => !absent.includes(k));
+  if (absent.includes("team")) return declared;
+  if (!declared.includes("orgs") || declared.includes("team")) return [...declared];
+  const out = [...declared];
   const at = out.indexOf("mine");
   out.splice(at >= 0 ? at + 1 : out.indexOf("orgs"), 0, "team");
   return out;

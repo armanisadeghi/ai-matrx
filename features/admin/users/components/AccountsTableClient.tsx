@@ -66,6 +66,7 @@ import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { readOf } from "@/components/read-state/ReadGate";
+import { usagePersonHref } from "@/features/admin/usage-drill/usageLinks";
 
 const ROSTER_PAGE_SIZE = 50;
 
@@ -767,7 +768,7 @@ export function AccountsTableClient() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    pushAppHref(router, `/administration/users/usage?user=${row.id}`)
+                    pushAppHref(router, usagePersonHref(row.id))
                   }
                 >
                   <Gauge className="mr-2 h-4 w-4" /> Usage & cost

@@ -4,7 +4,8 @@
  * the page printed codes and ids ("agent_service:5d0b07f8-…", "child_agent", "None" beside "unknown").
  */
 import { spendHandoff, spendHref, spendLead } from "../UsageExplorer";
-import { USAGE_WORDS, featureWords, plainWords } from "../usageWords";
+import { drillDimensionLabelFor, plainWords } from "@/components/official/drill-explorer/dimensionWords";
+import { spendAddressToUsage, usagePersonHref } from "../usageLinks";
 
 jest.mock("@/components/official/drill-explorer/DrillExplorer", () => ({ DrillExplorer: () => null }));
 jest.mock("../useUsageDrill", () => ({ USAGE_SOURCE: {}, usageNameResolvers: () => ({}), useUsageFreshness: () => ({}) }));
@@ -39,31 +40,58 @@ describe("the Spend Explorer hand-off carries the whole drill", () => {
   });
 });
 
+// Since lane DRILL-PRESETS-RETIRE the words come from the definition (describe carries `choices` and
+// `empty_label`), read by the one explorer; these dimensions are ai_usage's as declared.
+const dim = (d: Record<string, unknown>) => drillDimensionLabelFor(d as never, { names: undefined })!;
+const feature = dim({ key: "feature", label: "Feature", from: "feature", kind: "choice", empty_label: "No feature recorded" });
+const model = dim({ key: "model", label: "Model", from: "model", kind: "text", choices: [{ value: "unknown", label: "Model not recorded" }], empty_label: "No model (tools and services)" });
+const provider = dim({ key: "provider", label: "Provider", from: "provider", kind: "choice", choices: [{ value: "unknown", label: "Provider not recorded" }], empty_label: "No model (tools and services)" });
+
 describe("every code reads as words, never a key or an id", () => {
   const UUIDISH = /[0-9a-f]{8}-[0-9a-f]{4}/i;
-  it("feature codes", () => {
-    expect(featureWords("agent_service:5d0b07f8-54b5-499b-86a8-557c46ea8a59")).toBe("Agent service");
-    expect(featureWords("mandate:seo.topic_assigner")).toBe("Mandate · Seo topic assigner");
-    expect(featureWords("sch_run")).toBe("Sch run");
+  it("feature codes: separators become words, an id inside a code drops out", () => {
+    expect(feature("agent_service:5d0b07f8-54b5-499b-86a8-557c46ea8a59")).toBe("Agent service");
+    expect(feature("mandate:seo.topic_assigner")).toBe("Mandate · seo topic assigner");
+    expect(feature("sch_run")).toBe("Sch run");
+    expect(feature("")).toBe("No feature recorded");
   });
-  it("origin, source, app, trigger", () => {
-    expect(USAGE_WORDS.origin!("child_agent")).toBe("Child agent");
-    expect(USAGE_WORDS.origin!("client_auto")).toBe("Client auto");
-    expect(USAGE_WORDS.source!("sch_run")).toBe("Scheduled run");
-    expect(USAGE_WORDS.source!("internal_agent_run")).toBe("Agent started by another agent");
-    expect(USAGE_WORDS.source!("pex_job")).toBe("Processing job");
-    expect(USAGE_WORDS.app!("mcp-agent-service")).toBe("MCP agent service");
-    expect(USAGE_WORDS.trigger!("automated")).toBe("Automated");
+  it("a model reads as its own name; its empty and unknown values are sentences", () => {
+    expect(model("claude-sonnet-4-5")).toBe("claude-sonnet-4-5");
+    expect(model("unknown")).toBe("Model not recorded");
+    expect(model("")).toBe("No model (tools and services)");
+    expect(model("3f1c2a9e-1111-4222-8333-944455556666")).not.toMatch(UUIDISH);
   });
   it("no provider and an unrecorded provider are two different plain sentences", () => {
-    expect(USAGE_WORDS.provider!("")).toBe("No model (tools and services)");
-    expect(USAGE_WORDS.provider!("unknown")).toBe("Provider not recorded");
-    expect(USAGE_WORDS.model!("3f1c2a9e-1111-4222-8333-944455556666")).toBe("A model no longer in the catalog");
+    expect(provider("")).toBe("No model (tools and services)");
+    expect(provider("unknown")).toBe("Provider not recorded");
   });
   it("the humanizer never prints an id, whatever the code", () => {
-    for (const code of ["agent_service:5d0b07f8-54b5-499b-86a8-557c46ea8a59", "cld_file", "runtime.work_item", "twilio:sms"]) {
+    for (const code of ["agent_service:5d0b07f8-54b5-499b-86a8-557c46ea8a59", "cld_file", "runtime.work_item", "twilio:sms", "5d0b07f8-54b5-499b-86a8-557c46ea8a59"]) {
       expect(plainWords(code)).not.toMatch(UUIDISH);
-      expect(featureWords(code)).not.toMatch(UUIDISH);
     }
+  });
+});
+
+describe("links into AI usage", () => {
+  it("a person's usage is the Usage by person view on that person", () => {
+    expect(usagePersonHref(P)).toBe(`/administration/usage?view=builtin%3Ausage_by_person&f.person=${P}`);
+  });
+  it("the Spend Explorer's address maps: user is person, the first filter picks the cut, custom days are inclusive", () => {
+    const { href, dropped } = spendAddressToUsage(new URLSearchParams(`win=custom&from=2026-09-01&to=2026-09-10&f.agent=A1&f.user=${P}&f.session=S`));
+    const u = new URL(href, "http://x");
+    expect(u.pathname).toBe("/administration/usage");
+    expect(u.searchParams.get("view")).toBe("builtin:spend_by_agent");
+    expect(u.searchParams.get("f.person")).toBe(P);
+    expect(u.searchParams.get("f.agent")).toBe("A1");
+    expect(u.searchParams.get("w")).toBe("2026-09-01..2026-09-11");
+    expect(dropped).toEqual(["sign-in session"]);
+  });
+  it("presets and a day map one for one; the empty group stays the empty group", () => {
+    const a = new URL(spendAddressToUsage(new URLSearchParams("win=last7d&f.model=(none)")).href, "http://x");
+    expect(a.searchParams.get("w")).toBe("7d");
+    expect(a.searchParams.get("f.model")).toBe("(none)");
+    const b = new URL(spendAddressToUsage(new URLSearchParams("win=last30d&f.day=2026-09-12")).href, "http://x");
+    expect(b.searchParams.get("w")).toBe("2026-09-12..2026-09-13");
+    expect(b.searchParams.get("view")).toBe("builtin:spend_by_person");
   });
 });

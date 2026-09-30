@@ -11,8 +11,9 @@
 //                     resolver (a person's name comes from the platform's names door, because the
 //                     person registry has no title a member may read)
 //   a boolean         Yes / No
+//   a text value      as written (a name, not a code: "claude-sonnet-4-5")
 //   anything else     the host's words (a definition that declares no choices yet), else the value
-//                     in plain words ("save_hook" → "Save hook")
+//                     in plain words ("save_hook" → "Save hook"; an id inside a code dropped)
 //
 // So a mount passes no copy of its definition's labels: the definition file is the one place a code
 // gets its words.
@@ -23,10 +24,19 @@ import type { DrillNameResolver } from "./types";
 
 type Dimension = DrillDefinition["dimensions"][number] & { empty_label?: string };
 
-/** A code in plain words when nothing declares its label: "save_hook" → "Save hook". */
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+/**
+ * A code in plain words when nothing declares its label: "save_hook" → "Save hook",
+ * "mandate:seo.topic_assigner" → "Mandate · Seo topic assigner". An id inside a code never reaches a
+ * person ("agent_service:<uuid>" → "Agent service"); a code that is nothing but an id reads "Unnamed".
+ */
 export function plainWords(value: string): string {
-  const spaced = value.replace(/[_-]+/g, " ").trim();
-  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : value;
+  const part = (p: string) => p.replace(UUID, " ").replace(/[_\-./]+/g, " ").replace(/\s+/g, " ").trim();
+  const parts = value.split(":").map(part).filter(Boolean);
+  if (parts.length === 0) return value.trim() ? "Unnamed" : value;
+  const joined = parts.join(" · ");
+  return joined.charAt(0).toUpperCase() + joined.slice(1);
 }
 
 /**
@@ -57,6 +67,8 @@ export function drillDimensionLabelFor(
     const said = names?.[value] ?? choices.get(value);
     if (said) return said;
     if (hostWords) return hostWords(value);
+    // a text value is a name (a model's own name), never a code: it reads as written
+    if (dim.kind === "text") return new RegExp(`^${UUID.source}$`, "i").test(value) ? plainWords(value) : value;
     if (dim.kind === "relation") {
       const noun = dim.label.toLowerCase();
       return resolver ? (resolver.missingLabel ?? "Reading the name…") : `${/^[aeiou]/.test(noun) ? "An" : "A"} ${noun} whose name you cannot read`;

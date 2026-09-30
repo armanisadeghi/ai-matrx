@@ -14,7 +14,7 @@
 // that's what the render props are for.
 
 import type { ReactNode } from "react";
-import type { ListScopeKind } from "@/lib/list-scope/types";
+import type { LaneSupport, ListScopeKind } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
@@ -208,11 +208,13 @@ export interface EntityListConfig<TRow> {
    */
   scopes: ListScopeKind[];
   /**
-   * DECLARED FACT: `false` when this surface's records have no team concept (a mandate is homed
-   * to an organization, never a team), so the shell's automatic My team lane is absent rather
-   * than a tab that can only ever say 0. Omitted = the shell adds My team beside My Orgs.
+   * DECLARED FACT, per type: the lanes this surface's records can NEVER hold (`{ team: false }` for
+   * a mandate, homed to an organization and never a team; `{ public: false }` for a type with no
+   * publish path). Those lanes are absent rather than a tab that can only ever say 0; a lane that
+   * is possible but empty for this person is not declared and shows an honest 0. Omitted = the
+   * shell adds My team beside My Orgs and offers every lane in `scopes`. See `LaneSupport`.
    */
-  teamLane?: false;
+  lanes?: LaneSupport;
   service: EntityListService<TRow>;
   /**
    * A string identifying what THIS service instance was built from. Changes

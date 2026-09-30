@@ -1,5 +1,6 @@
 -- chair-step: inverse of provisionlock_workspace_war_rooms_reads_through_its_bounded_lane.sql (written by lane NIGHT-WINDOW-0930 for its clone rehearsal) — puts back every policy on workspace.war_rooms exactly as the clone (production's copy of 2026-09-29) held them, with the unbounded read lane.
 -- lane: NIGHT-WINDOW-0930
+-- window-class: drops and recreates the nine policies on workspace.war_rooms; each takes ACCESS EXCLUSIVE plus the 23-relation supautils set, held to COMMIT; apply only with Arman watching
 --
 -- inverse of provisionlock_workspace_war_rooms_reads_through_its_bounded_lane.sql
 

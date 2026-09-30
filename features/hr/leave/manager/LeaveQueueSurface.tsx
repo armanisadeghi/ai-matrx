@@ -91,6 +91,8 @@ import { useLeaveQueue, type LeaveQueueRow } from "./useLeaveQueue";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { HrLaneTabs } from "@/features/hr/shared/HrLaneTabs";
+import type { ListScopeKind } from "@/lib/list-scope/types";
 
 /** THE VIEW LAW: every list declares its scope in words. */
 const SCOPES: { key: HrInboxScope; label: string; sentence: string }[] = [
@@ -102,10 +104,14 @@ const SCOPES: { key: HrInboxScope; label: string; sentence: string }[] = [
   },
   {
     key: "queue",
-    label: "Organization",
+    label: "My Orgs",
     sentence: "Every open time-off decision in this organization.",
   },
 ];
+
+/** This door's scope keys, in the shell's lane words (the org-wide queue is My Orgs). */
+const QUEUE_LANE: Record<HrInboxScope, ListScopeKind> = { mine: "mine", team: "team", queue: "orgs" };
+const LANE_QUEUE_KEY: Partial<Record<ListScopeKind, HrInboxScope>> = { mine: "mine", team: "team", orgs: "queue" };
 
 function isScope(value: string): value is HrInboxScope {
   return value === "mine" || value === "team" || value === "queue";
@@ -468,18 +474,11 @@ export function LeaveQueueSurface() {
           {/* THE VIEW LAW — the scope, in words, above the list it describes. */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-1">
-              {visibleScopes.map((option) => (
-                <Button
-                  key={option.key}
-                  type="button"
-                  size="sm"
-                  variant={option.key === scope ? "secondary" : "ghost"}
-                  className="h-8"
-                  onClick={() => setScope(option.key)}
-                >
-                  {option.label}
-                </Button>
-              ))}
+              <HrLaneTabs
+                lanes={visibleScopes.map((option) => QUEUE_LANE[option.key])}
+                active={QUEUE_LANE[scope]}
+                onChange={(lane) => setScope(LANE_QUEUE_KEY[lane] ?? "mine")}
+              />
               <span className="ml-1 text-xs text-muted-foreground">
                 {scopeMeta.sentence}
               </span>

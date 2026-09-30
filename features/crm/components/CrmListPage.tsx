@@ -86,6 +86,7 @@ import type {
   WrittenByFilter,
 } from "../types";
 import {
+  CRM_LANES,
   CRM_LIST_SCOPES,
   DATE_BUCKETS,
   DEFAULT_RECORD_CLASS_FILTER,
@@ -1072,6 +1073,7 @@ export function CrmListPage({
               <EntityScopeTabs
                 scope={list.query.scope}
                 scopes={CRM_LIST_SCOPES}
+                lanes={CRM_LANES}
                 counts={list.counts}
                 countsLoading={list.countsLoading}
                 onChange={(scope) => list.setQuery({ scope })}

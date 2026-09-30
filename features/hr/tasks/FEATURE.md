@@ -159,9 +159,11 @@ and puts it in the notice both parties receive.
 - **Every row links to its exact actionable object** (`/hr/tasks/{instance}?step={step}`), which
   opens the decision panel **with the approve control focused**. A row that can only offer a list
   is a defect (AR2).
-- **Scopes** (Mine / My team / HR queue) are resolved **server-side**. A scope the persona does
-  not hold is **absent from the DOM**, never disabled — and the HR-queue scope **refuses** rather
-  than returning an empty list.
+- **Scopes** (lanes Mine / My team, in the shell's words; "HR queue" is a work-queue FILTER beside
+  them, never a lane) are resolved **server-side**. A scope the persona does not hold is **absent
+  from the DOM**, never disabled — and the HR-queue scope **refuses** rather than returning an
+  empty list. HR lists never coin a lane name: everyone in the employer is All, its own people My
+  Orgs (`features/hr/shared/HrLaneTabs.tsx`).
 - **Bulk**: the checkbox is absent on any row whose definition sets `allow_bulk_decide = false`
   (v1: `termination`, `pay_change`, `background_check_adverse_action`). The cap is the
   `hr.workflow.inbox_bulk_max` knob. Bulk **reject** takes one reason for the whole batch. The

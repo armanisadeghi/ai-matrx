@@ -123,6 +123,9 @@ export const crossSiteRankListConfig: EntityListConfig<CrossSiteRankRow> = {
   entityLabel: { singular: "tracked keyword", plural: "tracked keywords" },
   sourceFeature: "marketing",
   scopes: RANK_LIST_SCOPES,
+  // A tracked keyword has no publish path (platform.shareable_resource_registry.is_link_shareable
+  // is false for seo_rank_target), so Public could only ever say 0.
+  lanes: { public: false },
   service: {
     fetchPage: fetchCrossSiteRankPage,
     fetchCounts: fetchCrossSiteRankCounts,

@@ -70,7 +70,7 @@ import { useDrillKnobs } from "./useDrillKnobs";
 import { useDrillChart } from "./useDrillChart";
 import { drillReconcileSentence, useDrillReconcile } from "./useDrillReconcile";
 import { DrillExplorerHeadline, costColumnLabel } from "./DrillExplorerHeadline";
-import { carriedWords, splitExplorerQuestion, type DrillCarried, type ExplorerQuestion } from "./questionParts";
+import { carriedWords, splitExplorerQuestion, viewQuestionFromAddress, type DrillCarried, type ExplorerQuestion } from "./questionParts";
 import { drillUnitAdds, drillUnitFormatter } from "./measureFormat";
 import { drillDimensionLabelFor } from "./dimensionWords";
 import { autoTimeRef, drillExplorerAutoGrain, withAutoGrain } from "./grain";
@@ -102,14 +102,21 @@ function useUnit(): { unit: Unit; canToggle: boolean; setUnit: (u: Unit) => void
   };
 }
 
-/** A feature knob named `<feature>.<key…>` (the contract's `stale_after_knob`), read in minutes. */
+/**
+ * A feature knob named `<feature>.<key>` (the contract's `stale_after_knob`), read in minutes. The key
+ * is the part after the LAST dot: `drill.usage.stale_after_minutes` is feature `drill.usage`, key
+ * `stale_after_minutes` (the row's own split; the first dot read "drill" / "usage.stale_after_minutes"
+ * and said the setting was missing — lane DRILL-PRESETS-RETIRE walk, 2026-09-30).
+ */
+export function staleKnobAddress(knob: string): { feature: string; key: string } {
+  const dot = knob.lastIndexOf(".");
+  return dot > 0 ? { feature: knob.slice(0, dot), key: knob.slice(dot + 1) } : { feature: knob, key: "" };
+}
 function useStaleAfterMinutes(knob: string | null): { minutes: number | null; problem: string | null } {
   const [held, setHeld] = useState<{ knob: string | null; minutes: number | null; problem: string | null }>({ knob: null, minutes: null, problem: null });
   useEffect(() => {
     if (!knob) return;
-    const dot = knob.indexOf(".");
-    const feature = dot > 0 ? knob.slice(0, dot) : knob;
-    const key = dot > 0 ? knob.slice(dot + 1) : "";
+    const { feature, key } = staleKnobAddress(knob);
     let cancelled = false;
     knobNumber(feature, key).then(
       (minutes) => !cancelled && setHeld({ knob, minutes, problem: null }),
@@ -203,9 +210,16 @@ export function DrillExplorer({
     const ref = new URLSearchParams(window.location.search).get(DRILL_VIEW_PARAM);
     if (!ref || ref === viewRead || openView?.ref === ref) return;
     setViewRead(ref);
+    const params = new URLSearchParams(window.location.search);
     if (ref.startsWith("builtin:")) {
       const view = builtInViewsOf(def).find((v) => `builtin:${v.key}` === ref);
       if (!view) return;
+      // the address asks nothing of its own: the view opens whole, narrowed by the address's filters
+      const whole = viewQuestionFromAddress(explorerQuestionOf(view.question), params);
+      if (whole) {
+        openQuestion(whole, { ref, label: view.label });
+        return;
+      }
       setCarried(splitExplorerQuestion(explorerQuestionOf(view.question)).door);
       setOpenView({ ref, label: view.label });
       return;
@@ -213,6 +227,11 @@ export function DrillExplorer({
     void readDrillView(drillSavedViewSurface(def.key), ref).then((row) => {
       if (!row) return;
       const stored = (row.definition as { question?: ExplorerQuestion } | null)?.question;
+      const whole = stored ? viewQuestionFromAddress(stored, params) : null;
+      if (whole) {
+        openQuestion(whole, { ref, label: row.name });
+        return;
+      }
       setCarried(stored?.door && Object.keys(stored.door).length > 0 ? stored.door : null);
       setOpenView({ ref, label: row.name });
     });

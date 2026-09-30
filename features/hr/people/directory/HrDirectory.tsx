@@ -70,6 +70,7 @@ import {
   type HrEmployeeMenuSubject,
 } from "./useHrEmployeeMenu";
 import { OffboardEmployeeDialog } from "./offboarding/OffboardEmployeeDialog";
+import { HrLaneTabs } from "@/features/hr/shared/HrLaneTabs";
 
 // ── Server-side facet options ───────────────────────────────────────────────
 //
@@ -285,22 +286,11 @@ export function HrDirectory() {
         <div className="flex flex-wrap items-center gap-2">
           <HrOrgFilter />
           {showMyTeamTab ? (
-            <div
-              role="tablist"
-              aria-label="Directory scope"
-              className="inline-flex items-center rounded-md border border-border p-0.5"
-            >
-              <ScopeTab
-                active={!url.myTeam}
-                onClick={() => url.setMyTeam(false)}
-                label="Everyone"
-              />
-              <ScopeTab
-                active={url.myTeam}
-                onClick={() => url.setMyTeam(true)}
-                label="My team"
-              />
-            </div>
+            <HrLaneTabs
+              lanes={["all", "team"]}
+              active={url.myTeam ? "team" : "all"}
+              onChange={(lane) => url.setMyTeam(lane === "team")}
+            />
           ) : null}
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -512,33 +502,6 @@ export function HrDirectory() {
 }
 
 // ── Pieces ──────────────────────────────────────────────────────────────────
-
-function ScopeTab({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "inline-flex min-h-11 items-center rounded-sm px-3 text-sm font-medium transition-colors sm:min-h-8",
-        active
-          ? "bg-accent text-accent-foreground"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
 
 function ViewToggleButton({
   active,

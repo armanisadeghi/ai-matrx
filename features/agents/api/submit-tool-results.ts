@@ -81,6 +81,7 @@ import type { RootState } from "@/lib/redux/store";
 type ToolResultsDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
 import type { components } from "@/types/python-generated/api-types";
 import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import { settleClientToolCall } from "./settle-client-tool-call";
 
 type ClientToolResult = components["schemas"]["ClientToolResult"];
 type ToolResultsResponse = components["schemas"]["ToolResultsResponse"];
@@ -494,6 +495,11 @@ export const submitToolResult = (
   pending: PendingToolResult,
 ): ThunkAction<void, RootState, unknown, UnknownAction> => {
   return (dispatch) => {
+    // The answerer is first to know the call is finished — tell this client's
+    // own stores NOW, in the same tick the server is told (see
+    // settle-client-tool-call.ts). Never wait for a server event: for a
+    // delegated call the server sends none.
+    dispatch(settleClientToolCall(pending));
     const { conversationId, ...rest } = pending;
     const bucket = queue.get(conversationId) ?? [];
     bucket.push(rest);

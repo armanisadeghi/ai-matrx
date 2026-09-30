@@ -128,9 +128,13 @@ This feature exists because:
   feature coupling — reusable by any "here's what changed" surface (project /
   settings updates, version history), not just agents. Block comparisons open
   on the combined red/green diff with New and Original tabs; empty values and
-  clears retain their exact comparison bytes. Targets declaring `approvalComparison: "text-replacement"` read
-  the original from the owning live surface's declared text `updatesValue`
-  before asking. String operations on structured read values keep their
+  clears retain their exact comparison bytes. A string written into a string read twin is a replacement BY
+  DEFAULT (2026-09-30: the notes editor asked people to Apply a whole-note
+  rewrite with no diff because comparison was opt-in): the original is read
+  from the owning live surface's `comparisonValue` (else `updatesValue`) before
+  asking, and an unreadable original degrades to the plain proposal. Declaring
+  `approvalComparison: "text-replacement"` makes the original REQUIRED;
+  `append*` / `insert*` fragment targets are never compared. String operations on structured read values keep their
   existing proposal rendering; they are not full-text replacements.
   Missing originals refuse the write, and a changed original or unmounted
   surface refuses stale approval. Append fragments are labelled Text to append
@@ -625,3 +629,11 @@ server-side; the same Realtime subscription updates the panel with no delegation
   tool handlers, `nextjs-surface` capability + ambient context seeding,
   inline ask card UX (above the input, never blocks), TaskPanel +
   chip + `/agent-lists` aggregate route.
+
+
+> **A client-answered call settles on the client (2026-09-30).** `submitToolResult`
+> calls `settleClientToolCall` (`features/agents/api/settle-client-tool-call.ts`), which
+> marks the call terminal in BOTH `activeRequests.toolLifecycle` and
+> `observability.toolCalls` in the same tick it POSTs. The server sends no completion
+> event for a delegated call, so without this every card stayed "Working…". A
+> dispatcher never needs its own lifecycle upsert to get a correct card.

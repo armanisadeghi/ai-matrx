@@ -219,7 +219,7 @@ export function createLibraryListConfig(
         sourceFeature: "transcription",
         scopes: LIBRARY_LIST_SCOPES,
         // A Library's lanes are its visibility (personal / internal / link / public); no team concept.
-        teamLane: false,
+        lanes: { team: false },
         service: createLibraryListService(dispatch),
         // 🚨 THE ACTIVE ORGANIZATION IS PART OF WHAT THIS SERVICE WAS BUILT
         // FROM. It resolves AFTER the first render (cookie → default → personal,

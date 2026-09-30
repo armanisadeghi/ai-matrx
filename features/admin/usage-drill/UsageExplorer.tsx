@@ -21,7 +21,6 @@ import type { DrillReconcileSpec } from "@/components/official/drill-explorer/us
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 import { USAGE_SOURCE, usageNameResolvers, useUsageFreshness } from "./useUsageDrill";
-import { USAGE_WORDS } from "./usageWords";
 
 /** The first screen: everyone's spend in the last 30 days, by person, costliest first (the definition's own default). */
 export const USAGE_FIRST_QUESTION: MatrxDrillQuestion = {
@@ -65,7 +64,6 @@ export function UsageExplorer() {
       // provider words differ), so only those crumbs carry across; any other is said.
       reconcile={USAGE_RECONCILE}
       windowAlign="hour"
-      words={USAGE_WORDS}
       dataAttributes={{ "data-usage-explorer": "" }}
       headerExtras={
         <AppLink href="/administration/users/usage" className="underline-offset-2 hover:underline">

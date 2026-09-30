@@ -535,6 +535,73 @@ describe("surface approval comparison", () => {
     }
   });
 
+  const askOnce = async (
+    writeTarget: SurfaceWriteTarget,
+    scope: Record<string, unknown>,
+    values: readonly SurfaceValue[] = [stringReadTwin],
+  ) => {
+    mockGetManifest.mockReturnValue(manifestFor([writeTarget], values));
+    const seen: { proposal?: { currentValue?: string | null } } = {};
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => scope,
+        getWriteHandlers: () => ({ review_field: jest.fn() }),
+      },
+      10,
+    );
+    try {
+      const result = await applySurfaceWrite("review_field", "New text", {
+        origin: "agent",
+        quiet: true,
+        requestApproval: async (proposal) => {
+          seen.proposal = proposal;
+          return { kind: "declined" };
+        },
+      });
+      return { result, seen };
+    } finally {
+      unregister();
+    }
+  };
+
+  it("diffs a string replacement BY DEFAULT — no flag needed", async () => {
+    const { seen } = await askOnce(
+      { ...target, updatesValue: "review_value" },
+      { review_value: "Old text" },
+    );
+    expect(seen.proposal?.currentValue).toBe("Old text");
+  });
+
+  it("degrades to the plain proposal when an undeclared original is unreadable", async () => {
+    const { result, seen } = await askOnce(
+      { ...target, updatesValue: "review_value" },
+      {},
+    );
+    expect(seen.proposal).toBeDefined();
+    expect(seen.proposal?.currentValue).toBeUndefined();
+    expect(result).toMatchObject({ declined: true });
+  });
+
+  it("still refuses when a DECLARED original is unreadable", async () => {
+    const { result, seen } = await askOnce(replacementTarget, {});
+    expect(seen.proposal).toBeUndefined();
+    expect(result.ok).toBe(false);
+  });
+
+  it("reads comparisonValue when the read twin is not the text (notes)", async () => {
+    const { seen } = await askOnce(
+      {
+        ...target,
+        updatesValue: "resource_ref",
+        comparisonValue: "review_value",
+        approvalComparison: "text-replacement",
+      },
+      { review_value: "Live editor text" },
+    );
+    expect(seen.proposal?.currentValue).toBe("Live editor text");
+  });
+
   it("does not write when the user declines", async () => {
     mockGetManifest.mockReturnValue(manifestFor([replacementTarget]));
     const handler = jest.fn();

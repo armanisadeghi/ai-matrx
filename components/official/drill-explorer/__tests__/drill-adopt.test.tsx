@@ -215,3 +215,12 @@ describe("the explorer's settings and words", () => {
     expect(drillReconcileSentence(2000, 2100, "Model calls", f)).toMatch(/^The model calls count 2,100 points, 100 points more than these 2,000 points/);
   });
 });
+
+// lane DRILL-PRESETS-RETIRE: the stale line's setting is read at the row's own split (the last dot)
+describe("the stale-line setting's address", () => {
+  it("drill.usage.stale_after_minutes is feature drill.usage, key stale_after_minutes", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { staleKnobAddress } = require("../DrillExplorer") as typeof import("../DrillExplorer");
+    expect(staleKnobAddress("drill.usage.stale_after_minutes")).toEqual({ feature: "drill.usage", key: "stale_after_minutes" });
+  });
+});

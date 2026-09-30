@@ -40,6 +40,7 @@ import {
   withAvailability,
   type AvailabilityMap,
 } from "@/features/context-menu-v3/utils/availability";
+import { usagePersonHref } from "@/features/admin/usage-drill/usageLinks";
 
 /** The one thing every Users & Access table can say about a right-clicked user. */
 export interface AdminUserMenuRow {
@@ -96,7 +97,7 @@ export function buildAdminUserMenuSection(
       id: "admin-user-usage",
       label: "Usage & cost",
       icon: Gauge,
-      href: row ? `/administration/users/usage?user=${id}` : "#",
+      href: row ? usagePersonHref(id) : "#",
       disabled: !row,
     },
     {

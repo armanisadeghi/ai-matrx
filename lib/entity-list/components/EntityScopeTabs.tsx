@@ -58,6 +58,7 @@ import {
   withStandardLanes,
   scopeIndustryId,
   scopeNarrowId,
+  type LaneSupport,
   type ListScope,
   type ListScopeKind,
 } from "@/lib/list-scope/types";
@@ -83,8 +84,8 @@ export interface EntityScopeTabsProps {
    * RPC never sets it.
    */
   exact?: boolean;
-  /** `false` = the surface declared it has no team concept (`EntityListConfig.teamLane`). */
-  teamLane?: false;
+  /** The lanes the surface's type can never hold (`EntityListConfig.lanes`); absent, not empty. */
+  lanes?: LaneSupport;
   onChange: (scope: ListScope) => void;
 }
 
@@ -180,7 +181,7 @@ export function EntityScopeTabs({
   counts,
   countsLoading,
   exact = false,
-  teamLane,
+  lanes,
   onChange,
 }: EntityScopeTabsProps) {
   // A row wider than the screen fades at the edge that has more tabs past it
@@ -213,7 +214,7 @@ export function EntityScopeTabs({
         : more.start
           ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem)]"
           : "";
-  const kinds = exact ? [...scopes] : withStandardLanes(scopes, { teamLane });
+  const kinds = exact ? [...scopes] : withStandardLanes(scopes, { lanes });
   // Only a lane's OWN axis narrows inside its tab; organizations are the org filter's.
   const narrowOptions = (kind: ListScopeKind) =>
     LANE_NARROWS.has(kind) ? (counts.narrow[kind] ?? []) : [];

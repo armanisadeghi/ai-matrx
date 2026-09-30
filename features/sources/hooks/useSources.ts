@@ -27,6 +27,8 @@ import {
   applySourcesScope,
   SOURCE_LIST_ORDER_COLUMN,
   sourcesListFilter,
+  sourcesScopeIsEmpty,
+  type SourcesLane,
   listedSource,
   sourceFactsFromRow,
   factsPollDelayMs,
@@ -38,8 +40,10 @@ import {
 
 /** `organizationId` is the page's org FILTER (null = All organizations), never the active org. */
 export type SourcesScope = {
-  kind: "mine" | "orgs";
+  kind: SourcesLane;
   organizationId?: string | null;
+  /** The team lane's reach (`teamReachOrFilter`); null = on no team. */
+  teamFilter?: string | null;
 };
 
 export interface UseSourcesResult {
@@ -176,6 +180,7 @@ export async function readSourcesCounts(
   userId: string,
   search = "",
 ): Promise<{ savedTotal: number | null; allTotal: number | null }> {
+  if (sourcesScopeIsEmpty(scope)) return { savedTotal: 0, allTotal: 0 };
   const counts = await Promise.allSettled(
     [true, false].map(async (saved) => {
       let q = supabase
@@ -193,6 +198,47 @@ export async function readSourcesCounts(
     savedTotal: counts[0].status === "fulfilled" ? counts[0].value : null,
     allTotal: counts[1].status === "fulfilled" ? counts[1].value : null,
   };
+}
+
+/**
+ * The lane tabs' numbers: how many Sources each lane holds under the page's narrowing (the org
+ * filter and the Saved / All captures view), one head count per lane, under the same scope
+ * predicate the list uses, so a tab's number can never exceed what its list shows. A lane whose
+ * read failed is `null` (shown as no number, never 0).
+ */
+export async function readSourceLaneCounts(
+  lanes: readonly SourcesLane[],
+  narrowing: { organizationId: string | null; saved: boolean; teamFilter: string | null },
+  userId: string,
+): Promise<Partial<Record<SourcesLane, number | null>>> {
+  const out: Partial<Record<SourcesLane, number | null>> = {};
+  await Promise.all(
+    lanes.map(async (kind) => {
+      const scope: SourcesScope = {
+        kind,
+        organizationId: narrowing.organizationId,
+        teamFilter: narrowing.teamFilter,
+      };
+      if (sourcesScopeIsEmpty(scope)) {
+        out[kind] = 0;
+        return;
+      }
+      try {
+        let q = supabase
+          .schema("docproc")
+          .from("processed_documents")
+          .select("id", { count: "exact", head: true })
+          .is("deleted_at", null)
+          .or(sourcesListFilter({ saved: narrowing.saved, search: "" }));
+        q = applySourcesScope(q, scope, userId);
+        const { count, error } = await q;
+        out[kind] = error ? null : count;
+      } catch {
+        out[kind] = null;
+      }
+    }),
+  );
+  return out;
 }
 
 export interface UseSourcesCountsResult {
@@ -264,7 +310,7 @@ export function useSources(
     loadingMore: false,
   });
   const scopeKey = scope
-    ? `${scope.kind}:${scope.organizationId ?? "all"}`
+    ? `${scope.kind}:${scope.organizationId ?? "all"}:${scope.teamFilter ?? ""}`
     : "none";
   const listKey = `${scopeKey}|${userId}|${refreshKey}|${options.saved}|${options.search.trim()}`;
   const generation = useRef(0);
@@ -274,6 +320,8 @@ export function useSources(
   const readPage = useCallback(
     async (offset: number) => {
       if (!scope || !userId) return null;
+      // On no team: nothing to read, and never an unfiltered read under a team label.
+      if (sourcesScopeIsEmpty(scope)) return { rows: [] as SourceListRow[], count: 0 };
       let q = supabase
         .schema("docproc")
         .from("processed_documents")

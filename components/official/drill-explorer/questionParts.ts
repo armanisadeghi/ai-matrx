@@ -16,7 +16,7 @@
 // `doorQuestionOf` is the exact inverse: a declared question survives the round trip.
 
 import type { DrillQuestion } from "@ai-matrx/records";
-import type { MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
+import { MATRX_DRILL_NONE, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
 import type { DrillHaving, DrillQuestionWithHaving } from "./types";
 
@@ -207,4 +207,29 @@ export function carriedWords(door: DrillCarried | null | undefined, labelOf: (ke
     kept: kept.length > 0 ? `This view also narrows the answer: ${kept.join("; ")}.` : null,
     leftOut: leftOut.length > 0 ? `Left out here, because this screen cannot draw it: ${leftOut.join("; ")}.` : null,
   };
+}
+
+/** The address keys that ask a question of their own (a view named beside them yields to them). */
+const ASKING_KEYS = ["by", "across", "show", "path", "sort"];
+
+/**
+ * AN ADDRESS THAT NAMES A VIEW AND ASKS NOTHING OF ITS OWN OPENS THE VIEW (lane DRILL-PRESETS-RETIRE):
+ * `?view=builtin:usage_by_person&f.person=<id>&w=7d` is the view's question narrowed by the address's
+ * filters and window — the link every old screen's "usage of this person" becomes. An address that
+ * asks its own question (`by`, `across`, `show`, `path`, `sort`) keeps it: null, and the view only
+ * lends what it carries beyond the address.
+ */
+export function viewQuestionFromAddress(view: ExplorerQuestion, params: URLSearchParams): ExplorerQuestion | null {
+  if (ASKING_KEYS.some((k) => params.has(k))) return null;
+  const where = [...view.where];
+  for (const [key, value] of params.entries()) {
+    if (!key.startsWith("f.")) continue;
+    const dim = key.slice(2);
+    const at = where.findIndex((w) => w.dim === dim);
+    const filter = { dim, value: value === MATRX_DRILL_NONE ? null : value };
+    if (at >= 0) where[at] = filter;
+    else where.push(filter);
+  }
+  const w = params.get("w");
+  return { ...view, where, ...(w ? { window: w } : {}) };
 }

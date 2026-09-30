@@ -350,11 +350,23 @@ export interface SurfaceWriteTarget {
   updatesValue?: string;
   /**
    * Client approval preview contract: the input replaces the exact text named
-   * by updatesValue. Opt in only for full-value replacements (including a
-   * selected text range), never insert/append/action fragments. Code-owned;
-   * it does not change the provider tool schema or database apply policy.
+   * by updatesValue (or `comparisonValue`). A string write into a string read
+   * twin is treated as a replacement BY DEFAULT — the person always sees a
+   * before → after, never just the agent's text — and a missing original then
+   * quietly falls back to the plain proposal. Declare `"text-replacement"` to
+   * make the original REQUIRED (a missing one refuses the write). Targets whose
+   * name starts with `append`/`insert` carry a fragment and are never compared.
+   * Code-owned; it does not change
+   * the provider tool schema or database apply policy.
    */
   approvalComparison?: "text-replacement";
+  /**
+   * The SurfaceValue holding the exact text this target replaces, when it is
+   * not the `updatesValue` read twin (e.g. the notes editor's twin is the
+   * `current_note` resource reference — an object — while the live editor text
+   * is `content`). Defaults to `updatesValue`.
+   */
+  comparisonValue?: string;
   /**
    * This target accepts an ANCHORED EDIT as well as a whole value.
    *

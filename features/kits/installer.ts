@@ -37,7 +37,7 @@ import {
   type NewFieldSpec,
 } from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import { guardedUpdate } from "@ai-matrx/data/db";
+import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { createClient, supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -486,6 +486,32 @@ async function writeAgent(
   }
 }
 
+/**
+ * `base`, or `base 2`, `base 3`, … — the first name no other live agent in the
+ * organization uses (case-insensitive, as `agent._refuse_duplicate_agent_name` compares).
+ */
+async function nextFreeAgentName(organizationId: string, base: string, selfId: string): Promise<string> {
+  const rows = await readAllRows<{ id: string; name: string }>(
+    ({ from, to }) =>
+      supabase
+        .schema("agent")
+        .from("definition")
+        .select("id, name", { count: "exact" })
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .ilike("name", `${base.replace(/[%_\\]/g, (c) => `\\${c}`)}%`)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "agent.definition names (kit install)" },
+  );
+  const taken = new Set(rows.filter((r) => r.id !== selfId).map((r) => r.name.trim().toLowerCase()));
+  if (!taken.has(base.trim().toLowerCase())) return base;
+  for (let n = 2; ; n++) {
+    const candidate = `${base} ${n}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+}
+
 // ─── the run ────────────────────────────────────────────────────────────────
 
 export interface InstallContext {
@@ -678,20 +704,35 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         }
         steps.agents = { ...(steps.agents ?? {}), [agent.key]: newId };
         await record();
-        // Named from the manifest (never "… (Copy)") and tagged with the install.
-        await writeAgent(newId, "rename the copied agent", (cur) => ({
-          name: agent.name,
-          description: agent.description,
-          // The source's own kit labels (it may itself be a kit copy) never ride along:
-          // a copy carries exactly ONE install's label, or removal could not tell them apart.
-          tags: Array.from(
-            new Set([
-              ...(cur.tags ?? []).filter((t) => !t.startsWith("kit:") && !t.startsWith("kit-install:")),
-              `kit:${manifest.key}`,
-              `kit-install:${install!.id}`,
-            ]),
-          ),
-        }));
+        // Named from the manifest (never "… (Copy)") and tagged with the install. The
+        // database refuses a second agent with the same name in one organization, so a
+        // kit installed twice takes the next free name ("My Keyword Classifier 2"):
+        // chosen before the write, and — if another write took it meanwhile — the
+        // name the refusal offers is used instead. Never a raw error.
+        let name = await nextFreeAgentName(organizationId, agent.name, newId);
+        for (let attempt = 0; ; attempt++) {
+          try {
+            await writeAgent(newId, "rename the copied agent", (cur) => ({
+              name,
+              description: agent.description,
+              // The source's own kit labels (it may itself be a kit copy) never ride along:
+              // a copy carries exactly ONE install's label, or removal could not tell them apart.
+              tags: Array.from(
+                new Set([
+                  ...(cur.tags ?? []).filter((t) => !t.startsWith("kit:") && !t.startsWith("kit-install:")),
+                  `kit:${manifest.key}`,
+                  `kit-install:${install!.id}`,
+                ]),
+              ),
+            }));
+            break;
+          } catch (err) {
+            const e = isRecord(err) ? err : {};
+            const offered = e.code === "23505" && e.hint === "agent_name_taken" && typeof e.details === "string" ? e.details : null;
+            if (!offered || attempt >= 3) throw err;
+            name = offered;
+          }
+        }
         done(agentStep, { links: [{ label: "Open agent", href: KIT_ROUTES.agent(newId) }] });
       }
       const bindStep = `bind:${agent.key}`;

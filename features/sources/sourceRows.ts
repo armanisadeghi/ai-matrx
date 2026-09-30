@@ -107,26 +107,55 @@ export function listedSource<T extends Pick<SourceListRow, "name">>(row: T): T {
   return withDisplayTitle(row, "name");
 }
 
+/** The shell's lanes a Sources view answers (a direct table read: no Shared, Public or System). */
+export type SourcesLane = "all" | "mine" | "team" | "orgs";
+
 /**
  * WHOSE Sources a view lists — who captured them, never a privacy filter
- * (Arman 2026-09-26: a Source is organization data; no per-Source privacy).
- *   mine → Sources I captured.   orgs → every Source in the organization.
+ * (Arman 2026-09-26: a Source is organization data; no per-Source privacy). The shell's lanes:
+ *   all  → every Source row security lets me read (the default lane).
+ *   mine → Sources I captured.
+ *   team → Sources captured by me or someone I share a live team with, in that organization
+ *          (`teamFilter` = `teamReachOrFilter`; null = on no team, which matches nothing).
+ *   orgs → Sources in my organizations captured by someone else.
+ * `organizationId` is the organization FILTER and narrows every lane.
  */
 export function applySourcesScope<
-  Q extends { eq: (column: string, value: string) => Q },
+  Q extends {
+    eq: (column: string, value: string) => Q;
+    neq: (column: string, value: string) => Q;
+    or: (filters: string) => Q;
+  },
 >(
   q: Q,
   scope: {
-    kind: "mine" | "orgs";
+    kind: SourcesLane;
     /** The page's ORGANIZATION FILTER (`?org_filter=`); null/absent = All organizations. Never the active org. */
     organizationId?: string | null;
+    /** The team lane's reach as a PostgREST `.or()` string (`teamReachOrFilter`). */
+    teamFilter?: string | null;
   },
   userId: string,
 ): Q {
-  const lane = scope.kind === "mine" ? q.eq("created_by", userId) : q;
+  const lane =
+    scope.kind === "mine"
+      ? q.eq("created_by", userId)
+      : scope.kind === "orgs"
+        ? q.neq("created_by", userId)
+        : scope.kind === "team" && scope.teamFilter
+          ? q.or(scope.teamFilter)
+          : q;
   return scope.organizationId
     ? lane.eq("organization_id", scope.organizationId)
     : lane;
+}
+
+/** A team lane with no reach (on no team) can hold nothing: the read is skipped, never run unfiltered. */
+export function sourcesScopeIsEmpty(scope: {
+  kind: SourcesLane;
+  teamFilter?: string | null;
+}): boolean {
+  return scope.kind === "team" && !scope.teamFilter;
 }
 
 export interface SourceAttachment {

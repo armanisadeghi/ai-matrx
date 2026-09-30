@@ -137,3 +137,16 @@ describe("saving a question as the person's own Saved view", () => {
     expect(done).toEqual({ ok: false, message: 'You already have a view called "Spend by model"' });
   });
 });
+
+// lane DRILL-PRESETS-RETIRE: an address naming a view and asking nothing of its own opens the view
+import { viewQuestionFromAddress } from "../questionParts";
+describe("an address that names a view opens it", () => {
+  const view = { by: ["person"], show: ["cost", "requests"], where: [], sort: { key: "cost", direction: "desc" as const } };
+  it("the view's question, narrowed by the address's filters and window", () => {
+    const q = viewQuestionFromAddress(view, new URLSearchParams("view=builtin:usage_by_person&f.person=P1&w=7d"));
+    expect(q).toEqual({ ...view, where: [{ dim: "person", value: "P1" }], window: "7d" });
+  });
+  it("an address asking its own question keeps it (null)", () => {
+    expect(viewQuestionFromAddress(view, new URLSearchParams("view=builtin:x&by=model"))).toBeNull();
+  });
+});

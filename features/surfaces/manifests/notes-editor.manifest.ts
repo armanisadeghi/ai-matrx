@@ -444,6 +444,10 @@ const writeTargets: SurfaceWriteTarget[] = [
       "REPLACES the entire body of the open note with the value — markdown text, exactly as it should read. Use for rewrites, cleanups, and restructures; read the current body from `current_note` first so nothing the user wants kept is dropped. To add to the note instead of replacing it, use `append_to_note`. Staged into the live editor (undoable, autosaved like the user's own typing).",
     valueType: "string",
     updatesValue: "current_note",
+    // `current_note` is the server resource reference (an object); the exact
+    // live editor text it replaces is `content`. Required: no diff, no write.
+    approvalComparison: "text-replacement",
+    comparisonValue: "content",
     mode: "draft",
     applyPolicy: "ask",
     group: "note_identity",

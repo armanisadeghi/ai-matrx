@@ -291,14 +291,13 @@ export function useEntityList<TRow>({
         ...(archivedTouched.current ? {} : { archived: defaultQuery.archived }),
         ...(scopeTouched.current ? {} : { scope: defaultQuery.scope }),
       };
-  // A surface that declared it has no team lane (`teamLane: false`) must not serve a stale
-  // `?scope=team` link as the All list under a false name: the lane is absent, so the link
-  // lands on the default lane.
+  // A surface that declared a lane absent (`lanes: { team: false }`) must not serve a stale
+  // `?scope=team` (or `public`, `system` ...) link under a false name: the lane is absent, so the
+  // link lands on the default lane.
   const storedQuery: EntityListQuery =
-    unclampedQuery.scope.kind === "team" &&
     supportedScopes &&
     supportedScopes.length > 0 &&
-    !supportedScopes.includes("team")
+    !supportedScopes.includes(unclampedQuery.scope.kind)
       ? { ...unclampedQuery, scope: defaultQuery.scope }
       : unclampedQuery;
   // `searchSpansDefaultFilters` (see the arg's doc): a search typed over the

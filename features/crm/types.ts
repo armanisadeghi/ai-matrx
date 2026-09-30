@@ -8,7 +8,7 @@
 // not a CONTACT POINT (crm.party_contact_point — who uses it, how, since when).
 
 import type { Database } from "@/types/database.types";
-import type { ListScopeKind } from "@/lib/list-scope/types";
+import type { LaneSupport, ListScopeKind } from "@/lib/list-scope/types";
 import type { AssociationTargetEdge } from "@/features/scopes/types";
 
 // ── Generated row aliases ───────────────────────────────────────────────────
@@ -306,6 +306,12 @@ export type InteractionDirection = (typeof INTERACTION_DIRECTIONS)[number];
  * this list the moment `crm` grows one.
  */
 export const CRM_LIST_SCOPES: ListScopeKind[] = ["mine", "orgs", "public"];
+
+/**
+ * The lanes a CRM party can never hold: no publish path (crm.party has no
+ * `platform.shareable_resource_registry` row and no share door), so Public would only say 0.
+ */
+export const CRM_LANES: LaneSupport = { public: false };
 
 /** The list's kind facet — People / Companies / All. */
 export type PartyKindFilter = "all" | PartyKind;

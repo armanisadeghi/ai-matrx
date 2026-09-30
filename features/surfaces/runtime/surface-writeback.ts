@@ -680,7 +680,6 @@ async function agentWriteAllowed(
   // the plain proposal when the live surface cannot supply it.
   const declaredComparison = target.approvalComparison === "text-replacement";
   const compareText =
-    target.approvalComparison !== "none" &&
     originalName !== undefined &&
     (originalDefinition?.valueType === "string" ||
       originalDefinition?.valueType === "document") &&

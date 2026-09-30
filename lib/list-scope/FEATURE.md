@@ -148,6 +148,19 @@ narrow row per organization where the caller shares a team with someone. A list 
 directly uses `teamReach.ts`. Canonical doc: common-docs `/systems/platform/teams/FEATURE.md`.
 Counts rows are read only through `scopeCountsFromRows` (`lib/entity-list/types.ts`).
 
+### A lane the type can never hold is absent — one declared statement
+
+`EntityListConfig.lanes` (`LaneSupport`, `lib/list-scope/types.ts`) is the ONE place a surface says
+which lanes its TYPE cannot hold: `{ team: false }` (a mandate is homed to an organization),
+`{ public: false }` (no publish path). The shell (`withStandardLanes`, `EntityScopeTabs lanes`, the
+stale-`?scope=` clamp in `useEntityList`) drops those lanes; nothing per page, no UI toggle, and
+nothing that depends on who is looking. A lane that is possible but empty for this person is NOT
+declared and shows an honest 0. The test for each lane is a fact of the type: team needs a team
+concept on its rows; shared needs a `platform.shareable_resource_registry` row; public needs a
+publish path (`is_link_shareable`, or a public-card path as agents and workflows have); system
+needs a platform corpus of that type. Declared today: mandates + source libraries + mandate member
+list `team`; tracked keywords (`seo_rank_target`) and CRM parties `public`.
+
 ### UI shape
 
 ```
@@ -298,6 +311,12 @@ Invariants the template carries, all of them learned the hard way:
     which belongs to the access resolver, not to any one list.
 
 ## Change log
+
+- 2026-09-30 — **`lanes` replaces `teamLane`.** One declared per-type statement of the lanes a type
+  can never hold (`LaneSupport`); the shell drops them and lands a stale `?scope=` on the default
+  lane. `/rag/library` (Sources) and HR lists moved onto the fixed vocabulary: Sources offers All /
+  Mine / My team / My Orgs (Saved / All captures stays a view toggle in the toolbar), HR maps its
+  door keys onto the tabs (`features/hr/shared/HrLaneTabs.tsx`) and "HR queue" is a filter.
 
 - 2026-09-30 — **Two axes.** New lane `all` (the default; knob `lists.landing_tab` platform value `all`
   on every type). The organization filter is its own axis: `EntityListQuery.orgId`, `?org_filter=`,

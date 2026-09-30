@@ -2601,15 +2601,26 @@ html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
   top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
 }
 
-/* A toast action owns a full tap target; inline error text sizing must not
-   overflow the card or overlap its sibling content. */
-[data-sonner-toast] > [data-content] {
-  flex: 1 1 auto;
-  min-width: 0;
+/* Toast actions need their full tap target, not inline text geometry. Keep
+   the message flexible while every action stays inside the padded card. */
+.toaster [data-sonner-toast]:has(> .error-toast-copy) {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  column-gap: 10px;
 }
-[data-sonner-toast] > .error-toast-copy {
+.toaster [data-sonner-toast]:has(> .error-toast-copy):not(:has(> [data-icon])) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.toaster [data-sonner-toast] > .error-toast-copy {
   width: 36px;
   height: 36px;
-  margin-left: 4px;
-  flex: 0 0 36px;
+  margin: 0;
+}
+
+/* The copy palette opened by a toast must remain above its originating card. */
+body:has(.toaster [data-sonner-toast] > .error-toast-copy [data-alchemy-trigger][data-state="open"])
+  .matrx-alchemy-menu.matrx-alchemy-palette {
+  z-index: 1000000000 !important;
 }
