@@ -63,6 +63,7 @@ import {
   targetOfImpactVerdict,
 } from "@/features/mandates/candidate-dialog/target";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import {
   batchEligibilityOf,
   isBehindLatest,
@@ -750,7 +751,7 @@ function RowActions({
           {row.verdict ? (
             <TryAsCandidateButton
               mandateKey={storedMandateKey(row.verdict.mandate_key)}
-              mandateName={row.name}
+              mandateName={mandateDisplayName(storedMandateKey(row.verdict.mandate_key), null)}
               target={targetOfImpactVerdict(row.verdict)}
               rung={rungOfImpactVerdict(row.verdict)}
               disabled={busy}
