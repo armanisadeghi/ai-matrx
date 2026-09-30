@@ -325,9 +325,13 @@ describe("TopicTable", () => {
   it("selection is the workspace's checked topics; a row open selects and opens the panel", () => {
     const store = makeStore();
     const props = render(store);
-    act(() => props.selection?.onSelectedIdsChange(["live-there", "child"]));
+    const rendered = props.selection;
+    if (!rendered) throw new Error("the topic table must be rendered with row selection");
+    act(() => rendered.onSelectedIdsChange(["live-there", "child"]));
     expect(store.getState().topicalMap.maps[MAP_ID].checkedSlugs).toEqual(["live-there", "child"]);
-    expect(tableProps?.selection?.selectedIds).toEqual(["live-there", "child"]);
+    const selection = tableProps?.selection;
+    if (!selection) throw new Error("the topic table must be rendered with row selection");
+    expect(selection.selectedIds).toEqual(["live-there", "child"]);
     act(() => props.onRowOpen?.(props.data[1]));
     expect(store.getState().topicalMap.maps[MAP_ID].selectedSlug).toBe("live-there");
     expect(openTopicPanel).toHaveBeenCalledWith({ mapId: MAP_ID, slug: "live-there", siteId: null });
