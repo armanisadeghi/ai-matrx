@@ -75,7 +75,7 @@ import {
   CanvasNavToggle,
   useCanvasNavState,
 } from "@/features/shell/canvas-chrome/CanvasNav";
-import { aMenuOrPopoverIsOpen } from "@/features/shell/canvas-chrome/open-layer";
+import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
 import { CanvasChatColumn, type CanvasContextEntry } from "./CanvasChatColumn";
 import {
   CanvasPropertiesPanel,
@@ -272,18 +272,13 @@ export function ChatCanvasWorkspace({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Esc leaves full screen (unless a menu / popover is holding the key).
-  // Capture phase: a canvas that uses Escape itself (the spatial board clears
-  // its selection and prevents the default) must not swallow the way out.
+  // Esc leaves full screen through the shared full-screen layer stack: capture
+  // phase (a canvas that uses Escape itself must not swallow the way out), a
+  // menu / popover keeps the key, and one Escape leaves only the top layer —
+  // a board tile's full screen opened over this one closes first.
   useEffect(() => {
     if (!fullScreen) return undefined;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (aMenuOrPopoverIsOpen()) return;
-      setFullScreen(false);
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    return pushFullScreenLayer(() => setFullScreen(false));
   }, [fullScreen]);
 
   const conversationId = chat.conversationId;

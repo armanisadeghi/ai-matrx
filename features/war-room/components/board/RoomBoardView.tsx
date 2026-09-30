@@ -670,6 +670,9 @@ function BoardPartTile({
       icon={kind.Icon}
       statusFrom={{ kind: "static", value: status }}
       onMove={onMove}
+      // A part's size comes from its thread's layout (spatial_layout), which
+      // stores positions only — the board adapter refuses resize with a remedy.
+      onResize={null}
       onThrow={onThrow}
       throwActions={PART_THROWS}
     >

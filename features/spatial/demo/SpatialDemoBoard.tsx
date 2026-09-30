@@ -713,6 +713,7 @@ export function SpatialDemoBoard({
               spec={t}
               rect={t.rect}
               onMove={tiles.moveTile}
+              onResize={tiles.resizeTile}
               onThrow={onThrow}
               onContent={(content, title) =>
                 tiles.updateTile(
@@ -889,12 +890,14 @@ function BoardTile({
   spec,
   rect,
   onMove,
+  onResize,
   onThrow,
   onContent,
 }: {
   spec: TileSpec;
   rect: Rect;
   onMove: (id: string, x: number, y: number) => void;
+  onResize: (id: string, rect: Rect) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
   onContent: (content: TileContent, title?: string) => void;
 }) {
@@ -924,6 +927,7 @@ function BoardTile({
       icon={spec.icon}
       statusFrom={statusFrom}
       onMove={onMove}
+      onResize={onResize}
       onThrow={onThrow}
     >
       {(tier) => {

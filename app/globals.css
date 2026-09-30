@@ -2588,3 +2588,13 @@
 .markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper > :nth-child(1 of :not(style)) {
   margin-top: 0;
 }
+
+/* FULL-SCREEN TOAST CLEARANCE (2026-09-30). Nothing may cover a full-screen
+   layer's exit bar (a board tile's full screen, the chat workspace's full
+   screen). While any is open (`pushFullScreenLayer` marks <html>), toasts at
+   the top of the screen — persistent toasts rise top-center — start below
+   the bar. Unlayered + !important: sonner writes its own `top` from an
+   inline custom property, per breakpoint. */
+html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
+  top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
+}

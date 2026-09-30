@@ -509,6 +509,7 @@ export function MeetingBoard({
                   spec={t}
                   meetingId={meetingId}
                   onMove={tiles.moveTile}
+                  onResize={tiles.resizeTile}
                   onThrow={onThrow}
                   onContent={(id, content) => tiles.updateTile(id, { content }, { history: false })}
                 />
@@ -777,6 +778,7 @@ interface TileProps {
   spec: BoardSpec;
   meetingId: string;
   onMove: (id: string, x: number, y: number) => void;
+  onResize: (id: string, rect: Rect) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
   /** Content changed from inside the tile (typing) — no undo step. */
   onContent: (id: string, content: TileContent) => void;
@@ -789,7 +791,7 @@ function BoardTile(props: TileProps) {
   return <StaticTile {...props} />;
 }
 
-function MeetingNoteTile({ spec, onMove, onThrow, section }: TileProps & { section: MeetingSection }) {
+function MeetingNoteTile({ spec, onMove, onResize, onThrow, section }: TileProps & { section: MeetingSection }) {
   const status = useMeetingSectionStatus();
   return (
     <SpatialTile
@@ -800,6 +802,7 @@ function MeetingNoteTile({ spec, onMove, onThrow, section }: TileProps & { secti
       icon={iconOf(spec.content)}
       statusFrom={{ kind: "static", value: status }}
       onMove={onMove}
+      onResize={onResize}
       onThrow={onThrow}
     >
       {() => <MeetingSectionBody section={section} />}
@@ -807,7 +810,7 @@ function MeetingNoteTile({ spec, onMove, onThrow, section }: TileProps & { secti
   );
 }
 
-function ReplayTile({ spec, onMove, onThrow }: TileProps) {
+function ReplayTile({ spec, onMove, onResize, onThrow }: TileProps) {
   const [stream] = useState(() => new ReplayStream(spec.id, RESEARCH_REPORT));
   useEffect(() => {
     stream.start({});
@@ -822,6 +825,7 @@ function ReplayTile({ spec, onMove, onThrow }: TileProps) {
       icon={iconOf(spec.content)}
       statusFrom={{ kind: "self", source: stream }}
       onMove={onMove}
+      onResize={onResize}
       onThrow={onThrow}
     >
       {(tier) => <StreamTileBody source={stream} tier={tier} />}
@@ -831,7 +835,7 @@ function ReplayTile({ spec, onMove, onThrow }: TileProps) {
 
 const DONE = { kind: "static", value: { status: "complete", progress: null } } as const;
 
-function StaticTile({ spec, meetingId, onMove, onThrow, onContent }: TileProps) {
+function StaticTile({ spec, meetingId, onMove, onResize, onThrow, onContent }: TileProps) {
   const interacting = useEditingTile() === spec.id;
   const c = spec.content;
   return (
@@ -843,6 +847,7 @@ function StaticTile({ spec, meetingId, onMove, onThrow, onContent }: TileProps) 
       icon={iconOf(c)}
       statusFrom={DONE}
       onMove={onMove}
+      onResize={onResize}
       onThrow={onThrow}
     >
       {(tier) => {

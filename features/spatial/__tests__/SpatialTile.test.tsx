@@ -16,6 +16,7 @@ function TileHarness({ store, onMove }: { store: SpatialStore; onMove: jest.Mock
           rect={{ x: 0, y: 0, w: 320, h: 240 }}
           title="Movable tile"
           onMove={onMove}
+          onResize={null}
         >
           {() => <div>Body</div>}
         </SpatialTile>
@@ -228,5 +229,39 @@ describe("SpatialTile frame edge", () => {
     expect(container.querySelectorAll("[data-spatial-resize]")).toHaveLength(0);
     act(() => store.select("tile"));
     expect(container.querySelectorAll("[data-spatial-resize]")).toHaveLength(8);
+  });
+
+  it("a finger on the body selects without dragging (the content scrolls natively)", () => {
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
+    const onMove = jest.fn();
+    act(() =>
+      root.render(
+        <SpatialStoreContext.Provider value={store}>
+          <FocusHostContext.Provider value={null}>
+            <SpatialTile id="tile" rect={{ x: 100, y: 100, w: 400, h: 300 }} title="t" onMove={onMove} onResize={null}>
+              {() => <div data-body>Body</div>}
+            </SpatialTile>
+          </FocusHostContext.Provider>
+        </SpatialStoreContext.Provider>,
+      ),
+    );
+    act(() => store.recomputeCoarse());
+    const body = must(container.querySelector<HTMLElement>("[data-body]"));
+    const touch = (type: string, x: number) => {
+      const e = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: 50 });
+      Object.defineProperty(e, "pointerType", { value: "touch" });
+      return e;
+    };
+    let down!: MouseEvent;
+    act(() => {
+      down = touch("pointerdown", 50);
+      body.dispatchEvent(down);
+      body.dispatchEvent(touch("pointermove", 90));
+      body.dispatchEvent(touch("pointerup", 90));
+    });
+    expect(onMove).not.toHaveBeenCalled();
+    expect(down.defaultPrevented).toBe(false);
+    expect(store.getSelected()).toBe("tile");
+    expect(must(container.querySelector<HTMLElement>("[data-spatial-body]")).style.touchAction).toBe("pan-x pan-y");
   });
 });
