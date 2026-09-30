@@ -485,7 +485,7 @@ export function OrganizationHub({
       if (!organizationId && home) {
         const restored = await doors.restoreRecordIn(dataSource, home, tableId);
         if (!restored.ok) return {
-          code: "refused_by_rule",
+          code: "refused_by_rule" as const,
           message: restored.error.message,
           ...(restored.error.hint ? { hint: restored.error.hint } : {}),
         };
