@@ -56,24 +56,17 @@ export type InventoryResponse = components["schemas"]["InventoryResponse"];
 export async function ragInventory(
   opts: { adminBypassAcl?: boolean; signal?: AbortSignal } = {},
 ): Promise<InventoryResponse> {
-  // Raw client: the contract declares NO requestBody for this endpoint
-  // (`admin_bypass_acl` is a query param), so `apiPost` derives an empty body
-  // and would drop the historical `{}` payload this call has always sent.
-  // Response type is still contract-derived (InventoryResponse alias above).
-  const qs = opts.adminBypassAcl ? "?admin_bypass_acl=true" : "";
+  // A pure READ, so it is a GET on both doors: the server admits a GET declared
+  // `authenticated_resource_bootstrap` with no selected organization (law:
+  // access-belongs-to-the-person §3/§4/§8) while the old POST answered
+  // 400 organization_required. Response type stays contract-derived.
+  //
   // THE ADMIN DOOR (lib/api/adminDoor.ts): inside the admin section the
   // inventory — and the ACL bypass, which lives ONLY there — is the super-admin
-  // GET twin. On a user page the bypass flag is meaningless and never sent.
-  if (adminDoorOpen()) {
-    const { data } = await getJson<InventoryResponse>(
-      `/admin/rag/search-lab/inventory${qs}`,
-      { signal: opts.signal },
-    );
-    return data;
-  }
-  const { data } = await postJson<InventoryResponse, Record<string, never>>(
-    "/rag/search-lab/inventory",
-    {},
+  // twin. On a user page the bypass flag is meaningless and never sent.
+  const qs = opts.adminBypassAcl && adminDoorOpen() ? "?admin_bypass_acl=true" : "";
+  const { data } = await getJson<InventoryResponse>(
+    `${adminDoorPath("/rag/search-lab/inventory")}${qs}`,
     { signal: opts.signal },
   );
   return data;
