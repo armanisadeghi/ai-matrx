@@ -269,8 +269,8 @@ export default function DatedChangesPage() {
           pending?.kind === "zone"
             ? `No time zone in the source, so it reads as ${formatEffective(pending.change).split(" (")[0]} UTC. Enter the provider's billing zone; it can be set only once.`
             : pending?.kind === "cancel"
-            ? `On ${formatEffective(pending.change)} the price will stay ${formatPricing(pending.change.expected)} instead of becoming ${formatPricing(pending.change.newValue)}. This cannot be undone — schedule a new change if it is still needed. Say why.`
-            : "It leaves the reminder for every super admin. Say what was done — for example, the price was set by hand or a corrected change was scheduled."
+            ? `Price stays ${formatPricing(pending.change.expected)} on ${formatEffective(pending.change).split(" (")[0]}, not ${formatPricing(pending.change.newValue)}. This cannot be undone.`
+            : "It leaves the reminder for every super admin. Say what was done."
         }
         placeholder={
           pending?.kind === "zone"

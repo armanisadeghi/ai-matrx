@@ -377,7 +377,7 @@ export function UnifiedDataRampScreen() {
               <span className="text-foreground">Owner:</span> {exit.owner_name} ·{" "}
               <span className="text-foreground">Date:</span> {exit.exit_date} ·{" "}
               <span className="text-foreground">Status:</span> {exit.status}
-              {overdue && " — past its date; the ramp is paused"}
+              {overdue && " — past its date; paused until the owner sets a new one"}
             </div>
             <div className="mt-1 text-muted-foreground">
               <span className="text-foreground">Trigger:</span> {exit.exit_trigger}
