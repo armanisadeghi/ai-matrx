@@ -269,10 +269,23 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   document" places a draft tile that creates the document only on its Create click (org gate +
   `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
   `{ kind: "document" }` source renders through the same item and is saved in the entity form.
+- **A document tile is `/documents/[id]`'s own component** (`items/document-items.tsx`, key `udt_document`):
+  `DocumentRecord` (features/data-tables) — rename, Copy reference, Share, the Rulebook notice, the Univer
+  editor with its save status, snapshot and History — which mounts `matrx-user/documents` itself, so the
+  item declares `surface: { name }` with no `Host`. An agent reads and writes the name, the description AND
+  the body text (`document_body_text` / `document_body`, applied through Univer's command service). "New
+  document" places a draft tile that creates the document only on its Create click (org gate +
+  `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
+  `{ kind: "document" }` source renders through the same item and is saved in the entity form.
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
 
+- 2026-09-30 — Documents on the Board (`udt_document`): the tile renders `DocumentRecord`, the one
+  component `/documents/[id]` now renders too, with the `matrx-user/documents` surface — which gained the
+  body text (read + ask-first write through Univer's command service). Create happens on the tile's
+  Create click; bring in via `DocumentsResourcePicker`; legacy `{kind:"document"}` tiles render.
+  Tests: `items/__tests__/document-items.test.tsx`.
 - 2026-09-30 — Documents on the Board (`udt_document`): the tile renders `DocumentRecord`, the one
   component `/documents/[id]` now renders too, with the `matrx-user/documents` surface — which gained the
   body text (read + ask-first write through Univer's command service). Create happens on the tile's
