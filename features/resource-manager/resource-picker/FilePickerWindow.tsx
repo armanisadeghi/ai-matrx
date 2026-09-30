@@ -18,10 +18,11 @@
 
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FolderOpen } from "lucide-react";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   FilesResourcePicker,
@@ -83,10 +84,18 @@ export interface FilePickerWindowProps {
   scopeId: string;
   initialFilter?: FilesResourcePickerFilter;
   /**
-   * Only this organization's files are listed and an upload is filed there (a filter on what is
-   * shown, not a permission). The data grid's attachment cell passes the table's organization.
+   * WHAT THE WINDOW LISTS — the initial organization filter. Absent = All organizations (every
+   * file the person holds, across all their organizations); the window shows the visible
+   * organization filter (`EntityOrgFilter`) so the person can narrow or clear it. A filter on what
+   * is shown, never a permission, and never the active organization.
    */
-  organizationId?: string | null;
+  organizationFilter?: string | null;
+  /**
+   * WHERE AN UPLOAD GOES — separate from what is listed. Absent = the active organization,
+   * through the upload choke point's existing organization gate. The data grid's attachment cell
+   * names the table's organization here.
+   */
+  uploadOrganizationId?: string | null;
 }
 
 export function FilePickerWindow({
@@ -101,8 +110,12 @@ export function FilePickerWindow({
   title = "Choose a file",
   scopeId,
   initialFilter,
-  organizationId = null,
+  organizationFilter = null,
+  uploadOrganizationId = null,
 }: FilePickerWindowProps) {
+  // The list's organization filter: window-local, starts at All organizations (or the one the
+  // caller named), never seeded from the active organization.
+  const [listOrganizationId, setListOrganizationId] = useState<string | null>(organizationFilter);
   // Window ids MUST be unique per mounted instance. The same logical picker
   // can legitimately be on screen twice — e.g. the scope context-item editor
   // renders a live PREVIEW of the real ReferenceValuePicker next to the real
@@ -170,13 +183,14 @@ export function FilePickerWindow({
       bodyClassName="p-0 overflow-hidden"
     >
       <div className="flex h-full min-h-0 flex-col">
-        {organizationId ? (
-          // THE FILTER SAYS SO (nothing fails silently): an organization with no files of
-          // its own shows an empty list, which must not read as "you have no files".
-          <p className="shrink-0 border-b px-3 py-1.5 text-xs text-muted-foreground" data-file-window-organization={organizationId}>
-            Only files in this table&apos;s organization are listed. An upload is filed there.
-          </p>
-        ) : null}
+        <div className="flex shrink-0 items-center justify-end gap-2 border-b px-3 py-1.5 empty:hidden">
+          {uploadOrganizationId ? (
+            <p className="mr-auto text-xs text-muted-foreground" data-file-window-upload-organization={uploadOrganizationId}>
+              An upload is filed in this table&apos;s organization.
+            </p>
+          ) : null}
+          <EntityOrgFilter orgId={listOrganizationId} onChange={setListOrganizationId} />
+        </div>
         <div className="min-h-0 flex-1">
           <FilesResourcePicker
             onBack={onClose}
@@ -196,8 +210,8 @@ export function FilePickerWindow({
             selectedFileIds={attached?.ids}
             initialFilter={initialFilter}
             fillHost
-            organizationId={organizationId}
-            topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" organizationId={organizationId} />}
+            organizationId={listOrganizationId}
+            topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" organizationId={uploadOrganizationId} />}
           />
         </div>
         {attached && (

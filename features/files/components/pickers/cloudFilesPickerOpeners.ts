@@ -33,11 +33,17 @@ export interface UseFilePickerOpenOptions {
   title?: string;
   description?: string;
   /**
-   * Show only this organization's files, and file an upload there — a FILTER on what the window
-   * shows, never a permission. The data grid's attachment cell passes the TABLE's organization
-   * (merged-grid review 2, fix lane F item 4).
+   * WHAT THE WINDOW LISTS: the initial organization filter. Absent = All organizations (every
+   * file the person holds); the window shows a visible filter to narrow or clear it. A FILTER on
+   * what is shown, never a permission, never the active organization.
    */
-  organizationId?: string | null;
+  organizationFilter?: string | null;
+  /**
+   * WHERE AN UPLOAD GOES, separate from what is listed. Absent = the active organization through
+   * the upload choke point's organization gate. The data grid's attachment cell names the
+   * TABLE's organization here (AO-168).
+   */
+  uploadOrganizationId?: string | null;
 }
 
 export type FileOpener = (

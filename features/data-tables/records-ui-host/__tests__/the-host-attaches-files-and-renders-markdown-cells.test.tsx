@@ -79,7 +79,7 @@ describe("pickFiles — the app's one file window for an attachment cell", () =>
     openFilePicker.mockResolvedValue([CRANIAL, TIBIA]);
     const host = recordsUiHostFor({ ports: PORTS, merged: true });
     await expect(host.pickFiles!({ multiple: true })).resolves.toEqual([CRANIAL, TIBIA]);
-    expect(openFilePicker).toHaveBeenCalledWith({ multi: true, title: "Attach files", organizationId: PORTS.organizationId });
+    expect(openFilePicker).toHaveBeenCalledWith({ multi: true, title: "Attach files", uploadOrganizationId: PORTS.organizationId });
   });
 
   it("single-select for a one-file column, filtered by the column's accept list", async () => {
@@ -90,18 +90,18 @@ describe("pickFiles — the app's one file window for an attachment cell", () =>
       multi: false,
       title: "Attach a file",
       allowedExtensions: ["pdf"],
-      organizationId: PORTS.organizationId,
+      uploadOrganizationId: PORTS.organizationId,
     });
   });
 
   // Review 2 fix lane F item 4: the clinic's X-rays live in the clinic's workspace. The window the
-  // attachment cell opens lists only the TABLE's organization's files and files an upload there —
-  // a filter on what is shown, never a permission.
-  it("asks the file window for the TABLE's organization", async () => {
+  // attachment cell opens files an upload in the TABLE's organization and lists EVERY file the
+  // person holds (AO-168: what is listed and where an upload goes are two separate things).
+  it("asks the file window to file an upload in the TABLE's organization", async () => {
     openFilePicker.mockResolvedValue([CRANIAL]);
     const other = { ...PORTS, organizationId: "a1b2c3d4-0000-4000-8000-00000000abcd" };
     await recordsUiHostFor({ ports: other, merged: false }).pickFiles!({ multiple: false });
-    expect(openFilePicker).toHaveBeenCalledWith(expect.objectContaining({ organizationId: other.organizationId }));
+    expect(openFilePicker).toHaveBeenCalledWith(expect.objectContaining({ uploadOrganizationId: other.organizationId }));
   });
 
   it.each([[null], [[]]])("a closed window (%j) answers null, never an empty pick", async (answer) => {
