@@ -126,10 +126,6 @@ const NOT_SURFACED: Record<
   meet: {
     reason: "Google Meet preview remains internal and has no consent row.",
   },
-  other_contacts: {
-    reason:
-      "Google Other Contacts preview remains internal and has no consent row.",
-  },
   tasks_write: {
     reason: "Google Task changes remain internal and have no consent row.",
   },
