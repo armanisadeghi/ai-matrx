@@ -312,10 +312,12 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
   );
   const performers = isRecord(summary?.performers) ? summary.performers : {};
   const outcome = str(summary?.outcome) || "completed";
-  const failedStages: Record<string, string> = {};
-  if (isRecord(summary?.failed_stages)) {
-    for (const [k, v] of Object.entries(summary.failed_stages)) if (k !== "__kind") failedStages[k] = str(v);
-  }
+  // This reader names the workflow's fixed stage fields rather than deriving a
+  // marker-free copy of the kind-bearing failed_stages value.
+  const failedStages = STEP_ORDER.flatMap((stage) => {
+    const reason = isRecord(summary?.failed_stages) ? str(summary.failed_stages[stage]) : "";
+    return reason ? [[stage, reason] as const] : [];
+  });
   const proofGated = records(isRecord(run?.triage) ? run.triage.triaged : null).filter(
     (row) => row.proof_gated === true && str(row.tier) === "pitch_ready",
   );
@@ -546,7 +548,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                     that did work; the failed part is named here.
                   </p>
                   <ul className="mt-1 flex flex-col gap-0.5">
-                    {Object.entries(failedStages).map(([stage, why]) => (
+                    {failedStages.map(([stage, why]) => (
                       <li key={stage} className="text-xs">
                         <span className="font-medium text-foreground">{humanize(stage)}:</span>{" "}
                         <span className="text-muted-foreground">{why}</span>

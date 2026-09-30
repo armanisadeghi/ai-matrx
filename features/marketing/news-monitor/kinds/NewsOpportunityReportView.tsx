@@ -18,7 +18,7 @@ import { KindCard, Pill } from "./shared";
 
 function sectionCount(value: unknown): number {
   // A section entry with only a marker is a placeholder, not a story.
-  return records(value).filter((e) => Object.keys(e).some((k) => k !== "__kind")).length;
+  return records(value).filter((entry) => Object.keys(entry).length > 1).length;
 }
 
 export function NewsOpportunityReportView({ value }: { value: Record<string, unknown> }) {
@@ -31,7 +31,6 @@ export function NewsOpportunityReportView({ value }: { value: Record<string, unk
   const funnel = records(value.funnel);
   const markdown = str(value.rendered_markdown);
   const gatedEntries = Object.entries(gated)
-    .filter(([k]) => k !== "__kind")
     .map(([k, v]) => [k, strings(v).length] as const)
     .filter(([, n]) => n > 0);
   return (

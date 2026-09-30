@@ -150,7 +150,9 @@ export async function getRunParts(
   const verdicts: Record<string, Record<string, unknown>> = {};
   if (isRecord(row.verdicts)) {
     for (const [key, value] of Object.entries(row.verdicts)) {
-      if (key !== "__kind" && isRecord(value)) verdicts[key] = value;
+      // The marker is a string while verdict entries are objects, so accepting
+      // only the documented entry shape leaves the payload itself untouched.
+      if (isRecord(value)) verdicts[key] = value;
     }
   }
   return {

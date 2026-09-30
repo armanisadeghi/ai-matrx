@@ -53,10 +53,13 @@ function summarizeKindSchema(schema: unknown): string | null {
     Array.isArray(s.required) ? (s.required as unknown[]).map(String) : [],
   );
   const parts = Object.entries(props as Record<string, unknown>)
-    // `__kind` is part of the data everywhere, but it is never what the author
-    // of a write has to think about — the seam accepts it either way.
-    .filter(([name]) => name !== KIND_KEY)
-    .map(([name, spec]) => `${name}${required.has(name) ? "" : "?"}: ${describe(spec)}`);
+    // The marker stays in the advertised schema. Calling it stamped explains
+    // that the seam supplies the invariant without hiding it from the contract.
+    .map(([name, spec]) =>
+      name === KIND_KEY
+        ? `${name} (stamped): ${describe(spec)}`
+        : `${name}${required.has(name) ? "" : "?"}: ${describe(spec)}`,
+    );
   if (parts.length === 0) return null;
   return `{ ${parts.join(", ")} }`;
 }

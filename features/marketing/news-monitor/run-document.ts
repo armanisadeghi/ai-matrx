@@ -38,7 +38,6 @@ export function counts(value: unknown): Record<string, number> {
   if (!isRecord(value)) return {};
   const out: Record<string, number> = {};
   for (const [k, v] of Object.entries(value)) {
-    if (k === "__kind") continue;
     if (typeof v === "number" && Number.isFinite(v)) out[k] = v;
   }
   return out;
@@ -77,7 +76,7 @@ export interface SourceHealth {
 export function readSourceHealth(summary: unknown, digest: unknown): SourceHealth[] {
   const fromSummary = isRecord(summary) && isRecord(summary.source_status)
     ? Object.entries(summary.source_status)
-        .filter(([k, v]) => k !== "__kind" && isRecord(v))
+        .filter(([, value]) => isRecord(value))
         .map(([source, v]) => {
           const entry = v as Record<string, unknown>;
           return {
@@ -358,7 +357,7 @@ export function reportIsReadable(report: Record<string, unknown> | null): boolea
   const md = str(report.rendered_markdown).trim();
   const sections = isRecord(report.sections) ? report.sections : {};
   const listed = ["pitch_ready", "big_stories", "watch"].some(
-    (k) => records(sections[k]).some((entry) => Object.keys(entry).some((key) => key !== "__kind")),
+    (section) => records(sections[section]).some((entry) => Object.keys(entry).length > 1),
   );
   return md.length > 0 || listed;
 }
