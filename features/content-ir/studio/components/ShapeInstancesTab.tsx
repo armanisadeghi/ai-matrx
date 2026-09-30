@@ -532,6 +532,7 @@ export default function ShapeInstancesTab({
                       </span>
                     )}
                     <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {entry.organizationName ? `${entry.organizationName} · ` : ""}
                       {formatUpdated(entry.updatedAt)}
                     </span>
                   </button>

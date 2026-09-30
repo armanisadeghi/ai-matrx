@@ -30,7 +30,22 @@ function builder(relation: string) {
       tableCalls.push({ relation, op, args });
       return b;
     };
-  for (const op of ["select", "eq", "is", "not", "insert", "update", "in"]) b[op] = chain(op);
+  for (const op of ["select", "eq", "is", "not", "insert", "update"]) b[op] = chain(op);
+  // The person-wide door carries labels, not payloads; the documents are read back by id.
+  b.in = (...args: unknown[]) => {
+    tableCalls.push({ relation, op: "in", args });
+    const ids = args[1] as string[];
+    return {
+      then: (resolve: (v: unknown) => unknown) =>
+        resolve({
+          data: ids.map((id) => ({
+            id,
+            data: { __kind: "wine_tasting", wine_name: "Ridge Monte Bello 2019" },
+          })),
+          error: null,
+        }),
+    };
+  };
   b.maybeSingle = async () =>
     relation === "content_ir.kind_definition"
       ? { data: { kind: "wine_tasting", version: 3, emitted_json_schema: null }, error: null }
@@ -64,10 +79,55 @@ function builder(relation: string) {
 
 jest.mock("@/utils/supabase/client", () => {
   const client = {
-    schema: (schema: string) => ({ from: (table: string) => builder(`${schema}.${table}`) }),
+    schema: (schema: string) => ({
+      from: (table: string) => builder(`${schema}.${table}`),
+      // content_ir.kind_instances_everywhere — the OLD table across every organization.
+      rpc: async (name: string, args: unknown) => {
+        doorCalls.push({ door: `rpc:${name}`, args });
+        return {
+          data: {
+            success: true,
+            total: 2,
+            instances: [
+              {
+                id: "legacy-row-1",
+                title: "Ridge Monte Bello 2019",
+                validation_status: "passed",
+                kind_version: 3,
+                updated_at: "2026-09-27T09:00:00Z",
+                archived_at: null,
+                organization_id: LEGACY_ORG,
+                organization_name: "Legacy Cellars",
+                created_by: USER,
+              },
+              {
+                // an old-table row of an org that has since adopted the store: never listed twice
+                id: "stale-copy",
+                title: "Ridge Monte Bello 2019",
+                validation_status: "passed",
+                kind_version: 3,
+                updated_at: "2026-09-27T08:00:00Z",
+                archived_at: null,
+                organization_id: STORE_ORG,
+                organization_name: "Store Cellars",
+                created_by: USER,
+              },
+            ],
+          },
+          error: null,
+        };
+      },
+    }),
   };
   return { supabase: client, createClient: () => client };
 });
+
+jest.mock("@/features/organizations/service", () => ({
+  getUserOrganizations: async () => [
+    { id: STORE_ORG, name: "Store Cellars" },
+    { id: LEGACY_ORG, name: "Legacy Cellars" },
+  ],
+}));
 
 jest.mock("@/utils/supabase/claimsUser", () => ({
   getClaimsUser: async () => ({ data: { user: { id: USER } }, error: null }),
@@ -197,15 +257,23 @@ describe("a record-store organization", () => {
     ]);
   });
 
-  it("lists through the store's read door, and deletes through its delete door", async () => {
-    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, STORE_ORG);
-    expect(touchedLegacyTable()).toBe(false);
-    expect(entries.map((e) => e.id)).toEqual(["store-record-1"]);
+  it("lists every organization's instances: the store's read door for it, the person-wide door for the rest", async () => {
+    // The SELECTED organization is irrelevant to what is listed.
+    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, LEGACY_ORG);
+    expect(entries.map((e) => e.id).sort()).toEqual(["legacy-row-1", "store-record-1"]);
+    expect(entries.find((e) => e.id === "store-record-1")).toMatchObject({
+      organizationId: STORE_ORG,
+      organizationName: "Store Cellars",
+    });
+    expect(entries.find((e) => e.id === "legacy-row-1")).toMatchObject({
+      organizationName: "Legacy Cellars",
+    });
     expect(entries[0].updatedAt).toBe("2026-09-27T10:00:00Z");
     const list = doorCalls.find((c) => c.door === "list");
     expect((list!.args as { filter: unknown }).filter).toEqual({ kind_definition_id: KIND_DEF });
 
-    await softDeleteKindInstance(entries[0].id, entries[0].home);
+    tableCalls.length = 0;
+    await softDeleteKindInstance("store-record-1", entries.find((e) => e.id === "store-record-1")!.home);
     expect(touchedLegacyTable()).toBe(false);
     expect(doorCalls.find((c) => c.door === "recordDelete")?.args).toMatchObject({
       record_id: "store-record-1",
@@ -227,13 +295,14 @@ describe("an organization that has not adopted the store for kind records", () =
     expect(insert?.args[0]).toMatchObject({ organization_id: LEGACY_ORG, created_by: USER });
 
     const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, LEGACY_ORG);
-    expect(entries.map((e) => e.id)).toEqual(["legacy-row-1"]);
-    expect(writeDoors()).toEqual([]);
+    expect(entries.map((e) => e.id)).toContain("legacy-row-1");
+    // Reading the store-side organization is fine; a legacy organization never WRITES to a store.
+    expect(writeDoors().filter((d) => d.startsWith("recordWrite") || d === "recordDelete")).toEqual([]);
   });
 
-  it("lists today's table when no organization is known", async () => {
+  it("lists the same across-organization set when no organization is selected", async () => {
     const entries = await listKindInstances(KIND_DEF, "active");
-    expect(entries.map((e) => e.id)).toEqual(["legacy-row-1"]);
-    expect(doorCalls).toEqual([]);
+    expect(entries.map((e) => e.id).sort()).toEqual(["legacy-row-1", "store-record-1"]);
+    expect(doorCalls.some((c) => c.door === "rpc:kind_instances_everywhere")).toBe(true);
   });
 });

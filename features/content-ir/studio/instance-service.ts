@@ -341,6 +341,9 @@ export interface KindInstanceListEntry {
   archivedAt: string | null;
   /** Which store answered this row — hand it back to update / repin / delete. */
   home?: KindRecordHome;
+  /** The organization the row belongs to — the list spans every organization the person reaches. */
+  organizationId?: string | null;
+  organizationName?: string | null;
 }
 
 async function listFromRecordStore(
@@ -435,57 +438,152 @@ export async function listKindInstances(
 
   const listScope = await defaultListFilter("content_ir_kind_instance", { userId, requested: scope });
 
-  const home = await whereKindRecordsLive(homeOrganizationId ?? activeOrganizationId, userId);
-  // The selected organization decides only WHICH STORE its own records are read
-  // from — never which organizations' records the person sees. When it keeps them
-  // in the record store, the person's rows in every OTHER organization (still in
-  // today's table) are listed beside them, each tagged with its own home.
-  const fromOlderTable = async (excludeOrganizationId: string | null) => {
-    let query = supabase
-      .schema("content_ir")
-      .from("kind_instance")
-      .select("id,title,validation_status,kind_version,updated_at,data,archived_at")
-      .eq("kind_definition_id", kindDefinitionId)
-      .is("deleted_at", null);
-    if (homeOrganizationId) query = query.eq("organization_id", homeOrganizationId);
-    else query = listScope.apply(query);
-    if (excludeOrganizationId) query = query.neq("organization_id", excludeOrganizationId);
-    // THE ARCHIVED-ITEMS LAW: a request the tab's own control sets, never a
-    // literal — the default hides archived rows and one click reveals them.
-    if (archiveFilter === "active") query = query.is("archived_at", null);
-    else if (archiveFilter === "archived") query = query.not("archived_at", "is", null);
-
-    const { data, error } = await query.order("updated_at", { ascending: false });
-    if (error) {
-      throw new Error(`Failed to list instances: ${error.message}`);
-    }
-    return (data ?? []).map((row) => ({
-      id: row.id,
-      title: row.title,
-      validationStatus: row.validation_status,
-      kindVersion: row.kind_version,
-      updatedAt: row.updated_at,
-      data: row.data,
-      archivedAt: row.archived_at,
-    }));
-  };
-
-  if (home.store === "record") {
-    const inStore = await listFromRecordStore(
-      home,
-      kindDefinitionId,
-      archiveFilter,
-      !homeOrganizationId && listScope.ownerOnly ? userId : null,
-    );
-    // The admin door (`homeOrganizationId`) reads exactly one organization's store.
-    if (homeOrganizationId) return inStore;
-    const elsewhere = await fromOlderTable(home.organizationId);
-    return [...inStore, ...elsewhere].sort((a, b) =>
-      a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0,
+  // THE PERSON'S INSTANCES ACROSS EVERY ORGANIZATION — never the header's selected
+  // one. Two sources, merged and each row labelled with its organization:
+  //   1. the OLD table, through the person-wide door `content_ir.kind_instances_everywhere`;
+  //   2. the RECORD STORE, read per organization (each org that keeps its kind records there
+  //      answers through its own kind-record Table, as this person) — HOW an instance lives
+  //      there: see `listFromRecordStore`.
+  // The selected organization only ever names WHICH store answers its own rows.
+  void activeOrganizationId;
+  const { data: def, error: defError } = await supabase
+    .schema("content_ir")
+    .from("kind_definition")
+    .select("kind")
+    .eq("id", kindDefinitionId)
+    .maybeSingle();
+  if (defError || !def) {
+    throw new Error(
+      `Failed to resolve the kind for this list${defError ? `: ${defError.message}` : "."}`,
     );
   }
 
-  return fromOlderTable(null);
+  // Which organizations keep their kind records in the record store (they are read from
+  // the store, so the old table's rows for them are not listed twice).
+  const memberOrgs = await personOrganizations().catch((error: unknown) => {
+    console.warn("[content-ir] could not list the person's organizations", error);
+    return [] as Array<{ id: string; name: string }>;
+  });
+  const orgIds = homeOrganizationId ? [homeOrganizationId] : memberOrgs.map((o) => o.id);
+  const names = new Map<string, string>(memberOrgs.map((o) => [o.id, o.name]));
+  const storeHomes: RecordStoreHome[] = [];
+  const settled = await Promise.all(
+    orgIds.map(async (orgId) => {
+      try {
+        return { orgId, home: await whereKindRecordsLive(orgId, userId), failed: null as string | null };
+      } catch (error) {
+        return { orgId, home: null, failed: error instanceof Error ? error.message : String(error) };
+      }
+    }),
+  );
+  for (const r of settled) {
+    if (r.home?.store === "record") storeHomes.push(r.home);
+    else if (r.failed) console.warn("[content-ir] could not check where records live for", r.orgId, r.failed);
+  }
+  const storeOrgIds = new Set(storeHomes.map((h) => h.organizationId));
+
+  const fromOlderTable = async (): Promise<KindInstanceListEntry[]> => {
+    const listed: Array<{
+      id: string;
+      title: string | null;
+      validation_status: string;
+      kind_version: number;
+      updated_at: string;
+      archived_at: string | null;
+      organization_id: string;
+      organization_name: string | null;
+      created_by: string | null;
+    }> = [];
+    const PAGE = 500;
+    for (let offset = 0; ; offset += PAGE) {
+      const { data, error } = await supabase.schema("content_ir").rpc(
+        "kind_instances_everywhere" as never,
+        {
+          p_kind: def.kind,
+          p_organization_id: homeOrganizationId ?? null,
+          p_limit: PAGE,
+          p_offset: offset,
+          p_include_archived: archiveFilter !== "active",
+        } as never,
+      );
+      if (error) throw new Error(`Failed to list instances: ${error.message}`);
+      const body = data as unknown as {
+        success?: boolean;
+        instances?: typeof listed;
+        total?: number;
+      } | null;
+      if (!body?.success) throw new Error("Failed to list instances: the list door refused.");
+      listed.push(...(body.instances ?? []));
+      if (listed.length >= (body.total ?? 0) || (body.instances ?? []).length === 0) break;
+    }
+    const wanted = listed.filter(
+      (row) =>
+        !storeOrgIds.has(row.organization_id) &&
+        (archiveFilter !== "archived" || row.archived_at !== null) &&
+        (homeOrganizationId || !listScope.ownerOnly || row.created_by === userId),
+    );
+    // The door carries the labels, not the payload: read the documents for exactly these
+    // rows, through the list scope (a filter, never access).
+    const dataById = new Map<string, Json>();
+    for (let i = 0; i < wanted.length; i += 200) {
+      const ids = wanted.slice(i, i + 200).map((row) => row.id);
+      let query = supabase.schema("content_ir").from("kind_instance").select("id,data").in("id", ids);
+      if (!homeOrganizationId) query = listScope.apply(query);
+      const { data, error } = await query;
+      if (error) throw new Error(`Failed to list instances: ${error.message}`);
+      for (const row of data ?? []) dataById.set(row.id, row.data);
+    }
+    return wanted
+      .filter((row) => dataById.has(row.id))
+      .map((row) => {
+        if (row.organization_name) names.set(row.organization_id, row.organization_name);
+        return {
+          id: row.id,
+          title: row.title,
+          validationStatus: row.validation_status,
+          kindVersion: row.kind_version,
+          updatedAt: row.updated_at,
+          data: dataById.get(row.id) ?? null,
+          archivedAt: row.archived_at,
+          organizationId: row.organization_id,
+          organizationName: row.organization_name,
+        };
+      });
+  };
+
+  const [older, ...stores] = await Promise.all([
+    fromOlderTable(),
+    ...storeHomes.map(async (home) => {
+      try {
+        const rows = await listFromRecordStore(
+          home,
+          kindDefinitionId,
+          archiveFilter,
+          !homeOrganizationId && listScope.ownerOnly ? userId : null,
+        );
+        return rows.map((row) => ({ ...row, organizationId: home.organizationId }));
+      } catch (error) {
+        // The organization the person selected keeps its refusal loud; another
+        // organization's refusal never hides the rest.
+        if (home.organizationId === activeOrganizationId) throw error;
+        console.warn("[content-ir] record store list failed for", home.organizationId, error);
+        return [] as KindInstanceListEntry[];
+      }
+    }),
+  ]);
+  const orgNames = names;
+  return [...older, ...stores.flat()]
+    .map((row) => ({
+      ...row,
+      organizationName: row.organizationName ?? (row.organizationId ? (orgNames.get(row.organizationId) ?? null) : null),
+    }))
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
+}
+
+async function personOrganizations(): Promise<Array<{ id: string; name: string }>> {
+  const { getUserOrganizations } = await import("@/features/organizations/service");
+  const orgs = await getUserOrganizations();
+  return orgs.map((o) => ({ id: o.id, name: o.name }));
 }
 
 export interface UpdateKindInstanceArgs {
