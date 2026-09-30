@@ -22,6 +22,9 @@
  *   pnpm sync-types:fast     → ONLY step 2 against the LOCAL backend (no db-types, no typecheck)
  *   pnpm sync-types --api-only → ONLY step 2 (+ drop guard + typecheck) from the CHECKOUT — for when
  *                              step 1 is blocked by something unrelated (a package vocabulary drift)
+ *   pnpm sync-types --no-typecheck → run the selected contract steps, but deliberately skip Step 3.
+ *                              This is for a bounded contract refresh when the caller owns
+ *                              type-checking separately; it never skips the contract pin or drop guard.
  *
  * Steps:
  *   1. Update Supabase database types          → `pnpm db-types`
@@ -64,6 +67,7 @@ function getArg(name, fallback) {
 
 const fastMode = args.includes('--fast');
 const apiOnly = args.includes('--api-only');
+const noTypecheck = args.includes('--no-typecheck');
 const preflightOnly = args.includes('--preflight-only');
 const contractPinPath = getArg('--contract-pin-path', null);
 if (contractPinPath && !preflightOnly) {
@@ -135,7 +139,11 @@ function generateApiTypes(openapiPath, apiTypesPath) {
     );
 }
 
-/** Emit the contract from the aidream working tree — no server, no network. */
+/**
+ * Emit the contract from the aidream working tree — no server and no writes to
+ * that checkout. `generateReference` uses Aidream's explicit emitter with a
+ * temporary output path, then runs this repo's canonical TypeScript generator.
+ */
 function generateFromCheckout(stagingDir) {
     if (!existsSync(AIDREAM_ROOT)) {
         console.error(`  ✗ The aidream checkout is not at ${AIDREAM_ROOT}.`);
@@ -144,22 +152,26 @@ function generateFromCheckout(stagingDir) {
         process.exit(1);
     }
 
-    console.log('  Generating the API contract from the aidream CHECKOUT (no server)...\n');
-    console.log('  Note: this also refreshes aidream\'s own committed snapshot in');
-    console.log(`        ${AIDREAM_GENERATED_DIR}, so that checkout may now show as modified.\n`);
+    console.log('  Generating the API contract from the aidream CHECKOUT (no server, no checkout writes)...\n');
+    let reference;
     try {
-        execSync('uv run python scripts/generate_types.py all --direct', {
-            stdio: 'inherit',
-            cwd: AIDREAM_ROOT,
-        });
-    } catch {
+        reference = generateReference(AIDREAM_ROOT);
+        copyFileSync(reference.openapiPath, join(stagingDir, 'openapi.json'));
+        copyFileSync(reference.apiTypesPath, join(stagingDir, 'api-types.ts'));
+    } catch (error) {
         console.error('\n  ✗ The aidream checkout could not emit its schema.');
         console.error('    Fix the errors above (usually a Python import error in that tree), then re-run.');
         console.error(`    The same command on its own: cd ${AIDREAM_ROOT} && uv run python scripts/emit_openapi.py --out /tmp/openapi.json\n`);
         process.exit(1);
+    } finally {
+        if (reference) rmSync(reference.dir, { recursive: true, force: true });
     }
 
+    // These supplemental bundles are read-only snapshots supplied by Aidream.
+    // The OpenAPI pair above is freshly emitted; never invoke Aidream's legacy
+    // `generate_types.py all --direct` here because it dirties that shared checkout.
     for (const [from, to] of Object.entries({ 'openapi.json': 'openapi.json', ...BUNDLE_FILES })) {
+        if (from === 'openapi.json') continue;
         const source = join(AIDREAM_GENERATED_DIR, from);
         if (!existsSync(source)) continue;
         copyFileSync(source, join(stagingDir, to));
@@ -351,8 +363,8 @@ try {
 
 // ── Step 3: Type-check the codebase ────────────────────────────────────────
 
-if (fastMode) {
-    console.log('\n  ⊘ Step 3: Skipping type-check (--fast)\n');
+if (fastMode || noTypecheck) {
+    console.log(`\n  ⊘ Step 3: Skipping type-check (${fastMode ? '--fast' : '--no-typecheck'})\n`);
 } else {
     console.log('\n  Step 3: Running TypeScript type-check...\n');
     try {

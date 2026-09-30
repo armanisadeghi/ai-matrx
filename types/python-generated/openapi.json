@@ -84883,7 +84883,33 @@
           "Conversations"
         ],
         "summary": "Get User Conversations",
+        "description": "The caller's conversations, newest first, one bounded page.\n\nUnbounded, this read every conversation the person ever had and timed out\non a busy account; ``limit``/``offset`` page it and ``count`` is the page size.",
         "operationId": "get_user_conversations_cx_conversations_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -84891,6 +84917,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ListConversationsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -199538,6 +199574,18 @@
       },
       "Interval": {
         "properties": {
+          "__kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of, when it is one."
+          },
           "low": {
             "type": "number",
             "title": "Low"
@@ -222735,6 +222783,18 @@
       },
       "MetricEstimate": {
         "properties": {
+          "__kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of, when it is one."
+          },
           "metric": {
             "type": "string",
             "enum": [
@@ -237528,6 +237588,18 @@
       },
       "PairedComparison": {
         "properties": {
+          "__kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of, when it is one."
+          },
           "metric": {
             "type": "string",
             "enum": [
@@ -237951,6 +238023,18 @@
       },
       "PanelMetrics": {
         "properties": {
+          "__kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of, when it is one."
+          },
           "panel_id": {
             "type": "string",
             "title": "Panel Id"
@@ -292143,6 +292227,18 @@
       },
       "Stratum": {
         "properties": {
+          "__kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of, when it is one."
+          },
           "partition": {
             "anyOf": [
               {

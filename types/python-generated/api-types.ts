@@ -37953,7 +37953,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get User Conversations */
+        /**
+         * Get User Conversations
+         * @description The caller's conversations, newest first, one bounded page.
+         *
+         *     Unbounded, this read every conversation the person ever had and timed out
+         *     on a busy account; ``limit``/``offset`` page it and ``count`` is the page size.
+         */
         get: operations["get_user_conversations_cx_conversations_get"];
         put?: never;
         post?: never;
@@ -86213,6 +86219,11 @@ export interface components {
         };
         /** Interval */
         Interval: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             */
+            __kind?: string | null;
             /** Low */
             low: number;
             /** High */
@@ -96094,6 +96105,11 @@ export interface components {
         /** MetricEstimate */
         MetricEstimate: {
             /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             */
+            __kind?: string | null;
+            /**
              * Metric
              * @enum {string}
              */
@@ -102837,6 +102853,11 @@ export interface components {
         /** PairedComparison */
         PairedComparison: {
             /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             */
+            __kind?: string | null;
+            /**
              * Metric
              * @enum {string}
              */
@@ -103059,6 +103080,11 @@ export interface components {
         };
         /** PanelMetrics */
         PanelMetrics: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             */
+            __kind?: string | null;
             /** Panel Id */
             panel_id: string;
             /** Panel Status */
@@ -126868,6 +126894,11 @@ export interface components {
         };
         /** Stratum */
         Stratum: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             */
+            __kind?: string | null;
             /** Partition */
             partition?: string | null;
             /** Lane */
@@ -204438,7 +204469,10 @@ export interface operations {
     };
     get_user_conversations_cx_conversations_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -204452,6 +204486,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListConversationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
