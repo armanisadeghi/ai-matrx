@@ -47,6 +47,8 @@ jest.mock("../../../knobs", () => ({
   useTopicalMapKnobs: () => ({ knobs: KNOBS, loading: false, error: null }),
 }));
 jest.mock("../../../hooks", () => ({
+  // The workspace resolves its organization from the MAP's own record (active-org law), never the active org.
+  useTopicalMap: () => ({ data: { organization_id: "org-of-the-map" } }),
   useMapDiagnostics: () => ({ data: { sites_using_map: [] } }),
 }));
 jest.mock("../usePagesQuery", () => ({
