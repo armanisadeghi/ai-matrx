@@ -25,9 +25,8 @@
 // 768px (see the `ios-mobile-first` skill), so there is no second layout here
 // and no `useIsMobile` branch to drift.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  AlertTriangle,
   Ban,
   Check,
   ChevronDown,
@@ -223,6 +222,42 @@ export function productSwitchVisible(health: ConnectorProductHealth): boolean {
   return health.togglable || health.state === "connected";
 }
 
+/** The quiet status word beside a product name. Never a pill: color carries it. */
+function RowStatus({ health }: { health: ConnectorProductHealth }) {
+  const base = "inline-flex shrink-0 items-center gap-1 text-xs font-medium";
+  switch (health.state) {
+    case "connected":
+      return (
+        <span className={cn(base, "text-success")}>
+          <Check className="h-3 w-3" aria-hidden />
+          Connected
+        </span>
+      );
+    case "scope_missing":
+      return <span className={cn(base, "text-warning")}>Partly connected</span>;
+    case "refused":
+      return (
+        <span className={cn(base, "text-warning")}>
+          Not working
+          <ErrorAlchemyMenu />
+        </span>
+      );
+    case "account_unusable":
+      return <span className={cn(base, "text-destructive")}>Needs reconnecting</span>;
+    case "unavailable":
+      return <span className={cn(base, "text-destructive")}>Blocked</span>;
+    case "pending_rollout":
+      return (
+        <span className={cn(base, "text-muted-foreground")} title={health.reason ?? undefined}>
+          <Lock className="h-3 w-3" aria-hidden />
+          Coming soon
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
 function ProductRow({
   provider,
   health,
@@ -241,74 +276,43 @@ function ProductRow({
   anchorId?: string;
 }) {
   const Icon = health.product.icon;
+  const Mark = health.product.mark;
   const gated = health.state === "pending_rollout";
   return (
-    <div id={anchorId} tabIndex={anchorId ? -1 : undefined} className="scroll-mt-20 flex items-start gap-2 border-b border-border/60 px-1 py-2.5 outline-none last:border-b-0 focus:ring-2 focus:ring-primary sm:gap-2.5 sm:px-3">
-      <Icon
+    <div
+      id={anchorId}
+      tabIndex={anchorId ? -1 : undefined}
+      className="scroll-mt-20 flex items-start gap-3.5 px-4 py-3.5 outline-none focus:bg-accent/40 sm:px-5"
+    >
+      <span
         className={cn(
-          "mt-0.5 h-4 w-4 shrink-0",
-          gated ? "text-muted-foreground/60" : "text-foreground/70",
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background shadow-sm",
+          gated && "opacity-60",
         )}
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground">
+      >
+        {Mark ? (
+          <Mark colored className="h-6 w-6" />
+        ) : (
+          <Icon className="h-5 w-5 text-foreground/70" aria-hidden />
+        )}
+      </span>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span className="text-[15px] font-medium leading-tight text-foreground">
             {health.product.name}
           </span>
-          {health.state === "connected" ? (
-            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-success/15 px-1.5 text-[10px] font-medium text-success">
-              <Check className="h-2.5 w-2.5" aria-hidden />
-              Connected
-            </span>
-          ) : health.state === "scope_missing" ? (
-            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning">
-              <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
-              Partly connected
-            </span>
-          ) : health.state === "refused" ? (
-            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning">
-              <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
-              Not working
-              <ErrorAlchemyMenu />
-            </span>
-          ) : /* 🚨 THE TWO STATES THIS ROW RENDERED AS "never connected" (V17-3,
-                V17-1). A product the account HOLDS and cannot use is not a blank
-                row: with the credential dead every one of the nine rows read
-                exactly like a row nobody had ever switched on, on the one screen
-                a person reaches to repair it. */
-          health.state === "account_unusable" ? (
-            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 text-[10px] font-medium text-destructive">
-              <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
-              Needs reconnecting
-            </span>
-          ) : health.state === "unavailable" ? (
-            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 text-[10px] font-medium text-destructive">
-              <Ban className="h-2.5 w-2.5" aria-hidden />
-              Blocked
-            </span>
-          ) : null}
+          <RowStatus health={health} />
         </div>
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+        <p
+          className="mt-0.5 line-clamp-1 text-[13px] leading-snug text-muted-foreground"
+          title={health.product.promise}
+        >
           {health.product.promise}
         </p>
-        {gated ? (
-          <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3" aria-hidden />
-            {health.reason}
-          </p>
-        ) : null}
-        {/* A row the provider is REFUSING carried only its promise, so the badge
-            said "Not working" and nothing on the screen said what was wrong or
-            what the press would do about it. The server's own sentence goes
-            here, and a switched-on row says plainly that approving again renews
-            the grant — never that it is already connected.
-            🚨 That "renews it" line is true ONLY when the disposition is
-            `reconnect` (a fresh approval is what clears it) — `health.remedy`
-            is non-null exactly then (`productHealth` in health.ts). A
-            `share_required` refusal (a different Google identity must share
-            the item) or an `ours` refusal (our own configuration mistake) is
-            not fixed by approving again, so this row must not promise that
+        {/* A refused row says what is wrong and what the press will do. The
+            "renews it" promise is true only when the remedy is a fresh
+            approval (`health.remedy` non-null — `productHealth` in health.ts);
+            a share-required or our-own refusal is not fixed by approving again
             (Cursor Bugbot round 13, PR 228, comment 4041550778). */}
         {health.state === "refused" ? (
           <p className="mt-1 text-xs leading-snug text-warning">
@@ -319,8 +323,6 @@ function ProductRow({
             <ErrorAlchemyMenu />
           </p>
         ) : health.state === "account_unusable" ? (
-          /* The account's own sentence, on the row it broke, with what the press
-             will do about it — the same promise the footer makes (V17-3). */
           <p className="mt-1 text-xs leading-snug text-destructive">
             {health.reason}
             {selected
@@ -349,9 +351,7 @@ function ProductRow({
             {outcome.state === "granted" ? "Connected." : outcome.message}
           </p>
         ) : null}
-
-        {/* D1: a REAL disclosure, not a hover-only tooltip. `showActivity` is
-            off here — nothing has run yet on a row nobody has approved. */}
+        {/* D1: a real disclosure of the exact Google permission, one quiet line. */}
         <ProductPermissionsDisclosure
           providerName={provider.name}
           health={health}
@@ -360,8 +360,7 @@ function ProductRow({
           openLabel="Hide what is asked for"
         />
       </div>
-
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex shrink-0 items-center pt-2.5">
         {productSwitchVisible(health) ? (
           <Switch
             checked={selected}
@@ -783,7 +782,7 @@ export function ConnectorConsentBody({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
         {errorMessage ? (
           <div
             role="alert"
@@ -822,15 +821,15 @@ export function ConnectorConsentBody({
             bring a second Google identity in at all. The alternatives were also
             a run of raw emails with nothing to tell them apart; a select with
             the email AND what that account actually holds is the change. */}
-        <div className="flex flex-wrap items-center gap-2 px-0.5">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center">
           <label
             htmlFor="connector-consent-account"
-            className="text-xs text-muted-foreground"
+            className="text-sm text-muted-foreground"
           >
             Connecting as
           </label>
           {accounts.length === 0 ? (
-            <span className="text-xs font-medium text-foreground">
+            <span className="text-sm font-medium text-foreground">
               a {provider.name} account you choose next — {provider.name} asks
               you to sign in.
             </span>
@@ -838,7 +837,7 @@ export function ConnectorConsentBody({
             <Select value={accountId} onValueChange={chooseAccount}>
               <SelectTrigger
                 id="connector-consent-account"
-                className="h-11 w-full min-w-0 text-sm sm:h-8 sm:w-auto sm:min-w-[16rem]"
+                className="h-9 w-auto min-w-0 rounded-full border-border/70 bg-background px-3.5 text-sm font-medium shadow-sm"
                 aria-label={`Change which ${provider.name} account this connects`}
               >
                 <SelectValue placeholder={`Choose a ${provider.name} account`} />
@@ -873,7 +872,7 @@ export function ConnectorConsentBody({
               `Select`. */}
           <p
             className={cn(
-              "w-full text-xs",
+              "w-full text-center text-xs",
               account && !account.usable
                 ? "text-destructive"
                 : "text-muted-foreground",
@@ -885,11 +884,11 @@ export function ConnectorConsentBody({
                 ? `${accountSummary(provider, account, rollout)}.`
                 : !account.usable
                   ? `${accountSummary(provider, account, rollout)}. Approving ${provider.name} again renews what it already has — nothing new is asked for.`
-                  : "Switching on another product adds it to this account. Nothing it already has is asked for again."}
+                  : "Adding a product never asks again for what this account already has."}
           </p>
         </div>
 
-        <div className="flex min-h-0 flex-col gap-3">
+        <div className="flex min-h-0 flex-col gap-4">
           {provider.groups.map((group) => {
             const products = productsInGroup(provider, group.key);
             if (products.length === 0) return null;
@@ -906,27 +905,22 @@ export function ConnectorConsentBody({
                 key={`${group.key}-${group.key === focusGroup ? searchFocus?.request ?? 0 : 0}`}
                 defaultOpen
               >
-                <CollapsibleTrigger className="group mb-1 flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-0.5 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0">
-                  <span className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <ChevronDown
-                        className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90"
-                        aria-hidden
-                      />
-                      <span className="min-w-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {group.label}
-                      </span>
+                <CollapsibleTrigger className="group mb-1.5 flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-1 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-8">
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">
+                      {group.label}
                     </span>
-                    <span className="pl-5 text-xs text-muted-foreground/80 sm:hidden">
+                    <span className="block truncate text-xs text-muted-foreground">
                       {group.hint}
                     </span>
                   </span>
-                  <span className="hidden truncate text-xs text-muted-foreground/80 sm:inline">
-                    {group.hint}
-                  </span>
+                  <ChevronDown
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90"
+                    aria-hidden
+                  />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="overflow-hidden border-y border-border sm:rounded-lg sm:border sm:bg-card">
+                  <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-card">
                     {products.map((product) => {
                       const row = health.find(
                         (candidate) => candidate.product.key === product.key,
@@ -957,11 +951,11 @@ export function ConnectorConsentBody({
         </div>
 
         {gmailChangesSelected ? (
-          <p className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+          <p className="rounded-2xl border border-border/70 bg-card px-4 py-3 text-xs text-muted-foreground">
             Gmail changes connect only to your personal Google account. Choose your own account or connect a different one.
           </p>
         ) : mayConnectForOrganization && activeOrganization ? (
-          <label className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+          <label className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3.5">
             <Switch
               checked={forOrganization}
               disabled={busy}
@@ -1003,7 +997,7 @@ export function ConnectorConsentBody({
         ) : null}
 
         {hasGrantedResult ? (
-          <div className="rounded-lg border border-success/30 bg-success/[0.06] px-3 py-2.5">
+          <div className="rounded-2xl border border-success/30 bg-success/[0.06] px-4 py-3">
             <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <ShieldCheck className="h-4 w-4 text-success" aria-hidden />
               Ready to use
@@ -1028,66 +1022,56 @@ export function ConnectorConsentBody({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
-          {onDone ? (
+        <div className="flex flex-col items-stretch gap-2 pt-1">
+          {/* D8 — THE PRESS ALWAYS ANSWERS. Disabled only while the Google
+              window is open or its script is loading (a press then would
+              double-fire); an empty selection is answered in words. */}
+          {hasGrantedResult && onDone ? (
             <Button
-              variant="ghost"
-              size="sm"
               onClick={onDone}
-              disabled={busy}
-              className="h-11 w-full text-sm sm:h-8 sm:w-auto"
+              className="h-12 w-full rounded-full bg-foreground text-[15px] font-medium text-background hover:bg-foreground/90"
             >
-              {hasGrantedResult
-                ? "Done"
-                : "Not now"}
+              Done
             </Button>
+          ) : (
+            <Button
+              onClick={() => void connect()}
+              disabled={busy || !runner.ready}
+              className="h-12 w-full rounded-full bg-foreground text-[15px] font-medium text-background hover:bg-foreground/90"
+            >
+              {busy ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  Waiting for {provider.name}…
+                </>
+              ) : !runner.ready ? (
+                `Loading ${provider.name}…`
+              ) : (
+                provider.dialog.cta
+              )}
+            </Button>
+          )}
+          {!hasGrantedResult ? (
+            <button
+              type="button"
+              onClick={() => void connect(true)}
+              disabled={busy || !runner.ready}
+              className="mx-auto min-h-9 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+            >
+              Pop-ups blocked? Continue in this tab
+            </button>
           ) : null}
-          {/* D8 — THE PRESS ALWAYS ANSWERS. A disabled primary is the one
-              control a person cannot interrogate: on a phone there is no hover,
-              no title, no tooltip, so "why can't I press this?" has no answer on
-              the screen. Apple's and Slack's consent sheets keep the primary
-              action live and answer the press, and our own law is explicit —
-              "a click that would silently do nothing says so". So the button is
-              disabled ONLY while the provider window is open or its script is
-              still loading (pressing then would genuinely double-fire), and an
-              empty selection is answered in words, inline and in a toast. */}
-          <Button
-            size="sm"
-            onClick={() => void connect()}
-            disabled={busy || !runner.ready}
-            className="h-11 w-full text-sm sm:h-8 sm:w-auto"
-          >
-            {busy ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-                Waiting for {provider.name}…
-              </>
-            ) : !runner.ready ? (
-              `Loading ${provider.name}…`
-            ) : (
-              provider.dialog.cta
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => void connect(true)}
-            disabled={busy || !runner.ready}
-            className="h-11 w-full text-sm sm:h-8 sm:w-auto"
-          >
-            Continue in this tab
-          </Button>
         </div>
         {answer ? (
-          <p role="status" className="text-right text-xs text-warning">
+          <p role="status" className="text-center text-xs text-warning">
             {answer}
           </p>
         ) : plan.empty && !busy ? (
-          <p className="text-right text-xs text-muted-foreground">
+          <p className="text-center text-xs text-muted-foreground">
             {emptyPlanAnswer(plan, selected.length)}
           </p>
         ) : plan.request ? (
-          <p className="text-right text-xs text-muted-foreground">
+          <p className="text-center text-xs text-muted-foreground">
             {consentRequestSentence(provider.name, plan.request)}
           </p>
         ) : null}
@@ -1115,24 +1099,40 @@ export function ConnectorConsentDialog({
 }: ConnectorConsentDialogProps) {
   const provider = GOOGLE_CONNECTOR_PROVIDER;
   return (
+    <ConnectorConsentShell provider={provider} isOpen={isOpen} onClose={onClose}>
+      <LazyGoogleAPIProvider>
+        <ConnectorConsentDialogBody
+          provider={provider}
+          initialConnectionId={initialConnectionId ?? null}
+          initialProductKeys={initialProductKeys}
+          onDone={onClose}
+        />
+      </LazyGoogleAPIProvider>
+    </ConnectorConsentShell>
+  );
+}
+
+/**
+ * The dialog frame — hero plus scrolling body. Exported so the design demo
+ * renders the exact frame the product ships, never a look-alike.
+ */
+export function ConnectorConsentShell({
+  provider,
+  isOpen,
+  onClose,
+  children,
+}: {
+  provider: ConnectorProviderConfig;
+  isOpen: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
     <Dialog open={isOpen} onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogContent className="flex max-h-[90dvh] w-full flex-col overflow-hidden sm:max-w-[36rem]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ConnectorMarkSlot provider={provider} />
-            {provider.dialog.title}
-          </DialogTitle>
-          <DialogDescription>{provider.dialog.subtitle}</DialogDescription>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto pb-safe">
-          <LazyGoogleAPIProvider>
-            <ConnectorConsentDialogBody
-              provider={provider}
-              initialConnectionId={initialConnectionId ?? null}
-              initialProductKeys={initialProductKeys}
-              onDone={onClose}
-            />
-          </LazyGoogleAPIProvider>
+      <DialogContent className="flex max-h-[92dvh] w-full flex-col gap-0 overflow-hidden rounded-[28px] border-border/60 p-0 shadow-2xl sm:max-w-[30rem]">
+        <ConnectHero provider={provider} />
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-1 pb-safe sm:px-6">
+          {children}
         </div>
         <DialogFooter className="sr-only" />
       </DialogContent>
@@ -1140,14 +1140,41 @@ export function ConnectorConsentDialog({
   );
 }
 
-function ConnectorMarkSlot({
-  provider,
-}: {
-  provider: ConnectorProviderConfig;
-}) {
+/**
+ * The first Google moment's header: our mark and the provider's, joined, over a
+ * soft wash — the ChatGPT connectors dialog is the bar (PLAN §1). Decorative
+ * art is aria-hidden; the title and subtitle are the dialog's accessible name.
+ */
+function ConnectHero({ provider }: { provider: ConnectorProviderConfig }) {
   const connector = getConnector(provider.markConnectorId);
-  if (!connector) return null;
-  return <ConnectorMark connector={connector} className="h-4 w-4" />;
+  return (
+    <DialogHeader className="relative shrink-0 items-center gap-0 overflow-hidden px-6 pb-6 pt-9 text-center sm:text-center">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-10 -top-16 h-48 w-56 rounded-full bg-warning/30 blur-3xl" />
+        <div className="absolute -right-8 -top-10 h-44 w-52 rounded-full bg-primary/25 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-background" />
+      </div>
+      <div aria-hidden className="relative flex items-center gap-3">
+        <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border/60 bg-background shadow-md">
+          <img src="/matrx/matrx-icon-blue.svg" alt="" className="h-9 w-9" />
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+        </span>
+        <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border/60 bg-background shadow-md">
+          {connector ? <ConnectorMark connector={connector} className="h-9 w-9" /> : null}
+        </span>
+      </div>
+      <DialogTitle className="relative mt-5 text-balance text-[26px] font-semibold leading-tight tracking-tight text-foreground">
+        {provider.dialog.title}
+      </DialogTitle>
+      <DialogDescription className="relative mt-1.5 text-[15px] text-muted-foreground">
+        {provider.dialog.subtitle}
+      </DialogDescription>
+    </DialogHeader>
+  );
 }
 
 /**
