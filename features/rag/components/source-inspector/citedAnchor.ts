@@ -9,6 +9,12 @@
 /** What the viewer needs from the cited chunk's own row. */
 export interface CitedChunkFacts {
   pageNumbers: number[] | null;
+  /**
+   * The citation names a resolver PART (`<source id>:<n>`, a document with no
+   * search index yet), not an indexed chunk: there is no chunk card to
+   * highlight — the viewer shows the cited passage on its page instead.
+   */
+  part?: boolean;
   /** Transcript segments carry their time (ms) — a video has no pages. */
   t0Ms: number | null;
   t1Ms: number | null;
@@ -29,6 +35,40 @@ export function citedChunkFacts(row: {
     t0Ms: ms(meta.t0_ms),
     t1Ms: ms(meta.t1_ms),
   };
+}
+
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
+/** A real indexed chunk id (a uuid). */
+export function isChunkId(id: string): boolean {
+  return new RegExp(`^${UUID}$`, "i").test(id);
+}
+
+/**
+ * A resolver part id — `<document id>:<n>`, the n-th page that has text
+ * (`source_resolution.py` names page-grounded parts this way). Null otherwise.
+ */
+export function parsePartId(id: string): { documentId: string; ordinal: number } | null {
+  const m = new RegExp(`^(${UUID}):(\\d+)$`, "i").exec(id);
+  if (!m) return null;
+  const ordinal = Number.parseInt(m[2]!, 10);
+  return ordinal >= 1 ? { documentId: m[1]!, ordinal } : null;
+}
+
+/**
+ * The page a part id points at: the `ordinal`-th page (by page number) that
+ * has text — the same count the server used when it named the part. Null when
+ * the document has fewer pages with text.
+ */
+export function pageForPartOrdinal(
+  rows: ReadonlyArray<{ page_number: number | null; raw_char_count?: number | null; cleaned_char_count?: number | null }>,
+  ordinal: number,
+): number | null {
+  const withText = rows
+    .filter((r) => r.page_number != null && ((r.cleaned_char_count ?? 0) > 0 || (r.raw_char_count ?? 0) > 0))
+    .map((r) => r.page_number as number)
+    .sort((a, b) => a - b);
+  return withText[ordinal - 1] ?? null;
 }
 
 function cleanPages(raw: readonly number[]): number[] {

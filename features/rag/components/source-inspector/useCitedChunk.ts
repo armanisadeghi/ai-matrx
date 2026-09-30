@@ -10,7 +10,46 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
-import { citedChunkFacts, type CitedChunkFacts } from "./citedAnchor";
+import { docprocDb } from "@/utils/supabase/docprocDb";
+import {
+  citedChunkFacts,
+  isChunkId,
+  pageForPartOrdinal,
+  parsePartId,
+  type CitedChunkFacts,
+} from "./citedAnchor";
+
+/** Read where one cited id sits: an indexed chunk's own row, or a part's page. */
+async function readCitedFacts(
+  id: string,
+  documentId: string | null,
+): Promise<{ facts: CitedChunkFacts | null; error: string | null }> {
+  if (isChunkId(id)) {
+    const { data, error } = await ragDb(supabase)
+      .from("kg_chunks")
+      .select("page_numbers, metadata")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return { facts: null, error: error.message };
+    return data
+      ? { facts: citedChunkFacts(data), error: null }
+      : { facts: null, error: "The cited passage was not found." };
+  }
+  const part = parsePartId(id);
+  // Not a chunk and not a page part (a packed "Part n" of a record's text):
+  // the excerpt is all there is to show — not an error.
+  if (!part) return { facts: { pageNumbers: null, part: true, t0Ms: null, t1Ms: null }, error: null };
+  const { data, error } = await docprocDb(supabase)
+    .from("processed_document_pages")
+    .select("page_number, raw_char_count, cleaned_char_count")
+    // The part's prefix is the document id, or — for a stored file — the FILE
+    // id (`synthetic_prefix=file_id` server-side); the viewer knows the document.
+    .eq("processed_document_id", documentId ?? part.documentId)
+    .order("page_number", { ascending: true });
+  if (error) return { facts: null, error: error.message };
+  const page = pageForPartOrdinal(data ?? [], part.ordinal);
+  return { facts: { pageNumbers: page ? [page] : null, part: true, t0Ms: null, t1Ms: null }, error: null };
+}
 
 export interface CitedChunkState {
   facts: CitedChunkFacts | null;
@@ -18,9 +57,14 @@ export interface CitedChunkState {
   error: string | null;
 }
 
-export function useCitedChunk(chunkId: string | null): CitedChunkState {
-  const [state, setState] = useState<{ forId: string | null } & CitedChunkState>({
+export function useCitedChunk(
+  chunkId: string | null,
+  /** The viewer's processed document, once resolved. */
+  documentId: string | null = null,
+): CitedChunkState {
+  const [state, setState] = useState<{ forId: string | null; forDoc: string | null } & CitedChunkState>({
     forId: null,
+    forDoc: null,
     facts: null,
     loading: false,
     error: null,
@@ -29,24 +73,15 @@ export function useCitedChunk(chunkId: string | null): CitedChunkState {
     if (!chunkId) return undefined;
     let cancelled = false;
     void (async () => {
-      const { data, error } = await ragDb(supabase)
-        .from("kg_chunks")
-        .select("page_numbers, metadata")
-        .eq("id", chunkId)
-        .maybeSingle();
+      const { facts, error } = await readCitedFacts(chunkId, documentId);
       if (cancelled) return;
-      setState({
-        forId: chunkId,
-        facts: data ? citedChunkFacts(data) : null,
-        loading: false,
-        error: error ? error.message : data ? null : "The cited passage was not found.",
-      });
+      setState({ forId: chunkId, forDoc: documentId, facts, loading: false, error });
     })();
     return () => {
       cancelled = true;
     };
-  }, [chunkId]);
+  }, [chunkId, documentId]);
   if (!chunkId) return { facts: null, loading: false, error: null };
-  if (state.forId !== chunkId) return { facts: null, loading: true, error: null };
+  if (state.forId !== chunkId || state.forDoc !== documentId) return { facts: null, loading: true, error: null };
   return { facts: state.facts, loading: state.loading, error: state.error };
 }

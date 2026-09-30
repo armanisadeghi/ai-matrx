@@ -26,6 +26,7 @@
  * tailwind-merge, so a consumer's max-w/gap override wins over the base.
  */
 
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ArrowUpRight, Quote } from "lucide-react";
 import {
@@ -123,8 +124,17 @@ export function CitationChip({
   ...body
 }: CitationChipProps) {
   const { icon: Icon, label } = body;
+  // Opening the source closes the excerpt — it never floats over the viewer
+  // it just opened (verify-4 #33/#34).
+  const [open, setOpen] = useState(false);
+  const onOpen = body.onOpen
+    ? () => {
+        setOpen(false);
+        body.onOpen?.();
+      }
+    : undefined;
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -147,7 +157,7 @@ export function CitationChip({
         </button>
       </PopoverTrigger>
       <PopoverContent sizing="content" align="start" className="p-3">
-        <CitationPopoverBody {...body} />
+        <CitationPopoverBody {...body} onOpen={onOpen} />
       </PopoverContent>
     </Popover>
   );

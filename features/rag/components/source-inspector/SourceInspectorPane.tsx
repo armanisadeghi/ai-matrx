@@ -127,7 +127,7 @@ export function SourceInspectorPane({
   // passage (verify-4 #33/#34). Read only when the citation has no page.
   const citationHasPage =
     (pageNumbers?.length ?? 0) > 0 || pageNumber != null;
-  const cited = useCitedChunk(chunkId);
+  const cited = useCitedChunk(chunkId, processedDocumentId ?? null);
   const waitingForAnchor = !citationHasPage && cited.loading;
 
   // The page(s) the citation anchors to (1-based, clamped).
@@ -252,6 +252,22 @@ export function SourceInspectorPane({
                 <div className="flex h-full items-center justify-center text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" aria-label="Finding the passage" />
                 </div>
+              ) : cited.facts?.part ? (
+                // A part of a document with no search index yet: the cited
+                // passage, then the page it sits on — never page 1's chunks.
+                <ScrollArea className="h-full">
+                  <div className="space-y-3 p-3">
+                    {snippet ? (
+                      <div className="rounded-md border border-primary/50 bg-primary/[0.06] p-2.5 text-xs leading-relaxed text-foreground ring-1 ring-primary/20">
+                        <Badge className="mb-1.5 text-[10px]">{query ? "Matched" : "Cited"}</Badge>
+                        <p className="whitespace-pre-wrap break-words">{snippet}</p>
+                      </div>
+                    ) : null}
+                    {matchPages.length > 0 && (page?.cleanedText || page?.rawText) ? (
+                      <BasicMarkdownContent imagePolicy="other" content={page.cleanedText || page.rawText} />
+                    ) : null}
+                  </div>
+                </ScrollArea>
               ) : hasDoc && processedDocumentId ? (
                 <div className="flex h-full min-h-0 flex-col">
                   {cited.error && !citationHasPage ? (

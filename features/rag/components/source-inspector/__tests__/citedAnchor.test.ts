@@ -1,4 +1,7 @@
 import {
+  isChunkId,
+  pageForPartOrdinal,
+  parsePartId,
   citedChunkFacts,
   citedPages,
   citedTargetPage,
@@ -42,5 +45,32 @@ describe("a citation opens AT its cited chunk", () => {
     expect(pagesLabel([3])).toBe("Page 3");
     expect(pagesLabel([3, 4, 5])).toBe("Pages 3–5");
     expect(pagesLabel([])).toBeNull();
+  });
+});
+
+describe("a citation that names a PART (a document with no search index yet)", () => {
+  // Clone run 2026-09-30: the Wikipedia Source had no chunks, so the resolver
+  // named page parts `<document id>:<n>` and the cards cited ":16", ":15", ":31".
+  const DOC = "19141cb7-8704-44f4-bccb-e2d99f1f9ca0";
+
+  it("is told apart from a chunk id", () => {
+    expect(isChunkId("4b479083-7728-4777-9e9a-149a482dfa3a")).toBe(true);
+    expect(isChunkId(`${DOC}:16`)).toBe(false);
+    expect(parsePartId(`${DOC}:16`)).toEqual({ documentId: DOC, ordinal: 16 });
+    expect(parsePartId("4b479083-7728-4777-9e9a-149a482dfa3a")).toBeNull();
+    expect(parsePartId(`${DOC}:0`)).toBeNull();
+  });
+
+  it("opens on the n-th page that has text — the server's own count", () => {
+    const rows = [
+      { page_number: 3, cleaned_char_count: 900 },
+      { page_number: 1, cleaned_char_count: 15 },
+      { page_number: 2, cleaned_char_count: 0, raw_char_count: 0 },
+      { page_number: 4, raw_char_count: 40 },
+    ];
+    expect(pageForPartOrdinal(rows, 1)).toBe(1);
+    expect(pageForPartOrdinal(rows, 2)).toBe(3); // page 2 is empty and was never a part
+    expect(pageForPartOrdinal(rows, 3)).toBe(4);
+    expect(pageForPartOrdinal(rows, 4)).toBeNull();
   });
 });
