@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   X,
@@ -185,8 +186,21 @@ export default function TasksContextSidebar() {
     }
   };
 
+  // The organization filter lives in the URL (`?org_filter=`, never `?org=` —
+  // that key SWITCHES the active org). Every visit starts from the URL, so a
+  // bare /tasks is always "All organizations".
+  const searchParams = useSearchParams();
+  const urlOrgFilter = searchParams.get("org_filter");
+  useEffect(() => {
+    dispatch(setFilterOrgId(urlOrgFilter || null));
+  }, [dispatch, urlOrgFilter]);
+
   const handleSelectOrg = (id: string | null) => {
     dispatch(setFilterOrgId(id));
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("org_filter", id);
+    else url.searchParams.delete("org_filter");
+    window.history.replaceState(window.history.state, "", url);
   };
 
   const activeGroupLabel =
