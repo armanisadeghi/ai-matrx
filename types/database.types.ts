@@ -118065,7 +118065,13 @@ export type Database = {
         Returns: string
       }
       map_topic_associations: {
-        Args: { p_kinds?: string[]; p_map_id: string; p_slug: string }
+        Args: {
+          p_after?: string
+          p_kinds?: string[]
+          p_limit?: number
+          p_map_id: string
+          p_slug: string
+        }
         Returns: Json
       }
       map_topic_facets: {

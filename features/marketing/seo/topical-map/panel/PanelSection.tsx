@@ -59,7 +59,10 @@ export function PanelEmptyLine({ children }: { children: ReactNode }) {
 /**
  * The count a paged section prints: every row when it has them all, else the
  * tree's own total for that kind (the same number the tree row shows) — and
- * nothing when neither is known, because absent is not zero.
+ * nothing when neither is known, because absent is not zero. Pass a total
+ * ONLY when the tree counts exactly the rows the section lists: the tree's
+ * `pages` counts `covers` edges alone, while the pages section lists every
+ * page edge, so the pages section passes none (2,159 vs 3,779 on All Green).
  */
 export function pagedCount(loaded: number, paging: KindPaging, total: number | undefined): number | undefined {
   return paging.hasMore ? total : loaded;
