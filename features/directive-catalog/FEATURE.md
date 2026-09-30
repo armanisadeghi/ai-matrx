@@ -25,6 +25,8 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 | Live hook (fetch + manual refresh)        | `hooks/useDirectiveCatalog.ts`          |
 | (verb, noun) → Matrx envelope             | `buildEnvelope.ts`                      |
 | Identity field → searchable entity source | `identityPicker.ts`                     |
+| Item schema → form fields → payload (pure) | `schemaFields.ts`                      |
+| Generated write form (picker + builder)   | `components/SchemaFieldsForm.tsx`       |
 | State color/icon primitive                | `components/StateCell.tsx`              |
 | Grid (matrix, filters, legend)            | `components/DirectiveCatalogGrid.tsx`   |
 | Builder/test panel                        | `components/DirectiveBuilderPanel.tsx`  |
@@ -41,7 +43,18 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 ## Execute (writes)
 
-- `create` / `update` on a state-`yes` noun: a JSON payload editor + **Execute** runs the
+- **Write forms are generated from the server's item schema — never hand-authored per noun.**
+  `schemaFields.ts::deriveSchemaFields` maps every property of `noun.schemas[verb]` to a typed
+  field (text, number, yes/no, pick-list, date/time, record search, JSON); required + the
+  noun's `title_column` lead, the rest sit under "More fields" ordered by kind. Id fields
+  resolve to a record search via `identityPicker.ts::payloadFieldEntityInfo`. An update sends
+  **only touched fields**. Validation **offers, never blocks**: `buildSchemaPayload` returns
+  warnings beside the payload and always builds it. The same `SchemaFieldsForm` serves the
+  admin builder and the user-facing reference picker's Create/Update
+  (`features/matrx-envelope/components/reference-picker/`). Guard: `__tests__/schemaFields.test.ts`
+  runs every writable noun's real schema from the committed catalog snapshot.
+- `create` / `update` on a state-`yes` noun: the generated form (a JSON view one click away;
+  switching never loses input) + **Execute** runs the
   action via `POST /directives/execute` (authed; the write runs as the user under RLS on the
   server). Idempotent by content key — a repeat is `already_applied`; `force` opts out.
   Per-item receipts render below. `service.ts::executeDirective` attaches the Supabase JWT
@@ -78,6 +91,13 @@ alias map. Consequences here:
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-09-30 — The builder's hand-typed JSON payload became the generated `SchemaFieldsForm`
+  (JSON view kept). New pure core `schemaFields.ts`; `payloadFieldEntityInfo` turns payload id
+  fields into record searches (`parent_<token>_id` included). Found live: `GET
+  /directives/catalog` 500ed on prod — pgvector `kg_clusters.centroid` unmapped server-side;
+  fixed in aidream (`directive_apply/shapes.py` + a guarded preview path in
+  `directive_catalog/catalog.py`).
 
 - 2026-08-30 — Adopted the platform-wide whole-row mobile table contract. The noun column now scrolls with the verb columns instead of consuming the viewport as a sticky layer; the historical shared token name remains only as a compatibility name while consumers are inventoried for a later rename.
 
