@@ -5,7 +5,7 @@
  * agent definition itself may be the complete request.
  */
 
-import { execSync } from "node:child_process";
+import { repoFiles } from "./lib/repo-files";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -46,13 +46,10 @@ function lineOf(source: string, token: string): number {
 }
 
 function productionFiles(): string[] {
-  const output = execSync("git ls-files '*.ts' '*.tsx'", {
-    cwd: ROOT,
-    encoding: "utf8",
-  });
-  return output
-    .split("\n")
-    .filter(Boolean)
+  // git's file list through the ONE lister (scripts/lib/repo-files.ts): a bare
+  // `exec*Sync("git ls-files …")` has node's 1 MiB default output buffer, which the repo's
+  // .ts/.tsx listing crossed on 2026-09-29 — the check died with ENOBUFS before judging.
+  return repoFiles(ROOT, { match: /\.tsx?$/ })
     .filter((file) => PRODUCTION_ROOTS.some((root) => file.startsWith(root)))
     .filter((file) => existsSync(path.join(ROOT, file)))
     .filter(

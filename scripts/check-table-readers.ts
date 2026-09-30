@@ -23,7 +23,7 @@
  *   pnpm check:table-readers:self-test   proves the scanner finds each shape
  *   … --prune-baseline                   drop stale entries (never add by hand)
  */
-import { execFileSync } from "node:child_process";
+import { repoFiles } from "./lib/repo-files";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -66,9 +66,11 @@ export function findTableReaders(source: string): Array<{ line: number; shape: s
 }
 
 function trackedSources(): string[] {
-  return execFileSync("git", ["ls-files", "--", "*.ts", "*.tsx"], { cwd: ROOT, encoding: "utf8" })
-    .split("\n")
-    .filter((file) => file && !/(^|\/)__tests__\/|\.test\.tsx?$|\.spec\.tsx?$/.test(file) && !file.startsWith("scripts/check-table-readers"));
+  // git's file list through the ONE lister (scripts/lib/repo-files.ts): a bare
+  // `exec*Sync("git ls-files …")` has node's 1 MiB default output buffer, which the repo's
+  // .ts/.tsx listing crossed on 2026-09-29 — the check died with ENOBUFS before judging.
+  return repoFiles(ROOT, { match: /\.tsx?$/ })
+    .filter((file) => !/(^|\/)__tests__\/|\.test\.tsx?$|\.spec\.tsx?$/.test(file) && !file.startsWith("scripts/check-table-readers"));
 }
 
 function census(): Map<string, number> {

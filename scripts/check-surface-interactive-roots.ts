@@ -247,7 +247,7 @@ function trackedTsxFiles(): string[] {
   const output = execFileSync(
     "git",
     ["ls-files", "-z", "--", ...SOURCE_ROOTS.map((root) => `${root}/**/*.tsx`)],
-    { cwd: ROOT, encoding: "utf8" },
+    { cwd: ROOT, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }, // 1 MiB default → ENOBUFS
   );
   return output
     .split("\0")

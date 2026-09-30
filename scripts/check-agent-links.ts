@@ -32,7 +32,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { REPO_ROOT, repoFiles } from "./lib/repo-files";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 /** Files allowed to build an agent path from parts — the rule itself. */
@@ -87,10 +87,12 @@ export function scanSource(file: string, source: string): Offence[] {
   return found;
 }
 
-function repoFiles(): string[] {
-  return execSync("git ls-files '*.ts' '*.tsx'", { encoding: "utf8" })
-    .split("\n")
-    .filter(Boolean);
+// git's file list through the ONE lister (scripts/lib/repo-files.ts). A bare
+// exec of git ls-files has node's 1 MiB default output buffer; the
+// repo's .ts/.tsx listing crossed it on 2026-09-29 and this check died with
+// ENOBUFS before judging anything (checks-run-in-the-app COORDINATOR § Broken checks).
+function sourceFiles(): string[] {
+  return repoFiles(REPO_ROOT, { match: /\.tsx?$/ });
 }
 
 function selfTest(): boolean {
@@ -131,7 +133,7 @@ function main(): void {
     exitAfterDrain(ok ? 0 : 3);
   }
 
-  const offences = repoFiles().flatMap((file) => {
+  const offences = sourceFiles().flatMap((file) => {
     try {
       return scanSource(file, readFileSync(file, "utf8"));
     } catch {

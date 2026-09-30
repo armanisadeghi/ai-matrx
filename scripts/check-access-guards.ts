@@ -150,6 +150,7 @@ function isExemptFromAllDetectors(rel: string): boolean {
 function gitLsFiles(pattern: string): string[] {
   try {
     const raw = execSync(`git ls-files -- "${pattern}"`, {
+      maxBuffer: 512 * 1024 * 1024, // node's 1 MiB default truncates a large listing (ENOBUFS)
       cwd: ROOT,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],

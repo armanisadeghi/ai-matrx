@@ -43,6 +43,7 @@ const PARKABLE = ["admin", "core", "transitional", "public", "popup"] as const;
 function trackedFileCount(group: string): number {
   try {
     const out = execFileSync("git", ["ls-files", `app/(${group})`], {
+      maxBuffer: 512 * 1024 * 1024, // node's 1 MiB default truncates a large listing (ENOBUFS)
       encoding: "utf8",
     });
     return out.split("\n").filter(Boolean).length;

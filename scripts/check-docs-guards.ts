@@ -76,7 +76,7 @@ const COMMON_DOCS_ALLOWED_DIRS = new Set([
 ]);
 
 function trackedMd(): string[] {
-  return execSync("git ls-files -z -- '*.md'", { encoding: "utf8" })
+  return execSync("git ls-files -z -- '*.md'", { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 })
     .split("\0")
     .filter((f) => f && !SCAN_EXCLUDE.test(f));
 }

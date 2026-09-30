@@ -61,7 +61,7 @@
  * Usage: pnpm check:campaign-entry-points
  *        pnpm check:campaign-entry-points:self-test   (planted fixtures)
  */
-import { execSync } from "node:child_process";
+import { repoFiles } from "./lib/repo-files";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -75,7 +75,10 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 function trackedSources(): string[] {
     let out: string;
     try {
-        out = execSync("git ls-files -- '*.ts' '*.tsx'", { cwd: REPO_ROOT, encoding: "utf8" });
+        // git's file list through the ONE lister (scripts/lib/repo-files.ts): a bare
+        // `exec*Sync("git ls-files …")` has node's 1 MiB default output buffer, which the repo's
+        // .ts/.tsx listing crossed on 2026-09-29 — the check died with ENOBUFS before judging.
+        out = repoFiles(REPO_ROOT, { match: /\.tsx?$/ }).join("\n");
     } catch (error) {
         console.error(
             "check:campaign-entry-points: UNMEASURED — could not list tracked files " +

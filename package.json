@@ -414,7 +414,7 @@
     "test:release-outcome": "node --test scripts/release-outcome.test.mjs",
     "test:release-route-manifest": "node --test scripts/release-publishes-the-route-manifest.test.mjs",
     "test:release-ship-path": "bash scripts/test-release-ship-path.sh",
-    "test:release-checks": "node --test scripts/checks/run.test.mjs",
+    "test:release-checks": "node --test scripts/checks/run.test.mjs scripts/checks/git-listing-buffer.test.mjs",
     "findings": "node scripts/findings/findings.mjs",
     "test:findings": "node --test scripts/findings/findings.test.mjs",
     "test:visibility-remedies": "node --test scripts/visibility-vocab/remedies.test.mjs",

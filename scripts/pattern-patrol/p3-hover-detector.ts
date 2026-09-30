@@ -430,6 +430,7 @@ export function analyzeP3HoverSource(
 
 function trackedTsxFiles(repoRoot: string): string[] {
   return execFileSync("git", ["ls-files", "*.tsx"], {
+    maxBuffer: 512 * 1024 * 1024, // node's 1 MiB default truncates a large listing (ENOBUFS)
     cwd: repoRoot,
     encoding: "utf8",
   })

@@ -105,7 +105,7 @@ function extractStreamEventTypeNames(content: string): Set<string> {
 function listFeatureTypeFiles(): string[] {
   const out = execSync(
     `git ls-files 'features/**/*.ts' 'features/**/*.tsx' 'types/**/*.ts' 'types/**/*.tsx' 'components/**/*.ts' 'components/**/*.tsx' 'lib/**/*.ts' 'lib/**/*.tsx' 'app/**/*.ts' 'app/**/*.tsx'`,
-    { encoding: "utf8", cwd: ROOT },
+    { encoding: "utf8", cwd: ROOT, maxBuffer: 512 * 1024 * 1024 }, // 1 MiB default → ENOBUFS (this listing is past it)
   );
   return out
     .trim()

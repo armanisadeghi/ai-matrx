@@ -15,7 +15,7 @@ const tests = [
 ];
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const writeManifest = (manifest) => writeFileSync(join(runRoot, "manifest.json"), JSON.stringify(manifest, null, 2));
-const git = spawnSync("/usr/bin/git", ["ls-files", "-z"], { cwd: sourceRoot, encoding: "buffer" });
+const git = spawnSync("/usr/bin/git", ["ls-files", "-z"], { cwd: sourceRoot, encoding: "buffer", maxBuffer: 512 * 1024 * 1024 });
 if (git.status !== 0) throw new Error(git.stderr.toString());
 mkdirSync(runRoot, { recursive: true });
 const tracked = git.stdout.toString("utf8").split("\0").filter(Boolean);

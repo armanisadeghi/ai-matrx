@@ -26,7 +26,7 @@
  * Usage: pnpm check:signout-scope            (scan the repo, exit 1 on a hit)
  *        pnpm check:signout-scope --self-test (prove the detector still fails)
  */
-import { execSync } from "node:child_process";
+import { REPO_ROOT, repoFiles } from "./lib/repo-files";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
@@ -152,12 +152,16 @@ export function findUnscopedSignOuts(source: string, file: string): Finding[] {
 }
 
 function trackedSources(): string[] {
-  return execSync(
-    "git ls-files -- '*.ts' '*.tsx' ':!node_modules' ':!scripts/check-signout-scope.ts'",
-    { encoding: "utf8" },
-  )
-    .split("\n")
-    .filter((f) => f && !/\.test\.tsx?$/.test(f) && !/__tests__\//.test(f));
+  // git's file list through the ONE lister (scripts/lib/repo-files.ts): a bare
+  // `exec*Sync("git ls-files …")` has node's 1 MiB default output buffer, which the repo's
+  // .ts/.tsx listing crossed on 2026-09-29 — the check died with ENOBUFS before judging.
+  return repoFiles(REPO_ROOT, { match: /\.tsx?$/ }).filter(
+    (f) =>
+      !f.startsWith("node_modules/") &&
+      f !== "scripts/check-signout-scope.ts" &&
+      !/\.test\.tsx?$/.test(f) &&
+      !/__tests__\//.test(f),
+  );
 }
 
 export function selfTest(): boolean {

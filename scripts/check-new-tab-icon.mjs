@@ -172,7 +172,7 @@ function listTrackedTsxFiles() {
   const out = execFileSync(
     "git",
     ["ls-files", "--", "app/*.tsx", "app/**/*.tsx", "features/*.tsx", "features/**/*.tsx", "components/*.tsx", "components/**/*.tsx"],
-    { cwd: ROOT, encoding: "utf8" },
+    { cwd: ROOT, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }, // 1 MiB default → ENOBUFS
   );
   return out
     .split("\n")
