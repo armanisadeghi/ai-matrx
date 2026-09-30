@@ -921,6 +921,22 @@ export interface DeleteFileArg {
   fileId: string;
 }
 
+/**
+ * Save new content as the next version of an EXISTING file (edit-in-place).
+ * `content` is the whole new body; the file keeps its id, name and folder.
+ */
+export interface SaveFileNewVersionArg {
+  fileId: string;
+  content: string | Blob;
+  changeSummary?: string;
+}
+
+/** What a successful save wrote: the same file id at its new version. */
+export interface SaveFileNewVersionResult {
+  fileId: string;
+  versionNumber: number;
+}
+
 export interface RestoreVersionArg {
   fileId: string;
   versionNumber: number;

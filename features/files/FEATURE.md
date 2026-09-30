@@ -51,6 +51,12 @@ in the same change.
 7. **Mutations are optimistic + rollback**, never spinner-then-refetch, and every REST write ships a
    `requestId` registered in `redux/request-ledger.ts` — that is what lets realtime middleware ignore
    echoes of our own writes.
+7a. **Saving an edit is `saveFileNewVersion`, never `uploadFiles`.** `uploadFiles` is the NEW-file
+   path (a taken name becomes "name (1).ext"); every editor save — `CloudFileInlineEditor`,
+   `CloudFileEditor`, `writeAny` on a stored file — goes through `saveFileNewVersion` (redux/thunks.ts →
+   `Files.uploadNewVersion`), which uploads to the file's exact stored `file_path` (the service
+   version-bumps that row) and throws when the answer names another row or `is_new`. Guard:
+   `redux/save-file-new-version.test.ts`.
 8. **Reads hit Supabase directly, except exact-id hydration.** `useEnsureCloudFile` is the one
    exception: it calls the authenticated `GET /files/{id}?include_urls=false` access gate because
    the browser RLS planner can time out before a primary-key lookup. Do not reintroduce a browser
@@ -138,6 +144,7 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-30 — Saving an edited file writes a new version of THAT file, never a copy.** Edit tab → type → Save created `files.files` row "name (1).txt" and left the original at version 1 while the editor said "Saved": `CloudFileInlineEditor`, `CloudFileEditor` and `writeAny` (stored files) all re-uploaded through `uploadFiles`, whose collision rename turns a taken name into "name (1).ext" (and, with the folder not loaded, dropped the file at the root). New `saveFileNewVersion` thunk + `Files.uploadNewVersion` upload to the file's exact stored path with the file's own organization (the files service has no by-id content endpoint; the path upload version-bumps the row, per matrx-utils `managed_write_async`), update `currentVersion`, drop the blob/Office caches, reload the version list, and refuse any answer naming a different row or `is_new`. The inline editor's unmount flush now announces a failure instead of swallowing it. Known limit: the service looks the path up under the UPLOADER, so a person with write access to someone else's file would get the refusal, not a save — that needs a by-id replace endpoint server-side. Test: `redux/save-file-new-version.test.ts` (2 of 4 red on the old code: "notes (1).txt" with the folder loaded, "notes.txt" at root without).
 - **2026-09-29 — System files: off by default, never Recents.** A file the system marked as its own (`metadata.system_artifact`: page captures, provider payloads, crawl output, saved record values) is never in Recents — `files.is_recent_activity` gained the conjunct (aidream matrx-files `050_system_files_never_recent_activity.sql`, declared in `user_visible.py`) and the browser mirror `isRecentActivityFile` matches. Every other list (Files page table/grid via `buildRows`, the sidebar tree, the file picker's folders and search) shows them only while the Feature Knob `files.show_system_files` (default off; organization and person may override) is on — one rule, `isListedFile` / `isListedFolderPath` in `utils/user-visible.ts`, read through `hooks/useShowSystemFiles.ts`. One control, `components/core/ShowSystemFilesToggle.tsx`, sits in the Files page filter row and the picker's filter bar, absent when the person may not set their own value. The Source input's inventory already hid them (`platform._inventory_filter`) and still does, setting or not. Test: `utils/__tests__/system-files-never-recents.test.ts` (4 of 6 red on the old code).
 - **2026-09-29 — The one file picker lists the whole library.** `FilesResourcePicker` capped Recents and search at 20 rows (since 2026-07-16), so a large library read as "only what is loaded"; it now lists every Recents file and every search match (files and folders) from the tree, counted and paged by "Show more". Rule: `features/resource-manager/resource-picker/filesPickerLists.ts`; details in that folder's FEATURE.md.
 

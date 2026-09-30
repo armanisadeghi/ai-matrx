@@ -108,6 +108,31 @@ export async function uploadFile(
   return apiMultipart("/files/upload", form, opts);
 }
 
+/**
+ * Write new bytes as the NEXT VERSION of an existing file — same id, version + 1.
+ *
+ * The files service has no by-id content endpoint; a new version is an upload to the
+ * file's EXACT stored `file_path` (the service looks the row up by path and version-bumps
+ * it in place). The request carries the FILE's own organization, never the picker's.
+ * Callers go through the `saveFileNewVersion` thunk, which verifies the answer names the
+ * same file — never call `uploadFile` with a derived path to "save" an edit (that is how a
+ * save became a second file, "name (1).txt", 2026-09-30).
+ */
+export async function uploadNewVersion(
+  fileId: string,
+  params: Pick<UploadFileParams, "file" | "filePath" | "changeSummary">,
+  opts: RequestOptions = {},
+): Promise<{ data: FileUploadResponse; meta: ResponseMeta }> {
+  return uploadFile(
+    {
+      file: params.file,
+      filePath: params.filePath,
+      changeSummary: params.changeSummary,
+    },
+    withFileOrganization(fileId, opts),
+  );
+}
+
 export async function uploadFileWithProgress(
   params: UploadFileParams,
   onProgress: (event: UploadProgressEvent) => void,

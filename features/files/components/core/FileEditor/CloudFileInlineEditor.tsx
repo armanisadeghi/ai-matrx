@@ -24,8 +24,9 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
-import { uploadFiles as uploadFilesThunk } from "@/features/files/redux/thunks";
+import { saveFileNewVersion } from "@/features/files/redux/thunks";
 import { extractErrorMessage } from "@/utils/errors";
+import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFileViewerControls } from "@/features/files/components/surfaces/FileViewerControlsContext";
 import type { StandaloneCodeEditor } from "@/features/code/editor/MonacoEditor";
@@ -157,16 +158,12 @@ export function CloudFileInlineEditor({
     setSaving(true);
     setSaveError(null);
     try {
-      const reUploaded = new File(
-        [new Blob([text], { type: file.mimeType ?? "text/plain" })],
-        file.fileName,
-        { type: file.mimeType ?? "text/plain" },
-      );
+      // A save is the NEXT VERSION of this same file — never an upload
+      // (an upload of a taken name becomes "name (1).ext", a second file).
       await dispatch(
-        uploadFilesThunk({
-          files: [reUploaded],
-          parentFolderId: file.parentFolderId,
-          visibility: file.visibility,
+        saveFileNewVersion({
+          fileId: file.id,
+          content: text,
           changeSummary: "Edited in place",
         }),
       ).unwrap();
@@ -189,24 +186,22 @@ export function CloudFileInlineEditor({
         file &&
         !saveError
       ) {
-        const reUploaded = new File(
-          [new Blob([text], { type: file.mimeType ?? "text/plain" })],
-          file.fileName,
-          { type: file.mimeType ?? "text/plain" },
-        );
         void dispatch(
-          uploadFilesThunk({
-            files: [reUploaded],
-            parentFolderId: file.parentFolderId,
-            visibility: file.visibility,
+          saveFileNewVersion({
+            fileId: file.id,
+            content: text,
             changeSummary: "Edited in place (auto-flush on unmount)",
           }),
         )
           .unwrap()
-          .catch(() => undefined);
+          .catch((err: unknown) => {
+            // The editor is gone, so no inline error can show — say it.
+            toast.error(`Couldn't save your last edits to ${file.fileName}`, {
+              description: extractErrorMessage(err),
+            });
+          });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileId]);
 
   const handleDiscard = useCallback(() => {
