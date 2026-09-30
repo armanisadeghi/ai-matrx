@@ -48,11 +48,11 @@ const NARROW: MediaResearchPreview = {
     contact_lookups: 8,
     fit_checks: 8,
     max_cost_usd: 0.84,
-    lines: ["1 news searches at up to $0.010 each"],
+    lines: ["1 news searches at up to 200 points each"],
   },
   run_key: "mlr_abc",
   prior_run: null,
-  says: "5 good fits x 10 = research 50 journalists, for at most $0.84. Nothing is spent until you press Run it.",
+  says: "5 good fits x 10 = research 50 journalists, for at most 16,800 points. Nothing is spent until you press Run it.",
 };
 
 const OVER_CAP: MediaResearchPreview = {
@@ -112,7 +112,10 @@ test("shows the multiplier and why, the brief, the target and the maximum cost b
     "10x because this is a narrow search (ITAD only): far fewer of the journalists we find will truly fit.",
   );
   expect(q("media-research-target").textContent).toBe("50");
-  expect(q("media-research-max-cost").textContent).toBe("$0.84");
+  // A member sees points, never dollars (Arman, 2026-09-27).
+  expect(q("media-research-max-cost").textContent).toBe("16,800 points");
+  expect(container.textContent).toContain("Up to 16,800 points.");
+  expect(container.textContent).not.toContain("$");
   expect(q("media-research-brief").textContent).toBe(BRIEF);
   expect(container.textContent).toContain("Nothing is spent until you press Run it.");
   expect(container.querySelector('[data-testid="pitch-advisories"]')).toBeNull();
