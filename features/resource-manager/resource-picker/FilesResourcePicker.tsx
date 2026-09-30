@@ -466,7 +466,7 @@ function FolderNode({
   const childFiles = useMemo(
     () =>
       sortFiles(
-        children.fileIds
+        children.fileIds // org-filter: server-call showSystemFiles is the resolved files.show_system_files setting, not a match on the file's organization
           .map((id) => filesById[id])
           .filter(
             (f): f is CloudFileRecord =>

@@ -248,7 +248,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     if (!processedDocSignal) return;
     docsState.refresh();
     if (processedDocSignal.docId === activeDocIdRef.current) {
-      void extractor.fetchDocument(processedDocSignal.docId).then((fresh) => {
+      void extractor.fetchDocument(processedDocSignal.docId).then((fresh) => { // org-filter: server-call the extractor's server calls carry the organization in auth headers; this read is by document id and user
         if (fresh && activeDocIdRef.current === fresh.id) setActiveDoc(fresh);
       });
       refreshPages();

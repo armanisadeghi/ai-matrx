@@ -306,7 +306,7 @@ export function UnifiedDataRampScreen() {
             <option value="">
               {organizations.length === 0
                 ? "Looking for the organizations you are in…"
-                : "Pick an organization"}
+                : "Which organization?"}
             </option>
             {organizations.map((organization) => (
               <option key={organization.id} value={organization.id}>

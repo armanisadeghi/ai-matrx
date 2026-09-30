@@ -83,7 +83,7 @@ function WorkingOrganizationRecords({ children }: { children: ReactNode }) {
   }
   if (campaign.state !== "on") return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
   return (
-    <RecordsMount
+    <RecordsMount // org-filter: write-target the record store only for MAKING a table; choosing one reads across every organization
       letTheStoreDecideRights
       config={{
         dataSource,

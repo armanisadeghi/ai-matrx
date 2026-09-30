@@ -13,9 +13,7 @@ import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/
 import { ROLE_MANDATE_KEYS } from "@/features/research/components/agents/constants";
 import ResearchTopicShell from "./ResearchTopicShell";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export async function generateMetadata({
   params,
@@ -23,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ topicId: string }>;
 }) {
   const { topicId } = await params;
-  if (!UUID_RE.test(topicId)) {
+  if (!isUuidShape(topicId)) {
     return createDynamicRouteMetadata("/research", {
       title: "Research topic",
       description: "Research topics in AI Matrx.",
@@ -59,7 +57,7 @@ export default async function ResearchTopicLayout({
 }) {
   const { topicId } = await params;
 
-  if (!UUID_RE.test(topicId)) {
+  if (!isUuidShape(topicId)) {
     notFound();
   }
 

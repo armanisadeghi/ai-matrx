@@ -82,9 +82,8 @@ import { getPeekedAgentId } from "./agent-peek-tracker";
 import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
 import { getUserMessage } from "@/lib/api/errors";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 const CONSUMER_ID = "agents-main";
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function AgentsSkeleton({ count = 4 }: { count?: number }) {
   return (
@@ -170,7 +169,7 @@ export function AgentsGrid() {
   const [versionLookupRequestId, setVersionLookupRequestId] = useState("");
 
   const versionIdQuery = searchTerm.trim();
-  const isVersionIdQuery = UUID_PATTERN.test(versionIdQuery);
+  const isVersionIdQuery = isUuidShape(versionIdQuery);
 
   useEffect(() => {
     if (!isVersionIdQuery) return undefined;

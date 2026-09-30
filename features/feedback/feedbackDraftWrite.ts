@@ -19,6 +19,7 @@
  */
 
 import { FEEDBACK_TYPES, type FeedbackType } from "@/types/feedback.types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Fields `feedback_draft` accepts. Anything else is refused BY NAME rather
@@ -140,9 +141,6 @@ export interface FeedbackAttachmentPatch {
   name?: string;
 }
 
-const FILE_ID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * Validate an agent-supplied `feedback_attachment` value — ONE existing file,
  * by its file id (an image the agent generated, a file in the person's
@@ -161,7 +159,7 @@ export function parseFeedbackAttachment(value: unknown): FeedbackAttachmentPatch
     throw new Error(
       `feedback_attachment does not accept ${unknownKeys.join(", ")}. Allowed: file_id, name.`,
     );
-  if (typeof v.file_id !== "string" || !FILE_ID.test(v.file_id.trim()))
+  if (typeof v.file_id !== "string" || !isUuidShape(v.file_id.trim()))
     throw new Error(
       "feedback_attachment.file_id must be a platform file id (a UUID) of a file that already exists — not a URL, path or data URI.",
     );

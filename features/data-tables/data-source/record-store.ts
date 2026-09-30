@@ -88,6 +88,7 @@ import {
   type StoreHandOrder,
 } from "./record-store-shape";
 import { readAllRows } from "@ai-matrx/data/db";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * One page of a read that genuinely needs every row (export, the column filter's values): the
@@ -953,8 +954,6 @@ function storeDecorationWrite(
   }
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function olderRowActions(actions: readonly StoreRowAction[], fields: readonly Field[]): unknown[] {
   return actions.map((a) => ({
     id: a.id,
@@ -991,7 +990,7 @@ function storeRowActions(actions: ReadonlyArray<Record<string, unknown>>, fields
     }
     out.push({
       // The store keys a row action by uuid; an older id that is not one gets one.
-      id: typeof a.id === "string" && UUID_RE.test(a.id) ? a.id : crypto.randomUUID(),
+      id: typeof a.id === "string" && isUuidShape(a.id) ? a.id : crypto.randomUUID(),
       name: a.name,
       kind: a.kind === "agent" ? "agent" : "update",
       ...(a.color ? { color: a.color } : {}),

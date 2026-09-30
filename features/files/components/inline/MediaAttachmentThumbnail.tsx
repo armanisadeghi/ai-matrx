@@ -5,13 +5,11 @@ import { AlertCircle, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@/features/files/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-
-const FILE_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 function isOwnedFileReference(ref: MediaRef | string | null | undefined) {
   if (!ref) return false;
-  if (typeof ref === "string") return FILE_ID_PATTERN.test(ref);
+  if (typeof ref === "string") return isUuidShape(ref);
   return typeof ref.file_id === "string" && ref.file_id.length > 0;
 }
 

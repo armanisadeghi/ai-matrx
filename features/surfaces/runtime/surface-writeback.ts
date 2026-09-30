@@ -1238,7 +1238,7 @@ async function applySurfaceFeedbackWrite(
   // organization picker just for feedback. "None yet" is not "none": a write
   // racing boot waits for its answer, and a FAILED organization read is said
   // as that, never as "pick one".
-  let organizationId = readActiveOrganizationId();
+  let organizationId = readActiveOrganizationId(); // org-filter: write-target feedback is filed under the organization the person is acting in
   if (!organizationId) {
     const resolved = await awaitEffectiveOrganizationId();
     if (resolved.status === "ready") organizationId = resolved.organizationId;

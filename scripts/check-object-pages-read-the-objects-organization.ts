@@ -182,10 +182,7 @@ export const MUST_ASK_THE_OBJECT: Readonly<Record<string, RegExp>> = {
  * still reads the active organization for something that is NOT whether the object opens.
  * Only shrinks: an entry whose file no longer trips the guard FAILS, so a fix removes its row.
  */
-export const EXCUSED: Readonly<Record<string, string>> = {
-  "app/(core)/d/[renderId]/page.tsx":
-    "Owner's own fix 72ffbeacaa: custom.doc_render_read finds the document by id and checks the record in the document's organization; the selection is read only to offer 'Switch to <org>' beside a document that already opened.",
-};
+export const EXCUSED: Readonly<Record<string, string>> = {};
 
 const FORBIDDEN: readonly RegExp[] = [
   /\buseOrganizationRequired\s*\(/,

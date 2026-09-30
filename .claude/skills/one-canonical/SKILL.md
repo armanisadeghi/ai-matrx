@@ -47,7 +47,11 @@ Done when: a round using a new method adds nothing to the list.
 ## 3. Migrate one by one from the list
 
 Work the list top to bottom. Each item: move it, verify it on its real surface, mark it done with the
-proof. No bulk "all migrated" claims. The old copy is deleted, not left beside the new one.
+proof. No bulk "all migrated" claims. Before moving each item, screenshot it in place and apply
+[canonicalize without destroying](../../policies/canonicalize-without-destroying.md): an ordinary copy is
+replaced; a copy that is visibly better in its spot is adopted into the canonical piece (feature,
+option or new primitive) after one simple question to Arman with before/after links. Only then is
+the old copy deleted, not left beside the new one.
 
 Done when: every row is done-with-proof or explicitly out of scope with a reason.
 

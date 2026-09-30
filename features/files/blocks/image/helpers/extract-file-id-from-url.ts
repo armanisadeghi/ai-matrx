@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * features/files/blocks/image/helpers/extract-file-id-from-url.ts
  *
@@ -11,9 +13,6 @@
  * `file_id` consistently, this becomes dead code.
  */
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export function extractFileIdFromUrl(
   url: string | null | undefined,
 ): string | null {
@@ -23,12 +22,12 @@ export function extractFileIdFromUrl(
     // Canonical scheme: /{owner}/{file_id}
     if (parts.length >= 2) {
       const candidate = parts[1];
-      if (UUID_RE.test(candidate)) return candidate;
+      if (isUuidShape(candidate)) return candidate;
     }
     // Legacy fallback: last segment may be {uuid}.{ext}
     const last = parts[parts.length - 1] ?? "";
     const stripped = last.replace(/\.[^.]+$/, "");
-    if (UUID_RE.test(stripped)) return stripped;
+    if (isUuidShape(stripped)) return stripped;
     return null;
   } catch {
     return null;

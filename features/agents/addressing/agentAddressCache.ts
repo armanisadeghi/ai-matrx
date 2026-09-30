@@ -24,6 +24,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import type { AgentAddress } from "./agentAddress";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** A resolution outcome. `null` means "resolved, and there is nothing there". */
 export type AgentAddressResult = AgentAddress | null;
@@ -44,9 +45,6 @@ interface RpcRow {
   agent_name: string | null;
   version_number: number | null;
 }
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Already-known answer, or undefined when this id has never been resolved. */
 export function peekAgentAddress(id: string): AgentAddressResult | undefined {
@@ -126,7 +124,7 @@ async function flush(): Promise<void> {
 export function resolveAgentAddress(
   id: string,
 ): Promise<AgentAddressResult> | AgentAddressResult {
-  if (!id || !UUID_RE.test(id)) return null;
+  if (!id || !isUuidShape(id)) return null;
   const cached = cache.get(id);
   if (cached !== undefined) return cached;
 

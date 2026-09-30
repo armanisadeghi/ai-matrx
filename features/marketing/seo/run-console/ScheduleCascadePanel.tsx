@@ -179,7 +179,7 @@ export function ScheduleCascadePanel({
         if (scope.tier === "organization") {
           if (!scope.organizationId) {
             throw new Error(
-              "Choose an organization in the filter first — an organization schedule belongs to one organization. Nothing was written.",
+              "An organization schedule belongs to one organization — choose which one in the filter first. Nothing was written.",
             );
           }
           return scope.organizationId;

@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const FILE_RESOURCE_FAMILY_SCHEMA_VERSION = 2;
 
@@ -100,9 +101,6 @@ export async function getFileResourceFamily(
   return parseFileResourceFamilyInventory(data);
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export function normalizeFileResourceId(value: unknown): string | null {
   let candidate: unknown = value;
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -111,5 +109,5 @@ export function normalizeFileResourceId(value: unknown): string | null {
   }
   if (typeof candidate !== "string") return null;
   const normalized = candidate.trim();
-  return UUID_PATTERN.test(normalized) ? normalized : null;
+  return isUuidShape(normalized) ? normalized : null;
 }

@@ -142,7 +142,7 @@ export default function HealthTestClient() {
         const start = performance.now();
 
         try {
-            const response = await fetch(url, {
+            const response = await fetch(url, { // org-filter: server-call health probe of the server; the organization only rides the auth headers
                 method: 'GET',
                 headers: {
                     ...apiConfig.authHeaders,
@@ -182,7 +182,7 @@ export default function HealthTestClient() {
         const start = performance.now();
 
         try {
-            const response = await fetch(url, {
+            const response = await fetch(url, { // org-filter: server-call health probe of the server; the organization only rides the auth headers
                 method: 'GET',
                 headers: {
                     ...apiConfig.authHeaders,

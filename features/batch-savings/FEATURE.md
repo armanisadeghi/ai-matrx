@@ -22,7 +22,9 @@ Verified against code and live data 2026-09-14.
   `tests/test_batch_spend_ledger_live.py`.
 - **Authorization is RLS.** The function is `SECURITY INVOKER`; `organizationId`
   only scopes the read.
-- **Every number names its window and item count.**
+- **Every number names its window and item count** — in its label (`Batch savings (7d)`), a short
+  hint (`1,204 items · 7d`) or its tooltip; never a sentence, never the function name on screen
+  (`../common-docs/policies/interface-text-is-layout.md`).
 
 ## Files
 

@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * isMaterializedArtifactId — the R3 recognition primitive.
  *
@@ -18,12 +20,9 @@
  * See `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md` (R1–R3).
  */
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** True only for a canonical UUID — i.e. a real, persisted `canvas_items.id`. */
 export function isMaterializedArtifactId(id?: string | null): boolean {
-  return typeof id === "string" && UUID_RE.test(id.trim());
+  return typeof id === "string" && isUuidShape(id.trim());
 }
 
 /**

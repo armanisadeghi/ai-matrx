@@ -51,6 +51,7 @@ import {
   toOrgRole,
 } from "./types";
 import { emailErrorMessage } from "@/lib/email/error-message";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 // ============================================================================
 // Organization CRUD Operations
@@ -361,9 +362,6 @@ export async function getOrganizationBySlug(
   return transformOrganizationFromDb(data);
 }
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * Resolve an organization from either a UUID or a slug.
  * UUID format is detected via regex; anything else is treated as a slug.
@@ -371,7 +369,7 @@ const UUID_REGEX =
 export async function getOrganizationBySlugOrId(
   slugOrId: string,
 ): Promise<Organization | null> {
-  if (UUID_REGEX.test(slugOrId)) {
+  if (isUuidShape(slugOrId)) {
     return getOrganization(slugOrId);
   }
   return getOrganizationBySlug(slugOrId);

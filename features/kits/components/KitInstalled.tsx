@@ -62,7 +62,7 @@ function Panel({ icon, title, children, aside }: { icon: React.ReactNode; title:
  * the page so the "What the agent sees" preview re-reads too — no polling.
  */
 function TableChangeWatcher({ tableId, onChange }: { tableId: string; onChange: (tableId: string) => void }) {
-  const live = useRecords(tableId, { pageSize: 50 });
+  const live = useRecords(tableId, { pageSize: 50 }); // org-filter: write-target the kit is installed into, and this page shows it in, the organization it was installed in
   const rows = live.data?.rows;
   const seen = useRef<typeof rows>(undefined);
   useEffect(() => {
@@ -372,7 +372,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0 space-y-6">
-            <RecordsMount
+            <RecordsMount // org-filter: write-target the kit is installed into, and this page shows it in, the organization it was installed in
               letTheStoreDecideRights
               config={{
                 dataSource,

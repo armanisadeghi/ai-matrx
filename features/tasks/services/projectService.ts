@@ -41,7 +41,7 @@ export async function createProject(
   const userId = requireUserId();
   // Outside the try: a missing organization is a refusal the caller must see,
   // never one of the swallowed-and-logged failures below.
-  const organizationId = requireSelectedOrgId();
+  const organizationId = requireSelectedOrgId(); // org-filter: write-target a NEW project is filed in the organization the person works in
   try {
     const { data, error } = await workspaceDb(supabase)
       .from("projects")

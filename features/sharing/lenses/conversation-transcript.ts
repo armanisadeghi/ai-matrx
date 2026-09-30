@@ -16,6 +16,7 @@
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** One tool step as the database served it — already cleaned. */
 export interface SharedChatTool {
@@ -84,8 +85,6 @@ function strOrNull(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v : null;
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function parseOutput(raw: unknown): unknown {
   if (typeof raw !== "string") return raw ?? null;
   try {
@@ -140,7 +139,7 @@ function readBlock(raw: unknown, ordinal: number): SharedChatBlock | null {
       mimeType: strOrNull(raw.mime_type),
       // Defense in depth: only the public CDN is ever rendered as a raw source.
       url: url && url.startsWith("https://cdn.matrxserver.com/") ? url : null,
-      fileId: fileId && UUID_RE.test(fileId) ? fileId : null,
+      fileId: fileId && isUuidShape(fileId) ? fileId : null,
       sizeBytes: num(raw.size_bytes),
       width: num(raw.width),
       height: num(raw.height),

@@ -5,9 +5,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export default async function MarketingSnapshotPage({
   params,
@@ -15,7 +13,7 @@ export default async function MarketingSnapshotPage({
   params: Promise<{ snapshotId: string }>;
 }) {
   const { snapshotId } = await params;
-  if (!UUID_RE.test(snapshotId)) notFound();
+  if (!isUuidShape(snapshotId)) notFound();
 
   const supabase = await createClient();
   const db = webDb(supabase);

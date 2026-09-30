@@ -54,11 +54,15 @@ export async function listAuditionScores(
     .in("rulebook_id", rulebookIds)
     .not("quality_score", "is", null)
     .is("deleted_at", null)
-    .order("created_at", { ascending: true })
+    // NEWEST 200, then reversed: ordering ascending under the limit returned
+    // the OLDEST 200, so once a set of Rulebooks passed 200 audited runs the
+    // "latest" score and the trend froze on stale runs.
+    .order("created_at", { ascending: false })
     .limit(200)
     .returns<ScoreRow[]>();
   if (error) throw new Error(`${error.message} (${error.code})`);
-  return (data ?? [])
+  return [...(data ?? [])]
+    .reverse()
     .filter((row) => typeof row.quality_score === "number")
     .map((row) => ({
       rulebookId: row.rulebook_id,

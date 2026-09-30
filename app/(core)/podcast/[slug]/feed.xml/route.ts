@@ -26,6 +26,7 @@ import {
     CHAPTERS_JSON_MIME,
 } from '@/features/podcasts/chapters-json';
 import { publiclyServableEpisodes } from '@/features/podcasts/publicGate';
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const revalidate = 3600;
 
@@ -41,7 +42,7 @@ const DEFAULT_CATEGORY = 'Technology';
 const DEFAULT_LANGUAGE = 'en-us';
 
 function isUUID(str: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    return isUuidShape(str);
 }
 
 /** Escape the five XML metacharacters for use in element text / attributes. */

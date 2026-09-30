@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export default async function MarketingScreenshotPage({
   params,
@@ -16,7 +14,7 @@ export default async function MarketingScreenshotPage({
   params: Promise<{ screenshotId: string }>;
 }) {
   const { screenshotId } = await params;
-  if (!UUID_RE.test(screenshotId)) notFound();
+  if (!isUuidShape(screenshotId)) notFound();
 
   const supabase = await createClient();
   const response = await webDb(supabase)

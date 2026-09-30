@@ -24,15 +24,13 @@
  */
 
 import { getTeamOrganizationId } from "@/features/organizations/service/teamsService";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** `null` means "resolved, and there is no organization to reach through this id". */
 export type TeamAddressResult = string | null;
 
 const cache = new Map<string, TeamAddressResult>();
 const inFlight = new Map<string, Promise<TeamAddressResult>>();
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Already-known answer, or `undefined` when this id has never been resolved. */
 export function peekTeamOrganizationId(id: string): TeamAddressResult | undefined {
@@ -59,7 +57,7 @@ export function __resetTeamAddressCache(): void {
 export function resolveTeamOrganizationId(
   id: string,
 ): Promise<TeamAddressResult> | TeamAddressResult {
-  if (!id || !UUID_RE.test(id)) return null;
+  if (!id || !isUuidShape(id)) return null;
   const cached = cache.get(id);
   if (cached !== undefined) return cached;
 

@@ -22,6 +22,7 @@ import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { isJsonObject } from "@/types/json";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -45,8 +46,6 @@ function cleanFilters(filters: GscFilters): Json {
  * rules with no site pin, plus rules pinned to exactly this site. RLS is
  * the access ceiling; this query declares its scope (THE VIEW LAW).
  */
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function listDigRules(
   siteId: string,
@@ -54,7 +53,7 @@ export async function listDigRules(
 ): Promise<GscDigRuleRow[]> {
   // siteId comes straight from ?site= — validate before splicing it into
   // the PostgREST .or() filter DSL (a stray comma/paren would rewrite it).
-  if (!UUID_RE.test(siteId)) throw new Error("Invalid site id");
+  if (!isUuidShape(siteId)) throw new Error("Invalid site id");
   const response = await (
     await seoDb()
   )

@@ -2,9 +2,7 @@ import { notFound } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CollectionRunView } from "@/features/marketing/seo/ai-visibility/CollectionRunView";
 import { createClient } from "@/utils/supabase/server";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Standalone resolver route for one `seo.collection_run` — the in-app landing
@@ -18,7 +16,7 @@ export default async function MarketingCollectionRunPage({
   params: Promise<{ runId: string }>;
 }) {
   const { runId } = await params;
-  if (!UUID_RE.test(runId)) notFound();
+  if (!isUuidShape(runId)) notFound();
 
   const supabase = await createClient();
   const response = await supabase

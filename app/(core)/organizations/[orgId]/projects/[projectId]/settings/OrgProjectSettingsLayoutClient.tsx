@@ -14,9 +14,7 @@ import { getProjectBySlug, getProject } from "@/features/projects/service";
 import type { Project } from "@/features/projects/types";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ProjectSidebar } from "@/features/projects/components/ProjectSidebar";
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export function OrgProjectSettingsLayoutClient({
   children,
@@ -49,7 +47,7 @@ export function OrgProjectSettingsLayoutClient({
         setOrgSlug(org.slug);
 
         let proj: Project | null = null;
-        if (UUID_REGEX.test(projectId)) {
+        if (isUuidShape(projectId)) {
           proj = await getProject(projectId);
         } else {
           proj = await getProjectBySlug(projectId, org.id);

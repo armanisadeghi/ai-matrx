@@ -371,7 +371,7 @@ export function ExposureAuditClient() {
 
   const policy = useTablePaginationPolicy();
   const pagination = usePaginatedData<ExposureAuditRow, number>({
-    queryKey: JSON.stringify(["exposure-audit", policy.userId, policy.organizationId,
+    queryKey: JSON.stringify(["exposure-audit",
       resourceFilter, exposureFilter, includeDeleted, query.search.trim(), query.pageSize, refreshNonce]),
     initialCursor: 0,
     getRowId: (row) => `${row.resource_type}:${row.resource_id}`,

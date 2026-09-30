@@ -2,39 +2,9 @@
 
 // features/masterwork/home/MasterworkHomePage.tsx
 //
-// 🚨🚨 DO NOT DELETE THIS DIRECTORY. IT IS UNFINISHED WORK AWAITING ARMAN'S
-// RULING — NOT DEAD CODE. 🚨🚨
-//
-// `features/masterwork/home/` (this file, `HowItsImprovingPanel.tsx`,
-// `service.ts` — 1,022 lines) was DELETED on 2026-09-10 on the grounds that
-// nothing rendered it, and RESTORED the same day from `810a4d299a` after an
-// independent review found the deletion unlawful. THE UNFINISHED-WORK ALARM
-// (`../../../../common-docs/policies/unfinished-work-alarm.md` § The ban):
-// *"You may NEVER recommend deleting … a purpose-built artifact on the grounds
-// that it is unreferenced or empty … ONLY after Arman has himself named it
-// dead, in writing, first."* He never did.
-//
-// WHY IT IS NOT ROUTED, AND WHY AN AGENT MUST NOT ROUTE IT: Arman HIMSELF made
-// `/masterwork` bounce signed-in Experts to `/masterwork/all` in his own
-// commit `00602a2916` (2026-08-21) — *"'/masterwork' is the marketing page
-// (authed bounce to /all on the canonical list template)"*. That is his
-// routing decision in writing. Re-mounting this page there would reverse it on
-// an agent's authority, which is the mirror of the deletion, not its repair.
-// He named the ROUTE; he never named this page dead.
-//
-// WHAT IS ACTUALLY AT STAKE, for his ruling: `/masterwork/all` is a generic
-// Rulebook entity list. It carries NONE of what this page carries — the review
-// KPI strip, release state + quality trend per Masterwork, recent runs, the
-// Approach start tiles, and the "How it's improving" Hindsight panel. That
-// capability is currently unreachable, which is rung 2 of THE REACHABILITY
-// LADDER: report the missing caller, never the missing value.
-//
-// STATUS: restored, compiling, and archive-lawful (it carries F10's
-// `ArchivedDisclosure` split and the all-archived caption). Registered for
-// Arman in `.matrx/ARMAN_TASKS.md` and in the archived-items-law register
-// (`common-docs/projects/archived-items-law/STATUS.md`, row F10).
-//
-// The Masterwork HOME — the authed landing at /masterwork. Makes the depth
+// The Masterwork HOME — the signed-in landing at /masterwork (Arman
+// 2026-09-30: "signed-in Experts land on the Masterwork home dashboard;
+// approved"). Guests get the marketing page from the same route. Makes the depth
 // of the system visible in the Expert's own terms: your Rulebooks (with
 // review progress), the Masterworks built from them (release state + quality
 // trend), recent work the system did for you, the Approaches to start from,
@@ -86,11 +56,24 @@ function when(iso: string): string {
   return formatRelativeTime(iso, { style: "short" });
 }
 
+/** An operation with no label yet still reads as words, never as a code. */
+function operationLabel(operation: string): string {
+  const known = OPERATION_LABELS[operation];
+  if (known) return known;
+  const words = operation.replace(/_/g, " ").trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : operation;
+}
+
 /** What the system was doing, in the Expert's words. */
 const OPERATION_LABELS: Record<string, string> = {
   build: "Built a Masterwork",
   ingest: "Read a pasted source",
   ingest_file: "Read an uploaded source",
+  ingest_dump: "Read a pile of sources",
+  ingest_corpus: "Read a body of work",
+  ingest_chat: "Read a pasted chat",
+  audition_unfolding: "Ran an unfolding Audition",
+  bench: "Ran a Bench trial",
   audition: "Ran an Audition",
   checkup: "Ran a Final Checkup",
   clean_corpus: "Tidied your words",
@@ -236,7 +219,7 @@ function QualityTrend({
   return (
     <span
       className={cn("inline-flex items-center gap-1 text-xs tabular-nums", tone)}
-      title="Quality score from the latest Audition"
+      title="Latest Audition score for the Rulebook this was built from"
     >
       <Icon className="h-3.5 w-3.5" />
       {Math.round(latest)}
@@ -255,6 +238,7 @@ export function MasterworkHomePage() {
   const [approaches, setApproaches] = useState<DistillationApproach[] | null>(
     null,
   );
+  const [approachesError, setApproachesError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showArchivedMasterworks, setShowArchivedMasterworks] = useState(false);
 
@@ -270,15 +254,18 @@ export function MasterworkHomePage() {
             err instanceof Error ? err.message : "Could not load Masterwork.",
           );
       });
-    // Approaches are enrichment — a failure never blanks the page, but it
-    // screams (loud recovery) and the section simply doesn't render.
+    // Approaches are enrichment — a failure never blanks the page; the
+    // section says it failed instead of vanishing.
     fetchDistillationApproaches()
       .then((a) => {
         if (!cancelled) setApproaches(a);
       })
       .catch((err: unknown) => {
         console.error("[masterwork-home] Approach registry read failed", err);
-        if (!cancelled) setApproaches([]);
+        if (!cancelled)
+          setApproachesError(
+            err instanceof Error ? err.message : "Could not load the ways to start.",
+          );
       });
     return () => {
       cancelled = true;
@@ -336,20 +323,26 @@ export function MasterworkHomePage() {
       </div>
 
       {/* Start here — the Approach registry */}
-      {approaches !== null && startableApproaches(approaches).length > 0 ? (
-        <section className="space-y-2">
-          <div className="flex items-baseline justify-between gap-3">
-            <SectionHeading title="Start something new" />
-            <Link
-              href="/masterwork/approaches"
-              className="shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              All ways
-            </Link>
+      <section className="space-y-2">
+        <SectionHeading
+          title="Start something new"
+          door={{ href: "/masterwork/approaches", label: "All ways" }}
+        />
+        {approachesError !== null ? (
+          <p className="text-sm text-destructive">
+            Couldn&apos;t load the ways to start: {approachesError}{" "}
+            <ErrorAlchemyMenu error={approachesError} />
+          </p>
+        ) : approaches === null ? (
+          <div className="flex items-center justify-center rounded-lg border border-border bg-card p-6">
+            <LoadingSpinner />
           </div>
-          {/* ONE card component, three consumers (2026-08-20) — this grid used
-              to hand-roll a plainer tile, so the same Approach looked like two
-              different things depending on which page you were on. */}
+        ) : startableApproaches(approaches).length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No ways to start are open right now.
+          </p>
+        ) : (
+          // ONE card component, three consumers (2026-08-20).
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {startableApproaches(approaches).map((a) => (
               <ApproachCard
@@ -359,8 +352,8 @@ export function MasterworkHomePage() {
               />
             ))}
           </div>
-        </section>
-      ) : null}
+        )}
+      </section>
 
       {/* THE IMPROVEMENT BRAIN, VISIBLE FROM THE MODULE HOME
           (aidream/services/masterwork_assists/). Same rows as the Rulebook
@@ -428,10 +421,11 @@ export function MasterworkHomePage() {
       </section>
 
       {/* Your Masterworks */}
-      {activeMasterworks.length > 0 || archivedMasterworks.length > 0 ? (
+      {hasRulebooks ||
+      home.masterworkActiveTotal + home.masterworkArchivedTotal > 0 ? (
         <section className="space-y-2">
           <SectionHeading
-            title={`Your Masterworks (${activeMasterworks.length})`}
+            title={`Your Masterworks (${home.masterworkActiveTotal})`}
           />
           {/*
             🚨 A COUNT OF ZERO IS NOT A STATEMENT THAT NOTHING EXISTS (row F10
@@ -442,14 +436,19 @@ export function MasterworkHomePage() {
             the SAME exported function the Rulebook and lane KPI strips print,
             so this surface can never word it differently.
           */}
-          {activeMasterworks.length === 0 ? (
+          {activeMasterworks.length === 0 &&
+          archivedMasterworks.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nothing built yet — open a Rulebook to build its Masterwork.
+            </p>
+          ) : activeMasterworks.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               {masterworkFreshnessLine({
                 built: 0,
                 current: 0,
                 released: 0,
                 currentPct: 0,
-                archived: archivedMasterworks.length,
+                archived: home.masterworkArchivedTotal,
               })}
             </p>
           ) : null}
@@ -458,10 +457,16 @@ export function MasterworkHomePage() {
               <HomeMasterworkCard key={m.id} masterwork={m} />
             ))}
           </div>
+          {home.masterworkActiveTotal > activeMasterworks.length ? (
+            <p className="text-xs text-muted-foreground">
+              Showing the {activeMasterworks.length} most recently changed —
+              each Rulebook lists all of its Masterworks.
+            </p>
+          ) : null}
           {/* THE ARCHIVED-ITEMS LAW: hidden by default, one click to reveal,
               and the heading above counts only what is live. */}
           <ArchivedDisclosure
-            count={archivedMasterworks.length}
+            count={home.masterworkArchivedTotal}
             open={showArchivedMasterworks}
             onOpenChange={setShowArchivedMasterworks}
             label="Archived Masterworks"
@@ -490,9 +495,12 @@ export function MasterworkHomePage() {
       ) : null}
 
       {/* Recent work */}
-      {home.recentRuns.length > 0 ? (
+      {hasRulebooks || home.recentRuns.length > 0 ? (
         <section className="space-y-2">
           <SectionHeading title="Recent work" />
+          {home.recentRuns.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nothing has run yet.</p>
+          ) : (
           <div className="rounded-lg border border-border bg-card">
             {home.recentRuns.map((run, i) => (
               <Link
@@ -514,7 +522,7 @@ export function MasterworkHomePage() {
                   )}
                 />
                 <span className="text-foreground">
-                  {OPERATION_LABELS[run.operation] ?? run.operation}
+                  {operationLabel(run.operation)}
                 </span>
                 {run.rulebookName ? (
                   <span className="truncate text-muted-foreground">
@@ -533,9 +541,9 @@ export function MasterworkHomePage() {
               </Link>
             ))}
           </div>
+          )}
         </section>
       ) : null}
-
 
       {/* How it's improving — the honest Hindsight panel */}
       <HowItsImprovingPanel />

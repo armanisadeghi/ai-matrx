@@ -536,7 +536,7 @@ export function useIngest(): UseIngestResult {
           phase: "transcribing",
           message: "Transcribing what's said in the video…",
         });
-        const { text: transcript } = await fetchYouTubeTranscript(
+        const { text: transcript } = await fetchYouTubeTranscript( // org-filter: server-call the transcript call runs in the active organization on the server; it is not a list read
           backendApi.post,
           url,
         );

@@ -5,6 +5,7 @@
  * rows — so ⋯ and right-click disagreed. Break it names: a ⋯ that is not backed
  * by the ONE context-menu engine → red.
  */
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -27,7 +28,7 @@ import type { RichDocumentActionContext } from "../../types";
 
 const ctx = {
   content: "Kiln firing schedule",
-  source: { type: "note", mode: "identity", noteId: "n-1", sourceId: "s-1" },
+  source: noteIdentityContentSource("11111111-1111-4111-8111-111111111111", "s-1"),
   metadata: null,
   isCreator: false,
   surfaceKey: null,

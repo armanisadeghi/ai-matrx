@@ -11,9 +11,7 @@
 import { parseUpdateClassesValue, type ClassUpdatePlan, type CurrentClass } from "./classAgentWrites";
 import { ASSIGNABLE_TOKENS, CLASS_CONTENT_TOKENS } from "./constants";
 import type { AssignableToken } from "./types";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** The most items one hub list write may carry. */
 export const MAX_HUB_ITEMS_PER_WRITE = 25;
@@ -117,7 +115,7 @@ function parseItems(
       );
       ok = false;
     }
-    if (!UUID_RE.test(id)) {
+    if (!isUuidShape(id)) {
       problems.push(`${where}.id must be the record's UUID; received ${JSON.stringify(raw.id)}.`);
       ok = false;
     }

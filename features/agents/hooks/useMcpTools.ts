@@ -66,7 +66,7 @@ export function useMcpCatalog() {
   // server's answer is fetched alongside it — one request, once per mount.
   useEffect(() => {
     if (organizationId && availabilityStatus === "idle") {
-      dispatch(fetchAvailability({ organizationId }));
+      dispatch(fetchAvailability({ organizationId })); // org-filter: server-call MCP connection health is checked per organization on the server; the catalog itself is never narrowed
     }
   }, [dispatch, organizationId, availabilityStatus]);
 
@@ -114,7 +114,7 @@ export function useMcpCatalog() {
   const refreshAvailability = useCallback(
     (slugs?: string[]) => {
       if (organizationId) {
-        dispatch(fetchAvailability({ organizationId, slugs }));
+        dispatch(fetchAvailability({ organizationId, slugs })); // org-filter: server-call MCP connection health is checked per organization on the server; the catalog itself is never narrowed
       }
     },
     [dispatch, organizationId],

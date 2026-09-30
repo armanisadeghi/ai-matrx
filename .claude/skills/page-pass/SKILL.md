@@ -42,7 +42,7 @@ procedure — open it only when you are doing that job or the check fails.
    (code done; name the exact look still owed) · `arman` (question filed) ·
    `blocked` (what blocks).
 4. **Fix what you found** — the cause, not the symptom. Never remove, rename or
-   hide a feature to make a rule pass. Database changes are part of the job
+   hide a feature, or a designed look another page relies on, to make a rule pass. Database changes are part of the job
    (functions, grants, `client_callable_door` rows, per CLAUDE.md; new tables only
    via `platform.create_entity_table`). Pick ONE path: through the Supabase MCP
    with NO migration file, or a file you write and apply with `pnpm db:apply`
@@ -52,8 +52,12 @@ procedure — open it only when you are doing that job or the check fails.
    restore both in the same transaction. A shared-link fix often reaches past the
    page into the shared execution stack (org gate, bindings, the server's guest
    path) — follow it there. If the fix belongs in a shared component
-   or package, fix it there — and then prove it live on a SECOND page that
-   uses it (a shared change reaches every consumer at once), and run that
+   or package, first list every page that uses it (search its imports in every
+   repo). A behavior or bug fix that leaves the look unchanged: fix it and prove it
+   live on a few of those pages. A change to how it LOOKS: ask Arman first, one
+   simple question with the full page list and before/after links (law:
+   `common-docs/policies/canonicalize-without-destroying.md`); if it suits your page
+   and not the others, make it an option for your page, never the new default. Run that
    component's tests (`npx jest <its dir>`; menus: `npx jest features/context-menu-v3`,
    which runs the heading check). If it belongs on the server (a read wrongly gated,
    a 4xx/5xx the page can't fix), fix it in `../aidream` under that repo's

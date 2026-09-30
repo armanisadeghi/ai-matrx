@@ -54,7 +54,7 @@ export function useShowSystemFiles(): ShowSystemFiles {
       return;
     }
     let live = true;
-    void fetchKnobDefinition({
+    void fetchKnobDefinition({ // org-filter: server-call resolves the files.show_system_files setting for the organization the person works in; no file is matched on organization
       organizationId,
       userId,
       feature: SHOW_SYSTEM_FILES_KNOB.feature,

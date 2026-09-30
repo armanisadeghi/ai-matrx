@@ -7,6 +7,7 @@ import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import { oldTypeSlug, type StoreScopeRow } from "@/features/scopes/service/storeScopeAdapter";
 import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Short-link resolver for a scope: /scopes/s/[scopeId] → the canonical
@@ -22,8 +23,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  *
  * Same pattern (and same reason) as /marketing/pages/[pageId].
  */
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function ScopeShortLink({
   params,
@@ -33,7 +32,7 @@ export default async function ScopeShortLink({
   const { scopeId } = await params;
   // A malformed id would reach Postgres as a uuid parse error (500) — reject
   // it as a plain 404 instead.
-  if (!UUID_RE.test(scopeId)) notFound();
+  if (!isUuidShape(scopeId)) notFound();
 
   const supabase = await createClient();
   // The store's scope doors answer nobody signed out. Send signed-out visitors

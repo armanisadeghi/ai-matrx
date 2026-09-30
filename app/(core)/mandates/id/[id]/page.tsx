@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { personMandateRecordHref } from "@/features/mandates/member-list/routes";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * /mandates/id/[id] — THE DOOR for a mandate named by its definition id.
@@ -18,7 +19,7 @@ export default async function MandateIdResolverPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const isUuid = isUuidShape(id);
   const supabase = await createClient();
   const { data, error } = await mandateDefinitions(supabase)
     .select("mandate_key")

@@ -130,6 +130,7 @@ import { resolve } from "node:path";
 import pg from "pg";
 import { type CheckDb, CheckTargetRefusal, openCheckDb } from "./lib/check-target";
 import { GateDbRefusal, gateSessionCap } from "./lib/gate-db";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const ROOT = process.cwd();
 
@@ -1607,13 +1608,12 @@ interface HarvestedIds {
   reference: Set<string>;
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REFERENCE_KEY = /(_id|_by|_uuid|_ids)$/i;
 
 function harvestIds(value: unknown, key: string | null, out: HarvestedIds): void {
   if (value == null) return;
   if (typeof value === "string") {
-    if (!UUID_RE.test(value)) return;
+    if (!isUuidShape(value)) return;
     if (key === null || key === "id" || key === "uuid") out.identity.add(value.toLowerCase());
     else if (REFERENCE_KEY.test(key)) out.reference.add(value.toLowerCase());
     else out.identity.add(value.toLowerCase());
@@ -1745,7 +1745,7 @@ function harvestDescriptive(value: unknown, key: string | null, out: Map<string,
     }
     if (!key || !DESCRIPTIVE_KEY.test(key)) return;
     const v = value.trim();
-    if (v.length < 3 || UUID_RE.test(v)) return;
+    if (v.length < 3 || isUuidShape(v)) return;
     out.set(`${key}=${v}`, v);
     return;
   }

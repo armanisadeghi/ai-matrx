@@ -38,6 +38,7 @@ import {
 } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr, type FavoriteKind } from "@/features/scopes/types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** Everything a callsite must supply to pin something. `pinnedAt` is stamped here. */
 export type FavoriteInput = Omit<FavoriteItem, "pinnedAt">;
@@ -54,9 +55,6 @@ export interface UsePinnedResult {
   /** Persist a new order by id. */
   reorder: (orderedIds: string[]) => void;
 }
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Fixed namespace so a given nav href ALWAYS maps to the same synthetic uuid
 // (stable across reloads/devices). Arbitrary but constant — do not change, or
@@ -86,7 +84,7 @@ export function favoriteEntityRef(
   const raw = item.id.startsWith(prefix)
     ? item.id.slice(prefix.length)
     : item.id;
-  if (!UUID_RE.test(raw)) return null;
+  if (!isUuidShape(raw)) return null;
   return { entityType: item.kind, entityId: raw };
 }
 

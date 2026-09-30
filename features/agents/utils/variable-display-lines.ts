@@ -43,9 +43,7 @@ import {
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
 import { getCachedEntityTitle } from "@/features/scopes/service/entityTitles";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface VariableDisplayLine {
   /** The raw variable name — a stable React key. */
@@ -70,7 +68,7 @@ function resolveEntityVariable(
   key: string,
   value: unknown,
 ): { token: string; id: string } | null {
-  if (typeof value !== "string" || !UUID_RE.test(value.trim())) return null;
+  if (typeof value !== "string" || !isUuidShape(value.trim())) return null;
   const base = key.replace(/_?id$/i, "").replace(/_+$/, "");
   if (!base) return null;
   const token = resolveEntityToken(base);
@@ -108,7 +106,7 @@ function resolveAttachmentList(
     const rawToken = raw.entity_token ?? raw.entityToken;
     const rawId = raw.id;
     if (typeof rawToken !== "string" || typeof rawId !== "string") return null;
-    if (!UUID_RE.test(rawId.trim())) return null;
+    if (!isUuidShape(rawId.trim())) return null;
     const token = resolveEntityToken(rawToken);
     // An attachment we cannot open is dropped, exactly like a bare id.
     if (!tryGetEntityInfo(token)) continue;
@@ -158,7 +156,7 @@ export function buildVariableDisplayLines(
     }
 
     // A bare id we cannot turn into a door is dropped, never printed.
-    if (typeof value === "string" && UUID_RE.test(value.trim())) continue;
+    if (typeof value === "string" && isUuidShape(value.trim())) continue;
 
     const text = variableValueToDisplay(value);
     if (!text.trim()) continue;

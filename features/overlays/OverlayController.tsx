@@ -34,6 +34,7 @@ import {
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { readDetailOverlayData } from "@/features/window-panels/detail/detailOverlayData";
 import { useCloseOverlaysOnNavigation } from "@/features/overlays/useCloseOverlaysOnNavigation";
+import { isWalkUnitKind } from "@/features/review-walk/address";
 
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
@@ -6783,11 +6784,9 @@ export default function OverlayController() {
       {/* reviewWalkWindow — multi-instance */}
       {instancesById.reviewWalkWindow.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
-        const unitKind =
-          data?.unitKind === "assistant_message" ||
-          data?.unitKind === "agent_request"
-            ? data.unitKind
-            : null;
+        // Every kind the walk supports (wf_node_outcome included) — a
+        // deep-linked or restored step walk must not render nothing.
+        const unitKind = isWalkUnitKind(data?.unitKind) ? data.unitKind : null;
         if (typeof data?.unitId !== "string" || unitKind === null) {
           return null;
         }

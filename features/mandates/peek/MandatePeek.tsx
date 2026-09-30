@@ -51,8 +51,7 @@ import {
   useTransientPeek,
 } from "@/features/organizations/peek/useTransientPeek";
 import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 interface MandateFacts {
   id: string;
@@ -82,7 +81,7 @@ function useMandateFacts(idOrKey: string, active: boolean): FactsState {
         .select(
           `id, mandate_key, label, description, output_kind, is_enabled, deleted_at, ${MANDATE_HOLDER_COLUMNS}` as const,
         )
-        .eq(UUID.test(idOrKey) ? "id" : "mandate_key", idOrKey)
+        .eq(isUuidShape(idOrKey) ? "id" : "mandate_key", idOrKey)
         .maybeSingle();
       if (!live) return;
       if (error) {

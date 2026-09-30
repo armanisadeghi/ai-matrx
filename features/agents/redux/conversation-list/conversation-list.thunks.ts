@@ -26,6 +26,7 @@ import {
   setGlobalListError,
 } from "./conversation-list.slice";
 import { CONVERSATION_LIST_PAGE_SIZE } from "./conversation-list.types";
+import { HIDDEN_CONVERSATION_LANE } from "@/features/agents/redux/conversation-history/lanes";
 
 type GetAgentConversationsReturns =
   Database["public"]["Functions"]["get_agent_conversations"]["Returns"];
@@ -264,6 +265,8 @@ export const fetchGlobalConversations = createAsyncThunk<
       )
       .is("deleted_at", null)
       .eq("is_ephemeral", false)
+      // A mandate candidate's shadow leg is never listed (lanes.ts).
+      .neq("lane", HIDDEN_CONVERSATION_LANE)
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
     if (viewerId) {

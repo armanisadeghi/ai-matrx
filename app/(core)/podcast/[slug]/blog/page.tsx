@@ -12,6 +12,7 @@ import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { PodcastBlogPage } from "@/features/podcasts/components/player/PodcastBlogPage";
 import type { PcArticleDisplayRow, PcEpisodeWithShow } from "@/features/podcasts/types";
 import { mapPcEpisodeWithShowRow } from "@/features/podcasts/types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const revalidate = 3600;
 
@@ -21,7 +22,7 @@ const SITE_URL = (
 const DEFAULT_OG_IMAGE = `${SITE_URL}/images/podcast-default-og.png`;
 
 function isUUID(str: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+  return isUuidShape(
     str,
   );
 }

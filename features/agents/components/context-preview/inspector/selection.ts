@@ -13,6 +13,7 @@
  */
 
 import type { components } from "@/types/python-generated/api-types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface InspectorSelection {
   org: string | null;
@@ -33,11 +34,9 @@ export const EMPTY_SELECTION: InspectorSelection = {
   item: null,
 };
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function idOrNull(value: string | null | undefined): string | null {
   const v = value?.trim() ?? "";
-  return UUID_RE.test(v) ? v : null;
+  return isUuidShape(v) ? v : null;
 }
 
 /** Read the selection from an address query. Anything that is not an id is ignored. */

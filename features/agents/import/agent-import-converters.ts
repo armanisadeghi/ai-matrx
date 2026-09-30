@@ -25,6 +25,7 @@ import {
   sanitizeModelId,
 } from "./agent-import-validation";
 import { parsePasted } from "./agent-import-parse";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export { parsePasted } from "./agent-import-parse";
 
@@ -148,9 +149,6 @@ export function applyAgentDefaults(
 
 // ─── resolveTools ─────────────────────────────────────────────────────────────
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 interface ToolResolutionResult {
   resolvedIds: string[];
   warnings: string[];
@@ -164,7 +162,7 @@ function resolveTools(
   const warnings: string[] = [];
 
   for (const t of toolValues) {
-    if (typeof t === "string" && UUID_RE.test(t)) {
+    if (typeof t === "string" && isUuidShape(t)) {
       resolvedIds.push(t);
     } else if (typeof t === "string") {
       const id = toolIndex.get(t.toLowerCase());

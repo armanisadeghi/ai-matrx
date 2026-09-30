@@ -20,6 +20,14 @@ import { Bot, MessageSquare, Puzzle, Timer, Workflow } from "lucide-react";
 
 export type ConversationLane = "chat" | "matrx" | "auto" | "plugin" | "subagent";
 
+/**
+ * The lane `chat.conversation_lane` gives a mandate candidate's shadow leg
+ * (conversation_type 'mandate_candidate'). It is NOT a `ConversationLane`: no
+ * toggle shows it, `normalizeLanes` drops it, and every list excludes it — the
+ * conversation exists only so the candidate pair window can open it.
+ */
+export const HIDDEN_CONVERSATION_LANE = "hidden";
+
 /** Display order — exactly the order Arman named them. */
 export const CONVERSATION_LANES: readonly ConversationLane[] = [
   "chat",

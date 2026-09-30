@@ -1,5 +1,6 @@
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { resultAsObject, getArg } from "../_shared";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Parse the `dataset` and `usertable_create` tool results.
@@ -26,8 +27,6 @@ const asStr = (v: unknown): string | null =>
   typeof v === "string" && v ? v : null;
 const asNum = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function parseDataset(entry: ToolLifecycleEntry): ParsedDataset {
   const r = resultAsObject(entry) ?? {};
@@ -40,7 +39,7 @@ export function parseDataset(entry: ToolLifecycleEntry): ParsedDataset {
     asStr(meta.dataset_id) ??
     asStr(r.table_id) ??
     asStr(getArg<string>(entry, "dataset_id"));
-  const id = rawId && UUID_RE.test(rawId) ? rawId : null;
+  const id = rawId && isUuidShape(rawId) ? rawId : null;
 
   const fields: ParsedDatasetField[] = Array.isArray(r.fields)
     ? r.fields

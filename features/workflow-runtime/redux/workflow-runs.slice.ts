@@ -40,6 +40,7 @@ import {
   HELD_FOR_APPROVAL,
   HELD_WRITE_MARKER,
 } from "@/features/record-change-approvals/recordChangeApproval";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type NodeRunPhase =
   "running" | "settled" | "failed" | "skipped" | "retrying";
@@ -515,8 +516,6 @@ function humanDuration(ms: number | null | undefined): string | null {
   return formatDurationMs(ms, { style: "compact" });
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * The written row's id, when the resumed step's output names one — a shallow
  * scan because the held-write template's key varies by change shape
@@ -527,10 +526,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function firstUuidIn(value: Record<string, unknown> | null): string | null {
   if (!value) return null;
   for (const raw of Object.values(value)) {
-    if (typeof raw === "string" && UUID_RE.test(raw.trim())) return raw.trim();
+    if (typeof raw === "string" && isUuidShape(raw.trim())) return raw.trim();
     if (Array.isArray(raw)) {
       for (const item of raw) {
-        if (typeof item === "string" && UUID_RE.test(item.trim())) {
+        if (typeof item === "string" && isUuidShape(item.trim())) {
           return item.trim();
         }
       }

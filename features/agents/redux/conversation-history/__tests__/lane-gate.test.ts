@@ -134,3 +134,23 @@ describe("conversation lane gate", () => {
     expect(laneFilter(state)).toBe("NO_LANE_GATE");
   });
 });
+
+describe("the hidden lane (mandate candidate legs) is never listed", () => {
+  const base = {
+    excludeSourceFeatures: [],
+    includeSourceFeatures: [],
+    includeSourceApps: [],
+    includeEmptySource: false,
+    includeOriginClasses: [],
+  };
+
+  it("a scope with NO lane gate still excludes the hidden lane", () => {
+    const q = new RecordingQuery();
+    applyHistoryFilters(q, { ...base, includeLanes: null });
+    expect(q.calls).toContainEqual(["neq", "lane", "hidden"]);
+  });
+
+  it("a lane gate can never name the hidden lane", () => {
+    expect(normalizeLanes(["chat", "hidden"])).toEqual(["chat"]);
+  });
+});
