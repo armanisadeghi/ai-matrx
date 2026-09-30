@@ -18,7 +18,6 @@ import {
 } from "@ai-matrx/design-system";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { toast } from "@/lib/toast";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   attachTermList,
   detachTermList,
@@ -167,8 +166,7 @@ function TermListPicker({
   useEffect(() => {
     if (!open) return;
     let active = true;
-    void ensureOrgId(null)
-      .then((orgId) => listTermLists(orgId))
+    void listTermLists()
       .then((rows) => {
         if (active) {
           setLists(rows);

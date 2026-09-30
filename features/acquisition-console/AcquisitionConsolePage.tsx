@@ -223,6 +223,22 @@ export function AcquisitionConsolePage() {
           </p>
         )}
 
+        {organizationId &&
+          !loading &&
+          !failure &&
+          data.have.length === 0 &&
+          data.connected.length === 0 &&
+          data.blocked.length === 0 && (
+            <div className="flex max-w-prose items-center gap-3 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground">
+              <span>
+                Nothing in {memberOrgs.find((o) => o.id === organizationId)?.name ?? "this organization"}.
+              </span>
+              <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setOrganization("all")}>
+                View all organizations
+              </Button>
+            </div>
+          )}
+
         {data.problems.length > 0 && (
           // 🚨 A DROPPED ROW ANNOUNCES ITSELF. The tables below are missing
           // exactly these rows and say so in the words of the field that broke.
