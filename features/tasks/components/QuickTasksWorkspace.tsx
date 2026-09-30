@@ -99,7 +99,7 @@ export function filterQuickTasksBySearch<T extends { id: string; title: string }
   );
 }
 
-/** Tasks visible in the Quick Tasks window — org-scoped, hierarchy-hydrated. */
+/** Tasks visible in the Quick Tasks window — every organization unless the picker filters one. */
 function useQuickTasksList() {
   // Keep the shared nowMinute clock ticking while the Quick Tasks window is
   // open — selectFilteredTasks derives snooze expiry / date windows from it,
@@ -129,8 +129,7 @@ function useQuickTasksList() {
 }
 
 /**
- * Thin Provider-less wrapper: seeds the Quick Tasks window's org selection from
- * the hierarchy on first mount, ensures tasks are fetched, and scopes the list
+ * Thin Provider-less wrapper: ensures tasks are fetched, and scopes the list
  * to "all tasks" while the window is open (restores /tasks view state on close).
  * All state lives in Redux (quickTasksWindow + tasksUi slices).
  */
@@ -140,9 +139,10 @@ export function QuickTasksWorkspaceProvider({
   children: React.ReactNode;
 }) {
   const dispatch = useAppDispatch();
-  const { isSuccess } = useNavTree();
-  const selectedOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
-  const appOrgId = useAppSelector(selectOrganizationId);
+  useNavTree(); // loads the hierarchy so tasks are fetched
+  // The window's organization is an on-page FILTER chosen in the picker (default All) — it is
+  // never seeded from the header's selected organization. New tasks fall back to that
+  // organization for their destination (`QuickTasksMain`), which is a create, not a read.
   const showAllProjects = useAppSelector(selectShowAllProjects);
   const activeProject = useAppSelector(selectActiveProject);
   const savedViewRef = useRef<{
@@ -163,20 +163,6 @@ export function QuickTasksWorkspaceProvider({
     // Capture /tasks view mode once on open; restore on close only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
-
-  // Seed the window's org from the organization the PERSON selected — never
-  // from whichever organization sorted first in their membership list. A
-  // membership in someone else's own organization can sort first, and this
-  // value scopes both the list and the org every task created here is filed
-  // under (`QuickTasksMain`). Boot is total, so a null selection here means
-  // genuinely unresolved: the window then shows the organization-required
-  // state (below) beside the cascade picker, and invents nothing.
-  // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
-  useEffect(() => {
-    if (isSuccess && !selectedOrgId && appOrgId) {
-      dispatch(setQuickTasksSelectedOrgId(appOrgId));
-    }
-  }, [dispatch, isSuccess, selectedOrgId, appOrgId]);
 
   return <>{children}</>;
 }

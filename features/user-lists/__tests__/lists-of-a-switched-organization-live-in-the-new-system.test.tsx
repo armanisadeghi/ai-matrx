@@ -59,6 +59,7 @@ const index = {
   archived_ids: [],
 };
 const olderReads: string[] = [];
+const indexReads: string[] = [];
 const client = {
   rpc: jest.fn(async (fn: string) => {
     if (fn === "get_user_lists_summary") return { data: summary, error: null };
@@ -72,6 +73,7 @@ const client = {
     },
     rpc: async (fn: string) => {
       if (name === "custom" && (fn === "pick_list_index" || fn === "pick_list_index_everywhere")) {
+        indexReads.push(fn);
         return { data: index, error: null };
       }
       throw new Error(`unexpected rpc ${name}.${fn}`);
@@ -145,6 +147,7 @@ test("A. getAccessibleLists lists the person's lists that live in the new system
 
 test("B. the Picklists page lists a list in the new system at /lists/<id> and reads no older table", async () => {
   olderReads.length = 0;
+  indexReads.length = 0;
   const { PicklistsIndex } = await import("../components/PicklistsIndex");
   await act(async () => {
     root.render(
@@ -162,6 +165,8 @@ test("B. the Picklists page lists a list in the new system at /lists/<id> and re
   expect(text).toContain("4 items");
   expect(container.querySelector(`a[href="/lists/${STORE_LIST}"]`)).not.toBeNull();
   expect(olderReads.filter((t) => t.startsWith("workbench."))).toEqual([]);
+  // The header's selected organization never narrows the list: it opens on every organization.
+  expect(indexReads).toEqual(["pick_list_index_everywhere"]);
 });
 
 test("C. the older list editor, handed a list that lives in the new system, links to it instead", async () => {

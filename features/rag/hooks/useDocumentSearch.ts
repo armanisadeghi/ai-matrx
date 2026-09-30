@@ -23,7 +23,6 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { components } from "@/types/python-generated/api-types";
 
 // Wire shapes DERIVED from the generated OpenAPI contract, never hand-mirrored.
@@ -85,16 +84,14 @@ export function useDocumentSearch(documentId: string): UseDocumentSearch {
       setError(null);
       setHits(null);
       try {
-        const organizationId = await ensureOrgId(undefined);
-        const { data } = await apiPost(
+          const { data } = await apiPost(
           buildPath("/rag/library/{processed_document_id}/test-search", {
             processed_document_id: documentId,
           }),
           {
             query: q,
             limit: RESULT_LIMIT,
-            organization_id: organizationId,
-          },
+            },
         );
         if (seq !== seqRef.current) return [];
         const newHits = Array.isArray(data?.hits) ? data.hits : [];

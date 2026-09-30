@@ -33,20 +33,15 @@ describe("useDuplicateSchedules", () => {
     selectedOrganizationId = "11111111-1111-4111-8111-111111111111";
   });
 
-  it("waits for organization hydration before checking duplicates", async () => {
+  it("checks duplicates without waiting for, or depending on, a selected organization", async () => {
     selectedOrganizationId = null;
     listDuplicatesMock.mockResolvedValue({ groups: [] });
 
     const hook = await renderHook(() => useDuplicateSchedules());
-
-    expect(listDuplicatesMock).not.toHaveBeenCalled();
-
-    selectedOrganizationId = "11111111-1111-4111-8111-111111111111";
-    await hook.act(() => hook.current.refetch());
     await settle(
       hook,
       () => listDuplicatesMock.mock.calls.length === 1,
-      "the post-hydration duplicate check",
+      "the duplicate check with no organization selected",
     );
 
     expect(captureErrorMock).not.toHaveBeenCalled();

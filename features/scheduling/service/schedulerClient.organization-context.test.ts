@@ -47,7 +47,7 @@ describe("scheduler client organization admission", () => {
     registerOrganizationPicker(null);
   });
 
-  it("stamps the selected organization on identified scheduler requests", async () => {
+  it("a read never carries the selected organization — it lists everything the person can reach", async () => {
     const fetchMock = jest.fn(async () => ({
       ok: true,
       json: async () => ({ groups: [] }),
@@ -64,20 +64,19 @@ describe("scheduler client organization admission", () => {
     expect(url).toBe("https://server.example.test/scheduler/tasks/duplicates");
     const headers = new Headers(init.headers);
     expect(headers.get("Authorization")).toBe("Bearer jwt-token");
-    expect(headers.get("X-Organization-Id")).toBe(
-      "11111111-1111-4111-8111-111111111111",
-    );
+    expect(headers.get("X-Organization-Id")).toBeNull();
   });
 
-  it("fails before networking when no organization is selected and no picker is mounted", async () => {
+  it("a read with no organization selected still goes out (nothing to hold, nothing to ask)", async () => {
     setSelectedOrganization(null);
-    const fetchMock = jest.fn();
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      json: async () => ({ groups: [] }),
+    }));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    await expect(listDuplicateSchedules()).rejects.toMatchObject({
-      code: "organization_context_required",
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(listDuplicateSchedules()).resolves.toEqual({ groups: [] });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("uses an explicitly admitted organization when the singleton is still booting", async () => {
@@ -166,14 +165,10 @@ describe("scheduler client organization admission", () => {
     expect(new Headers(init.headers).get("X-Organization-Id")).toBe(CHOSEN_ORG);
   });
 
-  // ORG-GATE-AUDIT: the /schedules list, status and duplicates reads are
-  // fetched on mount. With no organization selected they must NOT open the
-  // picker (a dialog with nothing behind it, 4821555e98) — only a write asks.
-  // Fails against the SOURCE-KEY version, which gated every request
-  // interactively.
-  it("a background read with no organization selected never opens the picker, even when one is mounted", async () => {
+  // A read never opens the picker either, even when one is mounted and nothing is selected.
+  it("a background read with no organization selected never opens the picker", async () => {
     setSelectedOrganization(null);
-    const fetchMock = jest.fn();
+    const fetchMock = jest.fn(async () => ({ ok: true, json: async () => ({ groups: [] }) }));
     global.fetch = fetchMock as unknown as typeof fetch;
     const openPicker = jest.fn();
     registerOrganizationPicker(() => {
@@ -181,10 +176,7 @@ describe("scheduler client organization admission", () => {
       queueMicrotask(() => settleOrganizationSelection("33333333-3333-4333-8333-333333333333"));
     });
 
-    await expect(listDuplicateSchedules()).rejects.toMatchObject({
-      code: "organization_context_required",
-    });
+    await listDuplicateSchedules();
     expect(openPicker).not.toHaveBeenCalled();
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

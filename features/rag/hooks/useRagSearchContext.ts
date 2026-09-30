@@ -8,16 +8,16 @@ import {
 } from "@/features/rag/utils/build-rag-search-context";
 import type { RagSearchFilters } from "@/features/rag/api/search";
 
-/** Surface-A working context → `/knowledge/search` scope fields. */
+/** Surface-A working scopes → `/knowledge/search` scope fields (never the selected organization). */
 export function useRagSearchContext(
   extraFilters?: RagSearchFilters,
 ): RagSearchContextPayload {
-  const { organizationId, scopeIds } = useActiveContext();
+  const { scopeIds } = useActiveContext();
 
   const filtersKey = JSON.stringify(extraFilters ?? null);
 
   return useMemo(
-    () => buildRagSearchContext({ organizationId, scopeIds }, extraFilters),
-    [organizationId, scopeIds, filtersKey, extraFilters],
+    () => buildRagSearchContext({ scopeIds }, extraFilters),
+    [scopeIds, filtersKey, extraFilters],
   );
 }

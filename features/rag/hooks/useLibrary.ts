@@ -21,7 +21,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import type { components } from "@/types/python-generated/api-types";
@@ -323,13 +322,9 @@ export function useLibrarySummary(
   const { refreshKey = 0, pollMs = 0 } = opts;
 
   const userId = useAppSelector(selectUserId);
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE. This read
-  // `organization_id ?? the person's own organization id`, so an unselected picker
-  // silently reported the OWN organization's totals as the organization's.
-  // The RPC is keyed on auth.uid() and `p_organization_id` only NARROWS it:
-  // with nothing selected we send nothing and the totals honestly cover the
-  // caller's own documents — no tenant is substituted.
-  const orgId = useAppSelector(selectOrganizationId);
+  // Totals cover everything this person can reach, across all their organizations. The RPC's
+  // `p_organization_id` is an optional narrowing; the selected organization is never sent, so
+  // switching the header organization neither changes nor refetches these totals.
   const [summary, setSummary] = useState<LibrarySummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -346,7 +341,7 @@ export function useLibrarySummary(
       try {
         const { data, error: rpcError } = await supabase.rpc(
           "rag_library_summary_totals",
-          { p_organization_id: orgId ?? undefined },
+          {},
         );
         if (rpcError) throw new Error("We couldn't load your library totals.");
         const totals = (data ?? null) as ApiSummaryTotals | null;
@@ -390,7 +385,7 @@ export function useLibrarySummary(
         document.removeEventListener("visibilitychange", onVis);
       }
     };
-  }, [userId, orgId, refreshKey, pollMs]);
+  }, [userId, refreshKey, pollMs]);
 
   return { summary, loading, error };
 }

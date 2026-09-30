@@ -157,6 +157,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-09-29` — **Org-filter sweep (F5): the Tasks list is never narrowed by the header's selected organization.** `selectFilteredTasks`, `selectSmartViewCounts` and `selectValidProjectIds` read `taskUiSlice.filterOrgId` (default All), which the sidebar's Organization section sets in place; it no longer writes the header org. Quick Tasks no longer seeds its org filter from the header org (new tasks still fall back to it for their destination). Scope-chip names span every organization. Test: `redux/__tests__/orgFilterIsOnPage.test.ts`.
 - `2026-09-25` — Added staged task-assignment email outbox and activation migrations. The authenticated route keeps the actionable DM and direct-email fallback until activation, then uses the exact outbox row/cutover time. Source engineering and isolated-clone checks are separate from database rollout and delivery evidence.
 - `2026-09-22` — The task text confirmation describes `DONE` and `SNOOZE 1H`, including texting-policy delays and unchanged task due date. Corrected the obsolete claim that aidream has no notification service.
 

@@ -77,22 +77,22 @@ async function authHeaders(
       "Not authenticated — cannot reach aidream /scheduler endpoints",
     );
   }
-  // ORG-GATE-AUDIT: the method decides whether to ASK. A write the person
-  // pressed (Create schedule) with no organization selected opens the picker
-  // and continues; a GET (the /schedules list, status, duplicates — all
-  // fetched on mount) keeps the fail-closed refusal and never raises a dialog
-  // with nothing behind it (4821555e98).
+  // A READ is decided by access alone: a GET (the /schedules list, status, duplicates) never
+  // asks for, requires or stamps the selected organization — it lists everything the person can
+  // reach across all their organizations. It carries an organization only when the caller names
+  // one explicitly (an on-page organization filter). A write the person pressed (Create schedule)
+  // with no organization selected opens the picker and continues (ORG-GATE-AUDIT).
+  const isRead = method.toUpperCase() === "GET";
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+  if (isRead && !explicitOrganizationId) return headers;
   const organizationId = await ensureOrganizationForRequest({
     method,
     organizationId: explicitOrganizationId,
   });
-  return applyOrganizationContextHeader(
-    {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    organizationId,
-  );
+  return applyOrganizationContextHeader(headers, organizationId);
 }
 
 async function request<T>(

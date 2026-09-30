@@ -53,7 +53,9 @@ export interface PicklistsIndexProps {
 export function PicklistsIndex({ organizationId, organizationName, userId, dataSource }: PicklistsIndexProps) {
   const router = useRouter();
   const client = useRecordsClient();
-  const [everywhere, setEverywhere] = useState(false);
+  // Default: EVERY organization the person can reach. One organization is a filter they choose on
+  // the strip below, never the header's selected organization (access-belongs-to-the-person).
+  const [everywhere, setEverywhere] = useState(true);
   const [state, setState] = useState<IndexState>({ phase: "reading" });
   const [filter, setFilter] = useState("");
   const [reread, setReread] = useState(0);
@@ -174,8 +176,7 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
       />
 
       {/* MAKING ONE, FIRST (the data home's own rule): one create control, above the list. */}
-      {everywhere ? null : (
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
           {creating ? (
             <>
               <BasicInput
@@ -198,9 +199,14 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
               </Button>
             </>
           ) : (
-            <Button size="sm" onClick={() => setCreating(true)}>
-              New picklist
-            </Button>
+            <>
+              <Button size="sm" onClick={() => setCreating(true)}>
+                New picklist
+              </Button>
+              {everywhere && organizationName ? (
+                <span className="text-xs text-muted-foreground">Made in {organizationName}</span>
+              ) : null}
+            </>
           )}
           {createError ? (
             <p className="basis-full text-xs text-destructive">
@@ -208,7 +214,6 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
             </p>
           ) : null}
         </div>
-      )}
 
       <section className="rounded-lg border border-border bg-card" aria-label="Picklists">
         {state.phase === "reading" ? (

@@ -7,10 +7,7 @@ import {
   makeSelectEntityIdsMatchingScopes,
   selectAllEntityScopeAssignmentsFlat,
 } from "@/features/scopes/redux/selectors/tree";
-import {
-  selectOrganizationId,
-  selectScopeSelectionsContext,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectScopeSelectionsContext } from "@/lib/redux/slices/appContextSlice";
 import type { Task, TaskWithProject, Project, TaskSortConfig } from "../types";
 import { sortTasks } from "../utils/taskSorting";
 import { matchesSearch } from "@ai-matrx/kit/search-scoring";
@@ -40,6 +37,7 @@ import {
   selectGroupBy,
   selectFilterScopeIds,
   selectFilterScopeMatchAll,
+  selectFilterOrgId,
   selectNowMinute,
 } from "./taskUiSlice";
 import type { TaskGroupBy } from "./taskUiSlice";
@@ -203,14 +201,14 @@ export const selectTaskIdsMatchingAppContextScopes = createSelector(
 );
 
 /**
- * Project IDs that remain valid under the current org + scope selections.
+ * Project IDs that remain valid under the on-page organization filter + scope selections.
  * Returns null when no filter is active (all projects valid).
  *
  * Uses `scope_tags` already on `ProjectRecord` — no extra fetch needed.
  * AND semantics across scope types.
  */
 export const selectValidProjectIds = createSelector(
-  [selectAllProjects, selectOrganizationId, selectScopeSelectionsContext],
+  [selectAllProjects, selectFilterOrgId, selectScopeSelectionsContext],
   (projects, orgId, scopeSelections): Set<string> | null => {
     const selectedScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
@@ -251,7 +249,7 @@ export const selectFilteredTasks = createSelector(
     selectSortOrder,
     selectTaskIdsMatchingScopeFilter,
     selectTaskIdsMatchingAppContextScopes,
-    selectOrganizationId,
+    selectFilterOrgId,
     selectValidProjectIds,
     selectTaskUserStateMap,
     selectNowMinute,
@@ -538,7 +536,7 @@ export const selectSmartViewCounts = createSelector(
     selectAllTasksFlat,
     selectAllTasks,
     selectUserId,
-    selectOrganizationId,
+    selectFilterOrgId,
     selectTaskUserStateMap,
     selectNowMinute,
   ],
@@ -552,7 +550,7 @@ export const selectSmartViewCounts = createSelector(
   ): Record<SmartViewKey, number> => {
     const ctx = buildSmartViewContext(currentUserId, nowMinute);
     const nowIso = nowMinute;
-    // Respect the active org context so counts always agree with the list.
+    // Respect the on-page organization filter (default All) so counts agree with the list.
     let scoped = tasks;
     if (appOrgId) {
       const byId = new Map(allTaskRecords.map((r) => [r.id, r] as const));

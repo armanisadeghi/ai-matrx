@@ -47,6 +47,13 @@ export interface TaskUiState {
   filterScopeIds: string[];
   filterScopeMatchAll: boolean;
 
+  /**
+   * On-page organization filter (sidebar "Organization" section). null = All
+   * organizations, the default. It is a view filter of this page only — it never
+   * follows the header's selected organization (access-belongs-to-the-person).
+   */
+  filterOrgId: string | null;
+
   // List grouping + sort direction
   groupBy: TaskGroupBy;
   sortOrder: "asc" | "desc";
@@ -144,6 +151,7 @@ const initialState: TaskUiState = {
 
   filterScopeIds: [],
   filterScopeMatchAll: false,
+  filterOrgId: null,
 
   groupBy: "project",
   sortOrder: "desc",
@@ -339,6 +347,9 @@ const slice = createSlice({
     setShowAllProjects(state, action: PayloadAction<boolean>) {
       state.showAllProjects = action.payload;
     },
+    setFilterOrgId(state, action: PayloadAction<string | null>) {
+      state.filterOrgId = action.payload;
+    },
     setShowCompleted(state, action: PayloadAction<boolean>) {
       state.showCompleted = action.payload;
     },
@@ -471,6 +482,7 @@ export const {
   setSmartView,
   setShowAllProjects,
   setShowCompleted,
+  setFilterOrgId,
   setSearchQuery,
   setSortBy,
   setNewProjectName,
@@ -547,6 +559,7 @@ export const selectShowAllProjects = (s: StateWithTasksUi) =>
   s.tasksUi.showAllProjects;
 export const selectShowCompleted = (s: StateWithTasksUi) =>
   s.tasksUi.showCompleted;
+export const selectFilterOrgId = (s: StateWithTasksUi) => s.tasksUi.filterOrgId;
 export const selectSearchQuery = (s: StateWithTasksUi) => s.tasksUi.searchQuery;
 export const selectSortBy = (s: StateWithTasksUi) => s.tasksUi.sortBy;
 export const selectNewProjectName = (s: StateWithTasksUi) =>

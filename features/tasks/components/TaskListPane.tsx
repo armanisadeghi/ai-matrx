@@ -30,7 +30,7 @@ import {
   setNewTaskTitle,
 } from "@/features/tasks/redux/taskUiSlice";
 import { getTaskGroupByBanner } from "@/features/tasks/constants/groupBy";
-import { makeSelectScopeNameMapForOrg } from "@/features/scopes/redux/selectors/tree";
+import { selectAllScopesFlat } from "@/features/scopes/redux/selectors/tree";
 import {
   createTaskThunk,
   toggleTaskCompleteThunk,
@@ -119,13 +119,14 @@ export default function TaskListPane() {
   const isGrouped = groupBy !== "none";
   const orgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
-  const selectScopeNameMapForOrg = useMemo(
-    () => makeSelectScopeNameMapForOrg(),
-    [],
-  );
-  const scopeNameMap = useAppSelector((state) =>
-    selectScopeNameMapForOrg(state, orgId),
-  );
+  // Names for scopes of EVERY organization: the list shows tasks across all of the person's
+  // organizations, so a chip's name never depends on the header's selected one.
+  const allScopes = useAppSelector(selectAllScopesFlat);
+  const scopeNameMap = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const s of allScopes) out[s.id] = s.name;
+    return out;
+  }, [allScopes]);
 
   const { prefs, setView } = useListViewPrefs(
     "tasks-list-pane",

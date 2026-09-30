@@ -1,11 +1,13 @@
 /**
- * Map Surface-A app context (org + scopes) into `/knowledge/search` request fields.
+ * Map Surface-A app context (scopes) into `/knowledge/search` request fields.
  *
  * The Python SearchRequest accepts:
  *   - top-level `scope_ids`
- *   - `filters.organization_id` (admin override; still sent so the lab UI
- *     reflects the user's selection and admins can pivot orgs)
  *   - `filters.scope_ids` (same structural filter as top-level)
+ *
+ * The header's selected organization is NEVER sent: search answers from everything the person
+ * can access across all their organizations (access-belongs-to-the-person). A caller that wants
+ * an organization filter passes `organization_id` in `extraFilters` from an on-page control.
  *
  * Project and task are NOT part of the Knowledge search API — they affect agent
  * invocation via call-api scope injection but not chunk retrieval today.
@@ -13,7 +15,6 @@
 import type { RagSearchFilters } from "@/features/rag/api/search";
 
 export interface ActiveContextForRagSearch {
-  organizationId: string | null;
   scopeIds: string[];
 }
 
@@ -26,12 +27,10 @@ export function buildRagSearchContext(
   ctx: ActiveContextForRagSearch,
   extraFilters?: RagSearchFilters,
 ): RagSearchContextPayload {
-  const organization_id = ctx.organizationId ?? undefined;
   const scope_ids = ctx.scopeIds.length > 0 ? ctx.scopeIds : undefined;
 
   const filters: RagSearchFilters = {
     ...extraFilters,
-    ...(organization_id ? { organization_id } : {}),
     ...(scope_ids ? { scope_ids } : {}),
   };
 

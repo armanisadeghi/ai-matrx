@@ -43,6 +43,8 @@ import {
   setSearchQuery,
   setSmartView,
   setShowCompleted,
+  setFilterOrgId,
+  selectFilterOrgId,
   setGroupBy,
   setSortBy,
   toggleSortOrder,
@@ -52,16 +54,12 @@ import {
 } from "@/features/tasks/redux/taskUiSlice";
 import type { TaskSortField } from "@/features/tasks/types/sort";
 import { TASK_SORT_OPTIONS } from "@/features/tasks/types/sort";
-// Surface A: the tasks context sidebar IS an active-context picker — choosing an
-// org/scope sets the global working context, and the whole tasks feature reflects
-// it by design (selectFilteredTasks composes selectTaskIdsMatchingAppContextScopes;
-// quick-create / associate default to it). This is NOT a local view filter — that
-// is TaskScopeFilter + taskUiSlice.filterScopeIds, a separate path. Legit global writer.
+// Organization here is an on-page VIEW filter (taskUiSlice.filterOrgId, default All) — it never
+// reads or writes the header's selected organization. Scopes remain the Surface A active-context
+// picker (global writer below).
 // eslint-disable-next-line no-restricted-syntax -- Surface A: tasks active-context picker
 import {
-  selectOrganizationId,
   selectScopeSelectionsContext,
-  setOrganization,
   addActiveScope,
   removeActiveScope,
 } from "@/lib/redux/slices/appContextSlice";
@@ -115,7 +113,7 @@ export default function TasksContextSidebar() {
   const showCompleted = useAppSelector(selectShowCompleted);
 
   // Context (all orgs/scopes/projects, unfiltered)
-  const orgId = useAppSelector(selectOrganizationId);
+  const orgId = useAppSelector(selectFilterOrgId);
   const orgs = useAppSelector(selectOrganizationsList);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const allScopeTypes = useAppSelector(selectAllScopeTypesFlat);
@@ -188,8 +186,7 @@ export default function TasksContextSidebar() {
   };
 
   const handleSelectOrg = (id: string | null) => {
-    const org = id ? (orgs ?? []).find((o) => o.id === id) : null;
-    dispatch(setOrganization({ id, name: org?.name ?? null }));
+    dispatch(setFilterOrgId(id));
   };
 
   const activeGroupLabel =
