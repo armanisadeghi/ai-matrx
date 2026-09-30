@@ -354,9 +354,9 @@ export function buildFlashcardSetListConfig(input: {
     // never a literal here. Since access-ladder T-11 (2026-09-27) that view
     // derives from the "Shown to by default" knob access.shown_to_default/
     // fc_set: Only me → Mine, anything else → My Orgs. fc_set's system value
-    // is "only_me" (2026-09-29: a personal-study list — a person's own new deck
-    // must be on the tab they land on); orgs and people can override it.
-    // A person's own saved view still wins.
+    // is "everyone" — the table default (Arman 2026-09-29: visible to all,
+    // editable by the owner; never tighten a default). Which tab opens is a
+    // separate choice from who sees a deck.
     registryToken: "fc_set",
     entityLabel: { singular: "deck", plural: "decks" },
     sourceFeature: "education-flashcards",
