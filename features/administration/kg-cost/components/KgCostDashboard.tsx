@@ -78,13 +78,12 @@ import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
 import { KgCostExplorer } from "./KgCostExplorer";
 
 /**
- * THE KG UNIT-ECONOMICS FLIP (lane DRILL-ADOPT, 2026-09-30). The drill explorer mount over the declared
- * definition kg_cost is built and proven on the nightly copy (lane DRILL-GAPS), but kg_cost is not on
- * production until the drillgaps campaign files are applied — until then the mount only says the door's
- * refusal. So the old section (public.fn_kg_cost_unit_economics) stays on screen. Set this to true IN THE
- * SAME STEP as the production apply of the drillgaps files (PROGRESS-DRILL-GAPS.md apply list).
+ * THE KG UNIT-ECONOMICS FLIP (lane DRILL-ADOPT, 2026-09-30). kg_cost is on production (program DRILL-FINISH,
+ * applied 2026-09-30 with Arman watching), so the unit economics read through the drill explorer. The old
+ * section (UnitEconomicsSection over public.fn_kg_cost_unit_economics) is deleted once the owner-seat walk
+ * confirms the explorer shows the same numbers (PROGRESS-DRILL-FINISH.md).
  */
-const KG_UNIT_ECONOMICS_ON_THE_EXPLORER = false;
+const KG_UNIT_ECONOMICS_ON_THE_EXPLORER = true;
 
 // ---------------------------------------------------------------------------
 // Helpers
