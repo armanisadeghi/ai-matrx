@@ -82,7 +82,10 @@ export function MessagingConversationRowChrome({
 
   if (callable === null) {
     return (
-      <div data-conversation-id={conversation.conversation.id} className="contents">
+      <div
+        data-conversation-id={conversation.conversation.id}
+        className="contents"
+      >
         {children}
       </div>
     );
@@ -91,7 +94,7 @@ export function MessagingConversationRowChrome({
   return (
     <div
       data-conversation-id={conversation.conversation.id}
-      className="flex items-center pr-2"
+      className="messages-call-row flex items-center"
     >
       {children}
       <CallButton

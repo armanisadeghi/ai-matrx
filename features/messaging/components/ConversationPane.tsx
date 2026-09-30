@@ -1,5 +1,7 @@
 "use client";
 
+import "../messages-native.css";
+
 /**
  * The app's conversation thread: `@ai-matrx/messaging`'s `ConversationView`,
  * inside this app's right-click menu.
@@ -110,7 +112,12 @@ export function ConversationPane({
       }}
       extraSections={[buildMessageMenuSection({ message: menuMessage })]}
     >
-      <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      <div
+        className={cn(
+          "messages-native flex min-h-0 flex-1 flex-col",
+          className,
+        )}
+      >
         <ConversationView
           conversationId={id}
           className="min-h-0 flex-1"
@@ -128,12 +135,13 @@ export function ConversationPane({
               placeholder={input.placeholder}
               aria-label="Reply to conversation"
               autoGrow
-              minHeight={80}
+              minHeight={44}
+              rows={1}
               maxHeight={220}
               enableTextStats={false}
               surfaceName={surfaceName}
               {...(getApplicationScope ? { getApplicationScope } : {})}
-              wrapperClassName="w-full"
+              wrapperClassName="messages-composer w-full"
             />
           )}
           {...(onBack ? { onBack } : {})}

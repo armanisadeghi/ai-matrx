@@ -1,5 +1,7 @@
 "use client";
 
+import "../messages-native.css";
+
 /**
  * The app's conversation list: `@ai-matrx/messaging`'s list, inside this app's
  * right-click menu.
@@ -84,11 +86,13 @@ export function ConversationListPane({
       ]}
     >
       {/* `asChild` needs a real DOM element to hang the handler on. */}
-      <div className={cn("flex min-h-0 flex-col", className)}>
+      <div className={cn("messages-native flex min-h-0 flex-col", className)}>
         <ConversationList
           className="min-h-0 flex-1"
           {...(onSelect ? { onSelect } : {})}
-          onNewConversation={onNewConversation ?? (() => setOwnDialogOpen(true))}
+          onNewConversation={
+            onNewConversation ?? (() => setOwnDialogOpen(true))
+          }
         />
         {onNewConversation === undefined ? (
           <NewConversationDialog

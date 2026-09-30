@@ -87,3 +87,24 @@ specifications to build are in the cross-repo handoff.
 `lib/extension-bridge/bridgeChannel.ts` came out of the deleted `lib/supabase/messaging.ts`. It
 is the Chrome extension's transport, it is the one hand-rolled Supabase channel left in this
 area, and its own header says why it is not on `@ai-matrx/realtime` yet.
+
+## macOS presentation and review catalogue (2026-09-30)
+
+`messages-native.css` is the shared app presentation used by both panes, including
+floating windows and the side sheet. It sets compact desktop typography, a
+single-line action strip, a 40px contact header and a 44px growing composer;
+touch inputs retain 16px text and 44px action targets. Package data and rendering
+ownership are unchanged.
+
+`/messages-showcase` renders the package's real `MessageBubble` against the
+synthetic catalogue in `demo/examples.ts`, including all registered host action
+kinds and meet invitations. It provides light/dark, incoming/outgoing and two
+contact-header previews. Bubble action clicks are intercepted before handlers
+run; the explicit real-conversation/window links are outside that boundary.
+Attachment payloads and quoted-parent replies currently have no bubble renderer;
+the corresponding examples label those gaps for the content-renderer owner.
+
+The shared Assists clearance pass must never inset editable fields: doing so
+changes textarea auto-grow measurements. `clearance-preserves-editable-fields.test.ts`
+proves that textareas, editable elements and textbox roles retain their padding
+while their containing page can still receive dock clearance.
