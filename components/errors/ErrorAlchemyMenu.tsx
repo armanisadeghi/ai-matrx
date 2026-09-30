@@ -186,7 +186,12 @@ export function ErrorAlchemyMenu({
         className,
       )}
       onPointerEnter={surface.refresh}
-      onFocus={surface.refresh}
+      onFocus={(event) => {
+        // Sonner restores focus when it leaves a toast, which immediately
+        // dismisses a portalled copy menu as its first control takes focus.
+        if (event.currentTarget.closest("[data-sonner-toast]")) event.stopPropagation();
+        surface.refresh();
+      }}
     >
       <CopyButtons
         size={size}
