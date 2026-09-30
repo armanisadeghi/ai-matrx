@@ -284,7 +284,8 @@ export function scanSource(file, source) {
           || /text-destructive|text-amber|text-warning/.test(cls) || (role && /alert|status/.test(attrTexts(role).join(" ")));
         const secondary = /Description$/.test(tag) || /text-muted-foreground/.test(cls) || /text-(xs|\[1[01]px\])/.test(cls);
         where = `<${tag}>`;
-        if (t) checkText(node.openingElement, t, consequence ? "consequence" : secondary ? "secondary" : "body");
+        const emptyState = /^(No |Nothing |None |There (are|is) no |You have no |Not yet )/.test(t);
+        if (t) checkText(node.openingElement, t, consequence || emptyState ? "consequence" : secondary ? "secondary" : "body");
       }
 
       // page-description: a heading immediately followed by a muted sentence.
