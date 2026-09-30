@@ -106,6 +106,9 @@ const SERVER_IDENTITY_ALLOWED = new Set([
   "app/(auth-pages)/sign-out/page.tsx",
   // Pairs identity with `requestInAdminLane()` on the same line of logic.
   "app/(core)/education/library/community/page.tsx",
+  // The way INTO its own admin map: identity decides only whether the
+  // "Manage Quick Math problems" link is drawn; the map itself rides the lane.
+  "app/(core)/education/subjects/quick-math/page.tsx",
 ]);
 
 const SERVER_IDENTITY_CALL =
