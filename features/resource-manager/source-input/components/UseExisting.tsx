@@ -73,9 +73,9 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   }
   if (counts.loading) {
     return (
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6" aria-hidden>
+      <div className="flex flex-wrap gap-2" aria-hidden>
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-11 animate-pulse rounded-lg border border-border bg-muted/40" />
+          <div key={i} className="h-11 w-28 animate-pulse rounded-lg border border-border bg-muted/40" />
         ))}
       </div>
     );
@@ -113,7 +113,7 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-xs font-medium text-muted-foreground">Use existing</h3>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="flex flex-wrap gap-2">
         {kinds.map((token) => {
           const { plural, Icon } = kindWords(token);
           const n = counts.counts.get(token);
@@ -128,14 +128,14 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
                 setOpenQuery("");
               }}
               className={cn(
-                "flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors",
+                "flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-left transition-colors",
                 selected
                   ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
                   : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
               )}
             >
               {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
-              <span className="min-w-0 flex-1 truncate whitespace-nowrap text-sm text-foreground">{plural}</span>
+              <span className="text-sm text-foreground">{plural}</span>
               <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                 {n === null || n === undefined ? "—" : n.toLocaleString()}
               </span>
