@@ -48,13 +48,7 @@ export default function UnifiedManagementPreviewLanding() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 p-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-xl font-semibold">Unified Management — preview</h1>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Three non-functional previews of what mandates, surface bindings and
-          shortcuts look like once they are ONE job record. Mock data
-          throughout: nothing here reads or writes the database, and every
-          control reports what it would do rather than doing it. What is real is
-          the structure — and the structure is not going to change.
-        </p>
+        {/* Non-functional previews on mock data; nothing reads or writes the DB. */}
       </header>
 
       <ul className="flex flex-col gap-3">
@@ -87,12 +81,7 @@ export default function UnifiedManagementPreviewLanding() {
         })}
       </ul>
 
-      <p className="text-xs text-muted-foreground">
-        Sources: the settled model, the coverage scoreboard spec, and the
-        management keep/throw harvest — every capability composed here was
-        harvested from a page we already have, except the goal editor and the
-        coverage board, which exist nowhere today.
-      </p>
+      {/* Sources: settled model, coverage scoreboard spec, keep/throw harvest. */}
     </div>
   );
 }

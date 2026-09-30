@@ -74,10 +74,9 @@ function DriftReportDialog({ onClose }: { onClose: () => void }) {
           </DialogTitle>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+          {/* Count sums every array the report computes, so new drift categories are never under-reported. */}
           <p className="text-[11px] text-muted-foreground">
-            {DRIFT_ISSUE_COUNT} issues found. The count sums every array the
-            report computes rather than a hand-picked subset, so a new drift
-            category can never be silently under-reported.
+            {DRIFT_ISSUE_COUNT} issues found.
           </p>
           {DRIFT_SECTIONS.map((section) => (
             <Section key={section.title} section={section} />

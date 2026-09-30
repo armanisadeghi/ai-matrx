@@ -159,24 +159,20 @@ export default async function ShapeFindingCodePage({
             twice. */}
         {isBookkeeping(spec) && spec.command && spec.measuredOnBoard && (
           <p className="mt-2 max-w-4xl rounded border border-violet-500/40 bg-violet-500/5 px-3 py-2 text-xs text-violet-800 dark:text-violet-200">
-            This class is BOOKKEEPING — a generated file committed in the repo
-            has gone stale, and no click in this browser can rewrite a file in
-            the repo. The fix is{" "}
+            Stale generated file — run{" "}
             <code className="rounded bg-muted px-1 font-mono">
               {spec.command}
             </code>{" "}
-            followed by a commit.
+            and commit.
           </p>
         )}
         {!spec.measuredOnBoard && (
           <p className="mt-2 max-w-4xl rounded border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            This class is raised only by the CLI — the live board reads bundled
-            inputs and can never observe it. An empty list here is NOT evidence
-            that the class is clean; run{" "}
+            CLI-only class — an empty list proves nothing. Run{" "}
             <code className="rounded bg-muted px-1 font-mono">
               {spec.command ?? "pnpm check:shapes"}
             </code>{" "}
-            for the real answer.
+            to check.
           </p>
         )}
       </header>

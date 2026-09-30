@@ -69,18 +69,12 @@ export function OneBindingUi() {
         <h1 className="text-lg font-semibold text-foreground">
           The one binding UI
         </h1>
-        <p className="max-w-4xl text-xs leading-relaxed text-muted-foreground">
-          One flow binds a job to a place at any rung — system, organization or
-          just me — for an agent holder or a workflow holder. The spine is the
-          two-sides-and-a-middle mapping the shortcut and surface UIs already
-          use; the AI map, the scope rung, the option depth and the batch mode
-          are the other three sources folded into the same screen.
-        </p>
+        {/* Design note: one flow binds a job to a place at any rung, for agent or workflow holders. */}
+        {/* Standard: UI-STANDARD.md in common-docs. */}
         <PreviewBanner>
           Mock data only — nothing here reads or writes. Controls with a dashed
           amber outline are deliberately inert; hover one to see what it would
-          do. The standard this is built to is{" "}
-          <span className="font-medium">UI-STANDARD.md</span> in common-docs.
+          do.
         </PreviewBanner>
       </header>
 
@@ -109,10 +103,6 @@ export function OneBindingUi() {
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Same rows, same four sources, same validation — one place at a time, or
-          every place at once.
-        </p>
       </div>
 
       {mode === "map" ? <MapOnePlace /> : <MapManyPlaces />}
@@ -186,10 +176,9 @@ function ScopeAndHolderBar() {
             </span>
           </Inert>
           <p className="text-[11px] leading-snug text-muted-foreground">
-            Latest: your edits to this Mandate Holder apply here automatically — an edit
-            that changes its inputs can break this job. Currently{" "}
+            Tracks latest (
             <span className="font-medium text-foreground">{HOLDER.version}</span>
-            .
+            ); an edit to its inputs can break this job.
           </p>
         </div>
 
@@ -209,8 +198,8 @@ function ScopeAndHolderBar() {
             Offers{" "}
             <span className="font-medium text-foreground">
               {PLACE.declaredCount} values
-            </span>{" "}
-            — enough to feed every input below without asking the user anything.
+            </span>
+            , enough for every input below.
           </p>
         </div>
       </div>
@@ -482,9 +471,7 @@ function MappingRow({ input }: { input: HolderInput }) {
             {input.autoBound && (
               <p className="flex items-start gap-1 text-[10px] leading-snug text-muted-foreground">
                 <Zap className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                Chosen automatically — this place declares a value named like
-                this input, so it is what would happen anyway. Pick Mandate Holder
-                Default to ignore it on purpose.
+                Matched by name; choose Mandate Holder Default to ignore.
               </p>
             )}
             {offered && !offered.guaranteed && (
@@ -566,10 +553,6 @@ function MappingRow({ input }: { input: HolderInput }) {
                 {input.prompt || "What should we ask the user?"}
               </span>
             </Inert>
-            <p className="text-[10px] leading-snug text-muted-foreground">
-              Asking for anything means this job cannot run instantly — see the
-              bar at the bottom.
-            </p>
           </div>
         )}
       </div>
@@ -619,9 +602,7 @@ function AiMapTab({ onAccept }: { onAccept: () => void }) {
     <div className="space-y-3 p-3">
       <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
         <INTELLIGENCE_ICON className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-        A mandate read this place&apos;s {PLACE.declaredCount} offered values and
-        the Mandate Holder&apos;s {INPUTS.length} inputs and proposed a map. Nothing is
-        applied until you accept it.
+        Proposed by a mandate; nothing applies until you accept.
       </p>
       <div className="space-y-1.5">
         {AI_ROWS.map((r) => (
@@ -664,8 +645,7 @@ function AiMapTab({ onAccept }: { onAccept: () => void }) {
         </Inert>
       </div>
       <p className="text-[10px] text-muted-foreground">
-        Accepting opens the mapping editor with everything filled in — you can
-        still change any line before saving.
+        Accept opens the editor, fully filled in and editable.
       </p>
     </div>
   );
@@ -773,13 +753,6 @@ function MapManyPlaces() {
           </span>
         </Inert>
       </div>
-      <p className="border-t border-border/70 bg-muted/30 px-3 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
-        Apply is refused while any red cell stands:{" "}
-        <span className="italic">
-          &ldquo;1 required input is still unmapped. Fix the red cells
-          first.&rdquo;
-        </span>
-      </p>
     </Panel>
   );
 }

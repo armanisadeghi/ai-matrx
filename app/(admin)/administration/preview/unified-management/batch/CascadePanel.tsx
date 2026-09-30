@@ -92,9 +92,8 @@ export function CascadePanel({
             );
           })}
           <p className="px-3 pb-2 text-[11px] leading-snug text-muted-foreground">
-            Direct values and prompts fill cleanly. A known value only lands
-            where that <span className="font-medium">identity</span> exists —
-            everywhere else it falls to a name re-match you confirm, or to red.
+            Known values need a matching{" "}
+            <span className="font-medium">identity</span>, or you confirm.
           </p>
         </div>
       )}

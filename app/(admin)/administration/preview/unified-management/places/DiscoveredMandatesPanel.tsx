@@ -223,9 +223,6 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
           >
             {stillExcluded.length}
           </Badge>
-          <span className="ml-auto text-[10px] text-muted-foreground">
-            a place may explicitly exclude — with a reason, and always reversible
-          </span>
         </button>
         {showExcluded && (
           <div className="divide-y divide-border border-t border-border bg-muted/20">
@@ -282,7 +279,7 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
               </div>
               <MatchedKeys mandate={m} showMisses />
               <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
-                One key short. Declare{" "}
+                One key short; declare{" "}
                 {missing.map((c) => (
                   <code
                     key={c.key}
@@ -291,9 +288,7 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
                     {c.key}
                   </code>
                 ))}
-                on this place — it is already in the code manifest but not
-                supplied at runtime — and this job appears with no binding, no
-                mapping and no further configuration.
+                to bind this job.
               </p>
             </div>
           );

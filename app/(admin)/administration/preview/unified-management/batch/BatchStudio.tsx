@@ -283,8 +283,7 @@ function TemplateStrip() {
         ))}
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">
-        Every cell below starts here and is free to leave. Nothing is locked —
-        an inherited value is a starting point, never a constraint.
+        Cells start here; any can be overridden.
       </p>
     </section>
   );

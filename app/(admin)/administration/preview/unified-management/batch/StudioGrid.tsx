@@ -298,10 +298,9 @@ function JobBlock({
                       colSpan={treatmentColumns.length + bindingColumns.length}
                       className="border-b border-border px-3 py-1.5 text-[11px] italic text-muted-foreground"
                     >
-                      This place explicitly excludes{" "}
-                      <span className="font-mono not-italic">{job.key}</span> —
-                      categories curate, exclusions are the only thing that
-                      removes a pair.
+                      {/* Categories curate; exclusions are the only thing that removes a pair. */}
+                      Excluded here:{" "}
+                      <span className="font-mono not-italic">{job.key}</span>
                     </td>
                   ) : (
                     <>
@@ -348,9 +347,8 @@ function JobBlock({
 
       {!hasColumns && (
         <div className="border-t border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-          No per-cell columns — everything on this job is inherited or set for
-          all. Flip a row to <span className="font-medium">Per-cell</span> above
-          to edit it here.
+          No per-cell columns; set a row to{" "}
+          <span className="font-medium">Per-cell</span> to edit.
         </div>
       )}
       {attentionOnly && visiblePlaces.length === 0 && (

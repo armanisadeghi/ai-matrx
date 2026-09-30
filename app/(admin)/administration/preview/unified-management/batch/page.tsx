@@ -26,18 +26,7 @@ export default function BatchStudioPreviewPage() {
             Preview · mock data · writes nothing
           </span>
         </div>
-        <p className="max-w-4xl text-sm leading-relaxed text-muted-foreground">
-          The shortcut batch grid, elevated to the whole platform. Instead of
-          one shortcut across many surfaces, this authors{" "}
-          <span className="font-medium text-foreground">
-            any set of jobs × any set of places
-          </span>{" "}
-          in one pass — input bindings and UI treatments riding the same
-          three-level cascade: the template&apos;s value, one value set for all,
-          or a per-cell answer. Nothing is ever locked. The platform resolves
-          every cell it can by identity, offers a name re-match you confirm
-          where it cannot, and goes loud only where nothing works.
-        </p>
+        {/* Shortcut batch grid generalised: any jobs × any places over the three-level cascade. */}
       </header>
 
       <BatchStudio />

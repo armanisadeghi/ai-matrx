@@ -93,8 +93,7 @@ export function ChangesFooter({ summary }: { summary: ChangesSummary }) {
 
       {blocked && (
         <p className="mt-1.5 text-[11px] text-muted-foreground">
-          Unresolved cells and unconfirmed name matches are written as nothing —
-          the batch applies the settled cells and leaves the rest loud.
+          Unresolved cells are skipped; the rest applies.
         </p>
       )}
     </div>
