@@ -39,6 +39,18 @@ describe("useBoard history", () => {
     expect(result.current.tiles.map((t) => t.id)).toEqual(["a", "b"]);
   });
 
+  it("a resize drag is ONE undoable step, left-edge origin included", () => {
+    const { result } = renderHook(() => useBoard<T>(() => [tile("a")]));
+    act(() => {
+      for (let i = 1; i <= 10; i++) result.current.resizeTile("a", { x: -i * 10, y: 0, w: 100 + i * 10, h: 100 + i });
+    });
+    expect(result.current.tiles[0].rect).toEqual({ x: -100, y: 0, w: 200, h: 110 });
+    act(() => result.current.undo());
+    expect(result.current.tiles[0].rect).toEqual({ x: 0, y: 0, w: 100, h: 100 });
+    act(() => result.current.redo());
+    expect(result.current.tiles[0].rect).toEqual({ x: -100, y: 0, w: 200, h: 110 });
+  });
+
   it("an out-of-history patch survives undo (a note never loses its record id)", () => {
     const { result } = renderHook(() => useBoard<T>(() => [tile("n")]));
     act(() => result.current.updateTile("n", { title: "Renamed" }));

@@ -20,7 +20,8 @@
  *
  * Emitters:
  *   - `app/(core)/documents/page.tsx`      → library values
- *   - `app/(core)/documents/[id]/page.tsx` → document values
+ *   - `features/data-tables/components/DocumentRecord.tsx` → document values
+ *     (rendered by `app/(core)/documents/[id]/page.tsx` and the Board tile)
  * both via `buildDocumentsContextData` in
  * `features/data-tables/agent-context/buildDocumentsContextData.ts`.
  *
@@ -28,10 +29,20 @@
  * is a DURABLE `files.files` id — the only way this surface ever refers to an
  * imported source file. No signed URL, no S3 `storage_uri`, ever.
  *
- * DELIBERATELY NOT DECLARED: the document's body text, save status, and
- * collaboration presence. Those live inside the dynamically-imported
- * `DocumentEditor` (Univer owns the document model) and nothing lifts them to
- * the route today — declaring them would be declaring what nothing emits.
+ * THE BODY (2026-09-30): `document_body_text` (read) and `document_body`
+ * (write). Univer owns the document model; `DocumentEditor` lends a port
+ * (`onBodyPort`, `features/data-tables/document-body-text.ts`) to the shared
+ * record component (`features/data-tables/components/DocumentRecord.tsx`),
+ * which reads the plain text at Run time and applies a write as ONE changed
+ * span through Univer's command service — so undo, autosave, History and live
+ * collaboration peers all receive an agent's edit exactly as a keystroke, and
+ * formatting outside the changed span is kept.
+ *
+ * DELIBERATELY NOT DECLARED: the editor's save status and collaboration
+ * presence — transient editor state no agent job needs.
+ *
+ * MOUNTS: the page and the Board's Document tile render the same
+ * `DocumentRecord`, which mounts this surface for its one document.
  */
 
 import type {
@@ -45,6 +56,7 @@ import {
   DOCUMENT_DESCRIPTION_MAX_LENGTH,
   DOCUMENT_NAME_MAX_LENGTH,
 } from "@/features/data-tables/agent-context/documentWriteValidation";
+import { DOCUMENT_BODY_MAX_LENGTH } from "@/features/data-tables/document-body-text";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -212,6 +224,19 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 450,
     group: "document_identity",
     sortOrder: 358,
+  },
+
+  {
+    name: "document_body_text",
+    label: "Document text",
+    description:
+      "The open document's body as plain text, read from the live editor when the agent runs: one line per paragraph, formatting, images and tables left out. Absent while the editor is still opening, and in the library view. Change it through the document_body write target.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 6000,
+    inlineUpTo: 7000,
+    group: "document_identity",
+    sortOrder: 359,
   },
 
   // ── Document access (360-379) ─────────────────────────────────────────
@@ -384,11 +409,19 @@ const surfaceSpecific: SurfaceValue[] = [
  * may never focus and be lost on navigation. The write must land or not happen
  * at all. Same reasoning as `workbook_name`, `schedule_title`, `mermaid-editor`
  * and `scratchpad`. (The editor's own Save button belongs to the Univer
- * snapshot — the document BODY — which is a different thing entirely and is not
- * declared on this surface.)
+ * snapshot — the document BODY — which is the separate `document_body` target
+ * below.)
  *
  * Both are `applyPolicy: "ask"` — a document is the user's own writing, so
  * every agent-originated change is confirmed in place.
+ *
+ * **`document_body`** (2026-09-30) is the third target: the body text, read
+ * twin `document_body_text`, `patchable` (an anchored edit for a small change)
+ * with a text-replacement approval card. `mode: "entity"` because the edit lands
+ * in the live editor and the editor's own autosave writes the snapshot seconds
+ * later — nothing waits for a person to press Save. The handler
+ * (`documentBodyWriteHandler`) rewrites only the span that differs, through
+ * Univer's command service.
  *
  * BOUNDS LIVE IN ONE PLACE. `DOCUMENT_NAME_MAX_LENGTH` /
  * `DOCUMENT_DESCRIPTION_MAX_LENGTH` come from the pure
@@ -435,11 +468,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *   - the library values (`library_*`, `visible_documents`) — the search box,
  *     sort and view mode are the human's browsing state, and they belong to the
  *     mount that registers nothing anyway.
- *   - the document BODY, its save status and collab presence — the Univer
- *     editor owns the document model and nothing lifts it to the route, so it
- *     is not even a declared READ value (see the manifest header). A target
- *     whose handler cannot reach a canonical write path is a loud runtime
- *     defect by design; this one has no path to reach.
+ *   - the editor's save status and collab presence — transient editor state.
  *   - deleting a document — destructive, stays human.
  */
 const writeTargets: SurfaceWriteTarget[] = [
@@ -467,6 +496,20 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "document_identity",
     sortOrder: 320,
   },
+  {
+    name: "document_body",
+    label: "Document text",
+    description:
+      `Changes the open document's text in its editor. The change lands at once in the editor (the person sees it, Undo reverses it) and the editor saves it within a few seconds; collaborators see it live. Value is the document's WHOLE new text as a plain string, one line per paragraph, up to ${DOCUMENT_BODY_MAX_LENGTH} characters — read document_body_text first and send it back with your change; only the part that differs is rewritten, so formatting on untouched text is kept. For a small change send an anchored edit instead: {"command": "str_replace", "old_str": "<exact text now in the document>", "new_str": "<replacement>"}. To add a closing paragraph, send the current text plus a new line and the paragraph. Text you rewrite loses its formatting (bold, headings). Refused while the editor is still opening, and when the user only has viewer access.`,
+    valueType: "string",
+    updatesValue: "document_body_text",
+    approvalComparison: "text-replacement",
+    patchable: true,
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "document_identity",
+    sortOrder: 359,
+  },
 ];
 
 export const documentsManifest: SurfaceManifest = {
@@ -477,7 +520,7 @@ export const documentsManifest: SurfaceManifest = {
     "Document viewer and editor",
   readiness: "partial",
   readinessNote:
-    "Manifest rewritten against the real /documents routes and both emitters are wired; not yet DB-synced and no live binding test run. The Univer editor's body text, save status, and collab presence stay undeclared until the editor lifts them to the route.",
+    "Both emitters are wired and the body text is readable and writable through the editor (2026-09-30). No independent certification yet; the editor's save status and collab presence stay undeclared.",
   label: "Documents",
   urlPattern: "/documents/[id]",
   intro: `<surface_intro>
@@ -495,9 +538,10 @@ The surface has two faces; read documents_view FIRST:
                  document_is_owner whether they may share it. The library
                  values are empty.
 
-The document BODY is not part of this surface's values — the editor owns the
-document model. Ask for text through the user's selection (the selection
-baseline), or read the document by document_id.
+The document's text is document_body_text. To change it, use the
+document_body write target (the whole new text, or an anchored edit for a
+small change); document_name renames it and document_description sets the
+blurb shown in the library. Do not use generic context tools for this.
 
 document_original_file_id is a durable file id for documents imported from a
 DOCX/MD/TXT file. Resolve those bytes through the platform file handler by id;
@@ -509,6 +553,7 @@ this surface never emits a URL of any kind.
     surfaceSpecific,
   ),
   writeTargets,
+  briefValues: ["document_name", "document_description", "document_updated_at"],
 };
 
 export interface DocumentSummaryValue {
@@ -549,6 +594,7 @@ export function createDocumentsScope(values: {
   document_owner_id?: string;
   document_organization_id?: string;
   document_summary?: DocumentSummaryValue;
+  document_body_text?: string;
 
   // Access
   document_is_public?: boolean;

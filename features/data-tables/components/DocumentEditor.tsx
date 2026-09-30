@@ -67,6 +67,7 @@ import {
 import { isServiceFailure } from "../types";
 import { DocumentHistoryViewer } from "./DocumentHistoryViewer";
 import { DocumentPageReferenceCopyButton } from "./DocumentPageReferenceCopyButton";
+import type { DocumentBodyPort } from "../document-body-text";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -87,6 +88,15 @@ type Props = {
    * never share a broadcast room even if their UUIDs collide.
    */
   collab?: boolean;
+  /**
+   * Lends the body text to the record's agent surface (`document_body_text`
+   * and the `document_body` write target, `../document-body-text.ts`): called
+   * with a port once Univer has mounted the document, and with null when the
+   * instance is torn down. Every call through the port resolves the LIVE
+   * document, and every write runs through Univer's command service, so undo,
+   * autosave, History and collab see an agent's edit exactly as a keystroke.
+   */
+  onBodyPort?: (port: DocumentBodyPort | null) => void;
 };
 
 export default function DocumentEditor({
@@ -94,6 +104,7 @@ export default function DocumentEditor({
   editable = true,
   documentName,
   collab = false,
+  onBodyPort,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<FUniver | null>(null);
@@ -149,6 +160,29 @@ export default function DocumentEditor({
     darkModeRef.current = themeMode === "dark";
   }, [themeMode]);
 
+  // The body port — published while a document is mounted, withdrawn on
+  // teardown. Resolved per call so it never holds a disposed instance.
+  const bodyReady = bootState === "ready" && unitId !== null;
+  useEffect(() => {
+    if (!onBodyPort || !bodyReady) return undefined;
+    const liveDocument = () => {
+      const doc = apiRef.current?.getActiveDocument();
+      if (!doc) {
+        throw new Error(
+          "The document editor is closed or still opening. Nothing was changed; open the document and try again.",
+        );
+      }
+      return doc;
+    };
+    onBodyPort({
+      getDataStream: () => liveDocument().getBody().dataStream,
+      deleteRange: (start, end) =>
+        liveDocument().deleteRange({ startOffset: start, endOffset: end }),
+      insertText: (at, text) => liveDocument().insertText(at, text),
+    });
+    return () => onBodyPort(null);
+  }, [onBodyPort, bodyReady]);
+
   // Keep Univer's dark mode in lockstep with the app theme (Facade API).
   // This reaches Univer's CHROME only — see the hook's header.
   useUniverDarkModeSync(apiRef, bootState === "ready");
@@ -163,28 +197,6 @@ export default function DocumentEditor({
     unitId ?? "",
     bootState === "ready" && unitId !== null,
   );
-
-  const onRemoteSnapshot = useCallback(
-    (evt: { snapshotId: string; createdBy: string | null }) => {
-      // V2 (collab=true): CRDT is the source of truth; snapshots are
-      // checkpoint-only. A hot-swap would overwrite the live Yjs doc and
-      // momentarily desync peers. v1 (collab=false) keeps the original
-      // refetch-on-remote-snapshot behavior.
-      if (collab) return;
-      if (
-        evt.createdBy &&
-        lastSaveByUserRef.current &&
-        evt.createdBy === lastSaveByUserRef.current
-      ) {
-        return;
-      }
-      void reloadFromLatest();
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [collab],
-  );
-
-  useDocumentRealtime(documentId, onRemoteSnapshot, { enabled: !collab });
 
   const reloadFromLatest = useCallback(async () => {
     if (!apiRef.current) return;
@@ -214,151 +226,26 @@ export default function DocumentEditor({
     }
   }, [documentId]);
 
-  // Boot Univer EXACTLY ONCE per documentId. `editable` / `collab` are read
-  // from refs (above) so toggling them never tears the instance down. This is
-  // the lifecycle Univer's docs assume (create once, dispose on unmount) —
-  // recreating on a prop change is what crashed Univer's ParagraphMenu popup
-  // mid-render and made loaded content disappear.
-  useEffect(() => {
-    if (!containerRef.current) return undefined;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const { univer, univerAPI } = createUniver({
-          locale: LocaleType.EN_US,
-          locales: { [LocaleType.EN_US]: merge({}, docsCoreEnUS) },
-          theme: defaultTheme,
-          darkMode: darkModeRef.current,
-          presets: [
-            UniverDocsCorePreset({
-              container: containerRef.current as HTMLElement,
-              ribbonType: "simple",
-            }),
-          ],
-        });
-        if (cancelled) {
-          univer.dispose();
-          return;
-        }
-        univerRef.current = univer;
-        apiRef.current = univerAPI;
-
-        // THE CANVAS PAINTS WHAT IT IS TOLD. Univer's dark mode otherwise
-        // inverts every fill on its way to the context and THROWS on a colour
-        // its ColorKit cannot parse — inside the render pass, which leaves the
-        // whole page unpainted (cold walk 19). Must happen before the document
-        // unit exists: `ICanvasColorService` is injected into that unit's
-        // `Engine` at creation. Full argument in `../univer-doc-canvas-colors`.
-        const verbatim = renderDocumentCanvasColorsVerbatim(
-          univer.__getInjector() as unknown as ReplaceableInjector,
-        );
-        if (!verbatim.applied) {
-          // NOTHING FAILS SILENTLY: the page is about to be painted by the
-          // inverting service, which is the defect this guards.
-          console.warn(
-            `[document] could not take Univer's dark-mode colour inversion off the canvas (${verbatim.reason}) — the page may render inverted or blank in dark mode`,
-          );
-        }
-
-        // Sheets Facade mixins are process-global. Once their module exists in
-        // this SPA, FUniver attaches the observer to every later instance and
-        // resolves these two services when *any* unit reaches Rendered. Sheet
-        // plugins are lazy by unit type, so a document-only injector never
-        // receives them from UniverSheetsUIPlugin. Register exactly what that
-        // observer requires; starting the full sheets plugin creates workbook
-        // UI and duplicate internal editor documents on this surface.
-        registerUniverFacadeDependencies(univer.__getInjector(), [
-          HoverManagerService,
-          DragManagerService,
-        ]);
-
-        const res = await getLatestDocumentSnapshot(documentId);
-        if (cancelled) return;
-        if (isServiceFailure(res)) {
-          setLoadError(res.error);
-          setBootState("load_error");
-          return;
-        }
-        const initial: Partial<IDocumentData> = sanitizeUniverDocSnapshot(
-          (res.data?.snapshot as Partial<IDocumentData>) ??
-            defaultEmptyDocument(),
-          documentId,
-        );
-        // Univer is the authority on what it actually mounted (the snapshot
-        // may have been repaired); a unit that did not mount throws into the
-        // catch below and the page says "Load failed" — never "Editing".
-        setUnitId(mountUniverDocument(apiRef.current, initial));
-        setBootState("ready");
-
-        // Command stream → debounced autosave. Registered for the lifetime of
-        // the instance; viewer-mode (editable=false) is honored at fire time
-        // via editableRef so a later edit-permission grant needs no remount.
-        // D97: only snapshot-affecting MUTATIONs mark the doc dirty —
-        // scroll / selection / viewport commands must never trigger a save.
-        apiRef.current.addEvent(
-          apiRef.current.Event.CommandExecuted,
-          (command) => {
-            if (!isSnapshotMutation(command)) return;
-            if (!editableRef.current) return;
-            setSaveStatus("dirty");
-            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-            saveTimerRef.current = setTimeout(() => {
-              if (!editableRef.current) return;
-              if (collabRef.current && !collabIsHostRef.current) return;
-              void performSave();
-            }, 2500);
-          },
-        );
-
-        if (collabRef.current) {
-          void startCollabSession().catch((err) => {
-            console.warn(
-              "[document] collab boot failed — falling back to solo mode",
-              err,
-            );
-          });
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setLoadError(err instanceof Error ? err.message : String(err));
-        setBootState("load_error");
+  const onRemoteSnapshot = useCallback(
+    (evt: { snapshotId: string; createdBy: string | null }) => {
+      // V2 (collab=true): CRDT is the source of truth; snapshots are
+      // checkpoint-only. A hot-swap would overwrite the live Yjs doc and
+      // momentarily desync peers. v1 (collab=false) keeps the original
+      // refetch-on-remote-snapshot behavior.
+      if (collab) return;
+      if (
+        evt.createdBy &&
+        lastSaveByUserRef.current &&
+        evt.createdBy === lastSaveByUserRef.current
+      ) {
+        return;
       }
-    })();
+      void reloadFromLatest();
+    },
+    [collab],
+  );
 
-    return () => {
-      cancelled = true;
-      // The unit belongs to the instance being torn down — never let the next
-      // document's theme sync address the previous document's render.
-      setUnitId(null);
-      // LEAVING THE PAGE IS NOT A REASON TO LOSE THE LAST SENTENCE. A
-      // client-side route change (clicking Back) fires no `pagehide`, so the
-      // 2.5s debounce window's keystrokes used to die here. `performSave`
-      // reads the facade and takes the snapshot synchronously before its
-      // first await, so firing it BEFORE the teardown below captures the work
-      // even though the write itself lands after this component is gone.
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-        if (
-          editableRef.current &&
-          !(collabRef.current && !collabIsHostRef.current)
-        ) {
-          void performSave("autosave");
-        }
-      }
-      collabSessionRef.current?.stop();
-      collabSessionRef.current = null;
-      const univer = univerRef.current;
-      univerRef.current = null;
-      apiRef.current = null;
-      disposeUniverInstance(univer);
-    };
-    // performSave / startCollabSession are stable per documentId (useCallback
-    // deps = [documentId]) and are declared below this effect, so they're
-    // intentionally omitted to keep Univer booting exactly once per document.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [documentId]);
+  useDocumentRealtime(documentId, onRemoteSnapshot, { enabled: !collab });
 
   // Lazy-import the collab classes so the bundle for non-collab users stays
   // free of yjs / y-protocols. Resolved at session-start time only.
@@ -512,6 +399,151 @@ export default function DocumentEditor({
     },
     [documentId],
   );
+
+  // Boot Univer EXACTLY ONCE per documentId. `editable` / `collab` are read
+  // from refs (above) so toggling them never tears the instance down. This is
+  // the lifecycle Univer's docs assume (create once, dispose on unmount) —
+  // recreating on a prop change is what crashed Univer's ParagraphMenu popup
+  // mid-render and made loaded content disappear.
+  useEffect(() => {
+    if (!containerRef.current) return undefined;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { univer, univerAPI } = createUniver({
+          locale: LocaleType.EN_US,
+          locales: { [LocaleType.EN_US]: merge({}, docsCoreEnUS) },
+          theme: defaultTheme,
+          darkMode: darkModeRef.current,
+          presets: [
+            UniverDocsCorePreset({
+              container: containerRef.current as HTMLElement,
+              ribbonType: "simple",
+            }),
+          ],
+        });
+        if (cancelled) {
+          univer.dispose();
+          return;
+        }
+        univerRef.current = univer;
+        apiRef.current = univerAPI;
+
+        // THE CANVAS PAINTS WHAT IT IS TOLD. Univer's dark mode otherwise
+        // inverts every fill on its way to the context and THROWS on a colour
+        // its ColorKit cannot parse — inside the render pass, which leaves the
+        // whole page unpainted (cold walk 19). Must happen before the document
+        // unit exists: `ICanvasColorService` is injected into that unit's
+        // `Engine` at creation. Full argument in `../univer-doc-canvas-colors`.
+        const verbatim = renderDocumentCanvasColorsVerbatim(
+          univer.__getInjector() as unknown as ReplaceableInjector,
+        );
+        if (!verbatim.applied) {
+          // NOTHING FAILS SILENTLY: the page is about to be painted by the
+          // inverting service, which is the defect this guards.
+          console.warn(
+            `[document] could not take Univer's dark-mode colour inversion off the canvas (${verbatim.reason}) — the page may render inverted or blank in dark mode`,
+          );
+        }
+
+        // Sheets Facade mixins are process-global. Once their module exists in
+        // this SPA, FUniver attaches the observer to every later instance and
+        // resolves these two services when *any* unit reaches Rendered. Sheet
+        // plugins are lazy by unit type, so a document-only injector never
+        // receives them from UniverSheetsUIPlugin. Register exactly what that
+        // observer requires; starting the full sheets plugin creates workbook
+        // UI and duplicate internal editor documents on this surface.
+        registerUniverFacadeDependencies(univer.__getInjector(), [
+          HoverManagerService,
+          DragManagerService,
+        ]);
+
+        const res = await getLatestDocumentSnapshot(documentId);
+        if (cancelled) return;
+        if (isServiceFailure(res)) {
+          setLoadError(res.error);
+          setBootState("load_error");
+          return;
+        }
+        const initial: Partial<IDocumentData> = sanitizeUniverDocSnapshot(
+          (res.data?.snapshot as Partial<IDocumentData>) ??
+            defaultEmptyDocument(),
+          documentId,
+        );
+        // Univer is the authority on what it actually mounted (the snapshot
+        // may have been repaired); a unit that did not mount throws into the
+        // catch below and the page says "Load failed" — never "Editing".
+        setUnitId(mountUniverDocument(apiRef.current, initial));
+        setBootState("ready");
+
+        // Command stream → debounced autosave. Registered for the lifetime of
+        // the instance; viewer-mode (editable=false) is honored at fire time
+        // via editableRef so a later edit-permission grant needs no remount.
+        // D97: only snapshot-affecting MUTATIONs mark the doc dirty —
+        // scroll / selection / viewport commands must never trigger a save.
+        apiRef.current.addEvent(
+          apiRef.current.Event.CommandExecuted,
+          (command) => {
+            if (!isSnapshotMutation(command)) return;
+            if (!editableRef.current) return;
+            setSaveStatus("dirty");
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = setTimeout(() => {
+              if (!editableRef.current) return;
+              if (collabRef.current && !collabIsHostRef.current) return;
+              void performSave();
+            }, 2500);
+          },
+        );
+
+        if (collabRef.current) {
+          void startCollabSession().catch((err) => {
+            console.warn(
+              "[document] collab boot failed — falling back to solo mode",
+              err,
+            );
+          });
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err.message : String(err));
+        setBootState("load_error");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      // The unit belongs to the instance being torn down — never let the next
+      // document's theme sync address the previous document's render.
+      setUnitId(null);
+      // LEAVING THE PAGE IS NOT A REASON TO LOSE THE LAST SENTENCE. A
+      // client-side route change (clicking Back) fires no `pagehide`, so the
+      // 2.5s debounce window's keystrokes used to die here. `performSave`
+      // reads the facade and takes the snapshot synchronously before its
+      // first await, so firing it BEFORE the teardown below captures the work
+      // even though the write itself lands after this component is gone.
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        if (
+          editableRef.current &&
+          !(collabRef.current && !collabIsHostRef.current)
+        ) {
+          void performSave("autosave");
+        }
+      }
+      collabSessionRef.current?.stop();
+      collabSessionRef.current = null;
+      const univer = univerRef.current;
+      univerRef.current = null;
+      apiRef.current = null;
+      disposeUniverInstance(univer);
+    };
+    // performSave / startCollabSession are stable per documentId (useCallback
+    // deps = [documentId]), so they are omitted to keep Univer booting exactly
+    // once per document.
+  }, [documentId]);
 
   /**
    * TYPED WORK NEVER LEAVES THE PAGE UNWRITTEN.

@@ -115,13 +115,18 @@ export interface BuildDocumentArgs {
   canEdit: boolean;
   /** True when the current user owns the document. */
   isOwner: boolean;
+  /**
+   * The body as plain text, read from the live editor at Run time — null while
+   * the editor is still opening (the value is then absent, never "").
+   */
+  bodyText?: string | null;
 }
 
 /** `/documents/[id]` — one open document. */
 export function buildDocumentContextData(
   args: BuildDocumentArgs,
 ): Record<string, unknown> {
-  const { document, canEdit, isOwner } = args;
+  const { document, canEdit, isOwner, bodyText } = args;
 
   if (!document) {
     // The route is mounted but the row hasn't resolved — emit the one
@@ -147,6 +152,7 @@ export function buildDocumentContextData(
     document_owner_id: document.user_id,
     document_organization_id: document.organization_id ?? undefined,
     document_summary: summary,
+    document_body_text: bodyText ?? undefined,
     document_is_public: document.is_public,
     document_can_edit: canEdit,
     document_is_owner: isOwner,
