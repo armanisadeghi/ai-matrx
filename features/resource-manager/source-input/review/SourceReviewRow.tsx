@@ -304,7 +304,7 @@ export function SourceReviewRow({
           {usable && (
             <Field
               label="How the AI gets it"
-              hint={DELIVERY_WORDS[delivery].hint}
+              hint={deliveryChoices.length > 1 ? DELIVERY_WORDS[delivery].hint : undefined}
             >
               {deliveryChoices.length > 1 ? (
                 <SegmentedControl

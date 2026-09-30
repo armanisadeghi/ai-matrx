@@ -21,7 +21,7 @@ export function ContextValuesResourcePicker({
     <DrillDeck
       engine={engine}
       mode="assignment"
-      rootLabel="Context Values"
+      rootLabel="Context values"
       includeEngagements={false}
       selectableKinds={["item"]}
       onBack={onBack}

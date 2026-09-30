@@ -400,8 +400,8 @@ export function WebpageResourcePickerCore({
                       {suggestedType === "youtube"
                         ? "YouTube"
                         : suggestedType === "image_url"
-                          ? "Image URL"
-                          : "File URL"}
+                          ? "Image link"
+                          : "File link"}
                     </Button>
                   )}
                 </div>

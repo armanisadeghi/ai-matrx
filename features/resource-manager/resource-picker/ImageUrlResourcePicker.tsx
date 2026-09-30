@@ -205,7 +205,7 @@ export function ImageUrlResourcePicker({
                   ? "Web page"
                   : suggestedType === "youtube"
                     ? "YouTube"
-                    : "File URL"}
+                    : "File link"}
               </Button>
             )}
           </div>

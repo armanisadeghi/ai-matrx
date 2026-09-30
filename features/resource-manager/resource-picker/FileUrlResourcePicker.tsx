@@ -225,7 +225,7 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
         <div className="flex flex-col max-h-[min(460px,70dvh)]">
             {/* Header */}
             <ResourcePickerSubViewHeader
-                title="File URL"
+                title="File link"
                 onBack={onBack}
                 icon={
                     <FileText className="h-3.5 w-3.5 shrink-0 text-purple-600 dark:text-purple-400" />
@@ -261,9 +261,6 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                             )}
                         </Button>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                        Paste a direct URL to a file
-                    </p>
                 </div>
 
                 {/* Error with suggestion */}
@@ -322,22 +319,6 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                     </div>
                 )}
 
-                {/* Help Text */}
-                {!previewFile && !error && (
-                    <div className="p-2.5 border border-blue-500/20 bg-blue-500/10 rounded-lg">
-                        <p className="text-xs text-blue-600 dark:text-blue-400">
-                            <strong>Supported formats:</strong>
-                        </p>
-                        <ul className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-0.5 ml-3">
-                            <li>• PDF (.pdf)</li>
-                            <li>• Documents (.doc, .docx, .txt)</li>
-                            <li>• Spreadsheets (.xls, .xlsx, .csv)</li>
-                            <li>• Presentations (.ppt, .pptx)</li>
-                            <li>• Data files (.json, .xml, .csv)</li>
-                            <li>• Archives (.zip)</li>
-                        </ul>
-                    </div>
-                )}
             </div>
 
             {/* Footer with Add Button */}

@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useEffectEvent, useState } from "react";
-import { Check, Loader2, Plus } from "lucide-react";
+import { Building2, Check, Loader2, Plus } from "lucide-react";
 import { Badge, Input } from "@ai-matrx/design-system";
 import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
@@ -27,6 +27,13 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
 import { cn } from "@/utils/cn";
+import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 /** How many matches each kind shows under the one search box before "Show more". */
 const SEARCH_ROWS_PER_KIND = 5;
@@ -63,6 +70,9 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   });
   const kinds = counts.tokens.filter((t) => counts.counts.get(t) !== 0);
   const searching = query.trim().length > 0;
+  // A list's page size is an organization knob: with none active, ONE ask —
+  // never the same error under every kind (verify-3).
+  const hasOrganization = Boolean(useAppSelector(selectActiveOrganizationId));
 
   if (counts.error) {
     return (
@@ -86,6 +96,8 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   }
   // Nothing of any offered kind: the row is absent (Add new is the way in).
   if (kinds.length === 0) return null;
+
+  if (searching && !hasOrganization) return <OrganizationAsk />;
 
   if (searching) {
     const settled = matchCounts.query === query ? matchCounts.byToken : {};
@@ -156,10 +168,35 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
             aria-label={`Search ${kindWords(open).plural.toLowerCase()}`}
             className="text-base sm:text-sm"
           />
-          <KindList token={open} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
+          {hasOrganization ? (
+            <KindList token={open} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
+          ) : (
+            <OrganizationAsk />
+          )}
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** No organization is active: one line, one button — the org picker. */
+function OrganizationAsk() {
+  return (
+    <p role="status" className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <span>No organization chosen.</span>
+      <button
+        type="button"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border px-2.5 text-sm text-foreground hover:bg-accent/40 sm:min-h-8"
+        onClick={() =>
+          void ensureOrganizationContext({ interactive: true }).catch((err: unknown) => {
+            if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : String(err));
+          })
+        }
+      >
+        <Building2 className="h-3.5 w-3.5" />
+        Choose organization
+      </button>
+    </p>
   );
 }
 

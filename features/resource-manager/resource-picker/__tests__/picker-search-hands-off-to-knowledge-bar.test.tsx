@@ -93,7 +93,7 @@ it("opens the ⌘K bar with attach-here as the primary action and the picker's o
   // Upload and URL entry stay their own commands and re-open the picker there.
   const labels = (opts.commands ?? []).map((c) => c.label);
   expect(labels).toContain("Upload or browse files");
-  expect(labels).toContain("Webpage");
+  expect(labels).toContain("Web page");
   expect(labels).not.toContain("Notes"); // a search step — the bar replaces it
   opts.commands!.find((c) => c.label === "Upload or browse files")!.run();
   expect(onReopenAt).toHaveBeenCalledWith("files");
@@ -127,7 +127,7 @@ it("every host keeps Upload / URL / Voice / Tools as commands wired to ITS OWN h
   clickSearchRow();
   const opts = openBar.mock.calls[0][0] as OpenKnowledgeCommandBarOptions;
   const labels = (opts.commands ?? []).map((c) => c.label);
-  for (const label of ["Upload or browse files", "Webpage", "YouTube", "Voice Pad", "Tools"]) {
+  for (const label of ["Upload or browse files", "Web page", "YouTube", "Voice Pad", "Tools"]) {
     expect(labels).toContain(label);
   }
   opts.commands!.find((c) => c.label === "Voice Pad")!.run();

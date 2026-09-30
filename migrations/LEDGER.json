@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-30T01:40:08.863Z",
+  "generated_at": "2026-09-30T02:07:01.588Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4214,6 +4214,12 @@
       "checksum": "1c0ced66c1dc1e3e577c0f0addc0ffc22c9be83bbe3d118729c20f46d361f418",
       "applied_at": "2026-09-29 21:49:10.033274+00"
     },
+    "migrations/campaign/scopesaccess_one_reader_of_a_scopes_settings.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesaccess_one_reader_of_a_scopes_settings.sql",
+      "checksum": "d5a3d617356d600647507684a2f574ae9127d4fa2f4a2512660fcc5604ec0d7b",
+      "applied_at": "2026-09-30 02:06:59.568665+00"
+    },
     "migrations/campaign/scopesaccess_the_class_and_access_readers_read_the_store.sql": {
       "source": "matrx-frontend",
       "filename": "scopesaccess_the_class_and_access_readers_read_the_store.sql",
@@ -4267,6 +4273,12 @@
       "filename": "scopesreadsrest_the_five_suggestion_views_are_built_beside_from_the_store.sql",
       "checksum": "86600b10727c126fcb634c02cff5d8cbbb45625ab94b3a8094a71a23a587d9a2",
       "applied_at": "2026-09-29 22:12:06.63095+00"
+    },
+    "migrations/campaign/scopesreadstree_a_file_reference_names_the_file.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesreadstree_a_file_reference_names_the_file.sql",
+      "checksum": "05985c1ce5b16c77d5915a752b05965317a549943d3e451c6c5515999bb02108",
+      "applied_at": "2026-09-30 01:57:51.342598+00"
     },
     "migrations/campaign/scopesreadstree_the_scope_readers_switch.sql": {
       "source": "matrx-frontend",

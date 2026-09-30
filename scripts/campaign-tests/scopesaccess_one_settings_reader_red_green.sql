@@ -22,6 +22,11 @@
 \if :matrx_skip
 \quit
 \endif
+\if :{?world_until}
+\else
+\echo 'pass -v world_until=<the clone promotion time from common-docs/operations/clone/CLONE-REF>'
+\quit
+\endif
 
 set transaction_timeout = '40min';
 begin isolation level repeatable read;
@@ -33,39 +38,41 @@ create temp table s_orgs on commit drop as
    where t.table_id = custom.table_kernel_id() and t.data @> '{"kept_for": "context"}'::jsonb and t.deleted_at is null;
 create temp table s_admin_orgs on commit drop as
   select o.org from s_orgs o where exists (select 1 from iam.memberships m where m.container_type = 'organization'
-     and m.container_id = o.org and m.user_id = '87a6e699-3622-4869-8843-d0867456c0dd' and m.status = 'active' and m.deleted_at is null);
+     and m.container_id = o.org and m.user_id = '87a6e699-3622-4869-8843-d0867456c0dd' and m.status = 'active' and m.deleted_at is null)
+     and o.org not in (select iam.archived_org_ids());
 create temp table s_ans (side text, what text, id uuid, v jsonb) on commit drop;
+-- Production's world as the clone copied it (-v world_until = CLONE-REF `promoted`): a scope another lane made on the
+-- clone later has no store twin there (the clone runs no follow) and is left out.
+create temp table s_world on commit drop as
+  select s.id from context.scopes s where s.created_at <= :'world_until'::timestamptz;
 
 create function pg_temp.s_capture(p_side text) returns void language plpgsql as $f$
-declare o record; v_ids uuid[]; v jsonb; x jsonb;
+declare g record; v_ids uuid[]; v jsonb; x jsonb;
 begin
   perform set_config('request.jwt.claims', '', true);
-  insert into s_ans select p_side, 'rows_of', r.id, r.row_doc from s_orgs o cross join lateral custom.scope_rows_of(o.org) r;
-  insert into s_ans select p_side, 'checkout', s.id, custom.context_class_for_checkout(s.id) from context.scopes s;
-  insert into s_ans select p_side, 'setting_back', null, jsonb_build_object('k', e.key, 'b', f.data ->> 'type',
-                           'v', custom.scope_setting_back(e.value, f.data ->> 'type'))
+  insert into s_ans select p_side, 'rows_of', r.id, r.row_doc from s_orgs so cross join lateral custom.scope_rows_of(so.org) r where r.id in (select id from s_world);
+  insert into s_ans select p_side, 'checkout', s.id, custom.context_class_for_checkout(s.id) from context.scopes s where s.id in (select id from s_world);
+  -- every value of every scope Record, read back as a text Field would be
+  insert into s_ans select p_side, 'setting_back', null, jsonb_build_object('n', row_number() over (order by r.id, e.key), 'v', custom.scope_setting_back(e.value, 'text'))
     from custom.record r
     join custom.record t on t.organization_id = r.organization_id and t.id = r.table_id and t.data ->> 'kept_for' = 'context'
     cross join lateral jsonb_each(r.data - '_values' - '_sources') e
-    join custom.record f on f.organization_id = r.organization_id and f.table_id = custom.field_kernel_id()
-                        and f.data @> jsonb_build_object('entity_definition_id', r.table_id::text) and f.data ->> 'key' = e.key
-   where r.data_class = 'record';
+   where r.data_class = 'record' and r.id in (select id from s_world);
   perform set_config('request.jwt.claims', json_build_object('sub', '87a6e699-3622-4869-8843-d0867456c0dd', 'role', 'authenticated')::text, true);
-  perform set_config('role', 'authenticated', true);
-  for o in select org from s_admin_orgs loop
-    select array_agg(s.id) into v_ids from (select s.id from context.scopes s where s.organization_id = o.org and s.deleted_at is null order by s.id limit 1000) s;
+  for g in select org from s_admin_orgs loop
+    select array_agg(s.id) into v_ids from (select s.id from context.scopes s where s.organization_id = g.org and s.deleted_at is null and s.id in (select id from s_world) order by s.id limit 1000) s;
     if v_ids is not null then
+      perform set_config('role', 'authenticated', true);
       v := custom.context_scopes(v_ids);
-      for x in select * from jsonb_array_elements(v) loop
-        insert into s_ans values (p_side, 'scopes', (x ->> 'id')::uuid, x);
-      end loop;
+      perform set_config('role', 'none', true);
+      insert into s_ans select p_side, 'scopes', (e.value ->> 'id')::uuid, e.value from jsonb_array_elements(v) e;
     end if;
   end loop;
-  v := custom.context_tree((select array_agg(org) from s_admin_orgs));
-  for x in select * from jsonb_array_elements(v -> 'scopes') loop
-    insert into s_ans values (p_side, 'tree', (x ->> 'id')::uuid, x);
-  end loop;
+  select array_agg(org) into v_ids from s_admin_orgs;
+  perform set_config('role', 'authenticated', true);
+  v := custom.context_tree(v_ids);
   perform set_config('role', 'none', true);
+  insert into s_ans select p_side, 'tree', (e.value ->> 'id')::uuid, e.value from jsonb_array_elements(v -> 'scopes') e where (e.value ->> 'id')::uuid in (select id from s_world);
 end $f$;
 
 select pg_temp.s_capture('before');
@@ -83,7 +90,7 @@ select a.what, count(*) as answers,
   left join context.scopes s on s.id = a.id
  where a.side = 'before' and a.what <> 'setting_back'
  group by a.what order by a.what;
-select count(*) as setting_back_values,
+select (select count(*) from s_ans where side = 'before' and what = 'setting_back') as setting_back_values,
        (select count(*) from (select v from s_ans where side = 'before' and what = 'setting_back'
                               except all select v from s_ans where side = 'after' and what = 'setting_back') x) as setting_back_moved;
 

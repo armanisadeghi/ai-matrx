@@ -90,7 +90,7 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
       },
       {
         id: "webpage",
-        label: "Webpage",
+        label: "Web page",
         icon: Globe,
         iconClassName: "text-teal-600 dark:text-teal-400",
         requiresCapability: null,
@@ -187,21 +187,21 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
       },
       {
         id: "context_values",
-        label: "Context Values",
+        label: "Context values",
         icon: Layers,
         iconClassName: "text-secondary dark:text-secondary",
         requiresCapability: null,
       },
       {
         id: "image_url",
-        label: "Image URL",
+        label: "Image link",
         icon: Image,
         iconClassName: "text-sky-600 dark:text-sky-400",
         requiresCapability: "supportsImageUrls",
       },
       {
         id: "file_url",
-        label: "File URL",
+        label: "File link",
         icon: File,
         iconClassName: "text-purple-600 dark:text-purple-400",
         requiresCapability: "supportsFileUrls",

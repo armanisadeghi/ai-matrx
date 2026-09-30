@@ -358,7 +358,9 @@ export function SourceCard({
               // The one way this page can use it — said, never a one-option control.
               <p className="text-xs text-foreground">{DELIVERY_WORDS[delivery].label}</p>
             )}
-            <p className="text-xs text-muted-foreground">{DELIVERY_WORDS[delivery].hint}</p>
+            {deliveryChoices.length > 1 ? (
+              <p className="text-xs text-muted-foreground">{DELIVERY_WORDS[delivery].hint}</p>
+            ) : null}
           </div>
         </div>
       ) : null}
