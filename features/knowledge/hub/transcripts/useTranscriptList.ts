@@ -57,9 +57,6 @@ export function transcriptServerFilters(sel: TranscriptFacetSelection): Record<s
   return out;
 }
 
-/** The facets a recording session row carries — counted by the list itself (see the facets read). */
-const SESSION_FACETS: TranscriptFacet[] = ["kind", "status", "visibility"];
-
 export function transcriptScopeOf(sel: TranscriptFacetSelection): TranscriptScope {
   const s = sel.scope?.[0];
   return s === "mine" || s === "shared" || s === "public" ? s : "orgs";
@@ -199,33 +196,24 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
         if (!facet) continue;
         (out[facet] ??= []).push({ value: row.value, count: search ? -1 : Number(row.total ?? 0) });
       }
-      // A count must equal what choosing it returns. trx_list_facets counts recording sessions
-      // the list itself does not show (measured 2026-09-29: Session 211 vs 53, Idle 227 vs 70,
-      // Cleanup 27 vs 22, Stopped 11 vs 5), so every facet a session row carries — Type,
-      // Status, Visibility — and every Scope is counted by the list itself: the same
-      // function, the same filters, one row asked for, its true total read.
+      // A count equals what choosing it returns because trx_list_facets runs as the caller,
+      // reading the same rows under the same row security as trx_list_scoped (it once ran as
+      // definer and counted 211 sessions against the list's 53 — fixed at the source, aidream
+      // migration 20260930120000). Only Scope needs asking: the facets read covers one scope.
       if (!search) {
-        const recount = async (facet: TranscriptFacet, value: string, sc: TranscriptScope = scope) => {
-          const f = FILTER_KEY[facet];
-          const { data: r, error: re } = await supabase.rpc("trx_list_scoped", {
-            p_scope: sc,
-            p_org_id: sc === "orgs" && orgId ? orgId : undefined,
-            // Like every other facet count here: over the whole view, this value alone.
-            p_filters: f ? { [f.filter]: { values: [value] } } : {},
-            p_limit: 1,
-            p_offset: 0,
-          });
-          if (re) return -1;
-          return (r as TranscriptListRow[] | null)?.length ? Number((r as TranscriptListRow[])[0].total_count) : 0;
-        };
-        const jobs: Promise<void>[] = [];
-        for (const facet of SESSION_FACETS)
-          for (const v of out[facet] ?? []) jobs.push(recount(facet, v.value).then((n) => void (v.count = n)));
         const scopes = (["mine", "shared", "public"] as const).map((sc) => ({ value: sc, count: -1 }));
-        for (const sc of scopes) jobs.push(recount("scope", sc.value, sc.value).then((n) => void (sc.count = n)));
-        await Promise.all(jobs);
+        await Promise.all(
+          scopes.map(async (sc) => {
+            const { data: r, error: re } = await supabase.rpc("trx_list_scoped", {
+              p_scope: sc.value,
+              p_filters: {},
+              p_limit: 1,
+              p_offset: 0,
+            });
+            sc.count = re ? -1 : (r as TranscriptListRow[] | null)?.length ? Number((r as TranscriptListRow[])[0].total_count) : 0;
+          }),
+        );
         if (cancelled) return;
-        for (const facet of SESSION_FACETS) if (out[facet]) out[facet] = out[facet]!.filter((v) => v.count !== 0);
         out.scope = scopes.filter((sc) => sc.count !== 0);
       } else {
         out.scope = (["mine", "shared", "public"] as const).map((sc) => ({ value: sc, count: -1 }));

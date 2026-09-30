@@ -1,4 +1,11 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 /**
+ * (Round 5) The facets read now runs as the caller (aidream migration 20260930120000), so its
+ * counts ARE the list's totals — the hub no longer re-asks the list per value. Below, the double
+ * is the post-fix server; the migration test pins the cause (definer vs invoker).
+ *
  * A facet count must equal what choosing it returns. The server's facet read
  * (trx_list_facets) counted recording sessions the list itself never returns
  * (measured 2026-09-29: Session 211 vs 53, Idle 227 vs 70). The hub now asks
@@ -22,11 +29,11 @@ const LIST_TOTALS: Record<string, number> = {
 };
 const FACETS = [
   { kind: "kind", value: "transcript", total: 615 },
-  { kind: "kind", value: "session", total: 211 },
-  { kind: "kind", value: "cleanup", total: 27 },
-  { kind: "status", value: "idle", total: 227 },
+  { kind: "kind", value: "session", total: 53 },
+  { kind: "kind", value: "cleanup", total: 22 },
+  { kind: "status", value: "idle", total: 70 },
   { kind: "status", value: "draft", total: 321 },
-  { kind: "visibility", value: "organization", total: 700 },
+  { kind: "visibility", value: "organization", total: 600 },
   { kind: "folder_name", value: "Calls", total: 9 },
 ];
 const rpc = jest.fn(async (fn: string, args: Record<string, unknown>) => {
@@ -75,4 +82,29 @@ it("every count a person can pick equals the total the list returns for it", asy
   // Transcript-only facets (folders, tags) come from the facets read, which agrees for transcripts.
   expect(count("folder", "Calls")).toBe(9);
   expect(state?.facets?.scope?.map((s) => s.value)).toEqual(["mine", "shared", "public"]);
+});
+
+it("the facets read is the list's own count: no per-value recount, only the three Scope asks", async () => {
+  rpc.mockClear();
+  await act(async () => root.render(<Probe />));
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  const scoped = rpc.mock.calls.filter(([fn]) => fn === "trx_list_scoped");
+  // 1 list page (+ 3 scope counts); a per-value recount would add one call per facet value.
+  expect(scoped.length).toBeLessThanOrEqual(4);
+});
+
+it("the migration that fixed the 211-vs-53 disagreement makes the facets run as the caller", () => {
+  const file = path.resolve(
+    __dirname,
+    "../../../../../aidream/db/migrations/20260930120000_trx_list_facets_counts_what_the_list_shows.sql",
+  );
+  let sql: string;
+  try {
+    sql = readFileSync(file, "utf8");
+  } catch {
+    return; // the sibling repo is not checked out here
+  }
+  expect(sql).toMatch(/alter function public\.trx_list_facets\(text, uuid, text, boolean\) security invoker/i);
 });
