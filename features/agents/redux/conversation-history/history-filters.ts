@@ -5,7 +5,7 @@
  * (`__tests__/lane-gate.test.ts`).
  */
 
-import type { ConversationLane } from "./lanes";
+import { HIDDEN_CONVERSATION_LANE, type ConversationLane } from "./lanes";
 import type { ConversationHistoryScopeState } from "./types";
 
 /** The provenance filters a scope applies to its list query. */
@@ -47,6 +47,11 @@ export function applyHistoryFilters<Q extends HistoryFilterable<Q>>(
 
   if (f.includeLanes !== null) {
     q = q.in("lane", f.includeLanes);
+  } else {
+    // No gate still never means the HIDDEN lane: a mandate candidate's shadow
+    // leg (`chat.conversation_lane` → 'hidden') is persisted only so its pair
+    // can open it, and is listed nowhere. A gate cannot name it (normalizeLanes).
+    q = q.neq("lane", HIDDEN_CONVERSATION_LANE);
   }
 
   // Per-scope blacklist on `source_feature`. Each value gets its own `.neq`

@@ -1,0 +1,552 @@
+-- chair-step: replaces five matrx-frontend-owned conversation classifier/list functions on live — held for the Mandate Candidates C0 live session (clone-applied only until then)
+--
+-- based-on: chat.conversation_lane(text, text, text, text) 810068c296a1a1360c3851b13f67be61057ca0f934636b6102d36c88364b48ea
+-- based-on: public.cvx_audience(text, text, text, text, text) 9e3c6c578db21e9675e4bdb2bfa421d05bdf489fcc53a0152afe85394ac2b7d7
+-- based-on: public.get_cx_conversation_lane_facets() 2f9581f6e3ba13c43a0d8ac022a3d3dac598be8c0b2941b7d412d10a989ea74a
+-- based-on: public.cvx_list_scoped(text, uuid, text, boolean, text, text, boolean, text, jsonb, integer, integer) b47fb607b5d2174e057f032b9247a5c880064833c580967cb22688513db811f0
+-- based-on: public.cx_search_conversations(text, boolean, text, text[], uuid[], text[], text[], text[], boolean, text[], integer, integer) e1de113cc0747c8d60324905bbf1374b4db0d6d1dfee9bc8e85ad14607e28fa4
+--
+-- Mandate Candidates C0 — the HIDDEN conversation lane (PLAN §2.7).
+-- A candidate's shadow leg is persisted as a real conversation (conversation_type
+-- 'mandate_candidate', matrx-ai ConversationType.MANDATE_CANDIDATE) so the pair window can open
+-- both chats — and it must appear in NO chat list: its owner is the live run's owner (P4), so
+-- without this it would land in that person's sidebar, /work and search.
+--
+-- chat.conversation_lane is the ONE classifier; every consumer below reads it:
+--   * chat.conversation_lane          → 'hidden' for conversation_type = 'mandate_candidate' (first arm)
+--   * public.cvx_audience             → 'hidden' (derives from the lane, decides nothing)
+--   * public.cvx_list_scoped          → never returns a hidden row (so cvx_list_facets, which reads
+--                                       it, never counts one)
+--   * public.get_cx_conversation_lane_facets → never counts a hidden row
+--   * public.cx_search_conversations  → never returns a hidden row, whatever p_lanes says
+--   * the `lane` computed field (chat.lane) inherits the classifier; the sidebar/history lane gate
+--     only ever admits the five named lanes (features/agents/redux/conversation-history).
+-- The client-side lists that read chat.conversation directly are changed in the same commit.
+--
+-- Bodies are production's (as on the nightly clone) with ONLY the hidden-lane lines added.
+-- Live apply (chair, named):
+--   pnpm db:apply migrations/mandate_candidates_c0_hidden_conversation_lane.sql --confirm-chair-step mandate_candidates_c0_hidden_conversation_lane.sql
+
+CREATE OR REPLACE FUNCTION chat.conversation_lane(source_app text, source_feature text, origin_class text, conversation_type text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO ''
+AS $function$
+  select case
+    -- A mandate candidate's shadow leg (Mandate Candidates PLAN §2.7): persisted so the pair can
+    -- open both chats, never listed. FIRST, so no later arm can file it anywhere visible.
+    when conversation_type = 'mandate_candidate'
+      then 'hidden'
+    when conversation_type = 'subagent' or origin_class = 'child_agent'
+      then 'subagent'
+    when source_app = 'code-plugin'
+      then 'plugin'
+    when origin_class in ('scheduled', 'workflow', 'system', 'client_auto')
+      or conversation_type in ('scheduled', 'workflow', 'auto', 'system',
+                               'research', 'podcast', 'hindsight_replay')
+      or source_feature = 'system'
+      or source_app = 'aidream'
+      or source_app like 'aidream-%'
+      or source_app in ('matrx-scheduler', 'mcp-agent-service')
+      then 'auto'
+    when source_feature in ('chat', 'agent-runner', 'agent-builder', 'agent-app',
+                            'agent-comparison', 'agent-generator', 'agents-other',
+                            'voice-agent')
+      then 'chat'
+    else 'matrx'
+  end
+$function$;
+
+CREATE OR REPLACE FUNCTION public.cvx_audience(p_provider text, p_source_app text, p_source_feature text, p_origin_class text, p_conversation_type text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+AS $function$
+  -- Decides NOTHING. chat.conversation_lane is the one classifier; this is the
+  -- /work bucket each lane belongs to, plus the one fact the lane cannot see:
+  -- a live coding-session binding makes a row external whatever its lane.
+  SELECT CASE
+    WHEN chat.conversation_lane(p_source_app, p_source_feature, p_origin_class,
+                                p_conversation_type) = 'hidden'
+      THEN 'hidden'
+    WHEN p_provider IS NOT NULL
+      OR chat.conversation_lane(p_source_app, p_source_feature, p_origin_class,
+                                p_conversation_type) = 'plugin'
+      THEN 'external'
+    WHEN chat.conversation_lane(p_source_app, p_source_feature, p_origin_class,
+                                p_conversation_type) IN ('auto', 'subagent')
+      THEN 'internal'
+    ELSE 'chat'
+  END
+$function$;
+
+CREATE OR REPLACE FUNCTION public.get_cx_conversation_lane_facets()
+ RETURNS TABLE(lane text, source_app text, source_feature text, n bigint)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select
+    chat.conversation_lane(c.source_app, c.source_feature, c.origin_class, c.conversation_type) as lane,
+    c.source_app,
+    c.source_feature,
+    count(*)::bigint as n
+  from chat.conversation c
+  where c.created_by = (select auth.uid())
+    and c.deleted_at is null
+    and c.is_ephemeral = false
+    and chat.conversation_lane(c.source_app, c.source_feature, c.origin_class, c.conversation_type)
+        is distinct from 'hidden'
+  group by 1, 2, 3
+  order by count(*) desc;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.cvx_list_scoped(p_scope text DEFAULT 'mine'::text, p_org_id uuid DEFAULT NULL::uuid, p_search text DEFAULT NULL::text, p_deep boolean DEFAULT false, p_sort text DEFAULT 'last_activity'::text, p_dir text DEFAULT 'desc'::text, p_favorites_first boolean DEFAULT true, p_archived text DEFAULT 'active'::text, p_filters jsonb DEFAULT '{}'::jsonb, p_limit integer DEFAULT 25, p_offset integer DEFAULT 0)
+ RETURNS TABLE(id uuid, title text, conversation_type text, origin_class text, source_app text, source_feature text, status text, message_count integer, is_favorite boolean, is_archived boolean, visibility text, provider text, provider_session_id text, workspace_name text, provider_account text, title_source text, category text, fidelity text, binding_status text, binding_origin text, binding_last_seen_at timestamp with time zone, organization_id uuid, organization_name text, owner_email text, created_by uuid, initial_agent_id uuid, created_at timestamp with time zone, updated_at timestamp with time zone, last_activity_at timestamp with time zone, is_owner boolean, access_level text, total_count bigint)
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_scope text := lower(coalesce(p_scope, platform.entity_default_list_scope('conversation')));
+  v_dir text := CASE WHEN lower(coalesce(p_dir,'desc'))='asc' THEN 'asc' ELSE 'desc' END;
+  v_sort text := lower(coalesce(p_sort, 'last_activity'));
+  v_search text := nullif(btrim(coalesce(p_search, '')), '');
+  v_f jsonb := coalesce(p_filters, '{}'::jsonb);
+  -- ONE rule for "is this search deep" (public.cvx_search_is_deep), shared
+  -- with cvx_list_scope_counts. A caller that already ran the probe hands the
+  -- hit set in as p_filters->'__deep_hits' and is deep by definition. The
+  -- pass itself is the definer probe public.cvx_deep_hits — under this
+  -- function's invoker policy the trigram index cannot be used (ILIKE is not
+  -- leakproof) and the page timed out.
+  v_deep boolean := public.cvx_search_is_deep(v_search, p_deep)
+    OR (coalesce(p_filters, '{}'::jsonb) ? '__deep_hits');
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'cvx_list_scoped: not authenticated'; END IF;
+  IF v_scope NOT IN ('mine','team','orgs','shared') THEN
+    RAISE EXCEPTION 'cvx_list_scoped: unknown scope %', v_scope; END IF;
+  IF v_sort NOT IN ('last_activity','updated','created','title','conversation_type',
+                    'origin_class','source_app','source_feature','message_count',
+                    'provider','workspace_name','provider_account','title_source',
+                    'category','fidelity','binding_status','binding_last_seen_at',
+                    'organization_name','owner_email','visibility','favorite',
+                    'archived') THEN
+    v_sort := 'last_activity';
+  END IF;
+
+  RETURN QUERY
+  WITH deep_hits AS (
+    -- ONE indexed pass over message bodies, hashed once, probed per row.
+    -- A caller that ran the probe already (cvx_list_scope_counts, fifteen
+    -- calls per request) hands the set in as p_filters->'__deep_hits';
+    -- otherwise the definer probe runs here. Never a correlated EXISTS: that
+    -- is a scan per conversation, twice.
+    SELECT (x)::uuid AS conversation_id
+    FROM jsonb_array_elements_text(v_f->'__deep_hits') AS x
+    WHERE v_f ? '__deep_hits'
+    UNION ALL
+    SELECT h AS conversation_id
+    FROM public.cvx_deep_hits(v_search) AS h
+    WHERE NOT (v_f ? '__deep_hits') AND v_deep AND v_search IS NOT NULL
+  ),
+  scoped AS (
+    SELECT c.*, true AS s_is_owner, 'owner'::text AS s_access
+    FROM chat.conversation c
+    WHERE v_scope='mine' AND c.created_by = v_uid
+    UNION ALL
+    SELECT c.*, (c.created_by = v_uid), CASE WHEN c.created_by = v_uid THEN 'owner' ELSE 'org' END::text FROM chat.conversation c
+    WHERE v_scope IN ('orgs','team') AND (p_org_id IS NULL OR c.organization_id = p_org_id) AND c.organization_id IN (SELECT iam.my_orgs())
+      -- MY TEAM (T-29): the same rows, narrowed to people who share a team with me there.
+      AND (v_scope <> 'team' OR (c.organization_id, c.created_by) IN (SELECT r.organization_id, r.user_id FROM iam.my_team_reach(p_org_id) r))
+    UNION ALL
+    SELECT c.*, false, perm.permission_level::text FROM chat.conversation c
+    JOIN iam.permissions perm ON perm.resource_type='conversation' AND perm.resource_id=c.id
+      AND perm.granted_to_user_id = v_uid
+    WHERE v_scope='shared' AND c.created_by IS DISTINCT FROM v_uid
+    UNION ALL
+    SELECT DISTINCT ON (c.id) c.*, false, perm.permission_level::text FROM chat.conversation c
+    JOIN iam.permissions perm ON perm.resource_type='conversation' AND perm.resource_id=c.id
+      AND perm.granted_to_organization_id IN (
+        SELECT om.organization_id FROM iam.organization_member om WHERE om.user_id=v_uid)
+    WHERE v_scope='shared' AND c.created_by IS DISTINCT FROM v_uid
+      AND NOT EXISTS (SELECT 1 FROM iam.permissions p2 WHERE p2.resource_type='conversation'
+        AND p2.resource_id=c.id AND p2.granted_to_user_id=v_uid)
+  ),
+  joined AS (
+    SELECT
+      s.*,
+      o.name AS s_org_name,
+      u.email::text AS s_owner_email,
+      cs.provider AS s_provider,
+      cs.provider_session_id AS s_provider_session_id,
+      cs.metadata->>'workspace_name' AS s_workspace_name,
+      public.cvx_provider_account_display(cs.metadata) AS s_provider_account,
+      cs.metadata->>'title_source' AS s_title_source,
+      coalesce(
+        s.metadata->'coding_session_bridge'->>'category',
+        cs.metadata->>'provider_category'
+      ) AS s_category,
+      cs.fidelity AS s_fidelity,
+      cs.status AS s_binding_status,
+      cs.origin AS s_binding_origin,
+      cs.last_seen_at AS s_binding_last_seen_at,
+      coalesce(ues.is_favorite, false) AS s_is_favorite,
+      public.cvx_audience(cs.provider, s.source_app, s.source_feature, s.origin_class, s.conversation_type)
+        AS s_audience
+    FROM scoped s
+    LEFT JOIN iam.organizations o ON o.id = s.organization_id
+    LEFT JOIN platform.visible_user_identity u ON u.id = s.created_by
+    LEFT JOIN platform.user_entity_state ues
+      ON ues.user_id = v_uid
+     AND ues.entity_type = 'conversation'
+     AND ues.entity_id = s.id
+    LEFT JOIN LATERAL (
+      SELECT b.provider, b.provider_session_id, b.metadata, b.fidelity,
+             b.status, b.origin, b.last_seen_at
+      FROM chat.coding_session b
+      WHERE b.conversation_id = s.id AND b.deleted_at IS NULL
+      ORDER BY b.last_seen_at DESC NULLS LAST, b.created_at DESC, b.id
+      LIMIT 1
+    ) cs ON true
+  ),
+  filtered AS (
+    SELECT j.* FROM joined j
+    WHERE j.deleted_at IS NULL
+      AND j.is_ephemeral IS NOT TRUE
+      -- The hidden lane is never listed, whatever the filters ask (Mandate Candidates §2.7).
+      AND j.s_audience IS DISTINCT FROM 'hidden'
+      AND (CASE lower(coalesce(p_archived,'active'))
+             WHEN 'archived' THEN j.status = 'archived'
+             WHEN 'all' THEN true
+             ELSE j.status IS DISTINCT FROM 'archived' END)
+      -- THE SEARCH FILTER ADMITS EVERY FIELD cvx_search_score RANKS. A field
+      -- the scorer ranks but the filter drops scores 100000 and returns
+      -- nothing — that is how a pasted conversation id found no row until
+      -- 2026-09-18. Keep this list and the scorer's in lockstep.
+      AND (v_search IS NULL
+        OR coalesce(j.title,'') ILIKE '%'||v_search||'%'
+        OR coalesce(j.description,'') ILIKE '%'||v_search||'%'
+        OR coalesce(j.s_workspace_name,'') ILIKE '%'||v_search||'%'
+        OR coalesce(j.source_feature,'') ILIKE '%'||v_search||'%'
+        OR coalesce(j.source_app,'') ILIKE '%'||v_search||'%'
+        OR coalesce(j.s_provider_account,'') ILIKE '%'||v_search||'%'
+        OR j.id::text ILIKE '%'||v_search||'%'
+        -- EVERY live binding, not only the newest: a resumed Claude Code
+        -- session carries several provider ids and each is a name someone
+        -- was handed.
+        OR EXISTS (
+              SELECT 1 FROM chat.coding_session b
+              WHERE b.conversation_id = j.id AND b.deleted_at IS NULL
+                AND coalesce(b.provider_session_id,'') ILIKE '%'||v_search||'%')
+        OR j.id IN (SELECT dh.conversation_id FROM deep_hits dh))
+      AND (NOT v_f ? 'audience'
+           OR j.s_audience IN (SELECT jsonb_array_elements_text(v_f->'audience'->'values')))
+      AND (NOT v_f ? 'title' OR coalesce(j.title,'') ILIKE '%'||(v_f->'title'->>'value')||'%')
+      AND (NOT v_f ? 'provider_session_id'
+           OR coalesce(j.s_provider_session_id,'') ILIKE '%'||(v_f->'provider_session_id'->>'value')||'%')
+      AND (NOT v_f ? 'organization_name'
+           OR coalesce(j.s_org_name,'') ILIKE '%'||(v_f->'organization_name'->>'value')||'%')
+      AND (NOT v_f ? 'conversation_type'
+           OR j.conversation_type IN (SELECT jsonb_array_elements_text(v_f->'conversation_type'->'values')))
+      AND (NOT v_f ? 'origin_class'
+           OR j.origin_class IN (SELECT jsonb_array_elements_text(v_f->'origin_class'->'values')))
+      AND (NOT v_f ? 'source_app'
+           OR coalesce(nullif(j.source_app,''),'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'source_app'->'values')))
+      AND (NOT v_f ? 'source_feature'
+           OR coalesce(nullif(j.source_feature,''),'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'source_feature'->'values')))
+      AND (NOT v_f ? 'provider'
+           OR coalesce(j.s_provider,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'provider'->'values')))
+      AND (NOT v_f ? 'workspace_name'
+           OR coalesce(j.s_workspace_name,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'workspace_name'->'values')))
+      AND (NOT v_f ? 'provider_account'
+           OR coalesce(j.s_provider_account,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'provider_account'->'values')))
+      AND (NOT v_f ? 'title_source'
+           OR coalesce(j.s_title_source,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'title_source'->'values')))
+      AND (NOT v_f ? 'category'
+           OR coalesce(j.s_category,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'category'->'values')))
+      AND (NOT v_f ? 'fidelity'
+           OR coalesce(j.s_fidelity,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'fidelity'->'values')))
+      AND (NOT v_f ? 'binding_status'
+           OR coalesce(j.s_binding_status,'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'binding_status'->'values')))
+      AND (NOT v_f ? 'visibility'
+           OR j.visibility::text IN (SELECT jsonb_array_elements_text(v_f->'visibility'->'values')))
+      AND (NOT v_f ? 'owner_email'
+           OR coalesce(nullif(j.s_owner_email,''),'__none__')
+              IN (SELECT jsonb_array_elements_text(v_f->'owner_email'->'values')))
+      AND (NOT v_f ? 'access_level'
+           OR j.s_access IN (SELECT jsonb_array_elements_text(v_f->'access_level'->'values')))
+      AND (NOT v_f ? 'message_count'
+           OR public.cvx_size_band(j.message_count)
+              IN (SELECT jsonb_array_elements_text(v_f->'message_count'->'values')))
+      AND (NOT v_f ? 'updated'
+           OR j.updated_at >= public.agx_since_bucket(v_f->'updated'->'values'->>0))
+      AND (NOT v_f ? 'created'
+           OR j.created_at >= public.agx_since_bucket(v_f->'created'->'values'->>0))
+      AND (NOT v_f ? 'binding_last_seen_at'
+           OR j.s_binding_last_seen_at >= public.agx_since_bucket(v_f->'binding_last_seen_at'->'values'->>0))
+      AND (NOT v_f ? 'favorite'
+           OR coalesce(j.s_is_favorite,false) IS NOT DISTINCT FROM (v_f->'favorite'->>'value')::boolean)
+      AND (NOT v_f ? 'archived'
+           OR (j.status = 'archived') IS NOT DISTINCT FROM (v_f->'archived'->>'value')::boolean)
+  ),
+  activity AS (
+    SELECT
+      f.*,
+      greatest(
+        coalesce(lm.last_at, f.created_at),
+        coalesce(f.s_binding_last_seen_at, f.created_at),
+        f.created_at
+      ) AS s_last_activity
+    FROM filtered f
+    LEFT JOIN LATERAL (
+      SELECT m.created_at AS last_at
+      FROM chat.message m
+      WHERE m.conversation_id = f.id
+        AND m.deleted_at IS NULL
+        AND m.is_visible_to_user = true
+      ORDER BY m.created_at DESC
+      LIMIT 1
+    ) lm ON true
+  ),
+  activity_filtered AS (
+    SELECT a.* FROM activity a
+    WHERE (NOT v_f ? 'last_activity'
+           OR a.s_last_activity >= public.agx_since_bucket(v_f->'last_activity'->'values'->>0))
+  ),
+  scored AS (
+    SELECT f.*, public.cvx_search_score(
+      v_search, f.id, f.title, f.description, f.s_workspace_name,
+      f.source_feature, f.source_app, f.s_provider_account,
+      f.s_provider_session_id,
+      (f.id IN (SELECT dh.conversation_id FROM deep_hits dh))
+    ) AS s_score
+    FROM activity_filtered f
+  ),
+  counted AS (SELECT s.*, count(*) OVER () AS s_total FROM scored s)
+  SELECT
+    c.id, c.title, c.conversation_type, c.origin_class, c.source_app,
+    c.source_feature, c.status, c.message_count, c.s_is_favorite,
+    (c.status = 'archived'), c.visibility::text,
+    c.s_provider, c.s_provider_session_id, c.s_workspace_name,
+    c.s_provider_account, c.s_title_source, c.s_category, c.s_fidelity,
+    c.s_binding_status, c.s_binding_origin, c.s_binding_last_seen_at,
+    c.organization_id, c.s_org_name, c.s_owner_email, c.created_by,
+    c.initial_agent_id, c.created_at, c.updated_at, c.s_last_activity,
+    c.s_is_owner, c.s_access, c.s_total
+  FROM counted c
+  ORDER BY
+    CASE WHEN v_search IS NOT NULL THEN c.s_score END DESC NULLS LAST,
+    CASE WHEN p_favorites_first THEN c.s_is_favorite END DESC NULLS LAST,
+    CASE WHEN v_sort='last_activity' AND v_dir='desc' THEN c.s_last_activity END DESC,
+    CASE WHEN v_sort='last_activity' AND v_dir='asc' THEN c.s_last_activity END ASC,
+    CASE WHEN v_sort='updated' AND v_dir='desc' THEN c.updated_at END DESC,
+    CASE WHEN v_sort='updated' AND v_dir='asc' THEN c.updated_at END ASC,
+    CASE WHEN v_sort='created' AND v_dir='desc' THEN c.created_at END DESC,
+    CASE WHEN v_sort='created' AND v_dir='asc' THEN c.created_at END ASC,
+    CASE WHEN v_sort='title' AND v_dir='desc' THEN lower(coalesce(c.title,'')) END DESC,
+    CASE WHEN v_sort='title' AND v_dir='asc' THEN lower(coalesce(c.title,'')) END ASC,
+    CASE WHEN v_sort='conversation_type' AND v_dir='desc' THEN c.conversation_type END DESC,
+    CASE WHEN v_sort='conversation_type' AND v_dir='asc' THEN c.conversation_type END ASC,
+    CASE WHEN v_sort='origin_class' AND v_dir='desc' THEN c.origin_class END DESC,
+    CASE WHEN v_sort='origin_class' AND v_dir='asc' THEN c.origin_class END ASC,
+    CASE WHEN v_sort='source_app' AND v_dir='desc' THEN lower(coalesce(c.source_app,'')) END DESC,
+    CASE WHEN v_sort='source_app' AND v_dir='asc' THEN lower(coalesce(c.source_app,'')) END ASC,
+    CASE WHEN v_sort='source_feature' AND v_dir='desc' THEN lower(coalesce(c.source_feature,'')) END DESC,
+    CASE WHEN v_sort='source_feature' AND v_dir='asc' THEN lower(coalesce(c.source_feature,'')) END ASC,
+    CASE WHEN v_sort='message_count' AND v_dir='desc' THEN c.message_count END DESC,
+    CASE WHEN v_sort='message_count' AND v_dir='asc' THEN c.message_count END ASC,
+    CASE WHEN v_sort='provider' AND v_dir='desc' THEN lower(coalesce(c.s_provider,'')) END DESC,
+    CASE WHEN v_sort='provider' AND v_dir='asc' THEN lower(coalesce(c.s_provider,'')) END ASC,
+    CASE WHEN v_sort='workspace_name' AND v_dir='desc' THEN lower(coalesce(c.s_workspace_name,'')) END DESC,
+    CASE WHEN v_sort='workspace_name' AND v_dir='asc' THEN lower(coalesce(c.s_workspace_name,'')) END ASC,
+    CASE WHEN v_sort='provider_account' AND v_dir='desc' THEN lower(coalesce(c.s_provider_account,'')) END DESC,
+    CASE WHEN v_sort='provider_account' AND v_dir='asc' THEN lower(coalesce(c.s_provider_account,'')) END ASC,
+    CASE WHEN v_sort='title_source' AND v_dir='desc' THEN lower(coalesce(c.s_title_source,'')) END DESC,
+    CASE WHEN v_sort='title_source' AND v_dir='asc' THEN lower(coalesce(c.s_title_source,'')) END ASC,
+    CASE WHEN v_sort='category' AND v_dir='desc' THEN lower(coalesce(c.s_category,'')) END DESC,
+    CASE WHEN v_sort='category' AND v_dir='asc' THEN lower(coalesce(c.s_category,'')) END ASC,
+    CASE WHEN v_sort='fidelity' AND v_dir='desc' THEN lower(coalesce(c.s_fidelity,'')) END DESC,
+    CASE WHEN v_sort='fidelity' AND v_dir='asc' THEN lower(coalesce(c.s_fidelity,'')) END ASC,
+    CASE WHEN v_sort='binding_status' AND v_dir='desc' THEN lower(coalesce(c.s_binding_status,'')) END DESC,
+    CASE WHEN v_sort='binding_status' AND v_dir='asc' THEN lower(coalesce(c.s_binding_status,'')) END ASC,
+    CASE WHEN v_sort='binding_last_seen_at' AND v_dir='desc' THEN c.s_binding_last_seen_at END DESC NULLS LAST,
+    CASE WHEN v_sort='binding_last_seen_at' AND v_dir='asc' THEN c.s_binding_last_seen_at END ASC NULLS LAST,
+    CASE WHEN v_sort='organization_name' AND v_dir='desc' THEN lower(coalesce(c.s_org_name,'')) END DESC,
+    CASE WHEN v_sort='organization_name' AND v_dir='asc' THEN lower(coalesce(c.s_org_name,'')) END ASC,
+    CASE WHEN v_sort='owner_email' AND v_dir='desc' THEN lower(coalesce(c.s_owner_email,'')) END DESC,
+    CASE WHEN v_sort='owner_email' AND v_dir='asc' THEN lower(coalesce(c.s_owner_email,'')) END ASC,
+    CASE WHEN v_sort='visibility' AND v_dir='desc' THEN lower(c.visibility::text) END DESC,
+    CASE WHEN v_sort='visibility' AND v_dir='asc' THEN lower(c.visibility::text) END ASC,
+    CASE WHEN v_sort='favorite' AND v_dir='desc' THEN c.s_is_favorite END DESC,
+    CASE WHEN v_sort='favorite' AND v_dir='asc' THEN c.s_is_favorite END ASC,
+    CASE WHEN v_sort='archived' AND v_dir='desc' THEN (c.status='archived') END DESC,
+    CASE WHEN v_sort='archived' AND v_dir='asc' THEN (c.status='archived') END ASC,
+    c.id
+  LIMIT greatest(coalesce(p_limit,25),1) OFFSET greatest(coalesce(p_offset,0),0);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.cx_search_conversations(p_search text, p_deep boolean DEFAULT false, p_since text DEFAULT '30d'::text, p_lanes text[] DEFAULT NULL::text[], p_agent_ids uuid[] DEFAULT NULL::uuid[], p_exclude_source_features text[] DEFAULT '{}'::text[], p_include_source_features text[] DEFAULT '{}'::text[], p_include_source_apps text[] DEFAULT '{}'::text[], p_include_empty_source boolean DEFAULT false, p_origin_classes text[] DEFAULT NULL::text[], p_limit integer DEFAULT 30, p_offset integer DEFAULT 0)
+ RETURNS TABLE(id uuid, title text, description text, status text, message_count integer, is_favorite boolean, exclude_from_kg boolean, initial_agent_id uuid, last_model_id uuid, source_app text, source_feature text, origin_class text, created_at timestamp with time zone, updated_at timestamp with time zone, last_activity_at timestamp with time zone, total_count bigint)
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO ''
+AS $function$
+declare
+  v_uid uuid := auth.uid();
+  v_search text := nullif(btrim(coalesce(p_search, '')), '');
+  v_deep boolean := public.cvx_search_is_deep(v_search, p_deep);
+begin
+  if v_uid is null then
+    raise exception 'cx_search_conversations: not authenticated';
+  end if;
+  if v_search is null then return; end if;
+
+  return query
+  with deep_hits as (
+    select h as conversation_id
+    from public.cvx_deep_hits(v_search) as h
+    where v_deep
+  ),
+  filtered as (
+    select
+      c.*,
+      coalesce(ues.is_favorite, false) as s_is_favorite,
+      cs.provider_session_id as s_provider_session_id,
+      cs.metadata->>'workspace_name' as s_workspace_name,
+      public.cvx_provider_account_display(cs.metadata) as s_provider_account
+    from chat.conversation c
+    left join platform.user_entity_state ues
+      on ues.user_id = v_uid
+     and ues.entity_type = 'conversation'
+     and ues.entity_id = c.id
+    left join lateral (
+      select b.provider_session_id, b.metadata
+      from chat.coding_session b
+      where b.conversation_id = c.id and b.deleted_at is null
+      order by b.last_seen_at desc nulls last, b.created_at desc, b.id
+      limit 1
+    ) cs on true
+    where c.created_by = v_uid
+      and c.deleted_at is null
+      and c.is_ephemeral is false
+      and chat.conversation_lane(
+        c.source_app, c.source_feature, c.origin_class, c.conversation_type
+      ) is distinct from 'hidden'
+      and (p_lanes is null or chat.conversation_lane(
+        c.source_app, c.source_feature, c.origin_class, c.conversation_type
+      ) = any(p_lanes))
+      and (p_agent_ids is null or c.initial_agent_id = any(p_agent_ids))
+      and (
+        coalesce(array_length(p_exclude_source_features, 1), 0) = 0
+        or (
+          c.source_feature is not null
+          and not (c.source_feature = any(p_exclude_source_features))
+        )
+      )
+      and (
+        (
+          coalesce(array_length(p_include_source_features, 1), 0) = 0
+          and coalesce(array_length(p_include_source_apps, 1), 0) = 0
+          and not coalesce(p_include_empty_source, false)
+        )
+        or c.source_feature = any(coalesce(p_include_source_features, '{}'::text[]))
+        or c.source_app = any(coalesce(p_include_source_apps, '{}'::text[]))
+        or (coalesce(p_include_empty_source, false) and nullif(c.source_feature, '') is null)
+      )
+      and (p_origin_classes is null or c.origin_class = any(p_origin_classes))
+  ),
+  active as (
+    select
+      f.*,
+      greatest(
+        coalesce(lm.last_at, f.created_at),
+        f.created_at
+      ) as s_last_activity
+    from filtered f
+    left join lateral (
+      select m.created_at as last_at
+      from chat.message m
+      where m.conversation_id = f.id
+        and m.deleted_at is null
+        and m.is_visible_to_user is true
+      order by m.created_at desc
+      limit 1
+    ) lm on true
+    where p_since = 'all'
+       or p_since is null
+       or greatest(coalesce(lm.last_at, f.created_at), f.created_at)
+          >= public.agx_since_bucket(p_since)
+  ),
+  scored as (
+    select
+      a.*,
+      public.cvx_search_score(
+        v_search,
+        a.id,
+        a.title,
+        a.description,
+        a.s_workspace_name,
+        a.source_feature,
+        a.source_app,
+        a.s_provider_account,
+        a.s_provider_session_id,
+        a.id in (select d.conversation_id from deep_hits d)
+      ) as s_score
+    from active a
+  ),
+  matched as (
+    select s.*, count(*) over () as s_total
+    from scored s
+    where s.s_score > 0
+  )
+  select
+    m.id,
+    m.title,
+    m.description,
+    m.status,
+    m.message_count,
+    m.s_is_favorite,
+    m.exclude_from_kg,
+    m.initial_agent_id,
+    m.last_model_id,
+    m.source_app,
+    m.source_feature,
+    m.origin_class,
+    m.created_at,
+    m.updated_at,
+    m.s_last_activity,
+    m.s_total
+  from matched m
+  order by m.s_score desc, m.s_is_favorite desc, m.s_last_activity desc, m.id
+  limit least(greatest(coalesce(p_limit, 30), 1), 100)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$function$;
+
+-- Proof inside the transaction: the classifier hides the new type, and only it.
+DO $proof$
+BEGIN
+  IF chat.conversation_lane('matrx-frontend', 'chat', 'human', 'mandate_candidate') <> 'hidden' THEN
+    RAISE EXCEPTION 'chat.conversation_lane does not hide mandate_candidate';
+  END IF;
+  IF public.cvx_audience(NULL, 'matrx-frontend', 'chat', 'human', 'mandate_candidate') <> 'hidden' THEN
+    RAISE EXCEPTION 'cvx_audience does not derive hidden from the lane';
+  END IF;
+  IF chat.conversation_lane('matrx-frontend', 'chat', 'human', 'standard') <> 'chat'
+     OR chat.conversation_lane('aidream', 'system', 'system', 'hindsight_replay') <> 'auto' THEN
+    RAISE EXCEPTION 'the hidden arm changed another lane';
+  END IF;
+END
+$proof$;

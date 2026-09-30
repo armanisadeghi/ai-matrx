@@ -55,6 +55,7 @@ function loadEnv(): pg.ClientConfig {
 /**
  * THE DOCUMENTED MAPPING, written here and nowhere else in this file, so the
  * assertion cannot be satisfied by cvx_audience agreeing with itself:
+ *   hidden    lane 'hidden' (a mandate candidate's shadow leg — listed nowhere, bound or not);
  *   external  lane 'plugin', or a live coding-session binding (provider);
  *   internal  lane 'auto' or 'subagent';
  *   chat      lane 'chat' or 'matrx'.
@@ -77,7 +78,8 @@ const SHAPES = `
     ('shape: a human-origin MCP agent run',     null,          'mcp-agent-service', 'chat',          'human',       'chat'),
     ('shape: an aidream system row',            null,          'aidream-system',    'system',        'human',       'chat'),
     ('shape: a podcast build',                  null,          'matrx-frontend',    'podcast',       'human',       'podcast'),
-    ('shape: a chat bound to a coding session', 'claude-code', 'matrx-frontend',    'chat',          'human',       'chat')
+    ('shape: a chat bound to a coding session', 'claude-code', 'matrx-frontend',    'chat',          'human',       'chat'),
+    ('shape: a mandate candidate leg',          null,          'aidream',           'mandate_candidate:x', 'system', 'mandate_candidate')
   ) as s(id, provider, source_app, source_feature, origin_class, conversation_type)
 `;
 
@@ -109,6 +111,7 @@ const JUDGED = `
 /**
  * THE DOCUMENTED MAPPING, written here and nowhere else in this file, so the
  * assertion cannot be satisfied by cvx_audience agreeing with itself:
+ *   hidden    lane 'hidden' (a mandate candidate's shadow leg — listed nowhere, bound or not);
  *   external  lane 'plugin', or a live coding-session binding (provider);
  *   internal  lane 'auto' or 'subagent';
  *   chat      lane 'chat' or 'matrx'.
@@ -119,6 +122,7 @@ const DISAGREEMENTS = `
   from judged j
   where j.audience is distinct from (
     case
+      when j.lane = 'hidden' then 'hidden'
       when j.provider is not null or j.lane = 'plugin' then 'external'
       when j.lane in ('auto', 'subagent') then 'internal'
       else 'chat'
@@ -211,7 +215,7 @@ beforeAll(async () => {
 
 describe("public.cvx_audience is exactly the documented function of chat.conversation_lane", () => {
   it("the judged shapes reach every lane, so the mapping is measured end to end", () => {
-    expect(shapeLanes).toEqual(["auto", "chat", "matrx", "plugin", "subagent"]);
+    expect(shapeLanes).toEqual(["auto", "chat", "hidden", "matrx", "plugin", "subagent"]);
   });
 
   it("classifies every conversation (and every shape) the way the lane says", () => {
