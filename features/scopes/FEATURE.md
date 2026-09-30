@@ -402,6 +402,13 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-29 — **The variable editor's toggle is "Bind to a context item" again.** A 2026-09-25 sweep
+  of uncommitted work (919438f919) renamed it "Fill automatically" while adding the third source,
+  "From my data"; Arman then could not find the feature and reported it gone. Nothing had been
+  removed — every source and every in-place create path survived — so only the label and its
+  description changed back; the new source stays. The name is Arman's and the live vocabulary
+  term; keep it.
+
 - 2026-09-29 — **Resource inventory primitives** (A5-P, one source input). `useKindCounts` / `useKindItems`
   + `service/kindInventory.ts`; `reference_search_candidates` gained `p_order` ('recent'), `p_offset`,
   `p_organization_id`, `p_mine` and returns `updated_at`; new `entity_kind_counts`; both read
