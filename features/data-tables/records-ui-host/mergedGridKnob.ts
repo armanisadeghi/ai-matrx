@@ -4,11 +4,13 @@
  * WHICH TABLE GRID A RECORD-STORE TABLE DRAWS — the `data_tables.merged_grid` Feature Knob
  * (one-grid merge, steps 7-8).
  *
- * Off (the platform default until merge step 8): records-ui's classic grid. On: the merged grid —
- * the same grid carrying the older /data grid's controls. The platform default is set in the
- * admin dashboard; an organization or a person may override it (`platform.feature_knob` row
- * seeded by `migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql`). Read for the
- * TABLE's organization and this person, through the one ladder-resolved snapshot.
+ * On (the platform default since the switch-on, 2026-09-30): the merged grid — the one grid,
+ * carrying the older /data grid's controls (column menu, undo, add row, bulk edit, colour rules).
+ * Off: records-ui's classic grid, kept only as an organization's or a person's explicit override.
+ * The platform default is set in the admin dashboard (Limits & Knobs → Feature knobs); the row was
+ * seeded by `migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql` and its declared
+ * default turned on by `merge8_the_merged_grid_is_on_by_default.sql`. Read for the TABLE's
+ * organization and this person, through the one ladder-resolved snapshot.
  */
 
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -17,9 +19,12 @@ import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
 export const MERGED_GRID_KNOB = { feature: "data_tables", key: "merged_grid" } as const;
 
-/** `true` only when the knob answers `true`; "not answered yet" draws the classic grid. */
+/**
+ * `false` only when the knob answers Off. "Not answered yet" draws the merged grid — the platform
+ * default — so a table never flashes the classic grid for the moment before the snapshot lands.
+ */
 export function mergedGridOn(value: unknown): boolean {
-  return value === true || value === "true";
+  return value !== false && value !== "false";
 }
 
 export function useMergedGridKnob(organizationId: string | null): boolean {
