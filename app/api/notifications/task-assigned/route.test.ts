@@ -191,6 +191,30 @@ describe("task assignment notification admission", () => {
     expect(noticeQuery.eq).toHaveBeenCalledWith("dedupe_key", `task.assigned:${taskId}:4:dm`);
   });
 
+  it("falls back to the replay-safe browser DM when the durable-DM lookup fails", async () => {
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: {
+        assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
+        assignment_dm_outbox_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 120_000).toISOString(),
+        assignment_dm_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+    noticeQuery.maybeSingle
+      .mockResolvedValueOnce({ data: { id: taskId }, error: null })
+      .mockResolvedValueOnce({ data: { id: taskId }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "temporary read failure" } });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(sendDm).toHaveBeenCalledWith(expect.objectContaining({
+      clientMessageId: `task.assigned:${taskId}:4:dm`,
+    }));
+    expect(await response.json()).toMatchObject({ dmSkipped: false });
+  });
+
   it("keeps the browser DM for a saved write predating the DM cutover", async () => {
     taskQuery.maybeSingle.mockResolvedValue({ data: {
       ...savedTask, updated_at: new Date(Date.now() - 90_000).toISOString(),

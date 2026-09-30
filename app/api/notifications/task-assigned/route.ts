@@ -145,7 +145,9 @@ export async function POST(request: Request) {
       // The cutover marker is an intention, not delivery proof. A transition
       // is owned by the durable path only after its own dedupe row exists.
       // This preserves the browser fallback if activation ran ahead of the
-      // trigger body, while the row prevents a second DM after the repair.
+      // trigger body. A lookup failure also falls back: sendDm's replay key is
+      // unique, so retrying is safe while returning 503 would lose the sole
+      // browser notification because its caller does not retry.
       if (dmOutboxEligibleForAssignment && assignmentNoticeExists) {
         const { data: durableDm, error: durableDmError } = await admin
           .schema("communication").from("notification")
@@ -156,9 +158,9 @@ export async function POST(request: Request) {
           .maybeSingle();
         if (durableDmError) {
           console.error("[task-assigned] durable DM read failed:", durableDmError);
-          return NextResponse.json({ success: false, msg: "Could not verify assignment DM" }, { status: 503 });
+        } else {
+          durableDmExists = Boolean(durableDm);
         }
-        durableDmExists = Boolean(durableDm);
       }
     }
     const dmOutboxOwnsAssignment = dmOutboxEligibleForAssignment && durableDmExists;
