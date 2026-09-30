@@ -244,8 +244,16 @@ export const WRITERS: Row[] = [
     id: "S12",
     what: "Tags are filing: the organization's Tag scope type and each tag (aidream 1378)",
     status: "carried",
-    plain: "platform.tag_scope_type_id / platform.tag_scope_id (server only, called by platform.file_under_tag and platform.tags_backfill) find-or-create the organization's `tag` scope type and one tag scope by inserting into context.* directly; in an organization whose store is the writer the write-through carries each row into the store in the same statement. At the final switch: make them through custom.context_type_write / context_scope_write.",
+    plain: "platform.tag_scope_type_id / platform.tag_scope_id (server only, called by platform.file_under_tag, the tags-column trigger platform._tags_column_to_filing and platform.tags_backfill) find-or-create the organization's `tag` scope type and one tag scope by inserting into context.* directly; the write-through carries each row into the store in the same statement. NOT moved to the doors by lane SCOPES-OLD-WRITERS, on evidence: the person-facing doors would refuse two live callers the old path serves — the server's own writes (aidream updates transcripts.transcripts.tags as the store owner with no auth.uid(), 12 calls on 2026-09-29, and public.create_scope_type refuses a caller with no person) and a person editing a record shared with her from an organization she is not a member of (the doors' organization wall). Recommended: move it at the final switch onto the same store halves the doors will call then (custom._ctx_store_type / _ctx_store_scope, which decide nothing), since its callers have already decided (editor on the record, or the server).",
     functions: ["platform.tag_scope_id", "platform.tag_scope_type_id"],
+  },
+  {
+    id: "S14",
+    what: "The older dataset store's scope-table provisioning (an organization whose tables are still born in the older store)",
+    status: "flip_time",
+    plain: "context.provision_scope_dataset (web: features/scopes/service/olderContextWrites.ts, the one context-schema call left there) makes an older dataset for a (context item, scope) pair and records it in context.scope_dataset_instances; its scope write, the value pointing at the table, goes through context.write_context_value, which no client may call (S5). A store-born organization provisions through custom.scope_table_provision. It leaves with the older tables store; before SCOPES-CONTRACT moves scope_dataset_instances to graveyard, the organizations still born in the older store (1,636 of 1,640 on 2026-09-29) need that home decided.",
+    functions: ["context.provision_scope_dataset"],
+    claims: { "matrx-frontend": ["features/scopes/service/olderContextWrites.ts"] },
   },
   {
     id: "S13",
