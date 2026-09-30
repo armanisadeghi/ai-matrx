@@ -1,6 +1,8 @@
+-- draft: frontend-outbox-dd224 rebased against the live trigger body; production apply requires Arman watching
 -- P1: enqueue an actionable DM with the saved assignee transition. The
 -- shared dispatcher delivers it even if the browser closes before its POST.
 -- Apply after communications_p1_task_assignment_outbox_00_in_app_notice.sql.
+-- based-on: communication._task_assignment_outbox() d09374a91f9f82421a071936fcd8b2d718bf94a9998e7d69fda2e8d5eab8d2e9
 -- allows: revoke communication
 set local lock_timeout = '2s';
 set local statement_timeout = '120s';
