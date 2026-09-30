@@ -17,7 +17,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 
 import { createClient } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 import {
   type CertificationResultNotes,
@@ -291,12 +291,14 @@ export async function recordCertification(
     )?.id;
 
   if (targetId) {
-    const { data, error } = await db()
-      .from("certified_printer")
-      .update(values)
-      .eq("id", targetId)
-      .select(COLUMNS)
-      .single();
+    const { data, error } = await writeOneRow(
+      db()
+        .from("certified_printer")
+        .update(values)
+        .eq("id", targetId)
+        .select(COLUMNS),
+      { action: "update", noun: "certified printer" },
+    );
     if (error) throw error;
     return toPrinter(data as Row);
   }

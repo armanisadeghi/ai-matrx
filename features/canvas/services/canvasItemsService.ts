@@ -3,7 +3,7 @@ import {
   isPersistableCanvasType,
 } from "@/features/canvas/redux/canvasSlice";
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { buildSearchOr } from "@/utils/supabase-search";
@@ -244,13 +244,15 @@ export const canvasItemsService = {
         updateData.content_hash = await generateContentHash(input.content);
       }
 
-      const { data, error } = await supabase
-        .schema("canvas").from("canvas_items")
-        .update(updateData)
-        .eq("id", id)
-        .eq("user_id", userId)
-        .select()
-        .single();
+      const { data, error } = await writeOneRow(
+        supabase
+          .schema("canvas").from("canvas_items")
+          .update(updateData)
+          .eq("id", id)
+          .eq("user_id", userId)
+          .select(),
+        { action: "update", noun: "canvas item" },
+      );
 
       return {
         data: data ? mapDbRowToCanvasItemRow(data) : null,

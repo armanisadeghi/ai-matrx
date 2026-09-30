@@ -9,7 +9,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type {
@@ -140,12 +140,14 @@ export async function updateJob(
   jobId: string,
   patch: PageExtractionJobUpdate,
 ): Promise<PageExtractionJob> {
-  const { data, error } = await db
-    .from(TABLE)
-    .update(patch)
-    .eq("id", jobId)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .from(TABLE)
+      .update(patch)
+      .eq("id", jobId)
+      .select("*"),
+    { action: "update", noun: "record" },
+  );
   if (error) throw error;
   return data as PageExtractionJob;
 }

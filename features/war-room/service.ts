@@ -5,7 +5,7 @@
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
-import { tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -156,12 +156,14 @@ export async function updateSession(
     return current;
   }
 
-  const { data, error } = await wsDb
-    .from(SESSIONS)
-    .update(clean)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    wsDb
+      .from(SESSIONS)
+      .update(clean)
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "record" },
+  );
 
   if (error) {
     console.error("[war-room] updateSession failed:", error?.message ?? error);
@@ -354,12 +356,14 @@ export async function updateThread(
   id: string,
   patch: WarRoomThreadUpdate,
 ): Promise<WarRoomThread> {
-  const { data, error } = await wsDb
-    .from(THREADS)
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    wsDb
+      .from(THREADS)
+      .update(patch)
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "record" },
+  );
 
   if (error) {
     console.error("[war-room] updateThread failed:", error?.message ?? error);

@@ -27,7 +27,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 import type {
@@ -299,12 +299,14 @@ export async function updateGeoArea(
   draft: GeoAreaDraft,
   siteId: string,
 ): Promise<SiteGeoArea> {
-  const response = await (await seoDb())
-    .from("site_geo_area")
-    .update(geoAreaWriteColumns(draft, siteId))
-    .eq("id", areaId)
-    .select(GEO_AREA_COLUMNS)
-    .single();
+  const response = await writeOneRow(
+    (await seoDb())
+      .from("site_geo_area")
+      .update(geoAreaWriteColumns(draft, siteId))
+      .eq("id", areaId)
+      .select(GEO_AREA_COLUMNS),
+    { action: "update", noun: "site geo area" },
+  );
   return assertGoverned(
     response.data,
     response.error,

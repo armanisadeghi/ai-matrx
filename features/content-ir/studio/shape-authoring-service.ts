@@ -12,7 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
 import { guardedUpdate } from "@ai-matrx/data/db";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -459,13 +459,15 @@ export async function updateShapeExampleSample(
   exampleId: string,
   sample: unknown,
 ): Promise<string> {
-  const { data, error } = await client
-    .schema("content_ir")
-    .from("kind_example")
-    .update({ data: sample as Json })
-    .eq("id", exampleId)
-    .select("validation_status")
-    .single();
+  const { data, error } = await writeOneRow(
+    client
+      .schema("content_ir")
+      .from("kind_example")
+      .update({ data: sample as Json })
+      .eq("id", exampleId)
+      .select("validation_status"),
+    { action: "update", noun: "kind example" },
+  );
   if (error) throw new Error(`Failed to update the example: ${error.message}`);
   return data.validation_status;
 }

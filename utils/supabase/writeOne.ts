@@ -48,6 +48,7 @@
  * Guard: `pnpm check:single-record-writes` (scripts/check-single-record-writes.ts)
  * fails on a new single-record update/delete that judges success by error alone.
  */
+import { PostgrestError } from "@supabase/supabase-js";
 import { WriteRefusedError } from "@/lib/errors/writeFailure";
 
 /** The verb the person asked for. Drives the refusal sentence. */
@@ -217,4 +218,60 @@ export class BulkWriteError extends Error {
     this.failures = failures;
     this.attempted = attempted;
   }
+}
+
+export type WriteOneRowResult<Row> =
+  | { data: Row; error: null }
+  | { data: null; error: PostgrestError };
+
+/**
+ * The drop-in for `.update(…).eq("id", …).select(…).single()` (and the
+ * `.maybeSingle()` twin whose caller never looks at `data`): same
+ * `{ data, error }` shape, same `PostgrestError` type, same `PGRST116` code on
+ * zero rows — but the message is the person's sentence ("Nothing was updated:
+ * this deal no longer exists, or your access does not allow updating it.")
+ * instead of PostgREST's "JSON object requested, multiple (or no) rows
+ * returned", which every screen rendered as a vague failure.
+ *
+ *   const { data, error } = await writeOneRow(
+ *     db.from("deal").update(patch).eq("id", id).select("*"),
+ *     { action: "update", noun: "deal" },
+ *   );
+ *
+ * Guard: `pnpm check:single-record-writes` flags the bare `.select().single()`
+ * shape on a write.
+ */
+export async function writeOneRow<Row>(
+  write: PromiseLike<RowsResponse<Row>>,
+  options: Pick<WriteOneOptions, "action" | "noun" | "compareAndSet">,
+): Promise<WriteOneRowResult<Row>> {
+  const { data, error } = await write;
+  if (error) {
+    if (error instanceof PostgrestError) return { data: null, error };
+    const e = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+    return {
+      data: null,
+      error: new PostgrestError({
+        message: typeof e.message === "string" ? e.message : String(error),
+        details: typeof e.details === "string" ? e.details : "",
+        hint: typeof e.hint === "string" ? e.hint : "",
+        code: typeof e.code === "string" ? e.code : "",
+      }),
+    };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  if (rows.length === 1) return { data: rows[0], error: null };
+  const refusal = new WriteDidNotLandError(options, options.compareAndSet ? "taken" : "refused");
+  return {
+    data: null,
+    error: new PostgrestError({
+      message:
+        rows.length === 0
+          ? refusal.serverMessage ?? refusal.message
+          : `${rows.length} records matched where one ${options.noun} was expected, and all of them were changed. Reload to see the result.`,
+      details: rows.length === 0 ? refusal.technical : `writeOneRow(${options.action} ${options.noun}) matched ${rows.length} rows`,
+      hint: "",
+      code: "PGRST116",
+    }),
+  };
 }

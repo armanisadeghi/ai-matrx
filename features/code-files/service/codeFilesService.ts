@@ -6,7 +6,7 @@
 // facade in codeFilesApi.ts is what app code should call.
 
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database, Json } from "@/types/database.types";
 import type { CodeFile, CodeFolder } from "../redux/code-files.types";
@@ -170,13 +170,15 @@ export async function updateCodeFile(
   id: string,
   updates: UpdateCodeFileInput,
 ): Promise<CodeFile> {
-  const { data, error } = await supabase
-    .schema("code")
-    .from("code_files")
-    .update(updates)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("code")
+      .from("code_files")
+      .update(updates)
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "code file" },
+  );
   if (error) {
     console.error("[codeFilesService] updateCodeFile failed", error);
     throw error;
@@ -256,13 +258,15 @@ export async function updateCodeFolder(
   id: string,
   updates: UpdateCodeFolderInput,
 ): Promise<CodeFolder> {
-  const { data, error } = await supabase
-    .schema("code")
-    .from("code_file_folders")
-    .update(updates)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("code")
+      .from("code_file_folders")
+      .update(updates)
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "code file folder" },
+  );
   if (error) {
     console.error("[codeFilesService] updateCodeFolder failed", error);
     throw error;

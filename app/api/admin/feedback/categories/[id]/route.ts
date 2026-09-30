@@ -17,7 +17,7 @@ import {
   platformCategoryToFeedbackRow,
 } from "../_lib/categoryRow";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeFailureStatus, writeOneRow } from "@/utils/supabase/writeOne";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -124,14 +124,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { data: row, error } = await supabase
-      .schema("platform")
-      .from("categories")
-      .update(updates)
-      .eq("dimension", "feedback")
-      .eq("id", id)
-      .select(FEEDBACK_CATEGORY_SELECT)
-      .single();
+    const { data: row, error } = await writeOneRow(
+      supabase
+        .schema("platform")
+        .from("categories")
+        .update(updates)
+        .eq("dimension", "feedback")
+        .eq("id", id)
+        .select(FEEDBACK_CATEGORY_SELECT),
+      { action: "update", noun: "category" },
+    );
 
     if (error) {
       if (error.code === "23505") {

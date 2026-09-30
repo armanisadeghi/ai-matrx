@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { TablesUpdate } from "@/types/database.types";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeFailureStatus, writeOneRow } from "@/utils/supabase/writeOne";
 
 export async function POST(request: NextRequest) {
   try {
@@ -233,13 +233,15 @@ export async function POST(request: NextRequest) {
         if (thumbnailUrl !== undefined) updates.thumbnail_url = thumbnailUrl;
         if (metadata !== undefined) updates.metadata = metadata;
 
-        const { data, error } = await supabase
-          .schema("chat")
-          .from("artifact")
-          .update(updates)
-          .eq("id", id)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          supabase
+            .schema("chat")
+            .from("artifact")
+            .update(updates)
+            .eq("id", id)
+            .select(),
+          { action: "update", noun: "artifact" },
+        );
 
         if (error) {
           console.error("[artifacts API] update error:", error);

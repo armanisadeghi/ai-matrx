@@ -13,7 +13,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type { TablesUpdate } from "@/types/database.types";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -175,12 +175,14 @@ export async function updateProject(
     if (updates.targetDate !== undefined)
       updateData.target_date = updates.targetDate || null;
 
-    const { data, error } = await workspaceDb(supabase)
-      .from("projects")
-      .update(updateData)
-      .eq("id", projectId)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      workspaceDb(supabase)
+        .from("projects")
+        .update(updateData)
+        .eq("id", projectId)
+        .select(),
+      { action: "update", noun: "project" },
+    );
 
     if (error) throw pgErrorToError(error);
 

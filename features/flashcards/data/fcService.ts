@@ -22,7 +22,7 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { failureLine, metadataKeyRefusal } from "@/lib/failure/transport";
 import { EDGE_ROLE } from "./types";
 import {
@@ -166,12 +166,14 @@ export const fcService = {
     try {
       const clean =
         typeof patch.name === "string" ? { ...patch, name: displayTitle(patch.name) } : patch;
-      const { data, error } = await EDU()
-        .from("fc_set")
-        .update(clean)
-        .eq("id", setId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("fc_set")
+          .update(clean)
+          .eq("id", setId)
+          .select("*"),
+        { action: "update", noun: "set" },
+      );
       if (error) return fail("updateSet", error);
       return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
@@ -191,12 +193,14 @@ export const fcService = {
     fileId: string | null,
   ): Promise<FcResult<FcSetRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("fc_set")
-        .update({ audio_overview_file_id: fileId })
-        .eq("id", setId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("fc_set")
+          .update({ audio_overview_file_id: fileId })
+          .eq("id", setId)
+          .select("*"),
+        { action: "update", noun: "set" },
+      );
       if (error) return fail("updateSetAudioOverview", error);
       return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
@@ -214,12 +218,14 @@ export const fcService = {
   ): Promise<FcResult<FcSetRow>> {
     try {
       const cols = rowAccessColumns(change, await currentUserIdOrNull());
-      const { data, error } = await EDU()
-        .from("fc_set")
-        .update(cols)
-        .eq("id", setId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("fc_set")
+          .update(cols)
+          .eq("id", setId)
+          .select("*"),
+        { action: "update", noun: "set" },
+      );
       if (error) return fail("updateSetRowAccess", error);
       return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
@@ -236,12 +242,14 @@ export const fcService = {
     visibility: FcSetRow["visibility"],
   ): Promise<FcResult<FcSetRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("fc_set")
-        .update({ visibility })
-        .eq("id", setId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("fc_set")
+          .update({ visibility })
+          .eq("id", setId)
+          .select("*"),
+        { action: "update", noun: "set" },
+      );
       if (error) return fail("updateSetVisibility", error);
       return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
@@ -900,12 +908,14 @@ export const fcService = {
     >,
   ): Promise<FcResult<FcCardRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("fc_card")
-        .update(patch)
-        .eq("id", cardId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("fc_card")
+          .update(patch)
+          .eq("id", cardId)
+          .select("*"),
+        { action: "update", noun: "card" },
+      );
       if (error) return fail("updateCard", error);
       return { data: data as FcCardRow, error: null };
     } catch (e) {

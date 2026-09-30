@@ -8,7 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   CreateWebhookInput,
@@ -100,17 +100,19 @@ export async function updateWebhook(
   }
   const { organization_id: organizationId, ...rest } = patch;
   const supabase = createClient();
-  const { data, error } = await filesDb(supabase)
-    .from("webhooks")
-    .update({
-      ...rest,
-      ...(organizationId !== undefined ? { organization_id: organizationId } : {}),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select(WEBHOOK_LIST_COLUMNS)
-    .single()
-    .returns<Webhook>();
+  const { data, error } = await writeOneRow(
+    filesDb(supabase)
+      .from("webhooks")
+      .update({
+        ...rest,
+        ...(organizationId !== undefined ? { organization_id: organizationId } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select(WEBHOOK_LIST_COLUMNS)
+      .returns<Webhook[]>(),
+    { action: "update", noun: "webhook" },
+  );
   if (error) throw new Error(`Failed to update webhook: ${error.message}`);
   return data;
 }

@@ -16,7 +16,7 @@
  * the other at the same time — see `features/data-tables/FEATURE.md`.
  */
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 import type {
@@ -137,13 +137,15 @@ export async function renameDocument(
   documentId: string,
   name: string,
 ): Promise<ServiceResult<DocumentRow>> {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_documents")
-    .update({ document_name: name, updated_at: new Date().toISOString() })
-    .eq("id", documentId)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("workbench")
+      .from("udt_documents")
+      .update({ document_name: name, updated_at: new Date().toISOString() })
+      .eq("id", documentId)
+      .select("*"),
+    { action: "update", noun: "document" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as DocumentRow };
 }
@@ -164,16 +166,18 @@ export async function updateDocumentDescription(
   documentId: string,
   description: string | null,
 ): Promise<ServiceResult<DocumentRow>> {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_documents")
-    .update({
-      description: description && description.length > 0 ? description : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", documentId)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("workbench")
+      .from("udt_documents")
+      .update({
+        description: description && description.length > 0 ? description : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", documentId)
+      .select("*"),
+    { action: "update", noun: "document" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as DocumentRow };
 }

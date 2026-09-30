@@ -4,7 +4,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { getJson, patchJson, postJson } from "@/lib/python-client";
 import type { components } from "@/types/python-generated/api-types";
 import { RESEARCH_ENDPOINTS } from "./service/research-endpoints";
@@ -332,13 +332,15 @@ export async function updateTopic(
   const dbUpdate: Database["research"]["Tables"]["rs_topic"]["Update"] = {
     ...(updates as Database["research"]["Tables"]["rs_topic"]["Update"]),
   };
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_topic")
-    .update(dbUpdate)
-    .eq("id", topicId)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("research")
+      .from("rs_topic")
+      .update(dbUpdate)
+      .eq("id", topicId)
+      .select(),
+    { action: "update", noun: "rs topic" },
+  );
   if (error) throw error;
   return rowToResearchTopic(data);
 }
@@ -806,13 +808,15 @@ export async function updateSource(
     dbUpdates.scrape_status = updates.scrape_status;
   }
 
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_source")
-    .update(dbUpdates)
-    .eq("id", sourceId)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("research")
+      .from("rs_source")
+      .update(dbUpdates)
+      .eq("id", sourceId)
+      .select(),
+    { action: "update", noun: "rs source" },
+  );
   if (error) throw error;
   return rowToResearchSource(data);
 }
@@ -1154,13 +1158,15 @@ export async function updateTag(
     dbUpdates.sort_order = updates.sort_order;
   }
 
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_tag")
-    .update(dbUpdates)
-    .eq("id", tagId)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("research")
+      .from("rs_tag")
+      .update(dbUpdates)
+      .eq("id", tagId)
+      .select(),
+    { action: "update", noun: "rs tag" },
+  );
   if (error) throw error;
   return data;
 }
@@ -1826,13 +1832,15 @@ export async function updateMedia(
   mediaId: string,
   updates: MediaUpdate,
 ): Promise<ResearchMedia> {
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_media")
-    .update(updates)
-    .eq("id", mediaId)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("research")
+      .from("rs_media")
+      .update(updates)
+      .eq("id", mediaId)
+      .select(),
+    { action: "update", noun: "rs media" },
+  );
   if (error) throw error;
   return data;
 }

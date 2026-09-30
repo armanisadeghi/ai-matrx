@@ -17,7 +17,7 @@ import {
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -114,12 +114,14 @@ export const studyMediaService = {
     patch: StudyMediaPatch,
   ): Promise<MediaResult<StudyMediaRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("study_media")
-        .update(patch)
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("study_media")
+          .update(patch)
+          .eq("id", id)
+          .select(),
+        { action: "update", noun: "study media" },
+      );
       if (error) return fail("update", error);
       return { data: withDisplayTitle(data as StudyMediaRow, "title"), error: null };
     } catch (e) {

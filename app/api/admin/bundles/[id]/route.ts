@@ -9,6 +9,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import type { TablesUpdate } from "@/types/database.types";
 import { extractErrorMessage } from "@/utils/errors";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -54,13 +55,15 @@ export async function PATCH(
     }
 
     const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .schema("tool")
-      .from("bundle")
-      .update(patch)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("tool")
+        .from("bundle")
+        .update(patch)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "bundle" },
+    );
 
     if (error) {
       if (error.code === "PGRST116") {

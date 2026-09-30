@@ -25,7 +25,7 @@ import type {
   StudioSession,
   UpdateSessionInput,
 } from "../types";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 // The studio_* tables were created after the last DB types regeneration.
 // Cast `from("studio_sessions")` through `unknown` to silence the strict
@@ -450,13 +450,15 @@ export async function updateRawSegmentText(
   id: string,
   text: string,
 ): Promise<import("../types").RawSegment> {
-  const { data, error } = await db
-    .schema("transcripts")
-    .from("studio_raw_segments")
-    .update({ text })
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .schema("transcripts")
+      .from("studio_raw_segments")
+      .update({ text })
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "studio raw segment" },
+  );
   if (error || !data) {
     throw new Error(
       `[studio] updateRawSegmentText failed: ${error?.message ?? "no row"}`,
@@ -875,13 +877,15 @@ export async function updateStudioDocumentContent(
   id: string,
   content: string,
 ): Promise<import("../types").StudioDocument> {
-  const { data, error } = await db
-    .schema("transcripts")
-    .from("studio_documents")
-    .update({ content })
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .schema("transcripts")
+      .from("studio_documents")
+      .update({ content })
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "studio document" },
+  );
   if (error || !data) {
     throw new Error(
       `[studio] updateStudioDocumentContent failed: ${error?.message ?? "no row"}`,
@@ -1053,13 +1057,15 @@ export async function finalizeAgentRun(
   if (input.conversationId !== undefined)
     update.conversation_id = input.conversationId;
   if (input.error !== undefined) update.error = input.error;
-  const { data, error } = await db
-    .schema("transcripts")
-    .from("studio_runs")
-    .update(update)
-    .eq("id", input.id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .schema("transcripts")
+      .from("studio_runs")
+      .update(update)
+      .eq("id", input.id)
+      .select("*"),
+    { action: "update", noun: "studio run" },
+  );
   if (error || !data) {
     throw new Error(
       `[studio] finalizeAgentRun failed: ${error?.message ?? "no row"}`,
@@ -1238,13 +1244,15 @@ export async function updateCleanedSegmentText(
   id: string,
   text: string,
 ): Promise<import("../types").CleanedSegment> {
-  const { data, error } = await db
-    .schema("transcripts")
-    .from("studio_cleaned_segments")
-    .update({ text })
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .schema("transcripts")
+      .from("studio_cleaned_segments")
+      .update({ text })
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "studio cleaned segment" },
+  );
   if (error || !data) {
     throw new Error(
       `[studio] updateCleanedSegmentText failed: ${error?.message ?? "no row"}`,
@@ -1405,13 +1413,15 @@ export async function updateConceptItem(
   if (patch.label !== undefined) dbPatch.label = patch.label;
   if (patch.description !== undefined) dbPatch.description = patch.description;
   if (patch.confidence !== undefined) dbPatch.confidence = patch.confidence;
-  const { data, error } = await db
-    .schema("transcripts")
-    .from("studio_concept_items")
-    .update(dbPatch)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .schema("transcripts")
+      .from("studio_concept_items")
+      .update(dbPatch)
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "studio concept item" },
+  );
   if (error || !data) {
     throw new Error(
       `[studio] updateConceptItem failed: ${error?.message ?? "no row"}`,
@@ -1557,13 +1567,15 @@ export async function updateModuleSegmentPayload(
   id: string,
   payload: unknown,
 ): Promise<import("../types").ModuleSegment> {
-  const { data, error } = await db
-    .schema("transcripts")
-    .from("studio_module_segments")
-    .update({ payload })
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .schema("transcripts")
+      .from("studio_module_segments")
+      .update({ payload })
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "studio module segment" },
+  );
   if (error || !data) {
     throw new Error(
       `[studio] updateModuleSegmentPayload failed: ${error?.message ?? "no row"}`,

@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { sklActions } from "./slice";
 import { extractErrorMessage } from "@/utils/errors";
@@ -173,13 +173,15 @@ export const updateRenderDefinition = createAsyncThunk(
     { dispatch },
   ) => {
     const payload = sklRenderDefinitionToUpdate(args.patch);
-    const { data, error } = await supabase
-      .schema("skill")
-      .from("render_definition")
-      .update(payload)
-      .eq("id", args.id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("skill")
+        .from("render_definition")
+        .update(payload)
+        .eq("id", args.id)
+        .select(),
+      { action: "update", noun: "render definition" },
+    );
     if (error) throw error;
     const row = rowToSklRenderDefinition(data);
     dispatch(sklActions.renderDefinitionUpserted(row));

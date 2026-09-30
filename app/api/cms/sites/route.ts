@@ -40,6 +40,7 @@ import {
   validateResearchLineageIds,
 } from "../_lib/researchLineage";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const AGENT_WRITE_POLICIES = ["blocked", "draft_only", "full"] as const;
 type AgentWritePolicy = (typeof AGENT_WRITE_POLICIES)[number];
@@ -469,12 +470,14 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        const { data, error } = await db
-          .from("client_sites")
-          .update(updateData)
-          .eq("id", siteId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_sites")
+            .update(updateData)
+            .eq("id", siteId)
+            .select(),
+          { action: "update", noun: "client site" },
+        );
 
         if (error) {
           console.error("[cms/sites] update error:", error);
@@ -519,12 +522,14 @@ export async function POST(request: NextRequest) {
             researchTopicIds,
             researchTagIds,
           );
-          const { data, error } = await db
-            .from("client_sites")
-            .update({ research_topic_ids: topicIds, research_tag_ids: tagIds })
-            .eq("id", siteId)
-            .select()
-            .single();
+          const { data, error } = await writeOneRow(
+            db
+              .from("client_sites")
+              .update({ research_topic_ids: topicIds, research_tag_ids: tagIds })
+              .eq("id", siteId)
+              .select(),
+            { action: "update", noun: "client site" },
+          );
           if (error) throw error;
           await logCmsActivity(db, {
             siteId,
@@ -577,12 +582,14 @@ export async function POST(request: NextRequest) {
         const settings = asSettings(site.settings);
         const prior = asSettings(settings.domain_traffic);
         settings.domain_traffic = { ...prior, mode: "platform" };
-        const { data, error } = await db
-          .from("client_sites")
-          .update({ settings })
-          .eq("id", siteId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_sites")
+            .update({ settings })
+            .eq("id", siteId)
+            .select(),
+          { action: "update", noun: "client site" },
+        );
         if (error)
           return NextResponse.json({ error: error.message }, { status: 500 });
         await logCmsActivity(db, {
@@ -674,12 +681,14 @@ export async function POST(request: NextRequest) {
           last_error: verificationError,
           provider,
         };
-        const { data, error } = await db
-          .from("client_sites")
-          .update({ settings })
-          .eq("id", siteId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_sites")
+            .update({ settings })
+            .eq("id", siteId)
+            .select(),
+          { action: "update", noun: "client site" },
+        );
         if (error)
           return NextResponse.json({ error: error.message }, { status: 500 });
         await logCmsActivity(db, {
@@ -860,12 +869,14 @@ export async function POST(request: NextRequest) {
             : {}),
         };
 
-        const { data, error } = await db
-          .from("client_sites")
-          .update({ settings: nextSettings })
-          .eq("id", siteId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_sites")
+            .update({ settings: nextSettings })
+            .eq("id", siteId)
+            .select(),
+          { action: "update", noun: "client site" },
+        );
 
         if (error) {
           console.error("[cms/sites] admin_update_policy error:", error);

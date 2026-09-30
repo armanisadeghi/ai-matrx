@@ -8,6 +8,7 @@ import type { Database } from "@/types/database.types";
 import type { JsonObject } from "@/types/json";
 import { isJsonObject } from "@/types/json";
 import { readAllRows } from "@ai-matrx/data/db";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 function getClient(): SupabaseClient<Database> {
   if (typeof window !== "undefined") {
@@ -439,13 +440,15 @@ export async function updateAgentAppAdmin(
   if (input.rate_limit_authenticated !== undefined)
     patch.rate_limit_authenticated = input.rate_limit_authenticated;
 
-  const { data, error } = await supabase
-    .schema("app")
-    .from("definition")
-    .update(patch)
-    .eq("id", input.id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("app")
+      .from("definition")
+      .update(patch)
+      .eq("id", input.id)
+      .select(),
+    { action: "update", noun: "definition" },
+  );
   if (error) throw error;
   const keyByMandateId = await fetchMandateKeys([data.mandate_id]);
   return {
@@ -539,18 +542,20 @@ export async function resolveAgentAppError(input: {
 }): Promise<AgentAppErrorRow> {
   const supabase = getClient();
   const userId = requireUserId();
-  const { data, error } = await supabase
-    .schema("app")
-    .from("error")
-    .update({
-      resolved: true,
-      resolved_at: new Date().toISOString(),
-      resolved_by: userId,
-      resolution_notes: input.resolution_notes ?? null,
-    })
-    .eq("id", input.id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("app")
+      .from("error")
+      .update({
+        resolved: true,
+        resolved_at: new Date().toISOString(),
+        resolved_by: userId,
+        resolution_notes: input.resolution_notes ?? null,
+      })
+      .eq("id", input.id)
+      .select(),
+    { action: "update", noun: "error" },
+  );
   if (error) throw error;
   return data as AgentAppErrorRow;
 }
@@ -559,18 +564,20 @@ export async function unresolveAgentAppError(
   id: string,
 ): Promise<AgentAppErrorRow> {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .schema("app")
-    .from("error")
-    .update({
-      resolved: false,
-      resolved_at: null,
-      resolved_by: null,
-      resolution_notes: null,
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("app")
+      .from("error")
+      .update({
+        resolved: false,
+        resolved_at: null,
+        resolved_by: null,
+        resolution_notes: null,
+      })
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "error" },
+  );
   if (error) throw error;
   return data as AgentAppErrorRow;
 }
@@ -639,19 +646,21 @@ export async function unblockAgentAppRateLimit(
   id: string,
 ): Promise<AgentAppRateLimitRow> {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .schema("app")
-    .from("rate_limit")
-    .update({
-      is_blocked: false,
-      blocked_until: null,
-      blocked_reason: null,
-      execution_count: 0,
-      window_start_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("app")
+      .from("rate_limit")
+      .update({
+        is_blocked: false,
+        blocked_until: null,
+        blocked_reason: null,
+        execution_count: 0,
+        window_start_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "rate limit" },
+  );
   if (error) throw error;
   return data as AgentAppRateLimitRow;
 }
@@ -662,17 +671,19 @@ export async function blockAgentAppRateLimit(
   blockedUntil?: Date,
 ): Promise<AgentAppRateLimitRow> {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .schema("app")
-    .from("rate_limit")
-    .update({
-      is_blocked: true,
-      blocked_until: blockedUntil?.toISOString() ?? null,
-      blocked_reason: reason ?? null,
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("app")
+      .from("rate_limit")
+      .update({
+        is_blocked: true,
+        blocked_until: blockedUntil?.toISOString() ?? null,
+        blocked_reason: reason ?? null,
+      })
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "rate limit" },
+  );
   if (error) throw error;
   return data as AgentAppRateLimitRow;
 }

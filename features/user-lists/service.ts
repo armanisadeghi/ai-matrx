@@ -6,7 +6,7 @@
  * via the server client factory.
  */
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import type {
   UserList,
   UserListSummaryRaw,
@@ -213,13 +213,15 @@ export async function updateItem(
     icon_name?: string | null;
   },
 ) {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_list_items")
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("id", itemId)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_list_items")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", itemId)
+      .select(),
+    { action: "update", noun: "structured list item" },
+  );
   if (error) throw new Error(`Failed to update item: ${error.message}`);
   return data;
 }

@@ -28,7 +28,7 @@ import { operationFailed } from "@/utils/errors";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { publishedToWebPatch } from "@/lib/row-access";
-import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError, writeOneRow } from "@/utils/supabase/writeOne";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   createCodeFile,
@@ -333,13 +333,15 @@ export const patchSkill = createAsyncThunk<
   if (is_public !== undefined)
     Object.assign(dbPatch, publishedToWebPatch(is_public, null));
   if (version !== undefined) dbPatch.semver = version;
-  const { data, error } = await supabase
-    .schema("skill")
-    .from("definition")
-    .update(dbPatch)
-    .eq("id", skillId)
-    .select(SKILL_SELECT)
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("skill")
+      .from("definition")
+      .update(dbPatch)
+      .eq("id", skillId)
+      .select(SKILL_SELECT),
+    { action: "update", noun: "definition" },
+  );
   if (error) throw operationFailed("save this skill", error);
   const row = supabaseRowToSkillRow(data);
   dispatch(skillsActions.skillUpserted(row));

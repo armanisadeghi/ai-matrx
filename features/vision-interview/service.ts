@@ -13,7 +13,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { interviewDb } from "@/utils/supabase/interviewDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { readAllRows } from "@ai-matrx/data/db";
 import {
@@ -125,12 +125,14 @@ export async function appendVisionStatement(
   const next = current.vision_statement?.trim()
     ? `${current.vision_statement.trim()}\n\n${trimmed}`
     : trimmed;
-  const { data, error } = await interviewDb(supabase)
-    .from("session")
-    .update({ vision_statement: next })
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    interviewDb(supabase)
+      .from("session")
+      .update({ vision_statement: next })
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "session" },
+  );
   if (error) throw pgError(error);
   return data as InterviewSessionRow;
 }
@@ -244,12 +246,14 @@ export async function updateQuestionState(
   id: string,
   state: QuestionState,
 ): Promise<InterviewQuestionRow> {
-  const { data, error } = await interviewDb(supabase)
-    .from("question")
-    .update({ state })
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    interviewDb(supabase)
+      .from("question")
+      .update({ state })
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "question" },
+  );
   if (error) throw pgError(error);
   return data as InterviewQuestionRow;
 }
@@ -265,12 +269,14 @@ export async function updateHole(
   id: string,
   patch: HolePatch,
 ): Promise<InterviewHoleRow> {
-  const { data, error } = await interviewDb(supabase)
-    .from("hole")
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    interviewDb(supabase)
+      .from("hole")
+      .update(patch)
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "hole" },
+  );
   if (error) throw pgError(error);
   return data as InterviewHoleRow;
 }

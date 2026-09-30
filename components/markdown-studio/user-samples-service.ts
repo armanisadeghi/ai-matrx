@@ -4,7 +4,7 @@
 // needed, but explicit created_by on insert is required by the RLS check.
 
 import { supabase } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database } from "@/types/database.types";
@@ -57,12 +57,14 @@ export async function updateUserSample(
   id: string,
   patch: UserSampleUpdateInput,
 ): Promise<UserMarkdownSample> {
-  const { data, error } = await supabase
-    .schema("users").from("user_markdown_samples")
-    .update(patch)
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("users").from("user_markdown_samples")
+      .update(patch)
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "user markdown sample" },
+  );
   if (error) throw error;
   return data;
 }

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/utils/supabase/adminClient';
 import { SYSTEM_ORGANIZATION_ID } from '@/constants/platform-orgs';
 import { sendEmail, emailTemplates } from '@/lib/email/client';
 import { InvitationRequestStep1, InvitationRequestStep2 } from './types';
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 // Response types for actions
 export type ActionResponse<T = void> = 
@@ -56,16 +57,18 @@ export async function submitInvitationRequestStep1(
       }
       // If rejected, they can resubmit
       if (existing.status === 'rejected') {
-        const { data: updated, error: updateError } = await supabase
-          .schema('users').from('invitation_requests')
-          .update({
-            ...request,
-            status: 'pending',
-            step_completed: 1,
-          })
-          .eq('id', existing.id)
-          .select('id')
-          .single();
+        const { data: updated, error: updateError } = await writeOneRow(
+          supabase
+            .schema('users').from('invitation_requests')
+            .update({
+              ...request,
+              status: 'pending',
+              step_completed: 1,
+            })
+            .eq('id', existing.id)
+            .select('id'),
+          { action: "update", noun: "invitation request" },
+        );
 
         if (updateError) {
           console.error('Error updating invitation request:', updateError);
@@ -142,19 +145,21 @@ export async function submitInvitationRequestStep2(
     const supabase = createAdminClient();
 
     // Update the existing request with step 2 data
-    const { error } = await supabase
-      .schema('users').from('invitation_requests')
-      .update({
-        ...data,
-        // org-fallback-deliberate: the same pre-membership access request as above —
-        //   the requester has no organization to file it under
-        organization_id: SYSTEM_ORGANIZATION_ID,
-        step_completed: 2,
-      })
-      .eq('id', requestId)
-      .eq('status', 'pending')
-      .select('id')
-      .single();
+    const { error } = await writeOneRow(
+      supabase
+        .schema('users').from('invitation_requests')
+        .update({
+          ...data,
+          // org-fallback-deliberate: the same pre-membership access request as above —
+          //   the requester has no organization to file it under
+          organization_id: SYSTEM_ORGANIZATION_ID,
+          step_completed: 2,
+        })
+        .eq('id', requestId)
+        .eq('status', 'pending')
+        .select('id'),
+      { action: "update", noun: "invitation request" },
+    );
 
     if (error) {
       console.error('Error updating invitation request step 2:', error);

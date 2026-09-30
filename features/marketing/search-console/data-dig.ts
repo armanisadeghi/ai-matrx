@@ -18,7 +18,7 @@ import type {
 import type { GscDigRuleContent } from "@/features/marketing/search-console/lib/dig-rules";
 import { serializeDigConditions } from "@/features/marketing/search-console/lib/dig-rules";
 import { makeAssertData } from "@/utils/errors";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { isJsonObject } from "@/types/json";
@@ -119,16 +119,18 @@ export async function updateDigRule(
 ): Promise<GscDigRuleRow> {
   const organizationId = await ensureOrgId(input.organizationId);
   const session = await requireAuthenticatedSupabaseSession(supabase);
-  const response = await supabase
-    .schema("seo")
-    .from("gsc_dig_rule")
-    .update({
-      ...ruleWriteColumns({ ...input, organizationId }),
-      updated_by: session.user.id,
-    })
-    .eq("id", ruleId)
-    .select("*")
-    .single();
+  const response = await writeOneRow(
+    supabase
+      .schema("seo")
+      .from("gsc_dig_rule")
+      .update({
+        ...ruleWriteColumns({ ...input, organizationId }),
+        updated_by: session.user.id,
+      })
+      .eq("id", ruleId)
+      .select("*"),
+    { action: "update", noun: "gsc dig rule" },
+  );
   return assertData(response.data, response.error, "update that dig rule");
 }
 

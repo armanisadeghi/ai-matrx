@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { NextRequest, NextResponse } from "next/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeFailureStatus, writeOneRow } from "@/utils/supabase/writeOne";
 
 export async function GET(
   _request: NextRequest,
@@ -71,13 +71,15 @@ export async function PATCH(
 
     const body = await request.json();
 
-    const { data, error } = await supabase
-      .schema("app")
-      .from("definition")
-      .update(body)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("app")
+        .from("definition")
+        .update(body)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "definition" },
+    );
 
     if (error) {
       return NextResponse.json(

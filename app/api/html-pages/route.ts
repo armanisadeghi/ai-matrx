@@ -35,6 +35,7 @@ import {
   archiveNotLiveResponse,
   onlyLive,
 } from "@/app/api/cms/_lib/cmsArchive";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
 const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
@@ -180,21 +181,23 @@ export async function POST(request: NextRequest) {
               .limit(1)
               .maybeSingle();
             if (existing?.id) {
-              const { data: reused, error: reuseError } = await htmlDb
-                .from("html_pages")
-                .update({
-                  html_content: htmlContent,
-                  meta_title: metaTitle,
-                  meta_description: metaDescription,
-                  meta_keywords: metaFields.metaKeywords || null,
-                  og_image: metaFields.ogImage || null,
-                  canonical_url: metaFields.canonicalUrl || null,
-                  is_indexable: metaFields.isIndexable || false,
-                })
-                .eq("id", existing.id)
-                .eq("user_id", user.id)
-                .select()
-                .single();
+              const { data: reused, error: reuseError } = await writeOneRow(
+                htmlDb
+                  .from("html_pages")
+                  .update({
+                    html_content: htmlContent,
+                    meta_title: metaTitle,
+                    meta_description: metaDescription,
+                    meta_keywords: metaFields.metaKeywords || null,
+                    og_image: metaFields.ogImage || null,
+                    canonical_url: metaFields.canonicalUrl || null,
+                    is_indexable: metaFields.isIndexable || false,
+                  })
+                  .eq("id", existing.id)
+                  .eq("user_id", user.id)
+                  .select(),
+                { action: "update", noun: "html page" },
+              );
               if (!reuseError && reused) {
                 return NextResponse.json({
                   success: true,
@@ -370,13 +373,15 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { data, error } = await htmlDb
-          .from("html_pages")
-          .update(updateData)
-          .eq("id", pageId)
-          .eq("user_id", user.id)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          htmlDb
+            .from("html_pages")
+            .update(updateData)
+            .eq("id", pageId)
+            .eq("user_id", user.id)
+            .select(),
+          { action: "update", noun: "html page" },
+        );
 
         if (error) {
           console.error("[html-pages API] update error:", error);

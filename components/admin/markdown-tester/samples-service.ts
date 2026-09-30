@@ -7,7 +7,7 @@
 
 import { publishedToWebPatch } from "@/lib/row-access";
 import { supabase } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Tables, TablesUpdate } from "@/types/database.types";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -78,12 +78,14 @@ export async function updateSample(
   id: string,
   patch: SampleUpdateInput,
 ): Promise<MarkdownSample> {
-  const { data, error } = await supabase
-    .schema("admin").from("admin_markdown_samples")
-    .update(patch)
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("admin").from("admin_markdown_samples")
+      .update(patch)
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "admin markdown sample" },
+  );
   if (error) throw error;
   return data;
 }

@@ -23,7 +23,7 @@ import type {
   KeywordClassRuleRow,
 } from "@/features/marketing/search-console/lib/class-rules";
 import { makeAssertData } from "@/utils/errors";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 async function seoDb() {
@@ -102,12 +102,14 @@ export async function updateClassRule(
   organizationId: string | null,
 ): Promise<KeywordClassRuleRow> {
   const resolvedOrganizationId = await ensureOrgId(organizationId);
-  const response = await (await seoDb())
-    .from("keyword_class_rule")
-    .update(ruleWriteColumns(draft, siteId, resolvedOrganizationId))
-    .eq("id", ruleId)
-    .select("*")
-    .single();
+  const response = await writeOneRow(
+    (await seoDb())
+      .from("keyword_class_rule")
+      .update(ruleWriteColumns(draft, siteId, resolvedOrganizationId))
+      .eq("id", ruleId)
+      .select("*"),
+    { action: "update", noun: "keyword class rule" },
+  );
   return assertData(response.data, response.error, "update that classification rule");
 }
 
@@ -229,12 +231,14 @@ export async function updateValueRule(
   organizationId: string | null,
 ): Promise<KeywordClassRuleRow> {
   const resolvedOrganizationId = await ensureOrgId(organizationId);
-  const response = await (await seoDb())
-    .from("keyword_class_rule")
-    .update(valueRuleWriteColumns(draft, siteId, resolvedOrganizationId))
-    .eq("id", ruleId)
-    .select("*")
-    .single();
+  const response = await writeOneRow(
+    (await seoDb())
+      .from("keyword_class_rule")
+      .update(valueRuleWriteColumns(draft, siteId, resolvedOrganizationId))
+      .eq("id", ruleId)
+      .select("*"),
+    { action: "update", noun: "keyword class rule" },
+  );
   return assertData(response.data, response.error, "update that value rule");
 }
 

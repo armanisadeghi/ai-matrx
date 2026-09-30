@@ -31,6 +31,7 @@ import type {
   StudyPlanBlockRow,
 } from "../planner/types";
 import { fail } from "./serviceError";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const EDU = () => supabase.schema("education");
 
@@ -330,13 +331,15 @@ export const planService = {
   ): Promise<StudyResult<{ id: string }>> {
     try {
       const userId = requireUserId();
-      const { data, error } = await EDU()
-        .from("study_plan")
-        .update({ status } as never)
-        .eq("id", planId)
-        .eq("created_by", userId)
-        .select("id")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("study_plan")
+          .update({ status } as never)
+          .eq("id", planId)
+          .eq("created_by", userId)
+          .select("id"),
+        { action: "update", noun: "study plan" },
+      );
       if (error) return fail("updatePlanStatus", error);
       return { data: { id: (data as { id: string }).id }, error: null };
     } catch (e) {
@@ -351,13 +354,15 @@ export const planService = {
   ): Promise<StudyResult<StudyPlanBlockRow>> {
     try {
       const userId = requireUserId();
-      const { data, error } = await EDU()
-        .from("study_plan_block")
-        .update({ status } as never)
-        .eq("id", blockId)
-        .eq("created_by", userId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("study_plan_block")
+          .update({ status } as never)
+          .eq("id", blockId)
+          .eq("created_by", userId)
+          .select("*"),
+        { action: "update", noun: "study plan block" },
+      );
       if (error) return fail("updateBlockStatus", error);
       return { data: data as StudyPlanBlockRow, error: null };
     } catch (e) {
@@ -369,13 +374,15 @@ export const planService = {
   async deletePlan(planId: string): Promise<StudyResult<{ id: string }>> {
     try {
       const userId = requireUserId();
-      const { data, error } = await EDU()
-        .from("study_plan")
-        .update({ deleted_at: new Date().toISOString() } as never)
-        .eq("id", planId)
-        .eq("created_by", userId)
-        .select("id")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("study_plan")
+          .update({ deleted_at: new Date().toISOString() } as never)
+          .eq("id", planId)
+          .eq("created_by", userId)
+          .select("id"),
+        { action: "update", noun: "study plan" },
+      );
       if (error) return fail("deletePlan", error);
       return { data: { id: (data as { id: string }).id }, error: null };
     } catch (e) {

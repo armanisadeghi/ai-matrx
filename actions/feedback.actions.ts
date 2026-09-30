@@ -35,6 +35,7 @@ import {
 } from "@/types/feedback-row-mapper";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { readAllRows } from "@ai-matrx/data/db";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 type UserFeedbackUpdate =
   Database["users"]["Tables"]["user_feedback"]["Update"];
@@ -260,17 +261,19 @@ export async function updateUserOwnFeedback(
     }
 
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .schema("users")
-      .from("user_feedback")
-      .update({
-        ...updates,
-      })
-      .eq("id", feedbackId)
-      .eq("user_id", user.id)
-      .eq("status", "new")
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      admin
+        .schema("users")
+        .from("user_feedback")
+        .update({
+          ...updates,
+        })
+        .eq("id", feedbackId)
+        .eq("user_id", user.id)
+        .eq("status", "new")
+        .select(),
+      { action: "update", noun: "user feedback" },
+    );
 
     if (error) {
       console.error("Error updating own feedback:", error);
@@ -771,13 +774,15 @@ export async function updateFeedback(
     }
 
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .schema("users")
-      .from("user_feedback")
-      .update(updateData)
-      .eq("id", feedbackId)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      admin
+        .schema("users")
+        .from("user_feedback")
+        .update(updateData)
+        .eq("id", feedbackId)
+        .select(),
+      { action: "update", noun: "user feedback" },
+    );
 
     if (error) {
       console.error("Error updating feedback:", error);
@@ -1001,13 +1006,15 @@ export async function forceCloseFeedback(
     };
 
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .schema("users")
-      .from("user_feedback")
-      .update(updateData)
-      .eq("id", feedbackId)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      admin
+        .schema("users")
+        .from("user_feedback")
+        .update(updateData)
+        .eq("id", feedbackId)
+        .select(),
+      { action: "update", noun: "user feedback" },
+    );
 
     if (error) {
       console.error("Error force-closing feedback:", error);
@@ -1236,15 +1243,17 @@ export async function updateAnnouncement(
       return { success: false, error: "User not authenticated" };
     }
 
-    const { data, error } = await supabase
-      .schema("users")
-      .from("system_announcements")
-      .update({
-        ...updates,
-      })
-      .eq("id", announcementId)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("users")
+        .from("system_announcements")
+        .update({
+          ...updates,
+        })
+        .eq("id", announcementId)
+        .select(),
+      { action: "update", noun: "system announcement" },
+    );
 
     if (error) {
       console.error("Error updating announcement:", error);

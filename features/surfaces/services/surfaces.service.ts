@@ -17,6 +17,7 @@ import {
   TOOL_BUNDLE,
   assocData,
 } from "@/features/tool-registry/bundles/services/bundleMemberEdge";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 type UiTables = Database["ui"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -261,13 +262,15 @@ export async function createSurface(
 ): Promise<UiSurfaceRow> {
   const revive = (await archivedSurfaceNames([row.name])).has(row.name);
   const { data, error } = revive
-    ? await sb()
-        .schema("ui")
-        .from("ui_surface")
-        .update({ ...row, deleted_at: null })
-        .eq("name", row.name)
-        .select()
-        .single()
+    ? await writeOneRow(
+      sb()
+          .schema("ui")
+          .from("ui_surface")
+          .update({ ...row, deleted_at: null })
+          .eq("name", row.name)
+          .select(),
+      { action: "update", noun: "ui surface" },
+    )
     : await sb().schema("ui").from("ui_surface").insert(row).select().single();
   if (error) throw error;
   return data;

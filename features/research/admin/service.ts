@@ -9,7 +9,7 @@ import type {
 } from "./types";
 import { jsonToAgentConfigStrings } from "./types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError, writeOneRow } from "@/utils/supabase/writeOne";
 
 const supabase = createClient();
 
@@ -92,13 +92,15 @@ export async function updateTemplate(
     updates.metadata =
       Object.keys(input.metadata).length > 0 ? input.metadata : null;
 
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_template")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("research")
+      .from("rs_template")
+      .update(updates)
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "rs template" },
+  );
 
   if (error) throw new Error(`Failed to update template: ${error.message}`);
   return data as ResearchTemplate;

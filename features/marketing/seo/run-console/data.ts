@@ -31,6 +31,7 @@ import type {
   SituationalRefreshStatus,
   SituationalRunOutcome,
 } from "./types";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const assertData = makeAssertData("reach the run console");
 
@@ -188,12 +189,14 @@ export async function saveEngineSchedule(
     organization_id: draft.organizationId,
   };
   const response = existingId
-    ? await db
-        .from("engine_schedule")
-        .update(payload)
-        .eq("id", existingId)
-        .select("*")
-        .single()
+    ? await writeOneRow(
+      db
+          .from("engine_schedule")
+          .update(payload)
+          .eq("id", existingId)
+          .select("*"),
+      { action: "update", noun: "engine schedule" },
+    )
     : await db.from("engine_schedule").insert(payload).select("*").single();
   return assertData(
     response.data,
@@ -205,12 +208,14 @@ export async function saveEngineSchedule(
 /** Soft delete — the row is retired, never destroyed. */
 export async function retireEngineSchedule(id: string): Promise<void> {
   const db = await seoDb();
-  const response = await db
-    .from("engine_schedule")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id)
-    .select("id")
-    .single();
+  const response = await writeOneRow(
+    db
+      .from("engine_schedule")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "update", noun: "engine schedule" },
+  );
   assertData(response.data, response.error, "retire the schedule");
 }
 

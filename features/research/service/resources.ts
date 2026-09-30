@@ -16,7 +16,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { fetchTopicExperts } from "@/features/crm/service";
 import { parseManifest } from "../resources/manifest";
 import type {
@@ -388,13 +388,15 @@ export async function updateBundle(
   if (patch.agentId !== undefined) update.agent_id = patch.agentId;
   if (patch.entityId !== undefined) update.entity_id = patch.entityId;
 
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_context_bundle")
-    .update(update)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("research")
+      .from("rs_context_bundle")
+      .update(update)
+      .eq("id", id)
+      .select("*"),
+    { action: "update", noun: "rs context bundle" },
+  );
   if (error) throw error;
   return rowToBundle(data);
 }

@@ -7,6 +7,7 @@ import { requireAdmin } from "@/utils/auth/adminUtils";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { parseSemver } from "@/features/admin/applications/version";
 import { extractErrorMessage } from "@/utils/errors";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 export async function GET(request: NextRequest) {
   try {
@@ -220,12 +221,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = sameName
-      ? await supabase
-          .schema("tool").from("definition")
-          .update({ ...toolData, deleted_at: null })
-          .eq("id", sameName.id)
-          .select()
-          .single()
+      ? await writeOneRow(
+        supabase
+            .schema("tool").from("definition")
+            .update({ ...toolData, deleted_at: null })
+            .eq("id", sameName.id)
+            .select(),
+        { action: "update", noun: "definition" },
+      )
       : await supabase
           .schema("tool").from("definition")
           .insert([toolData])

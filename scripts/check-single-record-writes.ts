@@ -13,6 +13,15 @@
  * `EDU()`, `db`), filtered to ONE record with `.eq("id", …)`, whose chain has
  * no `.select(...)` — so the write cannot know whether any row changed.
  *
+ * AND THE SECOND SHAPE (2026-09-29): a write ending `.select(…).single()` —
+ * a refusal arrives as PostgREST's "JSON object requested, multiple (or no)
+ * rows returned" (PGRST116), which every screen rendered as a vague failure —
+ * and `.select(…).maybeSingle()` whose `data` the caller never looks at (zero
+ * rows is `data: null`, no error: silent). The drop-in is `writeOneRow`: the
+ * same `{ data, error }` shape and `PGRST116` code, with the person's sentence.
+ * A `.maybeSingle()` passes when its `data` is null-checked, returned, or
+ * asserted, or when it is handed to `guardedUpdate` (`applyUpdate:`/`write:`).
+ *
  * WHAT PASSES:
  *   - the chain ends in `.select(...)` (the rows written come back); the
  *     canonical form is the primitive `writeOne` / `tryWriteOne` from
@@ -58,6 +67,8 @@ export interface Site {
   line: number;
   op: "update" | "delete";
   side: "client" | "server";
+  /** "no-select": zero rows is silent. "single": `.select().single()` — zero rows is a vague PGRST116. "maybe": `.select().maybeSingle()` whose `data` is never checked. */
+  shape?: "no-select" | "single" | "maybe";
 }
 
 function listFiles(dir: string, out: string[]): void {
@@ -108,6 +119,57 @@ function isServerFile(rel: string, src: string): boolean {
   );
 }
 
+/** The chain is handed to a proving primitive (`guardedUpdate({ write: … })`, `mergeJsonColumn`, a `write:` thunk) rather than awaited here. */
+function passedToGuard(top: ts.Node): boolean {
+  let cur: ts.Node = top;
+  while (ts.isAsExpression(cur.parent) || ts.isParenthesizedExpression(cur.parent)) cur = cur.parent;
+  // step out of an arrow thunk `() => chain`
+  if (ts.isArrowFunction(cur.parent) && cur.parent.body === cur) cur = cur.parent;
+  const p = cur.parent;
+  if (p && ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && (p.name.text === "write" || p.name.text === "applyUpdate")) return true;
+  if (p && ts.isCallExpression(p) && p.arguments.includes(cur as ts.Expression)) {
+    const callee = p.expression.getText();
+    return /(guardedUpdate|mergeJsonColumn|writeOne|tryWriteOne|writeOneRow)$/.test(callee);
+  }
+  return false;
+}
+
+/** `const { data: row } = await …maybeSingle()` followed by a null check of `row` (or `res.data`) in the same function. */
+function dataIsChecked(top: ts.Node, sf: ts.SourceFile): boolean {
+  let await_: ts.Node = top.parent;
+  while (await_ && (ts.isParenthesizedExpression(await_) || ts.isAsExpression(await_))) await_ = await_.parent;
+  if (!await_ || !ts.isAwaitExpression(await_)) return false;
+  const decl = await_.parent;
+  let name: string | null = null;
+  if (decl && ts.isVariableDeclaration(decl)) {
+    if (ts.isIdentifier(decl.name)) name = `${decl.name.text}.data`;
+    else if (ts.isObjectBindingPattern(decl.name)) {
+      for (const el of decl.name.elements) {
+        const prop = el.propertyName && ts.isIdentifier(el.propertyName) ? el.propertyName.text : ts.isIdentifier(el.name) ? el.name.text : null;
+        if (prop === "data" && ts.isIdentifier(el.name)) name = el.name.text;
+      }
+    }
+  }
+  if (!name) return false;
+  const fn = enclosingFunction(top);
+  const after = fn.getText(sf).slice(Math.max(0, decl!.getEnd() - fn.getStart(sf)));
+  const v = name.replace(/\./g, "\\s*\\??\\.\\s*");
+  // A caller that LOOKS at `data` has proven the write: a null check, a
+  // fallback, an optional chain, handing it to an assert*, or returning it so
+  // the null travels up in the function's own type.
+  return new RegExp(
+    [
+      `!\\s*${v}\\b`,
+      `\\b${v}\\s*(===|!==|==|!=)\\s*(null|undefined)`,
+      `if\\s*\\(\\s*${v}\\s*\\)`,
+      `\\b${v}\\s*(\\?\\?|&&|\\?\\.|\\?(?!\\.))`,
+      `(&&|\\|\\|)\\s*${v}\\b`,
+      `return\\s*\\(?\\s*${v}\\b`,
+      `assert\\w*\\(\\s*${v}\\b`,
+    ].join("|"),
+  ).test(after);
+}
+
 /** Every unproven single-record write in one source text. Exported for the self-test. */
 export function findSites(rel: string, src: string): Site[] {
   if (!/\.(update|delete)\s*\(/.test(src)) return [];
@@ -126,6 +188,7 @@ export function findSites(rel: string, src: string): Site[] {
         let top: ts.Node = n;
         let single = false;
         let selected = false;
+        let terminal: "single" | "maybe" | null = null;
         while (
           ts.isPropertyAccessExpression(top.parent) &&
           top.parent.expression === top &&
@@ -135,7 +198,33 @@ export function findSites(rel: string, src: string): Site[] {
           const call = top.parent.parent;
           if (name === "eq" && isIdLiteral(call.arguments[0])) single = true;
           if (name === "select") selected = true;
+          if (selected && name === "single") terminal = "single";
+          if (selected && name === "maybeSingle") terminal = "maybe";
           top = call;
+        }
+        // THE SECOND SHAPE (2026-09-29): `.select().single()` on a write turns a
+        // refusal into PostgREST's "JSON object requested, multiple (or no) rows
+        // returned" — loud but vague; `.select().maybeSingle()` turns it into
+        // `data: null` with no error, silent unless the caller looks at `data`.
+        // The drop-in is `writeOneRow` (same `{ data, error }` shape, the
+        // person's sentence on zero rows).
+        if (terminal) {
+          const stmtLine0 = sf.getLineAndCharacterOfPosition(top.getStart(sf)).line;
+          const opLine0 = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line;
+          const exemptWindow = lines.slice(Math.max(0, stmtLine0 - 2), opLine0 + 1).join("\n");
+          const proven =
+            EXEMPT_RE.test(exemptWindow) ||
+            passedToGuard(top) ||
+            (terminal === "maybe" && dataIsChecked(top, sf));
+          if (!proven) {
+            sites.push({
+              file: rel,
+              line: opLine0 + 1,
+              op: n.expression.name.text as "update" | "delete",
+              side,
+              shape: terminal,
+            });
+          }
         }
         const counted = n.arguments.some((a) => /\bcount\b/.test(a.getText(sf)));
         if (single && !selected && !counted) {
@@ -157,7 +246,7 @@ export function findSites(rel: string, src: string): Site[] {
           const window = lines.slice(Math.max(0, stmtLine - 2), line + 1).join("\n");
           const exempt = EXEMPT_RE.test(window);
           if (!viaVariable && !exempt) {
-            sites.push({ file: rel, line: line + 1, op: n.expression.name.text as "update" | "delete", side });
+            sites.push({ file: rel, line: line + 1, op: n.expression.name.text as "update" | "delete", side, shape: "no-select" });
           }
         }
       }
@@ -206,6 +295,11 @@ function selfTest(): number {
     { name: "variable then .select()", src: `async function f(){ let q = db.from("n").update(p).eq("id", id); if (x) q = q.eq("v", 1); const { data } = await q.select("id").maybeSingle(); }`, expect: 0 },
     { name: "variable never selected", src: `async function f(){ let q = db.from("n").update(p).eq("id", id); if (x) q = q.eq("v", 1); const { error } = await q; }`, expect: 1 },
     { name: "exempt with reason", src: `async function f(){\n  // write-lands-exempt: best-effort last-seen stamp; zero rows is fine\n  await db.from("n").update(p).eq("id", id);\n}`, expect: 0 },
+    { name: "update .select().single() (vague PGRST116 on refusal)", src: `async function f(){ const { data, error } = await db.from("deal").update(p).eq("id", id).select("*").single(); if (error) throw error; return data; }`, expect: 1 },
+    { name: "update .select().maybeSingle(), data never checked", src: `async function f(){ const { error } = await db.from("deal").update(p).eq("id", id).select("id").maybeSingle(); if (error) throw error; }`, expect: 1 },
+    { name: "maybeSingle whose data is checked", src: `async function f(){ const { data, error } = await db.from("deal").update(p).eq("id", id).select("id").maybeSingle(); if (error) throw error; if (!data) throw new Error("gone"); }`, expect: 0 },
+    { name: "maybeSingle handed to guardedUpdate applyUpdate", src: `async function f(){ await guardedUpdate({ applyUpdate: ({ nextVersion }) => db.from("deal").update(p).eq("id", id).eq("version", v).select("*").maybeSingle(), fetchCurrent: () => q }); }`, expect: 0 },
+    { name: "writeOneRow wraps the select", src: `async function f(){ const { data, error } = await writeOneRow(db.from("deal").update(p).eq("id", id).select("*"), { action: "update", noun: "deal" }); }`, expect: 0 },
     { name: "exempt WITHOUT reason still flags", src: `async function f(){\n  // write-lands-exempt:\n  await db.from("n").update(p).eq("id", id);\n}`, expect: 1 },
   ];
   let failed = 0;
@@ -280,8 +374,9 @@ function main(): number {
   if (newSites.length > 0) {
     console.log("FAIL  a single-record update/delete judges success by error alone.");
     console.log("      PostgREST answers a write RLS refused with NO error and zero rows — the screen would say it worked.");
-    console.log("      Fix: wrap it in writeOne / tryWriteOne (utils/supabase/writeOne.ts) with .select(\"id\").\n");
-    for (const s of newSites) console.log(`  ${s.file}:${s.line}  ${s.op}`);
+    console.log("      Fix: wrap it in writeOne / tryWriteOne (utils/supabase/writeOne.ts) with .select(\"id\");");
+    console.log("      a `.select().single()` becomes writeOneRow(<chain>.select(…), { action, noun }) — same { data, error } shape.\n");
+    for (const s of newSites) console.log(`  ${s.file}:${s.line}  ${s.op}${s.shape && s.shape !== "no-select" ? `  (.select().${s.shape === "single" ? "single" : "maybeSingle"}())` : ""}`);
     console.log(`\n${total} sites now, baseline allows ${allowed}.`);
     return 1;
   }

@@ -3,7 +3,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";
-import { BulkWriteError, tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
+import { BulkWriteError, tryWriteOne, writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { toast } from "@/lib/toast";
 import type { Database, Json } from "@/types/database.types";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
@@ -847,19 +847,21 @@ export const aiModelService = {
     providerId: string,
     policy: ProviderSyncPolicy,
   ): Promise<ProviderSyncPolicy> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("provider")
-      .update({
-        sync_policy: {
-          min_release_date: policy.min_release_date,
-          excluded_model_ids: policy.excluded_model_ids,
-          notes: policy.notes,
-        },
-      })
-      .eq("id", providerId)
-      .select("sync_policy")
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("provider")
+        .update({
+          sync_policy: {
+            min_release_date: policy.min_release_date,
+            excluded_model_ids: policy.excluded_model_ids,
+            notes: policy.notes,
+          },
+        })
+        .eq("id", providerId)
+        .select("sync_policy"),
+      { action: "update", noun: "provider" },
+    );
     if (error) throw error;
     return this.parseSyncPolicy(data.sync_policy);
   },
@@ -901,13 +903,15 @@ export const aiModelService = {
     id: string,
     payload: AiProviderUpdate,
   ): Promise<AiProvider> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("provider")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("provider")
+        .update(payload)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "provider" },
+    );
     if (error) throw error;
     return parseProvider(data);
   },
@@ -969,13 +973,15 @@ export const aiModelService = {
       id,
       pickDefined({ byok_secret_key, auth_ref, base_url }, ["byok_secret_key", "auth_ref", "base_url"] as const),
     );
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("endpoint")
-      .update(rest)
-      .eq("id", id)
-      .select(ENDPOINT_PUBLIC_COLUMNS)
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("endpoint")
+        .update(rest)
+        .eq("id", id)
+        .select(ENDPOINT_PUBLIC_COLUMNS),
+      { action: "update", noun: "endpoint" },
+    );
     if (error) throw error;
     return parseEndpoint(
       withEndpointAdminColumns(data as unknown as EndpointPublicRow, await fetchEndpointAdminColumns()),
@@ -1024,13 +1030,15 @@ export const aiModelService = {
   },
 
   async updateApi(id: string, payload: AiApiUpdate): Promise<AiApi> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("api")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("api")
+        .update(payload)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "api" },
+    );
     if (error) throw error;
     return parseApi(data);
   },
@@ -1104,13 +1112,15 @@ export const aiModelService = {
   ): Promise<AiOffering> {
     const { pricing, ...rest } = payload;
     if (pricing !== undefined) await setOfferingPricing(id, pricing);
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("offering")
-      .update(rest)
-      .eq("id", id)
-      .select(OFFERING_PUBLIC_COLUMNS)
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("offering")
+        .update(rest)
+        .eq("id", id)
+        .select(OFFERING_PUBLIC_COLUMNS),
+      { action: "update", noun: "offering" },
+    );
     if (error) throw error;
     return parseOffering(
       withOfferingPricing(data as unknown as OfferingPublicRow, await fetchOfferingPricing()),
@@ -1221,13 +1231,15 @@ export const aiModelService = {
     id: string,
     payload: AiModelAliasUpdate,
   ): Promise<AiModelAliasRow> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("model_alias")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("model_alias")
+        .update(payload)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "model alia" },
+    );
     if (error) throw error;
     return data;
   },
@@ -1277,13 +1289,15 @@ export const aiModelService = {
     id: string,
     payload: AiSettingUpdate,
   ): Promise<AiSetting> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("setting")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("setting")
+        .update(payload)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "setting" },
+    );
     if (error) throw error;
     return parseSetting(data);
   },
@@ -1312,13 +1326,15 @@ export const aiModelService = {
   },
 
   async update(id: string, payload: AiModelUpdate): Promise<AiModel> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("model_definition")
-      .update(canonicalizeModelWrite(payload))
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("ai")
+        .from("model_definition")
+        .update(canonicalizeModelWrite(payload))
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "model definition" },
+    );
     if (error) throw error;
     return this.withMaker(data);
   },

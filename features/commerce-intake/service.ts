@@ -28,7 +28,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAllRows } from "@ai-matrx/data/db";
 
@@ -938,15 +938,17 @@ export async function answerQuestion(
 export async function skipQuestion(
   question: AssetQuestion,
 ): Promise<AssetQuestion> {
-  const { data, error } = await db()
-    .from("asset_unknown")
-    .update({
-      skip_count: question.skipCount + 1,
-      version: question.version + 1,
-    })
-    .eq("id", question.id)
-    .select(QUESTION_COLUMNS)
-    .single();
+  const { data, error } = await writeOneRow(
+    db()
+      .from("asset_unknown")
+      .update({
+        skip_count: question.skipCount + 1,
+        version: question.version + 1,
+      })
+      .eq("id", question.id)
+      .select(QUESTION_COLUMNS),
+    { action: "update", noun: "asset unknown" },
+  );
   if (error) throw error;
   return toQuestion(data as QuestionRow);
 }

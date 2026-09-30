@@ -6,6 +6,7 @@ import { requireAdmin } from "@/utils/auth/adminUtils";
 import { parseSemver } from "@/features/admin/applications/version";
 import type { Database } from "@/types/database.types";
 import { extractErrorMessage } from "@/utils/errors";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const EDITABLE_FIELDS = [
   "description",
@@ -145,12 +146,14 @@ export async function PUT(
     if (updateData.category === "") updateData.category = null;
     if (updateData.icon === "") updateData.icon = null;
 
-    const { data, error } = await supabase
-      .schema("tool").from("definition")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("tool").from("definition")
+        .update(updateData)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "definition" },
+    );
 
     if (error) {
       if (error.code === "PGRST116") {
@@ -190,14 +193,16 @@ export async function DELETE(
     const { id } = await params;
     const supabase = await createClient();
 
-    const { error } = await supabase
-      .schema("tool")
-      .from("definition")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null)
-      .select("id")
-      .single();
+    const { error } = await writeOneRow(
+      supabase
+        .schema("tool")
+        .from("definition")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id"),
+      { action: "update", noun: "definition" },
+    );
 
     if (error) {
       // Missing and RLS-hidden rows intentionally share one response so this

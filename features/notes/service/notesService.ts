@@ -771,6 +771,7 @@ export async function persistNoteUpdate(
       }
       data = result.row;
     } else {
+      // write-lands-exempt: zero rows leaves `data` null, and the `if (!data)` below refuses in words
       const { data: updated, error } = await supabase
         .schema("workbench")
         .from("notes")

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import { WEB_TOOL_UI_SURFACE } from "@/features/tool-call-visualization/db-renderer/surface";
 import { extractErrorMessage } from "@/utils/errors";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 // Map requireAdmin()/requireSuperAdmin() throws to the right HTTP status.
 function authErrorResponse(error: unknown): NextResponse | null {
@@ -149,12 +150,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = sameKey
-      ? await supabase
-          .schema("tool").from("ui")
-          .update({ ...componentData, deleted_at: null })
-          .eq("id", sameKey.id)
-          .select()
-          .single()
+      ? await writeOneRow(
+        supabase
+            .schema("tool").from("ui")
+            .update({ ...componentData, deleted_at: null })
+            .eq("id", sameKey.id)
+            .select(),
+        { action: "update", noun: "ui" },
+      )
       : await supabase
           .schema("tool").from("ui")
           .insert([componentData])

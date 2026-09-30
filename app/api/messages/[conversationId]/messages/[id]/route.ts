@@ -13,7 +13,7 @@ import { createClient } from "@/utils/supabase/server";
 import type { TablesUpdate } from "@/types/database.types";
 import { z } from "zod";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeFailureStatus, writeOneRow } from "@/utils/supabase/writeOne";
 
 // ============================================
 // Validation Schemas
@@ -195,13 +195,15 @@ export async function PATCH(
     }
 
     // Update message
-    const { data: updatedMessage, error: updateError } = await supabase
-      .schema("communication")
-      .from("dm_messages")
-      .update(updateData)
-      .eq("id", messageId)
-      .select()
-      .single();
+    const { data: updatedMessage, error: updateError } = await writeOneRow(
+      supabase
+        .schema("communication")
+        .from("dm_messages")
+        .update(updateData)
+        .eq("id", messageId)
+        .select(),
+      { action: "update", noun: "message" },
+    );
 
     if (updateError) {
       console.error("[DM Message API] Failed to update:", updateError);

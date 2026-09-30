@@ -42,7 +42,7 @@
 import { agentNotReadableError } from "./agent-not-readable";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { getAgentCatalog } from "@/lib/agents/catalog";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
@@ -1044,15 +1044,17 @@ export const saveAgentField = createAsyncThunk<
 
     dispatch(setAgentField({ id: agentId, field, value }));
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("definition")
-      .update(
-        agentDefinitionToUpdate({ [field]: value } as Partial<AgentDefinition>),
-      )
-      .eq("id", agentId)
-      .select("version, updated_at")
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("agent")
+        .from("definition")
+        .update(
+          agentDefinitionToUpdate({ [field]: value } as Partial<AgentDefinition>),
+        )
+        .eq("id", agentId)
+        .select("version, updated_at"),
+      { action: "update", noun: "definition" },
+    );
 
     if (error) {
       dispatch(rollbackAgentOptimisticUpdate({ id: agentId, snapshot }));
@@ -1124,18 +1126,20 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
     // Dead key — never re-persist; assignment is agent.definition.tools.
     delete existingConfig.tools;
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("definition")
-      .update({
-        tool_config: {
-          ...existingConfig,
-          auto_tools_disabled: disabled,
-        } as Database["agent"]["Tables"]["definition"]["Update"]["tool_config"],
-      })
-      .eq("id", agentId)
-      .select("version, updated_at")
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("agent")
+        .from("definition")
+        .update({
+          tool_config: {
+            ...existingConfig,
+            auto_tools_disabled: disabled,
+          } as Database["agent"]["Tables"]["definition"]["Update"]["tool_config"],
+        })
+        .eq("id", agentId)
+        .select("version, updated_at"),
+      { action: "update", noun: "definition" },
+    );
 
     if (error) {
       dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: previous }));
@@ -1189,13 +1193,15 @@ export const setAgentAutoContextDisabled = createAsyncThunk<
     // Synthetic comparison/variation agents live only in Redux — never persist.
     if (isSyntheticAgentId(agentId)) return;
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("definition")
-      .update({ auto_context_disabled: disabled })
-      .eq("id", agentId)
-      .select("version, updated_at")
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("agent")
+        .from("definition")
+        .update({ auto_context_disabled: disabled })
+        .eq("id", agentId)
+        .select("version, updated_at"),
+      { action: "update", noun: "definition" },
+    );
 
     if (error) {
       dispatch(
@@ -1254,13 +1260,15 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
 
     dispatch(setAgentLoading({ id: agentId, loading: true }));
 
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("definition")
-      .update(agentDefinitionToUpdate(dirtyPartial))
-      .eq("id", agentId)
-      .select("version, updated_at")
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("agent")
+        .from("definition")
+        .update(agentDefinitionToUpdate(dirtyPartial))
+        .eq("id", agentId)
+        .select("version, updated_at"),
+      { action: "update", noun: "definition" },
+    );
 
     dispatch(setAgentLoading({ id: agentId, loading: false }));
 

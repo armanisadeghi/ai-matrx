@@ -39,6 +39,7 @@ import type {
   FinalizeResultInput,
   ListAssessmentsFilter,
 } from "./types";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const EDU = () => supabase.schema("education");
 
@@ -139,12 +140,14 @@ export const assessmentService = {
         clean.title = displayTitle(clean.title);
       if (typeof clean.topic === "string")
         clean.topic = displayTitle(clean.topic) || null;
-      const { data, error } = await EDU()
-        .from("assessment")
-        .update(clean as never)
-        .eq("id", id)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("assessment")
+          .update(clean as never)
+          .eq("id", id)
+          .select("*"),
+        { action: "update", noun: "assessment" },
+      );
       if (error) return fail("updateAssessment", error);
       return {
         data: withDisplayTitle(data as AssessmentRow, "title"),
@@ -206,12 +209,14 @@ export const assessmentService = {
     change: RowAccessChange,
   ): Promise<AsResult<AssessmentRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("assessment")
-        .update(rowAccessColumns(change, await currentUserIdOrNull()))
-        .eq("id", id)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("assessment")
+          .update(rowAccessColumns(change, await currentUserIdOrNull()))
+          .eq("id", id)
+          .select("*"),
+        { action: "update", noun: "assessment" },
+      );
       if (error) return fail("updateRowAccess", error);
       return {
         data: withDisplayTitle(data as AssessmentRow, "title"),
@@ -224,12 +229,14 @@ export const assessmentService = {
 
   async deleteAssessment(id: string): Promise<AsResult<{ id: string }>> {
     try {
-      const { data, error } = await EDU()
-        .from("assessment")
-        .update({ deleted_at: new Date().toISOString() } as never)
-        .eq("id", id)
-        .select("id")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("assessment")
+          .update({ deleted_at: new Date().toISOString() } as never)
+          .eq("id", id)
+          .select("id"),
+        { action: "update", noun: "assessment" },
+      );
       if (error) return fail("deleteAssessment", error);
       return { data: { id: (data as { id: string }).id }, error: null };
     } catch (e) {
@@ -378,12 +385,14 @@ export const assessmentService = {
     patch: AssessmentItemPatch,
   ): Promise<AsResult<AssessmentItemRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("assessment_item")
-        .update(patch as never)
-        .eq("id", itemId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("assessment_item")
+          .update(patch as never)
+          .eq("id", itemId)
+          .select("*"),
+        { action: "update", noun: "assessment item" },
+      );
       if (error) return fail("updateItem", error);
       return { data: data as AssessmentItemRow, error: null };
     } catch (e) {
@@ -433,12 +442,14 @@ export const assessmentService = {
 
   async deleteItem(itemId: string): Promise<AsResult<{ id: string }>> {
     try {
-      const { data, error } = await EDU()
-        .from("assessment_item")
-        .update({ deleted_at: new Date().toISOString() } as never)
-        .eq("id", itemId)
-        .select("id")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("assessment_item")
+          .update({ deleted_at: new Date().toISOString() } as never)
+          .eq("id", itemId)
+          .select("id"),
+        { action: "update", noun: "assessment item" },
+      );
       if (error) return fail("deleteItem", error);
       return { data: { id: (data as { id: string }).id }, error: null };
     } catch (e) {
@@ -606,23 +617,25 @@ export const assessmentService = {
     input: FinalizeResultInput,
   ): Promise<AsResult<AssessmentResultRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("assessment_result")
-        .update({
-          status: input.status ?? "completed",
-          correct_count: input.correctCount,
-          partial_count: input.partialCount,
-          total_count: input.totalCount,
-          score_value: input.scoreValue,
-          points_earned: input.pointsEarned,
-          points_possible: input.pointsPossible,
-          duration_seconds: input.durationSeconds ?? null,
-          detail: input.detail as never,
-          completed_at: new Date().toISOString(),
-        } as never)
-        .eq("id", input.resultId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("assessment_result")
+          .update({
+            status: input.status ?? "completed",
+            correct_count: input.correctCount,
+            partial_count: input.partialCount,
+            total_count: input.totalCount,
+            score_value: input.scoreValue,
+            points_earned: input.pointsEarned,
+            points_possible: input.pointsPossible,
+            duration_seconds: input.durationSeconds ?? null,
+            detail: input.detail as never,
+            completed_at: new Date().toISOString(),
+          } as never)
+          .eq("id", input.resultId)
+          .select("*"),
+        { action: "update", noun: "assessment result" },
+      );
       if (error) return fail("finalizeResult", error);
       return { data: data as AssessmentResultRow, error: null };
     } catch (e) {

@@ -11,7 +11,7 @@ import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -201,12 +201,14 @@ export async function updateProject(
   updates: { name?: string; description?: string },
 ): Promise<DatabaseProject | null> {
   try {
-    const { data, error } = await workspaceDb(supabase)
-      .from("projects")
-      .update(updates)
-      .eq("id", projectId)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      workspaceDb(supabase)
+        .from("projects")
+        .update(updates)
+        .eq("id", projectId)
+        .select(),
+      { action: "update", noun: "project" },
+    );
 
     if (error) {
       console.error("Error updating project:", error);

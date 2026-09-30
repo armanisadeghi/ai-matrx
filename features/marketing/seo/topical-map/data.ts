@@ -59,6 +59,7 @@ import type {
   TopicalMapListScope,
   TopicalMapUpdate,
 } from "./types";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -107,8 +108,11 @@ export async function createTopicalMap(input: TopicalMapInsert): Promise<Topical
 }
 
 export async function updateTopicalMap(id: string, patch: TopicalMapUpdate): Promise<TopicalMap> {
-  const response = await (await seoDb()).from("topical_map").update(patch).eq("id", id)
-    .is("deleted_at", null).select("*").single();
+  const response = await writeOneRow(
+    (await seoDb()).from("topical_map").update(patch).eq("id", id)
+      .is("deleted_at", null).select("*"),
+    { action: "update", noun: "topical map" },
+  );
   return assertData(response.data, response.error);
 }
 
@@ -138,8 +142,11 @@ export async function createMapTopic(input: MapTopicInsert): Promise<MapTopic> {
 }
 
 export async function updateMapTopic(id: string, patch: MapTopicUpdate): Promise<MapTopic> {
-  const response = await (await seoDb()).from("map_topic").update(patch).eq("id", id)
-    .is("deleted_at", null).select("*").single();
+  const response = await writeOneRow(
+    (await seoDb()).from("map_topic").update(patch).eq("id", id)
+      .is("deleted_at", null).select("*"),
+    { action: "update", noun: "map topic" },
+  );
   return assertData(response.data, response.error);
 }
 
@@ -171,7 +178,10 @@ export async function createMapFacet(input: MapFacetInsert): Promise<MapFacet> {
 }
 
 export async function updateMapFacet(id: string, patch: MapFacetUpdate): Promise<MapFacet> {
-  const response = await (await seoDb()).from("map_facet").update(patch).eq("id", id).is("deleted_at", null).select("*").single();
+  const response = await writeOneRow(
+    (await seoDb()).from("map_facet").update(patch).eq("id", id).is("deleted_at", null).select("*"),
+    { action: "update", noun: "map facet" },
+  );
   return assertData(response.data, response.error);
 }
 
@@ -214,7 +224,10 @@ export async function createMapFacetValue(input: MapFacetValueInsert): Promise<M
 }
 
 export async function updateMapFacetValue(id: string, patch: MapFacetValueUpdate): Promise<MapFacetValue> {
-  const response = await (await seoDb()).from("map_facet_value").update(patch).eq("id", id).is("deleted_at", null).select("*").single();
+  const response = await writeOneRow(
+    (await seoDb()).from("map_facet_value").update(patch).eq("id", id).is("deleted_at", null).select("*"),
+    { action: "update", noun: "map facet value" },
+  );
   return assertData(response.data, response.error);
 }
 

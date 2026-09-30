@@ -44,6 +44,7 @@ import {
   validateResearchLineageIds,
 } from "../_lib/researchLineage";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 /**
  * Summary columns for list view (no HTML content blobs). `content_stats` is a
@@ -664,12 +665,14 @@ export async function POST(request: NextRequest) {
         const blockedResponse = cmsContentBlockedResponse(contentValidation);
         if (blockedResponse) return blockedResponse;
 
-        const { data, error } = await db
-          .from("client_pages")
-          .update(updateData)
-          .eq("id", pageId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_pages")
+            .update(updateData)
+            .eq("id", pageId)
+            .select(),
+          { action: "update", noun: "client page" },
+        );
 
         if (error) {
           console.error("[cms/pages] update error:", error);
@@ -723,12 +726,14 @@ export async function POST(request: NextRequest) {
             ? webPageId
             : null;
 
-        const { data, error } = await db
-          .from("client_pages")
-          .update({ web_page_id: wanted })
-          .eq("id", pageId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_pages")
+            .update({ web_page_id: wanted })
+            .eq("id", pageId)
+            .select(),
+          { action: "update", noun: "client page" },
+        );
 
         if (error) {
           // Unique (client_id, web_page_id): one crawled URL is served by
@@ -785,12 +790,14 @@ export async function POST(request: NextRequest) {
             researchTopicIds,
             researchTagIds,
           );
-          const { data, error } = await db
-            .from("client_pages")
-            .update({ research_topic_ids: topicIds, research_tag_ids: tagIds })
-            .eq("id", pageId)
-            .select()
-            .single();
+          const { data, error } = await writeOneRow(
+            db
+              .from("client_pages")
+              .update({ research_topic_ids: topicIds, research_tag_ids: tagIds })
+              .eq("id", pageId)
+              .select(),
+            { action: "update", noun: "client page" },
+          );
           if (error) throw error;
           await logCmsActivity(db, {
             siteId: data.client_id,
@@ -869,12 +876,14 @@ export async function POST(request: NextRequest) {
         if (canonicalUrl !== undefined)
           draftData.canonical_url_draft = canonicalUrl;
 
-        const { data, error } = await db
-          .from("client_pages")
-          .update(draftData)
-          .eq("id", pageId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_pages")
+            .update(draftData)
+            .eq("id", pageId)
+            .select(),
+          { action: "update", noun: "client page" },
+        );
 
         if (error) {
           console.error("[cms/pages] save-draft error:", error);

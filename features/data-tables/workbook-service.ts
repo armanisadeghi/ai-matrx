@@ -15,7 +15,7 @@
  */
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 import type {
   ServiceResult,
@@ -130,13 +130,15 @@ export async function renameWorkbook(
   workbookId: string,
   name: string,
 ): Promise<ServiceResult<Workbook>> {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_workbooks")
-    .update({ workbook_name: name, updated_at: new Date().toISOString() })
-    .eq("id", workbookId)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("workbench")
+      .from("udt_workbooks")
+      .update({ workbook_name: name, updated_at: new Date().toISOString() })
+      .eq("id", workbookId)
+      .select("*"),
+    { action: "update", noun: "workbook" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as Workbook };
 }
@@ -155,16 +157,18 @@ export async function updateWorkbookDescription(
   workbookId: string,
   description: string | null,
 ): Promise<ServiceResult<Workbook>> {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_workbooks")
-    .update({
-      description: description && description.length > 0 ? description : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", workbookId)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("workbench")
+      .from("udt_workbooks")
+      .update({
+        description: description && description.length > 0 ? description : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", workbookId)
+      .select("*"),
+    { action: "update", noun: "workbook" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as Workbook };
 }

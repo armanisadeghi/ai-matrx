@@ -44,7 +44,7 @@ import type {
   SiteCollection,
 } from "@/features/cms/types";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,62}$/;
 
@@ -854,12 +854,14 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: richtextError }, { status: 400 });
         }
 
-        const { data, error } = await db
-          .from("site_collections")
-          .update(updateData)
-          .eq("id", collectionId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("site_collections")
+            .update(updateData)
+            .eq("id", collectionId)
+            .select(),
+          { action: "update", noun: "site collection" },
+        );
         if (error) {
           console.error("[cms/collections] update error:", error);
           const status = error.code === "23505" ? 409 : 500;
@@ -951,12 +953,14 @@ export async function POST(request: NextRequest) {
             { status: 403 },
           );
         }
-        const { data, error } = await db
-          .from("site_collections")
-          .update({ status: "archived" })
-          .eq("id", collectionId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("site_collections")
+            .update({ status: "archived" })
+            .eq("id", collectionId)
+            .select(),
+          { action: "update", noun: "site collection" },
+        );
         if (error) {
           console.error("[cms/collections] archive error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
@@ -988,12 +992,14 @@ export async function POST(request: NextRequest) {
             { status: 403 },
           );
         }
-        const { data, error } = await db
-          .from("site_collections")
-          .update({ deleted_at: new Date().toISOString(), status: "archived" })
-          .eq("id", collectionId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("site_collections")
+            .update({ deleted_at: new Date().toISOString(), status: "archived" })
+            .eq("id", collectionId)
+            .select(),
+          { action: "update", noun: "site collection" },
+        );
         if (error) {
           console.error("[cms/collections] delete error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
@@ -1023,12 +1029,14 @@ export async function POST(request: NextRequest) {
           );
         }
         const newKey = mintDataApiKey();
-        const { data, error } = await db
-          .from("client_sites")
-          .update({ data_api_key: newKey })
-          .eq("id", siteId)
-          .select("id, name, data_api_key")
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_sites")
+            .update({ data_api_key: newKey })
+            .eq("id", siteId)
+            .select("id, name, data_api_key"),
+          { action: "update", noun: "client site" },
+        );
         if (error) {
           console.error("[cms/collections] rotate_key error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
@@ -1403,12 +1411,14 @@ export async function POST(request: NextRequest) {
         }
 
         // `data` only — an edit never rewrites provenance, flags or timestamps.
-        const { data: updated, error: updateError } = await db
-          .from("site_collection_items")
-          .update({ data: prepared.data })
-          .eq("id", itemId)
-          .select(ITEM_COLUMNS)
-          .single();
+        const { data: updated, error: updateError } = await writeOneRow(
+          db
+            .from("site_collection_items")
+            .update({ data: prepared.data })
+            .eq("id", itemId)
+            .select(ITEM_COLUMNS),
+          { action: "update", noun: "site collection item" },
+        );
         if (updateError) {
           console.error("[cms/collections] items_update error:", updateError);
           return NextResponse.json(

@@ -4,7 +4,7 @@ import { getGscSummary } from "@/features/marketing/search-console/data";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData, operationFailed } from "@/utils/errors";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 type SeoTables = Database["seo"]["Tables"];
 type SeoViews = Database["seo"]["Views"];
@@ -370,13 +370,15 @@ export async function updateSeoChange(
   patch: SeoTables["change_set"]["Update"],
 ): Promise<void> {
   const session = await requireAuthenticatedSupabaseSession(supabase);
-  const response = await supabase
-    .schema("seo")
-    .from("change_set")
-    .update({ ...patch, updated_by: session.user.id })
-    .eq("id", changeId)
-    .select("id")
-    .single();
+  const response = await writeOneRow(
+    supabase
+      .schema("seo")
+      .from("change_set")
+      .update({ ...patch, updated_by: session.user.id })
+      .eq("id", changeId)
+      .select("id"),
+    { action: "update", noun: "change set" },
+  );
   if (response.error) throw response.error;
 }
 
@@ -388,18 +390,20 @@ export async function verifySeoChangeItemManually(
   const session = await requireAuthenticatedSupabaseSession(supabase);
   const db = supabase.schema("seo");
   const now = new Date().toISOString();
-  const updateResult = await db
-    .from("change_item")
-    .update({
-      verification_status: status,
-      verification_method: "manual",
-      verified_at: now,
-      notes: note,
-      updated_by: session.user.id,
-    })
-    .eq("id", item.id)
-    .select("id")
-    .single();
+  const updateResult = await writeOneRow(
+    db
+      .from("change_item")
+      .update({
+        verification_status: status,
+        verification_method: "manual",
+        verified_at: now,
+        notes: note,
+        updated_by: session.user.id,
+      })
+      .eq("id", item.id)
+      .select("id"),
+    { action: "update", noun: "change item" },
+  );
   if (updateResult.error) throw updateResult.error;
   const eventResult = await db.from("change_event").insert({
     organization_id: item.organization_id,

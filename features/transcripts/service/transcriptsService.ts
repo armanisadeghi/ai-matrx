@@ -2,7 +2,7 @@
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -258,13 +258,15 @@ export async function updateTranscript(
     };
   }
 
-  const { data, error } = await supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .update(finalUpdates)
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("transcripts")
+      .from("transcripts")
+      .update(finalUpdates)
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "transcript" },
+  );
 
   if (error) {
     console.error("Error updating transcript:", error);
@@ -381,13 +383,15 @@ export async function finalizeDraft(
     };
   }
 
-  const { data, error } = await supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .update(finalUpdates)
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("transcripts")
+      .from("transcripts")
+      .update(finalUpdates)
+      .eq("id", id)
+      .select(),
+    { action: "update", noun: "transcript" },
+  );
 
   if (error) {
     console.error("Error finalizing draft:", error);

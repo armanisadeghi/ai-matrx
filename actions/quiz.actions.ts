@@ -6,7 +6,7 @@ import type { Json } from "@/types/database.types";
 import type { QuizSession } from "@/types/quiz-session";
 import { mapQuizSessionRow } from "@/utils/quiz-session-mapper";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 export type { QuizSession } from "@/types/quiz-session";
 
@@ -199,14 +199,16 @@ export async function updateQuizSession(
         : {}),
     };
 
-    const { data, error } = await supabase
-      .schema("education")
-      .from("quiz_sessions")
-      .update(updateData)
-      .eq("id", id)
-      .eq("created_by", user.id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("education")
+        .from("quiz_sessions")
+        .update(updateData)
+        .eq("id", id)
+        .eq("created_by", user.id)
+        .select(),
+      { action: "update", noun: "quiz session" },
+    );
 
     if (error) {
       console.error("Error updating quiz session:", error);

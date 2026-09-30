@@ -31,6 +31,7 @@ import {
   type CmsContentValidationResult,
 } from "../_lib/validateContent";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 export async function POST(request: NextRequest) {
   let contentValidation: CmsContentValidationResult | null = null;
@@ -256,12 +257,14 @@ export async function POST(request: NextRequest) {
         const blockedResponse = cmsContentBlockedResponse(contentValidation);
         if (blockedResponse) return blockedResponse;
 
-        const { data, error } = await db
-          .from("client_components")
-          .update(updateData)
-          .eq("id", componentId)
-          .select()
-          .single();
+        const { data, error } = await writeOneRow(
+          db
+            .from("client_components")
+            .update(updateData)
+            .eq("id", componentId)
+            .select(),
+          { action: "update", noun: "client component" },
+        );
 
         if (error) {
           console.error("[cms/components] update error:", error);

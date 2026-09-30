@@ -23,6 +23,7 @@ import type {
 } from "../types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { StudySessionRow } from "@/features/education/study/types";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const EDU = () => supabase.schema("education");
 
@@ -224,12 +225,14 @@ export const gameService = {
     patch: { started_at?: string; ended_at?: string } = {},
   ): Promise<EngageResult<GameRoomRow>> {
     try {
-      const { data, error } = await EDU()
-        .from("game_room")
-        .update({ status, ...patch } as never)
-        .eq("id", roomId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("game_room")
+          .update({ status, ...patch } as never)
+          .eq("id", roomId)
+          .select("*"),
+        { action: "update", noun: "game room" },
+      );
       if (error) return fail("setRoomStatus", error);
       return { data: data as GameRoomRow, error: null };
     } catch (e) {

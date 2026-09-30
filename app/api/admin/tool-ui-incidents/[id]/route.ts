@@ -3,7 +3,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import type { TablesUpdate } from "@/types/database.types";
 import { extractErrorMessage } from "@/utils/errors";
-import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeFailureStatus, writeOneRow } from "@/utils/supabase/writeOne";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -47,13 +47,15 @@ export async function PUT(
       updateData.resolution_notes = body.resolution_notes;
     }
 
-    const { data, error } = await supabase
-      .schema("tool")
-      .from("ui_incident")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("tool")
+        .from("ui_incident")
+        .update(updateData)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "ui incident" },
+    );
 
     if (error) {
       return NextResponse.json(

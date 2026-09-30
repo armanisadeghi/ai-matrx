@@ -70,7 +70,7 @@ import type {
 } from "@/features/marketing/types";
 import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
 import { extractErrorMessage, operationFailed } from "@/utils/errors";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { applyPageOnlyFilters } from "@/features/marketing/lib/page-content-class";
@@ -882,12 +882,14 @@ export async function createSite(
   return insertWithSlug<MarketingSite>(
     toMarketingKey(input.domain || input.name),
     (slug) =>
-      db
-        .from("site")
-        .update({ slug })
-        .eq("id", site.id)
-        .select(SITE_COLUMNS)
-        .single(),
+      writeOneRow(
+        db
+          .from("site")
+          .update({ slug })
+          .eq("id", site.id)
+          .select(SITE_COLUMNS),
+        { action: "update", noun: "site" },
+      ),
   );
 }
 
@@ -4573,12 +4575,14 @@ export async function upsertLocationListing(
     };
     if (input.listingUrl !== undefined) patch.listing_url = input.listingUrl;
     if (input.notes !== undefined) patch.notes = input.notes;
-    const response = await db
-      .from("location_listing")
-      .update(patch)
-      .eq("id", existing.data.id)
-      .select(LOCATION_LISTING_COLUMNS)
-      .single();
+    const response = await writeOneRow(
+      db
+        .from("location_listing")
+        .update(patch)
+        .eq("id", existing.data.id)
+        .select(LOCATION_LISTING_COLUMNS),
+      { action: "update", noun: "location listing" },
+    );
     return assertData(response.data, response.error);
   }
   const response = await db

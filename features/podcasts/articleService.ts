@@ -10,6 +10,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { PcArticle, PcArticleKind } from "./types";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 export const articleService = {
   /** Every article for an episode (blog + show_notes), newest first. */
@@ -94,12 +95,14 @@ export const articleService = {
     id: string,
     status: PcArticle["status"],
   ): Promise<PcArticle> {
-    const { data, error } = await supabase
-      .schema("podcast").from("pc_articles")
-      .update({ status })
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("podcast").from("pc_articles")
+        .update({ status })
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "pc article" },
+    );
     if (error) throw error;
     return data as PcArticle;
   },
@@ -108,12 +111,14 @@ export const articleService = {
     id: string,
     content_markdown: string,
   ): Promise<PcArticle> {
-    const { data, error } = await supabase
-      .schema("podcast").from("pc_articles")
-      .update({ content_markdown })
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("podcast").from("pc_articles")
+        .update({ content_markdown })
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "pc article" },
+    );
     if (error) throw error;
     return data as PcArticle;
   },

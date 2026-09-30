@@ -13,6 +13,7 @@ import type {
   CxAgentPlanRow,
   CxPlanStatus,
 } from "../tools/types";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 export interface CreateAgentPlanInput {
   conversation_id: string;
@@ -88,12 +89,14 @@ export async function setPlanStatus(
   planId: string,
   status: CxPlanStatus,
 ): Promise<CxAgentPlanRow> {
-  const { data, error } = await db
-    .schema("chat").from("agent_plan")
-    .update({ status })
-    .eq("id", planId)
-    .select("*")
-    .single();
+  const { data, error } = await writeOneRow(
+    db
+      .schema("chat").from("agent_plan")
+      .update({ status })
+      .eq("id", planId)
+      .select("*"),
+    { action: "update", noun: "agent plan" },
+  );
   if (error) throw error;
   return data as CxAgentPlanRow;
 }

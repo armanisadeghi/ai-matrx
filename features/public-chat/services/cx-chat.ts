@@ -16,7 +16,7 @@ import type {
   CxToolCall,
   CxConversationWithMessages,
 } from "../types/cx-tables";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 type CxDatabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -88,13 +88,15 @@ export async function updateCxConversation(
   updates: CxConversationUpdate,
 ): Promise<CxConversation | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("chat")
-    .from("conversation")
-    .update(updates)
-    .eq("id", conversationId)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("chat")
+      .from("conversation")
+      .update(updates)
+      .eq("id", conversationId)
+      .select(),
+    { action: "update", noun: "conversation" },
+  );
 
   if (error) {
     console.error("updateCxConversation error:", error);

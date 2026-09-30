@@ -57,6 +57,7 @@ import type {
   SessionProgressNarrative,
   SessionReviewRun,
 } from "../types";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 const EDU = () => supabase.schema("education");
 
@@ -407,13 +408,15 @@ export const studyService = {
   ): Promise<StudyResult<StudySessionRow>> {
     try {
       const userId = requireUserId();
-      const { data, error } = await EDU()
-        .from("study_session")
-        .update(patch as never)
-        .eq("id", id)
-        .eq("created_by", userId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("study_session")
+          .update(patch as never)
+          .eq("id", id)
+          .eq("created_by", userId)
+          .select("*"),
+        { action: "update", noun: "study session" },
+      );
       if (error) return fail("updateSession", error);
       return { data: data as StudySessionRow, error: null };
     } catch (e) {
@@ -1197,13 +1200,15 @@ export const studyService = {
   ): Promise<StudyResult<StudyGoalRow>> {
     try {
       const userId = requireUserId();
-      const { data, error } = await EDU()
-        .from("study_goal")
-        .update(patch as never)
-        .eq("id", id)
-        .eq("created_by", userId)
-        .select("*")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("study_goal")
+          .update(patch as never)
+          .eq("id", id)
+          .eq("created_by", userId)
+          .select("*"),
+        { action: "update", noun: "study goal" },
+      );
       if (error) return fail("updateGoal", error);
       return { data: data as StudyGoalRow, error: null };
     } catch (e) {
@@ -1215,13 +1220,15 @@ export const studyService = {
   async deleteGoal(id: string): Promise<StudyResult<{ id: string }>> {
     try {
       const userId = requireUserId();
-      const { data, error } = await EDU()
-        .from("study_goal")
-        .update({ deleted_at: new Date().toISOString() } as never)
-        .eq("id", id)
-        .eq("created_by", userId)
-        .select("id")
-        .single();
+      const { data, error } = await writeOneRow(
+        EDU()
+          .from("study_goal")
+          .update({ deleted_at: new Date().toISOString() } as never)
+          .eq("id", id)
+          .eq("created_by", userId)
+          .select("id"),
+        { action: "update", noun: "study goal" },
+      );
       if (error) return fail("deleteGoal", error);
       return { data: { id: (data as { id: string }).id }, error: null };
     } catch (e) {

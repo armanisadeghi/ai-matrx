@@ -21,6 +21,7 @@ import {
   lookupSandboxAndOrchestrator,
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 export async function POST(
   request: NextRequest,
@@ -74,19 +75,21 @@ export async function POST(
     // Mirror the new orchestrator state into the same Postgres row so the FE
     // doesn't have to swap row references — the row UUID `id` is stable.
     const supabase = await createClient();
-    const { data: instance, error: updateError } = await supabase
-      .from("sandbox_instances")
-      .update({
-        sandbox_id: newSandbox.sandbox_id,
-        container_id: newSandbox.container_id ?? null,
-        status: newSandbox.status ?? "creating",
-        expires_at: newSandbox.expires_at ?? null,
-        stopped_at: null,
-        stop_reason: null,
-      })
-      .eq("id", id)
-      .select()
-      .single();
+    const { data: instance, error: updateError } = await writeOneRow(
+      supabase
+        .from("sandbox_instances")
+        .update({
+          sandbox_id: newSandbox.sandbox_id,
+          container_id: newSandbox.container_id ?? null,
+          status: newSandbox.status ?? "creating",
+          expires_at: newSandbox.expires_at ?? null,
+          stopped_at: null,
+          stop_reason: null,
+        })
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "sandbox instance" },
+    );
 
     if (updateError) {
       console.error("Failed to mirror reset into DB:", updateError);

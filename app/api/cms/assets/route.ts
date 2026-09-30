@@ -27,7 +27,7 @@ import { logCmsActivity } from "../_lib/activityLog";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { readAllRows } from "@ai-matrx/data/db";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 // Durable public hosts a library asset URL may live on. Anything else — an
 // arbitrary external https URL — is refused so
@@ -364,7 +364,10 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        const { data, error } = await db.from("client_assets").update(clean).eq("id", assetId).select().single();
+        const { data, error } = await writeOneRow(
+          db.from("client_assets").update(clean).eq("id", assetId).select(),
+          { action: "update", noun: "client asset" },
+        );
         if (error) {
           console.error("[cms/assets] update error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });

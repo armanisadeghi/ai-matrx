@@ -16,7 +16,7 @@ import { mayRunNoteConflictCommand } from "./conflictCommandLock";
  *   saveNoteField            — quick single-field save + optimistic update
  */
 
-import { WriteDidNotLandError } from "@/utils/supabase/writeOne";
+import { WriteDidNotLandError, writeOneRow } from "@/utils/supabase/writeOne";
 import { noteEditBaseFromRecord } from "../utils/saveVerification";
 import { resolveNewNoteOrganization } from "../hooks/useNewNoteOrganization";
 import { readAllRows } from "@ai-matrx/data/db";
@@ -1610,13 +1610,15 @@ export const saveNoteField = createAsyncThunk<
 export const restoreNote = createAsyncThunk<void, string>(
   "notes/restoreNote",
   async (noteId, { dispatch }) => {
-    const { data, error } = await supabase
-      .schema("workbench")
-      .from("notes")
-      .update({ deleted_at: null })
-      .eq("id", noteId)
-      .select("*")
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("workbench")
+        .from("notes")
+        .update({ deleted_at: null })
+        .eq("id", noteId)
+        .select("*"),
+      { action: "update", noun: "note" },
+    );
 
     if (error) throw error;
     let restored = data;
@@ -1654,13 +1656,15 @@ export const restoreNote = createAsyncThunk<void, string>(
             .maybeSingle();
           if (liveError) throw liveError;
           if (live) {
-            const { data: moved, error: moveError } = await supabase
-              .schema("workbench")
-              .from("notes")
-              .update({ folder_id: live.id })
-              .eq("id", noteId)
-              .select("*")
-              .single();
+            const { data: moved, error: moveError } = await writeOneRow(
+              supabase
+                .schema("workbench")
+                .from("notes")
+                .update({ folder_id: live.id })
+                .eq("id", noteId)
+                .select("*"),
+              { action: "update", noun: "note" },
+            );
             if (moveError) throw moveError;
             restored = moved;
           }

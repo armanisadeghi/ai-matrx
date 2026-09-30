@@ -6,6 +6,7 @@ import {
 } from "@/lib/sandbox/orchestrator-routing";
 import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 function outcomeUnknown(operation: "stop" | "delete") {
   return NextResponse.json(
@@ -104,14 +105,16 @@ export async function PATCH(
       );
     }
 
-    const { data, error } = await supabase
-      .from("sandbox_instances")
-      .update({ name })
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .is("deleted_at", null)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .from("sandbox_instances")
+        .update({ name })
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .select(),
+      { action: "update", noun: "sandbox instance" },
+    );
 
     if (error) {
       if (error.code === "PGRST116") {

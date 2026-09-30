@@ -31,6 +31,7 @@ import {
   parseGetTriageBatchResult,
   type TriageBatchData,
 } from "@/types/feedback-row-mapper";
+import { writeOneRow } from "@/utils/supabase/writeOne";
 
 // ============= Types =============
 
@@ -388,13 +389,15 @@ export async function updateFeedbackItem(
     const { data, error } = await withTransientRetry(
       `users.user_feedback update of ${feedbackId}`,
       () =>
-        supabase
-          .schema("users")
-          .from("user_feedback")
-          .update(patch)
-          .eq("id", feedbackId)
-          .select()
-          .single(),
+        writeOneRow(
+          supabase
+            .schema("users")
+            .from("user_feedback")
+            .update(patch)
+            .eq("id", feedbackId)
+            .select(),
+          { action: "update", noun: "user feedback" },
+        ),
     );
 
     if (error) {

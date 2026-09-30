@@ -6,7 +6,7 @@ import { organizationRequired } from "@/lib/organizations/organizationRequiredSe
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { CreateListItemInput } from "../types";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 
 // ─── Create ────────────────────────────────────────────────────────────────────
 
@@ -219,20 +219,22 @@ export async function updateItemAction(params: {
   if (params.groupName !== undefined) patch.group_name = params.groupName;
   if (params.iconName !== undefined) patch.icon_name = params.iconName;
 
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_list_items")
-    .update(patch)
-    .eq("id", params.itemId)
-    // Scoped to the list AND the owner on purpose. This action is now reachable
-    // from an agent write target (`update_list_item`), where the item id is a
-    // value the model supplies — an id from another list, or from another
-    // user's list, must MISS (and `.single()` then throws) rather than quietly
-    // edit a row the caller never had on screen.
-    .eq("list_id", params.listId)
-    .eq("user_id", user.id)
-    .select()
-    .single();
+  const { data, error } = await writeOneRow(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_list_items")
+      .update(patch)
+      .eq("id", params.itemId)
+      // Scoped to the list AND the owner on purpose. This action is now reachable
+      // from an agent write target (`update_list_item`), where the item id is a
+      // value the model supplies — an id from another list, or from another
+      // user's list, must MISS (and `.single()` then throws) rather than quietly
+      // edit a row the caller never had on screen.
+      .eq("list_id", params.listId)
+      .eq("user_id", user.id)
+      .select(),
+    { action: "update", noun: "structured list item" },
+  );
 
   if (error) throw new Error(`Failed to update item: ${error.message}`);
   revalidatePath(`/lists/${params.listId}`);

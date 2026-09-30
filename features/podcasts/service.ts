@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { writeOne } from "@/utils/supabase/writeOne";
+import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { Json } from "@/types/database.types";
 import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
@@ -89,12 +89,14 @@ export const podcastService = {
       Omit<PcShow, "id" | "created_at" | "updated_at" | "created_by">
     >,
   ): Promise<PcShow> {
-    const { data, error } = await supabase
-      .schema("podcast").from("pc_shows")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("podcast").from("pc_shows")
+        .update(payload)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "pc show" },
+    );
     if (error) throw error;
     return mapPcShowRow(data);
   },
@@ -299,12 +301,14 @@ export const podcastService = {
       Omit<PcEpisode, "id" | "created_at" | "updated_at" | "chapters">
     >,
   ): Promise<PcEpisode> {
-    const { data, error } = await supabase
-      .schema("podcast").from("pc_episodes")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("podcast").from("pc_episodes")
+        .update(payload)
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "pc episode" },
+    );
     if (error) throw error;
     return mapPcEpisodeRow(data);
   },
@@ -342,12 +346,14 @@ export const podcastService = {
     const durationSeconds = await resolveAudioMetadataDuration(episode.audio_url);
     const playableChapters = normalizeChapterTiming(chapters, durationSeconds);
     const storedDurationSeconds = durationSecondsForStorage(durationSeconds);
-    const { data, error } = await supabase
-      .schema("podcast").from("pc_episodes")
-      .update({ chapters: playableChapters, duration_seconds: storedDurationSeconds })
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await writeOneRow(
+      supabase
+        .schema("podcast").from("pc_episodes")
+        .update({ chapters: playableChapters, duration_seconds: storedDurationSeconds })
+        .eq("id", id)
+        .select(),
+      { action: "update", noun: "pc episode" },
+    );
     if (error) throw error;
     return {
       ...mapPcEpisodeRow(data),
