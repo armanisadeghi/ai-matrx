@@ -52,6 +52,14 @@ system's `MatrxDrillAnswerTable`, which this screen also renders.
   rides as an attached resource — never `user_input`. No content_ir kind fits (searched 2026-09-30:
   `aggregate_result` lacks question/window/trail/Other), so the Alchemy structured form is used.
 - `grain.ts` — the grain a window reads best at (a time group asked with no grain).
+- `measureFormat.ts` — every unit the contract carries, formatted ONE way (`usd` through the one
+  credits/$ switch, `tokens`, `count`, `characters`, `ms` → human durations, `share` → %, `percent`,
+  `times` → ×). Every value is rounded on its own: a value reads the same wherever it appears (owner
+  ruling 2026-09-30, which replaced the rows-add-up-to-the-rounded-total apportioning).
+- `dimensionWords.ts` — a group reads as the definition's declared `choices` / `empty_label` and the
+  door's relation `labels` (merged by the hook before any host resolver); a code no definition names
+  reads in plain words. A person's name is the one thing still read through a host resolver (the
+  platform's names door).
 - `types.ts` — the ONE place the contract additions (`views`, `findings`, `records`, `having`,
   `as_of`, `stale_after_knob`) are typed and read defensively until `@ai-matrx/records` publishes them.
 
@@ -59,9 +67,10 @@ Mounts: `features/admin/usage-drill/UsageExplorer.tsx` (`/administration/usage`)
 `features/administration/kg-cost/components/KgCostExplorer.tsx` (`/administration/knowledge/kg-cost/explore`,
 definition `kg_cost`, platform lane), `features/workflow-runtime/drill/WorkflowRunsExplorer.tsx`
 (`/administration/automation/workflow-runs` platform lane; `/workflows/runs/analyze` mine lane; definition
-`workflow_runs`). What those mounts found the explorer still lacks (describe's choice labels and the door's
-relation `labels` unread, units beyond usd/tokens, records of an invoker definition) is listed in
-PROGRESS-DRILL-CONVERSIONS "Adoptions the explorer owes".
+`workflow_runs`). The KG cost dashboard's unit-economics section IS the kg_cost mount
+(`KgCostDashboard.tsx`, lane DRILL-GAPS). A mount passes no words of its own for a definition that
+declares its choices (lane DRILL-GAPS); the mine lane's header says "Your <rowNoun>s across all your
+organizations" (`mineScope`), because the door counts the person's rows in every organization.
 
 ---
 
@@ -72,6 +81,8 @@ PROGRESS-DRILL-CONVERSIONS "Adoptions the explorer owes".
   are listed in PROGRESS-DRILL-EXPLORER "After publish" — never a placeholder in the UI.
 - Money: a Measure with unit `usd` prints through the platform's one credits/$ switch
   (`selectCostUnit`, `formatAdminPoints` / `formatAdminUsd`); the toggle shows only to someone who may flip it.
+- A run rate (`op: "rate"`) needs a window with a start: with "all time" it is left out of the ask and
+  the screen says so — never a failed answer.
 - Controls live in the header row and the toolbar row; no third stacked row.
 - Freshness: the door's `as_of` wins over a host's own count; staleness reads the knob describe names
   (`stale_after_knob`) through `lib/knobs/featureKnobs.ts` — a missing knob is said, never replaced by a constant.
@@ -83,6 +94,9 @@ PROGRESS-DRILL-CONVERSIONS "Adoptions the explorer owes".
 - Walk: `scripts/drill-explain-walk.mjs` (shared preview, admin@admin.com; drills a person, presses
   Explain this, reads the workspace's Copy for AI back, checks the Continue-with-AI destinations are
   offered, never presses one).
+- `__tests__/drill-gaps.test.ts` — units formatted by the screen, groups read as the definition's and
+  the door's words, the door's labels on an answer (lane DRILL-GAPS).
+- Walk: `scripts/drill-gaps-walk.mjs` (clone preview for real answers; live preview for the honest refusal).
 - `__tests__/drill-explorer-contract.test.ts` — optional contract fields, declared → address question,
   auto grain, finding window, the Saved-view save path (7).
 - Walk: `scripts/drill-explorer-walk.mjs` (`PART=app` on the shared preview; `PART=package` on the
@@ -95,3 +109,8 @@ PROGRESS-DRILL-CONVERSIONS "Adoptions the explorer owes".
 - `2026-09-30` — Explain this (lane DRILL-EXPLAIN, program DRILL-FINISH decision 22): the question and its
   answer as one Alchemy payload; the Alchemy host now works in the admin seat's organization so the
   workspace on `/administration/*` offers Continue with AI (`components/agent-copy/alchemy-organization.ts`).
+- `2026-09-30` — Lane DRILL-GAPS: the explorer reads describe's choice labels and the door's relation
+  labels (mount word/name patches removed from the KG and workflow mounts), formats every contract unit,
+  rounds every value independently (`apportion.ts` deleted), says the mine lane's scope, asks the
+  header's `also` Measures on the total only, formats records cells by unit and words, and names record
+  ids through the door; the KG cost dashboard's unit-economics section switched to the kg_cost mount.

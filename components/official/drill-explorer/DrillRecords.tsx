@@ -28,6 +28,7 @@ import { doorWindow } from "./useDrillExplorer";
 import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordsDeclaration } from "./types";
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
+import { plainWords } from "./dimensionWords";
 
 const PAGE = 100;
 type Row = Record<string, unknown> & { __row: string };
@@ -171,6 +172,8 @@ export function DrillRecords({
         if (dimKey && typeof v === "string" && recordNames[dimKey]?.[v]) return <span>{recordNames[dimKey][v]}</span>;
         if (dim?.labelFor && (typeof v === "string" || typeof v === "boolean")) return <span>{dim.labelFor(String(v))}</span>;
         if (typeof v === "boolean") return <span>{v ? "Yes" : "No"}</span>;
+        // a code no Dimension names ("landed_only") reads in plain words, never as the code
+        if (typeof v === "string" && /^[a-z]+(_[a-z0-9]+)+$/.test(v)) return <span>{plainWords(v)}</span>;
         return <span className={typeof v === "number" ? "tabular-nums" : undefined}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</span>;
       },
     };
