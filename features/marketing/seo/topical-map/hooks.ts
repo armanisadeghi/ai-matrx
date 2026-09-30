@@ -201,7 +201,7 @@ export function useTopicalMaps(scope: TopicalMapListScope, enabled = true) {
     queryKey: topicalMapKeys.maps(scope),
     queryFn: ({ signal }) =>
       withTopicalMapErrors("seo.topical_map (list)", () => listTopicalMaps(scope, signal)),
-    enabled: enabled && Boolean(scope.organizationId),
+    enabled,
     placeholderData: keepPreviousData,
   });
 }

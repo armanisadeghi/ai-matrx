@@ -50,8 +50,6 @@ import {
   TOPICAL_MAP_SURFACE_NAME,
 } from "@/features/marketing/seo/topical-map/mandateKeys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay, selectOpenInstances } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
@@ -230,23 +228,16 @@ export default function TopicalMapWindow({
   );
 }
 
-/** The maps this person can view in the active organization — the empty-map state. */
+/**
+ * Every map this person can read, across all their organizations (active-org
+ * law: a read never narrows by the active organization; RLS decides). The
+ * active organization is only where a NEW map is started, elsewhere.
+ */
 function MapPicker({ onPick }: { onPick: (mapId: string) => void }) {
-  const { organizationId, organizationState } = useOrganizationRequired();
-  const maps = useTopicalMaps({ organizationId: organizationId ?? "" }, Boolean(organizationId));
+  const maps = useTopicalMaps({ organizationId: null });
 
-  if (organizationState !== "ready") {
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        what="Topical maps"
-        title="No organization is active"
-        description="Pick an organization in the top bar; its topical maps will be listed here."
-      />
-    );
-  }
-  if (maps.isPending) return <SuspenseLoader message="Listing this organization's topical maps…" />;
-  if (maps.isError) return <TopicalMapFailed what="this organization's topical maps" error={maps.error} />;
+  if (maps.isPending) return <SuspenseLoader message="Listing your topical maps…" />;
+  if (maps.isError) return <TopicalMapFailed what="your topical maps" error={maps.error} />;
   if (maps.data.length === 0) {
     return (
       <TopicalMapEmpty

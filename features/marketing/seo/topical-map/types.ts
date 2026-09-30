@@ -21,7 +21,8 @@ export type MapTopicStats = Database["seo"]["Views"]["v_map_topic_stats"]["Row"]
  * carries `brand_id`.
  */
 export interface TopicalMapListScope {
-  organizationId: string;
+  /** Null/omitted = every organization the person can read (RLS decides). */
+  organizationId?: string | null;
   brandId?: string | null;
 }
 

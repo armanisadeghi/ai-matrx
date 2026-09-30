@@ -86,8 +86,8 @@ export async function listTopicalMaps(scope: TopicalMapListScope, signal?: Abort
   const db = await seoDb();
   return readAllRows<TopicalMap>(
     ({ from, to }) => {
-      let query = db.from("topical_map").select("*").eq("organization_id", scope.organizationId)
-        .is("deleted_at", null);
+      let query = db.from("topical_map").select("*").is("deleted_at", null);
+      if (scope.organizationId) query = query.eq("organization_id", scope.organizationId);
       if (scope.brandId) query = query.eq("brand_id", scope.brandId);
       return query.order("name").order("id").range(from, to)
         .abortSignal(signal ?? new AbortController().signal);
