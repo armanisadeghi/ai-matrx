@@ -87,7 +87,7 @@ const HEADER_COMPONENT = /(Page|Route|Section|Panel|Shell|Screen|Card)?Header$|^
 const PROMO_COMPONENTS = /^(ModuleLanding|ModuleSignInGate|MarketingHero|LandingHero)$/;
 
 /** Promotional surfaces and documentation surfaces (their text IS the content) — prose is allowed there. */
-const PROMO = [/^app\/\(public\)\//, /\/official-components\//, /\/documentation\/feature-docs\//];
+const PROMO = [/^app\/\(public\)\//, /\/official-components\//, /\/documentation\/feature-docs\//, /\/module-landing\//];
 /** Developer demo pages — scanned only with --include-dev. */
 const DEV = [/^app\/\(dev\)\//, /\/demos?\//, /\.dev\.tsx$/, /\/lab\//, /\/test-bench\//, /\/bakeoff\//];
 const SKIP = [
@@ -202,6 +202,17 @@ function directText(el) {
   return collapse(s.replace(/…(\s*…)+/g, "…"));
 }
 
+/** What an object literal feeds: the variable it is assigned to or the call it is passed to. */
+function objectHost(obj) {
+  for (let p = obj.parent, depth = 0; p && depth < 6; p = p.parent, depth++) {
+    if (ts.isVariableDeclaration(p) && ts.isIdentifier(p.name)) return p.name.text;
+    if (ts.isCallExpression(p)) return p.expression.getText().slice(0, 80);
+    if (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))) return p.name.text;
+    if (ts.isExportAssignment(p) || ts.isSourceFile(p)) break;
+  }
+  return "";
+}
+
 /** Components whose body text explains a consequence or a state: dialogs, sheets, alerts, empty/error states. */
 const CONSEQUENCE_HOST = /(Dialog|AlertDialog|Sheet|Drawer|Alert|Confirm|EmptyState|ErrorState|ReadFailure|Notice|Empty)(Content|Body)?$/;
 function insideConsequenceHost(node) {
@@ -268,6 +279,20 @@ export function scanSource(file, source) {
           checkText(a, t, kind);
           if (name === "description" && HEADER_COMPONENT.test(tag) && collapse(t).length >= 12)
             push("page-description", a, t, `<${tag} description=…> renders a sentence under a title`);
+        }
+      }
+    }
+
+    // Text kept in data and rendered later: `{ title: "…", description: "…" }` in a .tsx config array
+    // (round-1 confirm: the system-agents dashboard's card copy lived in such arrays, unseen).
+    if (ts.isPropertyAssignment(node) && (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name))) {
+      const name = node.name.text;
+      if (SECONDARY_PROPS.has(name) && node.parent && ts.isObjectLiteralExpression(node.parent)) {
+        const host = objectHost(node.parent);
+        if (!/metadata|Metadata|openGraph|twitter|seo|jsonLd|schema|zod|z\.|tool|Tool|prompt|Prompt/.test(host)) {
+          where = `{ ${name}: }`;
+          const kind = /confirm|toast|notify|Dialog|alert|Alert/.test(host) ? "consequence" : "secondary";
+          for (const t of literalTexts(node.initializer)) checkText(node, t, kind);
         }
       }
     }
@@ -458,6 +483,7 @@ function selfTest() {
       </div>
       <p className="text-xs text-muted-foreground">On = when a scope/field is added, suggest values from already-indexed content. Always requires confirmation. Off by default.</p>
       <KpiTile label="NER" value={e} hint={x ? "Backfill brings this up to 100%." : "Live coverage not yet reported by the backend."} />
+      {[{ title: "Agents", description: "Every system agent the platform runs, with its bindings, versions, and the mandates that call it today." }].map((c) => <Card key={c.title} {...c} />)}
     </div>); }`;
   const good = `
     export function A() { return (<div>
