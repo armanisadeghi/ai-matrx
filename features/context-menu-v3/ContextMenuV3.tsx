@@ -59,6 +59,7 @@ import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 import { resolveTableRowMenuDescriptor } from "./table-row-context-registry";
 import { resolveRecordMenu } from "./record-menu-registry";
+import { joinExtraSections } from "./utils/join-extra-sections";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
 
 /**
@@ -459,17 +460,16 @@ export function ContextMenuV3({
         : answered,
     );
     const surfaceSections = resolveExtraSectionsOnOpen?.(target);
-    const ownSections =
-      rowMenu?.extraSections && surfaceSections
-        ? [...rowMenu.extraSections, ...surfaceSections]
-        : (rowMenu?.extraSections ?? surfaceSections);
+    // Several owners, one menu: joined so a row id is drawn once (utils/join-extra-sections.ts).
+    const ownSections = joinExtraSections(rowMenu?.extraSections, surfaceSections);
     // The record whose content this is (a note's tab rows, drawn apart from its
     // content): its rows join THIS menu, so the record's ⋯ and a right-click on
-    // its content are one menu (record-menu-registry.ts, R26).
+    // its content are one menu (record-menu-registry.ts, R26). The content's own
+    // row wins over the record's row with the same id — never both.
     const record = resolveRecordMenu(target);
     setResolvedExtraSections(
       record?.extraSections.length
-        ? [...(ownSections ?? extraSections ?? []), ...record.extraSections]
+        ? joinExtraSections(ownSections ?? extraSections ?? [], record.extraSections)
         : ownSections,
     );
     // The record's entity fills a silence only — never over this menu's own.

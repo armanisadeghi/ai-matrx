@@ -215,7 +215,10 @@ export function createNotesEditorExtraSections(
     },
   ];
 
-  const shared = new Set(["duplicate", "export", "move", "tabs", "delete-sep", "delete"]);
+  // The tab's rows carry Save too ("note-buffer", greyed with its reason), and
+  // both join the one menu on the note's content: a second "save" was yielded
+  // twice and refused by the action registry (2026-09-30).
+  const shared = new Set(["save", "duplicate", "export", "move", "tabs", "delete-sep", "delete"]);
   const own = noteActionsFromTab
     ? items.filter((item) => !shared.has(item.id))
     : items;
