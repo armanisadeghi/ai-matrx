@@ -190,10 +190,13 @@ export function useLiveCandidateCell(
   useSyncExternalStore(subscribeCells, () => cellVersion, () => 0);
   // The list's own answer wins until the heartbeat has read something newer
   // than it: a fresh page read resets what this cell shows.
-  const [baseline, setBaseline] = useState(listCell);
+  // Compared by VALUE: a list may hand a fresh row object on every render, and
+  // an identity check would reset to the list's (older) answer every time.
+  const listKey = listCell === undefined ? "unread" : JSON.stringify(listCell);
+  const [baseline, setBaseline] = useState(listKey);
   const [seenAt, setSeenAt] = useState(cellVersion);
-  if (baseline !== listCell) {
-    setBaseline(listCell);
+  if (baseline !== listKey) {
+    setBaseline(listKey);
     setSeenAt(cellVersion);
   }
   const live = mandateId && cellVersion > seenAt && liveCells.has(mandateId) ? liveCells.get(mandateId) : listCell;
