@@ -16,7 +16,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
-import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
+import { useOpenConnectorConsentDialog } from "@/features/overlays/openers/connectorConsentDialog";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { getUserMessage } from "@/lib/api/errors";
 import { toast } from "@/lib/toast";
@@ -81,7 +81,7 @@ export function OtherContactsReview() {
     staleTime: 30_000,
   });
   const inventory = useGoogleConnectionInventory();
-  const openGoogleConnect = useOpenGoogleConnectWindow();
+  const openConsent = useOpenConnectorConsentDialog();
   const connections = useMemo(
     () =>
       (inventory.data?.connections ?? []).filter(
@@ -105,12 +105,10 @@ export function OtherContactsReview() {
   const [done, setDone] = useState<ContactImportResultPending | null>(null);
 
   const connectGoogleAccount = useCallback(() => {
-    openGoogleConnect({
-      reason: "to review a selected Google Other Contact",
-      mode: "overview",
-      onWindowClose: () => inventory.refetch(),
+    openConsent({
+      initialProductKeys: ["other_contacts"],
     });
-  }, [inventory, openGoogleConnect]);
+  }, [openConsent]);
 
   const resetSelection = useCallback(() => {
     setSelected(null);

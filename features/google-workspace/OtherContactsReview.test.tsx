@@ -9,8 +9,7 @@ import { OtherContactsReview } from "./OtherContactsReview";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const openGoogleConnect = jest.fn();
-const refetchInventory = jest.fn();
+const openConsent = jest.fn();
 
 jest.mock("@tanstack/react-query", () => ({
   useQuery: () => ({
@@ -30,11 +29,10 @@ jest.mock("@/features/marketing/google/hooks", () => ({
     data: { connections: [], resources: [] },
     isLoading: false,
     isError: false,
-    refetch: refetchInventory,
   }),
 }));
-jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
-  useOpenGoogleConnectWindow: () => openGoogleConnect,
+jest.mock("@/features/overlays/openers/connectorConsentDialog", () => ({
+  useOpenConnectorConsentDialog: () => openConsent,
 }));
 
 let container: HTMLDivElement;
@@ -44,8 +42,7 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  openGoogleConnect.mockReset();
-  refetchInventory.mockReset();
+  openConsent.mockReset();
 });
 
 afterEach(() => {
@@ -53,7 +50,7 @@ afterEach(() => {
   container.remove();
 });
 
-test("opens the canonical connector in place and refreshes accounts after it closes", async () => {
+test("opens the canonical consent dialog with Other Contacts selected", async () => {
   await act(async () => {
     root.render(<OtherContactsReview />);
   });
@@ -71,17 +68,7 @@ test("opens the canonical connector in place and refreshes accounts after it clo
     connect!.click();
   });
 
-  expect(openGoogleConnect).toHaveBeenCalledWith(
-    expect.objectContaining({
-      reason: "to review a selected Google Other Contact",
-      mode: "overview",
-    }),
-  );
-  const options = openGoogleConnect.mock.calls[0][0] as {
-    onWindowClose: (event: { type: "window-close" }) => Promise<unknown>;
-  };
-  await act(async () => {
-    await options.onWindowClose({ type: "window-close" });
+  expect(openConsent).toHaveBeenCalledWith({
+    initialProductKeys: ["other_contacts"],
   });
-  expect(refetchInventory).toHaveBeenCalledTimes(1);
 });
