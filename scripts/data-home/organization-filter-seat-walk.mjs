@@ -46,10 +46,23 @@ async function session() {
     const m = r.url().match(/\/rpc\/(data_home[a-z_]*)/);
     if (m) doorHits.push(m[1]);
   });
+  // The shared preview's walk cap parks an idle host; Resume it the way the walks do.
+  if (!ORIGIN.includes("aimatrx.com")) {
+    await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
+    await page
+      .evaluate(async () => {
+        const body = new FormData();
+        body.set("returnTo", "/login");
+        return (await fetch("/__dev-walk", { method: "POST", body, redirect: "manual" })).status;
+      })
+      .catch(() => null);
+    if (page.url().includes("__dev-walk")) await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await new Promise((r) => setTimeout(r, 6000));
+  }
   const who = await signIn(page, ORIGIN, EMAIL, PASSWORD, SEAT);
   pass("seat", who === EMAIL, `/api/whoami answered ${who}`);
   // A fresh session may be working in no organization yet; a person picks one in the header.
-  await page.goto(`${ORIGIN}/data-v2?org=all`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
   const state = await until(
     "the home or its organization notice",
     async () =>
@@ -121,18 +134,26 @@ try {
     // ── 1. the bar, for a person on the platform default ─────────────────────────────────────
     const first = await session();
     let page = first.page;
-    await openHome(page, "?org=all");
-    const order = await page.evaluate(() =>
-      [...document.querySelectorAll("[data-hub-scope] [data-hub-scope-choice], [data-hub-scope] [data-hub-kind], [data-hub-scope] [data-hub-organization]")].map(
-        (el) => el.getAttribute("data-hub-scope-choice") ?? (el.hasAttribute("data-hub-kind") ? "kind" : "organization"),
-      ),
-    );
-    pass("bar order", JSON.stringify(order) === JSON.stringify(["all", "mine", "orgs", "shared", "public", "kind", "organization"]), order.join(" · "));
-    const start = await page.evaluate(() => {
-      const s = document.querySelector("[data-hub-organization]");
-      return s ? { value: s.value, label: s.options[s.selectedIndex]?.textContent } : null;
+    await openHome(page);
+    // THE SHELL'S LANES AND FILTER (Arman, 2026-09-30, active-org-is-never-a-list-filter.md).
+    const bar = await page.evaluate(() => {
+      const root = document.querySelector("[data-hub-scope]");
+      const lanes = [...(root?.querySelectorAll('[role="tablist"] [role="tab"]') ?? [])].map((b) =>
+        (b.textContent ?? "").replace(/\d+$/, "").trim(),
+      );
+      const order = [...(root?.querySelectorAll('[role="tablist"], [data-hub-kind], [data-entity-org-filter]') ?? [])].map((el) =>
+        el.getAttribute("role") === "tablist" ? "lanes" : el.hasAttribute("data-hub-kind") ? "kind" : "organization",
+      );
+      const filter = root?.querySelector("[data-entity-org-filter]")?.textContent?.trim() ?? null;
+      return { lanes, order, filter };
     });
-    pass("starts on All Orgs", start?.value === "all" && start?.label === "All Orgs", JSON.stringify(start));
+    pass(
+      "the shell's lanes",
+      JSON.stringify(bar.lanes) === JSON.stringify(["All", "Mine", "My team", "My Orgs", "Shared", "Public", "System"]),
+      bar.lanes.join(" · "),
+    );
+    pass("lanes, Kind, then the organization filter at the end", JSON.stringify(bar.order) === JSON.stringify(["lanes", "kind", "organization"]), bar.order.join(" · "));
+    pass("starts on All organizations", /All organizations/.test(bar.filter ?? ""), JSON.stringify(bar.filter));
     const everything = await tableFacts(page);
     const groupHeaders = await page.evaluate(
       () => document.querySelectorAll("[data-hub-organization-group], [data-hub-grouped-by='organization']").length,
@@ -186,13 +207,15 @@ try {
     await shot(page, "after-all-orgs");
 
     // ── 2. pick one organization; every lane lists only its tables ──────────────────────────
-    const pickId = await page.evaluate((name) => {
-      const s = document.querySelector("[data-hub-organization]");
-      return [...(s?.options ?? [])].find((o) => o.textContent === name)?.value ?? null;
-    }, PICK);
-    if (!pickId) throw new Error(`the dropdown does not offer ${PICK}`);
-    await page.selectOption("[data-hub-organization]", pickId);
-    await until("the address to carry the pick", async () => page.url().includes(`org=${pickId}`), 30000);
+    await page.click("[data-entity-org-filter]");
+    await page.getByRole("menuitem", { name: PICK }).first().click();
+    const picked = await until("the address to carry the pick", async () => {
+      const m = page.url().match(/org_filter=([0-9a-f-]{36})/);
+      return m ? m[1] : null;
+    }, 30000);
+    const pickId = picked.v;
+    if (!pickId) throw new Error(`the organization filter did not put ${PICK} in the address`);
+    pass("the pick lives in the address as org_filter, never org", !/[?&]org=/.test(page.url()), page.url().replace(ORIGIN, ""));
     await until(
       "the listing to re-read",
       async () => {
@@ -219,8 +242,14 @@ try {
     );
     await page.evaluate(() => document.querySelector('[data-hub-listing="forms"]')?.scrollIntoView());
     await shot(page, "after-picked-forms");
-    for (const lane of ["all", "mine", "orgs", "shared", "public"]) {
-      await page.click(`[data-hub-scope-choice="${lane}"]`);
+    const LANES = { all: "All", mine: "Mine", team: "My team", orgs: "My Orgs", shared: "Shared", public: "Public", system: "System" };
+    for (const [lane, label] of Object.entries(LANES)) {
+      await page.evaluate((want) => {
+        const tab = [...document.querySelectorAll('[data-hub-scope] [role="tablist"] [role="tab"]')].find(
+          (b) => (b.textContent ?? "").replace(/\d+$/, "").trim() === want,
+        );
+        tab?.click();
+      }, label);
       await until(`lane ${lane}`, async () => page.url().includes(`scope=${lane}`), 30000);
       await page.waitForTimeout(800);
       const f = await tableFacts(page);
@@ -231,23 +260,18 @@ try {
     pass("everything was more than one organization", new Set(everything.orgs).size > 1, `${new Set(everything.orgs).size} organizations under All Orgs`);
     await first.context.close();
 
-    // ── 3. a fresh session lands on the same organization ────────────────────────────────────
+    // ── 3. a fresh session opens on All organizations — the pick is never remembered ─────────
     const second = await session();
     page = second.page;
     await openHome(page);
-    const landed = await until(
-      "the saved pick",
-      async () => (await page.evaluate(() => document.querySelector("[data-hub-organization]")?.value ?? null)) === pickId,
-      60000,
-    );
+    const again = await page.evaluate(() => document.querySelector("[data-hub-scope] [data-entity-org-filter]")?.textContent?.trim() ?? null);
     const f = await tableFacts(page);
-    pass("fresh session lands on the pick", Boolean(landed.v) && f.orgs.every((o) => o === PICK), `dropdown ${landed.v ? PICK : "not the pick"}, ${f.orgs.length} rows`);
+    pass(
+      "a fresh session opens on All organizations (never remembered)",
+      /All organizations/.test(again ?? "") && new Set(f.orgs).size > 1 && !page.url().includes("org_filter"),
+      `filter reads ${JSON.stringify(again)}, ${new Set(f.orgs).size} organizations listed`,
+    );
     await shot(page, "after-fresh-session");
-
-    // ── 4. put the pick back to All Orgs (the account's default state) ──────────────────────
-    await page.selectOption("[data-hub-organization]", "all");
-    await until("All Orgs", async () => page.url().includes("org=all"), 30000);
-    await page.waitForTimeout(1500);
     await second.context.close();
   }
 } finally {
