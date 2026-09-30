@@ -34,8 +34,6 @@ import {
 import type { RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useAppSelector } from "@/lib/redux/hooks";
 
 import { planKeys } from "../data/hooks";
 import { usePlanReality } from "../hooks/usePlanReality";
@@ -64,29 +62,19 @@ const VIEW_ITEMS: { view: PlanView; label: string; icon: LucideIcon }[] = [
 
 /**
  * Sites for the picker. RLS already scopes to everything the caller can
- * administer (`listSiteOptions` is a deliberate org-browse surface). Active
- * org sites sort first; the full list stays available so a plan applied to
- * another of the user's orgs (e.g. Titanium while the shell is on AI Matrx)
- * is still reachable from the dropdown.
+ * administer (`listSiteOptions` is a deliberate org-browse surface), across
+ * every organization the person belongs to; a plan in any of them is reachable
+ * from the dropdown whichever organization is active.
  */
 export function useContentPlanSites() {
-  // The EXPLICIT active org, used only to sort the picker (RLS owns what is
-  // listed). With none selected every site the caller can administer still
-  // shows, unsorted — no personal-workspace stand-in decides the order.
-  const orgId = useAppSelector(selectOrganizationId);
   // access-errors: ok — site options for the plan switcher; a failed read only empties the dropdown, the selected plan surface owns its own record errors
   const sites = useSiteOptions();
   const all = sites.data ?? [];
-  const scopedSites = useMemo(
-    () => (orgId ? all.filter((site) => site.organization_id === orgId) : all),
-    [all, orgId],
-  );
-  const orgSites = useMemo(() => {
-    if (!orgId || scopedSites.length === 0) return all;
-    const inOrgIds = new Set(scopedSites.map((site) => site.id));
-    return [...scopedSites, ...all.filter((site) => !inOrgIds.has(site.id))];
-  }, [all, orgId, scopedSites]);
-  return { sites, orgSites, scopedSites };
+  // Every site across the person's organizations, in the order the read
+  // returns (name). The active organization never sorts or narrows this list —
+  // it is only where new things are saved (active-org law).
+  const orgSites = all;
+  return { sites, orgSites };
 }
 
 export function ContentPlanHeader() {

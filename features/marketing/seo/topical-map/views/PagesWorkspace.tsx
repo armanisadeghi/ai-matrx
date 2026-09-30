@@ -40,14 +40,13 @@ import { useSearchParams } from "next/navigation";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 import {
   TopicalMapFailed,
   TopicalMapLoading,
 } from "../components/TopicalMapStates";
 import type { MapHost, MapViewProps } from "../components/TopicalMapWorkspaceBody";
-import { useMapDiagnostics } from "../hooks";
+import { useMapDiagnostics, useTopicalMap } from "../hooks";
 import { useTopicalMapKnobs, type TopicalMapKnobs } from "../knobs";
 import { selectMapPageFilters, selectPagesOnNoTopic } from "../redux/selectors";
 import { clearPageFilters, setPageFilters } from "../redux/slice";
@@ -99,7 +98,10 @@ function PagesWorkspaceBody({
   knobs: TopicalMapKnobs;
 }) {
   const dispatch = useAppDispatch();
-  const organizationId = useAppSelector(selectOrganizationId);
+  // The MAP's own organization — never the active one (active-org law: a record
+  // resolves its organization from the record). null while the map loads.
+  const map = useTopicalMap(mapId);
+  const organizationId = map.data?.organization_id ?? null;
   const filters = useAppSelector(selectMapPageFilters(mapId));
   const onNoTopicIds = useAppSelector(selectPagesOnNoTopic(mapId));
 

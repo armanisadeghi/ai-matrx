@@ -27,6 +27,8 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   const { unit } = useCostDisplay();
@@ -67,6 +69,9 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
 export function SeoSpendPanel() {
   const { unit } = useCostDisplay();
   const spend = useSeoSpendSummary();
+  // Provider spend is ONE organization's budget (its ceiling vs its spend) — a
+  // billing subject, so it says which organization it is showing.
+  const orgName = useAppSelector(selectOrganizationName);
   /** Right-clicked rejection row — STATE (not a ref) so the menu reads the
    *  row that was actually clicked. */
   const [clickedRejection, setClickedRejection] =
@@ -195,7 +200,7 @@ export function SeoSpendPanel() {
       <section className="rounded-lg border border-border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            This month by provider
+            This month by provider{orgName ? ` · ${orgName}` : ""}
           </h2>
           <Button
             size="sm"

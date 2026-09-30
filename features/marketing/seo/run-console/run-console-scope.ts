@@ -193,7 +193,7 @@ export function buildRunConsoleScope(
 
     // Scope — the tier is a prop, so it is always knowable.
     scope_tier: scope.tier,
-    ...(scope.tier === "organization"
+    ...(scope.tier === "organization" && scope.organizationId
       ? { scope_organization_id: scope.organizationId }
       : {}),
     ...(scope.tier === "site" ? { scope_site_id: scope.siteId } : {}),

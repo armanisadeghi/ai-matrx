@@ -21,7 +21,8 @@ import type { AutonomyVerdict } from "@/features/marketing/search-console/data-d
  */
 export type RunConsoleScope =
   | { tier: "system" }
-  | { tier: "organization"; organizationId: string }
+  /** `organizationId: null` = All organizations (the page filter's default); one id narrows the console to that organization. */
+  | { tier: "organization"; organizationId: string | null }
   | { tier: "site"; siteId: string };
 
 export type ScheduleTier = RunConsoleScope["tier"];

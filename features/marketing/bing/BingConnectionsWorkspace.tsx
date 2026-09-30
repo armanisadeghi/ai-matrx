@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import {
   useBindBingSite,
@@ -80,6 +81,7 @@ export function BingConnectionsWorkspace() {
   // access-errors: ok — site options for the binding picker; the connection inventory is this surface's primary and a failed options read only empties the picker
   const sites = useSiteOptions();
   const organizations = useActiveOrganizationPicker();
+  const { organizations: memberOrganizations } = useUserOrganizations();
   const inventory = useBingConnectionInventory();
   const connect = useConnectBingApiKey();
   const oauth = useStartBingOAuth();
@@ -97,26 +99,24 @@ export function BingConnectionsWorkspace() {
   const [showApiKeyFallback, setShowApiKeyFallback] = useState(false);
 
   const connections = inventory.data?.connections ?? [];
+  // Every non-revoked connection the person can reach, across all their
+  // organizations — the org is a label on the row, never a filter (active-org law).
   const availableConnections = connections.filter(
-    (connection) =>
-      connection.status !== "revoked" &&
-      (connection.owner_type === "user" ||
-        !organizations.activeOrgId ||
-        connection.organization_id === organizations.activeOrgId),
+    (connection) => connection.status !== "revoked",
   );
+  const orgNameById = useMemo(
+    () => new Map(memberOrganizations.map((o) => [o.id, o.name])),
+    [memberOrganizations],
+  );
+  const orgNameOf = (id: string | null | undefined) =>
+    (id ? orgNameById.get(id) : null) ?? null;
   const usableConnections = availableConnections.filter(
     (connection) => connection.status === "connected",
   );
   const resources = inventory.data?.resources ?? [];
-  const organizationSites = useMemo(
-    () =>
-      (sites.data ?? []).filter(
-        (site) =>
-          !organizations.activeOrgId ||
-          site.organization_id === organizations.activeOrgId,
-      ),
-    [organizations.activeOrgId, sites.data],
-  );
+  // Every site across the person's organizations; binding uses the chosen
+  // site's own organization_id (below).
+  const organizationSites = sites.data ?? [];
   const selectedSite = organizationSites.find((site) => site.id === siteId);
   const currentBinding = selectedSite
     ? parseBingSiteBinding(selectedSite.integrations)
@@ -530,7 +530,7 @@ export function BingConnectionsWorkspace() {
                     <ConnectionRow
                       key={connection.id}
                       connection={connection}
-                      organizationName={organizations.activeOrgName}
+                      organizationName={orgNameOf(connection.organization_id)}
                       siteCount={
                         resources.filter(
                           (r) => r.connection_id === connection.id,
@@ -638,7 +638,7 @@ export function BingConnectionsWorkspace() {
                         {connectionsForSite.map((connection) => (
                           <SelectItem key={connection.id} value={connection.id}>
                             {connection.owner_type === "organization"
-                              ? `${organizations.activeOrgName ?? "Organization"} shared connection`
+                              ? `${orgNameOf(connection.organization_id) ?? "Organization"} shared connection`
                               : "My personal connection"}
                           </SelectItem>
                         ))}

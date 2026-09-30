@@ -931,18 +931,22 @@ export async function listAllBrandOptions(
   );
 }
 
-/** Light brand options (id/name) for one organization, name-ordered. */
+/**
+ * Light brand options (id/name/organization_id), name-ordered. `organizationId`
+ * null = every brand the person can reach across ALL their organizations
+ * (RLS decides); a value narrows to that organization (a page filter, or a
+ * record's own organization — never the active organization).
+ */
 export async function listBrandOptions(
-  organizationId: string,
+  organizationId: string | null,
   signal?: AbortSignal,
-): Promise<Array<Pick<MarketingBrand, "id" | "name">>> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
+): Promise<Array<Pick<MarketingBrand, "id" | "name" | "organization_id">>> {
+  let query = (await authenticatedWebDb(supabase))
     .from("brand")
-    .select("id, name")
-    .eq("organization_id", organizationId)
-    .is("deleted_at", null)
+    .select("id, name, organization_id")
+    .is("deleted_at", null);
+  if (organizationId) query = query.eq("organization_id", organizationId);
+  const response = await query
     .order("name", { ascending: true })
     .order("id", { ascending: true })
     .limit(1000)

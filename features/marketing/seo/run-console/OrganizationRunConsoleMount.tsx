@@ -17,36 +17,11 @@
  * Never re-fork this into a second console.
  */
 
-import { Building2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { RunConsole } from "./RunConsole";
 import { runConsoleBasePath } from "./routed-view";
-
-/**
- * No active organization is a real, expected state (a brand-new session, or a
- * user who only just accepted an invite) — never a crash and never an empty
- * page. Same door as `RecordUnavailableNotice`'s "Switch organization" affordance.
- */
-function OrganizationRequiredNotice() {
-  return (
-    <div className="flex h-full min-h-40 items-center justify-center p-6">
-      <div className="max-w-md rounded-lg border border-border bg-card p-4 text-center">
-        <Building2 className="mx-auto h-6 w-6 text-muted-foreground" />
-        <p className="mt-2 text-sm font-medium text-foreground">
-          Pick an organization to run automations
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Automations run against the brands your active organization
-          controls — select one to see them.
-        </p>
-        <OrganizationPickerButton align="center" className="mt-3 h-8" />
-      </div>
-    </div>
-  );
-}
 
 export function OrganizationRunConsoleMount({
   /**
@@ -58,16 +33,26 @@ export function OrganizationRunConsoleMount({
 }: {
   view?: string;
 } = {}) {
-  const organizationId = useAppSelector(selectOrganizationId);
+  // The brands across ALL the person's organizations, narrowed only by the
+  // page's own organization filter (`?org_filter=`, default All organizations)
+  // — never by the active organization (active-org law). Runs still launch in
+  // each brand's own organization (RunConsole supplies it per site).
+  const [organizationId, setOrganizationId] = useOrgFilterParam();
   const pathname = usePathname();
   const basePath = pathname ? runConsoleBasePath(pathname, view) : undefined;
 
-  if (!organizationId) return <OrganizationRequiredNotice />;
   return (
-    <RunConsole
-      scope={{ tier: "organization", organizationId }}
-      view={view}
-      basePath={basePath}
-    />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 justify-end px-2 pt-1">
+        <EntityOrgFilter orgId={organizationId} onChange={setOrganizationId} />
+      </div>
+      <div className="min-h-0 flex-1">
+        <RunConsole
+          scope={{ tier: "organization", organizationId }}
+          view={view}
+          basePath={basePath}
+        />
+      </div>
+    </div>
   );
 }

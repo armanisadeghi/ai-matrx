@@ -1123,10 +1123,9 @@ export function useBrandOptions(organizationId: string | null) {
     queryKey: [
       ...marketingKeys.root,
       "brand-options",
-      organizationId ?? "none",
+      organizationId ?? "all",
     ] as const,
-    queryFn: ({ signal }) => listBrandOptions(organizationId ?? "", signal),
-    enabled: Boolean(organizationId),
+    queryFn: ({ signal }) => listBrandOptions(organizationId, signal),
     staleTime: 30_000,
   });
 }

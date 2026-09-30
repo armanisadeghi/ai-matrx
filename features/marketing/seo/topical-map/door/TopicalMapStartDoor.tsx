@@ -21,8 +21,6 @@ import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker"
 import { useBrand } from "@/features/marketing/data/hooks";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { useAppSelector } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { TopicalMapLoading } from "../components/TopicalMapStates";
@@ -43,7 +41,6 @@ export function TopicalMapStartDoor() {
         ? "existing_research"
         : null;
 
-  const organizationId = useAppSelector(selectActiveOrganizationId);
   const [brandId, setBrandId] = useState<string | null>(null);
   // access-errors: ok — the refusal is rendered verbatim below.
   const brand = useBrand(brandId ?? "");
@@ -72,7 +69,7 @@ export function TopicalMapStartDoor() {
             {research ? " — the finished research you came from is already selected as the source." : "."}
           </p>
           <div className="mt-3 flex flex-wrap items-end gap-3">
-            <BrandPicker organizationId={organizationId ?? null} value={brandId} onChange={setBrandId} />
+            <BrandPicker organizationId={null} value={brandId} onChange={setBrandId} />
             {brandValue ? (
               <Button asChild variant="outline" size="sm">
                 <Link href={marketingRoutes.brandTopicalMapHome(brandValue.seg)} target="_blank" rel="noopener noreferrer">

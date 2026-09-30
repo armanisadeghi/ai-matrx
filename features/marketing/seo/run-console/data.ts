@@ -61,7 +61,7 @@ export async function listConsoleSites(
         })
         .is("deleted_at", null)
         .eq("status", "active");
-      if (scope.tier === "organization") {
+      if (scope.tier === "organization" && scope.organizationId) {
         query = query.eq("organization_id", scope.organizationId);
       }
       if (scope.tier === "site") {

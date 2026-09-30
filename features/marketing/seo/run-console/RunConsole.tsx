@@ -110,7 +110,9 @@ function pct(part: number, whole: number): number {
 function scopeHeadline(scope: RunConsoleScope): string {
   if (scope.tier === "system") return "Every brand on the platform";
   if (scope.tier === "organization")
-    return "The brands this organization controls";
+    return scope.organizationId
+      ? "The brands this organization controls"
+      : "The brands in all your organizations";
   return "This brand";
 }
 
@@ -489,6 +491,7 @@ function SituationalEngineView({
         onSelectedChange={setSelected}
         schedulePanel={
           <ScheduleCascadePanel
+            key={scope.tier === "organization" ? (scope.organizationId ?? "all") : scope.tier}
             engine={engine}
             scope={scope}
             sites={siteRows}
@@ -596,7 +599,7 @@ function TopicPlacementConsole({
   // mounts select a SITE, so the launch below supplies that site's owning
   // organization per run; the durable receipt retains it for rejoin.
   const requestOrganizationId =
-    scope.tier === "organization" ? scope.organizationId : undefined;
+    scope.tier === "organization" ? (scope.organizationId ?? undefined) : undefined;
 
   const siteRows = sites.data ?? [];
   const siteById = new Map(siteRows.map((site) => [site.id, site]));

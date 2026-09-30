@@ -100,6 +100,7 @@ function ownRowFor(
     return schedules.find((row) => row.scope_tier === "system") ?? null;
   }
   if (scope.tier === "organization") {
+    if (!scope.organizationId) return null;
     return (
       schedules.find(
         (row) =>
@@ -175,7 +176,14 @@ export function ScheduleCascadePanel({
       // instead; nothing is written and the toast says which site.
       const resolveOrganizationId = (): string => {
         if (scope.tier === "system") return SYSTEM_ORGANIZATION_ID;
-        if (scope.tier === "organization") return scope.organizationId;
+        if (scope.tier === "organization") {
+          if (!scope.organizationId) {
+            throw new Error(
+              "Choose an organization in the filter first — an organization schedule belongs to one organization. Nothing was written.",
+            );
+          }
+          return scope.organizationId;
+        }
         const site = sites.find((candidate) => candidate.id === scope.siteId);
         if (!site) {
           throw new Error(
@@ -239,6 +247,13 @@ export function ScheduleCascadePanel({
       </div>
 
       {/* ── The editor for THIS tier ─────────────────────────────────────── */}
+      {scope.tier === "organization" && !scope.organizationId ? (
+        <p className="shrink-0 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] text-muted-foreground">
+          Showing every brand across all your organizations. Choose an
+          organization in the filter above to set that organization&apos;s own
+          schedule.
+        </p>
+      ) : (
       <section className="shrink-0 rounded-md border border-border bg-card">
         <div className="flex items-center gap-2 border-b border-border px-2.5 py-1.5">
           <CalendarClock className="h-3.5 w-3.5 text-primary" />
@@ -413,6 +428,7 @@ export function ScheduleCascadePanel({
           ) : null}
         </div>
       </section>
+      )}
 
       {/* ── The cascade, made visible ────────────────────────────────────── */}
       {/* The cascade table is the ANSWER this panel exists to give, so it takes

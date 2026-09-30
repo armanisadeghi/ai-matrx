@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker";
+import { useBrandOptions } from "@/features/marketing/data/hooks";
 import { createInitiative, updateInitiative } from "./service";
 import {
   INITIATIVE_OBJECTIVES,
@@ -53,6 +54,7 @@ export function InitiativeEditorDialog({
   const [budget, setBudget] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [busy, setBusy] = useState(false);
+  const brandOptions = useBrandOptions(null);
   useEffect(() => {
     if (!open) return;
     setName(initiative?.name ?? "");
@@ -73,7 +75,12 @@ export function InitiativeEditorDialog({
       toast.error("Give this initiative a name.");
       return;
     }
-    if (!organizationId) {
+    // A new initiative is filed in its brand's own organization when it has a
+    // brand, else in the active organization (where new work is saved).
+    const brandOrganizationId =
+      brandOptions.data?.find((b) => b.id === brandId)?.organization_id ?? null;
+    const filingOrganizationId = brandOrganizationId ?? organizationId;
+    if (!initiative && !filingOrganizationId) {
       toast.error("Choose an organization before creating an initiative.");
       return;
     }
@@ -97,7 +104,7 @@ export function InitiativeEditorDialog({
       };
       const row = initiative
         ? await updateInitiative(initiative, patch)
-        : await createInitiative({ ...patch, organization_id: organizationId });
+        : await createInitiative({ ...patch, organization_id: filingOrganizationId as string });
       onSaved(row);
       onOpenChange(false);
       toast.success(initiative ? "Initiative saved" : "Initiative created");
@@ -140,7 +147,7 @@ export function InitiativeEditorDialog({
             />
           </div>
           <BrandPicker
-            organizationId={organizationId}
+            organizationId={null}
             value={brandId}
             onChange={setBrandId}
             allowAll
