@@ -205,17 +205,10 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
         category: "Data",
         showToast: false,
         action: () => {
+          // The parsed value itself: the one shape reader takes a JSON array of records (or an
+          // object holding one) and names its columns in words — "Room", not the key "room".
           openSaveToTable({
-            grid: {
-              headers: tabular.columns,
-              rows: tabular.rows.map((row) =>
-                tabular.columns.map((c) => {
-                  const v = row[c];
-                  if (v === null || v === undefined) return "";
-                  return typeof v === "object" ? JSON.stringify(v) : String(v);
-                }),
-              ),
-            },
+            value: data,
             title:
               tabular.source === "wrapped-array" && tabular.wrapperKey
                 ? tabular.wrapperKey.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
