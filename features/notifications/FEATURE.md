@@ -87,24 +87,22 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 5. **Preferences link** — the empty state names Settings › Notifications
    (`features/settings/tabs/NotificationsTab.tsx`); a direct control in the
    panel header is the next affordance.
-6. **`custom.inbox_counts` is an N+1 loop over every organization the caller
-   belongs to** (one `custom._inbox_items(org, user, false)` call per org,
-   each re-walking `custom.record` plus per-row `custom.has_visibility` /
-   `custom.work_approval_approvers` / `auth.users` lookups). Measured live
-   via Supabase MCP `EXPLAIN (ANALYZE, BUFFERS)` for `admin@admin.com` (46
-   organizations): **981ms**, ~72k buffer hits, ~15.6ms average per org even
-   for orgs answering zero rows. `useInboxCounts` (this file) now defers that
-   query to `requestIdleCallback` so it never competes with the shell's first
-   paint, but the query itself is still slow for any account in many
-   organizations. Real fix is a rewrite of `custom.inbox_counts` /
-   `custom._inbox_items` to a single set-based query across the caller's
-   whole organization set instead of a per-org loop — out of scope here
-   because it is a security-definer function touching approvals/assignment
-   visibility across the whole platform and needs its own dedicated
-   correctness pass, not a same-session drive-by.
+6. **`custom.inbox_counts` — FIXED 2026-09-29** (`migrations/inbox_counts_one_pass_over_every_organization.sql`).
+   It was an N+1 loop (one `custom._inbox_items` call per organization; the cost was the per-call
+   re-plan over the hash-partitioned `custom.record`, even for organizations with nothing in them).
+   Approvals are now read in one pass over every organization with `_inbox_items`' exact predicate;
+   assignments still come from `_inbox_items` itself, called only for organizations where the
+   caller's person-record is somebody's Assignee (the sight check there is a T-13 ratchet reader,
+   so it stays in one place). Remaining cost is per pending approval
+   (`custom.work_approval_approvers` per row) — test@test.com with 38 pending approvals is ~430 ms
+   on the clone.
 
 ## Change log
 
+- **2026-09-29** — `custom.inbox_counts` rewritten set-based (follow-up 6). Proven identical on the
+  nightly clone for all 1,398 users + 176 explicit (user, organization) calls + 8 rolled-back
+  snooze/clear scenarios (0 mismatches); admin@admin.com 981 ms -> 174 ms live (clone best-of-5
+  598 -> 93 ms). Inverse: `migrations/inverse/inbox_counts_one_pass_over_every_organization_down.sql`.
 - **2026-09-28** — Platform-performance pass: `useInboxCounts`'s work-waiting
   read (`custom.inbox_counts`) now waits for `requestIdleCallback` (the house
   pattern from `useWarmAgent`) instead of firing on mount, so it never
