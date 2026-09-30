@@ -356,6 +356,21 @@ export function scraperOrigin(): string {
   return resolveServiceBaseUrl("scraper");
 }
 
+/**
+ * A start refused because the site already has a live run in the same lane
+ * (one initialization, one site-wide crawl — enforced by the database). The
+ * caller follows `activeSessionId` instead of starting a second one.
+ */
+export class CrawlAlreadyRunningError extends Error {
+  readonly activeSessionId: string;
+
+  constructor(activeSessionId: string) {
+    super(`Crawl session ${activeSessionId} is already running for this site.`);
+    this.name = "CrawlAlreadyRunningError";
+    this.activeSessionId = activeSessionId;
+  }
+}
+
 export function crawlerCommandUrl(path: string): string {
   return `${scraperOrigin()}/api/scraper/crawler/${path.replace(/^\/+/, "")}`;
 }
@@ -494,6 +509,12 @@ async function streamCommand(
     body: body ? JSON.stringify(body) : undefined,
     signal: callbacks.signal,
   });
+  if (response.status === 409) {
+    // The site's start lane is held by a live run — the run this call asked
+    // for is already happening. Not a failure: hand the caller its id.
+    const activeSessionId = response.headers.get("X-Active-Crawl-Session-Id");
+    if (activeSessionId) throw new CrawlAlreadyRunningError(activeSessionId);
+  }
   if (!response.ok) throw await responseError(response, path);
 
   const sessionId = response.headers.get("X-Crawl-Session-Id") || "";

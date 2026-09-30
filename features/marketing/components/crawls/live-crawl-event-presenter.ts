@@ -6,6 +6,8 @@ import {
   crawlPacingFromEvent,
   pacingSourceLabel,
 } from "@/features/marketing/crawler/crawl-pacing";
+import { liveFetchedCount } from "@/features/marketing/crawler/crawl-counts";
+import type { Json } from "@/types/database.types";
 
 export interface PresentedCrawlEvent {
   label: string;
@@ -176,7 +178,7 @@ export function summarizeLiveCrawlEvents(
         );
         reportedFetched = Math.max(
           reportedFetched,
-          numberValue(event, "pages_fetched"),
+          liveFetchedCount(event as unknown as Json),
         );
         reportedFailed = Math.max(
           reportedFailed,

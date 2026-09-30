@@ -15,7 +15,6 @@ import {
 } from "@/features/marketing/data/hooks";
 import { MarketingSiteProvider } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
-  jsonNumber,
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
@@ -23,6 +22,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { MarketingSiteSurfaceProvider } from "@/features/marketing/lib/scopes/site-surface-base";
 import { MarketingSiteWriteTargets } from "@/features/marketing/components/site/MarketingSiteWriteTargets";
 import { useSiteCrawlActivity } from "@/features/marketing/data/useSiteCrawlActivity";
+import { liveFetchedCount } from "@/features/marketing/crawler/crawl-counts";
 import {
   SITE_COMMAND_COPY,
   siteCommandModeFromSession,
@@ -214,9 +214,7 @@ export function MarketingSiteLayoutClient({
   }
   const base = branchBase;
   const activeCrawl = crawlActivity.activeCrawl;
-  const fetched = activeCrawl
-    ? jsonNumber(activeCrawl.stats, ["pages_fetched"])
-    : 0;
+  const fetched = activeCrawl ? liveFetchedCount(activeCrawl.stats) : 0;
   // A command running on the server (analysis, sitemaps, GSC, links, a page
   // fetch) is named for what it IS. It used to read as "Crawling" here,
   // because the header took the newest active session of any mode.

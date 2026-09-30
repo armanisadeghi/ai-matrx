@@ -71,6 +71,7 @@ import { SiteIdentityMark } from "@/features/marketing/components/shared/SiteCon
 import { SiteRecordsSection } from "@/features/marketing/components/site/SiteRecordsSection";
 import { CrawlScheduleSummary } from "@/features/marketing/components/crawls/CrawlScheduleSummary";
 import {
+  CrawlAlreadyRunningError,
   initializeSite,
   initializeStepFromEvent,
 } from "@/features/marketing/crawler/direct-client";
@@ -112,6 +113,14 @@ import {
 
 type InitPhase = "idle" | "connecting" | "running" | "failed";
 
+// The `?capture=homepage` auto-initialize is claimed per site for the whole page
+// lifetime, not per component instance: a per-instance ref reset when the
+// overview remounted while `router.replace` was still dropping the param, and
+// one site creation started two initializations 0.4 s apart (2026-09-14). The
+// server's one-initialization-per-site claim is the arbiter; this keeps the
+// normal flow from ever asking twice.
+const autoInitClaimedSites = new Set<string>();
+
 const stateDotClass: Record<SiteConnectionState, string> = {
   connected: "bg-emerald-500",
   attention: "bg-amber-500",
@@ -119,7 +128,7 @@ const stateDotClass: Record<SiteConnectionState, string> = {
 };
 
 export function SiteOverview() {
-  const { site, brandId } = useMarketingSite();
+  const { site, brandId, crawlActivity } = useMarketingSite();
   const overview = useSiteOverview(site.id);
   // access-errors: ok — decorative hero screenshot; a failed read leaves the placeholder frame, and the site primary is gated by the layout above
   const hero = useSiteHeroScreenshot(
@@ -145,7 +154,10 @@ export function SiteOverview() {
   const stepEventsSeenRef = useRef(false);
   const [showProgress, setShowProgress] = useState(false);
   const [identityEditing, setIdentityEditing] = useState(false);
-  const autoInitStarted = useRef(false);
+  // A start that found an initialization already live follows that run.
+  const [followingSessionId, setFollowingSessionId] = useState<string | null>(
+    null,
+  );
 
   const runInitialize = useCallback(async () => {
     setInitPhase("connecting");
@@ -225,6 +237,16 @@ export function SiteOverview() {
         setInitPhase("idle");
       }
     } catch (error) {
+      if (error instanceof CrawlAlreadyRunningError) {
+        // Read the live set first so the follow effect judges fresh truth.
+        await queryClient.refetchQueries({
+          queryKey: marketingKeys.activeSessions(site.id),
+          exact: true,
+        });
+        setInitPhase("running");
+        setFollowingSessionId(error.activeSessionId);
+        return;
+      }
       const message = extractErrorMessage(error);
       setInitPhase("failed");
       setInitError(message);
@@ -239,15 +261,40 @@ export function SiteOverview() {
   useEffect(() => {
     const requested =
       new URLSearchParams(window.location.search).get("capture") === "homepage";
-    if (!requested || site.initialized_at || autoInitStarted.current) return;
-    autoInitStarted.current = true;
+    if (!requested || site.initialized_at || autoInitClaimedSites.has(site.id))
+      return;
+    autoInitClaimedSites.add(site.id);
     // Programmatic: consume the one-shot `capture` intent off the current
     // entry so a refresh cannot re-fire it. Never a user step. Drops ONLY
     // `capture` — the old write reset the whole query string — and tells the
     // page's other url-state controls to re-read.
     commitUrlParams({ capture: null }, "replace");
     void runInitialize();
-  }, [runInitialize, site.initialized_at]);
+  }, [runInitialize, site.id, site.initialized_at]);
+
+  // Following a run started elsewhere: when it leaves the live set, read the
+  // site row it wrote and settle.
+  const followedStillActive = followingSessionId
+    ? crawlActivity.activeSessions.some(
+        (session) => session.id === followingSessionId,
+      )
+    : false;
+  useEffect(() => {
+    if (!followingSessionId || followedStillActive || crawlActivity.isLoading)
+      return;
+    setFollowingSessionId(null);
+    setInitPhase("idle");
+    setShowProgress(false);
+    void queryClient.invalidateQueries({
+      queryKey: marketingKeys.site(site.id),
+    });
+  }, [
+    crawlActivity.isLoading,
+    followedStillActive,
+    followingSessionId,
+    queryClient,
+    site.id,
+  ]);
 
   if (overview.isLoading)
     return <LoadingSurface label="Loading site overview…" />;
