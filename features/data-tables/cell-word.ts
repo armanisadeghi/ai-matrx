@@ -21,6 +21,7 @@ import { readTypedNumber, readTypedTime } from "@ai-matrx/records";
 import { parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { FieldChoice, FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { inlineChoices, isChoiceFormat } from "@/lib/field-formats/choices";
+import { splitListWords } from "@/lib/field-formats/list-words";
 
 export type CellWordColumn = {
   display_name: string;
@@ -44,17 +45,8 @@ function choiceFor(choices: readonly FieldChoice[], word: string): FieldChoice |
   return choices.find((c) => sameWord(c.value, word) || (c.label ? sameWord(c.label, word) : false));
 }
 
-function splitWords(text: string): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const part of text.split(/[,;\n]/)) {
-    const word = part.trim().replace(/\s+/g, " ");
-    if (word === "" || seen.has(word.toLocaleLowerCase())) continue;
-    seen.add(word.toLocaleLowerCase());
-    out.push(word);
-  }
-  return out;
-}
+/** The one reading of a line of words as a list (lib/field-formats/list-words.ts). */
+const splitWords = splitListWords;
 
 function formatOf(column: CellWordColumn): FieldFormatConfig {
   return resolveFieldFormat(column.data_type, column.metadata);

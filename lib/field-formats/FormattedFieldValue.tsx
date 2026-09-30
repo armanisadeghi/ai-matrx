@@ -60,6 +60,22 @@ export type FormattedFieldValueProps = {
   emptyLabel?: string;
 };
 
+/**
+ * A CHOICE COLUMN'S STRAY VALUES READ AS WORDS, NEVER AS JSON (BREAKER-3 B3-02, 2026-09-30).
+ * A several-choice cell holding words that are none of its choices printed `["Lower back, Hip"]` —
+ * the list's JSON, in amber, as if it were a sentence. The words are what the person wrote.
+ */
+export function strayChoiceWords(value: unknown, fallback: string): string {
+  if (Array.isArray(value)) {
+    const words = value
+      .map((v) => (v === null || v === undefined ? "" : typeof v === "object" ? "" : String(v).trim()))
+      .filter(Boolean);
+    return words.length > 0 ? words.join(", ") : fallback;
+  }
+  if (value !== null && typeof value === "object") return fallback;
+  return value === null || value === undefined ? fallback : String(value);
+}
+
 export function FormattedFieldValue({
   value,
   format,
@@ -112,7 +128,7 @@ export function FormattedFieldValue({
       : result.reason;
     return (
       <span className={cn(MISMATCH_CLASS, className)} title={reason}>
-        {result.text}
+        {isChoiceFormat(format?.id) ? strayChoiceWords(value, result.text) : result.text}
       </span>
     );
   }
