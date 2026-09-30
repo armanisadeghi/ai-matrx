@@ -189,6 +189,22 @@ announce_node_modules_change() {
   printf '%s\n' "$line" >"$FAILED"
 }
 
+# node_modules moved under a server that is STILL RUNNING (2026-09-29): the data home crashed on the
+# shared preview with "useRecordsClient was called outside <RecordsProvider>" after a dependency
+# refresh relinked @ai-matrx/* under the live server — its module graph then held two copies of one
+# package, and a context provided by one copy is invisible to a hook from the other. Nothing was
+# wrong with the page; the server was serving a graph that no longer exists on disk. Say so while
+# it runs, with the remedy — never only after it dies.
+nm_moved_note() {
+  local recorded current
+  [[ -f "$META" ]] || return 0
+  recorded="$(meta_value NM_FINGERPRINT)"
+  [[ -n "$recorded" ]] || return 0
+  current="$(nm_fingerprint)"
+  [[ "$current" != "$recorded" ]] || return 0
+  printf 'WARNING node_modules changed under this running server since it started — an install ran while it was live, so pages may load two copies of one package (e.g. "useRecordsClient was called outside <RecordsProvider>"). Restart it before trusting what it shows: pnpm preview:stop && pnpm preview:start\n'
+}
+
 report_previous_failure() {
   [[ -f "$FAILED" ]] || return 0
   printf '\n' >&2
@@ -795,9 +811,11 @@ cmd_status_one() {
       log "a checkout mismatch alone does not prove localhost unavailable; check the route"
       log "never start another server to solve a checkout mismatch"
     fi
-    local changed
+    local changed moved
     changed="$(meta_value NODE_MODULES_CHANGED)"
     [[ -z "$changed" ]] || log "$changed"
+    moved="$(nm_moved_note)"
+    [[ -z "$moved" ]] || log "$moved"
     return 0
   fi
   local running pid port owner

@@ -70,3 +70,29 @@ test("leaves a normal-sized dev log completely alone", () => {
   assert.ok(!after.includes("LOG ROTATED"), "ordinary logs must never be touched");
   assert.ok(after.length >= 64 * 1024, "ordinary logs must keep every line");
 });
+
+// 2026-09-29: node_modules moved under a server that was still RUNNING and the data home crashed on
+// the shared preview ("useRecordsClient was called outside <RecordsProvider>") — two copies of one
+// package in one module graph. `pnpm preview:status` must say so while the server runs.
+function movedNoteWith({ recorded }) {
+  const stateDir = mkdtempSync(join(tmpdir(), "preview-nm-test-"));
+  try {
+    return execFileSync(
+      "bash",
+      ["-c", `source "${DEV_SERVER}"; printf 'PID=1\\nNM_FINGERPRINT=%s\\n' "${recorded}" >"$META"; if [ "${recorded}" = CURRENT ]; then printf 'PID=1\\nNM_FINGERPRINT=%s\\n' "$(nm_fingerprint)" >"$META"; fi; nm_moved_note`],
+      { env: { ...process.env, MATRX_PREVIEW_STATE_DIR: stateDir }, stdio: "pipe" },
+    ).toString();
+  } finally {
+    rmSync(stateDir, { recursive: true, force: true });
+  }
+}
+
+test("says node_modules moved under the RUNNING server, with the restart", () => {
+  const note = movedNoteWith({ recorded: "0:0" });
+  assert.match(note, /node_modules changed under this running server/);
+  assert.match(note, /pnpm preview:stop && pnpm preview:start/);
+});
+
+test("says nothing when node_modules is what the server started on", () => {
+  assert.equal(movedNoteWith({ recorded: "CURRENT" }), "");
+});
