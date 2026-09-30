@@ -66,7 +66,8 @@ import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
 import { KgGraphSidePanel } from "./KgGraphSidePanel";
 import { KgGraphLegend } from "./KgGraphLegend";
 import { KgScopeFilter } from "./KgScopeFilter";
-import { KgOrgFilter } from "./KgOrgFilter";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // cytoscape + extensions touch window at import → must be client-only.
@@ -143,8 +144,8 @@ export function KgGraphCanvas({
   // signal isn't drowned in document noise — toggleable.
   const [hideNoise, setHideNoise] = useState(true);
   // Org filter (org mode): always visible + changeable so the user is never stuck
-  // on a route-provided org. Seeded from the prop (route `?org=` / active org),
-  // re-synced when that changes.
+  // on a route-provided org. Seeded ONLY from the prop (the route's `?org_filter=`);
+  // null = All organizations. Never seeded from the active org.
   const [orgFilter, setOrgFilter] = useState<string | null>(
     organizationId ?? null,
   );
@@ -408,13 +409,13 @@ export function KgGraphCanvas({
               resets the scope (scopes belong to an org). */}
             {mode === "org" ? (
               <>
-                <KgOrgFilter
-                  value={orgFilter}
+                <EntityOrgFilter
+                  orgId={orgFilter}
                   onChange={(id) => {
                     setOrgFilter(id);
                     setScopeFilter(null);
                   }}
-                  className={cn(SELECT_TRIGGER, "w-[160px]")}
+                  counts={EMPTY_SCOPE_COUNTS}
                 />
                 <KgScopeFilter
                   organizationId={orgFilter}

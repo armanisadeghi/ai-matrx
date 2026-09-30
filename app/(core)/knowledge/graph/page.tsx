@@ -4,7 +4,7 @@
 // server-side — the KgGraphCanvas reads from authed-only Redux state
 // (`useActiveContext`) and would crash on a stub guest user.
 //
-// URL params (`?org=`, `?scope=`, `?scopeType=`) deep-link a filtered
+// URL params (`?org_filter=`, `?scope=`, `?scopeType=`) deep-link a filtered
 // graph for the org workspace; they pass through to `KnowledgeGraphClient`.
 
 import { KnowledgeGraphClient } from "./KnowledgeGraphClient";
@@ -16,12 +16,17 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 export default async function KnowledgeGraphPage({
   searchParams,
 }: {
-  searchParams: Promise<{ org?: string; scope?: string; scopeType?: string }>;
+  searchParams: Promise<{
+    org_filter?: string;
+    org?: string;
+    scope?: string;
+    scopeType?: string;
+  }>;
 }) {
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <KnowledgeGraphLanding />;
 
-  const { org, scope, scopeType } = await searchParams;
+  const { org_filter, org, scope, scopeType } = await searchParams;
 
   return (
     <>
@@ -46,7 +51,7 @@ export default async function KnowledgeGraphPage({
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
         <KnowledgeGraphClient
-          orgParam={org ?? null}
+          orgParam={org_filter ?? org ?? null}
           scopeParam={scope ?? null}
           scopeTypeParam={scopeType ?? null}
         />

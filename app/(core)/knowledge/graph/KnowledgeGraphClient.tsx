@@ -3,18 +3,16 @@
 // Client shell for the org-wide knowledge graph.
 //
 // Org resolution order:
-//   1. `?org=<slug|id>` URL param (lets the org workspace deep-link a filtered
-//      graph) — a slug is resolved to its org id.
-//   2. The user's active org from appContextSlice (read-only — Surface A owns
-//      writes).
-// When neither is set the backend org-wide query still returns the global
-// (NULL-org) corpus, so we pass null and let the canvas render.
+// Org filter: `?org_filter=<slug|id>` (the org workspace's legacy `?org=` link
+// is read too) — a slug is resolved to its org id. With none set the graph is
+// ALL organizations (the backend org-wide query returns the union of the
+// person's visible orgs plus the global corpus). The header's ACTIVE org never
+// narrows this graph (policies/active-org-is-never-a-list-filter.md).
 
 "use client";
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { KgGraphCanvas } from "@/features/kg-graph/components/KgGraphCanvas";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
@@ -31,7 +29,6 @@ export function KnowledgeGraphClient({
   scopeParam?: string | null;
   scopeTypeParam?: string | null;
 }) {
-  const active = useActiveContext();
   const [resolvedOrgId, setResolvedOrgId] = useState<string | null>(null);
   const [resolving, setResolving] = useState<boolean>(Boolean(orgParam));
   // A failed slug read is said, never read as "no organization" (RC-B12 r13).
@@ -93,9 +90,7 @@ export function KnowledgeGraphClient({
     );
   }
 
-  const organizationId = orgParam
-    ? resolvedOrgId
-    : (active.organizationId ?? null);
+  const organizationId = orgParam ? resolvedOrgId : null;
 
   return (
     <KgGraphCanvas

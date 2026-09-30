@@ -16,7 +16,7 @@ and `/knowledge/graph`, per-scope neighbourhood at `/scopes/[scopeId]/graph`. Re
 **Components** — `KgGraphCanvas` (the single surface for both modes: fetch, toolbar, legend,
 empty/error/loading, side panel) · `KgGraphCytoscape` (presentational render surface, client-only)
 · `KgGraphLegend` · `KgGraphSidePanel` (evidence drill-down; reuses `citationHrefFor()` from
-`features/rag/api/search.ts`) · `KgGraphCard` (lazy mini preview) · `KgOrgFilter` / `KgScopeFilter`.
+`features/rag/api/search.ts`) · `KgGraphCard` (lazy mini preview) · `KgScopeFilter` (the org filter is the shared `EntityOrgFilter`).
 
 **Cytoscape engine** (`cytoscape/`, direct integration, no React wrapper) — `useKgCytoscape.ts`
 (instance lifecycle only) · `ops.ts` (imperative ops) · `analysis.ts` (`buildElements`,
