@@ -75,8 +75,8 @@ import {
   presentOrganizationRefusal,
 } from "@/lib/organizations/organizationRefusalToast";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { archiveRecord } from "@/features/trash/service";
-import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
+import { trashConfirmSentence } from "@/features/trash/archiveCopy";
 import { keepSource, sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import type { EntityRef, FiledRef, KnowledgeHit, KnowledgeQuery } from "@/features/knowledge/api/knowledgeSearch";
 import {
@@ -178,7 +178,8 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingProgressSheet } from "@/features/rag/components/library/ProcessingProgressSheet";
-import { LibraryTrashList } from "@/features/rag/components/library/LibraryTrashList";
+import { TrashList } from "@/features/trash/components/TrashList";
+import { isVaultOwnedTrashToken } from "@/features/trash/service";
 import { SourceAddMenu, SourceSaveDialog, type SaveTarget } from "@/features/sources/components/SourceCapture";
 import { SourceStageCell } from "@/features/sources/components/SourceStageCell";
 import {
@@ -1205,7 +1206,7 @@ export function KnowledgeHubPage({
     const what = targets.length === 1 ? `"${targets[0].title}"` : `these ${targets.length} items`;
     const ok = await confirm({
       title: targets.length === 1 ? "Move to Trash?" : `Move ${targets.length} items to Trash?`,
-      description: archiveConfirmSentence(what),
+      description: trashConfirmSentence(what),
       confirmLabel: "Move to Trash",
       variant: "destructive",
     });
@@ -1219,8 +1220,25 @@ export function KnowledgeHubPage({
         if (!row) throw new Error(`${noun} is no longer listed, so it was not moved.`);
         await trashSource(row);
       });
-      if (outcome.failed.length) toast.error(outcome.sentence);
-      else toast.success(outcome.sentence);
+      // Undo puts every moved item back (the platform's one restore door).
+      const undo = outcome.moved.length
+        ? {
+            label: "Undo",
+            onClick: () =>
+              void (async () => {
+                const back = await Promise.allSettled(outcome.moved.map((t) => restoreFromTrash(t.entity, t.id)));
+                const refused = back.filter((b) => b.status === "rejected");
+                if (refused.length)
+                  toast.error(
+                    `${refused.length === back.length ? "Nothing was" : `${back.length - refused.length} of ${back.length} were`} put back: ${(refused[0] as PromiseRejectedResult).reason instanceof Error ? (refused[0] as PromiseRejectedResult).reason.message : "the server refused."}`,
+                  );
+                else toast.success(back.length === 1 ? `Put back "${outcome.moved[0].title}".` : `Put back ${back.length} items.`);
+                refreshResults();
+              })(),
+          }
+        : undefined;
+      if (outcome.failed.length) toast.error(outcome.sentence, undo ? { action: undo } : undefined);
+      else toast.success(outcome.sentence, undo ? { action: undo } : undefined);
       setSelected(new Set());
       if (outcome.ok) {
         if (peekKey && targets.some((t) => `${t.entity}:${t.id}` === peekKey)) closePeek();
@@ -1927,7 +1945,17 @@ export function KnowledgeHubPage({
       ) : null}
       <div className={noLibraries || expanding || librariesFailed ? "hidden" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>
         {trashView ? (
-          <LibraryTrashList filterText={state.query.text} onMutated={() => refreshResults()} />
+          // The platform's one Trash (every kind the hub lists — Sources, transcripts, recording
+          // sessions, notes, files, chats…), restorable here. Vault credentials restore only
+          // through the Vault's own review, so they stay in the Vault's Trash.
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+            <TrashList
+              scope={{ mode: "personal" }}
+              includeKind={(k) => !isVaultOwnedTrashToken(k)}
+              filterText={state.query.text}
+              onRestored={() => refreshResults()}
+            />
+          </div>
         ) : state.view.kind === "favorites" && sidebar.favorites.status !== "ready" ? (
           sidebar.favorites.status === "error" ? (
             <p className="px-2 py-4 text-sm text-destructive">

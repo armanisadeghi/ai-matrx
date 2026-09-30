@@ -124,20 +124,25 @@ export async function fileUnder(
 
 export type ArchiveDoor = (token: string, id: string, noun: string) => Promise<void>;
 
-export async function trashItems(hits: KnowledgeHit[], archive: ArchiveDoor): Promise<ActionOutcome> {
+export async function trashItems(
+  hits: KnowledgeHit[],
+  archive: ArchiveDoor,
+): Promise<ActionOutcome & { moved: ActionTarget[] }> {
   const targets = uniqueTargets(hits);
   const failed: ActionOutcome["failed"] = [];
+  const moved: ActionTarget[] = [];
   let ok = 0;
   for (const t of targets) {
     try {
       await archive(t.entity, t.id, `"${t.title}"`);
       ok += 1;
+      moved.push(t);
     } catch (err) {
       failed.push({ target: t, message: err instanceof Error ? err.message : String(err) });
     }
   }
   const sentence = ok
-    ? `Moved ${plural(ok, "item")} to Trash — restore from Trash any time.${failureTail(failed).replace("could not be", "could not be moved")}`
+    ? `Moved ${ok === 1 && targets.length === 1 ? `"${targets[0].title}"` : plural(ok, "item")} to Trash.${failureTail(failed).replace("could not be", "could not be moved")}`
     : `Nothing was moved to Trash.${failureTail(failed).replace("could not be", "could not be moved")}`;
-  return { ok, failed, sentence };
+  return { ok, failed, sentence, moved };
 }

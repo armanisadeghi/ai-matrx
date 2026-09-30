@@ -19,6 +19,16 @@ export const TRASH_HREF = "/trash";
  * `what` is the thing as a person would say it: "the show", "this map",
  * `"Q3 pricing scan"` (quoted names are passed already quoted).
  */
+/**
+ * The same three facts where "archive" already means something else (the Knowledge hub's
+ * triage Archive): "This moves "Q3 call" to Trash. It leaves this list, and you can restore it
+ * from Trash."
+ */
+export function trashConfirmSentence(what: string): string {
+  const subject = what.trim() || "it";
+  return `This moves ${subject} to Trash. It leaves this list, and you can restore it from Trash.`;
+}
+
 export function archiveConfirmSentence(what: string): string {
   const subject = what.trim() || "it";
   return `This archives ${subject}. It leaves this list, and you can restore it from Trash.`;

@@ -120,13 +120,17 @@ it("keeps the canonical table footer and distinguishes a loaded source window fr
     );
   });
 
-  expect(host.querySelector("[data-matrx-table-footer]")).not.toBeNull();
-  expect(host.querySelector('[data-matrx-table-coverage-scope="all"]')?.textContent).toContain("Partial");
-  expect(host.textContent).toContain(`Showing the ${hits.length} items loaded so far out of ${sourceTotal} items in this table.`);
-  expect(host.querySelector("[data-matrx-table-footer]")?.textContent).toContain(`${hits.length} / ${sourceTotal} loaded`);
-  const loadMore = [...host.querySelectorAll("button")].find((button) => button.textContent === "Load more");
-  expect(loadMore).toBeDefined();
-  await act(async () => loadMore?.click());
+  // ONE paging model: the table appends the next page as you scroll (the footer names what is
+  // loaded of the true total and keeps the table's own "Load more" for a mouse that won't scroll).
+  // No "Partial" banner and no numbered pager beside it.
+  const footer = host.querySelector("[data-matrx-table-footer]");
+  expect(footer).not.toBeNull();
+  expect(footer?.textContent).toContain(`${hits.length} loaded of ${sourceTotal}`);
+  expect(host.querySelector("[data-matrx-table-coverage-scope]")).toBeNull();
+  expect(host.textContent).not.toContain("Partial");
+  const loadMore = [...host.querySelectorAll("button")].filter((button) => button.textContent === "Load more");
+  expect(loadMore).toHaveLength(1);
+  await act(async () => loadMore[0]?.click());
   expect(onShowMore).toHaveBeenCalledWith(cursorSection.key);
 });
 
@@ -175,10 +179,9 @@ it("keeps a passage-only search result's total unknown", async () => {
     );
   });
 
-  expect(host.querySelector('[data-matrx-table-coverage-scope="all"]')?.textContent).toContain("Unknown total");
-  expect(host.textContent).toContain("The total number of items in this table is not known.");
+  // A search total is not claimed: the footer never says "of 100".
   expect(host.textContent).not.toContain("out of 100 items in this table.");
-  expect(host.querySelector("[data-matrx-table-footer]")?.textContent).not.toContain(" / 100 loaded");
+  expect(host.querySelector("[data-matrx-table-footer]")?.textContent).not.toContain("of 100");
 });
 
 it("uses the table-owned Alchemy control for transcript copy while retaining transcript links", async () => {
