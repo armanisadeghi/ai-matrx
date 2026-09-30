@@ -21,8 +21,11 @@
 --   (3) latency: the analytics print 0 for a model with no recorded latency; the door says none.
 -- `plant=noknob` moves every finding setting to a line nobody meets inside the rolled-back
 -- transaction -> the finding parity checks go RED (the lines are read from the settings, not the
--- file). `plant=nohasrequest` rewrites the view so has_request is always true -> context-heavy
--- and bursts parity go RED (the filter carries the oracle's "request_id IS NOT NULL").
+-- file; measured 2026-09-30: F2 F3 F5 F6 F7 red). `plant=nohasrequest` rewrites the view so
+-- has_request is always true -> V2 and R2 go RED (measured). F5 and F6 carry the filter too but
+-- cannot witness it on this data: no execution without a request lands in a context-heavy
+-- conversation or a burst in the September 2026 data (measured: both sets are the same with and
+-- without the filter), so V2 is the witness that the column carries the rule.
 --
 -- THE CLONE ONLY (never production): the seats are simulated with request.jwt.claims and
 -- `set local role authenticated`, exactly as PostgREST sets them. Nothing is kept: rolled back.
@@ -142,6 +145,25 @@ select pg_temp.chk('F0 describe: ai_usage_executions offers six findings, two Sa
   and (select count(*) from pg_temp.dcd, jsonb_array_elements(d -> 'findings') x where definition = 'ai_usage' and x ->> 'key' = 'spikes') = 1
   and not exists (select 1 from dcfs where parts is distinct from total and not (parts is null and total = 0)),
   (select string_agg(format('%s.%s %s groups $%s', definition, finding, n, round(cost, 2)), '; ' order by definition, finding) from dcfs));
+
+-- a finding row opens its records: the records of the top hog are its executions, same money
+do $$
+declare c_aimatrx constant uuid := '5dc930e9-bd65-44a1-8369-af773f6e1a5b'; v_w jsonb; v_conv text; v_cost numeric; v_calls numeric; v_p jsonb;
+begin
+  select jsonb_build_object('key', 'at', 'from', w0, 'to', w1) into v_w from pg_temp.dcw;
+  select groups ->> 'conversation', (measures ->> 'cost')::numeric into v_conv, v_cost
+    from pg_temp.dcf where definition = 'ai_usage_executions' and finding = 'hogs' and kind = 'group' order by (measures ->> 'cost')::numeric desc limit 1;
+  select count(*) into v_calls from runtime._ai_usage_calls c, pg_temp.dcw w where c.conversation_id = v_conv::uuid and c.created_at >= w.w0 and c.created_at < w.w1;
+  perform set_config('request.jwt.claims', json_build_object('sub', '87a6e699-3622-4869-8843-d0867456c0dd', 'role', 'authenticated')::text, true);
+  perform set_config('request.headers', '{"x-matrx-admin-lane":"1"}', true);
+  execute 'set local role authenticated';
+  v_p := platform.drill_rows(c_aimatrx, '{"kind":"entity","token":"ai_usage_executions"}',
+           jsonb_build_object('lane', 'platform', 'window', v_w, 'limit', 5, 'where', jsonb_build_object('conversation', v_conv)));
+  execute 'reset role';
+  perform pg_temp.chk('F8 "See these records" of the top hog: its executions, and the page''s sums = the finding row''s money',
+    (v_p ->> 'total')::numeric = v_calls and (v_p -> 'measures' ->> 'cost')::numeric = v_cost and jsonb_array_length(v_p -> 'rows') = least(5, v_calls),
+    format('%s records of %s, $%s vs $%s', v_p ->> 'total', v_calls, v_p -> 'measures' ->> 'cost', v_cost));
+end $$;
 
 -- the settings are the Spend page's values
 select pg_temp.chk('K1 the six finding settings are seeded with the Spend page''s values',
@@ -312,10 +334,10 @@ select pg_temp.chk('X3 Daily cost and tokens = cx_usage_analytics.by_day (UTC da
   not exists (
     select x.date, x.count, x.cost, x.input_tokens, x.output_tokens, x.cached_tokens from dcx, jsonb_to_recordset(dcx.j -> 'by_day') x(date text, count bigint, cost numeric, input_tokens bigint, output_tokens bigint, cached_tokens bigint)
     except
-    select left(groups ->> 'at', 10), (measures ->> 'calls')::bigint, (measures ->> 'cost')::numeric, (measures ->> 'tokens_in')::bigint, (measures ->> 'tokens_out')::bigint, (measures ->> 'tokens_cached')::bigint
+    select left(groups ->> 'at:day', 10), (measures ->> 'calls')::bigint, (measures ->> 'cost')::numeric, (measures ->> 'tokens_in')::bigint, (measures ->> 'tokens_out')::bigint, (measures ->> 'tokens_cached')::bigint
       from dcv where view_key = 'cx_by_day' and kind = 'group')
   and (select count(*) from dcv where view_key = 'cx_by_day' and kind = 'group') = (select jsonb_array_length(j -> 'by_day') from dcx),
-  (select string_agg(groups ->> 'at', ', ' order by groups ->> 'at') from (select groups from dcv where view_key = 'cx_by_day' and kind = 'group' limit 2) s));
+  format('%s days', (select count(*) from dcv where view_key = 'cx_by_day' and kind = 'group')));
 select pg_temp.chk('X4 Cost by origin = cx_usage_analytics.by_origin (calls, cost, the four token sums)',
   not exists (
     select x.origin_class, x.count, x.total_cost, x.total_input_tokens, x.total_output_tokens, x.total_cached_tokens, x.total_tokens
@@ -363,15 +385,16 @@ create temp table dcrp on commit drop as select
   (select (measures ->> 'cost')::numeric from dcrl where side = 'ledger' and kind = 'total') as ledger,
   (select (measures ->> 'cost')::numeric from dcrl where side = 'calls' and kind = 'total') as calls,
   (select coalesce(sum((measures ->> 'cost')::numeric), 0) from dcrl where side = 'ledger' and kind = 'group' and (groups ->> 'has_request')::boolean is not true) as no_request,
-  (select coalesce(sum((measures ->> 'cost')::numeric), 0) from dcrl where side = 'ledger' and kind = 'group' and (groups ->> 'has_request')::boolean and groups ->> 'source' is distinct from 'conversation') as request_not_model,
-  (select coalesce(sum((measures ->> 'cost')::numeric), 0) from dcrl where side = 'ledger' and kind = 'group' and (groups ->> 'has_request')::boolean and groups ->> 'source' = 'conversation') as request_model,
+  (select coalesce(sum((measures ->> 'cost')::numeric), 0) from dcrl where side = 'ledger' and kind = 'group' and (groups ->> 'has_request')::boolean) as with_request,
   (select coalesce(sum((measures ->> 'cost')::numeric), 0) from dcrl where side = 'calls' and kind = 'group' and (groups ->> 'request_in_ledger')::boolean) as calls_in_ledger,
-  (select coalesce(sum((measures ->> 'cost')::numeric), 0) from dcrl where side = 'calls' and kind = 'group' and (groups ->> 'request_in_ledger')::boolean is not true) as calls_not_in_ledger;
-select pg_temp.chk('R1 the pair adds up: ledger − calls = (spend no request owns) + (a request''s non-model executions) + (model executions − the calls of requests in the ledger) − (calls whose request is not in the ledger)',
-  ledger - calls = no_request + request_not_model + (request_model - calls_in_ledger) - calls_not_in_ledger
-  and ledger = no_request + request_not_model + request_model and calls = calls_in_ledger + calls_not_in_ledger,
-  format('ledger $%s − calls $%s = $%s: no request $%s + request, not a model call $%s + model executions vs their calls $%s − calls outside the ledger $%s',
-         round(ledger, 2), round(calls, 2), round(ledger - calls, 2), round(no_request, 2), round(request_not_model, 2), round(request_model - calls_in_ledger, 2), round(calls_not_in_ledger, 2)))
+  (select coalesce(sum((measures ->> 'cost')::numeric), 0) from dcrl where side = 'calls' and kind = 'group' and (groups ->> 'request_in_ledger')::boolean is not true) as calls_not_in_ledger,
+  (select string_agg(format('%s $%s', groups ->> 'source', round((measures ->> 'cost')::numeric, 2)), ', ' order by (measures ->> 'cost')::numeric desc)
+     from (select * from dcrl where side = 'ledger' and kind = 'group' and (groups ->> 'has_request')::boolean is not true order by (measures ->> 'cost')::numeric desc limit 4) t) as no_request_top;
+select pg_temp.chk('R1 the pair adds up: ledger − calls = (spend no request owns: no model call by construction) + (requests'' ledger spend − their model calls'' cost) − (calls whose request owns no ledger row)',
+  ledger - calls = no_request + (with_request - calls_in_ledger) - calls_not_in_ledger
+  and ledger = no_request + with_request and calls = calls_in_ledger + calls_not_in_ledger,
+  format('ledger $%s − calls $%s = $%s: no request $%s (%s) + requests'' ledger − their calls $%s − calls outside the ledger $%s',
+         round(ledger, 2), round(calls, 2), round(ledger - calls, 2), round(no_request, 2), no_request_top, round(with_request - calls_in_ledger, 2), round(calls_not_in_ledger, 2)))
   from dcrp;
 select pg_temp.chk('R2 each part is measured, not asserted: the pair''s parts = the base tables (ledger rows no request owns; calls whose request owns no ledger row; the two totals)',
   (select no_request from dcrp) = (select coalesce(sum(e.cost), 0) from runtime.global_execution e, dcw

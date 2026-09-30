@@ -1,6 +1,7 @@
 -- chair-step: the inverse of migrations/campaign/drillcalls_drill_declares_ai_calls_and_ai_usage_and_ai_usage_executions.sql (lane DRILL-CALLS) — drops the declared drill definition function(s) it created and puts back the ones it replaced (ai_usage) exactly as they were. No row of anybody's data is touched.
 -- lane: DRILL-CALLS
 -- lock: platform
+-- based-on: platform.drill_def__ai_usage() a7b0e01a981851d64b5b5f498c7f442241352622328848dbb899b38cbd77e46d
 
 drop function if exists platform.drill_def__ai_calls();
 drop function if exists platform.drill_def__ai_usage_executions();
