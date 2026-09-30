@@ -151,8 +151,15 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function Inputs({ mandateKey }: { mandateKey: AnyMandateKey }) {
-  const state = useMandateInputSurface(mandateKey);
+function Inputs({
+  mandateKey,
+  organizationId,
+}: {
+  mandateKey: AnyMandateKey;
+  /** The display organization (page org filter, else the mandate's home org) — never the active one. */
+  organizationId: string | null;
+}) {
+  const state = useMandateInputSurface(mandateKey, organizationId);
   if (state.status === "loading") {
     return <div className="h-6 w-48 animate-pulse rounded bg-muted" aria-label="Reading inputs" />;
   }
@@ -331,7 +338,7 @@ export function MandatePeekModal({ mandate, isOpen, onClose, href }: MandatePeek
                 <p className="whitespace-pre-wrap break-words text-sm text-foreground">{ready.description}</p>
               ) : null}
               <Section label="Inputs">
-                <Inputs mandateKey={ready.mandateKey} />
+                <Inputs mandateKey={ready.mandateKey} organizationId={ladderOrgId} />
               </Section>
               <Section label="Output">
                 <p className="flex items-center gap-1.5 text-sm text-foreground">
