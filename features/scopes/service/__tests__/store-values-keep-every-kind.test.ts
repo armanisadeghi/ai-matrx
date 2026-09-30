@@ -13,13 +13,15 @@
  *     team's "Team members" fence naming people the store has no Record for. The carried word
  *     ("reference") sent the value into the reference branch, which found no uuid in a fence string,
  *     and the cell came back EMPTY: the screen showed nothing where the old one showed the chips.
+ *  3. A File column's reference came back as the File RECORD's id; the old fence (and every file chip)
+ *     names the FILE. The door now answers `files` (record → file) and the adapter writes `file_id`.
  *  2. A reference to a row outside the scope system (a workbook, a note, a site, a brand) carries its
  *     label inside the store's element; the adapter dropped it, so the chip lost its name.
  *
  * Every other kind is pinned here too (date, datetime, a free-text "datetime", number, currency,
  * boolean, time, object, list, email, markdown, a scope reference, a file reference), so a later
  * change to the kind map cannot quietly move one. RED on the HEAD copy of storeScopeAdapter.ts
- * (cases 1 and 2), GREEN after.
+ * (cases 1, 2 and 3), GREEN after.
  */
 import { contextValueFromStore, type StoreValueRow } from "@/features/scopes/service/storeScopeAdapter";
 
@@ -60,8 +62,14 @@ describe("a store value lands in the old cell for every kind", () => {
       row("a71eeea7-739e-4f32-ba13-fbb91b279447", { type: "relation", multi: false, config: {}, relation_target: "2a0fff28-25db-4adc-89f4-e402df1121f5" }, { "a71eeea7-739e-4f32-ba13-fbb91b279447": "Golden State Indemnity Co." }),
     );
     expect(scope.value_text).toContain('"label": "Golden State Indemnity Co."');
-    const file = contextValueFromStore(row(["be939cea-95f2-4c72-b3c2-26736cae88f8"], { type: "relation", multi: true, config: {}, relation_target: FILE_KERNEL }));
+    // The store holds the File RECORD; the old fence (and every file chip) names the FILE.
+    const file = contextValueFromStore({
+      ...row(["be939cea-95f2-4c72-b3c2-26736cae88f8"], { type: "relation", multi: true, config: {}, relation_target: FILE_KERNEL }, { "be939cea-95f2-4c72-b3c2-26736cae88f8": "QME Report.pdf" }),
+      files: { "be939cea-95f2-4c72-b3c2-26736cae88f8": "e6acafbd-7d85-469b-bee4-02d17cc4b52d" },
+    });
     expect(file.value_text).toContain('"type": "file"');
+    expect(file.value_text).toContain('"file_id": "e6acafbd-7d85-469b-bee4-02d17cc4b52d"');
+    expect(file.value_text).not.toContain("be939cea");
   });
 
   it.each([

@@ -137,6 +137,8 @@ export interface StoreValueRow {
   authored_by?: string | null;
   /** Names of the scopes a reference points at that the caller may see. */
   labels?: Record<string, string> | null;
+  /** A File RECORD's file (record id → files.files id), for a File column's references the caller sees. */
+  files?: Record<string, string> | null;
 }
 
 // ─── the adapter: store words → the old nodes ──────────────────────────────────────────────────
@@ -325,7 +327,10 @@ const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/;
 const FENCE = /^\s*```matrx\b/;
 
 /** The canonical reference fence the old screens stored in `value_text` (features/scopes/utils/referenceCell.ts). */
-export function referenceFenceText(type: string, items: Array<{ id: string; label?: string; type?: string }>): string {
+export function referenceFenceText(
+  type: string,
+  items: Array<{ id?: string; file_id?: string; label?: string; type?: string }>,
+): string {
   const body = { matrx_version: 1, kind: "reference", type, items };
   return "```matrx\n" + JSON.stringify(body, null, 2) + "\n```";
 }
@@ -357,6 +362,7 @@ export function contextValueFromStore(row: StoreValueRow): ContextItemValue & { 
   const vt = valueTypeOfField(row.field ?? {}, row.field?.carried);
   const v = row.value;
   const labels = row.labels ?? {};
+  const files = row.files ?? {};
   // AN ITEM THE STORE LANDED AS TEXT HOLDS THE OLD CELL'S TEXT VERBATIM (lane SCOPES-READ-SWITCH-VALIDATE,
   // 2026-09-30). `custom._ctx_store_item` lands a value the store could not type (a reference fence
   // naming a table or a person the store has no Record for, a free-text "date" such as "2023") as a
@@ -390,6 +396,14 @@ export function contextValueFromStore(row: StoreValueRow): ContextItemValue & { 
       cell.value_text = referenceFenceText(
         type,
         refs.map((r) => {
+          // A File column holds File RECORD ids; the old fence named the FILE ({"file_id": …}), which is
+          // what every file chip opens. The door answers each record's file (`files`); a record whose
+          // file it does not name keeps its record id, so the chip is never silently re-pointed.
+          if (r.type === "file" && files[r.id]) {
+            const fileItem: { file_id: string; label?: string } = { file_id: files[r.id]! };
+            if (labels[r.id]) fileItem.label = labels[r.id];
+            return fileItem;
+          }
           const item: { id: string; label?: string; type?: string } = { id: r.id };
           if (labels[r.id]) item.label = labels[r.id];
           else if (r.label) item.label = r.label;
