@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
@@ -11,6 +10,7 @@ import { fetchEducationLibraryPage } from "@/features/education/library/service"
 import type { EducationLibraryRow } from "@/features/education/library/types";
 import { educationLibraryHref } from "@/features/education/library/types";
 import { artifactVisual } from "@/features/education/library/artifactVisuals";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import { createManualKit, isManualKitSourceType, kitHref, kitMembershipFingerprint, readKit, type ManualKitSourceType } from "../kitService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -46,6 +46,7 @@ export function ManualKitCreator() {
   const [sourceReady, setSourceReady] = useState(!requestedSourceId);
   const draftKey = `manual-study-kit-draft:${requestedSourceType}:${requestedSourceId ?? "new"}`;
   const recoveryQueryRef = useRef(draftKey);
+  const existingKitRef = useRef(false);
   const recoveryReady = recoveryReadyKey === draftKey;
   const queryMatchesSelectedSource = !requestedSourceId || (
     sourceId === requestedSourceId && sourceType === requestedSourceType
@@ -56,7 +57,22 @@ export function ManualKitCreator() {
     if (requestedSourceId && !sourceId) queueMicrotask(() => setSourceId(requestedSourceId));
   }, [requestedSourceId, sourceId]);
   useEffect(() => {
-    if (!requestedSourceId) return;
+    let active = true;
+    if (!requestedSourceId) {
+      queueMicrotask(() => {
+        if (!active) return;
+        setSourceReady(true);
+        setIsExistingKit(false);
+        existingKitRef.current = false;
+        setExistingFingerprint(null);
+        setSourceId(null);
+        setSourceType("file");
+        setSourceName(null);
+        setTitle("");
+        setSelected([]);
+      });
+      return () => { active = false; };
+    }
     if (!isManualKitSourceType(requestedSourceType)) {
       queueMicrotask(() => {
         setError("This kit source type is not supported.");
@@ -64,15 +80,17 @@ export function ManualKitCreator() {
       });
       return;
     }
-    let active = true;
     queueMicrotask(() => {
       if (!active) return;
       setSourceReady(false);
       setIsExistingKit(false);
+      existingKitRef.current = false;
       setExistingFingerprint(null);
       setSourceId(null);
       setSourceType("file");
       setSourceName(null);
+      setTitle("");
+      setSelected([]);
     });
     void readKit(requestedSourceType, requestedSourceId).then(async (kit) => {
       if (!active) return;
@@ -82,6 +100,7 @@ export function ManualKitCreator() {
         setExistingFingerprint(kitMembershipFingerprint(kit));
         setTitle(kit.title);
         setIsExistingKit(true);
+        existingKitRef.current = true;
         if (requestedSourceType === "file") {
           const file = await getFileMetadata(requestedSourceId);
           if (!active) return;
@@ -156,7 +175,7 @@ export function ManualKitCreator() {
         }
         // A URL-selected anchor owns its title. Its draft can restore selected
         // aids, but may not replace the title loaded from that anchor's kit.
-        if (!requestedSourceId) setTitle(draft.title);
+        if (!requestedSourceId || !existingKitRef.current) setTitle(draft.title);
         if (!requestedSourceId && draft.source) { setSourceId(draft.source.id); setSourceName(draft.source.name); setSourceType("file"); }
         setSelected(draft.selected);
         if (draft.restored) toast.info("Your unsaved kit was restored.");
@@ -210,7 +229,7 @@ export function ManualKitCreator() {
     finally { setSaving(false); }
   };
   const candidates = [...new Map([...rows, ...selected].map((row) => [`${row.kind}:${row.id}`, row])).values()];
-  const getScope = () => createEducationKitsScope({ view: "new", kit_draft_title: title, kit_source_file_id: sourceType === "file" ? sourceId ?? undefined : undefined, kit_membership_fingerprint: existingFingerprint ?? undefined, kit_member_candidates: candidates.map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })) });
+  const getScope = () => createEducationKitsScope({ view: "new", kit_draft_title: title, kit_source_id: sourceId ?? undefined, kit_source_type: sourceId ? sourceType : undefined, kit_source_file_id: sourceType === "file" ? sourceId ?? undefined : undefined, kit_membership_fingerprint: existingFingerprint ?? undefined, kit_member_candidates: candidates.map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })) });
   const getWriteHandlers = () => {
     const create = collectionWriteHandlers({ plural: "kits", singular: "kit", create: {
     parse: (value) => readCollectionList("create_kits", "kits", value, 25).map((raw, index) => {
@@ -218,7 +237,9 @@ export function ManualKitCreator() {
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`create_kits[${index}] must be an object.`);
       const item = raw as Record<string, unknown>;
       if (typeof item.title !== "string" || !item.title.trim()) throw new Error(`create_kits[${index}].title needs text.`);
-      if (item.source_file_id !== sourceId) throw new Error(`create_kits[${index}].source_file_id must be the file selected in this creator.`);
+      if (isExistingKit) {
+        if (item.source_id !== sourceId || item.source_type !== sourceType) throw new Error(`create_kits[${index}].source_id and source_type must identify the open kit.`);
+      } else if (item.source_file_id !== sourceId) throw new Error(`create_kits[${index}].source_file_id must be the file selected in this creator.`);
       if (isExistingKit && item.expected_membership_fingerprint !== existingFingerprint) throw new Error(`create_kits[${index}].expected_membership_fingerprint is stale. Reload this kit before adding aids.`);
       if (!Array.isArray(item.artifact_refs) || !item.artifact_refs.length) throw new Error(`create_kits[${index}].artifact_refs needs one or more visible study aids.`);
       const refs = item.artifact_refs;
@@ -240,17 +261,14 @@ export function ManualKitCreator() {
     <p className="text-sm text-muted-foreground">Group saved study aids under one saved source. Your aids are not copied or changed.</p>
     <label className="block text-sm font-medium">Kit title<Input className="mt-1" value={title} readOnly={isExistingKit} onChange={(event) => setTitle(event.target.value)} /></label>
     {!isExistingKit && <Button variant="outline" onClick={() => void chooseFile()}>{sourceId ? "Change source file" : "Choose source file"}</Button>}
-    {sourceId && <p className="text-xs text-muted-foreground">Source: {sourceType === "file" ? <a className="underline" href={`/files/f/${sourceId}`}>{sourceName ?? "Selected file"}</a> : sourceName ?? "Selected source"}</p>}
+    {sourceId && <p className="text-xs text-muted-foreground">Source: <EntityRef token={sourceType} id={sourceId} name={sourceName ?? "Selected source"} openInNewTab showIcon={false} /></p>}
     <label className="block text-sm font-medium">Find saved study aids<Input className="mt-1" placeholder="Search by name or type, like flashcards" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} /></label>
     <p className="text-xs text-muted-foreground">Choose any saved study aid, including a deck made in chat.</p>
     <div className="space-y-2 rounded-xl border border-border p-3">
       {rows.map((row) => <div key={`${row.kind}:${row.id}`} className="flex min-h-11 items-center gap-3 rounded-lg px-2 text-sm hover:bg-muted/50">
-        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-          <input type="checkbox" aria-label={`Add ${row.title}`} checked={selected.some((item) => item.id === row.id && item.kind === row.kind)} onChange={() => toggle(row)} />
-          <span className="min-w-0 flex-1 truncate">{row.title}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">{artifactVisual(row.subtype).label}</span>
-        </label>
-        <Link href={educationLibraryHref(row)} target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs text-primary hover:underline" aria-label={`Open ${row.title}`}>Open</Link>
+        <input type="checkbox" aria-label={`Add ${row.title}`} checked={selected.some((item) => item.id === row.id && item.kind === row.kind)} onChange={() => toggle(row)} />
+        <EntityRef token={row.kind} id={row.id} name={row.title} href={educationLibraryHref(row)} openInNewTab showIcon={false} fill className="min-w-0 flex-1" />
+        <span className="shrink-0 text-xs text-muted-foreground">{artifactVisual(row.subtype).label}</span>
       </div>)}
       {loading && <p className="text-sm text-muted-foreground">Loading study aids…</p>}
       {!loading && !rows.length && !error && <p className="text-sm text-muted-foreground">No matching study aids.</p>}

@@ -146,7 +146,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kit_source_id",
     label: "Kit id",
     description:
-      "The kit's id — the id of the source material everything was made from (from the page address). Present in the detail view.",
+      "The kit's id — the id of the source material everything was made from. In the manual creator, an existing-kit add request sends this as source_id.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -157,7 +157,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kit_source_type",
     label: "Material type",
     description:
-      'The kind of record the material is: "file" for an uploaded file, otherwise the source record type such as "note" or "processed_document" (the page address carries it as ?from=). Present in the detail view.',
+      'The kind of record the material is: "file" for an uploaded file, otherwise the source record type such as "note" or "processed_document" (the page address carries it as ?from=). In the manual creator, an existing-kit add request sends this as source_type.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 6,
@@ -242,7 +242,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kit_source_file_id",
     label: "Source file",
     description:
-      "The id of the source file chosen for the new kit; create_kits and add_kit_members must send it as source_file_id. Absent until a file is chosen and outside the new view.",
+      "The id of the source file chosen for a new kit; create_kits sends it as source_file_id. Absent until a file is chosen and outside the new view.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -275,7 +275,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 const writeTargets: SurfaceWriteTarget[] = [
   { name: "create_kits", label: "Create study kits", description: "Available only in the manual kit creator after a source file and visible study aids load. Value is an ARRAY of exactly one { title: string, source_file_id: string, artifact_refs: [{ kind: string, id: string }] }. Each reference must match a current kit_member_candidate by both kind and id, and source_file_id must equal kit_source_file_id. Creates member associations only; it never asserts generated-from provenance.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 90 },
-  { name: "add_kit_members", label: "Add saved study aids", description: "Available only in existing Kit add mode. Use the same single-item value as create_kits and include expected_membership_fingerprint from the open Kit. Adds flagged member edges only; stale membership is refused before writing.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 95 },
+  { name: "add_kit_members", label: "Add saved study aids", description: "Available only in existing Kit add mode. Value is an ARRAY of exactly one { title: string, source_id: string, source_type: string, expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. source_id and source_type must equal kit_source_id and kit_source_type. Adds flagged member edges only; stale membership is refused before writing.", valueType: "array", updatesValue: "kit_member_candidates", mode: "entity", applyPolicy: "ask", group: "kit_library", sortOrder: 95 },
   { name: "remove_kit_members", label: "Remove saved study aids", description: "Available on an open Kit. Value is { expected_membership_fingerprint: string, artifact_refs: [{ kind: string, id: string }] }. The complete qualified set is checked against one fresh membership snapshot before any removal. A write failure reports exactly how many removals completed. It removes or hides only the Kit membership; saved aids and generated provenance remain available elsewhere.", valueType: "object", updatesValue: "study_aids", mode: "entity", applyPolicy: "ask", group: "open_kit", sortOrder: 115 },
   {
     name: "update_kits", label: "Rename study kits",
