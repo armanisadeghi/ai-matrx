@@ -20,7 +20,7 @@ import { signIn, setOrganization, until, sleep } from "./lib/seat-browser.mjs";
 const ORIGIN = process.env.ORIGIN ?? "http://save-as-table.localhost:3001";
 const STEP = process.env.STEP ?? "note";
 const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-29/save-as-table";
-const STATE = join(SHOTS, "walk-state.json");
+const STATE = process.env.WALK_STATE ?? "/private/tmp/save-as-table-walk-state.json";
 mkdirSync(SHOTS, { recursive: true });
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
@@ -178,7 +178,7 @@ async function askChat(prompt, until_) {
 if (STEP === "chat") {
   if (!state.tableName) throw new Error("run STEP=note first (it makes the table these rows are added to)");
   await askChat(
-    "Reply with exactly three markdown bullet points and nothing else. Each bullet is a patient name, then an em dash with spaces around it, then a visit type: Nadia Karimi — Discharge Visit; Tom Reyes — Follow-up; Ivy Chen — Initial Evaluation.",
+    "Reply with exactly three markdown bullet points and nothing else. Each bullet is a patient name, then an em dash with spaces around it, then a visit type: Nadia Karimi — Aquatic Therapy; Tom Reyes — Follow-up; Ivy Chen — Initial Evaluation.",
     "Ivy Chen",
   );
   state.chatUrl = page.url();
@@ -276,6 +276,14 @@ if (STEP === "canvas") {
   await sleep(5000);
   await shot("04-canvas-after-live");
   save();
+}
+
+if (STEP === "table-after") {
+  await goto(new URL(state.tableUrl).pathname);
+  await until("the grid", async () => (await page.locator("thead th").count()) > 1, 120000);
+  await sleep(4000);
+  await shot("02-chat-after-table");
+  console.log("rows:", (await page.locator("tbody").innerText()).replace(/\s+/g, " ").slice(0, 600));
 }
 
 if (STEP === "explore") {
