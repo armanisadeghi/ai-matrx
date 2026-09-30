@@ -425,7 +425,7 @@ function ColumnSettingsForm({
               }}
               siblingFields={siblings}
               {...(suggestions ? { suggestions } : {})}
-              {...(relationTargets ? { relationTargets } : {})}
+              {...(relationTargets !== undefined ? { relationTargets } : {})}
               choiceUsage={choiceUsage}
               rehome={rehome}
               onRehomeChange={setRehome}

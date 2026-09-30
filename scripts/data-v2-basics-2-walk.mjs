@@ -1036,6 +1036,82 @@ try {
     }
   }
 
+  if (PHASE === "b205") {
+    await open(process.env.TABLE, "?view=sheet");
+    const d = await columnSettings("Body Areas");
+    step("Body Areas settings", { text: (await d.innerText()).replace(/\s+/g, " ").slice(0, 500), combos: await d.getByRole("combobox").allInnerTexts() });
+    await d.getByRole("combobox").nth(0).click();
+    await sleep(500);
+    step("Stores offers", { options: await page.getByRole("option").allInnerTexts() });
+    await page.getByRole("option", { name: "Text", exact: true }).first().click();
+    await sleep(500);
+    await d.getByRole("button", { name: "Save", exact: true }).click();
+    await sleep(2000);
+    await shot("r05a-after-save");
+    step("after Save", { dialogs: await popups(), toasts: await page.locator("[data-sonner-toast], li[role=status]").allInnerTexts() });
+    const change = page.getByRole("button", { name: "Change type", exact: true });
+    if (await change.count()) {
+      await change.click();
+      await sleep(6000);
+    }
+    await shot("r05b-after-change");
+    step("after Change type", { rows: (await rowTexts()).slice(0, 4), toasts: await page.locator("[data-sonner-toast], li[role=status]").allInnerTexts() });
+  }
+
+  if (PHASE === "b215") {
+    await open(process.env.TABLE, "?view=sheet");
+    const looks = async (col, look) => {
+      const d = await columnSettings(col);
+      await d.getByRole("combobox").nth(1).click();
+      await sleep(600);
+      await page.getByRole("option").filter({ hasText: new RegExp(`^${look}`) }).first().click();
+      await sleep(1500);
+      await d.getByRole("button", { name: "Save", exact: true }).click();
+      await sleep(1200);
+      const ok = page.getByRole("alertdialog").getByRole("button").filter({ hasNotText: "Cancel" });
+      if (await ok.count().catch(() => 0)) await ok.first().click().catch(() => {});
+      await sleep(5000);
+    };
+    if (!process.env.ONLY_RELATION) {
+    await looks("Visit Status", "Text");
+    const asText = (await rowTexts()).slice(0, 4);
+    await looks("Visit Status", "Choice");
+    const d = await columnSettings("Visit Status");
+    const choices = await d.locator('input[aria-label="Option value"]').evaluateAll((xs) => xs.map((x) => x.value));
+    await shot("r06-choice-list-kept");
+    step("B2-15 Visit Status to Text and back keeps its list", { as_text: asText, choices_after: choices });
+    if (!choices.includes("No-show")) friction(`the list did not come back whole: ${choices.join(", ")}`);
+    await page.keyboard.press("Escape");
+    await sleep(800);
+    }
+    // B2-07: a Relation says which table it points at
+    await page.getByRole("button", { name: /^Column$/ }).first().click();
+    const add = page.getByRole("dialog").filter({ hasText: "Add New Column" });
+    await add.waitFor({ timeout: 20000 });
+    await add.getByPlaceholder("e.g. Total Revenue").fill("Referring Clinic");
+    await add.getByRole("combobox").nth(1).click();
+    await sleep(500);
+    await page.getByRole("option", { name: /^Relation/ }).first().click();
+    await sleep(2500);
+    const pointsAt = add.getByRole("combobox", { name: "Points at the records of" });
+    await until("Points at", async () => (await pointsAt.count()) > 0 || /no other table/.test(await add.innerText()), 30000);
+    const offered = await pointsAt.count();
+    step("the Points-at control", { offered, text: (await add.innerText()).replace(/\s+/g, " ").match(/Points at[^]{0,120}/)?.[0] ?? null });
+    if (offered) {
+      await pointsAt.click();
+      await sleep(600);
+      await page.getByRole("option", { name: "Clinic Supplies Count", exact: true }).first().click();
+      await sleep(500);
+    }
+    await shot("r07-relation-points-at");
+    await add.getByRole("button", { name: "Add Column", exact: true }).click();
+    await sleep(6000);
+    const toasts = await page.locator("[data-sonner-toast], ol li").allInnerTexts();
+    const hs = await headers();
+    step("B2-07 a Relation column", { picker_offered: offered, headers: hs, toasts: toasts.filter((x) => /relation|Referring/i.test(x)).slice(0, 2) });
+    if (!offered || !hs.includes("Referring Clinic") || toasts.some((x) => /not as relation/i.test(x))) friction("the Relation column was not made with its table");
+  }
+
   if (PHASE === "tidy") {
     // Columns earlier walks added and left on the test table, removed the way a person removes them.
     await open(T.supplies, "?view=sheet");

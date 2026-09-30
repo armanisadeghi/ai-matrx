@@ -8,7 +8,8 @@
 import { useEffect, useState } from "react";
 import { listTablesBeside } from "../service";
 
-export function useRelationTargets(tableId: string, wanted: boolean): { id: string; name: string }[] | undefined {
+/** `null` while the tables are being read (the picker says so); `undefined` when not wanted. */
+export function useRelationTargets(tableId: string, wanted: boolean): { id: string; name: string }[] | null | undefined {
   const [targets, setTargets] = useState<{ id: string; name: string }[] | undefined>(undefined);
   useEffect(() => {
     if (!wanted || targets !== undefined) return;
@@ -25,5 +26,5 @@ export function useRelationTargets(tableId: string, wanted: boolean): { id: stri
       live = false;
     };
   }, [tableId, wanted, targets]);
-  return targets;
+  return wanted ? (targets ?? null) : undefined;
 }

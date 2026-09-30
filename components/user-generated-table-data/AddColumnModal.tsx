@@ -275,7 +275,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
                 setDataType(base);
                 setFormat(next);
               }}
-              {...(relationTargets ? { relationTargets } : {})}
+              {...(relationTargets !== undefined ? { relationTargets } : {})}
               triggerClassName="h-9 w-full text-sm"
             />
             {format.id === "formula" && (

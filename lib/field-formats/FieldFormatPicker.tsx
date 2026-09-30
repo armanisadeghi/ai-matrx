@@ -78,7 +78,7 @@ export type FieldFormatPickerProps = {
    * The caller hands the tables this column's organization keeps; the picker draws "Points at".
    * Omit it and no Points-at control is drawn.
    */
-  relationTargets?: { id: string; name: string }[];
+  relationTargets?: { id: string; name: string }[] | null;
   /**
    * Removing a choice records still hold (lane CHOICE-TAILS): how many records
    * hold each choice, and where the records of each removed one go. Passed
@@ -240,10 +240,12 @@ export function FieldFormatPicker({
         </div>
       )}
 
-      {optionKeys.includes("relation_target") && relationTargets && (
+      {optionKeys.includes("relation_target") && relationTargets !== undefined && (
         <div className="w-full min-w-0 space-y-1">
           <Label className="text-[11px] text-muted-foreground">Points at the records of</Label>
-          {relationTargets.length === 0 ? (
+          {relationTargets === null ? (
+            <p className="text-xs text-muted-foreground">Reading this organization's tables…</p>
+          ) : relationTargets.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               There is no other table in this organization to point at yet. Make the table first, then come back.
             </p>
