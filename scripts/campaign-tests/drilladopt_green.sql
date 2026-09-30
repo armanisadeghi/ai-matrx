@@ -36,7 +36,7 @@ declare b text; w text;
 begin
   if current_setting('da.plant') = 'nosession' then
     b := pg_get_functiondef('platform.ai_usage_names(uuid,jsonb)'::regprocedure);
-    w := replace(b, $x$from unnest(v_session) i(id)$x$, $x$from unnest(v_session) i(id) where false$x$);
+    w := replace(b, $x$from unnest(v_session) i(id)$x$, $x$from unnest('{}'::text[]) i(id)$x$);
     if w = b then raise exception 'plant nosession did not apply'; end if;
     execute w;
   elsif current_setting('da.plant') = 'norecords' then
