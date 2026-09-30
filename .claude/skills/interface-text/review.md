@@ -60,5 +60,7 @@ label, tooltip, or state design can carry it. State it as a decision with your r
 
 ## Done when
 
-Every Discover line is in exactly one batch or marked `legit`/`no-fix` with a reason, and your
+`node scripts/interface-text/validate-discover.mjs <units.json> <review-out.json>` exits 0 (round 2:
+all three reviewers shipped over-budget replacements — 31 — that the fixers then applied). Every
+Discover line is in exactly one batch or marked `legit`/`no-fix` with a reason, and your
 final message lists the batches (id, lane, files, finding count) and any overturn patterns.

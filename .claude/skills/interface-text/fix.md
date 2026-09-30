@@ -28,6 +28,21 @@ You were given one batch: files, findings, and the exact replacement for each. Y
   the old string is updated to assert the new one (or its absence) in the same batch.
 - **Dead code:** a helper, prop, or variable that only fed the deleted text is removed.
 
+## What the round-1 checkers caught fixers doing (2026-09-30 — don't)
+
+| Miss | Do instead |
+|---|---|
+| A warning about what a control does (Apply refused while a red cell stands; the goal is frozen once set) moved to a code comment | Put it in **that control's tooltip** (`title=`) — it is behaviour the person hits |
+| Shortening dropped the subject ("Updates the draft only") or narrowed a noun until false ("dates" where the form also holds key IDs) | The short line still says **what acts** and stays **true of everything it covers** |
+| One branch of a `cond ? "a" : "b"` trimmed, the other left long | Both branches are siblings — same shape, similar length |
+| Subtext removed from two of three switches | Remove it from every sibling, or give all a parallel line |
+| Only the listed lines fixed; a long string beside them left | Run the detector on the **whole file** and fix neighbours in the same row, dialog or list |
+| Review's replacement shipped still over budget | Count characters (code spans included) before applying; shorten to fit |
+| A warning's remedy cut with the prose ("the ramp is paused" — by whom? until when?) | A warning keeps its remedy: who acts, or the control that fixes it |
+| A new term nobody sees elsewhere ("Dig-here lines"), or ambiguous shorthand ("colour is off") | Use words already on the screen |
+| `truncate` on a line that carries a formatted number | Let number lines wrap — truncation hides the value |
+| A link to another page removed with the prose | Keep it as a plain link, or name the removal in the commit |
+
 ## Recipes
 
 | Verdict | Do |

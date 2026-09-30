@@ -37,6 +37,11 @@ it on the shared preview (`pnpm preview:status`; your session hostname, signed i
 admin via `pnpm dev-login /<route>`), at desktop and at 390px wide. Check: the row/grid heights
 are even, no text wraps into a second line in a secondary slot, tooltips show the definition.
 Take one screenshot per page. If the preview cannot be reached, say so — do not claim a render.
+The shared browser pane is often driven by other sessions at the same time (round 1: tabs jumped
+routes mid-check). Use your own tab, or an isolated headless Playwright script against the same
+preview URL, and take the screenshot only after the page shows the committed text. A dialog or
+error state that cannot be opened without acting on real records is reported as "checked in code
+only", never as rendered.
 
 ## Verdict
 
