@@ -127,9 +127,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
             <PlugZap className="size-5 text-red-600 dark:text-red-400" />
             <h1 className="text-lg font-semibold">Unwired work</h1>
           </div>
-          <p className="mt-1 max-w-4xl text-sm text-muted-foreground">
-            Purpose-built code that appears unfinished because no runtime path reaches it. The response is to hunt its intent and finish the wiring—never to treat this as a disposal list.
-          </p>
+          {/* Unwired = unreachable code; finish the wiring, never treat it as disposal. */}
         </div>
         <code className="rounded bg-muted px-2 py-1 text-xs">pnpm check:unwired:write</code>
       </header>

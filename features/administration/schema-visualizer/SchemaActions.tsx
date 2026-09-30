@@ -6,7 +6,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -41,9 +40,6 @@ export function SchemaActions() {
     <Card className="h-full border-0 rounded-none">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl">Schema Explorer</CardTitle>
-        <CardDescription>
-          Visualize and manage your database schema
-        </CardDescription>
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input

@@ -118,12 +118,7 @@ export function PublicExposureConsole() {
             <h1 className="text-sm font-semibold text-foreground">
               Public exposure
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Every unconditional anon policy a signed-out visitor can reach.
-              Each must be declared with a reason, or the release gate fails.
-              Tables with row-level security switched off have no policy to
-              show here — the release gate checks those separately.
-            </p>
+            {/* Tables with RLS off have no policy here; the release gate checks them separately. */}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -162,12 +157,11 @@ export function PublicExposureConsole() {
               <Row key={rowKey(r)} row={r} />
             ))}
             <p className="px-4 pb-3 text-xs text-muted-foreground">
-              If intentional, declare it in{" "}
+              Declare it in{" "}
               <code className="rounded bg-muted px-1 py-0.5">
                 lib/security/public-exposure.ts
               </code>{" "}
-              with a reason. If not, fix the policy — never declare it just to
-              silence the check.
+              with a reason, or fix the policy.
             </p>
           </Section>
         ) : null}
@@ -188,8 +182,7 @@ export function PublicExposureConsole() {
                 className="border-b border-border px-4 py-2 text-xs text-muted-foreground"
               >
                 <span className="font-medium text-foreground">{e.relation}</span>{" "}
-                ({e.policy}, {e.cmd}) — remove this line from the declaration
-                file so the list stays honest.
+                ({e.policy}, {e.cmd}) — remove from the declaration file.
               </div>
             ))}
           </Section>
@@ -298,7 +291,7 @@ function Row({ row }: { row: ClassifiedExposure }) {
         <p className="mt-1 text-xs text-muted-foreground">{row.why}</p>
       ) : (
         <p className="mt-1 text-xs text-destructive">
-          No declared reason. A stranger can reach this and nobody said why.
+          No reason declared
         </p>
       )}
     </div>

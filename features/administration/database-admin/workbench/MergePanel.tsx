@@ -205,9 +205,7 @@ export function MergePanel({
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <div className="text-xs">
-                  Combine two successful query results into one. Pick the two
-                  queries, choose a mode, and (for joins) pick the matching key
-                  on each side.
+                  Merge two query results; joins need a key on each side.
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -439,8 +437,8 @@ export function MergePanel({
               <div className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
                 <span>
-                  No automatic key match found. Pick keys manually using the
-                  dropdowns above — try columns ending in <code>_id</code>.
+                  No key match found; pick keys above (try <code>*_id</code>{" "}
+                  columns).
                 </span>
               </div>
             )}

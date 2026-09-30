@@ -360,7 +360,7 @@ export default function AdminAttentionDock() {
       }}
       title={noteFor ? `Mute "${noteFor.title}" for ${NOTE_MUTE.label}` : "Mute"}
       description="Say why it is fine for this to stay off — every super-admin will read it beside the schedule, and the mute ends on its own."
-      placeholder="e.g. The commerce module is not built yet; nothing to sync until eBay approves us."
+      placeholder="e.g. Commerce module not built yet; nothing to sync"
       multiline
       rows={3}
       confirmLabel={`Mute for ${NOTE_MUTE.label}`}

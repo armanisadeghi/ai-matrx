@@ -216,7 +216,7 @@ export function QueryBlock({
             "w-full px-3 py-2 text-sm font-mono bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-0 resize-y focus:outline-none focus:ring-0 min-h-[80px]",
             showResolved && "bg-slate-50 dark:bg-slate-800/50",
           )}
-          placeholder="-- Enter SQL. Use {{variable}} for raw substitution, {{:variable}} for auto-quoted strings."
+          placeholder="-- SQL. {{name}} inserts raw, {{:name}} quotes"
           spellCheck={false}
         />
         {hasUsed && (

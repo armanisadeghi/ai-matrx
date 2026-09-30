@@ -7,7 +7,6 @@ import { createClient } from "@/utils/supabase/client";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -116,16 +115,12 @@ export default function NodeDialog({ state, rows, onClose, onSaved }: NodeDialog
 
   return (
     <Dialog open={state !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>
             {state?.mode === "edit" ? `Edit ${state.node?.name}` : "New node"}
           </DialogTitle>
-          <DialogDescription>
-            {state?.mode === "edit"
-              ? "Changes write straight to platform.taxonomy_node."
-              : "New nodes start as Proposed; ratifying to Canonical is Arman's call."}
-          </DialogDescription>
+          {/* Writes go straight to platform.taxonomy_node. New nodes start as Proposed; ratifying to Canonical is Arman's call. */}
         </DialogHeader>
         <div className="grid gap-4 py-1">
           <div className="grid grid-cols-2 gap-3">

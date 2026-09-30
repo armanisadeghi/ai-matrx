@@ -420,13 +420,13 @@ export function FinalSwitchScreen() {
                 data-testid="final-switch-copy-again"
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium">
+                  {/* Runs one organization at a time. */}
+                  <p
+                    className="text-sm font-medium"
+                    title="The switch stays off until this step finishes green."
+                  >
                     Step 1 · Copy again and the context copy
                   </p>
-                  <span className="text-xs text-muted-foreground">
-                    Its own step, one organization at a time; the press stays
-                    off until it finishes green.
-                  </span>
                   <span className="flex-1" />
                   <Button
                     size="sm"
@@ -447,7 +447,7 @@ export function FinalSwitchScreen() {
                   {board.totals.need_copy_again === 0 &&
                   board.needsContextCopy.length === 0 &&
                   board.orphans.every((o) => o.resolution !== "organization")
-                    ? "Nothing to copy: every organization's tables and context copy are current."
+                    ? "Nothing to copy; everything is current."
                     : `It will copy the tables again for ${board.totals.need_copy_again} ${board.totals.need_copy_again === 1 ? "organization" : "organizations"} and run the context copy for ${board.needsContextCopy.length} (the edits waiting for it carried, then parity measured again).`}
                 </p>
                 {needsContext && (
@@ -458,7 +458,7 @@ export function FinalSwitchScreen() {
                     {capabilities
                       ? capabilities.says
                       : (capabilitiesError ??
-                        "Asking the server whether its context copy carries a large organization…")}
+                        "Checking whether the context copy can run…")}
                   </p>
                 )}
                 <p
@@ -563,14 +563,15 @@ export function FinalSwitchScreen() {
             <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
               <p className="text-sm font-medium">{board.says}</p>
               <p className="text-xs text-muted-foreground">
-                {counts.listed} organizations listed (anything old, or a switch
-                pressed), measured {when(board.checkedAt)}:{" "}
+                {/* Listed = anything old, or a switch pressed. "Current" = already
+                    on the new system or nothing old left. */}
+                {counts.listed} organizations listed, measured{" "}
+                {when(board.checkedAt)}:{" "}
                 <span data-testid="final-switch-counts">
-                  {counts.toSwitch} switch at the press · {counts.nothing}{" "}
-                  already on the new system or with nothing old left ·{" "}
-                  {board.totals.need_copy_again} of the listed need Copy again
-                  first · {board.totals.need_context_copy ?? 0} need the
-                  context copy first · {board.totals.blocked} blocked
+                  {counts.toSwitch} to switch · {counts.nothing} current ·{" "}
+                  {board.totals.need_copy_again} need Copy again ·{" "}
+                  {board.totals.need_context_copy ?? 0} need context copy ·{" "}
+                  {board.totals.blocked} blocked
                 </span>
                 {board.lastRun &&
                   ` · last run ${board.lastRun.direction === "new" ? "pressed" : "undone"} ${when(board.lastRun.at)}${board.lastRun.by ? ` by ${board.lastRun.by}` : ""}`}
@@ -665,11 +666,9 @@ export function FinalSwitchScreen() {
                 <p className="text-sm font-medium">
                   Archived with no owner organization
                 </p>
-                <p className="text-muted-foreground">
-                  The press archived these older pick lists because no single
-                  organization owns them. Undo restores them; until then they
-                  stay archived.
-                </p>
+                {/* The press archived these older pick lists because no single
+                    organization owns them. */}
+                <p className="text-muted-foreground">Undo restores them.</p>
                 <ul className="flex flex-col gap-0.5">
                   {board.noOwnerArchived.map((o) => (
                     <li key={o.id}>
@@ -832,10 +831,12 @@ export function FinalSwitchScreen() {
               ? "Switch every organization to the new system?"
               : "Undo the final switch for every organization?"
           }
+          // Press also: automations follow tables, agents read new copy, Data/scope pages switch, old write doors close; tables re-copied first.
+          // Undo also: each Switch back runs in reverse order; the Data page and scope screens go back.
           description={
             confirm === "press"
-              ? `This switches ${counts.toSwitch} organizations at once: their older tables and pick lists are archived with pointers to their copies (never deleted), "when a row changes" automations follow their tables, agents read the new copy of every organization's scopes, the Data page and the scope screens open the new pages for everyone, and the older write doors are closed to browsers. The older tables are copied again first where that clears a difference. One undo on this page reverses all of it.`
-              : "Every organization goes back to its older tables in the same order backwards. Each one's Switch back carries what was written in the new system since the press into its older tables; the older write doors open again, the Data page and the scope screens go back."
+              ? `Switches ${counts.toSwitch} organizations at once; older tables and pick lists are archived, never deleted. One undo on this page reverses it.`
+              : "Every organization returns to its older tables in reverse order, carrying what was written since the press; the older write doors reopen."
           }
           content={
             confirm === "undo" && board?.undo ? (

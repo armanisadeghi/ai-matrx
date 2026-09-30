@@ -249,11 +249,10 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
 
       {knobs.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          The explorer's "dig here" lines could not be read (
-          {knobs.error.message}), so nothing below is computed — the breakdown
-          refuses to guess where a line sits. Seed the five
+          Dig-here lines unreadable ({knobs.error.message}) — nothing below is
+          computed. Seed the five
           <span className="font-mono"> platform.spend_explorer.* </span>
-          knobs to restore it.
+          knobs.
           <ErrorAlchemyMenu />
         </div>
       ) : null}
@@ -271,10 +270,10 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
             The breakdown read failed — no numbers are shown.
           </div>
           <div className="mt-1 text-xs">
+            {/* Read is refused at the database, not hidden in the UI. */}
             {error.message}
             {" · "}
-            This needs a Super Admin account; the read is refused at the
-            database, not hidden in the UI. Use Refresh to try again.
+            Needs a Super Admin account.
           </div>
           <ErrorAlchemyMenu />
         </div>

@@ -123,13 +123,9 @@ export default function TaxonomyAdminClient() {
             Feature Registry
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            The platform taxonomy — Domain, Feature, Sub-feature — live from{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">
-              platform.taxonomy_node
-            </code>
+            {/* Source: platform.taxonomy_node. */}
             {counts && (
               <>
-                {" · "}
                 {counts.domains} domains · {counts.features} features ·{" "}
                 {counts.subfeatures} sub-features · {counts.canonical} canonical
                 · {counts.proposed} proposed

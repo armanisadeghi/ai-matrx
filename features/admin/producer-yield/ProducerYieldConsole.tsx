@@ -284,12 +284,7 @@ export function ProducerYieldConsole() {
               <Target className="h-6 w-6" />
               Yield register
             </h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Every autonomous spender in the platform, and what its money
-              actually bought. A producer that emits outcomes nobody accepts is
-              broken — this page does not need to know why, which is what makes
-              it the detector for problems nobody has named yet.
-            </p>
+            {/* Page purpose: every autonomous spender and what its money bought; unaccepted output = broken producer. */}
           </div>
           <div className="flex gap-2">
             <Button size="sm" onClick={() => void onCheck()} disabled={checking}>
@@ -325,29 +320,26 @@ export function ProducerYieldConsole() {
             icon={<TrendingDown className="h-3.5 w-3.5" />}
             label="Cost per accepted"
             value={formatCostDisplay(totals.cost_per_accepted_usd)}
-            hint="The honest number. Cost per PRODUCED outcome flatters a producer that emits more junk, so it is never the headline."
+            // Cost per produced outcome flatters junk emitters, so it is never the headline.
+            hint="Spend per accepted outcome"
           />
           <StatCard
             icon={<HelpCircle className="h-3.5 w-3.5" />}
             label="Unmeasurable spend"
             value={formatCostDisplay(totals.unmeasurable_cost_usd)}
             tone={(totals.unmeasurable_cost_usd ?? 0) > 0 ? "critical" : "neutral"}
-            hint="Money spent by producers with NO acceptance signal wired. Nothing here can tell you whether it was worth it."
+            hint="Spend by producers with no acceptance signal"
           />
         </section>
       )}
 
       {floors && (
         <p className="text-xs text-muted-foreground">
-          Floors (hourly system task <code>producer_yield_floor</code>): alarm below{" "}
-          <strong>{formatRate(floors.yield_floor)}</strong> yield once a producer has
-          emitted <strong>{floors.min_produced_for_verdict}</strong> outcomes; alarm when
-          nothing has been decided after{" "}
-          <strong>{floors.never_decided_min_age_days} days</strong>; alarm when a
-          producer with no acceptance signal has spent{" "}
-          <strong>{formatAdminCost(floors.no_signal_min_cost_usd)}</strong>. Below the sample
-          floor there is no verdict at all — a 0-of-3 yield is noise with a decimal
-          point.
+          {/* Hourly task producer_yield_floor; below the sample floor there is no verdict. */}
+          Alarm floors: yield &lt; <strong>{formatRate(floors.yield_floor)}</strong> after{" "}
+          <strong>{floors.min_produced_for_verdict}</strong> outcomes · undecided{" "}
+          <strong>{floors.never_decided_min_age_days}</strong> days · no-signal spend ≥{" "}
+          <strong>{formatAdminCost(floors.no_signal_min_cost_usd)}</strong>
         </p>
       )}
 

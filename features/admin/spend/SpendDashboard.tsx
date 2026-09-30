@@ -314,25 +314,20 @@ export function SpendDashboard() {
               onClick={() => setOverviewRetryTick((t) => t + 1)}
             />
           </div>
-          <div className="mt-1 text-xs">
-            {error.message}
-            {" · "}
-            The breakdown below has a separate read. Retry the overview here.
-          </div>
+          <div className="mt-1 text-xs">{error.message}</div>
           <ErrorAlchemyMenu />
         </div>
       ) : null}
 
       {knobsState.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          The alarm threshold setting could not be read (
-          {knobsState.error.message}), so the headline below will not change
-          colour no matter how high today runs. Seed
+          Alarm threshold unreadable ({knobsState.error.message}) — headline
+          colour is off. Seed
           <span className="font-mono">
             {" "}
             platform.spend_popover.scare_threshold_usd{" "}
           </span>
-          to restore it.
+          to restore.
           <ErrorAlchemyMenu />
         </div>
       ) : null}
