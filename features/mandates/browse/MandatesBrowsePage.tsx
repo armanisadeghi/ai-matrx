@@ -97,7 +97,6 @@ export function MandatesBrowsePage() {
           <EntityListPage
             config={{ ...mandateListConfig, service, serviceKey }}
             scopes={scopes}
-            defaultScope={{ kind: "orgs" }}
             notice={(list) => <MandateCoverageNotice list={list} />}
           />
         </MandateCoverageProvider>
