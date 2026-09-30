@@ -291,7 +291,8 @@ export function scanSource(file, source) {
         if (!ts.isJsxElement(next)) continue;
         const nt = tagName(next);
         const t = directText(next);
-        if ((nt === "p" || /Description$/.test(nt ?? "")) && t.length >= 12 && /[a-z]/.test(t)) {
+        // A line ending in ":" labels what follows (a row of links, a list) — it is not a description.
+        if ((nt === "p" || /Description$/.test(nt ?? "")) && t.length >= 12 && /[a-z]/.test(t) && !/:\s*…?\s*$/.test(t)) {
           const dialog = /^(DialogTitle|SheetTitle)$/.test(h);
           if (!dialog) push("page-description", next.openingElement, t, `sentence under <${h}>`);
         }
