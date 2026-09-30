@@ -8,7 +8,7 @@
     ]
   },
   "twinsGuard": {
-    "commit": "fd7cb5e85708f3ea7952ee4230e4dfecf63773fa",
+    "commit": "46928ee0681b8ad9b4fb3eecddc90d74256a920e",
     "files": [
       "check-package-twins.mjs",
       "byte-size-shape.mjs",
@@ -16,11 +16,12 @@
       "format-input-shape.mjs",
       "money-shape.mjs",
       "count-shape.mjs",
-      "relative-time-shape.mjs"
+      "relative-time-shape.mjs",
+      "uuid-shape.mjs"
     ]
   },
   "twinsCatalog": {
-    "commit": "c570ad1e4bac39ca567d58a1a853c3e2f215950d",
+    "commit": "46928ee0681b8ad9b4fb3eecddc90d74256a920e",
     "file": "package-twins.json"
   }
 }

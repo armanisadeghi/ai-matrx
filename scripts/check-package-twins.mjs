@@ -88,6 +88,11 @@ import {
   relativeTimeShapeIn,
   selfTestRelativeTimeShape,
 } from "./relative-time-shape.mjs";
+import {
+  uuidShapeIn,
+  selfTestUuidShape,
+  UUID_SHAPE_POSITIVES,
+} from "./uuid-shape.mjs";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -348,6 +353,24 @@ const SHAPE_RULES = [
       "`now` in a test. An age used only to pick a BRANCH formats nothing and " +
       "never matches this rule; an elapsed length with no \"ago\" is " +
       "formatDurationMs, and is reported there instead",
+  },
+  {
+    id: "uuid",
+    rowName: "isUuidShape",
+    module: "scripts/uuid-shape.mjs",
+    detect: uuidShapeIn,
+    selfTest: selfTestUuidShape,
+    what: "an anchored regex validating a whole string as a UUID",
+    fix:
+      "delete the regex and call the predicate the finding NAMES — strict " +
+      "stays strict and lax stays lax: an any-version, case-insensitive " +
+      "pattern is isUuidShape, a version [1-5] + variant [89ab] one is " +
+      "isRfc4122Uuid (both from @ai-matrx/kit/uuid). A finding that says NO " +
+      "kit export carries its contract (version [1-8], v4-only, lower-case " +
+      "only) is a kit OPTION to add, never a local copy — census it with that " +
+      "contract as the blocker. An EXTRACTOR (no ^…$ anchors, a g flag, " +
+      "matchAll/replace) and a composite key or route anchored around a UUID " +
+      "never match this rule, and neither does a SQL pattern in a SQL string",
   },
 ];
 const SHAPE_MODULES = new Set(SHAPE_RULES.map((r) => r.module));
@@ -751,7 +774,9 @@ function twinsIn(file, source) {
 function shapeVerdict(lane, file, source) {
   if (isOwningSource(lane.row, file)) return { kind: "owner", hits: [] };
   if (lane.allow.has(file)) return { kind: "allow", hits: [] };
-  const hits = lane.rule.detect(source);
+  // The file path is the SECOND argument: a lane that must skip test
+  // fixtures (uuid) reads it; every other lane ignores it.
+  const hits = lane.rule.detect(source, file);
   if (hits.length === 0) return { kind: "clean", hits: [] };
   if (lane.census.has(file)) return { kind: "census", hits };
   return { kind: "finding", hits };
@@ -1239,6 +1264,26 @@ if (SELF_TEST) {
     if (!shape.ok) {
       console.error(`SELF-TEST FAILED (${rule.id} shape lane): ${shape.why}.`);
       process.exit(1);
+    }
+  }
+  // ── THE CROSS-LANE MATRIX (uuid, added 2026-09-30) ──
+  // Every live UUID positive must be caught by the uuid lane and by NO other
+  // lane: a body two lanes report lands in two register rows. The reverse
+  // direction (other lanes' bodies are silent in the uuid lane) runs inside
+  // selfTestUuidShape.
+  for (const fixture of UUID_SHAPE_POSITIVES) {
+    for (const rule of SHAPE_RULES) {
+      const hits = rule.detect(fixture, "src/planted.ts");
+      const own = rule.id === "uuid";
+      if (own ? hits.length === 0 : hits.length !== 0) {
+        console.error(
+          `SELF-TEST FAILED (cross-lane matrix): the uuid positive ` +
+            `${JSON.stringify(fixture.slice(0, 80))} was ` +
+            (own ? "NOT caught by the uuid lane" : `ALSO caught by the ${rule.id} lane`) +
+            ".",
+        );
+        process.exit(1);
+      }
     }
   }
   console.log(
