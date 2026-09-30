@@ -5,6 +5,8 @@ description: "Relocating a live, still-used table to another Postgres schema wit
 
 # Move a table to a new schema
 
+> Moving an uncertified `public` table into its feature schema is the useful response to a database finding on it — not patching the finding in place: [canonical-first triage](../../../../common-docs/policies/canonical-first-triage.md).
+
 Relocate `public.<table>` → `<new>.<table>` with references intact. Postgres moves most things for you; the misses are predictable. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`. Retiring a dead table → `db-graveyard-table`; bringing a table onto the platform standard → `db-canonicalize-table`.
 
 ## What `ALTER TABLE … SET SCHEMA` carries automatically

@@ -24,9 +24,10 @@ Find bugs and fix them.” This runbook implements that request and its five
 stated weaknesses: false access blockers, reporting instead of fixing, avoidable
 local-environment friction, missing continuous improvement, and stale secondhand claims.
 
-When a finding traces to a table, triage it by that table first —
-[canonical-first triage](/policies/canonical-first-triage.md): graveyard is dead, public is a
-queue, and a problem that shows only on uncertified tables is canonicalization work, not a repair.
+An error a person or a running job actually hit is always a repair. When the repair traces to a
+table's shape, read [canonical-first triage](/policies/canonical-first-triage.md) first: on an
+uncertified table the repair is moving it onto the canonical system, never patching the old shape;
+on a certified table the same problem is a platform-wide defect fixed at its source.
 
 ## Repositories and entry points
 

@@ -133,7 +133,7 @@ select iam.verify_canonical_ok('public','notes','note');        -- floor gate
 
 ### The `audit.*` store — platform-wide conformance snapshot + blast-radius
 `select audit.refresh();` rebuilds every snapshot (drives the gate over all registered live tables + runs `plpgsql_check` over every plpgsql function) — heavy; it's what `release.sh` runs. Then:
-- `audit.summary` (view, cols `schema_name, table_name, token, fails, warns, certified`) — `WHERE NOT certified ORDER BY fails DESC` = the canonicalization hit list.
+- `audit.summary` (view, cols `schema_name, table_name, token, fails, warns, certified`) — `WHERE NOT certified ORDER BY fails DESC` = the canonicalization hit list (a queue to convert, never a defect list — `common-docs/policies/canonical-first-triage.md`).
 - `audit.canonical_findings` — every FAIL/WARN with `check_name`+`detail`.
 - `audit.broken_functions` — `plpgsql_check` errors (catches dangling column/table refs after renames; SQL-language fns are NOT covered — check them by hand).
 - `audit.table_impact('<schema>','<table>') → (function_sig, dependency, currently_broken, referenced_columns[])` — **run before any rename/drop** to see the exact blast radius.

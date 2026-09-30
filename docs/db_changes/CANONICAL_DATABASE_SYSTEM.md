@@ -178,7 +178,7 @@ React: `supabase.rpc('assoc_link', { p_source_type:'fc_card', p_source_id, p_tar
 
 | object                              | what it gives                                                                                                                                                  |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `audit.summary` (view)              | per table `fails` / `warns` / `certified`. `WHERE NOT certified ORDER BY fails DESC` = the hit list                                                            |
+| `audit.summary` (view)              | per table `fails` / `warns` / `certified`. `WHERE NOT certified ORDER BY fails DESC` = the hit list (a queue to convert, not a defect list — common-docs/policies/canonical-first-triage.md)                                                            |
 | `audit.canonical_findings`          | every FAIL/WARN with `check_name` + `detail`                                                                                                                   |
 | `audit.broken_functions`            | `plpgsql_check` errors: `level` / `sqlstate` / `message` (catches dangling column/table refs after renames)                                                    |
 | `audit.function_deps`               | precise function → object dependency map                                                                                                                       |

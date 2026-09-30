@@ -33,9 +33,10 @@ that gap is exactly why this skill exists (Arman, 2026-08-21).
   [database-changeover-doctrine](/policies/database-changeover-doctrine.md) (measurement
   traps §4: certified-vs-all universes, `is_component` vs `rls_variant`, cached certify,
   counts are not work lists).
-- Any finding a sentinel surfaces is triaged per table before it is reported —
-  [canonical-first triage](/policies/canonical-first-triage.md): graveyard is never mentioned,
-  public is a queue, and only a problem that also shows on certified tables is a defect.
+- The sentinels below measure the whole database on purpose. When one of them surfaces a specific
+  table, say which kind of table it is before reporting it —
+  [canonical-first triage](/policies/canonical-first-triage.md): graveyard is never mentioned, and a
+  problem on a certified or foundation table outranks the same problem on an uncertified one.
 
 ## 1. Measure (read-only, via Supabase MCP)
 

@@ -5,6 +5,8 @@ description: "Retiring a dead table by moving it to the graveyard schema and cle
 
 # Graveyard a table
 
+> Once a table is here it is dead to every database check: findings on graveyard tables are never reported or fixed — [canonical-first triage](../../../../common-docs/policies/canonical-first-triage.md).
+
 Goal: get the table **offline and reversible** (`SET SCHEMA graveyard`, never `DROP`), then erase every reference. **Getting it offline is priority #1; reference cleanup follows and must not block the move.** Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`.
 
 ## Step 1 — Discover every reference (this is the real work)
