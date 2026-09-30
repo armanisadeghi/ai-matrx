@@ -1441,3 +1441,16 @@ begin
 end;
 $function$;
 
+-- The guard is a SECURITY DEFINER function with no declared access decision; the provision shape
+-- guard asks for one when its body is replaced. It takes no argument and only the server calls it.
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select 'public', '__scope_access_membrane_conformance', '', '{}'::oid[],
+       'It takes no argument: it reads only the catalogue and context.scope_door_registry, and answers pass or fail per check.',
+       'scopesreadstree_the_scope_tree_and_values_read_the_store.sql',
+       'server_only: pnpm check:scope-access-membrane calls it with the service role to prove the scope membrane is in every door; no client ever calls it.',
+       false, false
+ where not exists (select 1 from platform.client_callable_door d
+                    where d.schema_name = 'public' and d.function_name = '__scope_access_membrane_conformance');
+
+

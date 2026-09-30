@@ -30976,6 +30976,26 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id: string }
         Returns: string
       }
+      _table_dimensions_build: {
+        Args: {
+          p_organization_id: string
+          p_table_id: string
+          p_with_hidden?: boolean
+        }
+        Returns: Json
+      }
+      _table_dimensions_check: {
+        Args: { p_doc: Json; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      _table_dimensions_infer: {
+        Args: {
+          p_every_field?: boolean
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
       _table_move_plan: {
         Args: { p_me: string; p_table_id: string; p_to: string }
         Returns: Json
@@ -32526,6 +32546,16 @@ export type Database = {
           identity_args: string
           why: string
         }[]
+      }
+      drill_resolve: {
+        Args: {
+          p_bucket: Json
+          p_group_by: Json
+          p_measures: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
       }
       effective_level: {
         Args: {
@@ -35630,6 +35660,18 @@ export type Database = {
       }
       table_decorations: {
         Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      table_dimensions: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      table_dimensions_set: {
+        Args: {
+          p_organization_id: string
+          p_overrides: Json
+          p_table_id: string
+        }
         Returns: Json
       }
       table_facts: {
@@ -69980,6 +70022,10 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: string[]
       }
+      oauth_client_is_dynamic: {
+        Args: { p_client_id: string }
+        Returns: boolean
+      }
       org_access_ids: { Args: never; Returns: string[] }
       org_access_log: {
         Args: { p_limit?: number; p_organization_id: string }
@@ -70039,6 +70085,16 @@ export type Database = {
         Args: { p_level: Database["public"]["Enums"]["permission_level"] }
         Returns: string
       }
+      personal_api_key_create: {
+        Args: {
+          p_expires_at?: string
+          p_name: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      personal_api_key_list: { Args: never; Returns: Json }
+      personal_api_key_revoke: { Args: { p_id: string }; Returns: Json }
       personal_data_relations: {
         Args: never
         Returns: {

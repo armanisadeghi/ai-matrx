@@ -10,7 +10,7 @@
 //                 2 the group-by menu (Group by / Then by / Across the top) and a second level
 //                 3 pivot "Last Serviced by month" across the top
 //                 4 the measure picker ("Show")
-//                 5 drill on a condition → by Room, the trail; the row menu → See these records
+//                 5 drill on a condition → the next Dimension, the trail; the row menu → See these records
 //                 6 the root crumb zooms back out; Back undoes one step
 //                 7 390 px and dark
 //   Every step records the record_aggregate calls it caused (the store answered the groups).
@@ -202,12 +202,12 @@ try {
         await thenBy.hover();
         await sleep(700);
         await shot("02b-then-by");
-        await page.locator('[data-matrx-drill-option="room"]').first().click();
+        await page.locator('[data-matrx-drill-option="last_serviced:year"]').first().click();
         await sleep(3500);
       } else friction("no Then by in the group-by menu");
       await page.keyboard.press("Escape");
       await sleep(500);
-      await shot("02c-condition-then-room");
+      await shot("02c-condition-then-year-serviced");
       step("2 nested", { level0: await groupRows(0), level1: (await groupRows(1)).slice(0, 8), url: search(), store_asked: asked() });
 
     });
@@ -255,8 +255,8 @@ try {
       const good = page.locator('[data-matrx-drill-level="0"] [data-matrx-drill-into]').first();
       const goodLabel = (await good.innerText()).trim();
       await good.click();
-      await until("drilled", async () => new URL(page.url()).searchParams.get("by") === "room", 20000);
-      await until("room groups", async () => (await groupRows()).length > 0, 60000);
+      await until("drilled", async () => (new URL(page.url()).searchParams.get("by") ?? "condition") !== "condition", 20000);
+      await until("next-level groups", async () => (await groupRows()).length > 0, 60000);
       await sleep(1500);
       await shot("05-drilled-into-condition");
       step("5 drilled", { clicked: goodLabel, url: search(), trail: await trail(), rows: await groupRows(), total: await total(), store_asked: asked() });
@@ -286,13 +286,13 @@ try {
     });
     await attempt("7 phone and dark", async () => {
       // ── 7 · phone and dark ──────────────────────────────────────────────────────────────────────
-      await open("?by=condition&show=count,sum_quantity&f.room=Gym%20A", { width: 390, height: 844 });
+      await open("?by=last_serviced:year&show=count,sum_quantity&f.condition=good", { width: 390, height: 844 });
       await sleep(1500);
       await shot("07-phone-390");
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       step("7 phone", { horizontal_overflow_px: overflow, trail: await trail(), rows: await groupRows() });
       if (overflow > 1) friction(`the page scrolls sideways by ${overflow}px at 390`);
-      await open("?by=condition,room&show=count,sum_quantity", { dark: true });
+      await open("?by=condition,last_serviced:year&show=count,sum_quantity", { dark: true });
       await sleep(1500);
       await shot("07b-dark-1600");
       step("7 dark", { rows: await groupRows(0) });

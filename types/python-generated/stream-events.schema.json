@@ -2153,6 +2153,36 @@
             "default": null,
             "title": "File Id"
           },
+          "published_to_web": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published To Web"
+          },
+          "shown_to": {
+            "anyOf": [
+              {
+                "enum": [
+                  "only_me",
+                  "my_team",
+                  "everyone",
+                  "everyone_on_ai_matrx"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Shown To"
+          },
           "visibility": {
             "anyOf": [
               {
@@ -2392,6 +2422,36 @@
             "default": null,
             "title": "File Id"
           },
+          "published_to_web": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published To Web"
+          },
+          "shown_to": {
+            "anyOf": [
+              {
+                "enum": [
+                  "only_me",
+                  "my_team",
+                  "everyone",
+                  "everyone_on_ai_matrx"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Shown To"
+          },
           "visibility": {
             "anyOf": [
               {
@@ -2630,6 +2690,36 @@
             ],
             "default": null,
             "title": "File Id"
+          },
+          "published_to_web": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published To Web"
+          },
+          "shown_to": {
+            "anyOf": [
+              {
+                "enum": [
+                  "only_me",
+                  "my_team",
+                  "everyone",
+                  "everyone_on_ai_matrx"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Shown To"
           },
           "visibility": {
             "anyOf": [
@@ -2882,6 +2972,36 @@
             ],
             "default": null,
             "title": "File Id"
+          },
+          "published_to_web": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published To Web"
+          },
+          "shown_to": {
+            "anyOf": [
+              {
+                "enum": [
+                  "only_me",
+                  "my_team",
+                  "everyone",
+                  "everyone_on_ai_matrx"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Shown To"
           },
           "visibility": {
             "anyOf": [
@@ -3143,6 +3263,36 @@
             ],
             "default": null,
             "title": "File Id"
+          },
+          "published_to_web": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published To Web"
+          },
+          "shown_to": {
+            "anyOf": [
+              {
+                "enum": [
+                  "only_me",
+                  "my_team",
+                  "everyone",
+                  "everyone_on_ai_matrx"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Shown To"
           },
           "visibility": {
             "anyOf": [
@@ -14050,6 +14200,18 @@
         "additionalProperties": true,
         "title": "Arguments",
         "type": "object"
+      },
+      "display_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Display Name"
       }
     },
     "title": "ToolStartedData",

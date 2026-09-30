@@ -1524,6 +1524,8 @@ export interface MasterworkTriageProgressData {
 export interface AudioBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
+  published_to_web?: boolean | null;
+  shown_to?: "only_me" | "my_team" | "everyone" | "everyone_on_ai_matrx" | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
   download_url?: string | null;
@@ -1547,6 +1549,8 @@ export interface AudioBlock {
 export interface DocumentBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
+  published_to_web?: boolean | null;
+  shown_to?: "only_me" | "my_team" | "everyone" | "everyone_on_ai_matrx" | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
   download_url?: string | null;
@@ -1570,6 +1574,8 @@ export interface DocumentBlock {
 export interface ImageBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
+  published_to_web?: boolean | null;
+  shown_to?: "only_me" | "my_team" | "everyone" | "everyone_on_ai_matrx" | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
   download_url?: string | null;
@@ -1594,6 +1600,8 @@ export interface ImageBlock {
 export interface VideoBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
+  published_to_web?: boolean | null;
+  shown_to?: "only_me" | "my_team" | "everyone" | "everyone_on_ai_matrx" | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
   download_url?: string | null;
@@ -1619,6 +1627,8 @@ export interface VideoBlock {
 export interface YouTubeBlock {
   origin?: "external";
   file_id?: string | null;
+  published_to_web?: boolean | null;
+  shown_to?: "only_me" | "my_team" | "everyone" | "everyone_on_ai_matrx" | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
   download_url?: string | null;
@@ -2775,6 +2785,7 @@ export function isTypedCompletionEvent(e: CompletionPayload): e is CompletionPay
 
 export interface ToolStartedData {
   arguments?: Record<string, unknown>;
+  display_name?: string | null;
 }
 
 export interface ToolProgressData {
@@ -2820,6 +2831,7 @@ export type TypedToolEventData =
 
 export interface ToolStartedData {
   arguments?: Record<string, unknown>;
+  display_name?: string | null;
 }
 
 export interface ToolStartedToolEvent {

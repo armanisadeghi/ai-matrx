@@ -518,6 +518,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your tables
+         * @description Every table you can open in the request's organization.
+         */
+        get: operations["list_tables_v1_tables_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tables/{table}/columns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A table's columns
+         * @description The columns — by the names you see on the table — with their types and choices.
+         */
+        get: operations["table_columns_v1_tables__table__columns_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tables/{table}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rows */
+        get: operations["list_rows_v1_tables__table__rows_get"];
+        put?: never;
+        /** Create a row */
+        post: operations["create_row_v1_tables__table__rows_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tables/{table}/rows/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * List rows (body)
+         * @description The same as listing rows, with the question in the body.
+         */
+        post: operations["query_rows_v1_tables__table__rows_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tables/{table}/rows/upsert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create or update many rows
+         * @description Rows matched on ``key_column``: a match is updated, no match is created — all or nothing.
+         */
+        post: operations["upsert_rows_v1_tables__table__rows_upsert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tables/{table}/rows/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a row */
+        get: operations["get_row_v1_tables__table__rows__row_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Archive a row
+         * @description Archives, never destroys: the row keeps every value and comes back with restore.
+         */
+        delete: operations["archive_row_v1_tables__table__rows__row_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a row
+         * @description Changes only the columns named. Send ``expected_version`` to refuse a stale update.
+         */
+        patch: operations["update_row_v1_tables__table__rows__row_id__patch"];
+        trace?: never;
+    };
+    "/v1/tables/{table}/rows/{row_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore an archived row */
+        post: operations["restore_row_v1_tables__table__rows__row_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scraper-kinds/scrape": {
         parameters: {
             query?: never;
@@ -3903,6 +4043,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/raw-transcripts/backup-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Raw Backup Policy
+         * @description Asked FIRST by every automatic uploader (Matrx Local, @ai-matrx/coding-sessions).
+         *
+         *     Answers from the session's own organization and the owner's Feature Knob
+         *     ``coding_session_bridge.raw_transcript_backup``; a session AI Matrx does not
+         *     know yet answers ``enabled: false`` because there is nothing to attach it to.
+         */
+        get: operations["read_raw_backup_policy_coding_sessions_raw_transcripts_backup_policy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/coding-sessions/raw-transcripts/backup": {
         parameters: {
             query?: never;
@@ -4997,6 +5161,57 @@ export interface paths {
          *     are with the room pass.
          */
         post: operations["meeting_chat_send_v1_meet_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/collab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Meeting Collab State
+         * @description What a joiner reads once: polls, questions, the whiteboard, the breakout plan and
+         *     the knobs that decide which of those controls exist (Meet wave 5).
+         */
+        get: operations["meeting_collab_state_v1_meet_collab_get"];
+        put?: never;
+        /**
+         * Meeting Collab Action
+         * @description POLLS, Q&A, THE SHARED WHITEBOARD AND BREAKOUT ROOMS (Meet wave 5).
+         *
+         *     No authentication dependency, like `/moderate`: guests vote, ask, draw and join
+         *     breakouts, proving who they are with the room pass. Host powers are decided in
+         *     `services/meet/collab.py` / `breakouts.py` from the meeting itself; every item is
+         *     saved with the meeting, then the room is told on `matrx.meet.collab`.
+         */
+        post: operations["meeting_collab_action_v1_meet_collab_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/captions/translate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting Captions Translate
+         * @description Translate finished live-caption lines into the viewer's chosen language (Meet
+         *     wave 5) through the `meet.caption_translation` mandate; shared per line + language.
+         */
+        post: operations["meeting_captions_translate_v1_meet_captions_translate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22694,7 +22909,7 @@ export interface paths {
         /**
          * Run Site Competitor Autopsy
          * @description Find the competitors that truly overlap, read the exact pages earning
-         *     their visibility, and stream the strategist's ranked opportunity autopsy.
+         *     their search presence, and stream the strategist's ranked opportunity autopsy.
          *     Competitor identities and opportunities persist durably.
          */
         post: operations["run_site_competitor_autopsy_seo_sites__site_id__competitor_autopsy_post"];
@@ -29576,7 +29791,9 @@ export interface paths {
         };
         /**
          * Get Panel Design
-         * @description The design run's steps, gates, open review card, documents and notices.
+         * @description The design run's steps, gates, open review card, documents and notices — or ``null``
+         *     for a hand-typed panel (never designed; not an error). 404 means the panel itself is
+         *     missing or not readable.
          */
         get: operations["get_panel_design_ai_visibility_panels__panel_id__design_get"];
         put?: never;
@@ -33117,7 +33334,7 @@ export interface paths {
          *     Everything the blocking variant guaranteed still holds inside
          *     ``_run_ingest_stream``: the universal auto-ingest funnel (effective-org
          *     resolution, budget shield, model-visibility gates, post-ingest suggestion
-         *     pass; actor="manual" bypasses enable toggles, never budget/visibility) and
+         *     pass; actor="manual" bypasses enable toggles, never budget/access) and
          *     the cld_file anti-duplication lock (open → run holds a 'processing' row so
          *     a concurrent sweeper claim loses the CAS — kg_032; a live run streams a
          *     ``run_in_progress`` result, never a second ingest).
@@ -37592,6 +37809,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/shown_to": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Workflow Shown To
+         * @description Set who a workflow is shown to in lists. Editor-gated.
+         */
+        patch: operations["set_workflow_shown_to_workflows__definition_id__shown_to_patch"];
+        trace?: never;
+    };
     "/workflows/{definition_id}/visibility": {
         parameters: {
             query?: never;
@@ -37606,14 +37843,10 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Set Workflow Visibility
-         * @description Set a workflow's canonical visibility. Editor-gated.
-         *
-         *     Until 2026-08-10 this wrote the DROPPED ``is_public`` column and
-         *     500'd on every call — the canonical ``visibility`` enum is the only
-         *     visibility truth.
+         * Set Workflow Shown To Transitional
+         * @description Transitional door for the old path; same effect as ``PATCH …/shown_to``.
          */
-        patch: operations["set_workflow_visibility_workflows__definition_id__visibility_patch"];
+        patch: operations["set_workflow_shown_to_transitional_workflows__definition_id__visibility_patch"];
         trace?: never;
     };
     "/public/workflows/{definition_id}": {
@@ -37625,8 +37858,8 @@ export interface paths {
         };
         /**
          * Get Public Workflow
-         * @description Anonymous read of a workflow with visibility='public'. NO auth — any
-         *     other visibility (or archived / soft-deleted) is a 404, never a leak.
+         * @description Anonymous read of a workflow published to the web. NO auth — anything
+         *     unpublished (or archived / soft-deleted) is a 404, never a leak.
          */
         get: operations["get_public_workflow_public_workflows__definition_id__get"];
         put?: never;
@@ -37825,7 +38058,7 @@ export interface paths {
          *
          *     Use for lightweight edits where the caller does NOT want to fork
          *     history — e.g. redacting a message, fixing a typo, flipping
-         *     visibility flags. After the write, both cache layers are busted so
+         *     hidden/shown flags. After the write, both cache layers are busted so
          *     the next AI call rebuilds the conversation from fresh rows.
          */
         patch: operations["update_message_cx_conversations__conversation_id__messages__message_id__patch"];
@@ -38100,13 +38333,12 @@ export interface paths {
         head?: never;
         /**
          * Patch Asset
-         * @description Mutate an asset: visibility, share grants, metadata.
+         * @description Mutate an asset: publish to / take off the web, list filter, share grants, metadata.
          *
-         *     Best-effort atomic: each sub-op runs sequentially. Visibility change
+         *     Best-effort atomic: each sub-op runs sequentially. A publish change
          *     cascades to every persisted variant so the asset can't end up half
-         *     public / half private. Failures of variant visibility moves are
-         *     logged but don't fail the whole call (consistent with the prior
-         *     behaviour and with the FE team's spec).
+         *     public / half private. Failures of variant moves are logged but don't
+         *     fail the whole call (consistent with the FE team's spec).
          */
         patch: operations["patch_asset_assets__file_id__patch"];
         trace?: never;
@@ -39948,7 +40180,7 @@ export interface paths {
          *     2026-07-06 — identical behavior to ``/ingest/stream``, which stays as an
          *     alias; this is the canonical path).
          *
-         *     Runs through ``auto_ingest`` (budget + visibility + the 8-agent
+         *     Runs through ``auto_ingest`` (budget + access + the 8-agent
          *     scope-suggestion orchestrator) via the ``cld_file_rag_jobs`` lifecycle:
          *     it ADOPTS any deferred auto-RAG job (so the file is never double-run) and
          *     409s if a run is already in progress. Already-ingested + not ``force`` →
@@ -44478,6 +44710,60 @@ export interface components {
             /** Adapter Version */
             adapter_version?: string | null;
         };
+        /**
+         * ActionRequestStatusResponse
+         * @description Result of opening, completing, or re-minting an action request.
+         */
+        ActionRequestStatusResponse: {
+            /** State */
+            state: string;
+            /** Id */
+            id?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Next */
+            next?: string | null;
+            /** Request Id */
+            request_id?: string | null;
+            /** Channels */
+            channels?: string[];
+            /** Skipped */
+            skipped?: {
+                [key: string]: string;
+            }[];
+            /** Agent Told */
+            agent_told?: boolean | null;
+            /** Kind */
+            kind?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Subject User Id */
+            subject_user_id?: string | null;
+            /** Render */
+            render?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Viewer Is Subject */
+            viewer_is_subject?: boolean | null;
+            /** Requires Session */
+            requires_session?: boolean | null;
+            /** Bearer Allowed */
+            bearer_allowed?: boolean | null;
+            /** Can Complete */
+            can_complete?: boolean | null;
+            /** Sign In Reason */
+            sign_in_reason?: string | null;
+            /** Answer By */
+            answer_by?: string | null;
+            /** Link Expires At */
+            link_expires_at?: string | null;
+            /** Session Ttl Minutes */
+            session_ttl_minutes?: number | null;
+            /** Remint Count */
+            remint_count?: number | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /** ActionResult */
         ActionResult: {
             /** Ok */
@@ -46220,6 +46506,11 @@ export interface components {
              * @description Optional override of the projected tool's description. When omitted, the agent's own description is used.
              */
             description_override?: string | null;
+            /**
+             * Display Name
+             * @description The human role this projected agent plays for the caller (an Orchestra edge's role title). Projection shows it with the agent's own name on the tool card; None = the agent's name alone.
+             */
+            display_name?: string | null;
             /** Max Calls Per Conversation */
             max_calls_per_conversation?: number | null;
             /** Cost Cap Per Call */
@@ -47548,6 +47839,30 @@ export interface components {
             published_at: string;
         };
         /**
+         * ApiError
+         * @description Every refusal, in the store's own words.
+         */
+        ApiError: {
+            /**
+             * Error
+             * @description A stable code: not_found, not_allowed, conflict, invalid, unknown_column, ambiguous_column, too_many, rate_limited, idempotency_conflict, source_not_served, …
+             */
+            error: string;
+            /**
+             * Message
+             * @description The sentence a person reads.
+             */
+            message: string;
+            /** Hint */
+            hint?: string | null;
+            detail?: components["schemas"]["JsonValue"] | null;
+            /**
+             * Sqlstate
+             * @description The store's own code, when the store refused.
+             */
+            sqlstate?: string | null;
+        };
+        /**
          * ApiVideoServiceStatus
          * @description Safe aggregate status projection for api.video's fixed status page.
          */
@@ -48624,12 +48939,26 @@ export interface components {
              */
             file_id: string;
             /**
+             * Published To Web
+             * @description True when the asset master is published to the web (served from the CDN).
+             * @default false
+             */
+            published_to_web?: boolean;
+            /**
+             * Shown To
+             * @description List filter of the asset master; null follows the type's default.
+             */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /**
              * Visibility
-             * @description Canonical access level of the asset master and its variants.
-             * @default personal
+             * @default internal
              * @enum {string}
              */
             visibility?: "internal" | "link" | "personal" | "public";
+            /** Share Token */
+            share_token?: string | null;
+            /** Share Url */
+            share_url?: string | null;
             /**
              * Folder
              * @description Logical folder containing the asset master.
@@ -48671,7 +49000,7 @@ export interface components {
          * @description Response envelope for combined-op endpoints (FE-team A.1 / A.2).
          *
          *     Returned by ``POST /assets`` when ``options_json`` is set, and by
-         *     ``PATCH /files/{id}`` when union-body fields beyond simple rename/visibility
+         *     ``PATCH /files/{id}`` when union-body fields beyond simple rename/publish
          *     are present. The primary op (upload / patch) always lands; sub-op failures
          *     appear in ``errors`` rather than aborting the whole request.
          */
@@ -48687,10 +49016,15 @@ export interface components {
          * @description Mutate an existing asset.
          *
          *     Use to:
-         *       - change visibility (also moves the S3 object between buckets)
+         *       - publish to / take off the web (also moves the S3 object between buckets)
+         *       - change who it is shown to in lists
          *       - grant new sharees
          */
         AssetPatchRequest: {
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
             /** Visibility */
             visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Share With */
@@ -49142,7 +49476,7 @@ export interface components {
             max_retries_per_iteration?: number;
             /**
              * Skill Config
-             * @description Per-request skill visibility override (Smart Input additive picks). Validated against the host's skill-config shape on entry.
+             * @description Per-request skill exposure override (Smart Input additive picks). Validated against the host's skill-config shape on entry.
              */
             skill_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -49414,7 +49748,7 @@ export interface components {
              * @description Echoed from the candidate; the server re-reads the row.
              */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /**
@@ -52017,10 +52351,37 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * BlockActionResponse
+         * @description Receipt for retrying blocks or handing them to the browser ladder.
+         */
+        BlockActionResponse: {
+            /** Refused */
+            refused?: components["schemas"]["BlockRefusal"][];
+            /** Sentence */
+            sentence: string;
+            /** Retried */
+            retried?: number | null;
+            /** Readable */
+            readable?: number | null;
+            /** Still Blocked */
+            still_blocked?: number | null;
+            /** Queued */
+            queued?: number | null;
+            /** Batch Id */
+            batch_id?: string | null;
+        };
         /** BlockIdsBody */
         BlockIdsBody: {
             /** Block Ids */
             block_ids?: string[];
+        };
+        /** BlockRefusal */
+        BlockRefusal: {
+            /** Block Id */
+            block_id: string;
+            /** Why */
+            why: string;
         };
         /** BlockStageRequest */
         BlockStageRequest: {
@@ -52388,12 +52749,12 @@ export interface components {
              * @description Logical folder path; defaults to Assets/<uuid>
              */
             folder?: string | null;
-            /**
-             * Visibility
-             * @default public
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal" | "public";
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /**
              * Share With
              * @description Comma-separated user IDs (legacy)
@@ -52432,12 +52793,12 @@ export interface components {
             file: string;
             /** File Path */
             file_path: string;
-            /**
-             * Visibility
-             * @default personal
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /**
              * Share With
              * @description Comma-separated user IDs
@@ -52492,11 +52853,17 @@ export interface components {
              */
             enrich_goal?: string | null;
             /**
-             * Visibility
-             * @description personal (default; research artifacts can be paywalled/sensitive) | public | shared
-             * @default personal
+             * Published To Web
+             * @description Publish the artifact to the web. Default: not published (artifacts can be paywalled/sensitive).
              */
-            visibility?: string;
+            published_to_web?: boolean | null;
+            /**
+             * Shown To
+             * @description Who the artifact is shown to in lists. Default: only me.
+             */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
         };
         /** Body_upload_podcast_image_media_podcast_upload_image_post */
         Body_upload_podcast_image_media_podcast_upload_image_post: {
@@ -52877,6 +53244,13 @@ export interface components {
             attendance_exception_id?: string | null;
             /** Source Punch Ids */
             source_punch_ids?: string[];
+        };
+        /** BreakoutRoomIn */
+        BreakoutRoomIn: {
+            /** Name */
+            name: string;
+            /** Identities */
+            identities?: string[];
         };
         /**
          * BreatheHRServiceStatus
@@ -55373,7 +55747,7 @@ export interface components {
              * Op
              * @enum {string}
              */
-            op: "delete" | "move" | "restore" | "share" | "visibility";
+            op: "delete" | "move" | "publish" | "restore" | "share" | "shown_to" | "visibility";
             /** Args */
             args?: {
                 [key: string]: unknown;
@@ -55381,7 +55755,7 @@ export interface components {
         };
         /**
          * BulkOperationResponse
-         * @description Response from POST /files/bulk (discriminator: move|delete|restore|visibility|share).
+         * @description Response from POST /files/bulk (discriminator: move|delete|restore|publish|share).
          */
         BulkOperationResponse: {
             /** Op */
@@ -56010,11 +56384,11 @@ export interface components {
             etag: string;
             /** Starts At */
             starts_at: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Ends At */
             ends_at: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Attendees */
             attendees: string[];
@@ -56359,11 +56733,11 @@ export interface components {
             etag: string;
             /** Old Start */
             old_start: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Old End */
             old_end: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** New Start */
             new_start: {
@@ -56741,6 +57115,13 @@ export interface components {
              */
             status_page?: "https://status.capsulecrm.com";
         };
+        /** CaptionLineIn */
+        CaptionLineIn: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+        };
         /**
          * CaptionSegment
          * @description One timed line, exactly as the person's own browser read it.
@@ -56777,6 +57158,24 @@ export interface components {
             /** Segments */
             segments?: components["schemas"]["CaptionSegment"][];
         };
+        /** CaptionTranslateRequest */
+        CaptionTranslateRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Target Language */
+            target_language: string;
+            /** Lines */
+            lines: components["schemas"]["CaptionLineIn"][];
+        };
+        /** CaptionTranslateResponse */
+        CaptionTranslateResponse: {
+            /** Target Language */
+            target_language: string;
+            /** Translations */
+            translations: {
+                [key: string]: string;
+            };
+        };
         /**
          * CaptivateServiceStatus
          * @description Safe aggregate status projection for Captivate.fm's fixed status page.
@@ -56811,6 +57210,74 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.captivate.fm";
+        };
+        /**
+         * CaptureHandoff
+         * @description The browser-capture queue row returned after every ladder action.
+         */
+        CaptureHandoff: {
+            /** Id */
+            id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Library Id */
+            library_id?: string | null;
+            /** Url */
+            url: string;
+            /** Title */
+            title: string;
+            /** Handoff Kind */
+            handoff_kind: string;
+            /** Rung */
+            rung: string;
+            /** Status */
+            status: string;
+            /** Reason */
+            reason?: string | null;
+            /** Reason Note */
+            reason_note?: string | null;
+            /**
+             * What To Do
+             * @default
+             */
+            what_to_do?: string;
+            /** Estimated Seconds */
+            estimated_seconds?: number | null;
+            /** Rung Trail */
+            rung_trail?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Batch Id */
+            batch_id?: string | null;
+            /** Claimed By */
+            claimed_by?: string | null;
+            /** Claimed At */
+            claimed_at?: string | null;
+            /** Claim Expires At */
+            claim_expires_at?: string | null;
+            /**
+             * Attempt Count
+             * @default 0
+             */
+            attempt_count?: number;
+            /** Captured Item Id */
+            captured_item_id?: string | null;
+            /** Captured Processed Document Id */
+            captured_processed_document_id?: string | null;
+            /** Captured Chars */
+            captured_chars?: number | null;
+            /** Captured At */
+            captured_at?: string | null;
+            /** Captured By Rung */
+            captured_by_rung?: string | null;
+            /** Final Url */
+            final_url?: string | null;
+            /** Failure Note */
+            failure_note?: string | null;
         };
         /**
          * CaptureHealth
@@ -56853,6 +57320,37 @@ export interface components {
             last_failure_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /**
+         * CaptureLadderResponse
+         * @description Queue action receipt; preserves optional landing ids and notices.
+         */
+        CaptureLadderResponse: {
+            handoff?: components["schemas"]["CaptureHandoff"] | null;
+            /** Created */
+            created?: components["schemas"]["CaptureHandoff"][];
+            /** Items */
+            items?: components["schemas"]["CaptureHandoff"][];
+            /** Refused */
+            refused?: components["schemas"]["CaptureRefusal"][];
+            /** Counts */
+            counts?: {
+                [key: string]: number;
+            };
+            /** Batch Id */
+            batch_id?: string | null;
+            /** Processed Document Id */
+            processed_document_id?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /** Transcript Id */
+            transcript_id?: string | null;
+            /** Library Item Id */
+            library_item_id?: string | null;
+            /** Library Id */
+            library_id?: string | null;
+            /** Notices */
+            notices?: string[];
         };
         /**
          * CaptureOutcomeRequest
@@ -56962,6 +57460,15 @@ export interface components {
              * Format: date-time
              */
             due_at: string;
+        };
+        /** CaptureRefusal */
+        CaptureRefusal: {
+            /** Url */
+            url: string;
+            /** Why */
+            why: string;
+            /** Code */
+            code?: string | null;
         };
         /** CaptureResponse */
         CaptureResponse: {
@@ -61519,9 +62026,7 @@ export interface components {
             /** Organization Id */
             organization_id?: string | null;
             /** Organizations */
-            organizations?: {
-                [key: string]: unknown;
-            }[] | null;
+            organizations?: components["schemas"]["OrganizationPickerOption"][] | null;
             /**
              * Memberships Url
              * @default /auth/organizations
@@ -61673,6 +62178,37 @@ export interface components {
          * @enum {string}
          */
         CollectionTrigger: "backfill" | "on_demand" | "scheduled" | "test";
+        /** Column */
+        Column: {
+            /**
+             * Name
+             * @description The column's name — use exactly this in values, where, sort and key_column.
+             */
+            name: string;
+            /**
+             * Type
+             * @description text, number, date, datetime, time, checkbox, choice, choices, relation, file, formula, or the store's own word for anything else.
+             */
+            type: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
+            /**
+             * Choices
+             * @description For a choice column, the words it accepts.
+             */
+            choices?: string[] | null;
+            /** Unit */
+            unit?: string | null;
+            /**
+             * Read Only
+             * @description True for a column worked out by the table (a formula); writing it is refused.
+             * @default false
+             */
+            read_only?: boolean;
+        };
         /** CombinedPromptCatalogResponse */
         CombinedPromptCatalogResponse: {
             /** Prompts */
@@ -61913,12 +62449,12 @@ export interface components {
              * @default Images/Generated/image-studio
              */
             folder_path?: string;
-            /**
-             * Visibility
-             * @default personal
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -62438,7 +62974,7 @@ export interface components {
             token: string;
             /** Result */
             result?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Field Values */
             field_values?: {
@@ -62943,7 +63479,7 @@ export interface components {
             permission_level?: string | null;
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** ConnectorContactView */
@@ -64721,7 +65257,7 @@ export interface components {
             permission_level?: string | null;
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** ConversationContinueRequest */
@@ -65062,8 +65598,14 @@ export interface components {
             file_path: string;
             /** Folder */
             folder?: string | null;
-            /** Visibility */
-            visibility?: ("internal" | "link" | "personal" | "public") | null;
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /**
+             * Visibility
+             * @default personal
+             * @enum {string}
+             */
+            visibility?: "internal" | "link" | "personal" | "public";
             /** Url */
             url?: string | null;
             /** Cdn Url */
@@ -65767,12 +66309,12 @@ export interface components {
             file_id: string;
             /** Name */
             name?: string | null;
-            /**
-             * Visibility
-             * @default personal
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal" | "public";
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -65783,12 +66325,12 @@ export interface components {
              * @description Logical folder path, e.g. 'Images/Chat'
              */
             folder_path: string;
-            /**
-             * Visibility
-             * @default personal
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -65809,17 +66351,17 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
-            /**
-             * Visibility
-             * @default personal
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal" | "public";
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Organization Id */
             organization_id?: string | null;
             /** Settings */
             settings?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /** CreatePlanRequest */
@@ -66234,12 +66776,10 @@ export interface components {
             tags?: string[];
             /** Category */
             category?: string | null;
-            /**
-             * Visibility
-             * @default internal
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal";
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal") | null;
         };
         /** CredentialCreateRequest */
         CredentialCreateRequest: {
@@ -68191,6 +68731,9 @@ export interface components {
          * @description A monitor declaration. What is required depends on ``lenses`` (NEWS-ENGINE-SPEC §5.1):
          *     coverage needs a site, a brand key and brand terms; opportunity needs a brand (the site's,
          *     or ``brand_id`` for a site-less monitor) and at least one topic, search term or feed.
+         *
+         *     ``tracker_id`` names the monitor being edited — exactly that one is updated. Without it (and without a
+         *     ``declared_ref``) a person's save always creates a new monitor.
          */
         DeclareTrackerBody: {
             /**
@@ -68223,6 +68766,8 @@ export interface components {
              * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
              */
             initiation?: ("auto" | "user") | null;
+            /** Tracker Id */
+            tracker_id?: string | null;
             /** Site Id */
             site_id?: string | null;
             /** Brand Id */
@@ -68515,8 +69060,10 @@ export interface components {
             is_active?: boolean | null;
             /** Is Archived */
             is_archived?: boolean | null;
-            /** Visibility */
-            visibility?: string | null;
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: string | null;
             /** Tags */
             tags?: string[] | null;
             /** Category */
@@ -73861,7 +74408,7 @@ export interface components {
             prefer_lane?: "free_captions" | "paid_agent";
             /** Params */
             params?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /**
@@ -74762,6 +75309,29 @@ export interface components {
              */
             acknowledged_at: string;
         };
+        /** ExportAdapterResponse */
+        ExportAdapterResponse: {
+            /** Adapters */
+            adapters: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Readable */
+            readable: number;
+            /** Recognised Not Readable */
+            recognised_not_readable: number;
+            /** Accept */
+            accept: string;
+            /** Extensions */
+            extensions: string[];
+            /** Readable Formats */
+            readable_formats: string[];
+            /** Blocked Formats */
+            blocked_formats: {
+                [key: string]: string | null;
+            }[];
+            /** Note */
+            note: string;
+        };
         /**
          * ExportArtifactEnvelope
          * @description E-23. **The reference envelope, never bytes and never a signed URL.**
@@ -74779,7 +75349,7 @@ export interface components {
          *     2026-08-26) — has no "but this object is the handoff" exception: that was the exact
          *     rationale the law names as how the bug kept crawling back. The blocking guard is
          *     ``scripts/check_signed_url_confinement.py`` (+ ``tests/test_signed_url_confinement.py``).
-         *     A payroll artifact is written ``visibility="personal"``, so it also has no ``cdn_url``:
+         *     A payroll artifact is never ``published_to_web``, so it also has no ``cdn_url``:
          *     the only way to these bytes is an authenticated redemption of the file id.
          */
         ExportArtifactEnvelope: {
@@ -74808,6 +75378,14 @@ export interface components {
              */
             include_transcripts?: boolean;
         };
+        /** ExportCreateResponse */
+        ExportCreateResponse: {
+            library: components["schemas"]["ExportLibraryWire"];
+            /** Detected */
+            detected: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /** ExportDelivery */
         ExportDelivery: {
             /**
@@ -74821,6 +75399,17 @@ export interface components {
              * @description Required when mode='api'; names the live provider binding to push through.
              */
             binding_id?: string | null;
+        };
+        /** ExportFacetsResponse */
+        ExportFacetsResponse: {
+            /** Direction */
+            direction: {
+                [key: string]: number;
+            };
+            /** Item Kind */
+            item_kind: {
+                [key: string]: number;
+            };
         };
         /** ExportFailBody */
         ExportFailBody: {
@@ -74926,6 +75515,90 @@ export interface components {
         ExportFormatsResponse: {
             /** Formats */
             formats: components["schemas"]["ExportFormatEntry"][];
+        };
+        /** ExportItemsResponse */
+        ExportItemsResponse: {
+            /** Items */
+            items: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Total */
+            total: number;
+            /** Filtered Total */
+            filtered_total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Filter Description */
+            filter_description: string;
+        };
+        /**
+         * ExportLibraryWire
+         * @description Public Library projection, including wire-safe timestamps.
+         */
+        ExportLibraryWire: {
+            /** Id */
+            id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Adapter */
+            adapter: string;
+            /** Source Kind */
+            source_kind: string;
+            /** External Id */
+            external_id: string;
+            /** Name */
+            name?: string | null;
+            /** Adapter Label */
+            adapter_label?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Published To Web */
+            published_to_web: boolean;
+            /** Shown To */
+            shown_to?: string | null;
+            /** Visibility */
+            visibility?: string | null;
+            /** Item Count */
+            item_count?: number | null;
+            /** Sync Status */
+            sync_status?: string | null;
+            /** Sync Error */
+            sync_error?: string | null;
+            /** Last Synced At */
+            last_synced_at?: string | null;
+            /** Last Sync Duration Ms */
+            last_sync_duration_ms?: number | null;
+            /** Detected From */
+            detected_from?: string | null;
+            /** Confidence */
+            confidence?: number | null;
+            /** Owner Identity */
+            owner_identity?: string | null;
+            /** Owner Identity Basis */
+            owner_identity_basis?: string | null;
+            /** Metrics */
+            metrics?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** ExportPresetsResponse */
+        ExportPresetsResponse: {
+            /** Presets */
+            presets: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Total */
+            total: number;
+        };
+        /** ExportReadResponse */
+        ExportReadResponse: {
+            library: components["schemas"]["ExportLibraryWire"];
         };
         /**
          * ExportSupersedeBody
@@ -76460,6 +77133,10 @@ export interface components {
          *     response envelope rather than rolling everything back.
          */
         FilePatchRequest: {
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
             /** Visibility */
             visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Metadata */
@@ -76571,10 +77248,14 @@ export interface components {
             /** Checksum */
             checksum?: string | null;
             /**
-             * Visibility
-             * @default personal
+             * Published To Web
+             * @default false
              */
-            visibility?: string;
+            published_to_web?: boolean;
+            /** Shown To */
+            shown_to?: string | null;
+            /** Visibility */
+            visibility?: string | null;
             /**
              * Current Version
              * @default 1
@@ -76633,7 +77314,7 @@ export interface components {
          *       3. ``cdn_url``  — permanent public CDN URL (public files only).
          *       4. ``download_url`` — durable attachment-disposition URL (Download btn).
          *       5. display metadata the client renders: ``file_name``, ``mime_type``,
-         *          ``size_bytes``, ``visibility``, ``thumbnail_url``.
+         *          ``size_bytes``, ``published_to_web``, ``shown_to``, ``thumbnail_url``.
          *
          *     🚫 What it DELIBERATELY OMITS — the whole point of this shape:
          *       - ``storage_uri`` / ``file_uri`` — the native ``s3://bucket/owner/key``
@@ -76657,11 +77338,14 @@ export interface components {
              */
             file_id: string;
             /**
-             * Visibility
-             * @default personal
-             * @enum {string}
+             * Published To Web
+             * @default false
              */
-            visibility?: "internal" | "link" | "personal" | "public";
+            published_to_web?: boolean;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "public") | null;
             /** File Name */
             file_name?: string | null;
             /** Mime Type */
@@ -76749,6 +77433,10 @@ export interface components {
             is_new: boolean;
             /** Cdn Url */
             cdn_url?: string | null;
+            /** Share Token */
+            share_token?: string | null;
+            /** Share Url */
+            share_url?: string | null;
         };
         /**
          * FileVersionRecord
@@ -77819,10 +78507,12 @@ export interface components {
             /** Parent Id */
             parent_id?: string | null;
             /**
-             * Visibility
-             * @default personal
+             * Published To Web
+             * @default false
              */
-            visibility?: string;
+            published_to_web?: boolean;
+            /** Shown To */
+            shown_to?: string | null;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -79751,6 +80441,38 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * GoalClauseRecord
+         * @description What the platform knows about one mandate's goal, as a version.
+         */
+        GoalClauseRecord: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Goal Hash */
+            goal_hash: string;
+            /** Goal Text */
+            goal_text: string;
+            /** Goal Grounding */
+            goal_grounding: string;
+            /** Judgeable */
+            judgeable?: boolean | null;
+            /**
+             * Judgeable Reason
+             * @default
+             */
+            judgeable_reason?: string;
+            /** Never Clauses */
+            never_clauses?: string[];
+            /**
+             * Job Sentence
+             * @default
+             */
+            job_sentence?: string;
+            /** Ratified By */
+            ratified_by?: string | null;
+            /** Row Id */
+            row_id?: string | null;
+        };
         /** GongServiceStatus */
         GongServiceStatus: {
             /**
@@ -81269,6 +81991,28 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /**
+         * HeldStepRefusedResponse
+         * @description A held step's change was refused: the run ended as refused (lane HELD-WRITE-RESUME).
+         */
+        HeldStepRefusedResponse: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Status
+             * @default cancelled
+             * @constant
+             */
+            status?: "cancelled";
+            /**
+             * Cause
+             * @default refused
+             * @constant
+             */
+            cause?: "refused";
+            /** Message */
+            message: string;
+        };
         /** HelpScoutServiceStatus */
         HelpScoutServiceStatus: {
             /**
@@ -82594,13 +83338,16 @@ export interface components {
         };
         /** ImageEditOutput */
         ImageEditOutput: {
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
             /**
              * Visibility
-             * @description Access level for the newly written edited image.
+             * @description Transitional access level for the newly written edited image.
              * @default personal
-             * @enum {string}
              */
-            visibility?: "personal" | "public" | "shared";
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /**
              * Folder
              * @description Logical destination folder; defaults beside the source image.
@@ -90194,6 +90941,19 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** LocalApprovalResponse */
+        LocalApprovalResponse: {
+            /** Status */
+            status: string;
+            /** Approval Id */
+            approval_id: string;
+            /** Command Id */
+            command_id: string;
+            /** Claim Grant */
+            claim_grant?: string | null;
+            /** Deadline Ms */
+            deadline_ms?: number | null;
+        };
         /** LocalClusterResponse */
         LocalClusterResponse: {
             /** Id */
@@ -90221,6 +90981,30 @@ export interface components {
             /** Docket Id */
             docket_id?: number | null;
             judges?: components["schemas"]["JsonValue"];
+        };
+        /** LocalCommandClaimResponse */
+        LocalCommandClaimResponse: {
+            /** Status */
+            status: string;
+            /** Command Id */
+            command_id: string;
+            /** Deadline Ms */
+            deadline_ms?: number | null;
+            /** Completion Grant */
+            completion_grant?: string | null;
+            injection?: components["schemas"]["JsonValue"] | null;
+        };
+        /** LocalCommandCompleteResponse */
+        LocalCommandCompleteResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "completed";
+            /** Result */
+            result: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
         };
         /** LocalCompetitorSearchBody */
         LocalCompetitorSearchBody: {
@@ -90322,6 +91106,51 @@ export interface components {
             plain_text_chars: number;
             /** Plain Text Preview */
             plain_text_preview: string;
+        };
+        /** LocalTransportVerifyResponse */
+        LocalTransportVerifyResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "accepted";
+            /**
+             * Operation
+             * @enum {string}
+             */
+            operation: "admit" | "approve" | "claim" | "cleanup" | "complete" | "discover" | "renew";
+            /** Run Id */
+            run_id: string;
+            /** App Instance Id */
+            app_instance_id: string;
+            /** Controller Revision */
+            controller_revision: number;
+            /** Jti */
+            jti: string;
+            /** Expires At Ms */
+            expires_at_ms: number;
+            /** Extension Generation */
+            extension_generation?: string | null;
+            /** Connection Id */
+            connection_id?: string | null;
+            /** Actor Id */
+            actor_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Profile Id */
+            profile_id?: string | null;
+            /** Admission Id */
+            admission_id?: string | null;
+            /** Command Id */
+            command_id?: string | null;
+            /** Sequence */
+            sequence?: number | null;
+            /** Command Digest */
+            command_digest?: string | null;
+            /** Approval Id */
+            approval_id?: string | null;
+            /** Deadline Ms */
+            deadline_ms?: number | null;
         };
         /** LockStormResponse */
         LockStormResponse: {
@@ -91162,11 +91991,15 @@ export interface components {
              * @default current
              * @enum {string}
              */
-            selection?: "agent" | "current" | "latest" | "mandate_pinned" | "version";
+            selection?: "agent" | "current" | "latest" | "mandate_pinned" | "version" | "workflow";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version Id */
             agent_version_id?: string | null;
+            /** Workflow Id */
+            workflow_id?: string | null;
+            /** Workflow Version Id */
+            workflow_version_id?: string | null;
             /** Config Overrides */
             config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -91933,6 +92766,72 @@ export interface components {
             has_reference_artifact: boolean;
         };
         /**
+         * MandateRunAccounting
+         * @description Everything one bench cell spent, read from the runtime spine's ledger
+         *     (``runtime.global_execution`` + ``global_meter_entry``) for the cell's OWN
+         *     execution tree — every model call, every child agent run, every nested
+         *     mandate run beneath it. Never summed by hand from a door's return value.
+         *
+         *     ``not_counted`` says, in sentences, what this cell ran that the ledger did
+         *     NOT see (or saw only in part). Empty means the ledger saw the whole tree.
+         */
+        MandateRunAccounting: {
+            /** Ledger Execution Id */
+            ledger_execution_id?: string | null;
+            /**
+             * Total Cost Usd
+             * @default 0
+             */
+            total_cost_usd?: number;
+            /**
+             * Model Calls
+             * @default 0
+             */
+            model_calls?: number;
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens?: number;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens?: number;
+            /**
+             * Cached Tokens
+             * @default 0
+             */
+            cached_tokens?: number;
+            /**
+             * Unpriced Model Calls
+             * @default 0
+             */
+            unpriced_model_calls?: number;
+            /**
+             * Nested Mandate Runs
+             * @default 0
+             */
+            nested_mandate_runs?: number;
+            /**
+             * Executions
+             * @default 0
+             */
+            executions?: number;
+            /**
+             * Failed Executions
+             * @default 0
+             */
+            failed_executions?: number;
+            /**
+             * Unsettled Executions
+             * @default 0
+             */
+            unsettled_executions?: number;
+            /** Not Counted */
+            not_counted?: string[];
+        };
+        /**
          * MandateServedInput
          * @description One entry of the mandate's served input surface.
          *
@@ -92094,7 +92993,11 @@ export interface components {
              * Selection
              * @enum {string}
              */
-            selection: "agent" | "current" | "latest" | "mandate_pinned" | "version";
+            selection: "agent" | "current" | "latest" | "mandate_pinned" | "version" | "workflow";
+            /** Workflow Id */
+            workflow_id?: string | null;
+            /** Workflow Version Id */
+            workflow_version_id?: string | null;
         };
         /** MandateTestPrincipal */
         MandateTestPrincipal: {
@@ -92177,6 +93080,8 @@ export interface components {
             run_id?: string | null;
             /** Workflow Id */
             workflow_id?: string | null;
+            /** Workflow Version Id */
+            workflow_version_id?: string | null;
             /** Agent Id */
             agent_id?: string | null;
             /** Definition Agent Id */
@@ -92217,6 +93122,8 @@ export interface components {
              * @default 0
              */
             duration_ms?: number;
+            accounting?: components["schemas"]["MandateRunAccounting"] | null;
+            contract_check?: components["schemas"]["ContractCheck"] | null;
             /** Error */
             error?: string | null;
             /** Notes */
@@ -94048,6 +94955,104 @@ export interface components {
             /** Body */
             body: string;
         };
+        /** MeetCollabRequest */
+        MeetCollabRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "breakout_broadcast" | "breakout_close" | "breakout_expire" | "breakout_join" | "breakout_move" | "breakout_open" | "breakout_update" | "poll_close" | "poll_create" | "poll_delete" | "poll_launch" | "poll_share" | "poll_update" | "poll_vote" | "question_answer" | "question_ask" | "question_delete" | "question_dismiss" | "question_reopen" | "question_upvote" | "stroke_add" | "stroke_erase" | "whiteboard_clear";
+            /** Item Id */
+            item_id?: string | null;
+            /** Question */
+            question?: string | null;
+            /** Options */
+            options?: string[] | null;
+            /** Multiple */
+            multiple?: boolean | null;
+            /** Anonymous */
+            anonymous?: boolean | null;
+            /** Option Ids */
+            option_ids?: string[] | null;
+            /** Text */
+            text?: string | null;
+            stroke?: components["schemas"]["StrokeIn"] | null;
+            /** Rooms */
+            rooms?: components["schemas"]["BreakoutRoomIn"][] | null;
+            /** Allow Choose */
+            allow_choose?: boolean | null;
+            /** Minutes */
+            minutes?: number | null;
+            /** Identity */
+            identity?: string | null;
+            /** Room Id */
+            room_id?: string | null;
+        };
+        /** MeetCollabResponse */
+        MeetCollabResponse: {
+            /** Action */
+            action: string;
+            /** Item */
+            item?: {
+                [key: string]: unknown;
+            } | null;
+            /** Removed */
+            removed?: string[];
+            /** Message */
+            message: string;
+        };
+        /**
+         * MeetCollabSettings
+         * @description The resolved knobs for this meeting's organization — what controls EXIST.
+         */
+        MeetCollabSettings: {
+            /** Polls Enabled */
+            polls_enabled: boolean;
+            /** Poll Max Options */
+            poll_max_options: number;
+            /** Qa Enabled */
+            qa_enabled: boolean;
+            /** Qa Anonymous Allowed */
+            qa_anonymous_allowed: boolean;
+            /** Whiteboard Enabled */
+            whiteboard_enabled: boolean;
+            /** Breakouts Enabled */
+            breakouts_enabled: boolean;
+            /** Breakout Max Rooms */
+            breakout_max_rooms: number;
+            /** Breakout Default Minutes */
+            breakout_default_minutes: number;
+            /** Caption Translation Enabled */
+            caption_translation_enabled: boolean;
+            /** Caption Translation Language */
+            caption_translation_language: string;
+        };
+        /** MeetCollabState */
+        MeetCollabState: {
+            /** Polls */
+            polls: {
+                [key: string]: unknown;
+            }[];
+            /** Questions */
+            questions: {
+                [key: string]: unknown;
+            }[];
+            /** Strokes */
+            strokes: {
+                [key: string]: unknown;
+            }[];
+            /** Breakout */
+            breakout: {
+                [key: string]: unknown;
+            } | null;
+            settings: components["schemas"]["MeetCollabSettings"];
+            /** Role */
+            role: string;
+            /** Identity */
+            identity: string;
+        };
         /** MeetModerationRequest */
         MeetModerationRequest: {
             /** Meeting Id */
@@ -94680,6 +95685,10 @@ export interface components {
             outcome_event_id?: string | null;
             /** Matched Terms */
             matched_terms?: string[];
+            /** Verdict */
+            verdict?: string | null;
+            /** Verdict Reason */
+            verdict_reason?: string | null;
         };
         /**
          * MergeFieldBinding
@@ -95042,6 +96051,26 @@ export interface components {
             department?: string | null;
             /** Is Public Domain */
             is_public_domain: boolean;
+        };
+        /** MetricDefinition */
+        MetricDefinition: {
+            /**
+             * Metric
+             * @enum {string}
+             */
+            metric: "aided_brand_knowledge" | "answer_framing" | "campaign_response" | "citation_presence" | "competitive_mention_share" | "unaided_brand_presence";
+            /** Display Name */
+            display_name: string;
+            /** Numerator */
+            numerator: string;
+            /** Denominator */
+            denominator: string;
+            /** Eligible Partitions */
+            eligible_partitions: ("aided" | "control" | "core" | "rotating" | "sentinel")[];
+            /** Eligible Lanes */
+            eligible_lanes: ("campaign_experiment" | "closed_model" | "consumer_surface" | "retrieval")[];
+            /** Does Not Prove */
+            does_not_prove: string;
         };
         /** MetricEstimate */
         MetricEstimate: {
@@ -96552,7 +97581,7 @@ export interface components {
         NativeCompleteBody: {
             /** Result */
             result?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Field Values */
             field_values?: {
@@ -96973,7 +98002,7 @@ export interface components {
         };
         /**
          * NewRelicAccountStatus
-         * @description Provider-formatted account visibility from the discovery-only MCP tool.
+         * @description Provider-formatted account exposure from the discovery-only MCP tool.
          */
         NewRelicAccountStatus: {
             /** Server Id */
@@ -98544,8 +99573,12 @@ export interface components {
             spreadsheet?: components["schemas"]["SpreadsheetSpec"] | null;
             /** File Name */
             file_name?: string | null;
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
             /** Visibility */
-            visibility?: string | null;
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
         };
         /**
          * OfficeGenerationResponse
@@ -98593,11 +99626,17 @@ export interface components {
              */
             cdn_url?: string | null;
             /**
-             * Visibility
-             * @description Access level of the stored file ('personal' by default; 'public' when requested).
-             * @default personal
+             * Published To Web
+             * @description Whether the stored file is published to the web (False by default).
+             * @default false
              */
-            visibility?: string;
+            published_to_web?: boolean;
+            /**
+             * Shown To
+             * @description List filter of the stored file ('only_me' by default).
+             * @default only_me
+             */
+            shown_to?: string | null;
         };
         /**
          * OfficePortionOut
@@ -99861,6 +100900,18 @@ export interface components {
             member_titles?: string[];
             /** Member Depth Ceiling */
             member_depth_ceiling?: number | null;
+        };
+        /**
+         * OrganizationPickerOption
+         * @description One membership choice shown when a coding session needs an organization.
+         */
+        OrganizationPickerOption: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Abbreviation */
+            abbreviation?: string | null;
         };
         /** OrganizationReport */
         OrganizationReport: {
@@ -102013,6 +103064,8 @@ export interface components {
             metrics: components["schemas"]["MetricEstimate"][];
             /** Comparisons */
             comparisons?: components["schemas"]["PairedComparison"][];
+            /** Definitions */
+            definitions?: components["schemas"]["MetricDefinition"][];
         };
         /**
          * PanelPreview
@@ -102409,6 +103462,10 @@ export interface components {
              * @description New full folder path (rename / move)
              */
             folder_path?: string | null;
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
             /** Visibility */
             visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Metadata */
@@ -103116,6 +104173,34 @@ export interface components {
             /** Api Resource */
             api_resource: string;
         };
+        /** PendingActionRequest */
+        PendingActionRequest: {
+            /** Request Id */
+            request_id: string;
+            /** Kind */
+            kind: string;
+            /** Render */
+            render: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Organization Id */
+            organization_id: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Link Expires At */
+            link_expires_at?: string | null;
+            /** Link Live */
+            link_live: boolean;
+            /** Answer By */
+            answer_by?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /** PendingActionRequestsResponse */
+        PendingActionRequestsResponse: {
+            /** Requests */
+            requests: components["schemas"]["PendingActionRequest"][];
+        };
         /** PendingCallSummary */
         PendingCallSummary: {
             /** Id */
@@ -103237,15 +104322,15 @@ export interface components {
             reasoning?: string | null;
             /** Answers */
             answers?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Unanswerable */
             unanswerable?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Authority Answers */
             authority_answers?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Input Cut Ratio
@@ -105793,7 +106878,7 @@ export interface components {
              * @description page {"page": n}; section {"heading_path": [...], "text_fragment": "..."}; segment {"t0_ms", "t1_ms", "speaker"}; message {"message_id"}; sheet {"sheet", "row_start", "row_end"}; slide {"slide": n}
              */
             locator: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Method
@@ -106188,12 +107273,12 @@ export interface components {
             content_type?: string | null;
             /** Expected Size Bytes */
             expected_size_bytes?: number | null;
-            /**
-             * Visibility
-             * @default personal
-             * @enum {string}
-             */
-            visibility?: "internal" | "link" | "personal" | "private" | "public" | "shared";
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -108942,7 +110027,7 @@ export interface components {
             captured_by_rung?: string | null;
             /** Rung Trail */
             rung_trail?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /**
              * Captured At
@@ -110696,6 +111781,26 @@ export interface components {
              * @description Does this goal say enough to judge a run against? Omit to keep whatever the extraction recorded.
              */
             judgeable?: boolean | null;
+        };
+        /**
+         * RawBackupPolicyAnswer
+         * @description What the computer holding a session's file must obey before a byte leaves it.
+         */
+        RawBackupPolicyAnswer: {
+            /** Provider */
+            provider: string;
+            /** Provider Session Id */
+            provider_session_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Debounce Seconds */
+            debounce_seconds: number;
+            /** Session Known */
+            session_known: boolean;
+            /** Backup Sha256 */
+            backup_sha256?: string | null;
+            /** Sentence */
+            sentence: string;
         };
         /** RawPayloadEvidenceOut */
         RawPayloadEvidenceOut: {
@@ -114333,6 +115438,25 @@ export interface components {
              */
             initiation?: ("auto" | "user") | null;
         };
+        /** ResumeQueuedRunResponse */
+        ResumeQueuedRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Job Id */
+            job_id: string;
+            /**
+             * Mode
+             * @default queued
+             * @constant
+             */
+            mode?: "queued";
+            /**
+             * Status
+             * @default running
+             * @constant
+             */
+            status?: "running";
+        };
         /** ResumeResponse */
         ResumeResponse: {
             /** Organization Id */
@@ -115299,6 +116423,8 @@ export interface components {
             meeting_id?: string | null;
             /** Slug */
             slug?: string | null;
+            /** Breakout Room Id */
+            breakout_room_id?: string | null;
         };
         /**
          * RoomTokenResponse
@@ -115329,6 +116455,8 @@ export interface components {
             role: string;
             /** Lobby */
             lobby: boolean;
+            /** Breakout Room Id */
+            breakout_room_id?: string | null;
         };
         /**
          * RorPublicOrganization
@@ -115456,11 +116584,89 @@ export interface components {
             /** Rotation */
             rotation: number;
         };
-        /** RowUpdate */
-        RowUpdate: {
-            /** Data */
-            data: {
-                [key: string]: unknown;
+        /** Row */
+        Row: {
+            /** Id */
+            id: string;
+            /**
+             * Values
+             * @description Every column you can see, by name; a column with no value is null.
+             */
+            values: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Version
+             * @description Send this back as expected_version to refuse the update if someone changed the row since you read it.
+             */
+            version?: number | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /**
+             * Hidden
+             * @description Columns this table hides from you on this row; they read null here and cannot be written.
+             */
+            hidden?: string[] | null;
+        };
+        /**
+         * RowFilter
+         * @description What a list call asks for. Every name is a column name.
+         */
+        RowFilter: {
+            /**
+             * Where
+             * @description Column name -> value. A plain value means "equals"; null means "empty"; {"from": ..., "to": ...} is a date window.
+             */
+            where?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Search
+             * @description Words to find in any column you can see.
+             */
+            search?: string | null;
+            /**
+             * Sort
+             * @description Column names, "-Name" for descending, applied in order.
+             */
+            sort?: string[] | null;
+            /**
+             * Limit
+             * @description Rows per page; the organization's ceiling trims a larger ask.
+             */
+            limit?: number | null;
+            /**
+             * Offset
+             * @default 0
+             */
+            offset?: number;
+        };
+        /** RowPage */
+        RowPage: {
+            /** Table Id */
+            table_id: string;
+            /** Rows */
+            rows: components["schemas"]["Row"][];
+            /**
+             * Total
+             * @description How many rows match, of those you may see.
+             */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** RowWrite */
+        RowWrite: {
+            /**
+             * Values
+             * @description Column name -> the value to write. Only the columns named are changed.
+             */
+            values: {
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /**
@@ -115517,11 +116723,11 @@ export interface components {
             message?: string | null;
             /** Meeting */
             meeting?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Invitee */
             invitee?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
              * Host Notified
@@ -115668,6 +116874,31 @@ export interface components {
              * @default 0
              */
             rules_produced?: number;
+        };
+        /** RulebookSendResponse */
+        RulebookSendResponse: {
+            /** Selected */
+            selected: number;
+            /** Added */
+            added: number;
+            /** Already There */
+            already_there: number;
+            /** Skipped Empty */
+            skipped_empty: number;
+            /** Failed */
+            failed: number;
+            /** Sent */
+            sent: number;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Permit Id */
+            permit_id: string;
+            /** Confirmed Sentence */
+            confirmed_sentence: string;
+            /** Confirmed At */
+            confirmed_at?: string | null;
+            /** Unaccounted */
+            unaccounted?: number | null;
         };
         /**
          * Ruleset
@@ -117217,6 +118448,25 @@ export interface components {
              */
             initiation?: ("auto" | "user") | null;
         };
+        /**
+         * ScheduleProjection
+         * @description One schedule choice's projected monthly cost against the organization's ceiling (spec §8).
+         *
+         *     Validation offers, never blocks: the editor shows the projection and names a cheaper choice that fits;
+         *     saving any choice stays allowed.
+         */
+        ScheduleProjection: {
+            /** Preset Id */
+            preset_id: string;
+            /** Label */
+            label: string;
+            /** Runs Per Month */
+            runs_per_month: number;
+            /** Monthly Usd */
+            monthly_usd: number;
+            /** Over Ceiling */
+            over_ceiling: boolean;
+        };
         /** ScheduleView */
         ScheduleView: {
             /**
@@ -118560,7 +119810,7 @@ export interface components {
             item_ids?: string[] | null;
             /** Filter */
             filter?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Confirmed Sentence */
             confirmed_sentence: string;
@@ -119663,7 +120913,7 @@ export interface components {
             library_id?: string | null;
             /** Values */
             values: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** SettingsCapabilityIssue */
@@ -119785,6 +121035,10 @@ export interface components {
              * @default 0
              */
             runs_measured?: number;
+            /** Estimated Run Usd */
+            estimated_run_usd?: number | null;
+            /** Estimate Basis */
+            estimate_basis?: ("measured" | "setting") | null;
         };
         /**
          * SetupFacts
@@ -119801,23 +121055,25 @@ export interface components {
             };
             /** Feed Catalog */
             feed_catalog: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** X Key On File */
             x_key_on_file: boolean;
             /** X Trends Locations */
             x_trends_locations?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Schedule Presets */
             schedule_presets?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Schedule Default */
             schedule_default?: {
                 [key: string]: string;
             };
             cost: components["schemas"]["SetupCost"];
+            /** Schedule Projections */
+            schedule_projections?: components["schemas"]["ScheduleProjection"][];
         };
         /**
          * SevenShiftsServiceStatus
@@ -120491,6 +121747,60 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * ShownToRequest
+         * @description Set who a workflow is shown to in lists (access ladder T-13 — a list filter,
+         *     never row security). A workflow BODY is never published to the web (DB CHECK
+         *     ``workflow_definition_body_not_public_chk``); public reach is the CARD's own
+         *     publish (``card_visibility``, the lane-A ruling). Sharing without publishing is
+         *     an Anyone link, made in Share — never a row state.
+         */
+        ShownToRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal") | null;
+        };
+        /**
+         * ShownToResponse
+         * @description The list filter that now applies (null = follow the type's default).
+         */
+        ShownToResponse: {
+            /** Definition Id */
+            definition_id: string;
+            /** Shown To */
+            shown_to?: string | null;
         };
         /** SiYuanPublicRelease */
         SiYuanPublicRelease: {
@@ -122267,8 +123577,8 @@ export interface components {
          *
          *     Soft = origin 'user', goal_grounding 'H', no Holder — exactly what
          *     ``create_user_mandate`` writes. ``level`` picks the home: the request's
-         *     active organization, visible to the author alone (visibility 'personal'), or
-         *     an organization they administer (visibility 'internal'). System mandates stay platform-admin only
+         *     active organization, shown only to the author in lists (shown_to 'only_me'), or
+         *     an organization they administer (shown_to null). System mandates stay platform-admin only
          *     on ``POST /mandates``.
          */
         SoftMandateCreateRequest: {
@@ -122309,8 +123619,8 @@ export interface components {
             origin: string;
             /** Organization Id */
             organization_id: string;
-            /** Visibility */
-            visibility: string;
+            /** Shown To */
+            shown_to?: string | null;
         };
         /**
          * SortBoundaryQuestion
@@ -122709,7 +124019,7 @@ export interface components {
             original?: components["schemas"]["Original"] | null;
             /** Structured */
             structured?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             provenance: components["schemas"]["Provenance"];
             /** Attach To */
@@ -122724,12 +124034,12 @@ export interface components {
              * @default false
              */
             keep?: boolean;
-            /**
-             * Visibility
-             * @default internal
-             * @enum {string}
-             */
-            visibility?: "internal" | "personal";
+            /** Published To Web */
+            published_to_web?: false | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /** Organization Id */
             organization_id: string;
         };
@@ -122801,7 +124111,7 @@ export interface components {
              */
             truncated?: boolean;
             /** Unavailable */
-            unavailable?: ("no_access" | "missing" | "not_ready" | "failed") | null;
+            unavailable?: ("failed" | "missing" | "no_access" | "not_ready") | null;
             /** Detail */
             detail?: string | null;
         };
@@ -123125,7 +124435,7 @@ export interface components {
             container_id: string | null;
             /** Attributes */
             attributes: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** SourceSegment */
@@ -124384,7 +125694,7 @@ export interface components {
             selection?: components["schemas"]["Selection"];
             /** Params */
             params?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Allow Paid */
             allow_paid?: boolean | null;
@@ -124976,12 +126286,12 @@ export interface components {
             source_ref: string;
             /** File Path */
             file_path: string;
-            /**
-             * Visibility
-             * @default personal
-             * @enum {string}
-             */
-            visibility?: "internal" | "personal";
+            /** Published To Web */
+            published_to_web?: false | null;
+            /** Shown To */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "personal" | "private" | "shared") | null;
         };
         /** StorageUsageResponse */
         StorageUsageResponse: {
@@ -125677,6 +126987,30 @@ export interface components {
             order_id?: string | null;
             /** Print Job Id */
             print_job_id?: string | null;
+        };
+        /** StrokeIn */
+        StrokeIn: {
+            /** Points */
+            points: [
+                number,
+                number
+            ][];
+            /**
+             * Color
+             * @default #111827
+             */
+            color?: string;
+            /**
+             * Width
+             * @default 3
+             */
+            width?: number;
+            /**
+             * Tool
+             * @default pen
+             * @enum {string}
+             */
+            tool?: "highlighter" | "pen";
         };
         /** StructuralVerdict */
         StructuralVerdict: {
@@ -127086,6 +128420,17 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** TableColumns */
+        TableColumns: {
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Columns */
+            columns: components["schemas"]["Column"][];
+        };
         /** TableInputPart */
         TableInputPart: {
             /** Metadata */
@@ -127168,6 +128513,13 @@ export interface components {
              */
             include_raw?: boolean;
         };
+        /** TableList */
+        TableList: {
+            /** Organization Id */
+            organization_id: string;
+            /** Tables */
+            tables: components["schemas"]["TableSummary"][];
+        };
         /** TableRowBookmark */
         TableRowBookmark: {
             /**
@@ -127197,6 +128549,36 @@ export interface components {
             table_name?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /** TableSummary */
+        TableSummary: {
+            /**
+             * Id
+             * @description The table's id — what every other call names it by.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The table's name, as the person sees it.
+             */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Home
+             * @description Where the table lives (its Home), by name.
+             */
+            home?: string | null;
+            /**
+             * Your Access
+             * @description Your level on this table: viewer, commenter, editor, admin or owner.
+             */
+            your_access: string;
+            /**
+             * Kept By The App
+             * @description True for a table the app keeps for one of its own features (a context scope's table, for example); false for the organization's own data.
+             */
+            kept_by_the_app?: boolean | null;
         };
         /** TagCreate */
         TagCreate: {
@@ -127640,7 +129022,29 @@ export interface components {
          *     to the tasks half of B-2). The plan now pins the set and the apply refuses a
          *     set that moved, naming what changed.
          */
-        TaskImportPin: {
+        "TaskImportPin-Input": {
+            /** Task List Id */
+            task_list_id: string;
+            /** Project Id */
+            project_id?: string | null;
+            /** Tasks */
+            tasks?: components["schemas"]["TaskPinRow"][];
+        };
+        /**
+         * TaskImportPin
+         * @description THE task set a person reviewed — the list, the project, and each task.
+         *
+         *     🚨 **AN APPLY IMPORTS THE SET THAT WAS REVIEWED, OR NOTHING.** ``import_tasks``
+         *     re-reads Google at apply time, so between the preview a person approved and
+         *     the write, a task's title, notes, due date or status can change, a task can be
+         *     imported by somebody else, or the caller can name a different project. Until
+         *     2026-09-18 all of that was written silently: the person approved "Call Dana"
+         *     and the row said whatever Google said a minute later
+         *     (``common-docs/projects/google-native/VERIFY-B1-B2-R5.md`` W6's class, applied
+         *     to the tasks half of B-2). The plan now pins the set and the apply refuses a
+         *     set that moved, naming what changed.
+         */
+        "TaskImportPin-Output": {
             /** Task List Id */
             task_list_id: string;
             /** Project Id */
@@ -127665,7 +129069,7 @@ export interface components {
              * @default false
              */
             dry_run?: boolean;
-            reviewed_task_set?: components["schemas"]["TaskImportPin"] | null;
+            reviewed_task_set?: components["schemas"]["TaskImportPin-Input"] | null;
         };
         /** TaskImportResult */
         TaskImportResult: {
@@ -127694,7 +129098,7 @@ export interface components {
              * @default 0
              */
             unchanged?: number;
-            reviewed_task_set?: components["schemas"]["TaskImportPin"] | null;
+            reviewed_task_set?: components["schemas"]["TaskImportPin-Output"] | null;
             /** Warnings */
             warnings?: string[];
         };
@@ -127830,7 +129234,7 @@ export interface components {
             already_imported?: boolean;
             /** Snapshot */
             snapshot?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /**
@@ -128580,6 +129984,34 @@ export interface components {
                 [key: string]: {
                     [key: string]: unknown;
                 };
+            };
+        };
+        /**
+         * TermListPreviewResponse
+         * @description The exact vendor-ready dictionary projections for the selected lists.
+         */
+        TermListPreviewResponse: {
+            /** Chat Prompt Section */
+            chat_prompt_section: string;
+            /** Elevenlabs Rules */
+            elevenlabs_rules: {
+                [key: string]: {
+                    [key: string]: components["schemas"]["JsonValue"];
+                }[];
+            };
+            /** Tts Substitution */
+            tts_substitution: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Deepgram */
+            deepgram: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Whisper Prompt */
+            whisper_prompt?: string | null;
+            /** Vendor Support */
+            vendor_support: {
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** TermListUpdate */
@@ -130892,8 +132324,10 @@ export interface components {
             size_bytes?: number | null;
             /** Mime Type */
             mime_type?: string | null;
-            /** Visibility */
-            visibility?: string | null;
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: string | null;
             /** Parent Folder Id */
             parent_folder_id?: string | null;
             /** Deleted At */
@@ -130918,8 +132352,10 @@ export interface components {
             folder_name?: string | null;
             /** Parent Id */
             parent_id?: string | null;
-            /** Visibility */
-            visibility?: string | null;
+            /** Published To Web */
+            published_to_web?: boolean | null;
+            /** Shown To */
+            shown_to?: string | null;
             /** Deleted At */
             deleted_at?: string | null;
             /** Created At */
@@ -132313,10 +133749,17 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
             /**
-             * Visibility
-             * @description Who may RUN/see the agent itself. Leave a builtin at 'internal' — publicness for a builtin is org placement (the ownerless Matrx System org), not this column.
+             * Published To Web
+             * @description Publish the agent itself to the web (the only anonymous lane). Leave a builtin unpublished — reach for a builtin is org placement (the ownerless Matrx System org), not this column. Independent of `card_visibility`.
              */
-            visibility?: ("internal" | "link" | "personal" | "public") | null;
+            published_to_web?: boolean | null;
+            /**
+             * Shown To
+             * @description Who the agent is listed for (a list filter, never security).
+             */
+            shown_to?: ("everyone" | "everyone_on_ai_matrx" | "my_team" | "only_me") | null;
+            /** Visibility */
+            visibility?: ("internal" | "link" | "personal" | "private" | "public" | "shared") | null;
             /**
              * Card Visibility
              * @description Who may see the agent's CARD (the browse list / surface agent menu). 🚨 A builtin MUST be 'public': it has created_by NULL in the ownerless system org, where iam.has_org_access can never be true, so 'public' is the only clause agent.card can ever admit it on. The factory writes it on creation; this is how an existing agent is corrected.
@@ -132561,6 +134004,47 @@ export interface components {
         UpdatedCountResponse: {
             /** Updated */
             updated: number;
+        };
+        /** UpsertRequest */
+        UpsertRequest: {
+            /**
+             * Key Column
+             * @description The column rows are matched on, e.g. "Account". A row whose key matches a record updates it; no match creates one.
+             */
+            key_column: string;
+            /**
+             * Rows
+             * @description The rows, each carrying the key column.
+             */
+            rows: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+        };
+        /** UpsertResult */
+        UpsertResult: {
+            /** Table Id */
+            table_id: string;
+            /** Created */
+            created: number;
+            /** Updated */
+            updated: number;
+            /** Rows */
+            rows: components["schemas"]["UpsertedRow"][];
+        };
+        /** UpsertedRow */
+        UpsertedRow: {
+            /**
+             * Row
+             * @description Its position in the request, from 1.
+             */
+            row: number;
+            key: components["schemas"]["JsonValue"];
+            /** Id */
+            id: string;
+            /** Created */
+            created: boolean;
+            /** Version */
+            version?: number | null;
         };
         /**
          * UscreenServiceStatus
@@ -134571,6 +136055,8 @@ export interface components {
             key_thumbprint: string;
             /** Label */
             label?: string | null;
+            /** Device Kind */
+            device_kind?: ("browser" | "mac") | null;
             /** Challenge Id */
             challenge_id: string;
             /** Credential */
@@ -136340,66 +137826,6 @@ export interface components {
             change_summary?: string | null;
         };
         /**
-         * VisibilityRequest
-         * @description Set a workflow's canonical ``visibility`` — the platform enum values a
-         *     BODY may hold (personal | internal | link). ``public`` is deliberately
-         *     absent: a workflow body is never public (DB CHECK
-         *     ``workflow_definition_body_not_public_chk``); public reach is the CARD
-         *     (``card_visibility``). There is no boolean alias: a two-state flag cannot
-         *     express the canonical states, and the ``is_public`` wire shape was
-         *     retired with the column it named.
-         */
-        VisibilityRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /**
-             * Source App
-             * @description Stable application slug that initiated the request.
-             */
-            source_app?: string | null;
-            /**
-             * Source Feature
-             * @description Stable feature slug within the source application.
-             */
-            source_feature?: string | null;
-            /**
-             * Initiation
-             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
-             */
-            initiation?: ("auto" | "user") | null;
-            /**
-             * Visibility
-             * @enum {string}
-             */
-            visibility: "internal" | "link" | "personal";
-        };
-        /**
-         * VisibilityResponse
-         * @description The canonical visibility that now applies. ``public_url`` is set only
-         *     for ``public`` — there is no boolean twin of the enum on the wire.
-         */
-        VisibilityResponse: {
-            /** Definition Id */
-            definition_id: string;
-            /** Visibility */
-            visibility: string;
-            /** Public Url */
-            public_url?: string | null;
-        };
-        /**
          * VisionMediaUploadResponse
          * @description Response payload for ``POST /media/upload``.
          */
@@ -136799,11 +138225,11 @@ export interface components {
             tells_before: string[];
             /** Changes */
             changes?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Unfixable */
             unfixable?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Error */
             error?: string | null;
@@ -138958,6 +140384,29 @@ export interface components {
             expected_updated_at?: string | null;
         };
         /**
+         * WriteResult
+         * @description A create, update, archive or restore — and, for an AI client, the organization's answer.
+         */
+        WriteResult: {
+            /**
+             * Done
+             * @description False only when the organization asked a person to approve it first.
+             */
+            done: boolean;
+            row?: components["schemas"]["Row"] | null;
+            /** Archived */
+            archived?: boolean | null;
+            /** Restored */
+            restored?: boolean | null;
+            /**
+             * Waiting
+             * @description When done is false: what is waiting, why, and where a person approves it.
+             */
+            waiting?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
+        /**
          * WrittenRefs
          * @description What a calculation actually persisted.
          *
@@ -140617,6 +142066,13 @@ export interface components {
              */
             allow_context_create?: boolean;
         };
+        /** RowUpdate */
+        aidream__services__datasets__wire__RowUpdate: {
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+        };
         /** PackageMetadata */
         aidream__services__debian_sources_integrations__service__PackageMetadata: {
             /**
@@ -142185,6 +143641,21 @@ export interface components {
             /** Content */
             content: string;
         };
+        /** RowUpdate */
+        aidream__services__table_api__contract__RowUpdate: {
+            /**
+             * Values
+             * @description Column name -> the value to write. Only the columns named are changed.
+             */
+            values: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Expected Version
+             * @description The version you read. When someone changed the row since, the update is refused (409) with both versions.
+             */
+            expected_version?: number | null;
+        };
         /** CardMetadata */
         aidream__services__tcgdex_integrations__service__CardMetadata: {
             /**
@@ -143399,6 +144870,1078 @@ export interface operations {
             };
         };
     };
+    list_tables_v1_tables_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableList"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    table_columns_v1_tables__table__columns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableColumns"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    list_rows_v1_tables__table__rows_get: {
+        parameters: {
+            query?: {
+                /** @description JSON object of column name -> value, e.g. {"Status":"AVAILABLE"}. */
+                where?: string | null;
+                /** @description Words to find in any column. */
+                search?: string | null;
+                /** @description Comma-separated column names; "-Name" sorts descending. */
+                sort?: string | null;
+                limit?: number | null;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RowPage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_row_v1_tables__table__rows_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Any unique string. Retrying a write with the same key and body returns the first answer instead of writing again. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    query_rows_v1_tables__table__rows_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RowFilter"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RowPage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    upsert_rows_v1_tables__table__rows_upsert_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Any unique string. Retrying a write with the same key and body returns the first answer instead of writing again. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpsertResult"] | components["schemas"]["WriteResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    get_row_v1_tables__table__rows__row_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Row"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    archive_row_v1_tables__table__rows__row_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Any unique string. Retrying a write with the same key and body returns the first answer instead of writing again. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                table: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    update_row_v1_tables__table__rows__row_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Any unique string. Retrying a write with the same key and body returns the first answer instead of writing again. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                table: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["aidream__services__table_api__contract__RowUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    restore_row_v1_tables__table__rows__row_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Any unique string. Retrying a write with the same key and body returns the first answer instead of writing again. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                table: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     scrape_as_kind_scraper_kinds_scrape_post: {
         parameters: {
             query?: never;
@@ -143537,9 +146080,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ActionRequestStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -143572,9 +146113,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ActionRequestStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -143607,9 +146146,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ActionRequestStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -143638,9 +146175,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PendingActionRequestsResponse"];
                 };
             };
         };
@@ -143666,9 +146201,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ActionRequestStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -144535,9 +147068,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["TermListPreviewResponse"];
                 };
             };
             /** @description Validation Error */
@@ -149178,6 +151709,39 @@ export interface operations {
             };
         };
     };
+    read_raw_backup_policy_coding_sessions_raw_transcripts_backup_policy_get: {
+        parameters: {
+            query: {
+                provider: string;
+                provider_session_id: string;
+                provider_project_key?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RawBackupPolicyAnswer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     backup_raw_transcript_coding_sessions_raw_transcripts_backup_post: {
         parameters: {
             query: {
@@ -149920,7 +152484,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -149946,7 +152510,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -149979,7 +152543,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150016,7 +152580,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150051,7 +152615,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150084,7 +152648,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150117,7 +152681,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150150,7 +152714,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150183,7 +152747,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150218,7 +152782,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150249,7 +152813,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        [key: string]: components["schemas"]["JsonValue"];
                     };
                 };
             };
@@ -150863,9 +153427,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CalendarCreateResult"];
                 };
             };
             /** @description Validation Error */
@@ -151033,6 +153595,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeetChatMessage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_collab_state_v1_meet_collab_get: {
+        parameters: {
+            query: {
+                meeting_id: string;
+            };
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetCollabState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_collab_action_v1_meet_collab_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetCollabRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetCollabResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_captions_translate_v1_meet_captions_translate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-meet-room-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaptionTranslateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptionTranslateResponse"];
                 };
             };
             /** @description Validation Error */
@@ -187510,7 +190175,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DesignRunView"];
+                    "application/json": components["schemas"]["DesignRunView"] | null;
                 };
             };
             /** @description Validation Error */
@@ -193363,7 +196028,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RowUpdate"];
+                "application/json": components["schemas"]["aidream__services__datasets__wire__RowUpdate"];
             };
         };
         responses: {
@@ -196587,7 +199252,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["EnrollmentDetailOut"];
                 };
             };
             /** @description Validation Error */
@@ -196618,7 +199283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ReviewDetailOut"];
                 };
             };
             /** @description Validation Error */
@@ -196649,7 +199314,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["InventoryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -196682,7 +199347,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DiagnoseResponse"];
                 };
             };
             /** @description Validation Error */
@@ -196749,7 +199414,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DefinitionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -196783,7 +199448,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["RunRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -196814,7 +199479,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["RunRecord"];
                 };
             };
             /** @description Validation Error */
@@ -196845,7 +199510,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PlanListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -196876,7 +199541,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PlanFullResponse"];
                 };
             };
             /** @description Validation Error */
@@ -196908,7 +199573,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DescendOut"];
                 };
             };
             /** @description Validation Error */
@@ -199512,13 +202177,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description A JSON resume result or an NDJSON workflow event stream. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AwaitingInputRunResponse"] | components["schemas"]["HeldStepRefusedResponse"] | components["schemas"]["ResumeQueuedRunResponse"];
+                    "application/x-ndjson": string;
                 };
             };
             /** @description Validation Error */
@@ -201490,7 +204156,7 @@ export interface operations {
             };
         };
     };
-    set_workflow_visibility_workflows__definition_id__visibility_patch: {
+    set_workflow_shown_to_workflows__definition_id__shown_to_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -201501,7 +204167,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VisibilityRequest"];
+                "application/json": components["schemas"]["ShownToRequest"];
             };
         };
         responses: {
@@ -201511,7 +204177,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VisibilityResponse"];
+                    "application/json": components["schemas"]["ShownToResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_workflow_shown_to_transitional_workflows__definition_id__visibility_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShownToRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShownToResponse"];
                 };
             };
             /** @description Validation Error */
@@ -202675,7 +205376,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -202713,7 +205416,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -202746,7 +205451,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -202777,7 +205484,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -202858,7 +205567,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -202902,7 +205613,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -202931,7 +205644,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
         };
@@ -202953,7 +205668,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -202986,7 +205703,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203021,7 +205740,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203056,7 +205777,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203091,7 +205814,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203126,7 +205851,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203157,7 +205884,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203188,7 +205917,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203219,7 +205950,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: components["schemas"]["JsonValue"];
+                    };
                 };
             };
             /** @description Validation Error */
@@ -203283,9 +206016,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ExportAdapterResponse"];
                 };
             };
         };
@@ -203309,7 +206040,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExportCreateResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203340,7 +206071,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExportReadResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203421,7 +206152,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExportItemsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203452,7 +206183,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExportFacetsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203483,7 +206214,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ExportPresetsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203518,7 +206249,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["RulebookSendResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203552,9 +206283,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CaptureLadderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203587,9 +206316,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CaptureLadderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203624,9 +206351,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CaptureHandoff"];
                 };
             };
             /** @description Validation Error */
@@ -203661,9 +206386,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CaptureLadderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -203698,9 +206421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CaptureHandoff"];
                 };
             };
             /** @description Validation Error */
@@ -203735,9 +206456,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["CaptureHandoff"];
                 };
             };
             /** @description Validation Error */
@@ -204036,9 +206755,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BlockActionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -204071,9 +206788,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BlockActionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -204619,7 +207334,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description FileRecord when only basic fields (visibility/metadata) are updated; AssetCombinedOpResponse when union-body sub-ops (share/permissions/variants/copy_to/restore) are present or X-Idempotency-Key is set. */
+            /** @description FileRecord when only basic fields (published_to_web/metadata) are updated; AssetCombinedOpResponse when union-body sub-ops (share/permissions/variants/copy_to/restore) are present or X-Idempotency-Key is set. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -207054,7 +209769,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["LocalTransportVerifyResponse"];
                 };
             };
         };
@@ -207074,7 +209789,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["LocalApprovalResponse"];
                 };
             };
         };
@@ -207094,7 +209809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["LocalCommandClaimResponse"];
                 };
             };
         };
@@ -207114,7 +209829,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["LocalCommandCompleteResponse"];
                 };
             };
         };
@@ -209935,9 +212650,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["GoalClauseRecord"];
                 };
             };
             /** @description Validation Error */

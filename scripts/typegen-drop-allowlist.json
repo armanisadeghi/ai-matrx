@@ -8,6 +8,7 @@
     "mention_rate": "Removed on purpose by aidream 1f0b31f8ce with the pooled rates; nothing here reads it.",
     "citation_rate": "Removed on purpose by aidream 1f0b31f8ce with the pooled rates; nothing here reads it.",
     "campaign_context": "Renamed to `pitch` by aidream 90ea9a2874 (journalist fit check); the server still accepts campaign_context only as an input alias. features/crm/enrichment/service.ts now sends `pitch`; the remaining hit (ChaseboxDraftDialog CLAIM_SOURCE_LABELS) is a claim-source label, not this wire field.",
-    "hard_delete": "Delete means archive (Arman, 2026-09-27): the files bulk-delete request lost its hard_delete flag on purpose (aidream 1e5195661c); every files delete is a Trash move."
+    "hard_delete": "Delete means archive (Arman, 2026-09-27): the files bulk-delete request lost its hard_delete flag on purpose (aidream 1e5195661c); every files delete is a Trash move.",
+    "visibility": "Retired on purpose by the access ladder T-13 phase 5 (aidream d6c6247cc1 + 1bc217ac08 'complete retiring visibility compatibility'): row access is published_to_web + shown_to. The responses FolderRecord, TrashFileEntry, DefinitionRecord, OfficeGenerationResponse and SoftMandateCreatedResponse no longer echo the old word; request models still accept it as a counted transitional input. The guard's other hits here are DB-row and UI 'visibility' names, not these wire responses."
   }
 }
