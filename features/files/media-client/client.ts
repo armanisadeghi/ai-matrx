@@ -264,7 +264,8 @@ function diagnostics(event: FilesDiagnosticsEvent): void {
 function toMetadata(record: CloudFile): FileMetadata {
   return {
     mimeType: record.mimeType ?? null,
-    visibility: record.visibility ?? null,
+    publishedToWeb:
+      record.visibility == null ? null : record.visibility === "public",
     cdnUrl: record.cdnUrl ?? null,
     publicUrl: record.publicUrl ?? null,
     thumbnailUrl: record.thumbnailUrl ?? null,
