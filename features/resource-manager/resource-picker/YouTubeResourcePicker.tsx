@@ -93,14 +93,14 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
         setVideoPreview(null);
 
         if (!url.trim()) {
-            setError("Please enter a YouTube URL");
+            setError("Paste a YouTube link.");
             return;
         }
 
         const videoId = extractVideoId(url.trim());
 
         if (!videoId) {
-            setError("Invalid YouTube URL. Please enter a valid YouTube video link.");
+            setError("That is not a YouTube video link.");
             return;
         }
 
@@ -120,7 +120,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
 
             setVideoPreview(video);
         } catch (err) {
-            setError("Could not fetch video information. The video might be private or unavailable.");
+            setError("That video is private or unavailable.");
         } finally {
             setIsValidating(false);
         }
@@ -149,7 +149,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
 
             const videoId = extractVideoId(pastedText.trim());
             if (!videoId) {
-                setError("Invalid YouTube URL. Please enter a valid YouTube video link.");
+                setError("That is not a YouTube video link.");
                 return;
             }
 
@@ -164,7 +164,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                 };
                 setVideoPreview(video);
             }).catch(() => {
-                setError("Could not fetch video information. The video might be private or unavailable.");
+                setError("That video is private or unavailable.");
             }).finally(() => {
                 setIsValidating(false);
             });
@@ -175,7 +175,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
         <div className="flex flex-col max-h-[min(460px,70dvh)]">
             {/* Header */}
             <ResourcePickerSubViewHeader
-                title="YouTube Video"
+                title="YouTube video"
                 onBack={onBack}
                 icon={
                     <Youtube className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
@@ -211,9 +211,6 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                             )}
                         </Button>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                        Paste a YouTube video URL or video ID
-                    </p>
                 </div>
 
                 {/* Error */}
@@ -265,20 +262,6 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                     </div>
                 )}
 
-                {/* Help Text */}
-                {!videoPreview && !error && (
-                    <div className="p-2.5 border border-blue-500/20 bg-blue-500/10 rounded-lg">
-                        <p className="text-xs text-blue-600 dark:text-blue-400">
-                            <strong>Supported formats:</strong>
-                        </p>
-                        <ul className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-0.5 ml-3">
-                            <li>• youtube.com/watch?v=VIDEO_ID</li>
-                            <li>• youtu.be/VIDEO_ID</li>
-                            <li>• youtube.com/embed/VIDEO_ID</li>
-                            <li>• Direct video ID</li>
-                        </ul>
-                    </div>
-                )}
             </div>
 
             {/* Footer with Add Button - Fixed at bottom */}
@@ -290,7 +273,7 @@ export function YouTubeResourcePicker({ onBack, onSelect, initialUrl }: YouTubeR
                         size="sm"
                     >
                         <Youtube className="w-4 h-4 mr-2" />
-                        Add Video
+                        Add video
                     </Button>
                 </div>
             )}

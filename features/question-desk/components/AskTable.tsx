@@ -164,7 +164,6 @@ export function AskTable({
       pageSize={25}
       pageSizeOptions={[10, 25, 50]}
       detail={{ enabled: false }}
-      copy={false}
       toolbar={{
         title: "Every question at once",
         search: true,

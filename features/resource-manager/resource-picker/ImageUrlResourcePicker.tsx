@@ -15,7 +15,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { useOpenImageUploaderWindow } from "@/features/overlays/openers/imageUploaderWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { parseYouTubeUrl } from "@/lib/media/youtube";
+import { normalizeUrl, validateImageUrl } from "./imageLink";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ImageUrlResourcePickerProps {
@@ -30,140 +30,6 @@ type ImageUrlData = {
   type: string; // MIME type
   isValid: boolean;
 };
-
-// Normalize a URL by prepending https:// if no protocol is present
-function normalizeUrl(url: string): string {
-  const trimmed = url.trim();
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-}
-
-// Detect URL type — tolerates bare domains (no protocol)
-function detectUrlType(url: string): "youtube" | "image" | "webpage" | "file" {
-  try {
-    const urlObj = new URL(normalizeUrl(url));
-
-    // ONE canonical YouTube detector — `lib/media/youtube.ts`.
-    if (parseYouTubeUrl(urlObj.toString())) {
-      return "youtube";
-    }
-
-    const imageExtensions = [
-      ".jpg",
-      ".jpeg",
-      ".png",
-      ".gif",
-      ".webp",
-      ".svg",
-      ".bmp",
-      ".ico",
-    ];
-    const pathname = urlObj.pathname.toLowerCase();
-    if (imageExtensions.some((ext) => pathname.endsWith(ext))) {
-      return "image";
-    }
-
-    const fileExtensions = [
-      ".pdf",
-      ".doc",
-      ".docx",
-      ".xls",
-      ".xlsx",
-      ".ppt",
-      ".pptx",
-      ".txt",
-      ".csv",
-      ".json",
-      ".xml",
-      ".zip",
-    ];
-    if (fileExtensions.some((ext) => pathname.endsWith(ext))) {
-      return "file";
-    }
-
-    return "webpage";
-  } catch {
-    return "webpage";
-  }
-}
-
-// Validate if URL is accessible and is an image
-async function validateImageUrl(
-  url: string,
-): Promise<{
-  isValid: boolean;
-  type?: string;
-  error?: string;
-  suggestedType?: "webpage" | "youtube" | "file_url";
-}> {
-  try {
-    const normalized = normalizeUrl(url);
-    const urlObj = new URL(normalized);
-
-    // Detect URL type
-    const detectedType = detectUrlType(normalized);
-
-    if (detectedType === "youtube") {
-      return {
-        isValid: false,
-        error: "This appears to be a YouTube URL",
-        suggestedType: "youtube",
-      };
-    }
-
-    if (detectedType === "file") {
-      return {
-        isValid: false,
-        error: "This appears to be a file URL",
-        suggestedType: "file_url",
-      };
-    }
-
-    if (detectedType === "webpage") {
-      return {
-        isValid: false,
-        error:
-          "This appears to be a webpage. Would you like to scrape it instead?",
-        suggestedType: "webpage",
-      };
-    }
-
-    // Check if URL ends with common image extensions
-    const imageExtensions = [
-      ".jpg",
-      ".jpeg",
-      ".png",
-      ".gif",
-      ".webp",
-      ".svg",
-      ".bmp",
-      ".ico",
-    ];
-    const pathname = urlObj.pathname.toLowerCase();
-    const hasImageExtension = imageExtensions.some((ext) =>
-      pathname.endsWith(ext),
-    );
-
-    if (!hasImageExtension) {
-      return {
-        isValid: false,
-        error:
-          "URL does not appear to be an image. Please ensure it ends with an image extension (.jpg, .png, etc.)",
-        suggestedType: "webpage",
-      };
-    }
-
-    // Attempt to determine MIME type from extension
-    let mimeType = "image/jpeg"; // default
-    if (pathname.endsWith(".png")) mimeType = "image/png";
-    else if (pathname.endsWith(".gif")) mimeType = "image/gif";
-    else if (pathname.endsWith(".webp")) mimeType = "image/webp";
-    else if (pathname.endsWith(".svg")) mimeType = "image/svg+xml";
-
-    return { isValid: true, type: mimeType };
-  } catch (error) {
-    return { isValid: false, error: "Invalid URL format" };
-  }
-}
 
 export function ImageUrlResourcePicker({
   onBack,
@@ -217,7 +83,7 @@ export function ImageUrlResourcePicker({
     setPreviewImage(null);
 
     if (!target.trim()) {
-      setError("Please enter an image URL");
+      setError("Paste an image link.");
       return;
     }
 
@@ -227,7 +93,7 @@ export function ImageUrlResourcePicker({
       const validation = await validateImageUrl(target);
 
       if (!validation.isValid) {
-        setError(validation.error || "Invalid image URL");
+        setError(validation.error || "That is not an image link.");
         setSuggestedType(validation.suggestedType || null);
         return;
       }
@@ -241,7 +107,7 @@ export function ImageUrlResourcePicker({
       setPreviewImage(imageData);
     } catch (err) {
       setError(
-        "Could not validate image URL. Please check the URL and try again.",
+        "That link could not be checked. Check it and try again.",
       );
     } finally {
       setIsValidating(false);
@@ -270,7 +136,7 @@ export function ImageUrlResourcePicker({
     <div className="flex flex-col max-h-[min(460px,70dvh)]">
       {/* Header */}
       <ResourcePickerSubViewHeader
-        title="Image URL"
+        title="Image link"
         onBack={onBack}
         icon={
           <ImageIcon className="h-3.5 w-3.5 shrink-0 text-sky-600 dark:text-sky-400" />
@@ -307,9 +173,7 @@ export function ImageUrlResourcePicker({
             </Button>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">
-              Paste a direct URL to an image file
-            </p>
+            <span />
             <button
               type="button"
               onClick={handleUploadInstead}
@@ -338,7 +202,7 @@ export function ImageUrlResourcePicker({
                 <Globe className="w-3.5 h-3.5 mr-1.5" />
                 Switch to{" "}
                 {suggestedType === "webpage"
-                  ? "Webpage"
+                  ? "Web page"
                   : suggestedType === "youtube"
                     ? "YouTube"
                     : "File URL"}
@@ -358,7 +222,7 @@ export function ImageUrlResourcePicker({
                 className="max-w-full max-h-full object-contain"
                 onError={() =>
                   setError(
-                    "Failed to load image. The URL may be incorrect or the image may not be accessible.",
+                    "That image did not load — the link may be wrong or private.",
                   )
                 }
               />
@@ -387,21 +251,6 @@ export function ImageUrlResourcePicker({
           </div>
         )}
 
-        {/* Help Text */}
-        {!previewImage && !error && (
-          <div className="p-2.5 border border-blue-500/20 bg-blue-500/10 rounded-lg">
-            <p className="text-xs text-blue-600 dark:text-blue-400">
-              <strong>Supported formats:</strong>
-            </p>
-            <ul className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-0.5 ml-3">
-              <li>• .jpg / .jpeg</li>
-              <li>• .png</li>
-              <li>• .gif</li>
-              <li>• .webp</li>
-              <li>• .svg</li>
-            </ul>
-          </div>
-        )}
       </div>
 
       {/* Footer with Add Button */}
@@ -409,7 +258,7 @@ export function ImageUrlResourcePicker({
         <div className="border-t border-border p-2">
           <Button onClick={handleSelect} className="w-full" size="sm">
             <ImageIcon className="w-4 h-4 mr-2" />
-            Add Image
+            Add image
           </Button>
         </div>
       )}

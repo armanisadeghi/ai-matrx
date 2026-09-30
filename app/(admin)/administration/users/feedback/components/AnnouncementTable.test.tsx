@@ -87,7 +87,11 @@ describe("AnnouncementTable read lifecycle", () => {
       searchPlaceholder: "Search announcements…",
       refresh: { label: "Refresh announcements" },
     });
-    expect(tableProps?.toolbar?.actions).toBeDefined();
+    expect(tableProps?.toolbar?.actions).toBeUndefined();
+    expect(tableProps?.copy).toMatchObject({
+      rowKind: "system-announcement",
+      listKind: "system-announcements",
+    });
   });
 
   it("keeps earlier rows and reports a failed refresh through the table read state", async () => {
@@ -113,5 +117,21 @@ describe("AnnouncementTable read lifecycle", () => {
         ["message", "message", "text"],
       ]),
     );
+  });
+
+  it("uses one canonical copy control for a selected view while retaining all-loaded export", async () => {
+    getAllAnnouncements.mockResolvedValueOnce({ success: true, data: [announcement] });
+
+    await act(async () => root.render(<AnnouncementTable />));
+    const copy = tableProps?.copy;
+    if (!copy || copy === true) throw new Error("The table copy configuration is missing");
+
+    expect(copy.humanRow(announcement)).toContain("Planned maintenance");
+    expect(copy.listHuman?.([announcement], [announcement])).toContain("Planned maintenance");
+    expect(copy.rowAttributes?.(announcement)).toMatchObject({
+      id: announcement.id,
+      type: "warning",
+    });
+    expect(copy.export?.([], [announcement]).items).toHaveLength(2);
   });
 });

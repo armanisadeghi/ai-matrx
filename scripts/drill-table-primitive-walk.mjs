@@ -27,6 +27,9 @@ const SHOTS =
   process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-29/drill-table-primitive";
 mkdirSync(SHOTS, { recursive: true });
 const TABLE = "46ae8d53-4068-4593-9439-fb2b656767f1";
+// GRID=merged forces the merged grid (`?grid=merged`); left out, the table opens as it is designated.
+const GRID = process.env.GRID ?? "";
+const withGrid = (query) => (GRID ? `${query}${query.includes("?") ? "&" : "?"}grid=${GRID}` : query);
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
     .split("\n")
@@ -50,6 +53,16 @@ const context = await browser.newContext({ viewport: { width: 1600, height: 1000
 const page = await context.newPage();
 let counting = false;
 let aggregates = [];
+// The drill doors' answers (status + first words), so a walk that draws nothing says why.
+out.doors = [];
+page.on("response", async (r) => {
+  if (!/\/rpc\//.test(r.url())) return;
+  let text = "";
+  try {
+    text = (await r.text()).slice(0, 240);
+  } catch {}
+  out.doors.push({ status: r.status(), door: r.url().replace(/^.*\/rpc\//, "").replace(/\?.*/, ""), text });
+});
 page.on("request", (r) => {
   if (r.url().includes("/rpc/record_aggregate")) {
     try {
@@ -101,6 +114,7 @@ async function open(query = "", opts = {}) {
 async function openOnce(query = "", { width = 1600, height = 1000, dark = false } = {}) {
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
+  query = withGrid(query);
   await page.goto(`${ORIGIN}/data-v2/${TABLE}${query}`, { waitUntil: "domcontentloaded", timeout: 300000 });
   // The walk cap parks an idle preview behind "Resume this preview", at the same address or at
   // /__dev-walk; a person presses Resume, and so does the walk.
@@ -157,6 +171,26 @@ try {
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`signed in as ${out.signed_in_as}, not the test seat`);
   counting = true;
   step("signed in", { as: out.signed_in_as });
+
+  if (PHASE === "probe") {
+    await open("?by=condition&show=count,sum_quantity");
+    await sleep(15000);
+    step("probe", {
+      drill_rows: await page.locator("[data-matrx-drill-level]").count(),
+      group_by: await page.locator("[data-matrx-table-group-by]").first().innerText().catch(() => null),
+      doors: out.doors.map((d) => `${d.status} ${d.door}`).slice(0, 60),
+      bundles: await page.evaluate(async () => {
+        const hits = [];
+        for (const src of [...document.querySelectorAll("script[src]")].map((x) => x.src)) {
+          try {
+            const t = await (await fetch(src)).text();
+            if (/records-ui|records_ui/.test(src) || t.includes("data-matrx-drill")) hits.push({ src: src.slice(-90), drill: t.includes("data-matrx-drill"), describe: t.includes("drill_describe"), grid: t.includes("useGridDrillQuestion") });
+          } catch {}
+        }
+        return hits.slice(0, 10);
+      }),
+    });
+  }
 
   if (PHASE === "before") {
     await open();

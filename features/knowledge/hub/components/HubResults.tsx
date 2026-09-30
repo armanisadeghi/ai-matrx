@@ -592,6 +592,8 @@ function TableLayout({
         // one button below, which can advance every section that still has a cursor.
         pageSize={0}
         // The row's own menu (Open, Keep, Archive, Tag, File to, Copy, Trash) in the Actions column.
+        // The Hub's menu supplies its own transcript-specific Copy and Copy for AI entries.
+        // It cannot yet host the table's Alchemy control, so enabling it would duplicate them.
         copy={false}
         rowActions={handlers.rowMenu ? (h) => handlers.rowMenu?.(h) : undefined}
       />

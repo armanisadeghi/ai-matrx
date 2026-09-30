@@ -175,7 +175,6 @@ export function CataloguedSourcesList({
                     getRowHref={(r) => sourceHref(r.id)}
                     onRowOpen={(r) => router.push(sourceHref(r.id))}
                     detail={{ enabled: false }}
-                    copy={false}
                     read={readOf({ loading, error }, { what: "this Library's Sources", onRetry: () => setNonce((n) => n + 1) })}
                     emptyState={{
                         title: "No Sources filed here yet",

@@ -396,6 +396,25 @@ if (STEP === "agent") {
   save();
 }
 
+if (STEP === "archive") {
+  // The test tables go the way a person archives a table: Settings → Archive this table → confirm.
+  for (const id of (process.env.TABLES ?? "").split(",").filter(Boolean)) {
+    await goto(`/data-v2/${id}?rail=settings`);
+    const found = await until("the archive button", async () => (await page.getByRole("button", { name: "Archive this table" }).count()) > 0, 120000);
+    if (!found.v) {
+      await shot(`archive-${id.slice(0, 8)}-missing`);
+      console.log(`archive ${id}: no Archive button`);
+      continue;
+    }
+    await page.getByRole("button", { name: "Archive this table" }).first().click();
+    await sleep(1500);
+    await page.getByRole("button", { name: "Archive this table" }).last().click();
+    const done = await until("archived", async () => /archived|in Trash|Trash/i.test(await page.locator("body").innerText()) && (await page.getByRole("button", { name: /Archiving/ }).count()) === 0, 120000);
+    await sleep(2000);
+    console.log(`archive ${id}:`, done.v ? "done" : "not confirmed", page.url());
+  }
+}
+
 if (STEP === "explore") {
   await goto(process.env.PATHNAME ?? "/notes");
   await sleep(8000);

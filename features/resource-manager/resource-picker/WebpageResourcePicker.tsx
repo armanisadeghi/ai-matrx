@@ -347,17 +347,13 @@ export function WebpageResourcePickerCore({
                     )}
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Paste a webpage URL to extract its text content
-                </p>
               </div>
 
               {/* A stage is never silent — the box just emptied, so say what
                   it took and what will happen to it. */}
               {stagedYouTube && (
                 <p className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-700 dark:text-emerald-400">
-                  Added the video. We read its transcript with timestamps, so
-                  every rule it suggests points back at the moment it came from.
+                  Video added — its transcript keeps the timestamps.
                 </p>
               )}
 
@@ -431,10 +427,6 @@ export function WebpageResourcePickerCore({
               {/* The paste lane the remedy opens. */}
               {pasteOpen && (
                 <div className="space-y-2 rounded border border-border bg-muted/40 p-2">
-                  <p className="text-xs text-muted-foreground">
-                    Paste the page&apos;s text here and we&apos;ll use that
-                    instead.
-                  </p>
                   <ProTextarea
                     value={pastedText}
                     onChange={(e) => setPastedText(e.target.value)}
@@ -483,32 +475,14 @@ export function WebpageResourcePickerCore({
                 </div>
               )}
 
-              {/* Help Text */}
-              {!isLoading && !hasError && !suggestedType && (
-                <div className="p-2.5 border border-blue-500/20 bg-blue-500/10 rounded-lg">
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">
-                    <strong>How it works:</strong>
-                  </p>
-                  <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-0.5 ml-3">
-                    <li>• Enter any webpage URL</li>
-                    <li>• We'll extract the text content</li>
-                    <li>• Preview and confirm before adding</li>
-                  </ul>
-                </div>
-              )}
             </div>
 
             {/* Loading state */}
             {isLoading && (
-              <div className="flex-1 flex flex-col items-center justify-center mt-8">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-500 mb-3" />
-                <p className="text-sm text-muted-foreground mb-1">
-                  Scraping webpage...
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  This may take a few seconds
-                </p>
-              </div>
+              <p className="flex items-center gap-2 px-1 py-2 text-sm text-muted-foreground" role="status">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Reading the page…
+              </p>
             )}
           </div>
         </div>
@@ -521,7 +495,7 @@ export function WebpageResourcePickerCore({
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span className="truncate">
-                {pageTitle || "Webpage Content Preview"}
+                {pageTitle || "Page preview"}
               </span>
             </DialogTitle>
           </DialogHeader>
@@ -541,12 +515,8 @@ export function WebpageResourcePickerCore({
 
               <div className="mt-8 text-center space-y-3">
                 <h3 className="text-lg font-semibold text-foreground">
-                  Scraping Webpage...
+                  Reading the page…
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  We're extracting the content from the webpage. This may take a
-                  few moments depending on the page size and complexity.
-                </p>
 
                 <div className="flex items-center justify-center gap-2 pt-4">
                   <div className="flex gap-1.5">
@@ -616,7 +586,7 @@ export function WebpageResourcePickerCore({
                   >
                     <div className="flex items-center justify-between px-6 py-2 bg-muted border-b border-border flex-shrink-0">
                       <span className="text-xs font-medium text-foreground">
-                        Content (editable — sent on confirm)
+                        Page text
                       </span>
                       <div className="flex items-center gap-2">
                         {editedContent !== data.textContent && (
@@ -656,7 +626,7 @@ export function WebpageResourcePickerCore({
                         if (charLimit > 0) setCharLimit(0);
                       }}
                       className="flex-1 px-6 py-4 bg-background text-xs text-foreground font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:focus:ring-blue-600 min-h-0"
-                      placeholder="Edit the scraped content here..."
+                      placeholder="Page text"
                     />
                   </TabsContent>
                 </Tabs>
@@ -739,7 +709,7 @@ export function WebpageResourcePickerCore({
                     disabled={!effectiveContent.trim()}
                     size="xs"
                   >
-                    Add Content
+                    Add page
                   </Button>
                 </div>
               </div>
@@ -761,7 +731,7 @@ export function WebpageResourcePicker({
     <div className="flex flex-col max-h-[min(460px,70dvh)]">
       {/* Header */}
       <ResourcePickerSubViewHeader
-        title="Webpage Content"
+        title="Web page"
         onBack={onBack}
         icon={
           <Globe className="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400" />

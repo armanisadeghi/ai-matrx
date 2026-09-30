@@ -98,7 +98,9 @@ describe("AskTable", () => {
     expect(tableProps.density).toBe("condensed");
     expect(tableProps.defaultSort).toBeUndefined();
     expect(tableProps.detail).toEqual({ enabled: false });
-    expect(tableProps.copy).toBe(false);
+    // The shared table's default copy integration gives this decision list
+    // selection and batch Alchemy copy without displacing its row actions.
+    expect(tableProps.copy).toBeUndefined();
     expect(tableProps.toolbar).toMatchObject({
       title: "Every question at once",
       search: true,

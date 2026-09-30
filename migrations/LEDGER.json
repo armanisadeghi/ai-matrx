@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-30T01:29:08.175Z",
+  "generated_at": "2026-09-30T01:40:08.863Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4214,6 +4214,12 @@
       "checksum": "1c0ced66c1dc1e3e577c0f0addc0ffc22c9be83bbe3d118729c20f46d361f418",
       "applied_at": "2026-09-29 21:49:10.033274+00"
     },
+    "migrations/campaign/scopesaccess_the_class_and_access_readers_read_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesaccess_the_class_and_access_readers_read_the_store.sql",
+      "checksum": "985413aa8b27aef5d3568c980a36ca70403a37f03dada9483dce6b7fae3a6075",
+      "applied_at": "2026-09-30 01:37:47.110873+00"
+    },
     "migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql": {
       "source": "matrx-frontend",
       "filename": "scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql",
@@ -4261,6 +4267,18 @@
       "filename": "scopesreadsrest_the_five_suggestion_views_are_built_beside_from_the_store.sql",
       "checksum": "86600b10727c126fcb634c02cff5d8cbbb45625ab94b3a8094a71a23a587d9a2",
       "applied_at": "2026-09-29 22:12:06.63095+00"
+    },
+    "migrations/campaign/scopesreadstree_the_scope_readers_switch.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesreadstree_the_scope_readers_switch.sql",
+      "checksum": "292a9e9e1bf4aeecfee66139e2f1026e039566b06393267e6dc5f9012fc4b4d9",
+      "applied_at": "2026-09-30 01:39:47.822798+00"
+    },
+    "migrations/campaign/scopesreadstree_the_scope_tree_and_values_read_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesreadstree_the_scope_tree_and_values_read_the_store.sql",
+      "checksum": "0d8b9e7acae054b82786c2a2761280e290d46fd2fa99084c85bb128873aab24e",
+      "applied_at": "2026-09-30 01:40:01.797892+00"
     },
     "migrations/campaign/scopesreadsweb_the_scope_screens_read_the_store_through_its_doors.sql": {
       "source": "matrx-frontend",

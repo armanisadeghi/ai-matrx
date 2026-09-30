@@ -1140,21 +1140,22 @@ export async function getAllAnnouncements(): Promise<{
       return { success: false, error: "User not authenticated" };
     }
 
-    const { data, error } = await supabase
-      .schema("users")
-      .from("system_announcements")
-      .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching all announcements:", error);
-      return { success: false, error: error.message };
-    }
+    const data = await readAllRows(
+      ({ from, to }) =>
+        supabase
+          .schema("users")
+          .from("system_announcements")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to),
+      { label: "users.system_announcements admin list", pageSize: 1000 },
+    );
 
     return {
       success: true,
-      data: mapSystemAnnouncementRows(data ?? []),
+      data: mapSystemAnnouncementRows(data),
     };
   } catch (error: unknown) {
     console.error("Error in getAllAnnouncements:", error);

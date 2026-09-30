@@ -183,10 +183,46 @@ export default function AnnouncementTable() {
                     getRowId={(announcement) => announcement.id}
                     onRowOpen={handleEdit}
                     viewTabs={false}
-                    copy={false}
+                    copy={{
+                        label: 'Announcement',
+                        listLabel: 'Announcements (this view)',
+                        location: LOCATION,
+                        rowKind: 'system-announcement',
+                        listKind: 'system-announcements',
+                        rowDescription: 'One system announcement row.',
+                        listDescription: 'The filtered announcements loaded by this page.',
+                        humanRow: announcementSummary,
+                        agentRow: (announcement) => announcement,
+                        rowAttributes: (announcement) => ({
+                            id: announcement.id,
+                            type: announcement.announcement_type,
+                            active: announcement.is_active,
+                        }),
+                        listHuman: (visible) => visible.map(announcementSummary).join('\n\n'),
+                        export: (_visible, all) => ({
+                            items: [
+                                jsonExportItem(() => all, 'JSON (all loaded announcements)'),
+                                csvExportItem(
+                                    () => all.map((announcement) => ({
+                                        id: announcement.id,
+                                        title: announcement.title,
+                                        message: announcement.message,
+                                        announcement_type: announcement.announcement_type,
+                                        is_active: announcement.is_active,
+                                        min_display_seconds: announcement.min_display_seconds,
+                                        created_at: announcement.created_at,
+                                        updated_at: announcement.updated_at,
+                                        created_by: announcement.created_by,
+                                        target_user_id: announcement.target_user_id,
+                                    })),
+                                    'CSV (all loaded announcements)',
+                                ),
+                            ],
+                        }),
+                    }}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
-                    coverage={{ answeredBy: 'client', noun: 'system announcement' }}
+                    coverage={{ answeredBy: 'client', noun: 'system announcement', total: announcements.length }}
                     isLoading={loading && !hasLoaded}
                     isFetching={loading && hasLoaded}
                     read={readOf(
@@ -203,30 +239,8 @@ export default function AnnouncementTable() {
                         search: true,
                         searchPlaceholder: 'Search announcements…',
                         refresh: { onRefresh: () => loadAnnouncements(), label: 'Refresh announcements' },
-                        actions: <CopyButtons
-                            size="icon"
-                            label="Announcements"
-                            human={() => announcements.map(announcementSummary).join('\n\n')}
-                            json={() => announcements}
-                            agent={() => ({
-                                kind: 'system-announcements',
-                                location: LOCATION,
-                                description: 'The system announcements loaded by this page.',
-                                data: announcements,
-                                attributes: { count: announcements.length },
-                            })}
-                            export={{
-                                items: [
-                                    jsonExportItem(() => announcements),
-                                    csvExportItem(
-                                        () => announcements as unknown as Array<Record<string, unknown>>,
-                                        'CSV',
-                                    ),
-                                ],
-                            }}
-                        />,
                     }}
-                    rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><CopyButtons size="xs" label={`Announcement "${announcement.title}"`} human={() => announcementSummary(announcement)} json={() => announcement} agent={() => ({ kind: 'system-announcement', location: LOCATION, description: 'One system announcement row.', data: announcement, summary: announcementSummary(announcement), attributes: { id: announcement.id, type: announcement.announcement_type, active: announcement.is_active } })} /><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Move announcement to Trash"><Trash2 className="w-4 h-4" /></Button></div>}
+                    rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Move announcement to Trash"><Trash2 className="w-4 h-4" /></Button></div>}
                 />
             </Card>
 
