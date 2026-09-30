@@ -4,6 +4,7 @@
  * own (30 rows) — ⋯ and right-click disagreed on the same note.
  * Break it names: ⋯ dispatching on itself (bubbling to the outer menu) → red.
  */
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { OpenOneMenuButton } from "../OpenOneMenuButton";
@@ -13,7 +14,7 @@ import type { ContentSource } from "../../../types";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 it("⋯ beside the content opens the content's own menu, not the outer one", () => {
-  const source = { type: "note", mode: "identity", noteId: "n-1", sourceId: "s-1" } as ContentSource;
+  const source = noteIdentityContentSource("11111111-1111-4111-8111-111111111111", "s-1") as ContentSource;
   const key = contentSourceKey(source);
   const host = document.createElement("div");
   document.body.appendChild(host);

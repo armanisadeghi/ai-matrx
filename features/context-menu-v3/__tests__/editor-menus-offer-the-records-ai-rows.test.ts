@@ -7,10 +7,11 @@
  * Apply that can't save) → "unsaveable" red; a host's own callback is replaced
  * → "host wins" red.
  */
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { editorTextAgentCallbacks } from "../utils/editor-text-agent";
 
 const request = jest.fn();
-const note = { type: "note", noteId: "n1" } as never;
+const note = noteIdentityContentSource("11111111-1111-4111-8111-111111111111") as never;
 const canEdit = { edit: async () => ({}) } as never;
 
 describe("editor menus and the record's AI rows", () => {
@@ -20,7 +21,7 @@ describe("editor menus and the record's AI rows", () => {
 
   it("unsaveable: raw, read-only or no edit adapter get none", () => {
     expect(editorTextAgentCallbacks(undefined, { type: "raw" } as never, canEdit, request)).toBeUndefined();
-    expect(editorTextAgentCallbacks(undefined, { type: "note", noteId: "n1", readOnly: true } as never, canEdit, request)).toBeUndefined();
+    expect(editorTextAgentCallbacks(undefined, { ...noteIdentityContentSource("11111111-1111-4111-8111-111111111111"), readOnly: true } as never, canEdit, request)).toBeUndefined();
     expect(editorTextAgentCallbacks(undefined, note, {} as never, request)).toBeUndefined();
     expect(editorTextAgentCallbacks(undefined, note, canEdit, undefined)).toBeUndefined();
   });

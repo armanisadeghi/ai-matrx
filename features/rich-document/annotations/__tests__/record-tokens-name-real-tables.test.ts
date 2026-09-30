@@ -6,6 +6,7 @@
  * working documents: they were sent as "document" (content.document) while their id lives in
  * workbench.working_documents ("working_document").
  */
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { annotationRecordOf } from "../record-of-source";
 
 describe("annotation record tokens name the table the id lives in", () => {
@@ -20,7 +21,7 @@ describe("annotation record tokens name the table the id lives in", () => {
   });
 
   it("a note is a note and a chat answer is a message", () => {
-    expect(annotationRecordOf({ type: "note", noteId: "n", mode: "readonly" } as never)?.token).toBe("note");
+    expect(annotationRecordOf({ ...noteIdentityContentSource("11111111-1111-4111-8111-111111111111"), mode: "readonly" } as never)?.token).toBe("note");
     expect(
       annotationRecordOf({ type: "chat-message", messageId: "m", conversationId: "c" } as never)?.token,
     ).toBe("message");
