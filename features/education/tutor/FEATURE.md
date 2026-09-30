@@ -188,6 +188,12 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-09-29** — The inventory timeout below is FIXED without touching access: the inventory read now
+  calls `files.my_rag_jobs('completed')` (migration `files_my_rag_jobs_asks_per_row.sql`), which asks the
+  table's own read policies row by row over only the caller's jobs instead of materialising every visible
+  file. Clone, admin@admin.com: 5.5–10.9 s → 0.11 s; proved row-for-row identical to the policies
+  (25 users × 381 rows, 0 mismatches). A real Send on the clone preview grounded in the learner's own
+  `cld_file` material. Also serves `ExamContentPipeline` (same function).
 - **2026-09-29** — Send is never silent. The per-turn material search (`prepareTutorTurn`, the surface's
   `beforeExecute`) used to show nothing for 10–25 s and its failure reached only the console. Now the
   shared pre-send window (`smartExecute` → `preSend` state → `PendingSendMessage` in
