@@ -262,6 +262,11 @@ export function SurfaceBoundAgentsList({
                   }}
                   className="min-w-0 flex-1 text-xs font-medium leading-none"
                 />
+                {a.organizationName ? (
+                  <span className="max-w-[40%] shrink-0 truncate text-[10px] text-muted-foreground">
+                    {a.organizationName}
+                  </span>
+                ) : null}
                 <button
                   type="button"
                   title={`Settings for ${a.name}`}

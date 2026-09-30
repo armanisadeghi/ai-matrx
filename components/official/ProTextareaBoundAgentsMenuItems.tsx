@@ -56,6 +56,11 @@ export function ProTextareaBoundAgentsMenuItems({
             >
               <AGENT_ICON className="h-4 w-4 shrink-0 text-indigo-500/80" />
               <span className="truncate">{agent.name}</span>
+              {agent.organizationName ? (
+                <span className="ml-auto shrink-0 truncate text-[10px] text-muted-foreground">
+                  {agent.organizationName}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>

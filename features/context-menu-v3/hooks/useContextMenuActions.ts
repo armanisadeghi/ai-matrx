@@ -1103,7 +1103,7 @@ export function useContextMenuActions(
           kind: "item",
           id: `sa:${section.key}:${agent.agentId}`,
           label: agent.name,
-          description: section.label,
+          description: agent.organizationName ? `${section.label} · ${agent.organizationName}` : section.label,
           icon: AGENT_ICON,
           onSelect: () => void handleBoundAgentExecute(agent),
         });

@@ -69,6 +69,7 @@ import {
 } from "@/features/surfaces/services/surface-registration-error";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   AGENT_SCOPES,
   type AgentScope,
@@ -218,14 +219,8 @@ function mapContextPolicyType(slot: ContextPolicy): SurfaceValue["valueType"] {
 export function AgentSurfacesPanel({ agent }: Props) {
   const dispatch = useAppDispatch();
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  const currentOrgId = useAppSelector((s) => {
-    const orgState = (
-      s as unknown as {
-        organizations?: { activeOrganizationId?: string | null };
-      }
-    ).organizations;
-    return orgState?.activeOrganizationId ?? null;
-  });
+  // org-filter: default-for-new pre-selects the organization a NEW binding is filed under; never narrows a list
+  const currentOrgId = useAppSelector(selectOrganizationId);
 
   // ── Redux-backed catalogue + bindings ─────────────────────────────────────
   const selectBindingsForAgent = useMemo(

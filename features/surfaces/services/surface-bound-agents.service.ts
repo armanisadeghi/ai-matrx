@@ -27,15 +27,20 @@ export interface SurfaceBoundAgentEntry {
    * those are not this surface's binds.
    */
   canDetach: boolean;
+  /**
+   * The organization the binding was made in, when it is an organization binding. A label only —
+   * organizations are never sections (law: active-org-is-never-a-list-filter, rule 3).
+   */
+  organizationName?: string;
 }
 
 export interface SurfaceBoundAgentSection {
   /**
    * Stable section id for UI layout:
-   * `public` | `mine` | `shared` | `org:<uuid>` — only `public` on the admin
+   * `public` | `mine` | `my-orgs` | `shared` — only `public` on the admin
    * seat, which lists the platform's agents alone.
    */
-  key: "public" | "mine" | "shared" | `org:${string}`;
+  key: "public" | "mine" | "shared" | "my-orgs";
   /** Display label: the public tab, the person's own section, an org name, or shared-with-me. */
   label: string;
   /** Stable sort key — lower renders first. */
@@ -377,10 +382,7 @@ function bucketBindingRows(
   const mine: SurfaceBoundAgentEntry[] = [];
   const system: SurfaceBoundAgentEntry[] = [];
   const shared: SurfaceBoundAgentEntry[] = [];
-  const byOrg = new Map<
-    string,
-    { label: string; agents: SurfaceBoundAgentEntry[] }
-  >();
+  const orgAgents: SurfaceBoundAgentEntry[] = [];
 
   for (const row of rows) {
     const agent = unwrapOne(row.agent);
@@ -411,12 +413,7 @@ function bucketBindingRows(
 
     const org = unwrapOne(row.organization);
     if (row.organization_id && org) {
-      const bucket = byOrg.get(row.organization_id) ?? {
-        label: org.name,
-        agents: [],
-      };
-      bucket.agents.push(entry);
-      byOrg.set(row.organization_id, bucket);
+      orgAgents.push({ ...entry, organizationName: org.name });
       continue;
     }
 
@@ -461,22 +458,15 @@ function bucketBindingRows(
     });
   }
 
-  const orgSections = [...byOrg.entries()]
-    .map(([orgId, bucket]) => ({
-      orgId,
-      label: bucket.label,
-      agents: dedupeAgents(bucket.agents),
-    }))
-    .filter((s) => s.agents.length > 0)
-    .sort((a, b) => a.label.localeCompare(b.label));
-
-  for (let i = 0; i < orgSections.length; i++) {
-    const org = orgSections[i]!;
+  // ONE "My Orgs" section for every organization's bindings — the organization is a label on the
+  // agent, never a section of its own.
+  const orgDeduped = dedupeAgents(orgAgents);
+  if (orgDeduped.length > 0) {
     sections.push({
-      key: `org:${org.orgId}`,
-      label: org.label,
-      sortOrder: 100 + i,
-      agents: org.agents,
+      key: "my-orgs",
+      label: "My Orgs",
+      sortOrder: 100,
+      agents: orgDeduped,
     });
   }
 

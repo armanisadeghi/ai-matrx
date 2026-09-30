@@ -24,6 +24,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   AGENT_SCOPES,
   type AgentScope,
@@ -114,14 +115,8 @@ export function SurfaceAgentBindPanel({
 }: SurfaceAgentBindPanelProps) {
   const dispatch = useAppDispatch();
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  const currentOrgId = useAppSelector((s) => {
-    const orgState = (
-      s as unknown as {
-        organizations?: { activeOrganizationId?: string | null };
-      }
-    ).organizations;
-    return orgState?.activeOrganizationId ?? null;
-  });
+  // org-filter: default-for-new pre-selects the organization a NEW binding is filed under; never narrows a list
+  const currentOrgId = useAppSelector(selectOrganizationId);
 
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [scope, setScope] = useState<AgentScope>(AGENT_SCOPES.USER);

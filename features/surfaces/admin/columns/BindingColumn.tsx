@@ -67,14 +67,6 @@ export function BindingColumn({ agent }: { agent: AgentDefinition }) {
     useSurfacesAdminSelection();
   const dispatch = useAppDispatch();
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  const currentOrgId = useAppSelector((s) => {
-    const orgState = (
-      s as unknown as {
-        organizations?: { activeOrganizationId?: string | null };
-      }
-    ).organizations;
-    return orgState?.activeOrganizationId ?? null;
-  });
 
   const selectBindings = useMemo(
     () => makeSelectBindingsForAgent(agent.id),
@@ -152,7 +144,7 @@ export function BindingColumn({ agent }: { agent: AgentDefinition }) {
       existing={existing}
       seedMappings={seedMappings}
       defaultUserId={currentUserId}
-      defaultOrgId={currentOrgId}
+      defaultOrgId={null} // admin seat: the organization is picked, never the admin's own active org
       onSaved={(id) => selectBinding(id)}
       onDeleted={() => selectBinding(null)}
       onCancel={() => (existing ? selectBinding(null) : selectSurface(null))}

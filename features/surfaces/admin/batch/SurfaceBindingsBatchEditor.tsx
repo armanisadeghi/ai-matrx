@@ -127,14 +127,6 @@ export function SurfaceBindingsBatchEditor({
 }) {
   const dispatch = useAppDispatch();
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  const currentOrgId = useAppSelector((s) => {
-    const orgState = (
-      s as unknown as {
-        organizations?: { activeOrganizationId?: string | null };
-      }
-    ).organizations;
-    return orgState?.activeOrganizationId ?? null;
-  });
 
   const selectBindings = useMemo(
     () => makeSelectBindingsForAgent(agent.id),
@@ -183,16 +175,10 @@ export function SurfaceBindingsBatchEditor({
   useEffect(() => {
     if (scope === AGENT_SCOPES.USER && !scopeId && currentUserId) {
       setScopeId(currentUserId);
-    } else if (
-      scope === AGENT_SCOPES.ORGANIZATION &&
-      !scopeId &&
-      currentOrgId
-    ) {
-      setScopeId(currentOrgId);
     } else if (scope === AGENT_SCOPES.GLOBAL) {
       setScopeId(undefined);
     }
-  }, [scope, scopeId, currentUserId, currentOrgId]);
+  }, [scope, scopeId, currentUserId]);
 
   const targets = useMemo(() => buildBindingTargets(agent), [agent]);
 
