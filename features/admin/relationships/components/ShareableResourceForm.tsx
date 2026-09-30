@@ -254,10 +254,8 @@ export function ShareableResourceForm({
         </div>
         <div className="flex items-center justify-between">
           <span className="flex flex-col">
+            {/* Can be tagged into scopes (context assignment). */}
             <span className="text-xs font-medium">Scopeable</span>
-            <span className="text-[10px] text-muted-foreground">
-              Can be tagged into scopes (context assignment).
-            </span>
           </span>
           <Switch
             checked={editor.isScopeable}

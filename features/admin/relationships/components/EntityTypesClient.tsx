@@ -864,7 +864,8 @@ export function EntityTypesClient({ entityTypes }: Props) {
           activeTarget?.is_active
             // Hard deletes not offered: tokens are FK targets.
             ? `Hidden from pickers and generated types; existing links stay. You can reactivate it anytime.`
-            : `The token returns to entity_types_list() and the generated TS vocabulary on the next pnpm gen:entity-types run.`
+            // Returns to entity_types_list() and the generated TS vocabulary on the next pnpm gen:entity-types run.
+            : `Shown in pickers and generated types again. You can deactivate it anytime.`
         }
         confirmLabel={activeTarget?.is_active ? "Deactivate" : "Reactivate"}
         variant={activeTarget?.is_active ? "destructive" : "default"}

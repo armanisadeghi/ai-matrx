@@ -265,7 +265,7 @@ export function RuleEditorForm({
         ))}
         {editor.containerSide === "source" ? (
           <p className="text-xs text-amber-600 dark:text-amber-500">
-            Stored big→little: every writer must match. Say why in notes.
+            Big→little: all writers must match; explain in notes
           </p>
         ) : null}
       </div>
