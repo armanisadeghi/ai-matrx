@@ -557,6 +557,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/automation/scheduling/cron-tester"),
           destination("/administration/automation/scheduling/scanner-health"),
           destination("/administration/automation/scheduling/templates"),
+          destination("/administration/automation/scheduling/dated-changes"),
         ],
       },
       {
