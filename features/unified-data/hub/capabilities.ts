@@ -70,7 +70,7 @@ export interface HubItem {
 export interface HubReadContext {
   client: RecordsClient;
   dataSource: RecordsDataSource;
-  organizationId: string;
+  organizationId: string | null;
   /** This organization's Tables, read once through `tableList()` and shared by every capability. */
   tables: readonly Table[];
   tableKernelId: string | null;
@@ -730,6 +730,7 @@ export async function attachChangedBy(
   const byOrganization = new Map<string, string[]>();
   for (const item of items) {
     const organization = item.organizationId ?? ctx.organizationId;
+    if (!organization) continue; // a row names its own organization; with neither there is nobody to ask
     const ids = byOrganization.get(organization) ?? [];
     ids.push(item.id);
     byOrganization.set(organization, ids);

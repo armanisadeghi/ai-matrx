@@ -85,15 +85,22 @@ export default function UnifiedDataPage() {
   );
   const namedOrganization =
     organizationFilter === ALL_ORGANIZATIONS ? undefined : myOrganizations.find((org) => org.id === organizationFilter);
-  const organizationId: string | null = namedOrganization ? namedOrganization.id : active.organizationId;
+  // ALL ORGS (the default) MOUNTS WITH NO ORGANIZATION AT ALL (Arman, 2026-09-25: access belongs to
+  // the person, not the header's selected organization). The home's doors answer for the person
+  // (`custom.data_home*`, NULL), so nothing here waits on, or is narrowed by, the selected
+  // organization; only the ONE organization the person chose in the on-page dropdown binds the mount.
+  const acrossAll = organizationFilter === ALL_ORGANIZATIONS;
+  const organizationId: string | null = namedOrganization ? namedOrganization.id : null;
   // HELD, never guessed: until the person's memberships and saved pick are read, which
   // organization the home shows is not known, and showing All Orgs for a moment would be a lie.
   const pickUnread = !addressPick && preferencesLoad === "loading";
   const organizationState: OrganizationState = namedOrganization
     ? "ready"
-    : (organizationFilter !== ALL_ORGANIZATIONS && myOrganizationsLoading) || pickUnread
+    : (!acrossAll && myOrganizationsLoading) || pickUnread
       ? "resolving"
-      : active.organizationState;
+      : acrossAll
+        ? "ready"
+        : active.organizationState;
   const organizationChoices = [...myOrganizations]
     .map((org) => ({ id: org.id, name: org.name }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -114,6 +121,9 @@ export default function UnifiedDataPage() {
     organizationState,
     storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
   });
+
+  /** ALL ORGS reads through the person's doors, not one organization's store switch (that switch is per organization). */
+  const storeOn = acrossAll || campaign.state === "on";
 
   /** The same membership port the table page binds — see its comment. */
   const members = useCallback(async () => {
@@ -159,7 +169,7 @@ export default function UnifiedDataPage() {
             down the page, then as a row of its own). Offered once the store can take one. */}
         <HeaderStructured
           back={goBack}
-          {...(organizationState === "ready" && campaign.state === "on"
+          {...(organizationState === "ready" && storeOn
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => setMakeAsked((n) => ({ ...n, create: n.create + 1 })) },
@@ -176,7 +186,7 @@ export default function UnifiedDataPage() {
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
         {organizationState !== "ready" ? (
           <OrganizationContextNotice state={organizationState} what="Data records" />
-        ) : campaign.state !== "on" ? (
+        ) : !storeOn ? (
           /* THE ONE NOTICE. Resolving, could-not-check and genuinely-off are
              three different things and this says which — a failed check is
              "could not check, try again", never a claim about the organization
@@ -188,12 +198,12 @@ export default function UnifiedDataPage() {
             config={{
               dataSource,
               actor: personActor(userId),
-              organizationId: organizationId!,
+              organizationId,
               // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
               // was naming exactly this seam. The port joins the private topic the database
               // broadcasts a NOTICE on and re-reads through the read door; `undefined` when
               // the store's switch is off, and the honest banner comes back.
-              realtime: createRecordsRealtimePort(organizationId!),
+              realtime: organizationId ? createRecordsRealtimePort(organizationId) : undefined,
             }}
             host={{
               Link,
@@ -214,7 +224,7 @@ export default function UnifiedDataPage() {
                 /data-v2's landing; there is deliberately no second route family
                 for it. Lane DATA-HUB, 2026-09-22. */}
             <OrganizationHub
-              organizationId={organizationId!}
+              organizationId={organizationId}
               dataSource={dataSource}
               organizationName={namedOrganization?.name ?? null}
               makeAsked={makeAsked}

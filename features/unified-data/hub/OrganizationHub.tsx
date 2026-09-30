@@ -89,7 +89,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
 export interface OrganizationHubProps {
-  organizationId: string;
+  /** The ONE organization the on-page dropdown chose; null = All Orgs (the person's own reach). */
+  organizationId: string | null;
   /**
    * THE SAME data seam the mount above is bound to, handed down rather than
    * built a second time — one client, one session, one set of headers. It is
@@ -251,6 +252,13 @@ export function OrganizationHub({
   useEffect(() => {
     let alive = true;
     setFacts({ phase: "reading" });
+    // ALL ORGS has no one organization to ask: every row of `custom.data_home` carries its own facts.
+    if (!organizationId) {
+      setFacts({ phase: "read", rows: new Map() });
+      return () => {
+        alive = false;
+      };
+    }
     void doors.tableFacts(dataSource, organizationId).then((answered) => {
       if (!alive) return;
       setFacts(
@@ -287,7 +295,7 @@ export function OrganizationHub({
   const memberVisibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
   // THE SENTENCE IS THE READER'S (UI-FIX-19): shared-only speaks to a member, never to the
   // owner or an admin, whose own lane still reaches every table.
-  const { role: myRole } = useUserRole(organizationId);
+  const { role: myRole } = useUserRole(organizationId ?? undefined);
   const sharedOnly = seesOnlyWhatIsShared(memberVisibility, myRole);
   const [states, setStates] = useState<Record<string, HubListingState>>({});
   const [open, setOpen] = useState<Record<string, boolean>>({ tables: true });
@@ -326,7 +334,8 @@ export function OrganizationHub({
       // read ten doors because a host forgot its gate would be the campaign's
       // code running for an organization that never turned the store on. `off`
       // and `could not check` are different sentences and both are said.
-      const gate = await UNIFIED_DATA_CAMPAIGN.check(organizationId);
+      // ALL ORGS has no one organization's switch to read; the person's own doors decide.
+      const gate = organizationId ? await UNIFIED_DATA_CAMPAIGN.check(organizationId) : ({ state: "on" } as const);
       if (!alive) return;
       if (gate.state !== "on") {
         const message =
