@@ -369,6 +369,7 @@ export function KnowledgeHubPage({
   const presetPending = Boolean(presetKey && presetDef && appliedPreset.current !== presetKey);
   // The active organization (the shell header's) is only where NEW things are saved (writes below);
   // no read narrows by it. The list's organization filter is `query.organizations` (?org_filter=).
+  // org-filter: write-target saved views, Keep and file-under are created in the organization the person is working in
   const activeOrgId = useAppSelector(selectOrganizationId);
   const effectiveQuery = presetPending && presetDef ? mergePresetQuery(presetDef.query, state.query) : state.query;
   // `library:*` (the Libraries preset) → every library this person can see.

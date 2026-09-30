@@ -191,11 +191,6 @@
       "owner": "google-workspace",
       "note": "org only part of a remount key"
     },
-    "features/knowledge/hub/components/KnowledgeHubPage.tsx": {
-      "class": "labelled-active-default",
-      "owner": "knowledge",
-      "note": "org narrows results only when the Search reach menu says Only <org>; default is every organization"
-    },
     "features/mandates/admin/ImpactBatchPanel.tsx": {
       "class": "admin-platform",
       "owner": "mandates",

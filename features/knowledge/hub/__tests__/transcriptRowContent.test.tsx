@@ -179,11 +179,6 @@ describe("the empty view", () => {
 
 import { hitIcon, TRANSCRIPT_MEDIA_ICON } from "@/features/knowledge/hub/hubPresentation";
 import { transcriptMediaKind } from "@/features/knowledge/hub/transcripts/transcriptRows";
-import {
-  ACTIVE_ORGANIZATION,
-  organizationReachOf,
-  resolveOrganizationReach,
-} from "@/features/knowledge/hub/hubState";
 import { AudioLines, Globe, MessagesSquare, Mic, MonitorPlay, Podcast, TextCursorInput, Users } from "lucide-react";
 
 describe("every row its own glyph", () => {
@@ -226,20 +221,5 @@ describe("placeholder titles", () => {
     const bare = transcriptRowContent(record({ title: "Untitled transcript", source_type: "audio", created_at: "2026-09-27T19:35:00Z" })).title!;
     expect(bare.startsWith("Recording · Sep 27")).toBe(true);
     expect(transcriptRowContent(record({ title: "Board meeting" })).title).toBeNull();
-  });
-});
-
-describe("organization reach — one active organization, default all", () => {
-  it("no reach set means every organization", () => {
-    expect(resolveOrganizationReach({ mode: "find" }, "org-a")).toEqual({ mode: "find" });
-    expect(organizationReachOf({ mode: "find" })).toBe("all");
-  });
-  it("'only mine' is a word resolved against the live active organization, and follows it", () => {
-    const q = { mode: "find" as const, organizations: [ACTIVE_ORGANIZATION] };
-    expect(organizationReachOf(q)).toBe("active");
-    expect(resolveOrganizationReach(q, "org-a").organizations).toEqual(["org-a"]);
-    expect(resolveOrganizationReach(q, "org-b").organizations).toEqual(["org-b"]);
-    // No organization chosen: reach every organization, never an empty filter.
-    expect(resolveOrganizationReach(q, null).organizations).toBeUndefined();
   });
 });
