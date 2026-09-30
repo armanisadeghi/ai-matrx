@@ -210,6 +210,29 @@ export const MESSAGE_EXAMPLES: MessageExample[] = [
         payload: { href: "/reports", label: "Open report" },
       },
       {
+        kind: "open_link",
+        title: "Open Review",
+        content: "The review is ready.",
+        payload: {
+          href: "/administration/users/agent-review",
+          label: "Open Review",
+        },
+      },
+      {
+        kind: "access_request",
+        title: "Resource action request",
+        content: "Alex requested deletion of the draft.",
+        payload: {
+          request_id: id,
+          resource_type: "note",
+          resource_id: id,
+          request_kind: "resource_action",
+          action_key: "delete",
+          href: "/notes",
+          entity_title: "Launch brief",
+        },
+      },
+      {
         kind: "task_reminder",
         title: "Task reminder",
         content: "Review the launch brief today.",

@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { DemoAttachment } from "./DemoAttachment";
 import { useState } from "react";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setMode } from "@/styles/themes/themeSlice";
 import {
   Avatar,
   MessageBubble,
@@ -28,8 +31,9 @@ export default function MessagesShowcase() {
   const host = useMessagingHost();
   const [category, setCategory] = useState("Everything");
   const [search, setSearch] = useState("");
-  const [header, setHeader] = useState("compact");
-  const [theme, setTheme] = useState("light");
+  const [header, setHeader] = useState("centered");
+  const theme = useThemeMode();
+  const dispatch = useAppDispatch();
   const [direction, setDirection] = useState("both");
   const [notice, setNotice] = useState(
     "Preview examples — actions do not change real records.",
@@ -104,7 +108,11 @@ export default function MessagesShowcase() {
                 <select
                   aria-label="Preview appearance"
                   value={theme}
-                  onChange={(event) => setTheme(event.target.value)}
+                  onChange={(event) =>
+                    dispatch(
+                      setMode(event.target.value === "dark" ? "dark" : "light"),
+                    )
+                  }
                 >
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>

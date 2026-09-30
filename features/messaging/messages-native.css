@@ -16,11 +16,11 @@
   --mx-msg-bg-subtle: #eceaeb;
   --mx-msg-bg-raised: #fafafa;
   --mx-msg-text: #171717;
-  --mx-msg-text-muted: #777777;
-  --mx-msg-text-faint: #858585;
-  --mx-msg-accent: #008cff;
+  --mx-msg-text-muted: #626267;
+  --mx-msg-text-faint: #626267;
+  --mx-msg-accent: #0068d9;
   --mx-msg-text-on-accent: #ffffff;
-  --mx-msg-bubble-mine-bg: #39b9f6;
+  --mx-msg-bubble-mine-bg: #0758c7;
   --mx-msg-bubble-mine-text: #ffffff;
   --mx-msg-bubble-theirs-bg: #e9e9eb;
   --mx-msg-bubble-theirs-text: #171717;
@@ -177,19 +177,6 @@
   line-height: 20px;
   box-shadow: none;
 }
-.messages-native .messages-call-row {
-  min-width: 0;
-  position: relative;
-}
-.messages-native .messages-call-row > .mx-msg__row {
-  padding-right: 34px;
-}
-.messages-native .messages-call-row > :last-child:not(.mx-msg__row) {
-  position: absolute;
-  right: 2px;
-  transform: scale(0.7);
-  transform-origin: right center;
-}
 @media (pointer: coarse), (max-width: 767px) {
   .messages-native {
     --mx-msg-touch-target: 44px;
@@ -204,12 +191,6 @@
   .messages-native .messages-composer textarea {
     font-size: 16px;
   }
-  .messages-native .messages-call-row > :last-child:not(.mx-msg__row) {
-    transform: none;
-  }
-  .messages-native .messages-call-row > .mx-msg__row {
-    padding-right: 48px;
-  }
 }
 
 .messages-native[data-theme="dark"],
@@ -220,7 +201,7 @@
   --mx-msg-bg-active: rgba(255, 255, 255, 0.12);
   --mx-msg-accent-hover: #329aff;
   --mx-msg-accent-subtle: rgba(0, 140, 255, 0.2);
-  --mx-msg-danger: #ff6b7d;
+  --mx-msg-danger: #ff7a8a;
   --mx-msg-success: #45c98a;
   --mx-msg-warning: #e2a33a;
   --mx-msg-focus-ring: rgba(66, 160, 255, 0.65);
@@ -234,23 +215,23 @@
   --mx-msg-text-faint: #a6a6ab;
   --mx-msg-bubble-theirs-bg: #3a3a3c;
   --mx-msg-bubble-theirs-text: #f5f5f7;
-  --mx-msg-bubble-mine-bg: #087ffe;
+  --mx-msg-bubble-mine-bg: #0758c7;
 }
 
 /* Native bubble tails belong to the message silhouette, not its renderer. */
 .messages-native .mx-msg__bubble--tail::after {
   content: "";
   position: absolute;
-  bottom: 0;
-  left: -4px;
-  width: 10px;
-  height: 12px;
+  bottom: -2px;
+  left: -5px;
+  width: 14px;
+  height: 18px;
   background: var(--mx-msg-bubble-theirs-bg);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%, 45% 65%);
+  clip-path: path("M 14 0 C 12 8 8 13 0 17 C 8 18 12 14 14 10 Z");
 }
 .messages-native .mx-msg__bubble--mine.mx-msg__bubble--tail::after {
   left: auto;
-  right: -4px;
+  right: -5px;
   transform: scaleX(-1);
   background: var(--mx-msg-bubble-mine-bg);
 }
@@ -466,8 +447,9 @@
   font-size: 11px;
 }
 .messages-native .mx-msg__favorite .mx-msg__avatar {
-  width: 72px;
-  height: 72px;
+  width: min(72px, 100%);
+  height: auto;
+  aspect-ratio: 1;
   font-size: 26px;
   box-shadow: 0 4px 12px #0001;
 }
@@ -486,7 +468,7 @@
   border-left: 3px solid currentColor;
   padding: 3px 8px;
   font-size: 11px;
-  opacity: 0.8;
+  opacity: 1;
 }
 .messages-native .mx-msg__group-body {
   max-width: 78%;
@@ -541,10 +523,10 @@
   display: none;
 }
 .messages-native .mx-msg__bubble--mine {
-  background: linear-gradient(180deg, #42bffc, #198cff);
+  background: linear-gradient(180deg, #0069df, #0758c7);
 }
 .messages-native .mx-msg__bubble--mine.mx-msg__bubble--tail::after {
-  background: #198cff;
+  background: var(--mx-msg-bubble-mine-bg);
 }
 
 .messages-header-person [data-slot="avatar-image"] {
@@ -617,4 +599,42 @@
 .messages-custom-data-picker__more {
   padding: 10px;
   font-size: 12px;
+}
+
+.messages-media-frame {
+  width: 320px;
+  max-width: 100%;
+}
+
+.messages-custom-data-picker__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.messages-native .mx-msg__bubble--tail {
+  border-bottom-left-radius: 15px;
+}
+.messages-native .mx-msg__bubble--mine.mx-msg__bubble--tail {
+  border-bottom-right-radius: 15px;
+}
+
+/* Rich controls own their paired foreground/background; message text keeps the bubble pair. */
+.messages-native .mx-msg__bubble--mine .mx-msg__markdown blockquote {
+  color: inherit;
+  border-left-color: currentColor;
+}
+.messages-native .mx-msg__bubble--pending {
+  opacity: 1;
+}
+.messages-native .mx-msg__bubble--failed {
+  background: var(--mx-msg-bg-subtle);
+  color: var(--mx-msg-text);
+}
+.messages-native .mx-msg__bubble--failed.mx-msg__bubble--tail::after {
+  background: var(--mx-msg-bg-subtle);
+}
+.messages-native .mx-msg__agent-tag {
+  color: var(--mx-msg-text);
 }

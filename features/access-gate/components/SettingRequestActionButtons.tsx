@@ -40,7 +40,7 @@ export function SettingRequestActionButtons({
 
   if (isOwn) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-primary-foreground/80">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-inherit">
         <Settings className="h-3 w-3" aria-hidden />
         Setting change requested
       </span>

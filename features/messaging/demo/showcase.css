@@ -84,7 +84,8 @@
   background: var(--mx-msg-bg-raised);
 }
 .showcase-settings a {
-  color: var(--mx-msg-accent);
+  color: var(--mx-msg-text);
+  text-decoration: underline;
 }
 .showcase-thread {
   display: flex;
