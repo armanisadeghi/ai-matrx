@@ -18,6 +18,7 @@ import {
   type RecurrenceSpec,
 } from "@/features/meet/lib/recurrence";
 import { utcToZoned, zonedToUtcIso } from "@/features/meet/lib/zoned-time";
+import { formatDurationMinutes } from "@ai-matrx/kit/format";
 
 export interface DraftInvitee {
   /** Stable React key: the invitee row id once saved, else the address/user. */
@@ -67,12 +68,9 @@ export const PLATFORM_DEFAULT_SETTINGS: DraftSettings = {
   recordingPolicy: "host-controlled",
 };
 
-/** "30 min", "1 hr", "1 hr 30 min". */
+/** "30 min", "1h", "1h 30m" — the package's coarse voice for a meeting length. */
 export function durationLabel(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours} hr` : `${hours} hr ${rest} min`;
+  return formatDurationMinutes(minutes, { style: "coarse" });
 }
 
 /** The next half hour from `now`, on the clock in `zone` — where a new meeting starts. */

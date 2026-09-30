@@ -36,6 +36,7 @@ import {
   type SentSecureDelivery,
 } from "./secureDeliveryService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatDurationMinutes } from "@ai-matrx/kit/format";
 
 interface SecureLinkPanelProps {
   resourceType: string;
@@ -160,7 +161,7 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
         <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
         <p className="text-xs text-muted-foreground">
           They get a link that opens once, and a code on a separate channel. No account needed.
-          {options ? ` The link works for ${Math.round(options.link_ttl_minutes / 60)} hours.` : ""}
+          {options ? ` The link works for ${formatDurationMinutes(options.link_ttl_minutes, { style: "long" })}.` : ""}
         </p>
       </div>
 

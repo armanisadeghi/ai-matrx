@@ -37,6 +37,7 @@ import type { Field, RuleExpression } from "@ai-matrx/records";
 import type { PublicForm } from "@/features/forms/service";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 
 /** Authored form text → the static inline level (phrasing, valid inside the package's <p>). */
@@ -411,14 +412,14 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
   );
 }
 
-/** "just now", "3 minutes ago", or the day — said the way a person says it. */
+const DAY_MS = 86_400_000;
+
+/** "3 minutes ago", "2 hours ago", or the day — said the way a person says it. */
 function whenSaid(at: string): string {
   const then = new Date(at).getTime();
   if (Number.isNaN(then)) return "earlier";
-  const minutes = Math.round((Date.now() - then) / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  return `on ${new Date(then).toLocaleDateString(undefined, { month: "long", day: "numeric" })}`;
+  if (Date.now() - then >= DAY_MS) {
+    return `on ${new Date(then).toLocaleDateString(undefined, { month: "long", day: "numeric" })}`;
+  }
+  return formatRelativeTime(then, { style: "long" });
 }

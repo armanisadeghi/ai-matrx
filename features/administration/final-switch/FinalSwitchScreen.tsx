@@ -43,6 +43,7 @@ import {
   checkTitle,
 } from "./finalSwitch";
 import lastRehearsal from "./last-rehearsal.json";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 type Rehearsal = {
   date: string;
@@ -518,7 +519,7 @@ export function FinalSwitchScreen() {
                           {typeof o.ms === "number" && (
                             <span className="text-muted-foreground">
                               {" "}
-                              ({(o.ms / 60000).toFixed(1)} min)
+                              ({formatDurationMs(o.ms, { style: "compact" })})
                             </span>
                           )}
                         </span>
@@ -785,7 +786,7 @@ export function FinalSwitchScreen() {
                 {typeof s.ms === "number" && (
                   <span className="text-muted-foreground">
                     {" "}
-                    ({(s.ms / 1000).toFixed(1)} s)
+                    ({formatDurationMs(s.ms, { style: "compact" })})
                   </span>
                 )}
               </li>

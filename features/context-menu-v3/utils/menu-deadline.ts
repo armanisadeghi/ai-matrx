@@ -8,11 +8,13 @@
 // and offers a retry. The fetch itself keeps running, so rows still arrive if
 // it lands later.
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 export const MENU_LIBRARY_DEADLINE_MS = 8_000;
 
 export class MenuLibraryTimeoutError extends Error {
   constructor(what: string, ms: number) {
-    super(`${what} took longer than ${Math.round(ms / 1000)}s`);
+    super(`${what} took longer than ${formatDurationMs(ms, { style: "compact" })}`);
     this.name = "MenuLibraryTimeoutError";
   }
 }

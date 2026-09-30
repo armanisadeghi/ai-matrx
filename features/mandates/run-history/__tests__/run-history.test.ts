@@ -133,11 +133,14 @@ describe("the words a row prints", () => {
     expect(costWords(null)).toBe("—");
     expect(durationWords(6214)).toBe("6.2s");
     expect(durationWords(850)).toBe("850ms");
+    expect(durationWords(11_000)).toBe("11s");
     expect(durationWords(125_000)).toBe("2m 05s");
     expect(durationWords(null)).toBe("—");
     const now = Date.parse("2026-09-27T10:25:23Z");
     expect(relativeWhen("2026-09-27T10:22:23Z", now)).toBe("3m ago");
     expect(relativeWhen("2026-09-27T07:25:23Z", now)).toBe("3h ago");
+    expect(relativeWhen("2026-09-27T10:25:03Z", now)).toBe("20s ago");
+    expect(relativeWhen("2026-09-17T10:25:23Z", now)).toMatch(/^Sep 17$/);
   });
 
   it("names the missing output keys on a warned run", () => {

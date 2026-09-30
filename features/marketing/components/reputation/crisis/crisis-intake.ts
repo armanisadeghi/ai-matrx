@@ -11,6 +11,7 @@ import {
 } from "@/features/marketing/monitor-setup/data";
 
 import type { CrisisIntake } from "@/features/marketing/pr/media-desk/api";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export const INCIDENT_TYPES = [
   ["data_security", "Data security"],
@@ -158,11 +159,11 @@ export function toWire(form: IntakeForm): CrisisIntake {
   };
 }
 
-/** "valid for 3h 58m" / "expired 12m ago — do not reuse this draft". */
+/** "valid for 3h 58m" / "expired 12 min ago — do not reuse this draft". */
 export function validity(validUntilIso: string, nowMs: number): { expired: boolean; text: string } {
   const diff = new Date(validUntilIso).getTime() - nowMs;
-  const mins = Math.round(Math.abs(diff) / 60000);
-  const span = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  // A countdown never over-promises and an expiry never understates: floor both ways.
+  const span = formatDurationMs(Math.abs(diff), { style: "coarse", round: "down" });
   return diff > 0
     ? { expired: false, text: `valid for ${span} more` }
     : { expired: true, text: `expired ${span} ago. The situation has likely moved. Do not reuse this draft.` };

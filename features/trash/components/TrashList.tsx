@@ -58,6 +58,7 @@ import {
 } from "@/features/trash/sources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** Rows per page — per kind in personal mode, per merged page in organization mode. */
 export const TRASH_PAGE = 50;
@@ -115,16 +116,6 @@ export interface TrashListProps {
   includeKind?: (kind: string) => boolean;
   /** Words that narrow the rows by title (a host's search box). */
   filterText?: string;
-}
-
-function whenDeleted(iso: string): string {
-  const then = new Date(iso).getTime();
-  const days = Math.floor((Date.now() - then) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
 }
 
 export function TrashList({
@@ -486,7 +477,7 @@ export function TrashList({
                   {item.label}
                 </span>
                 <span className="text-muted-foreground w-16 shrink-0 text-right text-xs tabular-nums">
-                  {whenDeleted(item.deleted_at)}
+                  {formatRelativeTime(item.deleted_at)}
                 </span>
                 {isMovedOlderTable(item) && !offersSwitchBack(item) ? (
                   // Not an owner or admin of that organization: say where it went, offer no door.

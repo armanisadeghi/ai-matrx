@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 /** A snapshot older than this is shown as stale — the numbers may no longer be true. */
 const STALE_SNAPSHOT_MS = 2 * 60 * 60 * 1000;
@@ -21,13 +22,7 @@ function snapshotAge(
   if (!iso) return null;
   const ms = now - new Date(iso).getTime();
   if (Number.isNaN(ms)) return null;
-  const minutes = Math.max(0, Math.round(ms / 60000));
-  const label =
-    minutes < 60
-      ? `${minutes} min old`
-      : minutes < 48 * 60
-        ? `${Math.round(minutes / 60)} h old`
-        : `${Math.round(minutes / 1440)} days old`;
+  const label = `${formatDurationMs(Math.max(0, ms), { style: "coarse" })} old`;
   return { label, stale: ms > STALE_SNAPSHOT_MS };
 }
 
