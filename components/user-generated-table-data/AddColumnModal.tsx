@@ -28,6 +28,8 @@ import { FormulaExpressionEditor } from '@/features/data-tables/components/Formu
 import { isServiceFailure } from '@/features/data-tables/types';
 import { columnNameProblem, columnNameToKeep } from '@/features/data-tables/column-name-taken';
 import { offListChoiceWords, readCellWord, takesOtherWords } from '@/features/data-tables/cell-word';
+import { defaultChoiceAsk, keptKey, withChoicesAdded } from '@/features/data-tables/default-choice-ask';
+import { ChoiceNudgeAsk } from '@/features/data-tables/components/ChoiceNudgeAsk';
 import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
 import {
   offerFormatWhereRelationIs,
@@ -74,6 +76,8 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
     format.id === 'modified_time' ||
     format.id === 'autonumber';
   const [defaultValue, setDefaultValue] = useState('');
+  // The words the person answered "Keep as typed" for, so the default's question is asked once (B3-14).
+  const [keptDefault, setKeptDefault] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,6 +124,18 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
       : defaultOffList.length > 0 && !takesOtherWords(defaultColumn)
         ? `“${defaultOffList.join(', ')}” is not one of the choices, so it cannot be the default. Pick one of the choices, or add it to them first.`
         : null;
+  // A default that is none of the choices, on a column that takes other values, is ASKED — the same
+  // question a cell asks (ChoiceNudgeAsk) — never taken in silence (BREAKER-3 B3-14).
+  const defaultAsk = defaultRead?.ok && !isComputedFormat && format.id !== 'relation'
+    ? defaultChoiceAsk(defaultRead.value, defaultColumn, keptDefault)
+    : null;
+  const answerDefaultAsk = (answer: 'add' | 'keep' | 'cancel') => {
+    if (!defaultAsk) return;
+    if (answer === 'add') setFormat(withChoicesAdded(format, defaultAsk));
+    else if (answer === 'keep') setKeptDefault(keptKey(defaultAsk));
+    else setDefaultValue('');
+    setError(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +150,10 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
     }
     if (defaultProblem && !isComputedFormat) {
       setError(defaultProblem);
+      return;
+    }
+    if (defaultAsk) {
+      setError(`Answer the question under Default Value first: add ${defaultAsk.map((w) => `“${w}”`).join(', ')} to the choices, keep it as typed, or clear it.`);
       return;
     }
 
@@ -326,6 +346,13 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
               }`}
             />
             {defaultProblem ? <p className="text-xs text-destructive" data-default-problem="">{defaultProblem}</p> : null}
+            {defaultAsk ? (
+              <ChoiceNudgeAsk
+                ask={{ words: defaultAsk, canKeep: true, canAdd: true, value: defaultRead?.ok ? defaultRead.value : null }}
+                columnName={columnNameToKeep(displayName) || 'this column'}
+                onAnswer={answerDefaultAsk}
+              />
+            ) : null}
           </div>
           </>
           )}

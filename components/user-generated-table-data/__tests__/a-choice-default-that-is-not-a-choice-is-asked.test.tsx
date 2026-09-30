@@ -41,6 +41,12 @@ jest.mock("@/lib/field-formats/FieldFormatPicker", () => ({
 import AddColumnModal from "../AddColumnModal";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+// jsdom has no ResizeObserver; the dialog's switch measures itself with one.
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;

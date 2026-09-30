@@ -76,6 +76,8 @@ import { isServiceFailure, type FieldDataType } from "@/features/data-tables/typ
 import { COLUMN_STORAGE_TYPES, storageTypesToChangeInto } from "@/features/data-tables/column-storage-types";
 import { columnNameProblem, columnNameToKeep } from "@/features/data-tables/column-name-taken";
 import { offListChoiceWords, readCellWord, takesOtherWords } from "@/features/data-tables/cell-word";
+import { defaultChoiceAsk, keptKey, withChoicesAdded } from "@/features/data-tables/default-choice-ask";
+import { ChoiceNudgeAsk } from "@/features/data-tables/components/ChoiceNudgeAsk";
 import { inlineChoices } from "@/lib/field-formats/choices";
 import {
   parseValidationRules,
@@ -156,6 +158,8 @@ function ColumnSettingsForm({
     return Array.isArray(held) ? held.map(word).join(", ") : typeof held === "object" ? JSON.stringify(held) : word(held);
   })();
   const [defaultWords, setDefaultWords] = useState(defaultShown);
+  // The words the person answered "Keep as typed" for (BREAKER-3 B3-14): the question is asked once.
+  const [keptDefault, setKeptDefault] = useState<string | null>(null);
   const [rules, setRules] = useState<ValidationRules>(parseValidationRules(field.validation_rules));
   const [asRowLabel, setAsRowLabel] = useState(isLabel);
   const [saving, setSaving] = useState(false);
@@ -222,6 +226,17 @@ function ColumnSettingsForm({
       : defaultOffList.length > 0 && !takesOtherWords(defaultColumn)
         ? `“${defaultOffList.join(", ")}” is not one of the choices, so it cannot be the default. Pick one of the choices, or add it to them first.`
         : null;
+  // A default that is none of the choices, on a column that takes other values, is ASKED with the
+  // cell's own question, never kept in silence (BREAKER-3 B3-14).
+  const defaultAsk = defaultRead?.ok && !computed && format?.id !== "relation"
+    ? defaultChoiceAsk(defaultRead.value, defaultColumn, keptDefault)
+    : null;
+  const answerDefaultAsk = (answer: "add" | "keep" | "cancel") => {
+    if (!defaultAsk) return;
+    if (answer === "add" && format) setFormat(withChoicesAdded(format, defaultAsk));
+    else if (answer === "keep") setKeptDefault(keptKey(defaultAsk));
+    else setDefaultWords("");
+  };
   const typeChanged = dataType !== field.data_type;
   const onTheRecordStore = isRecordStoreTable(tableId);
 
@@ -233,6 +248,18 @@ function ColumnSettingsForm({
     const nameProblem = trimmed === columnNameToKeep(original.display_name) ? null : columnNameProblem(name, otherColumns);
     if (nameProblem) {
       toast({ title: "That name cannot be used", description: nameProblem, variant: "destructive" });
+      return;
+    }
+    // THE DEFAULT IS JUDGED BEFORE ANYTHING IS WRITTEN, so a refused default never leaves the column
+    // half-saved (its type or look changed, its default not).
+    if (!computed && defaultWords.trim() !== defaultShown.trim() && (defaultProblem || defaultAsk)) {
+      toast({
+        title: "The default needs an answer",
+        description:
+          defaultProblem ??
+          `Add ${(defaultAsk ?? []).map((w) => `“${w}”`).join(", ")} to the choices, keep it as typed, or clear it — the question is under the default.`,
+        variant: "destructive",
+      });
       return;
     }
     setSaving(true);
@@ -277,7 +304,6 @@ function ColumnSettingsForm({
       const update: Record<string, unknown> = { id: original.id };
       if (required !== Boolean(original.is_required)) update.is_required = required;
       if (!computed && defaultWords.trim() !== defaultShown.trim()) {
-        if (defaultProblem) throw new Error(defaultProblem);
         update.default_value = defaultRead && defaultRead.ok ? defaultRead.value : null;
       }
       if (JSON.stringify(nextRules) !== JSON.stringify(priorRules)) update.validation_rules = nextRules;
@@ -474,6 +500,13 @@ function ColumnSettingsForm({
                 ) : null}
               </div>
               {defaultProblem ? <p className="text-xs text-destructive" data-default-problem="">{defaultProblem}</p> : null}
+              {defaultAsk && !readOnly ? (
+                <ChoiceNudgeAsk
+                  ask={{ words: defaultAsk, canKeep: true, canAdd: Boolean(format), value: defaultRead?.ok ? defaultRead.value : null }}
+                  columnName={columnNameToKeep(name) || field.display_name}
+                  onAnswer={answerDefaultAsk}
+                />
+              ) : null}
             </div>
           )}
 
