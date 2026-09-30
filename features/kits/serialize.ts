@@ -9,6 +9,7 @@
 //   the agent id   → {{agent:key}}       (source_agent_id stays the real id — the installer forks it)
 // Entity references to PLATFORM records ({token, id}) are kept as they are.
 
+import { variableLabel } from "./format";
 import type {
   KitAgent,
   KitBinding,
@@ -305,7 +306,7 @@ export function buildManifest(snapshot: Snapshot, meta: KitMeta): BuildResult {
   for (const { variable, binding } of mergeFieldBindings(snapshot.agent.variableDefinitions)) {
     const tableKey = tableKeyById[binding.table_id];
     if (!tableKey) {
-      notes.push(`{{${variable}}} reads a table that is not in this kit, so its connection is left out.`);
+      notes.push(`${variableLabel(variable)}: its table isn't in this kit — left unconnected.`);
       continue;
     }
     const { table_id: _t, record_id, ...rest } = binding;
@@ -313,7 +314,7 @@ export function buildManifest(snapshot: Snapshot, meta: KitMeta): BuildResult {
     if (record_id) {
       const at = recordIndex[record_id];
       if (!at) {
-        notes.push(`{{${variable}}} reads one row that is not included as example data, so its connection is left out.`);
+        notes.push(`${variableLabel(variable)}: its row isn't in the example data — left unconnected.`);
         continue;
       }
       kitBinding.record_index = at.record_index;
@@ -374,13 +375,13 @@ export function draftGuide(snapshot: Snapshot, agentName: string): KitGuideStep[
     const t = snapshot.tables.find((x) => x.id === binding.table_id);
     if (!t) continue;
     steps.push({
-      title: `The trick: {{${variable}}}`,
+      title: `The trick: ${variableLabel(variable)}`,
       body:
         binding.semantic_type === "collection"
-          ? `{{${variable}}} is connected to the whole ${t.name} table: every row becomes one line the agent reads, on every run.`
+          ? `${variableLabel(variable)} is connected to the whole ${t.name} table: every row becomes one line the agent reads, on every run.`
           : binding.semantic_type === "value"
-            ? `{{${variable}}} is connected to one value in ${t.name}. Change that cell and the next run uses it.`
-            : `{{${variable}}} is connected to one row of ${t.name}.`,
+            ? `${variableLabel(variable)} is connected to one value in ${t.name}. Change that cell and the next run uses it.`
+            : `${variableLabel(variable)} is connected to one row of ${t.name}.`,
     });
   }
   for (const w of snapshot.workflows) {

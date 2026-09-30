@@ -17,16 +17,17 @@ const HTML = /<\s*(!doctype|html|head|body)\b/i;
 export function plainError(raw: unknown): PlainError {
   const text = raw instanceof Error ? raw.message : typeof raw === "string" ? raw : String(raw);
   const trimmed = text.trim();
-  if (!trimmed) return { sentence: "Something went wrong, and it did not say what.", detail: null };
+  if (!trimmed) return { sentence: "Something went wrong.", detail: null };
   if (HTML.test(trimmed)) {
-    return { sentence: "The server answered with an error page instead of data. Try again in a moment.", detail: trimmed };
+    return { sentence: "Something went wrong on our side. Try again in a moment.", detail: trimmed };
   }
   if (TRANSPORT.test(trimmed)) {
-    return { sentence: "We couldn't reach the server. Check your connection and try again.", detail: trimmed };
+    return { sentence: "Couldn't connect. Check your connection and try again.", detail: trimmed };
   }
   if (/^HTTP \d{3}$/.test(trimmed) || /^\d{3}$/.test(trimmed)) {
-    return { sentence: "The server refused the request without saying why. Try again.", detail: trimmed };
+    return { sentence: "That didn't go through. Try again.", detail: trimmed };
   }
-  if (trimmed.length > 400) return { sentence: `${trimmed.slice(0, 280)}…`, detail: trimmed };
+  // An error state holds at most 140 characters; the whole text stays behind "Details".
+  if (trimmed.length > 140) return { sentence: `${trimmed.slice(0, 120).trimEnd()}…`, detail: trimmed };
   return { sentence: trimmed, detail: null };
 }

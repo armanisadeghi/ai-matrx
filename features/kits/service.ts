@@ -6,6 +6,7 @@
 // browser read the SAME function.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
 import { KIT_CATALOG } from "./constants";
 import type { KitEntry, KitManifest } from "./types";
@@ -105,18 +106,27 @@ function kitsFromRows(rows: KitRow[] | null): KitEntry[] {
  * kits are read with `fetchAccessibleKits`, never narrowed to the selected org.
  */
 export async function fetchKits(client: Client, organizationId: string): Promise<KitsRead> {
-  const { data, error } = await client
-    .from("catalog_entries")
-    .select("key, payload, sort_order, organization_id, created_by")
-    .eq("app", KIT_CATALOG.app)
-    .eq("kind", KIT_CATALOG.kind)
-    .eq("organization_id", organizationId)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: true })
-    .order("key", { ascending: true });
-  if (error) return { kits: [], error: error.message };
-  return { kits: kitsFromRows(data), error: null };
+  // A list treated as complete — read with readAllRows, never a capped bare select.
+  try {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        client
+          .from("catalog_entries")
+          .select("key, payload, sort_order, organization_id, created_by", { count: "exact" })
+          .eq("app", KIT_CATALOG.app)
+          .eq("kind", KIT_CATALOG.kind)
+          .eq("organization_id", organizationId)
+          .eq("is_active", true)
+          .is("deleted_at", null)
+          .order("sort_order", { ascending: true })
+          .order("key", { ascending: true })
+          .range(from, to),
+      { label: "catalog_entries (kits of one organization)" },
+    );
+    return { kits: kitsFromRows(rows), error: null };
+  } catch (err) {
+    return { kits: [], error: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 /**
@@ -128,19 +138,25 @@ export async function fetchAccessibleKits(
   client: Client,
   excludeOrganizationId: string | null,
 ): Promise<KitsRead> {
-  let q = client
-    .from("catalog_entries")
-    .select("key, payload, sort_order, organization_id, created_by")
-    .eq("app", KIT_CATALOG.app)
-    .eq("kind", KIT_CATALOG.kind)
-    .eq("is_active", true)
-    .is("deleted_at", null);
-  if (excludeOrganizationId) q = q.neq("organization_id", excludeOrganizationId);
-  const { data, error } = await q
-    .order("sort_order", { ascending: true })
-    .order("key", { ascending: true });
-  if (error) return { kits: [], error: error.message };
-  return { kits: kitsFromRows(data), error: null };
+  try {
+    const rows = await readAllRows(
+      ({ from, to }) => {
+        let q = client
+          .from("catalog_entries")
+          .select("key, payload, sort_order, organization_id, created_by", { count: "exact" })
+          .eq("app", KIT_CATALOG.app)
+          .eq("kind", KIT_CATALOG.kind)
+          .eq("is_active", true)
+          .is("deleted_at", null);
+        if (excludeOrganizationId) q = q.neq("organization_id", excludeOrganizationId);
+        return q.order("sort_order", { ascending: true }).order("key", { ascending: true }).range(from, to);
+      },
+      { label: "catalog_entries (kits a person can reach)" },
+    );
+    return { kits: kitsFromRows(rows), error: null };
+  } catch (err) {
+    return { kits: [], error: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 export async function fetchKit(

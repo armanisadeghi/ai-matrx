@@ -7,9 +7,9 @@
 import { Table2 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { KitTable } from "../types";
+import { count } from "../format";
 import { KitIcon } from "./KitIcon";
 
-const MAX_ROWS = 8;
 
 const TYPE_WORDS: Record<string, string> = {
   text: "Text",
@@ -52,12 +52,15 @@ export function TablePreview({
   table,
   kitKey,
   refNames,
+  previewRows,
 }: {
   table: KitTable;
   kitKey: string;
   refNames: Record<string, string>;
+  /** The `kits.preview_rows` knob; null while it loads. */
+  previewRows: number | null;
 }) {
-  const rows = table.records.slice(0, MAX_ROWS);
+  const rows = previewRows === null ? [] : table.records.slice(0, previewRows);
   const more = table.records.length - rows.length;
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -114,14 +117,19 @@ export function TablePreview({
           </table>
           {more > 0 && (
             <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-              and {more} more {more === 1 ? "row" : "rows"}
+              +{count(more, "more row")}
             </p>
           )}
         </div>
+      ) : table.records.length > 0 ? (
+        // The `kits.preview_rows` knob is still loading.
+        <p className="px-3 py-3 text-xs text-muted-foreground" aria-busy="true">
+          —
+        </p>
       ) : (
         <p className="flex items-center gap-1.5 px-3 py-3 text-xs text-muted-foreground">
           <Table2 className="h-3.5 w-3.5" />
-          Starts empty — you fill it in.
+          Starts empty
         </p>
       )}
     </div>

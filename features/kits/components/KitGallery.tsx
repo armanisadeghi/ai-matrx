@@ -15,6 +15,7 @@ import { KIT_WORD, KITS_CHANGED_EVENT, KITS_HERO } from "../constants";
 import type { KitEntry } from "../types";
 import { KitCard } from "./KitCard";
 import { ErrorNotice } from "./ErrorNotice";
+import { InfoHint } from "@/components/official/InfoHint";
 
 const ALL = "All";
 
@@ -82,10 +83,10 @@ export function KitGallery({
               <Package className="h-3 w-3" />
               {KIT_WORD.many}
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
+            <h1 className="mt-3 flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
               Start from something that already works
+              <InfoHint text={KITS_HERO} label={`What is a ${KIT_WORD.oneLower}?`} side="bottom" />
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{KITS_HERO}</p>
           </section>
 
           <section className="mt-8">
@@ -99,12 +100,12 @@ export function KitGallery({
               </Button>
             </div>
             {orgKits.error ? (
-              <ErrorNotice className="mt-3 max-w-xl" title={`Your organization's ${KIT_WORD.manyLower} could not be loaded.`} error={orgKits.error} onRetry={orgKits.retry} />
+              <ErrorNotice className="mt-3 max-w-xl" title={`Your ${KIT_WORD.manyLower} could not be loaded.`} error={orgKits.error} onRetry={orgKits.retry} />
             ) : orgKits.kits.length === 0 ? (
               <p className="mt-3 max-w-xl text-sm text-muted-foreground">
                 {orgKits.loading
-                  ? "Looking for kits your organization saved…"
-                  : `None yet. Connect an agent's variable to one of your tables, then save the setup as a ${KIT_WORD.oneLower} so everyone here can install it in one click.`}
+                  ? `Looking for saved ${KIT_WORD.manyLower}…`
+                  : `None yet — save an agent that reads your tables as a ${KIT_WORD.oneLower}.`}
               </p>
             ) : (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

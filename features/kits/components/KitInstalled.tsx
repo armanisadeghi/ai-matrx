@@ -4,6 +4,8 @@
 // canonical records grid, "What the agent sees" rendered by the server, a "Try it"
 // run of the forked agent streaming live, and the doors to every created thing.
 
+import { variableLabel } from "../format";
+import { InfoHint } from "@/components/official/InfoHint";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -132,15 +134,15 @@ function BindingPreviewCard({
   return (
     <div className="p-4">
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11.5px] font-medium text-foreground">{`{{${variable}}}`}</code>
+        <span className="rounded bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground">{variableLabel(variable)}</span>
         {/* The panel already names the agent; say what this one variable reads. */}
         <span className="text-muted-foreground">reads</span>
         <span className="font-medium text-foreground">
           {spec.binding.semantic_type === "value" && spec.binding.field_key
             ? (table?.fields.find((f) => f.key === spec.binding.field_key)?.label ?? spec.binding.field_key)
             : spec.binding.semantic_type === "reference"
-              ? `a whole row of ${table?.name ?? spec.binding.table_key}`
-              : (table?.name ?? spec.binding.table_key)}
+              ? `a whole row of ${table?.name ?? "—"}`
+              : (table?.name ?? "—")}
         </span>
         <button
           type="button"
@@ -156,7 +158,7 @@ function BindingPreviewCard({
         {answer === null ? (
           <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground" aria-busy="true">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Asking the server what the agent will read…
+            Loading what the agent reads…
           </div>
         ) : answer.state === "ok" ? (
           <>
@@ -257,7 +259,7 @@ function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
             )}
             {vars.map(([k, v]) => (
               <div key={k} className="rounded-lg bg-muted/40 p-2.5">
-                <code className="font-mono text-[10.5px] text-muted-foreground">{`{{${k}}}`}</code>
+                <span className="text-[10.5px] font-medium text-muted-foreground">{variableLabel(k)}</span>
                 <p className="mt-0.5 text-xs leading-relaxed text-foreground/85">{v}</p>
               </div>
             ))}
@@ -268,9 +270,7 @@ function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
             <Play className="mr-1.5 h-3.5 w-3.5" />
             Run it once
           </Button>
-          <p className="text-[11px] text-muted-foreground">
-            Opens a window and runs your copy once with the example above — it uses AI credits like any run, and you can keep talking to it there.
-          </p>
+          <p className="text-[11px] text-muted-foreground">Uses AI credits · opens in a chat window</p>
         </div>
       </div>
     </div>
@@ -454,7 +454,8 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                     <>
                       <p className="flex items-center gap-1.5 border-b border-border px-4 py-2 text-xs text-muted-foreground">
                         <Eye className="h-3.5 w-3.5" />
-                        What it sees — exactly the text your data turns into on each run. It updates as you edit the table.
+                        What it sees
+                        <InfoHint text="The exact text your table becomes on each run, updated as you edit it." />
                       </p>
                       <div className="divide-y divide-border">
                         {a.bindings.map((b) => (

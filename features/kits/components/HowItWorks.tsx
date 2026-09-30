@@ -6,31 +6,15 @@
 // whole row / whole table) each one reads. When one table feeds several agents, the
 // fan IS the lesson — edit one row, every agent follows.
 
-import { ArrowDown, Table2, Workflow } from "lucide-react";
+import { ArrowDown, ArrowRight, Table2, Workflow } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { count } from "../format";
+import { count, variableLabel } from "../format";
 import type { KitAgent, KitBinding, KitManifest } from "../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
-/** `{{model_selection_guidance}}`, breakable only at its underscores — never mid-word. */
+/** An agent input, as a person reads it ("Model selection guidance"), in a chip. */
 function VariableName({ name }: { name: string }) {
-  const parts = name.split("_");
-  return (
-    <code className="font-mono text-[12px] text-foreground">
-      {"{{"}
-      {parts.map((p, i) => (
-        <span key={i}>
-          {p}
-          {i < parts.length - 1 && (
-            <>
-              _<wbr />
-            </>
-          )}
-        </span>
-      ))}
-      {"}}"}
-    </code>
-  );
+  return <span className="rounded bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground">{variableLabel(name)}</span>;
 }
 
 export function describeBinding(b: KitBinding): string {
@@ -101,7 +85,7 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
                     </span>
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Your table</span>
                   </div>
-                  <p className="mt-2 text-sm font-medium text-foreground">{table?.name ?? tableKey}</p>
+                  <p className="mt-2 text-sm font-medium text-foreground">{table?.name ?? "—"}</p>
                   {table && (
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {count(table.records.length, "row")} · {count(table.fields.length, "column")}
@@ -117,7 +101,7 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
                   )}
                   {fan && (
                     <p className="mt-2 rounded-md bg-primary/8 px-2 py-1 text-[11px] font-medium text-primary">
-                      Feeds {count(branches.length, "agent")} — edit it once, every one follows
+                      Feeds {count(branches.length, "agent")} — edit once, all follow
                     </p>
                   )}
                 </div>
@@ -153,12 +137,16 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
                           </span>
                           <span className="min-w-0 truncate text-sm font-medium text-foreground">{b.agent.name}</span>
                         </div>
-                        <ul className="mt-2 space-y-1">
+                        {/* One row per input: the input → what it reads. A grid, so a long column
+                            name truncates in its own cell instead of wrapping under the chip. */}
+                        <ul className="mt-2 grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-x-1.5 gap-y-1">
                           {b.bindings.map((x, i) => (
-                            <li key={b.variables[i]} className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs">
+                            <li key={b.variables[i]} className="contents text-xs">
                               <VariableName name={b.variables[i]!} />
-                              <span className="text-muted-foreground">reads</span>
-                              <span className="font-medium text-foreground/90">{reads(x, labelOf)}</span>
+                              <ArrowRight className="h-3 w-3 text-muted-foreground" aria-label="reads" />
+                              <span className="truncate text-xs font-medium text-foreground/90" title={reads(x, labelOf)}>
+                                {reads(x, labelOf)}
+                              </span>
                             </li>
                           ))}
                         </ul>

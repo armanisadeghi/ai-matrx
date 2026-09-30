@@ -26,13 +26,11 @@ import {
   stepsFromInstall,
   type RemovalFacts,
 } from "../installer";
-import { KIT_WORD } from "../constants";
+import { kitKnob } from "../knobs";
 import type { InstallStepView, KitInstallRecord, KitManifest } from "../types";
 
 export type KitInstallPhase = "loading" | "ready" | "installing" | "removing";
 
-/** How often an attached tab re-reads somebody else's running install. */
-const ATTACHED_POLL_MS = 4000;
 
 function newRunId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -88,7 +86,7 @@ export function useKitInstall(manifest: KitManifest, targetOrganizationId?: stri
         setRunError(found?.status === "failed" && !busyElsewhere ? (found.error ?? null) : null);
         setAttached(
           busyElsewhere
-            ? `This ${KIT_WORD.oneLower} is being installed right now in another tab or by someone else in this organization. This page follows along.`
+            ? "Installing elsewhere — following along"
             : null,
         );
         setPhase((p) => (p === "installing" || p === "removing" ? p : "ready"));
@@ -104,10 +102,22 @@ export function useKitInstall(manifest: KitManifest, targetOrganizationId?: stri
   }, [organizationId, store.state, userId, manifest, runId, attempt]);
 
   // While attached to somebody else's run, re-read until it settles.
+  // The interval is the `kits.attached_poll_ms` knob.
   useEffect(() => {
     if (!attached) return;
-    const timer = setInterval(() => setAttempt((n) => n + 1), ATTACHED_POLL_MS);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
+    kitKnob("attached_poll_ms")
+      .then((ms) => {
+        if (!cancelled) timer = setInterval(() => setAttempt((n) => n + 1), ms);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setActionError(err instanceof Error ? err.message : String(err));
+      });
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
   }, [attached]);
 
   async function install_(): Promise<KitInstallRecord | null> {

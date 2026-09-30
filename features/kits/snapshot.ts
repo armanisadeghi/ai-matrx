@@ -8,7 +8,6 @@
 import type { RecordsClient } from "@ai-matrx/records/core";
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { KIT_SAVE } from "./constants";
 import {
   mergeFieldBindings,
   tablesToInclude,
@@ -104,7 +103,13 @@ export interface Detected {
 }
 
 /** Everything the save flow shows, read once when an agent is picked. */
-export async function detectSetup(client: RecordsClient, organizationId: string, agentId: string): Promise<Detected> {
+/** `seedRowCap` is the `kits.seed_row_cap` knob for this organization. */
+export async function detectSetup(
+  client: RecordsClient,
+  organizationId: string,
+  agentId: string,
+  seedRowCap: number,
+): Promise<Detected> {
   const agent = await readAgentFacts(agentId);
   const bindings = mergeFieldBindings(agent.variableDefinitions);
 
@@ -135,7 +140,7 @@ export async function detectSetup(client: RecordsClient, organizationId: string,
     const rows = await client.query({
       table_id: id,
       orderBy: { column: "created_at", ascending: true },
-      limit: KIT_SAVE.seedRowCap + 1,
+      limit: seedRowCap + 1,
     });
     if (!rows.ok) throw new Error(`The rows of "${String(doc.name ?? "a table")}" could not be read: ${rows.error.message}`);
     const clean = rows.data.rows.map((r) => {
@@ -150,8 +155,8 @@ export async function detectSetup(client: RecordsClient, organizationId: string,
         ? doc.description.replace(/\n\nInstalled by the ".*" kit \(install [0-9a-f-]+\)\.$/, "")
         : "",
       fields,
-      rows: clean.slice(0, KIT_SAVE.seedRowCap),
-      capped: clean.length > KIT_SAVE.seedRowCap,
+      rows: clean.slice(0, seedRowCap),
+      capped: clean.length > seedRowCap,
       reason: direct.has(id) ? "binding" : "related",
     });
   }
@@ -191,7 +196,7 @@ export async function detectSetup(client: RecordsClient, organizationId: string,
 /** Whether the organization's other members may fork this agent (agx_duplicate_agent needs viewer). */
 export function agentForkableByOrg(agent: AgentFacts, organizationId: string): { ok: boolean; why: string | null } {
   if (agent.organizationId !== organizationId) {
-    return { ok: false, why: "This agent lives in a different organization, so people here may not be able to copy it when they install the kit." };
+    return { ok: false, why: "This agent is in another organization, so people here may not be able to copy it." };
   }
   // "Shown to: Only me" only keeps it out of other people's lists — it never locks, so members of
   // its organization can still open and copy it.

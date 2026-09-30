@@ -112,18 +112,15 @@ export function InstallStepper({ steps }: { steps: InstallStepView[] }) {
   );
 }
 
-function consequence(manifest: KitManifest, orgName: string): string {
-  const parts: string[] = [];
+/** What an install adds, as one short line: "1 table (7 rows), 1 agent copy, 1 workflow". */
+function consequence(manifest: KitManifest): string {
   const rows = manifest.tables.reduce((n, t) => n + t.records.length, 0);
-  if (manifest.tables.length > 0) {
-    parts.push(
-      `${count(manifest.tables.length, "table")}${rows > 0 ? ` with ${count(rows, "example row")}` : ""}`,
-    );
-  }
-  if (manifest.agents.length > 0) parts.push(manifest.agents.length === 1 ? "a copy of 1 agent" : `copies of ${manifest.agents.length} agents`);
-  if (manifest.workflows.length > 0) parts.push(manifest.workflows.length === 1 ? "1 workflow" : `${manifest.workflows.length} workflows`);
-  const list = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0] ?? "nothing";
-  return `Creates ${list} in ${orgName}. Nothing you already have is changed.`;
+  const parts = [
+    manifest.tables.length > 0 && `${count(manifest.tables.length, "table")}${rows > 0 ? ` (${count(rows, "row")})` : ""}`,
+    manifest.agents.length > 0 && count(manifest.agents.length, "agent copy", "agent copies"),
+    manifest.workflows.length > 0 && count(manifest.workflows.length, "workflow"),
+  ].filter((x): x is string => typeof x === "string");
+  return `Adds ${parts.join(", ")}`;
 }
 
 export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: KitInstallApi }) {
@@ -145,34 +142,28 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
     try {
       facts = await api.removalFacts();
     } catch (err) {
-      toast.error(`Could not read what would be removed: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error("Could not check what would be removed", { description: err instanceof Error ? err.message : String(err) });
       return;
     }
     if (!facts) return;
-    const tableLines = facts.tables.map(
-      (t) =>
-        `the "${t.name}" table and every row in it (${t.rows === 1 ? "1 example row" : `${t.rows} example rows`} plus anything added since) — restorable from the table archive for ${
-          t.retentionDays ? `${t.retentionDays} days` : "as long as the table's own retention setting allows"
-        }`,
-    );
+    // ≤ 140 chars, two sentences: what is archived, then what stops and for how long.
+    // (Agents and workflows fall to the platform floor — never purged; tables keep their
+    // own retention_days.)
+    const rows = facts.tables.reduce((n, t) => n + t.rows, 0);
+    const days = facts.tables.map((t) => t.retentionDays).find((d): d is number => typeof d === "number");
     const what = [
-      ...tableLines,
-      facts.optionTables > 0 &&
-        `${facts.optionTables === 1 ? "the choice list" : `${facts.optionTables} choice lists`} the store made for ${facts.tables.length === 1 ? "that table's" : "those tables'"} choice columns`,
-      facts.agents > 0 &&
-        `${facts.agents === 1 ? "the agent copy" : `${facts.agents} agent copies`} — archived, so it is restorable from the Archived view of your agents list`,
-      facts.workflows > 0 &&
-        `${facts.workflows === 1 ? "the workflow" : `${facts.workflows} workflows`} — archived, so restorable from the Archived view of your workflows list`,
+      facts.tables.length > 0 && `${count(facts.tables.length, "table")} (${count(rows, "row")})`,
+      facts.optionTables > 0 && count(facts.optionTables, "choice list"),
+      facts.agents > 0 && count(facts.agents, "agent copy", "agent copies"),
+      facts.workflows > 0 && count(facts.workflows, "workflow"),
     ].filter((x): x is string => typeof x === "string");
-    const breaks = [
+    const stops =
       facts.conversations && facts.conversations > 0
-        ? `${facts.conversations} ${facts.conversations === 1 ? "conversation" : "conversations"} with the agent copy will no longer be able to continue.`
-        : null,
-      "Any workflow, agent or schedule you built on these tables or this agent stops working until they are restored.",
-    ].filter(Boolean);
+        ? `${count(facts.conversations, "conversation")} and anything built on them pause`
+        : "Anything built on them pauses";
     const ok = await confirm({
       title: `Remove what "${manifest.name}" created in ${orgName}?`,
-      description: `This archives exactly what this install made: ${what.join("; ")}. ${breaks.join(" ")} Nothing else you have is touched.`,
+      description: `Archives ${what.join(", ")}. ${stops} until restored${days ? ` (within ${days} days)` : ""}.`,
       confirmLabel: "Archive them",
       variant: "destructive",
     });
@@ -221,7 +212,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
                 <p className="text-sm text-foreground">Installed in {orgName}.</p>
               </div>
             ) : !install && !busy ? (
-              <p className="text-sm leading-relaxed text-muted-foreground">{consequence(manifest, orgName)}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{consequence(manifest)}</p>
             ) : null}
 
             {api.attached && (
@@ -233,7 +224,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
 
             {runError && !busy && (
               <ErrorNotice title="The install stopped." error={runError}>
-                Everything already created is listed below and kept. Finishing picks up where it stopped.
+                What was created is kept; Finish install resumes.
               </ErrorNotice>
             )}
 
@@ -289,7 +280,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
              target="_blank"
              rel="noopener noreferrer"
            >
-            The install record lives in your “{KIT_INSTALLS_TABLE.name}” table
+            {KIT_INSTALLS_TABLE.name}
             <ExternalLink className="h-3 w-3" />
           </Link>
         </div>

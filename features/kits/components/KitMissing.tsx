@@ -25,13 +25,13 @@ export function KitMissing({ kitKey, error, inactive }: { kitKey: string; error:
               {error
                 ? `This ${KIT_WORD.oneLower} could not be loaded.`
                 : inactive
-                  ? `This ${KIT_WORD.oneLower} is not available right now — it has been taken out of the gallery, so it cannot be installed.`
+                  ? `This ${KIT_WORD.oneLower} is no longer available.`
                   : `There is no published ${KIT_WORD.oneLower} called “${kitKey}”.`}
               <ErrorAlchemyMenu />
             </p>
             {inactive && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Anything you already installed from it keeps working and stays where it is.
+                Existing installs keep working.
               </p>
             )}
             {error && <ErrorNotice className="mt-3" title="What happened" error={error} onRetry={() => router.refresh()} />}

@@ -1,6 +1,6 @@
 "use client";
 
-import { count } from "../format";
+import { count, variableLabel } from "../format";
 
 // SaveKitDialog — "Save as kit": a person's own setup (an agent whose variables read
 // their tables, those tables, the workflows that use them) becomes a kit their
@@ -28,7 +28,8 @@ import { useOpenShareModal } from "@/features/overlays/openers/shareModal";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
-import { KIT_ROUTES, KIT_SAVE, KIT_WORD, KITS_CHANGED_EVENT } from "../constants";
+import { KIT_ROUTES, KIT_WORD, KITS_CHANGED_EVENT } from "../constants";
+import { useScopedKitKnobs } from "../knobs";
 import { kitRecordsClient } from "../installer";
 import { publishKit, updateKit } from "../publish";
 import { buildManifest, draftGuide, type Snapshot } from "../serialize";
@@ -85,6 +86,9 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
   // org-filter: write-target the organization the kit is published into; the agent's setup is read in the agent's own org
   const org = useOrganizationRequired();
   const organizationId = org.organizationState === "ready" ? org.organizationId : null;
+  // The `kits.seed_row_cap` knob for the organization the kit is saved into.
+  const knobs = useScopedKitKnobs(organizationId);
+  const seedRowCap = knobs.seedRowCap;
   const { organizations } = useUserOrganizations();
   const orgName = organizations.find((o) => o.id === organizationId)?.name ?? "your organization";
   const openShare = useOpenShareModal();
@@ -137,7 +141,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
 
   // Create mode: read the setup once an agent is picked.
   useEffect(() => {
-    if (editing || !agentId) return;
+    if (editing || !agentId || seedRowCap === null) return;
     let cancelled = false;
     setDetecting(true);
     setDetectError(null);
@@ -146,7 +150,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
     // the one the person is working in; the kit is then published into the working organization.
     readAgentFacts(agentId)
       .then((facts) =>
-        detectSetup(kitRecordsClient(facts.organizationId, userId), facts.organizationId, agentId),
+        detectSetup(kitRecordsClient(facts.organizationId, userId), facts.organizationId, agentId, seedRowCap),
       )
       .then((d) => {
         if (cancelled) return;
@@ -164,7 +168,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             d.bindings
               .map((b) => {
                 const t = d.tables.find((x) => x.id === b.binding.table_id);
-                return t ? `{{${b.variable}}} reads the ${t.name} table on every run — change a row, not the prompt.` : "";
+                return t ? `${variableLabel(b.variable)} reads ${t.name} on every run.` : "";
               })
               .filter(Boolean)
               .join("\n"),
@@ -185,7 +189,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
     return () => {
       cancelled = true;
     };
-  }, [editing, agentId, userId, attempt]);
+  }, [editing, agentId, userId, attempt, seedRowCap]);
 
   const build = () => {
     if (editing && editingManifest) {
@@ -276,8 +280,8 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
           <DialogTitle>{editing ? `Edit ${KIT_WORD.oneLower}` : `Save as ${KIT_WORD.oneLower}`}</DialogTitle>
           <DialogDescription>
             {editing
-              ? `Change how this ${KIT_WORD.oneLower} is described. Its tables, agent and workflows stay as they were saved.`
-              : `Turn an agent that reads your tables into a ${KIT_WORD.oneLower} anyone in ${orgName} can install in one click.`}
+              ? `Edit the name, description and walkthrough.`
+              : `Share an agent and the tables it reads with ${orgName}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -307,7 +311,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             <div className="flex flex-col items-start gap-3 rounded-xl border border-success/30 bg-success/5 p-4">
               <p className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <Check className="h-4 w-4 text-success" />
-                Saved. Everyone in {orgName} can now find it under {KIT_WORD.many}.
+                Saved to {orgName}&rsquo;s {KIT_WORD.manyLower}.
               </p>
               <div className="flex gap-2">
                 <Button asChild size="sm">
@@ -324,7 +328,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             </div>
           ) : step === "agent" ? (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Which agent does this {KIT_WORD.oneLower} share? It needs at least one variable connected to one of your tables.</p>
+              <p className="text-sm text-muted-foreground">Pick an agent that reads one of your tables.</p>
               <AgentListDropdown
                 activeAgentId={agentId ?? undefined}
                 onSelect={(id: string) => setAgentId(id)}
@@ -338,21 +342,20 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
               {detecting && (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Reading the agent, the tables it reads and the workflows that use it…
+                  Reading the agent and its tables…
                 </p>
+              )}
+              {knobs.missing.length > 0 && (
+                <ErrorNotice title="A kit setting is missing." error={`Missing feature knob: ${knobs.missing.join(", ")}`} />
               )}
               {detectError && <ErrorNotice title="The setup could not be read." error={detectError} onRetry={() => setAttempt((n) => n + 1)} />}
               {/* read-gate-exempt: `detected` is set only by a SUCCESSFUL setup read (cleared when a read starts); its failure renders ErrorNotice on the line above */}
               {detected && detected.bindings.length === 0 && (
                 <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
-                  <p>{detected.agent.name} has no variable connected to a table yet, so there is nothing to share as a {KIT_WORD.oneLower}.</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Connect a variable to one of your tables on the agent, or start from a{" "}
-                    <Link href={KIT_ROUTES.gallery} className="text-primary hover:underline" onClick={onClose}>
-                      {KIT_WORD.oneLower} that already does
-                    </Link>
-                    .
-                  </p>
+                  <p>{detected.agent.name} doesn&rsquo;t read any of your tables yet.</p>
+                  <Link href={KIT_ROUTES.gallery} className="mt-1 inline-block text-xs text-primary hover:underline" onClick={onClose}>
+                    Browse {KIT_WORD.manyLower} that do
+                  </Link>
                 </div>
               )}
               {detected && detected.bindings.length > 0 && (
@@ -360,7 +363,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                   {detected.bindings.map((b) => (
                     <li key={b.variable} className="flex items-center gap-1.5">
                       <Check className="h-3.5 w-3.5 text-success" />
-                      <code className="rounded bg-muted px-1 font-mono text-xs">{`{{${b.variable}}}`}</code>
+                      <span className="rounded bg-muted px-1 text-xs font-medium">{variableLabel(b.variable)}</span>
                       <span className="text-muted-foreground">reads</span>
                       <span>{detected.tables.find((t) => t.id === b.binding.table_id)?.name ?? "a table"}</span>
                     </li>
@@ -370,9 +373,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             </div>
           ) : step === "data" && detected ? (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                These tables come with the {KIT_WORD.oneLower}. Their rows are copied in as example data unless you turn it off (up to {KIT_SAVE.seedRowCap} rows each).
-              </p>
+              <p className="text-sm text-muted-foreground">Checked tables bring their rows as example data.</p>
               {detected.tables.map((t) => (
                 <label key={t.id} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3">
                   <Checkbox
@@ -387,10 +388,16 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                         {count(t.fields.length, "column")} · {t.capped ? `${t.rows.length}+ rows` : count(t.rows.length, "row")}
                       </span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {includeRows[t.id] ? "Include its rows as example data" : "Include the empty table only"}
-                      {t.reason === "related" ? " — added because another table points at it" : ""}
-                      {t.capped ? ` — only the first ${KIT_SAVE.seedRowCap} rows are included` : ""}
+                    <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                      {includeRows[t.id] ? "With example rows" : "Empty table"}
+                      {t.reason === "related" && (
+                        <span className="rounded bg-muted px-1.5 py-px text-[10px] font-medium">Linked</span>
+                      )}
+                      {t.capped && seedRowCap !== null && (
+                        <span className="rounded bg-warning/15 px-1.5 py-px text-[10px] font-medium text-warning">
+                          First {seedRowCap} rows
+                        </span>
+                      )}
                     </p>
                   </div>
                   <Link href={KIT_ROUTES.table(t.id)} target="_blank" className="shrink-0 text-xs text-primary hover:underline">
@@ -460,7 +467,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             </div>
           ) : step === "guide" ? (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">A short walkthrough people read after installing. Drafted from what was found — edit freely.</p>
+              <p className="text-sm text-muted-foreground">Shown after install. Drafted for you — edit freely.</p>
               {guide.map((g, i) => (
                 <div key={i} className="flex gap-2 rounded-lg border border-border bg-card p-2">
                   <span className="mt-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold text-background">{i + 1}</span>
@@ -482,10 +489,10 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             <div className="space-y-2">
               {/* read-gate-exempt: this step renders only once `detected` exists, which only a SUCCESSFUL setup read sets; a failed read never reaches it */}
               {detected.workflows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No workflow in {orgName} uses this agent or its tables, so the {KIT_WORD.oneLower} carries none.</p>
+                <p className="text-sm text-muted-foreground">No workflow uses this agent or its tables.</p>
               ) : (
                 <>
-                  <p className="text-sm text-muted-foreground">These workflows use the agent or its tables. Included ones are recreated on install, pointed at the new copies.</p>
+                  <p className="text-sm text-muted-foreground">Checked workflows are recreated on install.</p>
                   {detected.workflows.map((w) => (
                     <label key={w.id} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3">
                       <Checkbox
@@ -533,8 +540,8 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
               )}
               <p className="text-xs text-muted-foreground">
                 {editing
-                  ? "Saving replaces this kit's description and walkthrough. Installs already made are not changed."
-                  : `Saving publishes it to ${orgName}: every member can see it and install it into an organization they set. It copies your example rows into the ${KIT_WORD.oneLower} as they are now; your tables and agent are not changed. Only you can edit or unpublish it.`}
+                  ? "Existing installs are not changed."
+                  : `Everyone in ${orgName} can install it. Your tables and agent stay as they are.`}
               </p>
               {saveError && <ErrorNotice title="It was not saved." error={saveError} />}
             </div>

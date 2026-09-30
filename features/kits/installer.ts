@@ -27,6 +27,8 @@
 // record carries the version it last wrote (`expectedVersion`), so a second runner
 // that slipped past the lease loses its next write and stops.
 
+import { count } from "./format";
+import { kitKnob } from "./knobs";
 import {
   createRecordsClient,
   declareTable,
@@ -79,8 +81,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 // ─── the ledger: "Kit installs" ─────────────────────────────────────────────
 
-/** How long a runner's claim on an install lasts without a write renewing it. */
-const RUN_LEASE_MS = 3 * 60_000;
+/** How long a runner's claim lasts without a write renewing it — the `kits.run_lease_seconds` knob. */
+async function runLeaseMs(): Promise<number> {
+  return (await kitKnob("run_lease_seconds")) * 1000;
+}
 
 const LEDGER_FIELDS: NewFieldSpec[] = [
   { key: "kit_key", label: "Kit", type: "text", sort: 10 },
@@ -260,7 +264,7 @@ interface RecordWriter {
   save: (install: KitInstallRecord, extra?: Record<string, unknown>) => Promise<void>;
 }
 
-function versionedWriter(client: RecordsClient, runId: string, startVersion: number): RecordWriter {
+function versionedWriter(client: RecordsClient, runId: string, startVersion: number, leaseMs: number): RecordWriter {
   let version = startVersion;
   return {
     async save(install, extra = {}) {
@@ -272,13 +276,13 @@ function versionedWriter(client: RecordsClient, runId: string, startVersion: num
           steps: JSON.stringify(install.steps),
           error: install.error ?? "",
           run_id: runId,
-          run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
+          run_until: new Date(Date.now() + leaseMs).toISOString(),
           ...extra,
         },
       });
       if (!saved.ok) {
         throw new InstallBusyError(
-          `This ${KIT_WORD.oneLower} is being installed somewhere else at the same time (another tab or another person), so this run stopped to avoid doing the same work twice. ${saved.error.message}`,
+          `Installing elsewhere too — this run stopped. ${saved.error.message}`,
         );
       }
       version = saved.data;
@@ -303,7 +307,7 @@ export function planSteps(manifest: KitManifest): InstallStepView[] {
   for (const a of manifest.agents) {
     steps.push({ id: `agent:${a.key}`, label: `Copy the agent as "${a.name}"`, state: "pending" });
     if (a.bindings.length > 0) {
-      const vars = a.bindings.map((b) => `{{${b.variable}}}`).join(", ");
+      const vars = count(a.bindings.length, "input");
       steps.push({ id: `bind:${a.key}`, label: `Connect ${vars} to your data`, state: "pending" });
     }
   }
@@ -444,7 +448,7 @@ async function readAgentRow(agentId: string): Promise<AgentRow> {
     .eq("id", agentId)
     .maybeSingle();
   if (error) throw new InstallError(`The copied agent could not be read: ${error.message}`);
-  if (!data) throw new InstallError("The copied agent could not be found — it may have been deleted, or you may not read it.");
+  if (!data) throw new InstallError("The copied agent is missing or not readable.");
   return data as AgentRow;
 }
 
@@ -478,7 +482,7 @@ async function writeAgent(
     throw new InstallError(`Could not ${what}: the copied agent was not found, or you may not edit it.`);
   }
   if (result.status === "conflict") {
-    throw new InstallError(`Could not ${what}: the agent changed while the kit was writing to it. Finish the install to try again.`);
+    throw new InstallError(`Could not ${what}: the agent changed meanwhile. Finish install to retry.`);
   }
 }
 
@@ -532,6 +536,7 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
   try {
     // 0 — THE INSTALL RECORD, FIRST, CLAIMED.
     start("ledger");
+    const leaseMs = await runLeaseMs();
     const ledger = await ensureLedger(client);
     let row = await readLedgerRow(client, organizationId, manifest.key);
     if (!row) {
@@ -548,14 +553,14 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
             steps: "{}",
             error: "",
             run_id: runId,
-            run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
+            run_until: new Date(Date.now() + leaseMs).toISOString(),
           },
         ],
       });
       if (!written.ok) {
         if (written.error.code === "already_exists" || written.error.sqlstate === "23505") {
           throw new InstallBusyError(
-            `This ${KIT_WORD.oneLower} is already being installed in this organization (another tab or another person started it a moment ago). Showing that install.`,
+            "Installing elsewhere — following along",
           );
         }
         throw refusal("Could not write the install record", written.error.message, written.error.hint);
@@ -566,7 +571,7 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
       }
     } else if (row.runId && row.runId !== runId && (row.runUntil ?? 0) > Date.now()) {
       throw new InstallBusyError(
-        `This ${KIT_WORD.oneLower} is already being installed in this organization (another tab or another person is running it). Showing that install.`,
+        "Installing elsewhere — following along",
       );
     }
     install = { ...row.install, status: "installing", error: null };
@@ -577,11 +582,11 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         status: "installing",
         error: "",
         run_id: runId,
-        run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
+        run_until: new Date(Date.now() + leaseMs).toISOString(),
       },
     });
     if (!claimed.ok) throw refusal("Could not claim the install record", claimed.error.message, claimed.error.hint);
-    writer = versionedWriter(client, runId, claimed.data);
+    writer = versionedWriter(client, runId, claimed.data, leaseMs);
     await record(); // proves the claim is ours before anything is created
     view = stepsFromInstall(manifest, install).map((s) => (s.id === "finish" ? { ...s, state: "pending" as const } : s));
     done("ledger");
@@ -702,7 +707,7 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
             const idx = defs.findIndex((d) => isRecord(d) && d.name === b.variable);
             if (idx < 0) {
               throw new InstallError(
-                `The copied agent has no variable named {{${b.variable}}}, so it cannot be connected. The kit expects the source agent to declare it.`,
+                `The copied agent has no "${b.variable.replace(/_/g, " ")}" input to connect.`,
               );
             }
             const def = defs[idx] as Record<string, unknown>;
@@ -772,16 +777,15 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
 }
 
 /** Archive one table in passes; answers the problem, or null when it is done. */
-async function archiveTable(client: RecordsClient, tableId: string): Promise<string | null> {
+async function archiveTable(client: RecordsClient, tableId: string, maxPasses: number): Promise<string | null> {
   const archived = await client.tableArchived({ table_id: tableId });
   if (archived.ok && archived.data) return null; // already in the archive
-  const MAX_PASSES = 200;
-  for (let pass = 0; pass < MAX_PASSES; pass++) {
+  for (let pass = 0; pass < maxPasses; pass++) {
     const r = await client.tableArchive({ table_id: tableId });
     if (!r.ok) return r.error.message;
     if (r.data.done) return null;
   }
-  return `only partly archived after ${MAX_PASSES} passes — remove it again to continue where it stopped`;
+  return `partly archived — remove again to continue`;
 }
 
 // ─── removal: exactly the recorded ids, and only if they are still this install's ─
@@ -846,6 +850,7 @@ export async function removeInstall(
 ): Promise<void> {
   // The record is written at the end with columns an older ledger may not have yet.
   await ensureLedger(client);
+  const maxPasses = await kitKnob("archive_max_passes");
   const problems: string[] = [];
   const tag = `kit-install:${install.id}`;
 
@@ -896,7 +901,7 @@ export async function removeInstall(
         // The main table went first last time; its recorded choice lists still go.
         const key = Object.entries(install.steps.tables ?? {}).find(([, v]) => v === id)?.[0];
         for (const optionId of key ? (install.steps.optionTables?.[key] ?? []) : []) {
-          const p = await archiveTable(client, optionId);
+          const p = await archiveTable(client, optionId, maxPasses);
           if (p) problems.push(`the choice list ${optionId} of table ${id}: ${p}`);
         }
         continue;
@@ -912,10 +917,10 @@ export async function removeInstall(
     const tableKey = Object.entries(install.steps.tables ?? {}).find(([, v]) => v === id)?.[0];
     const options = new Set([...(tableKey ? (install.steps.optionTables?.[tableKey] ?? []) : []), ...(await optionTablesOf(client, id))]);
     for (const optionId of options) {
-      const p = await archiveTable(client, optionId);
+      const p = await archiveTable(client, optionId, maxPasses);
       if (p) problems.push(`the choice list ${optionId} of table ${id}: ${p}`);
     }
-    const p = await archiveTable(client, id);
+    const p = await archiveTable(client, id, maxPasses);
     if (p) problems.push(`table ${id}: ${p}`);
   }
 

@@ -4,6 +4,8 @@
 // (drawn), every table with its example rows, the agent it forks and which of its
 // variables get connected, the workflow, the guide — and the install rail.
 
+import { variableLabel } from "../format";
+import { useScopedKitKnobs } from "../knobs";
 import Link from "next/link";
 import { Lightbulb, Link2, ListOrdered, Table2, Workflow } from "lucide-react";
 import type { ReactNode } from "react";
@@ -100,9 +102,9 @@ export function KitAgentsSection({ manifest, sourceAgents }: { manifest: KitMani
                   const table = manifest.tables.find((t) => t.key === b.binding.table_key);
                   return (
                     <div key={b.variable} className="flex flex-wrap items-center gap-1.5 text-xs">
-                      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11.5px] text-foreground">{`{{${b.variable}}}`}</code>
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground">{variableLabel(b.variable)}</span>
                       <Link2 className="h-3 w-3 text-muted-foreground" />
-                      <span className="font-medium text-foreground">{table?.name ?? b.binding.table_key}</span>
+                      <span className="font-medium text-foreground">{table?.name ?? "—"}</span>
                       <span className="text-muted-foreground">· {describeBinding(b.binding).toLowerCase()}</span>
                     </div>
                   );
@@ -128,6 +130,7 @@ export function KitDetail({
   const m = kit.manifest;
   // The organization filter (?org_filter=) names where a new install goes; none = the active organization.
   const api = useKitInstall(m, useOrgFilterParam()[0]);
+  const kitKnobs = useScopedKitKnobs(api.organizationId);
   const installed = api.install?.status === "installed";
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
@@ -145,7 +148,7 @@ export function KitDetail({
             void (async () => {
               const ok = await confirm({
                 title: `Unpublish "${m.name}"?`,
-                description: `It leaves the ${KIT_WORD.manyLower} gallery for everyone in your organization, so nobody can install it from now on. Installs already made keep working and are not changed. The saved ${KIT_WORD.oneLower} is kept, not deleted.`,
+                description: `No one can install it from the gallery anymore. Existing installs keep working.`,
                 confirmLabel: "Unpublish",
                 variant: "destructive",
               });
@@ -217,7 +220,7 @@ export function KitDetail({
               <Section icon={<Table2 className="h-3.5 w-3.5" />} title={m.tables.length === 1 ? "The table" : "The tables"}>
                 <div className="space-y-3">
                   {m.tables.map((t) => (
-                    <TablePreview key={t.key} table={t} kitKey={kit.key} refNames={refNames} />
+                    <TablePreview key={t.key} table={t} kitKey={kit.key} refNames={refNames} previewRows={kitKnobs.previewRows} />
                   ))}
                 </div>
               </Section>

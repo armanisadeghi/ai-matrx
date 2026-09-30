@@ -10,9 +10,8 @@ export const KIT_WORD = {
   manyLower: "kits",
 } as const;
 
-/** The one sentence a non-technical expert reads first. */
-export const KITS_HERO =
-  "A kit sets up a working example in one click: tables holding your information, an agent that reads them, and a workflow — so you can see how it fits together and make it yours.";
+/** What a kit is, in the tooltip slot beside the gallery title (≤ 140 chars). */
+export const KITS_HERO = "Tables, an agent that reads them and a workflow — installed together in one click, ready to make yours.";
 
 /** Where a kit lives in the catalog (`public.catalog_entries`). */
 export const KIT_CATALOG = { app: "matrx", kind: "kit" } as const;
@@ -37,14 +36,6 @@ export const KIT_ROUTES = {
 /** The server door that renders a binding exactly as the agent will see it (PLAN.md § P1). */
 export const BINDING_PREVIEW_PATH = "/agents/variable-bindings/preview";
 
-/**
- * "Save as kit" limits. A knob-ready constant until the feature-knob row exists:
- * the most example rows a saved kit carries per table (the rest are left out and
- * the flow says so).
- */
-export const KIT_SAVE = {
-  seedRowCap: 200,
-} as const;
 
 /** Fired on `window` after a kit is saved, edited or unpublished, so open galleries re-read. */
 export const KITS_CHANGED_EVENT = "matrx:kits-changed";
