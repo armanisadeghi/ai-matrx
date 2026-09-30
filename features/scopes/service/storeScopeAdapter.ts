@@ -399,8 +399,9 @@ export function contextValueFromStore(row: StoreValueRow): ContextItemValue & { 
           // A File column holds File RECORD ids; the old fence named the FILE ({"file_id": …}), which is
           // what every file chip opens. The door answers each record's file (`files`); a record whose
           // file it does not name keeps its record id, so the chip is never silently re-pointed.
-          if (r.type === "file" && files[r.id]) {
-            const fileItem: { file_id: string; label?: string } = { file_id: files[r.id]! };
+          const fileId = r.type === "file" ? files[r.id] : undefined;
+          if (fileId) {
+            const fileItem: { file_id: string; label?: string } = { file_id: fileId };
             if (labels[r.id]) fileItem.label = labels[r.id];
             return fileItem;
           }

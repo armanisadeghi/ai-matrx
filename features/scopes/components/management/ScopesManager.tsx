@@ -35,9 +35,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   makeSelectScopeTypesForOrg,
   selectTreeError,
+  selectTreeStatus,
 } from "@/features/scopes/redux/selectors/tree";
+import { ReadGate, readStatusOf } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { updateScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
@@ -74,6 +75,12 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
     selectScopeTypesForOrg(s, organization.id),
   );
   const treeError = useAppSelector(selectTreeError);
+  // "No scope types yet" (the onboarding) is an answer only after the tree LOADED (lane
+  // SCOPES-READ-SWITCH-VALIDATE, 2026-09-30): while it loads, the firm's owner was shown "Scopes · 0 types ·
+  // 0 scopes" and "What does your organization revolve around?" for her own seven types.
+  const treeStatus = useAppSelector(selectTreeStatus);
+  const treeRead = readStatusOf({ status: treeStatus, error: treeError });
+  const countsTrusted = treeRead === "ready" || (treeRead === "loading" && scopeTypes.length > 0);
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const addressSearch = useSearchParams();
@@ -202,17 +209,17 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               {" · "}
               <UntrustedCount
                 value={scopeTypes.length}
-                trustworthy={!treeError}
+                trustworthy={countsTrusted}
                 label="Scope types"
               />{" "}
-              type{scopeTypes.length === 1 && !treeError ? "" : "s"}
+              type{scopeTypes.length === 1 && countsTrusted ? "" : "s"}
               {" · "}
               <UntrustedCount
                 value={totalScopes}
-                trustworthy={!treeError}
+                trustworthy={countsTrusted}
                 label="Scopes"
               />{" "}
-              scope{totalScopes === 1 && !treeError ? "" : "s"}
+              scope{totalScopes === 1 && countsTrusted ? "" : "s"}
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-3">
               <Link
@@ -260,17 +267,18 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         />
       )}
 
-      {treeError && scopeTypes.length === 0 ? (
-        <ReadFailure
-          error={treeError}
-          what="this organization's scopes"
-          onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
-        />
-      ) : scopeTypes.length === 0 ? (
-        <Card className="p-6 md:p-8">
-          <ScopeOnboarding orgId={organization.id} />
-        </Card>
-      ) : (
+      <ReadGate
+        status={treeRead}
+        error={treeError}
+        what="this organization's scopes"
+        isEmpty={scopeTypes.length === 0}
+        onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
+        empty={
+          <Card className="p-6 md:p-8">
+            <ScopeOnboarding orgId={organization.id} />
+          </Card>
+        }
+      >
         <>
           {orderedTypes.map((scopeType) => (
             <OrgScopeTypeSection
@@ -317,7 +325,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
             )}
           </div>
         </>
-      )}
+      </ReadGate>
 
       <ArchivedDisclosure
         // read-gate-exempt: 0 hides this control and a failed first read is said by the toast in loadArchived; a failed refresh keeps the count marked stale

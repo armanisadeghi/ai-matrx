@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { SearchX } from "lucide-react";
+import { Loader2, SearchX } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectTreeError, selectTreeStatus } from "@/features/scopes/redux/selectors/tree";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,6 +40,32 @@ export function ScopeNotFound({
   backHref,
   backLabel,
 }: ScopeNotFoundProps) {
+  const dispatch = useAppDispatch();
+  const treeStatus = useAppSelector(selectTreeStatus);
+  const treeError = useAppSelector(selectTreeError);
+  // A SLUG IS ONLY "NOT A MATCH" AGAINST A TREE THAT LOADED (lane SCOPES-READ-SWITCH-VALIDATE, 2026-09-30).
+  // Every caller shows this once the tree has SETTLED — and a failed load settles too. On the store read
+  // path a slow or refused tree read put "This address doesn't match a scope type you can open" on the
+  // Matters page of the firm's own owner. A failed read is said as a failure, with its retry; a read still
+  // in flight is a wait. Only a tree that answered can say the address matched nothing.
+  if (treeError) {
+    return (
+      <div className="py-12">
+        <ReadFailure
+          error={treeError}
+          what="your scopes"
+          onRetry={() => void dispatch(ensureScopeTree({ refresh: true }))}
+        />
+      </div>
+    );
+  }
+  if (treeStatus === "idle" || treeStatus === "loading") {
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 text-xs text-muted-foreground" role="status" aria-busy="true">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading your scopes…
+      </div>
+    );
+  }
   if (UUID_RE.test(param)) {
     return (
       <AccessGate
