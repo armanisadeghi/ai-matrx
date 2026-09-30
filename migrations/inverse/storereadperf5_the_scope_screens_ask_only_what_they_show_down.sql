@@ -1,13 +1,14 @@
--- chair-step: inverse of storereadperf5_the_scope_screens_ask_only_what_they_show.sql — restores the eight bodies it replaced verbatim (custom.tables_seen_once_per_group, custom.query_visible_ids, custom.context_tree, custom.context_values, custom.context_items, custom.context_archived_types, public.get_scope_tree, public.get_user_full_context), the door row sentence it rewrote, and drops the four helpers it created with their two door rows. No table, index, policy or data row is touched.
+-- chair-step: inverse of storereadperf5_the_scope_screens_ask_only_what_they_show.sql — restores the nine bodies it replaced verbatim (public.__scope_access_membrane_conformance, custom.tables_seen_once_per_group, custom.query_visible_ids, custom.context_tree, custom.context_values, custom.context_items, custom.context_archived_types, public.get_scope_tree, public.get_user_full_context), the door row sentence it rewrote, and drops the four helpers it created with their two door rows. No table, index, policy or data row is touched.
 -- lane: STORE-READ-PERF-5
 -- based-on: custom.tables_seen_once_per_group(uuid, uuid[]) 1d7cf35df5ee756bd86b18d51928a24814a6d787f149fe55a74864fb892cd87d
 -- based-on: custom.query_visible_ids(uuid, uuid, text) 4d2014f6091d71202400636a56042cf3aa0d8595b2d48e9c4e319a7595d5730d
 -- based-on: custom.context_tree(uuid[]) b179d95cae8fe72ac5a287978ad7832da4266755e848f21a6a5733f01d12f285
 -- based-on: custom.context_values(uuid[]) 58cdcbd50ce78f364666fab10d28147ae82e01fde0da9efef4eeb2961853d2b9
 -- based-on: custom.context_items(uuid[]) 6bd76a840beeff21b439af37be7c808a8197e4ccc9ee1eaef237fae7b5fd3b81
--- based-on: custom.context_archived_types(uuid) d0cd451956e49f6f53e70f50ca13f87ef26e0db06f8aca4a5d1654e9465269ea
+-- based-on: custom.context_archived_types(uuid) 155e35d5ed116c54778861c2781f64ac85356746b284c1c44c00b7ecb0632e11
 -- based-on: public.get_scope_tree(uuid, uuid) 2d7ca36003ad1329062d2d1580fac2084b07b5fffd859db085439d0c65a8b42e
 -- based-on: public.get_user_full_context(uuid) 903e122be00981ce60c08f0b13912cd1ed75877dbd71add80ff48d79e66ebb3a
+-- based-on: public.__scope_access_membrane_conformance() 1440e4c14ac8a2c2794ec2dee0e703f3e29cf415aaba05d62a2bd0e7de120240
 
 CREATE OR REPLACE FUNCTION custom.tables_seen_once_per_group(p_user_id uuid, p_organization_ids uuid[])
  RETURNS TABLE(organization_id uuid, id uuid, seen boolean)
@@ -1204,6 +1205,161 @@ begin
     ) sub;
     select jsonb_build_object('organizations', v_real_rows) into v_result;
     return v_result;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.__scope_access_membrane_conformance()
+ RETURNS TABLE(check_key text, ok boolean, severity text, detail jsonb)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  c_refs constant text := 'context\.(scopes|context_items|context_item_values)';
+  c_values constant text := 'context\.context_item_values';
+  c_call constant text := '(context\._(assert_scope_readable|scope_readable|scope_readable_for|readable_scope_ids)|custom\.levels_of|custom\.resolve_context)\s*\(';
+  v_unregistered text[];
+  v_stale text[];
+  v_lost text[];
+  v_wrongclass text[];
+  v_listdoors text[];
+  v_pols jsonb;
+  v_sel text;
+begin
+  check_key := 'membrane_helpers_installed';
+  detail := (select jsonb_object_agg(p.proname, jsonb_build_object('definer', p.prosecdef))
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'context'
+                and p.proname in ('_scope_readable','_scope_readable_for','_assert_scope_readable',
+                                  '_scope_denial_message','_readable_scope_ids'));
+  ok := (select count(*) = 5 and bool_and(p.prosecdef)
+           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'context'
+            and p.proname in ('_scope_readable','_scope_readable_for','_assert_scope_readable',
+                              '_scope_denial_message','_readable_scope_ids'));
+  severity := 'error';
+  if not ok then detail := coalesce(detail,'{}'::jsonb) || jsonb_build_object(
+    'why','All five membrane helpers must exist and be SECURITY DEFINER. As INVOKER they would ask the question through the caller''s own RLS and answer "no" to everybody.'); end if;
+  return next;
+
+  select array_agg(n.nspname || '.' || p.proname order by n.nspname, p.proname)
+    into v_unregistered
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname in ('public','context') and p.prosecdef
+    and p.prosrc ~ c_refs
+    and n.nspname || '.' || p.proname <> 'public.__scope_access_membrane_conformance'
+    and not exists (select 1 from context.scope_door_registry r
+                     where r.function_name = n.nspname || '.' || p.proname);
+  check_key := 'all_scope_doors_registered';
+  ok := v_unregistered is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','A new SECURITY DEFINER function reads the scopes tables and nobody has decided what it is. Either make it call context._assert_scope_readable and register it as `membraned`, or register it with the class and the reason it does not need one: insert into context.scope_door_registry.',
+    'unregistered', coalesce(to_jsonb(v_unregistered),'[]'::jsonb));
+  return next;
+
+  select array_agg(r.function_name order by r.function_name)
+    into v_stale
+  from context.scope_door_registry r
+  where not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                     where n.nspname || '.' || p.proname = r.function_name and p.prosecdef);
+  check_key := 'registry_has_no_stale_rows';
+  ok := v_stale is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','These registry rows name a SECURITY DEFINER function that does not exist. Delete the row, or restore the function.',
+    'stale', coalesce(to_jsonb(v_stale),'[]'::jsonb));
+  return next;
+
+  select array_agg(r.function_name order by r.function_name)
+    into v_lost
+  from context.scope_door_registry r
+  join pg_proc p on true
+  join pg_namespace n on n.oid = p.pronamespace and n.nspname || '.' || p.proname = r.function_name
+  where r.door_class = 'membraned'
+    and p.prosecdef
+    and context._strip_sql_noise(p.prosrc) !~ c_call;
+  check_key := 'membraned_doors_carry_a_real_call';
+  ok := v_lost is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','These doors are registered as `membraned` and their live body contains no CALL to the membrane once comments, string literals and dollar-quoted blocks are removed. A comment is not a gate (V-7 B-F2). Re-apply migrations/ctx_scope_access_membrane_b7.sql, or change the row''s class with a reason.',
+    'lost', coalesce(to_jsonb(v_lost),'[]'::jsonb));
+  return next;
+
+  select array_agg(n.nspname || '.' || p.proname || ' (' || coalesce(r.door_class,'UNREGISTERED') || ')'
+                   order by p.proname)
+    into v_wrongclass
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  left join context.scope_door_registry r on r.function_name = n.nspname || '.' || p.proname
+  where n.nspname in ('public','context') and p.prosecdef
+    and p.prosrc ~ c_values
+    and n.nspname || '.' || p.proname <> 'public.__scope_access_membrane_conformance'
+    and coalesce(r.door_class,'') not in ('membraned','unreachable');
+  check_key := 'value_doors_are_membraned';
+  ok := v_wrongclass is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','RLS does not run inside a SECURITY DEFINER function. A door that serves a scope''s cell values must be class `membraned` (or provably `unreachable`) — organization membership is not the question. This is the 2026-09-11 finding on get_scope_context.',
+    'offenders', coalesce(to_jsonb(v_wrongclass),'[]'::jsonb));
+  return next;
+
+  select array_agg(x.fn order by x.fn) into v_listdoors
+  from (select unnest(array['public.list_scopes','public.get_scope_tree','public.search_scopes']) as fn) x
+  where not exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname || '.' || p.proname = x.fn
+       and context._strip_sql_noise(p.prosrc) ~ '(context\._readable_scope_ids|custom\.levels_of)\s*\(');
+  check_key := 'list_doors_filter_the_readable_set';
+  ok := v_listdoors is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','These doors list scopes without filtering on context._readable_scope_ids(), so they can name a `personal` record — its name, slug, creator and visibility — to somebody the record itself refuses. On a personal legal matter the case NAME is the most sensitive field there is.',
+    'unfiltered', coalesce(to_jsonb(v_listdoors),'[]'::jsonb));
+  return next;
+
+  check_key := 'values_registered_as_component_of_scope';
+  detail := jsonb_build_object(
+    'entity_type', (select to_jsonb(t) from (select rls_variant, is_component, is_active
+                                               from platform.entity_types where token = 'context_item_value') t),
+    'parents', coalesce((select jsonb_agg(jsonb_build_object('parent', er.parent_type, 'fk', er.fk_column))
+                           from platform.entity_relationships er
+                          where er.child_type = 'context_item_value' and er.kind = 'composition'), '[]'::jsonb),
+    'why','A second composition parent (context_item) would OR an ORG-WIDE id set back into the read lane and undo the membrane. The parent is `scope`, and only `scope`.');
+  ok := exists (select 1 from platform.entity_types
+                 where token = 'context_item_value' and rls_variant = 'component' and is_component and is_active)
+        and (select count(*) from platform.entity_relationships
+              where child_type = 'context_item_value' and kind = 'composition') = 1
+        and exists (select 1 from platform.entity_relationships
+                     where child_type = 'context_item_value' and parent_type = 'scope' and fk_column = 'scope_id');
+  severity := 'error';
+  return next;
+
+  select jsonb_object_agg(policyname, cmd), max(qual) filter (where cmd = 'SELECT')
+    into v_pols, v_sel
+  from pg_policies where schemaname = 'context' and tablename = 'context_item_values';
+  check_key := 'values_policies_are_generated_component_lane';
+  ok := coalesce(v_sel,'') like '%accessible_entity_ids(''scope''::text%'
+        and coalesce(v_sel,'') not like '%context.scopes%'
+        and v_pols ? 'std_select' and v_pols ? 'std_insert' and v_pols ? 'std_update'
+        and v_pols ? 'std_delete' and v_pols ? 'svc_all';
+  severity := 'error';
+  detail := jsonb_build_object(
+    'policies', coalesce(v_pols,'{}'::jsonb),
+    'why','The read lane must resolve the PARENT id set once per query (THE COMPONENT-ACCESS PRECEDENT, 2026-08-08) and must not fall back to organization membership. Re-apply with select iam.apply_rls(''context'',''context_item_values'',''context_item_value'',''component'').');
+  return next;
+
+  check_key := 'no_anon_grants_on_values';
+  detail := jsonb_build_object(
+    'grants', coalesce((select jsonb_agg(privilege_type order by privilege_type)
+                          from information_schema.role_table_grants
+                         where table_schema = 'context' and table_name = 'context_item_values'
+                           and grantee = 'anon'), '[]'::jsonb),
+    'why','A table grant that only a policy stands behind is one apply_rls away from being a hole.');
+  ok := not exists (select 1 from information_schema.role_table_grants
+                     where table_schema = 'context' and table_name = 'context_item_values' and grantee = 'anon');
+  severity := 'error';
+  return next;
 end;
 $function$;
 

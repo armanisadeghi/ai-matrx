@@ -1,5 +1,5 @@
 -- draft: STORE-READ-PERF-5 — held for the owner's production apply (brief 2026-09-30: this lane makes no production change; rehearsed on the clone, see common-docs PROGRESS-STORE-READ-PERF-5.md). It SUPERSEDES the draft scopesreadswitch_a_file_reference_reads_back_as_its_file.sql (lane SCOPES-READ-SWITCH-VALIDATE, never applied): its custom.context_values body carries that file's answer too (a File column's reference reads back as its file), so apply this one, not both. Remove this line to apply.
--- chair-step: it CREATES four helper functions (custom._record_shown_to_ctx and custom.tables_listed_among: SECURITY INVOKER, no client EXECUTE; custom.tables_seen_among and custom.seen_among: SECURITY DEFINER, no client EXECUTE, server_only door rows) and REPLACES the bodies of custom.tables_seen_once_per_group, custom.query_visible_ids, custom.context_tree, custom.context_values, custom.context_items, custom.context_archived_types, public.get_scope_tree and public.get_user_full_context. Same signatures and grants; custom.context_values also answers `files` (a File record's file id, for references already visible), the change the unapplied draft scopesreadswitch_a_file_reference_reads_back_as_its_file.sql carried; two platform.client_callable_door rows are inserted and the reason sentence of custom.context_archived_types' row is rewritten to say what its body now does; no table, index, policy or user/business data row is touched. Nothing a person sees changes: every answer is the same (scripts/campaign-tests/storereadperf5_green.sql, both seats), only faster.
+-- chair-step: it CREATES four helper functions (custom._record_shown_to_ctx and custom.tables_listed_among: SECURITY INVOKER, no client EXECUTE; custom.tables_seen_among and custom.seen_among: SECURITY DEFINER, no client EXECUTE, server_only door rows) and REPLACES the bodies of public.__scope_access_membrane_conformance (the scope membrane guard: custom.seen_among counts as the membrane call), custom.tables_seen_once_per_group, custom.query_visible_ids, custom.context_tree, custom.context_values, custom.context_items, custom.context_archived_types, public.get_scope_tree and public.get_user_full_context. Same signatures and grants; custom.context_values also answers `files` (a File record's file id, for references already visible), the change the unapplied draft scopesreadswitch_a_file_reference_reads_back_as_its_file.sql carried; two platform.client_callable_door rows are inserted and the reason sentence of custom.context_archived_types' row is rewritten to say what its body now does; no table, index, policy or user/business data row is touched. Nothing a person sees changes: every answer is the same (scripts/campaign-tests/storereadperf5_green.sql, both seats), only faster.
 -- lane: STORE-READ-PERF-5
 -- based-on: custom.tables_seen_once_per_group(uuid, uuid[]) 81ccf49b1953efb57dd9a8ece22385d4930aa12427f11112628a1f5e263170da
 -- based-on: custom.query_visible_ids(uuid, uuid, text) f09bf2632b395c9c592a80c65908616bb515580e03ad76c3dfea0fdfde9a61b5
@@ -9,6 +9,7 @@
 -- based-on: custom.context_archived_types(uuid) 6dbb865d72ad4187797a01563d10ef8d213581997cfaef228ec949c0c19a423a
 -- based-on: public.get_scope_tree(uuid, uuid) 2783445eaa04b108a01700c764a147def62fc6e66c9d630a5c91c0a65447227a
 -- based-on: public.get_user_full_context(uuid) 13e59453b78bedd3e845c95d9a1b1fc698a6a3e1b8e72cadf1562df0bb6759ca
+-- based-on: public.__scope_access_membrane_conformance() e40a3e84e70eda2873673ea2c8aa7b6fc69397b68ede2aab8be50c702a1cd79b
 --
 -- STORE-READ-PERF-5 — THE SCOPE SCREENS ASK ONLY WHAT THEY SHOW.
 --
@@ -1583,8 +1584,8 @@ begin
   -- Tables and no archived scope type: 7-30 s to answer []. The candidates are the archived,
   -- unquarantined kernel rows whose stored kept_for is context (a superset of what the old filter
   -- kept, which read the same key from the rendered document); none, and the answer is [].
-  -- The organization's wall and the Table decision are asked first, as the archive door asked them.
-  perform custom.assert_client_may_reach(p_organization_id, 'custom.read_records_archived');
+  -- The Table decision is asked first, as the archive door asked it (the wall was asked above, in
+  -- this door's own name).
   perform custom.assert_may_know_table(p_organization_id, v_tables, 'custom.context_archived_types');
   select coalesce(array_agg(r.id), '{}'::uuid[]) into v_cand
     from custom.record r
@@ -1646,5 +1647,164 @@ end;
 $function$;
 
 update platform.client_callable_door
-   set reason = 'The archived scope types of one organization: decided through custom.assert_client_may_reach in this door''s name and the archive door''s, and custom.assert_may_know_table for the Table kernel; the candidates are the archived, unquarantined Tables whose stored kept_for is context, answered exactly as custom.read_records_archived answers them (the one ladder''s predicate at viewer from custom.visible_predicate_sql, the one read mask from custom.read_mask_for, custom.mask_document, custom.choice_render), of which the ones the context system kept, each with how many of its scopes are archived. It writes nothing. (STORE-READ-PERF-5)'
+   set reason = 'The archived scope types of one organization: decided through custom.assert_client_may_reach in this door''s name and custom.assert_may_know_table for the Table kernel; the candidates are the archived, unquarantined Tables whose stored kept_for is context, answered exactly as custom.read_records_archived answers them (the one ladder''s predicate at viewer from custom.visible_predicate_sql, the one read mask from custom.read_mask_for, custom.mask_document, custom.choice_render), of which the ones the context system kept, each with how many of its scopes are archived. It writes nothing. (STORE-READ-PERF-5)'
  where schema_name = 'custom' and function_name = 'context_archived_types' and identity_args = 'p_organization_id uuid';
+
+-- ─── 8. the scope membrane guard knows seen_among is the ladder's viewer answer ───
+
+CREATE OR REPLACE FUNCTION public.__scope_access_membrane_conformance()
+ RETURNS TABLE(check_key text, ok boolean, severity text, detail jsonb)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  c_refs constant text := 'context\.(scopes|context_items|context_item_values)';
+  c_values constant text := 'context\.context_item_values';
+  c_call constant text := '(context\._(assert_scope_readable|scope_readable|scope_readable_for|readable_scope_ids)|custom\.levels_of|custom\.seen_among|custom\.resolve_context)\s*\(';
+  -- STORE-READ-PERF-5: custom.seen_among is custom.levels_of's "s" (the one ladder's viewer answer),
+  -- asked once per class of look-alike records and through levels_of itself for every other id.
+  v_unregistered text[];
+  v_stale text[];
+  v_lost text[];
+  v_wrongclass text[];
+  v_listdoors text[];
+  v_pols jsonb;
+  v_sel text;
+begin
+  check_key := 'membrane_helpers_installed';
+  detail := (select jsonb_object_agg(p.proname, jsonb_build_object('definer', p.prosecdef))
+               from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'context'
+                and p.proname in ('_scope_readable','_scope_readable_for','_assert_scope_readable',
+                                  '_scope_denial_message','_readable_scope_ids'));
+  ok := (select count(*) = 5 and bool_and(p.prosecdef)
+           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'context'
+            and p.proname in ('_scope_readable','_scope_readable_for','_assert_scope_readable',
+                              '_scope_denial_message','_readable_scope_ids'));
+  severity := 'error';
+  if not ok then detail := coalesce(detail,'{}'::jsonb) || jsonb_build_object(
+    'why','All five membrane helpers must exist and be SECURITY DEFINER. As INVOKER they would ask the question through the caller''s own RLS and answer "no" to everybody.'); end if;
+  return next;
+
+  select array_agg(n.nspname || '.' || p.proname order by n.nspname, p.proname)
+    into v_unregistered
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname in ('public','context') and p.prosecdef
+    and p.prosrc ~ c_refs
+    and n.nspname || '.' || p.proname <> 'public.__scope_access_membrane_conformance'
+    and not exists (select 1 from context.scope_door_registry r
+                     where r.function_name = n.nspname || '.' || p.proname);
+  check_key := 'all_scope_doors_registered';
+  ok := v_unregistered is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','A new SECURITY DEFINER function reads the scopes tables and nobody has decided what it is. Either make it call context._assert_scope_readable and register it as `membraned`, or register it with the class and the reason it does not need one: insert into context.scope_door_registry.',
+    'unregistered', coalesce(to_jsonb(v_unregistered),'[]'::jsonb));
+  return next;
+
+  select array_agg(r.function_name order by r.function_name)
+    into v_stale
+  from context.scope_door_registry r
+  where not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                     where n.nspname || '.' || p.proname = r.function_name and p.prosecdef);
+  check_key := 'registry_has_no_stale_rows';
+  ok := v_stale is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','These registry rows name a SECURITY DEFINER function that does not exist. Delete the row, or restore the function.',
+    'stale', coalesce(to_jsonb(v_stale),'[]'::jsonb));
+  return next;
+
+  select array_agg(r.function_name order by r.function_name)
+    into v_lost
+  from context.scope_door_registry r
+  join pg_proc p on true
+  join pg_namespace n on n.oid = p.pronamespace and n.nspname || '.' || p.proname = r.function_name
+  where r.door_class = 'membraned'
+    and p.prosecdef
+    and context._strip_sql_noise(p.prosrc) !~ c_call;
+  check_key := 'membraned_doors_carry_a_real_call';
+  ok := v_lost is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','These doors are registered as `membraned` and their live body contains no CALL to the membrane once comments, string literals and dollar-quoted blocks are removed. A comment is not a gate (V-7 B-F2). Re-apply migrations/ctx_scope_access_membrane_b7.sql, or change the row''s class with a reason.',
+    'lost', coalesce(to_jsonb(v_lost),'[]'::jsonb));
+  return next;
+
+  select array_agg(n.nspname || '.' || p.proname || ' (' || coalesce(r.door_class,'UNREGISTERED') || ')'
+                   order by p.proname)
+    into v_wrongclass
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  left join context.scope_door_registry r on r.function_name = n.nspname || '.' || p.proname
+  where n.nspname in ('public','context') and p.prosecdef
+    and p.prosrc ~ c_values
+    and n.nspname || '.' || p.proname <> 'public.__scope_access_membrane_conformance'
+    and coalesce(r.door_class,'') not in ('membraned','unreachable');
+  check_key := 'value_doors_are_membraned';
+  ok := v_wrongclass is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','RLS does not run inside a SECURITY DEFINER function. A door that serves a scope''s cell values must be class `membraned` (or provably `unreachable`) — organization membership is not the question. This is the 2026-09-11 finding on get_scope_context.',
+    'offenders', coalesce(to_jsonb(v_wrongclass),'[]'::jsonb));
+  return next;
+
+  select array_agg(x.fn order by x.fn) into v_listdoors
+  from (select unnest(array['public.list_scopes','public.get_scope_tree','public.search_scopes']) as fn) x
+  where not exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname || '.' || p.proname = x.fn
+       and context._strip_sql_noise(p.prosrc) ~ '(context\._readable_scope_ids|custom\.levels_of|custom\.seen_among)\s*\(');
+  check_key := 'list_doors_filter_the_readable_set';
+  ok := v_listdoors is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why','These doors list scopes without filtering on context._readable_scope_ids(), so they can name a `personal` record — its name, slug, creator and visibility — to somebody the record itself refuses. On a personal legal matter the case NAME is the most sensitive field there is.',
+    'unfiltered', coalesce(to_jsonb(v_listdoors),'[]'::jsonb));
+  return next;
+
+  check_key := 'values_registered_as_component_of_scope';
+  detail := jsonb_build_object(
+    'entity_type', (select to_jsonb(t) from (select rls_variant, is_component, is_active
+                                               from platform.entity_types where token = 'context_item_value') t),
+    'parents', coalesce((select jsonb_agg(jsonb_build_object('parent', er.parent_type, 'fk', er.fk_column))
+                           from platform.entity_relationships er
+                          where er.child_type = 'context_item_value' and er.kind = 'composition'), '[]'::jsonb),
+    'why','A second composition parent (context_item) would OR an ORG-WIDE id set back into the read lane and undo the membrane. The parent is `scope`, and only `scope`.');
+  ok := exists (select 1 from platform.entity_types
+                 where token = 'context_item_value' and rls_variant = 'component' and is_component and is_active)
+        and (select count(*) from platform.entity_relationships
+              where child_type = 'context_item_value' and kind = 'composition') = 1
+        and exists (select 1 from platform.entity_relationships
+                     where child_type = 'context_item_value' and parent_type = 'scope' and fk_column = 'scope_id');
+  severity := 'error';
+  return next;
+
+  select jsonb_object_agg(policyname, cmd), max(qual) filter (where cmd = 'SELECT')
+    into v_pols, v_sel
+  from pg_policies where schemaname = 'context' and tablename = 'context_item_values';
+  check_key := 'values_policies_are_generated_component_lane';
+  ok := coalesce(v_sel,'') like '%accessible_entity_ids(''scope''::text%'
+        and coalesce(v_sel,'') not like '%context.scopes%'
+        and v_pols ? 'std_select' and v_pols ? 'std_insert' and v_pols ? 'std_update'
+        and v_pols ? 'std_delete' and v_pols ? 'svc_all';
+  severity := 'error';
+  detail := jsonb_build_object(
+    'policies', coalesce(v_pols,'{}'::jsonb),
+    'why','The read lane must resolve the PARENT id set once per query (THE COMPONENT-ACCESS PRECEDENT, 2026-08-08) and must not fall back to organization membership. Re-apply with select iam.apply_rls(''context'',''context_item_values'',''context_item_value'',''component'').');
+  return next;
+
+  check_key := 'no_anon_grants_on_values';
+  detail := jsonb_build_object(
+    'grants', coalesce((select jsonb_agg(privilege_type order by privilege_type)
+                          from information_schema.role_table_grants
+                         where table_schema = 'context' and table_name = 'context_item_values'
+                           and grantee = 'anon'), '[]'::jsonb),
+    'why','A table grant that only a policy stands behind is one apply_rls away from being a hole.');
+  ok := not exists (select 1 from information_schema.role_table_grants
+                     where table_schema = 'context' and table_name = 'context_item_values' and grantee = 'anon');
+  severity := 'error';
+  return next;
+end;
+$function$;
