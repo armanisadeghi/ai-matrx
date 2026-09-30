@@ -1063,7 +1063,7 @@ function DrainOutcomeBadge({ drain }: { drain: DrainOutcome | null }) {
           </a>
         </>
       ) : null}
-      <span className="block max-w-[220px] whitespace-normal text-muted-foreground">{drain.note}</span>
+      <span className="line-clamp-2 max-w-[220px] whitespace-normal text-muted-foreground">{drain.note.replace(/^Stuck — /, "")}</span>
     </span>
   );
 }
