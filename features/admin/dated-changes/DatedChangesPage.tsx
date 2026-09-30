@@ -101,8 +101,7 @@ export default function DatedChangesPage() {
       <div className="flex items-start gap-2">
         <CalendarClock className="mt-0.5 h-5 w-5 text-primary" aria-hidden />
         <p className="text-sm text-muted-foreground">
-          Changes stored now and applied on their date — today, model prices a provider announced ahead. Each
-          applies only if the value is still the one it expected; otherwise it is refused and nothing changes.
+          Applied on their date, only if the value still matches.
         </p>
       </div>
 
@@ -268,7 +267,7 @@ export default function DatedChangesPage() {
         }
         description={
           pending?.kind === "zone"
-            ? `The source names no time zone, so the change is read as ${formatEffective(pending.change).split(" (")[0]} UTC. Enter the zone the provider bills on (for example America/Los_Angeles, or UTC to keep it). The moment it applies is recomputed from that; it can be set once — to change a stated zone, cancel the change and schedule it again.`
+            ? `No time zone in the source, so it reads as ${formatEffective(pending.change).split(" (")[0]} UTC. Enter the provider's billing zone; it can be set only once.`
             : pending?.kind === "cancel"
             ? `On ${formatEffective(pending.change)} the price will stay ${formatPricing(pending.change.expected)} instead of becoming ${formatPricing(pending.change.newValue)}. This cannot be undone — schedule a new change if it is still needed. Say why.`
             : "It leaves the reminder for every super admin. Say what was done — for example, the price was set by hand or a corrected change was scheduled."

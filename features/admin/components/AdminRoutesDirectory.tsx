@@ -224,7 +224,7 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
               Unregistered administration routes
             </h2>
             <p className="text-xs text-muted-foreground">
-              These routes must be declared in admin-navigation.ts.
+              Declare them in admin-navigation.ts
             </p>
           </div>
           <div className="divide-y divide-border/60">

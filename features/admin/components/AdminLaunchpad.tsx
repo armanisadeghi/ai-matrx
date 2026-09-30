@@ -144,9 +144,6 @@ export default function AdminLaunchpad() {
               <h1 className="truncate text-lg font-semibold leading-tight">
                 Admin Launchpad
               </h1>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                Keep this page open. Every destination launches in a new tab.
-              </p>
             </div>
           </div>
 

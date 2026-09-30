@@ -123,12 +123,7 @@ export function AssistProducerControl() {
             <AGENT_ICON className="h-4 w-4 text-primary" />
             Assist producer controls
           </h2>
-          <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-            Production controls whether the producer may do Assist-specific
-            work. Presentation controls whether its rows can compete for one of
-            the three ambient slots. Turning either back on restores the
-            implementation; no producer code or history is deleted.
-          </p>
+          {/* Production: may do Assist-specific work. Presentation: may compete for the three ambient slots. Re-enabling restores; nothing deleted. */}
         </div>
         <label className="w-full max-w-md text-xs text-muted-foreground">
           Change reason

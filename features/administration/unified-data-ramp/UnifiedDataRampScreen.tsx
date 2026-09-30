@@ -290,9 +290,7 @@ export function UnifiedDataRampScreen() {
     <div className="flex h-full flex-col gap-4 overflow-auto p-4">
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-lg font-semibold">Unified data ramp</h1>
-        <span className="text-sm text-muted-foreground">
-          One consumer at a time, one organization at a time. Test 1 gates every switch on.
-        </span>
+        {/* One consumer, one org at a time; Test 1 gates every switch on. */}
         <div className="ml-auto flex items-center gap-2">
           <label className="text-sm text-muted-foreground" htmlFor="ramp-org">
             Organization
@@ -379,7 +377,7 @@ export function UnifiedDataRampScreen() {
               <span className="text-foreground">Owner:</span> {exit.owner_name} ·{" "}
               <span className="text-foreground">Date:</span> {exit.exit_date} ·{" "}
               <span className="text-foreground">Status:</span> {exit.status}
-              {overdue && " — PAST ITS DATE. The ramp stops here until the owner names a new one."}
+              {overdue && " — past its date; the ramp is paused"}
             </div>
             <div className="mt-1 text-muted-foreground">
               <span className="text-foreground">Trigger:</span> {exit.exit_trigger}
@@ -397,8 +395,7 @@ export function UnifiedDataRampScreen() {
 
       {!organizationId && (
         <div className="rounded-md border border-border p-3 text-sm text-muted-foreground">
-          The ramp is set per organization, so there is nothing to show until one is chosen.
-          Pick the organization above.
+          Choose an organization above to see its ramp.
         </div>
       )}
 

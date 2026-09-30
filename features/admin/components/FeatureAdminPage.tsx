@@ -21,7 +21,6 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import {
   AlertCircle,
-  Boxes,
   Component,
   Database,
   FileText,
@@ -600,20 +599,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
           </section>
         )}
 
-        {/* Footer reminder — single line, mono. */}
-        <footer className="pt-2 border-t border-border">
-          <p className="text-[10px] text-muted-foreground/70 font-mono">
-            <Boxes className="inline h-3 w-3 -mt-0.5 mr-1" />
-            source: hand-curated FeatureAdminMap config at{" "}
-            <ExternalTabLink
-              href={`/administration/documentation/feature-docs/view/app/(core)/${map.slug}/admin/page.tsx`}
-              className="hover:underline text-primary"
-            >
-              app/(core)/{map.slug}/admin/page.tsx
-            </ExternalTabLink>{" "}
-            · drift warnings above flag what's missed.
-          </p>
-        </footer>
+        {/* Source: hand-curated FeatureAdminMap config at app/(core)/{slug}/admin/page.tsx. */}
       </div>
     </div>
   );

@@ -403,10 +403,6 @@ export function CodexUsageDashboard() {
               Codex usage
             </h1>
           </div>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Local activity captured by Matrx Local. Cost is an estimated
-            standard-credit scenario, not your measured Pro allowance debit.
-          </p>
         </div>
         <div
           className={cn(
@@ -559,14 +555,9 @@ export function CodexUsageDashboard() {
             <section className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:text-amber-100">
               <p className="font-medium">Collection is partial</p>
               <p className="mt-1">
-                {collectionProgress
-                  ? `Processed ${collectionProgress.completed} of ${collectionProgress.total} candidates.`
-                  : "The indexed candidate set was not fully collected."}{" "}
                 {collectedCount != null
-                  ? `${collectedCount} candidates were successfully read.`
-                  : "Some candidates may be unreadable or missing."}{" "}
-                All shares, totals, and rankings reflect only the successfully
-                collected subset and may change.
+                  ? `Totals cover only the ${collectedCount} candidates read so far and may change.`
+                  : "Totals cover only the candidates read so far and may change."}
               </p>
             </section>
           ) : null}
@@ -629,13 +620,8 @@ export function CodexUsageDashboard() {
             {collectionProgress ? (
               <p className="mt-2 text-xs text-muted-foreground">
                 {collectionProgress.completed} of {collectionProgress.total}{" "}
-                candidates processed ({collectionProgress.percent}%).
-                {collectedCount != null
-                  ? ` ${collectedCount} successfully read.`
-                  : ""}
-                {canResume
-                  ? " Continue collection to keep this exact frozen range."
-                  : ""}
+                processed ({collectionProgress.percent}%)
+                {collectedCount != null ? ` · ${collectedCount} read` : ""}
               </p>
             ) : null}
             {allowance?.status === "available" ? (
@@ -692,11 +678,7 @@ export function CodexUsageDashboard() {
               <p className="mt-1 text-xs text-muted-foreground">
                 {snapshot.activity.classification}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Peer counts are submitted peer-send expressions, not messages or
-                confirmed delivery. Titles and recipient titles are only
-                supplied through this authenticated owner connection.
-              </p>
+              {/* Peer counts are submitted peer-send expressions, not confirmed delivery; titles come via owner connection. */}
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <CountCard
                   label="Inbound peer wakes"

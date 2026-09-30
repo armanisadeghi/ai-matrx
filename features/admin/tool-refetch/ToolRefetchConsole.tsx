@@ -156,10 +156,11 @@ function TrimBadge({ value }: { value: boolean | null }) {
         No
       </Badge>
     );
+  // Trim audit coverage starts at TRIM_AUDIT_EPOCH.
   return (
     <Badge
       variant="outline"
-      title={`No per-iteration context-trim audit was recorded for this repeat, so whether the first result was still visible cannot be known. Audit coverage widens from ${TRIM_AUDIT_EPOCH} on and is partial before it. This is not "No".`}
+      title="No context-trim audit for this repeat, so after-trim is unknown, not No."
       className="whitespace-nowrap text-muted-foreground"
     >
       n/a
@@ -372,7 +373,8 @@ const DETAIL_COLUMNS: MatrxColumnDef<ToolRefetchDetailRow>[] = [
   {
     id: "sameData",
     accessorKey: "sameData",
-    header: "Data",
+    header: <span title="Same-data: output matched the earlier call. New-data: output changed. Unknown: output not stored.">Data</span>,
+    label: "Data",
     filter: "boolean",
     width: 105,
     cell: (row) => <SameDataBadge value={row.sameData} />,
@@ -380,7 +382,8 @@ const DETAIL_COLUMNS: MatrxColumnDef<ToolRefetchDetailRow>[] = [
   {
     id: "trimmedBeforeRepeat",
     accessorKey: "trimmedBeforeRepeat",
-    header: "After trim",
+    header: <span title="The first result was cleared from context before the repeat. n/a means no trim audit.">After trim</span>,
+    label: "After trim",
     filter: "boolean",
     width: 110,
     cell: (row) => <TrimBadge value={row.trimmedBeforeRepeat} />,
@@ -603,7 +606,7 @@ export function ToolRefetchConsole() {
     { id: "sameDataRate", accessorKey: "sameDataRate", header: "Same-data %", filter: "number", width: 125, cell: (row) => <span className={cn("tabular-nums", (row.sameDataRate ?? 0) >= 0.05 && "font-semibold text-rose-600 dark:text-rose-400")}>{fmtPct(row.sameDataRate)}</span> },
     { id: "newDataRepeats", accessorKey: "newDataRepeats", header: "New-data", filter: "number", width: 105, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtCount(row.newDataRepeats)}</span> },
     { id: "unknownDataRepeats", accessorKey: "unknownDataRepeats", header: "Unknown", filter: "number", width: 105, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtCount(row.unknownDataRepeats)}</span> },
-    { id: "afterTrimRepeats", accessorKey: "afterTrimRepeats", header: "After trim", filter: "number", width: 105, cell: (row) => <span className="tabular-nums">{fmtCount(row.afterTrimRepeats)}</span> },
+    { id: "afterTrimRepeats", accessorKey: "afterTrimRepeats", header: <span title="The first result was cleared from context before the repeat. n/a means no trim audit.">After trim</span>, label: "After trim", filter: "number", width: 105, cell: (row) => <span className="tabular-nums">{fmtCount(row.afterTrimRepeats)}</span> },
     { id: "medianGapCalls", accessorKey: "medianGapCalls", header: "Gap calls", filter: "number", width: 105, cell: (row) => <span className="tabular-nums">{fmtGapCalls(row.medianGapCalls)}</span> },
     { id: "medianGapSecs", accessorKey: "medianGapSecs", header: "Gap", filter: "number", width: 100, cell: (row) => <span className="tabular-nums">{fmtDuration(row.medianGapSecs)}</span> },
     { id: "charsRefetchedSameData", accessorKey: "charsRefetchedSameData", header: "Chars re-fetched", filter: "number", width: 135, cell: (row) => <span className="tabular-nums">{fmtCount(row.charsRefetchedSameData)}</span> },
@@ -639,25 +642,7 @@ export function ToolRefetchConsole() {
               <Repeat2 className="h-6 w-6" />
               Tool re-fetch report
             </h1>
-            <p className="mt-1 max-w-4xl text-sm text-muted-foreground">
-              How often an agent asks a tool for something it was already given.{" "}
-              <strong>A repeat</strong> is a tool call whose name and arguments are identical to an
-              earlier call in the same conversation. <strong>Same-data</strong> means the stored
-              output hash matched, so the second call returned exactly what the first one did and
-              the re-fetch bought nothing; <strong>new-data</strong> means the output actually
-              changed, which is a legitimate refresh, not waste; <strong>unknown</strong> means the
-              output was not stored, so neither claim can be made.{" "}
-              <strong>After trim</strong> means the first result had already been cleared from the
-              model&apos;s context by the context trimmer before the repeat — the agent could no
-              longer see the answer it had.
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              After-trim is answerable only where a per-iteration context-trim audit was recorded
-              for that conversation — coverage widens from {TRIM_AUDIT_EPOCH} on and is partial
-              before it, so a repeat with no audit reads <em>n/a</em>, never <em>No</em>. Measured
-              on this database, rows on both sides of that date still come back unaudited, so treat
-              the after-trim column as a floor.
-            </p>
+            {/* After-trim is a floor: some rows past the audit epoch are still unaudited. */}
           </div>
         </div>
 
@@ -679,7 +664,6 @@ export function ToolRefetchConsole() {
             <span className="ml-2 text-xs text-muted-foreground">
               {fmtCount(visibleTotals.repeats)} repeats ·{" "}
               {fmtCount(visibleTotals.sameData)} same-data · {fmtCount(visibleTotals.chars)} chars re-fetched
-              {win === "all" ? " (all-time rollup view)" : " (recomputed for this window)"}
             </span>
           )}
         </div>
@@ -744,13 +728,7 @@ export function ToolRefetchConsole() {
         detail={{ title: (row) => row.toolName, description: (row) => `${fmtCount(row.repeats)} repeats in the ${win} window`, render: (row) => <ToolDetail toolName={row.toolName} window={win} expectedRepeats={row.repeats} /> }}
       />
 
-      <p className="text-xs text-muted-foreground">
-        Sources: <code>chat.vw_tool_refetch_summary</code> (all-time rollup) and{" "}
-        <code>chat.vw_tool_refetch</code> (one row per repeat). The summary view carries no date
-        column, so a 7 / 30 / 90-day view is recomputed from the per-repeat rows, with total calls
-        counted from <code>chat.tool_call</code> over the same window (types local / agent /
-        external, undeleted). &ldquo;All time&rdquo; reads the summary view directly.
-      </p>
+      {/* Sources: chat.vw_tool_refetch_summary (all time), chat.vw_tool_refetch + chat.tool_call for windows. */}
     </div>
   );
 }
