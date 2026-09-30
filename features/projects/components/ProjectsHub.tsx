@@ -554,6 +554,7 @@ export function ProjectsHub({
     doneTaskCount: statsReadFailed ? undefined : stats.get(project.id)?.done,
   }));
 
+  // org-filter: server-call names the working organization in the agent context only; the list reads orgFilterId
   const activeOrganizationId = useAppSelector(selectOrganizationId);
 
   const buildListContextData = () =>

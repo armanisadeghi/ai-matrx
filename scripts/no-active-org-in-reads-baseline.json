@@ -11,11 +11,6 @@
       "owner": "cms",
       "note": "selectOrganizationId → ensureOrganizationContext for Create Site only; site list read takes no org"
     },
-    "app/(core)/data-v2/page.tsx": {
-      "class": "labelled-active-default",
-      "owner": "data",
-      "note": "active org only feeds knob default and fallback; list narrowed by an on-page organization dropdown (All Orgs default)"
-    },
     "app/(core)/documents/page.tsx": {
       "class": "write-target",
       "owner": "documents",
@@ -196,16 +191,6 @@
       "owner": "mandates",
       "note": "active org only a readiness gate; fetchMandateCoverageStates takes the passed organizationId"
     },
-    "features/mandates/browse/MandatesBrowsePage.tsx": {
-      "class": "labelled-active-default",
-      "owner": "mandates",
-      "note": "activeOrganizationId only orders homes; list has Organization/System scope control defaulting to all orgs"
-    },
-    "features/mandates/feature-intelligence/useIntelligenceDirectory.ts": {
-      "class": "not-a-list",
-      "owner": "mandates",
-      "note": "activeOrgId → p_resolve_org_id to resolve holders from this seat; directory defs are not narrowed"
-    },
     "features/mandates/peek/MandatePeek.tsx": {
       "class": "not-a-list",
       "owner": "mandates",
@@ -250,11 +235,6 @@
       "class": "not-a-list",
       "owner": "residential-egress",
       "note": "organizationId → useScopedKnobs download URL knob"
-    },
-    "features/scheduling/hooks/useDuplicateSchedules.ts": {
-      "class": "not-a-list",
-      "owner": "scheduling",
-      "note": "org only a retry fallback address for the organization-free duplicates check"
     },
     "features/scopes/components/active-context/ActiveContextLayersPanel.tsx": {
       "class": "not-a-list",
