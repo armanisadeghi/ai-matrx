@@ -629,19 +629,6 @@ export const selectNotesGroupedBy = createSelector(
       }
       return map;
     },
-    byOrganization: () => {
-      const map = new Map<string, NoteRecord[]>();
-      for (const n of notes) {
-        const key = n.organization_id || "__none__";
-        let bucket = map.get(key);
-        if (!bucket) {
-          bucket = [];
-          map.set(key, bucket);
-        }
-        bucket.push(n);
-      }
-      return map;
-    },
     byProject: () => {
       const map = new Map<string, NoteRecord[]>();
       for (const n of notes) {

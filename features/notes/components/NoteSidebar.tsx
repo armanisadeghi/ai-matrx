@@ -60,14 +60,9 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   selectOrganizationId,
-  selectOrganizationName,
-  selectScopeSelectionsContext,
-  selectProjectId,
   selectProjectName,
-  selectTaskId,
   selectTaskName,
 } from "@/lib/redux/slices/appContextSlice";
-import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
 import {
   setInstanceActiveTab,
   addInstanceTab,
@@ -207,10 +202,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   // ── Active context for filtering + grouping labels ──────────────────
   const activeOrgId = useAppSelector(selectOrganizationId);
   const resolveOrganization = useNewNoteOrganization();
-  const activeProjectId = useAppSelector(selectProjectId);
-  const activeTaskId = useAppSelector(selectTaskId);
-  const scopeSelections = useAppSelector(selectScopeSelectionsContext);
-  const orgName = useAppSelector(selectOrganizationName);
   const projName = useAppSelector(selectProjectName);
   const taskName = useAppSelector(selectTaskName);
   // Folders are per organization, so one person can hold several "Draft"
@@ -218,32 +209,13 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const { organizations: memberOrgs } = useUserOrganizations();
   const orgNameById = new Map(memberOrgs.map((o) => [o.id, o.name]));
 
-  // ── Scope-filtered note IDs (fetched when scopes change) ──────────
-  const activeScopeIds = useMemo(
-    () => Object.values(scopeSelections).filter(Boolean) as string[],
-    [scopeSelections],
-  );
-  const { entityIds: scopeFilteredNoteIds } = useEntitiesByScopes({
-    scopeIds: activeScopeIds,
-    entityType: "note",
-    matchAll: false,
-  });
-
-  // ── Filter notes by active context (scopes + project + task) ────────
+  // ── The list shows EVERY note the person can access ─────────────────
   //
-  // NEVER by the selected organization (access-by-person law): the list shows
-  // every note the person can access across all their organizations; each
-  // folder header already names its organization when names collide.
-  const contextFiltered = useMemo(() => {
-    let result = allNotes;
-    if (scopeFilteredNoteIds)
-      result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
-    if (activeProjectId)
-      result = result.filter((n) => n.project_id === activeProjectId);
-    if (activeTaskId)
-      result = result.filter((n) => n.task_id === activeTaskId);
-    return result;
-  }, [allNotes, scopeFilteredNoteIds, activeProjectId, activeTaskId]);
+  // NEVER narrowed by the selected organization, nor by the global active
+  // project / task / scope context (active-org-never-a-list-filter: a hidden
+  // global lens silently dropped notes with nothing on this page saying why).
+  // Each folder header names its organization when names collide.
+  const contextFiltered = allNotes;
 
   // ── Local UI state ─────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -481,9 +453,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     for (const n of notesForGroups) {
       let key: string;
       switch (groupBy) {
-        case "organization":
-          key = n.organization_id || "__none__";
-          break;
         case "project":
           key = n.project_id || "__none__";
           break;
@@ -535,8 +504,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     }
     // Scope keys are already human-readable: "Department: SEO"
     if (groupBy === "scope") return key;
-    // For org/project/task, the key is a UUID — show context name if matching
-    if (groupBy === "organization" && orgName) return orgName;
+    // For project/task, the key is a UUID — show context name if matching
     if (groupBy === "project" && projName) return projName;
     if (groupBy === "task" && taskName) return taskName;
     return key.slice(0, 8) + "...";

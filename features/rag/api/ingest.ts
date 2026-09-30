@@ -60,7 +60,13 @@ export interface IngestRequestBody {
 export async function ingestSource(
   sourceKind: IngestRequestBody["source_kind"],
   sourceId: string,
-  opts: { force?: boolean; signal?: AbortSignal } = {},
+  opts: {
+    force?: boolean;
+    signal?: AbortSignal;
+    /** The source record's OWN organization (an existing record is processed in
+     *  the org it lives in, never whichever one is active). */
+    organizationId?: string | null;
+  } = {},
 ): Promise<IngestResponse> {
   const { data } = await postJson<IngestResponse, IngestRequestBody>(
     `/rag/ingest`,
@@ -69,7 +75,7 @@ export async function ingestSource(
       source_id: sourceId,
       force: opts.force ?? false,
     },
-    { signal: opts.signal },
+    { signal: opts.signal, organizationId: opts.organizationId ?? undefined },
   );
   return data;
 }

@@ -39,12 +39,6 @@ import {
   fetchDeletedNotes,
   restoreNote,
 } from "../../redux/thunks";
-import {
-  selectProjectId,
-  selectTaskId,
-  selectScopeSelectionsContext,
-} from "@/lib/redux/slices/appContextSlice";
-import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
 import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
@@ -81,46 +75,18 @@ export default function MobileNotesList({
   const [trashOpen, setTrashOpen] = useState(false);
   const trashFetchedRef = useRef(false);
 
-  // Active context for filtering
-  const activeProjectId = useAppSelector(selectProjectId);
-  const activeTaskId = useAppSelector(selectTaskId);
-  const scopeSelections = useAppSelector(selectScopeSelectionsContext);
-
-  // Scope-filtered note IDs
-  const activeScopeIds = useMemo(
-    () => Object.values(scopeSelections).filter(Boolean) as string[],
-    [scopeSelections],
-  );
-  const { entityIds: scopeFilteredNoteIds } = useEntitiesByScopes({
-    scopeIds: activeScopeIds,
-    entityType: "note",
-    matchAll: false,
-  });
-
-  // Deduplicated + context-filtered notes
+  // Deduplicated notes — never narrowed by the global active context
   const uniqueNotes = useMemo(() => {
     const seen = new Set<string>();
-    let result = notes.filter((n) => {
+    return notes.filter((n) => {
       if (seen.has(n.id)) return false;
       seen.add(n.id);
       return true;
     });
-    if (scopeFilteredNoteIds)
-      result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
-    if (activeProjectId)
-      result = result.filter((n) => n.project_id === activeProjectId);
-    if (activeTaskId) result = result.filter((n) => n.task_id === activeTaskId);
-    return result;
-  }, [
-    notes,
-    scopeFilteredNoteIds,
-    activeProjectId,
-    activeTaskId,
-  ]);
+  }, [notes]);
 
   // Filtered + sorted notes. "Shared only" swaps the base list to the notes
-  // shared WITH me (from get_notes_shared_with_me) — those are cross-org, so
-  // the active-context org/project filters don't apply to them.
+  // shared WITH me (from get_notes_shared_with_me) — those are cross-org.
   const filteredNotes = useMemo(() => {
     let result = filters.sharedOnly ? sharedNotes : uniqueNotes;
 

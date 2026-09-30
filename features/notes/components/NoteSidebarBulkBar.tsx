@@ -128,7 +128,9 @@ export function NoteSidebarBulkBar({
         selectedNotes,
         MAX_PARALLEL,
         async (note) => {
-          await ingestSource("note", note.id);
+          await ingestSource("note", note.id, {
+            organizationId: note.organization_id,
+          });
         },
       );
       if (failed > 0) {

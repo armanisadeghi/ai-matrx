@@ -90,7 +90,6 @@ import {
   refreshNoteContent,
   saveNote,
 } from "../redux/thunks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   selectInstanceActiveTab,
   selectInstanceTabs,
@@ -282,7 +281,6 @@ export function NotesView({
   }, [dispatch, instanceId]);
 
   // ── Fetch notes list + scope data on mount ──────────────────────────
-  const orgId = useAppSelector(selectOrganizationId);
   const fetchedUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     // Do not start a read from a persisted/stale Redux identity. Supabase
@@ -332,13 +330,14 @@ export function NotesView({
   }, [dispatch, userId]);
 
   useEffect(() => {
-    if (fetchedUserIdRef.current && orgId) {
+    // Keyed on the person, never the active org: the scope tree spans every org.
+    if (fetchedUserIdRef.current && userId) {
       // Ensure the canonical scope tree is loaded so the new scope pickers
       // (EntityScopeTagger / EntityTargetPicker) and the active-context
       // surface have data. No-op if already `ready` (no refetch policy).
       dispatch(ensureScopeTree());
     }
-  }, [dispatch, orgId]);
+  }, [dispatch, userId]);
 
   // ── Single note mode: set active immediately ──────────────────────
   useEffect(() => {
@@ -453,10 +452,8 @@ export function NotesView({
         dispatch(fetchNotesList()).unwrap(),
         dispatch(fetchSharedNotesList()).unwrap(),
       ];
-      if (orgId) {
-        // Explicit user refresh → force-refresh the canonical scope tree.
-        work.push(dispatch(ensureScopeTree({ refresh: true })));
-      }
+      // Explicit user refresh → force-refresh the canonical scope tree.
+      work.push(dispatch(ensureScopeTree({ refresh: true })));
       for (const noteId of openTabs ?? []) {
         work.push(dispatch(refreshNoteContent(noteId)).unwrap());
       }
@@ -464,7 +461,7 @@ export function NotesView({
     } finally {
       setIsRefreshing(false);
     }
-  }, [dispatch, isRefreshing, openTabs, orgId]);
+  }, [dispatch, isRefreshing, openTabs]);
 
   // ── Keyboard shortcuts ───────────────────────────────────────────
   useEffect(() => {

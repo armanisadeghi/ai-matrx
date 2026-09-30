@@ -79,7 +79,7 @@ export type NoteListItem = Pick<
 
 // ── Group-by modes for the sidebar ──────────────────────────────────────────
 export type NoteGroupBy =
-  "folder" | "organization" | "project" | "task" | "scope";
+  "folder" | "project" | "task" | "scope";
 
 // ── View modes for the editor ────────────────────────────────────────────────
 export type NoteViewMode =
