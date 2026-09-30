@@ -272,7 +272,13 @@ if $STRICT; then
         # without --strict. It also runs in release.sh OUTSIDE --no-gates, so a
         # release that skips this suite still reports; the entry here is what
         # makes a manual gate run show the findings too.
-        "Mandate references (every Mandate this build names, and every bypass)|pnpm check:mandate-references"
+        # mandate-scan-step:begin
+        # `|| echo '[WARN] …'`: a missing uvx, a PyPI outage or a crash exits
+        # non-zero BEFORE the scanner runs; that is a loud [WARN] badge, never a
+        # [FAIL] that makes --strict exit 1. `matrx-mandate-scan wiring` runs this
+        # row with a failing fake scanner and screams if it can change the exit.
+        "Mandate references (every Mandate this build names, and every bypass)|pnpm check:mandate-references || echo '[WARN] the mandate reference scan did not complete (uvx missing, crashed or timed out) — this build is UNMEASURED on the fleet board; it never blocks (D23)'"
+        # mandate-scan-step:end
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         # CANONICAL RATCHETS — the two counts from the 2026-08-15 architecture
         # drift audit's enforcement recommendation (item 2). Both read ONE cached

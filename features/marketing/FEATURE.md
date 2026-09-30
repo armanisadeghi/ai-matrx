@@ -686,12 +686,7 @@ directly.
 What a worth row means: a keyword placed on an offering, or beneath it in the
 brand's hierarchy, starts at the site baseline plus the nearest offering's
 `worth_points`; `lead_quality = negative_value` or `offering_match` in
-`not_offered | actively_avoided` makes it Negative. Since 2026-09-30 (COLLAPSE-7,
-matrx-seo round 32) a worth row is KEYED on the offering's map topic
-(`site_offering_value.topic_id -> seo.map_topic`, derived by the table's trigger;
-`brand_offering_id` stays for the older readers) and the resolver finds offering worth
-only through it; taxonomy-topic worth still comes from `seo.site_topic_value` until
-COLLAPSE-6. `seo.keyword_value_map`
+`not_offered | actively_avoided` makes it Negative. `seo.keyword_value_map`
 reads only this site's rows (proven lossless: 40,574 keywords, 0 unexplained;
 `pnpm check:offering-resolver-equivalence:self-test`).
 
