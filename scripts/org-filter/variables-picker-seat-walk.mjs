@@ -113,6 +113,43 @@ try {
     `${tableRows.length} table rows offered; the data home's door answers ${EXPECT} (not kept by the app); ${count.v} options in all`,
   );
 
+  // THE SHELL'S LANES: the tab bar is the shell's, All is selected, and Mine narrows to the seat's own.
+  await page.keyboard.press("Escape");
+  await sleep(500);
+  const tabs = await page.evaluate(() =>
+    [...document.querySelectorAll('[role="tab"]')]
+      .filter((b) => b.closest('[role="dialog"]'))
+      .map((b) => ({ label: (b.textContent ?? "").replace(/\d+$/, ""), selected: b.getAttribute("aria-selected") })),
+  );
+  const labels = tabs.map((t) => t.label).join(" · ");
+  pass(
+    "the shell's lanes, All first and selected",
+    labels === "All · Mine · My team · My Orgs · Shared · Public · System" && tabs[0]?.selected === "true",
+    labels,
+  );
+  if (process.env.VP_EXPECT_MINE) {
+    await page.locator('[role="dialog"] [role="tab"]', { hasText: /^Mine/ }).first().click();
+    await sleep(800);
+    await page.locator('[aria-label="Table"]').first().click();
+    await sleep(1200);
+    const mine = await page.evaluate(() => {
+      const search = document.querySelector('input[placeholder="Search your tables…"]');
+      let box = search?.parentElement ?? null;
+      while (box && !box.querySelector('[role="option"]')) box = box.parentElement;
+      return (box?.querySelectorAll('[role="option"]') ?? []).length;
+    });
+    await shot(page, "lane-mine");
+    pass("Mine lists the seat's own tables", mine === Number(process.env.VP_EXPECT_MINE), `${mine} offered; the door says ${process.env.VP_EXPECT_MINE}`);
+    await page.keyboard.press("Escape");
+    await page.locator('[role="dialog"] [role="tab"]', { hasText: /^All/ }).first().click();
+    await sleep(800);
+    await page.locator('[aria-label="Table"]').first().click();
+    await sleep(800);
+  } else {
+    await page.locator('[aria-label="Table"]').first().click();
+    await sleep(800);
+  }
+
   if (OTHER) {
     await page.keyboard.type(OTHER);
     await sleep(800);
