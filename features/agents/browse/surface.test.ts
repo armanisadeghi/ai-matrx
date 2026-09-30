@@ -9,6 +9,7 @@ function makeListController(): EntityListSurfaceController<AgentBrowseRow> {
   return {
     query: {
       scope: { kind: "mine" },
+      orgId: null,
       search: "research",
       deep: false,
       archived: "active",

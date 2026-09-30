@@ -8,6 +8,7 @@ jest.mock("./service", () => ({
 
 const QUERY: EntityListQuery = {
   scope: { kind: "orgs" },
+  orgId: null,
   search: " matrx ",
   deep: false,
   archived: "active",

@@ -75,26 +75,36 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
  * Mine, and My Orgs narrowed to one organization, are single filters (`applyListScope`); All and a
  * blended My Orgs are every organization's Shown-to filter plus shares (`defaultListFilter`),
  * narrowed by the organization filter when one is chosen.
+ *
+ * Two steps on purpose: the async half resolves what the scope needs, the SYNC half applies it. A
+ * query builder is a thenable, so returning one from an async function would run the query.
  */
-async function scopeTranscripts<Q extends ListScopeQuery<Q>>(
-  query: Q,
+async function transcriptScope(
   scope: ListScope | undefined,
   orgId: string | null,
-): Promise<Q> {
+): Promise<{ apply<Q extends ListScopeQuery<Q>>(query: Q): Q }> {
   const userId = requireUserId();
   const resolved = scope ?? (await defaultListScopeFor("transcript"));
   if (resolved.kind === "all" || (resolved.kind === "orgs" && !orgId)) {
     const filter = await defaultListFilter("transcript", { userId, requested: "organization" });
-    const blended = filter.apply(query);
-    return orgId ? blended.eq("organization_id", orgId) : blended;
+    return {
+      apply: (query) => {
+        const blended = filter.apply(query);
+        return orgId ? blended.eq("organization_id", orgId) : blended;
+      },
+    };
   }
-  return applyListScope(query, resolved, {
-    userId,
-    ownerColumn: "created_by",
-    organizationId: orgId,
-    // Access ladder T-11: an organization list honors each row's "Shown to".
-    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
-  });
+  // Access ladder T-11: an organization list honors each row's "Shown to".
+  const shownTo = resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined;
+  return {
+    apply: (query) =>
+      applyListScope(query, resolved, {
+        userId,
+        ownerColumn: "created_by",
+        organizationId: orgId,
+        shownTo,
+      }),
+  };
 }
 
 /**
@@ -109,10 +119,9 @@ export async function fetchTranscripts(
   scope?: ListScope,
   orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const query = await scopeTranscripts(
+  const lane = await transcriptScope(scope, orgId);
+  const query = lane.apply(
     supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
-    scope,
-    orgId,
   );
   const { data, error } = await query.order("updated_at", { ascending: false });
 
@@ -134,10 +143,9 @@ export async function fetchTranscriptsPaginated(
   scope?: ListScope,
   orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const query = await scopeTranscripts(
+  const lane = await transcriptScope(scope, orgId);
+  const query = lane.apply(
     supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
-    scope,
-    orgId,
   );
   const { data, error } = await query
     .order("updated_at", { ascending: false })
@@ -500,10 +508,9 @@ export async function searchTranscripts(
   scope?: ListScope,
   orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const searchQuery = await scopeTranscripts(
+  const lane = await transcriptScope(scope, orgId);
+  const searchQuery = lane.apply(
     supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
-    scope,
-    orgId,
   );
   const { data, error } = await searchQuery
     .or(buildSearchOr(query, ["title", "description"]))
@@ -525,10 +532,9 @@ export async function getTranscriptsByFolder(
   scope?: ListScope,
   orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const folderQuery = await scopeTranscripts(
+  const lane = await transcriptScope(scope, orgId);
+  const folderQuery = lane.apply(
     supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
-    scope,
-    orgId,
   );
   const { data, error } = await folderQuery
     .eq("folder_name", folderName)
@@ -550,10 +556,9 @@ export async function getTranscriptsByTag(
   scope?: ListScope,
   orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const tagQuery = await scopeTranscripts(
+  const lane = await transcriptScope(scope, orgId);
+  const tagQuery = lane.apply(
     supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
-    scope,
-    orgId,
   );
   const { data, error } = await tagQuery
     .contains("tags", [tag])

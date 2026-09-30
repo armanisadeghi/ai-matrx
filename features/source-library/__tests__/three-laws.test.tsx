@@ -215,6 +215,7 @@ function selectionOfIds(ids: string[]): EntityBulkSelection<VideoRow> {
         count: ids.length,
         filter: {
             scope: { kind: "mine" },
+            orgId: null,
             search: "",
             deep: false,
             archived: "active",
@@ -233,6 +234,7 @@ function selectionOfEverythingMatching(
         count,
         filter: {
             scope: { kind: "mine" },
+            orgId: null,
             search: "",
             deep: false,
             archived: "active",

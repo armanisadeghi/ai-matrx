@@ -53,6 +53,7 @@ const CTX = {
 function query(written_by?: PartyListQuery["filters"]["written_by"]): PartyListQuery {
   return {
     scope: { kind: "mine" },
+    orgId: null,
     search: "",
     kind: "all",
     filters: { record_class: DEFAULT_RECORD_CLASS_FILTER, written_by },
