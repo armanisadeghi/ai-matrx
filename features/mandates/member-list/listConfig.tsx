@@ -209,6 +209,8 @@ export function memberMandateListConfig(
     sourceFeature: "agents-other",
     getRowEntity: (row) => ({ type: "mandate", id: row.id, title: row.name }),
     scopes,
+    // A mandate is homed to an organization, never a team.
+    teamLane: false,
     service: {
       fetchPage: async () => ({ rows: [], total: 0 }),
       fetchCounts: async () => EMPTY_SCOPE_COUNTS,

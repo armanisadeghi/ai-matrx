@@ -162,6 +162,12 @@ export function isTeamScope(
   return scope.kind === "team";
 }
 
+/** What a surface declares about the standard lanes (`EntityListConfig.teamLane`). */
+export interface StandardLanesOptions {
+  /** `false` = this surface's records have no team concept, so My team never appears. */
+  teamLane?: boolean;
+}
+
 /**
  * THE ONE PLACE "My team" joins a list (T-29, 2026-09-27). Every surface that
  * offers "My Orgs" offers "My team" beside it — never declared per page. Its
@@ -173,7 +179,13 @@ export function isTeamScope(
  * team, my organization). Idempotent; a list without "orgs" is untouched —
  * an admin page, or a Private type, has no team question to answer.
  */
-export function withTeamScope(scopes: readonly ListScopeKind[]): ListScopeKind[] {
+export function withTeamScope(
+  scopes: readonly ListScopeKind[],
+  lanes: StandardLanesOptions = {},
+): ListScopeKind[] {
+  // A surface whose records have no team concept DECLARES it (`teamLane: false`): a lane that
+  // can never hold anything is absent, never an empty tab (a screen never lies).
+  if (lanes.teamLane === false) return scopes.filter((k) => k !== "team");
   if (!scopes.includes("orgs") || scopes.includes("team")) return [...scopes];
   const out = [...scopes];
   const at = out.indexOf("mine");
@@ -195,8 +207,11 @@ export function withAllScope(scopes: readonly ListScopeKind[]): ListScopeKind[] 
 }
 
 /** The lanes a tab bar renders: the surface's own, plus All and My team where they belong. */
-export function withStandardLanes(scopes: readonly ListScopeKind[]): ListScopeKind[] {
-  return withAllScope(withTeamScope(scopes));
+export function withStandardLanes(
+  scopes: readonly ListScopeKind[],
+  lanes: StandardLanesOptions = {},
+): ListScopeKind[] {
+  return withAllScope(withTeamScope(scopes, lanes));
 }
 
 export function isAllScope(

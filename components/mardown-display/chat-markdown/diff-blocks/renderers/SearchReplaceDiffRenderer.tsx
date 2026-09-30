@@ -15,15 +15,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef } from "react";
-import {
-  generateUnifiedDiff,
-  DiffLine,
-} from "@/features/code-editor/utils/generateDiff";
+import { computeLineChanges, type UnifiedLine } from "@ai-matrx/diff/text";
 import { DiffView } from "@/features/code-editor/components/DiffView";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { DiffLoadingIndicator } from "../DiffLoadingIndicator";
 import { DiffCollapsible } from "../DiffCollapsible";
-import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -42,14 +38,14 @@ interface SearchReplaceDiffRendererProps {
  * Used in collapsed state
  */
 const DiffPreview: React.FC<{
-  lines: DiffLine[];
+  lines: UnifiedLine[];
   language: string;
   maxLines?: number;
 }> = ({ lines, language, maxLines = 4 }) => {
   const mode = useThemeMode();
   const previewLines = lines.slice(0, maxLines);
 
-  const getDiffLineStyle = (type: DiffLine["type"]) => {
+  const getDiffLineStyle = (type: UnifiedLine["type"]) => {
     if (type === "added") {
       return mode === "dark"
         ? "bg-green-900/60 border-l-4 border-green-500"
@@ -63,13 +59,13 @@ const DiffPreview: React.FC<{
     return mode === "dark" ? "bg-transparent" : "bg-transparent";
   };
 
-  const getDiffLinePrefix = (type: DiffLine["type"]) => {
+  const getDiffLinePrefix = (type: UnifiedLine["type"]) => {
     if (type === "added") return "+ ";
     if (type === "removed") return "- ";
     return "  ";
   };
 
-  const getDiffLinePrefixColor = (type: DiffLine["type"]) => {
+  const getDiffLinePrefixColor = (type: UnifiedLine["type"]) => {
     if (type === "added") {
       return mode === "dark" ? "text-green-400" : "text-green-700";
     }
@@ -135,7 +131,7 @@ export const SearchReplaceDiffRenderer: React.FC<
   // Memoize diff generation - only when both are complete
   const diffData = useMemo(() => {
     if (!isComplete || !search || !replace) return null;
-    return generateUnifiedDiff(search, replace);
+    return computeLineChanges(search, replace);
   }, [isComplete, search, replace]);
 
   // Auto-scroll the streaming preview to the bottom as new code arrives,
@@ -195,12 +191,6 @@ export const SearchReplaceDiffRenderer: React.FC<
         className={className}
         additions={diffData.additions}
         deletions={diffData.deletions}
-        headerRight={
-          <LegacyDiffChip
-            label="chat diff"
-            reason="Streaming SEARCH/REPLACE chat block; the completed diff uses the canonical DiffView, but the collapsed preview + counts still use the legacy LCS util"
-          />
-        }
         showPreview={true}
         previewContent={
           <DiffPreview

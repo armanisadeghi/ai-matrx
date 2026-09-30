@@ -48,7 +48,7 @@ import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { applyCodeEdits } from "@/features/code-editor/agent-code-editor/utils/applyCodeEdits";
-import { generateUnifiedDiff } from "@/features/code-editor/agent-code-editor/utils/generateDiff";
+import { computeLineChanges } from "@ai-matrx/diff/text";
 import { useMonacoTheme } from "./useMonacoTheme";
 import { setActiveTab, updateTabContent } from "../redux/tabsSlice";
 import {
@@ -104,7 +104,7 @@ export const TabDiffView: React.FC<TabDiffViewProps> = ({ tab }) => {
         ok[patch.patchId] = false;
       }
     }
-    const stats = generateUnifiedDiff(tab.content, working);
+    const stats = computeLineChanges(tab.content, working);
     return {
       proposedContent: working,
       perPatchOk: ok,

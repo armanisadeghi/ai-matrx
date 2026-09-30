@@ -23,7 +23,7 @@ import {
   validateEdits,
 } from "@/features/code-editor/utils/parseCodeEdits";
 import { applyCodeEdits } from "@/features/code-editor/utils/applyCodeEdits";
-import { getDiffStats } from "@/features/code-editor/utils/generateDiff";
+import { computeLineChanges } from "@ai-matrx/diff/text";
 import {
   buildSpecialVariables,
   filterOutSpecialVariables,
@@ -459,7 +459,7 @@ export function useAICodeEditor({
   }, [modifiedCode, onCodeChange, onOpenChange]);
 
   const diffStats = modifiedCode
-    ? getDiffStats(currentCode, modifiedCode)
+    ? computeLineChanges(currentCode, modifiedCode)
     : null;
 
   // displayVariables: no longer driven by cachedPrompt.variableDefaults.

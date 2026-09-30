@@ -120,12 +120,6 @@ export async function fetchMandateListPage(
   mode: MandateListMode,
   coverage: MandateCoverageNarrowing | null = null,
 ): Promise<EntityListPage<MandateListRow>> {
-  // A mandate is homed in an ORGANIZATION (or the platform), never in a team, so the My team lane
-  // has nothing to show — and its count says 0, so the list and the count agree (the count IS the
-  // list). Asking the door for "everything" here would make this lane repeat All under a false name.
-  if (mode.kind === "homes" && query.scope.kind === "team") {
-    return { rows: [], total: 0 };
-  }
   const rows = await listMandatesScoped({
     ...(mode.kind === "organization"
       ? { resolutionFor: "org" as const, organizationId: mode.organizationId }
@@ -232,7 +226,6 @@ export async function fetchMandateScopeCounts(
       // organization the caller belongs to), so both badges carry the door's one count.
       counts.byKind.orgs = result.value;
       counts.byKind.all = result.value;
-      counts.byKind.team = 0;
     }
   });
   if (narrowed.length > 0) counts.narrow.orgs = narrowed;

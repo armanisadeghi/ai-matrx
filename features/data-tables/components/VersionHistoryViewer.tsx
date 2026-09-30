@@ -22,6 +22,7 @@
 "use client";
 
 import { useState } from "react";
+import { diffRecordFields } from "@ai-matrx/diff/structural";
 
 import {
   AlertCircle,
@@ -376,7 +377,7 @@ function VersionCard({
 }) {
   const { change_kind, changed_at, changed_by, data, prior_data, reason } =
     version;
-  const diff = computeDiff(prior_data, data, change_kind);
+  const diff = diffRecordFields(prior_data, data, change_kind);
   const restoreBusy = busyKey === `restore-${version.id}`;
   // Restoring the current (non-delete) version is a no-op — hide it there.
   // On a deleted row every card is restorable (re-insert).
@@ -562,52 +563,8 @@ function ActorChip({ userId }: { userId: string | null }) {
 
 // ─── Diff helpers (no comments inside — names self-document) ─────────────────
 
-type DiffEntry =
-  | { kind: "insert"; key: string; next: unknown }
-  | { kind: "delete"; key: string; prev: unknown }
-  | { kind: "change"; key: string; prev: unknown; next: unknown };
-
-function computeDiff(
-  prior: unknown,
-  next: unknown,
-  kind: RowVersion["change_kind"],
-): DiffEntry[] {
-  const priorObj = isPlainObject(prior) ? prior : {};
-  const nextObj = isPlainObject(next) ? next : {};
-  const keys = new Set([...Object.keys(priorObj), ...Object.keys(nextObj)]);
-  const out: DiffEntry[] = [];
-
-  for (const key of keys) {
-    const inPrior = key in priorObj;
-    const inNext = key in nextObj;
-    const pv = priorObj[key];
-    const nv = nextObj[key];
-
-    if (kind === "insert" && inNext) {
-      out.push({ kind: "insert", key, next: nv });
-    } else if (kind === "delete" && inPrior) {
-      out.push({ kind: "delete", key, prev: pv });
-    } else if (!inPrior && inNext) {
-      out.push({ kind: "insert", key, next: nv });
-    } else if (inPrior && !inNext) {
-      out.push({ kind: "delete", key, prev: pv });
-    } else if (!shallowEqual(pv, nv)) {
-      out.push({ kind: "change", key, prev: pv, next: nv });
-    }
-  }
-  return out;
-}
-
 function isPlainObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
-}
-
-function shallowEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (typeof a !== typeof b) return false;
-  if (a === null || b === null) return false;
-  if (typeof a === "object") return JSON.stringify(a) === JSON.stringify(b);
-  return false;
 }
 
 function formatValue(v: unknown): string {

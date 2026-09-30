@@ -43,7 +43,7 @@ import {
   type ParseResult,
 } from "../utils/parseCodeEdits";
 import { applyCodeEdits } from "../utils/applyCodeEdits";
-import { getDiffStats } from "../utils/generateDiff";
+import { computeLineChanges } from "@ai-matrx/diff/text";
 import type { CodeEditorState, UseSmartCodeEditorReturn } from "../types";
 import type { ConsumePendingResult } from "./useCodeEditorWidgetHandle";
 
@@ -248,7 +248,8 @@ export function useSmartCodeEditor({
 
   const diffStats = useMemo(() => {
     if (!modifiedCode) return null;
-    return getDiffStats(currentCode, modifiedCode);
+    const { additions, deletions } = computeLineChanges(currentCode, modifiedCode);
+    return { additions, deletions };
   }, [currentCode, modifiedCode]);
 
   return {

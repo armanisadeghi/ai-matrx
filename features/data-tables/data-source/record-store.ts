@@ -47,6 +47,7 @@ import { declareTable, personActor, recordsDataSource, resolveTableStyle, type N
 import { withheldCells, type WithheldCells } from "../withheld-cells";
 
 import { createClient } from "@/utils/supabase/client";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { FieldChoice } from "@ai-matrx/design-system/field-formats";
 
 import type {
@@ -117,6 +118,31 @@ function clientFor(home: RecordStoreHome): RecordsClient {
       dataSource: recordsDataSource(createClient()),
       actor: personActor(home.userId),
       organizationId: home.organizationId,
+    });
+    clients.set(key, client);
+  }
+  return client;
+}
+
+/**
+ * THE CLIENT THAT READS ACROSS EVERY ORGANIZATION THE PERSON BELONGS TO (active-org law: the
+ * organization a grid was opened in is where it writes, never what a list shows). The ids come
+ * from the canonical membership read (`mbr_for_user`), never a fixed list; the client is keyed by
+ * them so a membership change builds a fresh one. A failed membership read is thrown, never
+ * papered over with a one-organization list.
+ */
+async function spanningClientFor(home: RecordStoreHome): Promise<RecordsClient> {
+  const read = await membershipsService.forUser("organization");
+  if (!read.ok) throw new Error(`Could not read your organizations: ${read.error.message}`);
+  const organizationIds = [...new Set(read.data.memberships.map((m) => m.containerId))].sort();
+  const key = `${home.organizationId}:${home.userId ?? ""}:span:${organizationIds.join(",")}`;
+  let client = clients.get(key);
+  if (!client) {
+    client = createRecordsClient({
+      dataSource: recordsDataSource(createClient()),
+      actor: personActor(home.userId),
+      organizationId: home.organizationId,
+      organizationIds,
     });
     clients.set(key, client);
   }
@@ -581,12 +607,11 @@ export async function hasEditorAccess(home: RecordStoreHome, args: { tableId: st
   return level === "editor" || level === "admin";
 }
 
-/** The tables the header's switcher lists: this organization's record-store Tables. */
+/** The tables the header's switcher lists: the record-store Tables of EVERY organization the person belongs to. */
 export async function listTables(
   home: RecordStoreHome,
-): Promise<ServiceResult<Array<{ id: string; table_name: string; description: string | null; row_count: number; field_count: number }>>> {
-  const client = clientFor(home);
-  const answer = await client.tableList();
+): Promise<ServiceResult<Array<{ id: string; table_name: string; description: string | null; organization_id: string; row_count: number; field_count: number }>>> {
+  const answer = await (await spanningClientFor(home)).tableList();
   if (!answer.ok) return refused(answer.error);
   const tables = answer.data.filter((t) => !t.is_kernel);
   // A REAL COUNT, never a zero (lane INTEG-CLIENTS). Every picker prints "N rows" and the
@@ -594,7 +619,10 @@ export async function listTables(
   // listed as 0 made that sentence a lie. `custom.table_capacity` counts a Table's live
   // records for a reader who may know the table. One call per Table — the store has no
   // "tables with their counts" door yet (named for GRID-PRIMITIVES).
-  const counts = await Promise.all(tables.map((t) => client.tableCapacity({ table_id: t.id })));
+  // Each count is asked in the table's OWN organization (the list now spans several).
+  const counts = await Promise.all(
+    tables.map((t) => clientFor({ ...home, organizationId: t.organization_id }).tableCapacity({ table_id: t.id })),
+  );
   const failed = counts.find((c) => !c.ok);
   if (failed && !failed.ok) return refused(failed.error);
   return {
@@ -605,6 +633,7 @@ export async function listTables(
         id: t.id,
         table_name: t.name,
         description: null,
+        organization_id: t.organization_id,
         row_count: count && count.ok ? count.data.records : 0,
         field_count: Array.isArray(t.fields) ? t.fields.length : 0,
       };
