@@ -219,6 +219,7 @@ export function memberMandateListConfig(
     columns: memberMandateColumns({
       canManage: (row) => canRemoveMemberRow(row, options),
       onChanged: options.onChanged,
+      recordHref: hrefFor,
     }),
     prefsVersion: 1,
     prefsDefaults: { sort: "name", direction: "asc", pageSize: 50 },

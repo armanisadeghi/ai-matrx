@@ -23,7 +23,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@/components/cost/costUnit", () => ({ selectCostUnit: () => "points", selectCanToggleCostUnit: () => true }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd" }));
 jest.mock("@/lib/redux/preferences/userPreferencesSlice", () => ({ setModulePreferences: (p: unknown) => ({ type: "prefs", payload: p }) }));
-jest.mock("@/lib/knobs/featureKnobs", () => ({ knobNumber: jest.fn(async () => 20) }));
+jest.mock("@/components/official/InfoHint", () => ({ InfoHint: ({ text }: { text: string }) => <i data-hint={text} /> }));
 jest.mock("@/components/navigation/AppLink", () => ({ __esModule: true, default: ({ children }: { children: unknown }) => <a>{children as never}</a> }));
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 
@@ -65,8 +65,9 @@ jest.mock("../useDrillKnobs", () => ({
     paretoSharePct: 80,
     pivotColumns: 24,
     grainLines: null,
-    says: ["The setting drill.auto_grain.hour_max_days could not be read (Missing feature knob), so time reads at the package's own grain lines."],
+    unread: [{ name: "drill.auto_grain.hour_max_days", label: "Time grain", why: "no knob is registered" }],
   }),
+  useDrillStaleAfter: () => ({ minutes: 20, unread: null }),
 }));
 jest.mock("../useDrillChart", () => ({ useDrillChart: () => ({ answers: {}, error: null }) }));
 jest.mock("../useDrillReconcile", () => ({
@@ -114,7 +115,7 @@ jest.mock("../useDrillExplorer", () => {
 
 import { DrillExplorer } from "../DrillExplorer";
 import { drillKnobsOf } from "../useDrillKnobs";
-import { drillReconcileSentence } from "../useDrillReconcile";
+import { drillReconcileChip } from "../useDrillReconcile";
 import { formatPoints } from "@ai-matrx/kit/format";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -184,43 +185,64 @@ describe("the explorer on the published packages", () => {
     const conditions = captured.explain!.conditions as string[];
     expect(conditions[0]).toBe('Saved view "Anthropic and OpenAI by model" is open.');
     expect(conditions.join(" ")).toMatch(/Provider is anthropic or openai/);
-    expect(host.querySelector("[data-drill-explorer-carried]")?.textContent).toMatch(/Anthropic and OpenAI by model/);
+    const chip = host.querySelector("[data-drill-explorer-carried]");
+    expect(chip?.textContent).toMatch(/^View: Anthropic and OpenAI by model/);
+    expect(chip?.querySelector("[data-hint]")?.getAttribute("data-hint")).toMatch(/Provider is anthropic or openai/);
   });
 
-  it("says a knob it could not read, and the reconciliation in words from the two numbers", async () => {
+  it("says a knob it could not read, and the reconciliation from the two numbers — as state, not sentences", async () => {
     await mount();
-    expect(host.querySelector("[data-drill-explorer-knob-said]")?.textContent).toMatch(/drill\.auto_grain\.hour_max_days could not be read/);
-    expect(host.querySelector("[data-drill-explorer-reconcile]")?.textContent).toMatch(/of these .* are AI model calls; .* is spend with no AI model call behind it\./);
+    const defaults = host.querySelector("[data-drill-explorer-knob-said]");
+    expect(defaults?.textContent).toBe("Defaults");
+    expect(defaults?.querySelector("[data-hint]")?.getAttribute("data-hint")).toBe("Not read: Time grain. Built-in lines in use.");
+    const reconcile = host.querySelector("[data-drill-explorer-reconcile]");
+    expect(reconcile?.textContent).toBe("AI model calls 75%");
+    expect(reconcile?.querySelector("[data-hint]")?.getAttribute("data-hint")).toMatch(/^.+ of .+; .+ \(25%\) with no AI model call$/);
     expect(captured.reconcile).toMatchObject({ lane: "platform" });
+  });
+
+  it("F8/F9: the calendar said once as a chip, times in it; the toolbar's controls never shrink", async () => {
+    await act(async () => {
+      root.render(
+        <DrillExplorer
+          source={{ kind: "entity", token: "ai_usage" }}
+          lane="platform"
+          organizationId="00000000-0000-0000-0000-000000000001"
+          title="AI usage"
+          rootLabel="All usage"
+          headline={{ measure: "cost" }}
+          windowAlign="hour"
+          timeZone="UTC"
+        />,
+      );
+    });
+    expect(host.querySelectorAll("[data-drill-explorer-time-zone]")).toHaveLength(1);
+    expect(host.querySelector("[data-drill-explorer-time-zone]")?.textContent).toMatch(/^(· )?UTC$/);
+    const controls = host.querySelector("[data-drill-explorer-controls]");
+    expect(controls?.className).toMatch(/flex-wrap/);
+    expect(controls?.className).toMatch(/\[&>\*\]:shrink-0/);
   });
 });
 
 describe("the explorer's settings and words", () => {
-  it("reads every knob it can and says each one it cannot, the grain lines once", () => {
+  it("reads every knob it can and names each one it cannot", () => {
     const ok = (value: number) => ({ ok: true as const, value });
-    const no = { ok: false as const, message: "Missing feature knob drill.chart top_n" };
+    const no = { ok: false as const, message: "no knob is registered for feature='drill.chart', key='top_n'" };
     expect(drillKnobsOf([ok(10), ok(80), ok(24), ok(2), ok(90), ok(366)])).toEqual({
-      chartTopN: 10, paretoSharePct: 80, pivotColumns: 24, grainLines: { hourMaxDays: 2, dayMaxDays: 90, weekMaxDays: 366 }, says: [],
+      chartTopN: 10, paretoSharePct: 80, pivotColumns: 24, grainLines: { hourMaxDays: 2, dayMaxDays: 90, weekMaxDays: 366 }, unread: [],
     });
     const some = drillKnobsOf([no, ok(80), ok(24), no, no, ok(366)]);
     expect(some.chartTopN).toBeNull();
     expect(some.grainLines).toBeNull();
-    expect(some.says).toHaveLength(2);
-    expect(some.says[0]).toBe("The setting drill.chart.top_n is not on this database yet, so the chart draws the package's 10 series before Other.");
+    expect(some.unread.map((u) => u.name)).toEqual(["drill.chart.top_n", "drill.auto_grain.hour_max_days", "drill.auto_grain.day_max_days"]);
   });
 
   it("builds the reconciliation from the measured parts", () => {
     const f = (v: number) => formatPoints(v);
-    expect(drillReconcileSentence(2000, 1500, "AI model calls", f)).toBe("1,500 points of these 2,000 points are AI model calls; 500 points (25%) is spend with no AI model call behind it.");
-    expect(drillReconcileSentence(2000, 2100, "Model calls", f)).toMatch(/^The model calls count 2,100 points, 100 points more than these 2,000 points/);
+    expect(drillReconcileChip(2000, 1500, "AI model calls", f)).toEqual({ label: "AI model calls 75%", tip: "1,500 points of 2,000 points; 500 points (25%) with no AI model call" });
+    expect(drillReconcileChip(2000, 2100, "Model calls", f).tip).toMatch(/^2,100 points of 2,000 points: 100 points more than the ledger holds$/);
   });
 });
 
-// lane DRILL-PRESETS-RETIRE: the stale line's setting is read at the row's own split (the last dot)
-describe("the stale-line setting's address", () => {
-  it("drill.usage.stale_after_minutes is feature drill.usage, key stale_after_minutes", () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { staleKnobAddress } = require("../DrillExplorer") as typeof import("../DrillExplorer");
-    expect(staleKnobAddress("drill.usage.stale_after_minutes")).toEqual({ feature: "drill.usage", key: "stale_after_minutes" });
-  });
-});
+// The stale line's setting address (lane DRILL-PRESETS-RETIRE found the first-dot split) is now the
+// explorer's one knob rule: drill-live-fixes.test.tsx, "F1".

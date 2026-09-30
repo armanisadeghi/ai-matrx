@@ -61,6 +61,11 @@ export interface MandateListRow {
   version_live: boolean | null;
   /** The organization this mandate is HOMED in — its owner (D-R3). */
   home_organization_id: string | null;
+  /**
+   * The open live candidate (Mandate Candidates, V1 D4), added by the list
+   * service from `public.mnd_candidate_cells` — `null` = none open; absent = not read.
+   */
+  candidate?: import("@/features/mandates/admin-list/rpc").MandateCandidateCell | null;
 }
 
 /**

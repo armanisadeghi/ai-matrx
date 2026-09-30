@@ -4,6 +4,12 @@ import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
 import { unmetContractChecks } from "@/features/mandates/contract-check";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { MandateCandidatesPanel } from "@/features/mandates/record-next/MandateCandidatesPanel";
+import { useCandidateCount } from "@/features/mandates/record-next/useCandidateCount";
+import { TabCount } from "@/features/mandates/record-next/RecordTabStrip";
 
 // features/mandates/workspace/MandateWorkspace.tsx
 //
@@ -155,7 +161,9 @@ export type MandateWorkspaceTab =
   | "permissions"
   | "source"
   | "diagnostics"
-  | "notes";
+  | "notes"
+  /** Live candidates — a live read beside the saved tabs (Mandate Candidates, V1 D4). */
+  | "candidates";
 
 /** The tabs `BindingSection` renders — one mounted draft owner across them. */
 const BINDING_TABS: readonly string[] = [
@@ -181,6 +189,7 @@ const WORKSPACE_TABS: {
   { id: "source", label: "Source & Usage", admin: true },
   { id: "diagnostics", label: "Diagnostics", admin: true },
   { id: "notes", label: "Notes" },
+  { id: "candidates", label: "Candidates" },
 ];
 
 export interface MandateWorkspaceProps {
@@ -392,10 +401,15 @@ function OneMandateWorkspace({
   routeHeader,
 }: MandateWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<MandateWorkspaceTab>("definition");
+  const viewerId = useAppSelector(selectUserId);
   useEffect(() => {
     const openHolder = () => setActiveTab("holder");
     window.addEventListener("matrx:open-mandate-pin", openHolder);
     if (window.location.hash === "#bind") openHolder();
+    // A list's Candidates cell and a candidate notice land here with ?tab=candidates.
+    if (new URLSearchParams(window.location.search).get("tab") === "candidates") {
+      setActiveTab("candidates");
+    }
     return () =>
       window.removeEventListener("matrx:open-mandate-pin", openHolder);
   }, []);
@@ -460,6 +474,9 @@ function OneMandateWorkspace({
         ? personLadderOrgId
         : null,
   );
+
+  // The Candidates tab's badge — the same read the record page and window show.
+  const candidateCount = useCandidateCount(ladderKey || null);
 
   if (loading && !data) {
     return (
@@ -647,14 +664,18 @@ function OneMandateWorkspace({
                   className={cn(styles.tab, "px-3 text-xs")}
                 >
                   {item.label}
+                  {item.id === "candidates" && candidateCount ? (
+                    <TabCount count={candidateCount} />
+                  ) : null}
                 </TabsTrigger>
               ),
             )}
           </TabsList>
           <MandateAlchemy
             data={data}
-            activeTab={activeTab}
-            tabs={WORKSPACE_TABS.filter((item) => !item.admin || authoring).map((item) => item.id)}
+            // Candidates is a live read, not saved mandate data — it exports as Definition.
+            activeTab={activeTab === "candidates" ? "definition" : activeTab}
+            tabs={WORKSPACE_TABS.filter((item) => (!item.admin || authoring) && item.id !== "candidates").map((item) => item.id)}
             perspective={perspective}
             organizationName={perspective === "organization" && principal.kind === "org" ? nameOfOrg(principal.orgId) : null}
             buildTab={(tab): MandateAlchemyCapture => tab === "definition"
@@ -828,6 +849,31 @@ function OneMandateWorkspace({
                 }
               />
             </Section>
+          </div>
+          <div
+            role="tabpanel"
+            id="mandate-panel-candidates"
+            aria-labelledby="mandate-tab-candidates"
+            hidden={activeTab !== "candidates"}
+            className={activeTab === "candidates" ? "space-y-3" : "hidden"}
+          >
+            {activeTab === "candidates" ? (
+              <MandateCandidatesPanel
+                mandateKey={storedMandateKey(data.mandate.mandate_key)}
+                mandateName={mandateDisplayName(
+                  storedMandateKey(data.mandate.mandate_key),
+                  data.mandate.label,
+                )}
+                outputKind={data.mandate.output_kind ?? null}
+                rung={
+                  perspective === "system"
+                    ? { rung: "global", principalId: null }
+                    : principal.kind === "org"
+                      ? { rung: "org", principalId: principal.orgId }
+                      : { rung: "user", principalId: viewerId }
+                }
+              />
+            ) : null}
           </div>
         </Tabs>
         </MandateAlchemyCaptureProvider>

@@ -38,6 +38,7 @@ import {
   type MandateHome,
 } from "@/features/mandates/list-door";
 import type { MandateListRow } from "./types";
+import { fetchCandidateCells } from "@/features/mandates/candidates/live";
 
 /** One organization the caller belongs to — a own organization included. */
 export interface MandateHomeOrganization {
@@ -135,7 +136,26 @@ export async function fetchMandateListPage(
     limit: sort.pageSize,
     offset: (query.page - 1) * sort.pageSize,
   });
-  return { rows, total: rows.length > 0 ? Number(rows[0].total_count) : 0 };
+  return {
+    rows: await withCandidates(rows),
+    total: rows.length > 0 ? Number(rows[0].total_count) : 0,
+  };
+}
+
+/**
+ * The page's open candidates (Mandate Candidates, V1 D4) — the SAME cell every
+ * mandate list shows, for the page's rows only. A failed read leaves the column
+ * at "—" and says why in the console; it never fails the list.
+ */
+async function withCandidates(rows: MandateListRow[]): Promise<MandateListRow[]> {
+  if (rows.length === 0) return rows;
+  try {
+    const cells = await fetchCandidateCells(rows.map((row) => row.id));
+    return rows.map((row) => ({ ...row, candidate: cells[row.id] ?? null }));
+  } catch (error: unknown) {
+    console.error("[mandate list] candidate counts unread:", error);
+    return rows;
+  }
 }
 
 /**

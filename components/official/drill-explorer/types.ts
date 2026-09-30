@@ -5,6 +5,7 @@
 // program DRILL-FINISH decision 25); lane DRILL-ADOPT re-exports them here under the names the
 // explorer already used. The door's JSON is still read defensively (a malformed entry is dropped).
 
+import type { DrillSibling } from "./drillSiblings";
 import type { ReactNode } from "react";
 import type {
   DrillAnswer,
@@ -209,6 +210,12 @@ export interface DrillExplorerProps {
   /** Words for id-valued Dimensions, per Dimension key. */
   names?: Record<string, DrillNameResolver> | undefined;
   headline?: DrillExplorerHeadline | undefined;
+  /**
+   * The calendar the door cuts periods in, when the host knows it ("UTC": the platform lane asks in the
+   * platform's own organization, whose calendar is UTC). Every time on the screen prints in it and a chip
+   * says it once (VERIFY-DRILL-LIVE F8). Absent: the reader's own clock.
+   */
+  timeZone?: string | undefined;
   freshness?: DrillExplorerFreshness | undefined;
   recordsLink?: DrillExplorerRecordsLink | undefined;
   /** What one answer row counts ("hourly total"). */
@@ -222,6 +229,13 @@ export interface DrillExplorerProps {
   reconcile?: DrillReconcileSpec | undefined;
   /** Where a copied group was copied from ("Administration › AI usage"); default the title. */
   location?: string | undefined;
+  /**
+   * SIBLING DEFINITIONS (lane DRILL-PRESETS-RETIRE): other grains of the same subject whose built-in
+   * views and findings this screen offers beside its own, each opening at the sibling's address.
+   */
+  siblings?: readonly DrillSibling[] | undefined;
+  /** This definition's group name in the menus when siblings are offered ("Usage"). */
+  groupLabel?: string | undefined;
   /**
    * PLAIN WORDS for code-valued Dimensions whose definition declares no `choices` yet (an origin's
    * `child_agent` → "An agent it started"), per Dimension key. The definition's own `choices` and the

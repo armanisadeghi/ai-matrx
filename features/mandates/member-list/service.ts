@@ -28,6 +28,24 @@ import {
   type MandateMemberPageAnswer,
 } from "./rpc";
 import type { MandateListLevel, MandateMemberRow } from "./types";
+import { fetchCandidateCells } from "@/features/mandates/candidates/live";
+
+/**
+ * The page's open candidates (Mandate Candidates, V1 D4) — the SAME cell the
+ * admin list reads, for the page's rows only. A failed read leaves the column
+ * at "—" (its "not read" state) and says why in the console; it never fails
+ * the list.
+ */
+async function withCandidates(rows: MandateMemberRow[]): Promise<MandateMemberRow[]> {
+  if (rows.length === 0) return rows;
+  try {
+    const cells = await fetchCandidateCells(rows.map((row) => row.id));
+    return rows.map((row) => ({ ...row, candidate: cells[row.id] ?? null }));
+  } catch (error: unknown) {
+    console.error("[mandate list] candidate counts unread:", error);
+    return rows;
+  }
+}
 
 export interface MandateMemberServiceOptions {
   level: MandateListLevel;
@@ -109,7 +127,7 @@ export function createMandateMemberService(
         p_limit: sort.pageSize,
         p_offset: (query.page - 1) * sort.pageSize,
       });
-      return { rows: answer.rows.map(memberRowFromWire), total: answer.total };
+      return { rows: await withCandidates(answer.rows.map(memberRowFromWire)), total: answer.total };
     },
     fetchCounts: async (query) => {
       const answer = await callMandateMemberList<MandateMemberCountsAnswer>({

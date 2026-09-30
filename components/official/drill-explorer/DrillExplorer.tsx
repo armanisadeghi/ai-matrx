@@ -32,6 +32,13 @@
 // are the package's; every line (chart Top N, Pareto share, pivot columns, auto-grain) is a knob
 // (`useDrillKnobs`). An open Saved view is named in the address (`view=`), so its link reopens it
 // whole and Explain this hands its conditions over.
+//
+// Lane DRILL-LIVE-FIXES (VERIFY-DRILL-LIVE F1, F6, F8, F9; interface text is layout): every setting is
+// read through `readDrillKnob` (the door's address rule, one helper); the header asks its own headline
+// Measure whatever a view shows; a host that cuts its periods in one calendar (`timeZone`, UTC on the
+// platform lane) prints every time in it and says so once with a chip; the toolbar's controls never
+// shrink (they wrap to a second line on a phone); the note row is chips with tooltips
+// (`DrillExplorerNotes`), never sentences.
 
 import { useEffect, useState } from "react";
 import { MatrxDrillChart } from "@ai-matrx/design-system/data-table/drill-chart";
@@ -53,22 +60,26 @@ import {
 } from "@ai-matrx/design-system/data-table";
 
 import AppLink from "@/components/navigation/AppLink";
+import { InfoHint } from "@/components/official/InfoHint";
 import { Button } from "@/components/ui/button";
 import { selectCanToggleCostUnit, selectCostUnit } from "@/components/cost/costUnit";
-import { knobNumber } from "@/lib/knobs/featureKnobs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 import { DrillExplainButton } from "./DrillExplainButton";
 import { DrillFindings } from "./DrillFindings";
+import { DrillSiblingFindings } from "./DrillSiblingFindings";
+import { openDrillSibling, useDrillSiblings } from "./drillSiblings";
 import { DrillRecords } from "./DrillRecords";
 import { DrillSavedViews, type DrillOpenView } from "./DrillSavedViews";
 import { drillSavedViewSurface, readDrillView } from "./savedViews";
 import { explorerWindowRange, useDrillExplorer } from "./useDrillExplorer";
-import { useDrillKnobs } from "./useDrillKnobs";
+import { useDrillKnobs, useDrillStaleAfter } from "./useDrillKnobs";
+import { DrillExplorerNotes, tipWords, type DrillNoteChip } from "./DrillExplorerNotes";
+import { clockWords, measureFactWords, momentWords } from "./explorerWords";
 import { useDrillChart } from "./useDrillChart";
-import { drillReconcileSentence, useDrillReconcile } from "./useDrillReconcile";
+import { drillReconcileChip, useDrillReconcile } from "./useDrillReconcile";
 import { DrillExplorerHeadline, costColumnLabel } from "./DrillExplorerHeadline";
 import { carriedWords, splitExplorerQuestion, viewQuestionFromAddress, type DrillCarried, type ExplorerQuestion } from "./questionParts";
 import { drillUnitAdds, drillUnitFormatter } from "./measureFormat";
@@ -102,33 +113,6 @@ function useUnit(): { unit: Unit; canToggle: boolean; setUnit: (u: Unit) => void
   };
 }
 
-/**
- * A feature knob named `<feature>.<key>` (the contract's `stale_after_knob`), read in minutes. The key
- * is the part after the LAST dot: `drill.usage.stale_after_minutes` is feature `drill.usage`, key
- * `stale_after_minutes` (the row's own split; the first dot read "drill" / "usage.stale_after_minutes"
- * and said the setting was missing — lane DRILL-PRESETS-RETIRE walk, 2026-09-30).
- */
-export function staleKnobAddress(knob: string): { feature: string; key: string } {
-  const dot = knob.lastIndexOf(".");
-  return dot > 0 ? { feature: knob.slice(0, dot), key: knob.slice(dot + 1) } : { feature: knob, key: "" };
-}
-function useStaleAfterMinutes(knob: string | null): { minutes: number | null; problem: string | null } {
-  const [held, setHeld] = useState<{ knob: string | null; minutes: number | null; problem: string | null }>({ knob: null, minutes: null, problem: null });
-  useEffect(() => {
-    if (!knob) return;
-    const { feature, key } = staleKnobAddress(knob);
-    let cancelled = false;
-    knobNumber(feature, key).then(
-      (minutes) => !cancelled && setHeld({ knob, minutes, problem: null }),
-      (e: unknown) => !cancelled && setHeld({ knob, minutes: null, problem: `How old an answer may be before this screen says so could not be read (knob ${knob}: ${e instanceof Error ? e.message : String(e)}).` }),
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [knob]);
-  return held.knob === knob ? { minutes: held.minutes, problem: held.problem } : { minutes: null, problem: null };
-}
-
 const EMPTY_QUESTION: MatrxDrillQuestion = { by: [], show: [], where: [] };
 /** The address parameter naming the open Saved view (`builtin:<key>` or a saved row's id). */
 export const DRILL_VIEW_PARAM = "view";
@@ -141,7 +125,6 @@ function writeViewParam(ref: string | null) {
   else url.searchParams.delete(DRILL_VIEW_PARAM);
   if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url.href);
 }
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 export function DrillExplorer({
   source,
@@ -152,6 +135,7 @@ export function DrillExplorer({
   firstQuestion,
   names: resolvers,
   headline,
+  timeZone,
   freshness,
   recordsLink,
   rowNoun = "record",
@@ -164,6 +148,8 @@ export function DrillExplorer({
   openRecord,
   reconcile,
   location,
+  siblings,
+  groupLabel,
 }: DrillExplorerProps) {
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
@@ -191,10 +177,16 @@ export function DrillExplorer({
     writeViewParam(null);
   };
 
-  const knobs = useDrillKnobs();
+  const seat = { lane, organizationId, userId } as const;
+  const knobs = useDrillKnobs(seat);
   // The hook asks exactly what the table draws: the address question with the auto grain applied.
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried, headlineAlso: headline?.also, grainLines: knobs.grainLines, ready: knobs.settled });
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled });
   const { def, answers: rawAnswers, whole: rawWhole, names, says, error, asOf, client } = drill;
+  // THE CALENDAR THE DOOR CUTS PERIODS IN (F8): the definition's own (`calendar.time_zone`, from the
+  // organization the door asks in — the platform lane's is UTC), else the host's word, else the reader's.
+  const zone = (def as { calendar?: { time_zone?: string } } | null)?.calendar?.time_zone ?? timeZone;
+  // the other grains' built-in views and findings, offered where the person already looks
+  const siblingDefs = useDrillSiblings(client, siblings);
   if (!firstQuestion && def && !definitionDefault) {
     const { question: q, door } = def.default ? splitExplorerQuestion(explorerQuestionOf(def.default)) : { question: EMPTY_QUESTION, door: null };
     setDefinitionDefault(q);
@@ -285,14 +277,11 @@ export function DrillExplorer({
   const builtIn = builtInViewsOf(def);
   const findings = findingsOf(def);
   const records = recordsOf(def);
-  const stale = useStaleAfterMinutes(staleAfterKnobOf(def));
+  const stale = useDrillStaleAfter(staleAfterKnobOf(def), seat);
 
   // FRESHNESS: the door's own `as_of` when the answers carry it; the host's count until then.
   const countedThrough = asOf ?? freshness?.countedThrough ?? null;
-  const behind =
-    asOf && stale.minutes !== null && Date.now() - new Date(asOf).getTime() > stale.minutes * 60_000
-      ? `The schedule is behind: counted through ${time(asOf)}.`
-      : null;
+  const behind = Boolean(asOf && stale.minutes !== null && Date.now() - new Date(asOf).getTime() > stale.minutes * 60_000);
 
   const emptyLabel = "None";
   const windowWords = drillWindowLabel(question.window ?? null);
@@ -301,7 +290,6 @@ export function DrillExplorer({
   const carriedSaid = carriedWords(carried, labelOfKey);
   // "Save this question as a view" keeps what the open view carries, so a copy is never wider.
   const savedQuestion: ExplorerQuestion = carried ? { ...asked, door: carried } : asked;
-  const dimensionWords = dimensions.map((d) => d.label.toLowerCase());
   const conditions = [
     ...(openView ? [`Saved view "${openView.label}" is open.`] : []),
     ...(carriedSaid.kept ? [carriedSaid.kept] : []),
@@ -340,12 +328,43 @@ export function DrillExplorer({
     version: freshness?.version,
     enabled: Boolean(def) && knobs.settled,
   });
-  const reconcileLine =
+  const reconcileChip: DrillNoteChip | null =
     reconciled.state === "counted" && headlineKey && total?.measures[headlineKey] != null
-      ? drillReconcileSentence(total.measures[headlineKey]!, reconciled.value, reconciled.label, (v) => fmt(headlineKey, v))
+      ? { key: "reconcile", attrs: { "data-drill-explorer-reconcile": "" }, ...drillReconcileChip(total.measures[headlineKey]!, reconciled.value, reconciled.label, (v) => fmt(headlineKey, v)) }
       : reconciled.state === "said"
-        ? reconciled.sentence
+        ? { key: "reconcile", attrs: { "data-drill-explorer-reconcile": "" }, label: "Reconcile —", tip: reconciled.sentence }
         : null;
+
+  // THE NOTE ROW, AS STATE (interface text is layout): each fact a chip, its detail in a tooltip
+  const unread = [...knobs.unread, ...(stale.unread ? [stale.unread] : [])];
+  const chips: DrillNoteChip[] = [
+    ...(grainWasChosen ? [{ key: "grain", label: `By ${autoGrain}`, tip: `The grain ${windowWords.toLowerCase()} reads best at` }] : []),
+    ...(reconcileChip ? [reconcileChip] : []),
+    ...(openView || carriedSaid.kept || carriedSaid.leftOut
+      ? [
+          {
+            key: "view",
+            attrs: { "data-drill-explorer-carried": "" },
+            label: openView ? `View: ${openView.label}` : "View filters",
+            tip: [carriedSaid.kept, carriedSaid.leftOut].filter(Boolean).join(" ") || undefined,
+            onClear: { label: "Show without the view's filters", run: dropCarried },
+          },
+        ]
+      : []),
+    ...(behind && asOf ? [{ key: "behind", tone: "warn" as const, attrs: { "data-drill-explorer-behind": "" }, label: "Behind", tip: `Counted through ${clockWords(asOf, zone)}${zone ? ` ${zone}` : ""}` }] : []),
+    ...(unread.length > 0
+      ? [
+          {
+            key: "defaults",
+            tone: "warn" as const,
+            attrs: { "data-drill-explorer-knob-said": "" },
+            label: "Defaults",
+            tip: `Not read: ${[...new Set(unread.map((u) => u.label))].join(", ")}. Built-in lines in use.`,
+          },
+        ]
+      : []),
+    ...(freshness?.error ? [{ key: "recount", tone: "error" as const, label: "Recount failed", tip: freshness.error }] : []),
+  ];
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-drill-explorer {...dataAttributes}>
@@ -362,30 +381,31 @@ export function DrillExplorer({
                     key: "from",
                     title: "Counted in whole hours: the window starts on the hour",
                     attrs: { "data-drill-explorer-window-start": "" },
-                    content: `from ${new Date(range.from).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`,
+                    content: `from ${momentWords(range.from, zone)}`,
                   },
                 ]
+              : []),
+            // THE CALENDAR THE PERIODS ARE CUT IN, said once (F8): a day bar is a UTC day on the platform lane
+            ...(zone
+              ? [{ key: "tz", title: "Days and hours are cut in this time zone", attrs: { "data-drill-explorer-time-zone": zone }, content: <span className="rounded bg-muted px-1 font-medium">{zone}</span> }]
               : []),
             ...(headline?.also ?? []).flatMap((key) => {
               const v = total?.measures[key];
               if (v === null || v === undefined) return [];
               const m = (def?.measures ?? []).find((x) => x.key === key);
-              const label = m?.label ?? key;
-              // a count reads "1,204 runs"; any other unit names itself first ("Projected monthly cost 3,578 points")
-              const counted = !m?.unit || m.unit === "count" || m.unit === "tokens" || m.unit === "characters";
-              return [{ key: `also:${key}`, content: counted ? `${fmt(key, v)} ${label.toLowerCase()}` : `${label} ${fmt(key, v)}` }];
+              return [{ key: `also:${key}`, content: measureFactWords(m?.label ?? key, m?.unit, fmt(key, v)) }];
             }),
             // THE MINE LANE IS EVERY ORGANIZATION'S (VERIFY-DRILL-LEDGER-RECORDS F4): the door narrows
             // the mine lane by the person alone (platform._drill_compile), so its numbers are hers
             // across all her organizations, whichever organization the screen asks in — said.
             ...(lane === "mine"
-              ? [{ key: "scope", attrs: { "data-drill-explorer-scope": "mine" }, content: mineScope ?? `Your ${rowNoun}s across all your organizations` }]
+              ? [{ key: "scope", title: "Counted across every organization you belong to", attrs: { "data-drill-explorer-scope": "mine" }, content: mineScope ?? "All your orgs" }]
               : []),
           ]}
         />
         <div className="ml-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span data-drill-explorer-freshness>
-            {freshness?.recounting ? "Recounting the latest hours…" : countedThrough ? `Counted through ${time(countedThrough)}` : null}
+            {freshness?.recounting ? "Recounting…" : countedThrough ? `Counted through ${clockWords(countedThrough, zone)}` : null}
           </span>
           {range && freshness?.recount ? (
             <Button
@@ -418,7 +438,7 @@ export function DrillExplorer({
               ))}
             </div>
           ) : null}
-          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} homeOrganizationId={lane === "platform" ? organizationId : null} builtIn={builtIn} question={savedQuestion} onOpen={(q, view) => openQuestion(q, view)} /> : null}
+          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} homeOrganizationId={lane === "platform" ? organizationId : null} builtIn={builtIn} question={savedQuestion} onOpen={(q, view) => openQuestion(q, view)} builtInLabel={siblingDefs.length > 0 ? groupLabel : undefined} more={siblingDefs.map((s) => ({ label: s.group, views: builtInViewsOf(s.def).map((v) => ({ key: v.key, label: v.label, open: () => openDrillSibling(s, { view: v.key }) })) }))} /> : null}
           {def && question.by.length > 0 ? (
             <DrillExplainButton
               input={{
@@ -451,14 +471,25 @@ export function DrillExplorer({
       </div>
 
       {/* ONE toolbar row: the trail, then the window, the Measures, the grouping and the findings. */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-1.5">
-        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} className="min-w-0" />
-        <div className="ml-auto flex items-center gap-0">
+      {/* F9: the controls never shrink — on a phone they wrap to their own line, the trail above them */}
+      <div data-drill-explorer-toolbar className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border px-4 py-1.5">
+        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} className="min-w-0 max-sm:basis-full" />
+        <div data-drill-explorer-controls className="ml-auto flex flex-wrap items-center justify-end gap-0 [&>*]:shrink-0">
           <MatrxDrillWindowMenu question={question} onQuestionChange={setQuestion} dimensionLabel="When" />
           <MatrxDrillMeasurePicker measures={measures} question={question} onQuestionChange={setQuestion} />
           <MatrxDrillGroupByMenu dimensions={dimensions} question={question} onQuestionChange={setQuestion} />
-          {findings.length > 0 ? (
+          {findings.length > 0 || siblingDefs.some((s) => findingsOf(s.def).length > 0) ? (
             <DrillFindings
+              label={groupLabel}
+              sections={siblingDefs
+                .filter((s) => findingsOf(s.def).length > 0)
+                .map((s) => ({
+                  label: s.group,
+                  count: findingsOf(s.def).length,
+                  render: (open: boolean, close: () => void) => (
+                    <DrillSiblingFindings client={client} lane={lane} window={question.window ?? null} sibling={s} resolvers={resolvers} money={unit} emptyLabel={emptyLabel} open={open} onOpen={(q) => { close(); openDrillSibling(s, { question: q }); }} />
+                  ),
+                }))}
               client={client}
               source={source}
               lane={lane}
@@ -477,19 +508,17 @@ export function DrillExplorer({
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         {question.by.length === 0 ? (
           def && records ? (
-            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={carried} resolvers={resolvers} openRecord={openRecord} />
+            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={carried} resolvers={resolvers} openRecord={openRecord} timeZone={zone} />
           ) : (
-            <p className="p-6 text-sm text-muted-foreground">
-              Pick a way to group (Group by, on the right){dimensionWords.length > 0 ? ` — by ${dimensionWords.slice(0, -1).join(", ")}${dimensionWords.length > 1 ? ", or " : ""}${dimensionWords.at(-1)}` : ""}.
+            <p data-drill-explorer-no-grouping className="flex flex-wrap items-center gap-1.5 p-6 text-sm text-muted-foreground">
+              <span>No grouping. Pick one in Group by.</span>
               {recordsLink ? (
-                <>
-                  {" "}
-                  {typeof recordsLink.lead === "function" ? recordsLink.lead(question) : recordsLink.lead}{" "}
+                <span className="inline-flex items-center gap-1">
                   <AppLink href={recordsLink.href(question)} className="underline underline-offset-2">
                     {recordsLink.label}
                   </AppLink>
-                  .
-                </>
+                  <InfoHint text={tipWords(typeof recordsLink.lead === "function" ? recordsLink.lead(question) : recordsLink.lead)} label={recordsLink.label} />
+                </span>
               ) : null}
             </p>
           )
@@ -533,37 +562,14 @@ export function DrillExplorer({
                 rowActions={{ label: `${title} group`, location: location ?? title, kind: "drill-group", selectable: true }}
                 {...(knobs.pivotColumns !== null ? { pivotColumnCap: knobs.pivotColumns } : {})}
                 note={
-                  <span data-drill-explorer-note>
-                    {grainWasChosen ? <span>Shown by {autoGrain} — the grain {windowWords.toLowerCase()} reads best at. </span> : null}
-                    {reconcileLine ? <span data-drill-explorer-reconcile>{reconcileLine} </span> : null}
-                    {carriedSaid.kept || carriedSaid.leftOut ? (
-                      <span data-drill-explorer-carried>
-                        {openView ? `Saved view "${openView.label}". ` : null}
-                        {carriedSaid.kept ? `${carriedSaid.kept} ` : null}
-                        {carriedSaid.leftOut ? `${carriedSaid.leftOut} ` : null}
-                        <button type="button" data-drill-explorer-carried-drop className="underline underline-offset-2" onClick={dropCarried}>
-                          Show the answer without them
-                        </button>{" "}
-                      </span>
-                    ) : null}
-                    {behind ? <span className="text-destructive">{behind} </span> : null}
-                    {stale.problem ? <span className="text-destructive">{stale.problem} </span> : null}
-                    {knobs.says.map((s) => (
-                      <span key={s} data-drill-explorer-knob-said>
-                        {s}{" "}
-                      </span>
-                    ))}
-                    {says.map((s) => (
-                      <span key={s}>{s} </span>
-                    ))}
-                    {freshness?.error ? <span className="text-destructive">{freshness.error} </span> : null}
+                  <span data-drill-explorer-note className="inline-flex flex-wrap items-center gap-1.5">
+                    <DrillExplorerNotes chips={chips} notes={says} />
                     {!records && recordsLink ? (
-                      <span>
-                        {typeof recordsLink.lead === "function" ? recordsLink.lead(question) : recordsLink.lead}{" "}
+                      <span className="inline-flex items-center gap-1">
                         <AppLink href={recordsLink.href(question)} className="underline underline-offset-2">
                           {recordsLink.label}
                         </AppLink>
-                        .
+                        <InfoHint text={tipWords(typeof recordsLink.lead === "function" ? recordsLink.lead(question) : recordsLink.lead)} label={recordsLink.label} />
                       </span>
                     ) : null}
                   </span>

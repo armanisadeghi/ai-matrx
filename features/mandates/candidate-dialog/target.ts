@@ -137,3 +137,29 @@ export const RUNG_LABEL: Record<CandidateRung, string> = {
   org: "Organization",
   user: "Personal",
 };
+
+/**
+ * What a candidate at each rung collects (P7 eligibility: a real run feeds the
+ * candidate only when its holder was decided at that same rung and principal).
+ */
+export const RUNG_COLLECTS: Record<CandidateRung, string> = {
+  global: "Runs that use the Everyone setting",
+  org: "Runs that use this organization's setting",
+  user: "Your runs that use your own setting",
+};
+
+/**
+ * The rung the live holder sits at, from the resolution verdict's provenance
+ * (`GET /mandates/{key}/resolution`). `run` (a caller-supplied holder) and an
+ * unanswered verdict name no rung.
+ */
+export function liveRungOf(
+  provenance: "system" | "org" | "user" | "run" | null,
+  organizationId: string | null,
+  userId: string | null,
+): CandidateRungChoice | null {
+  if (provenance === "system") return { rung: "global", principalId: null };
+  if (provenance === "org" && organizationId) return { rung: "org", principalId: organizationId };
+  if (provenance === "user" && userId) return { rung: "user", principalId: userId };
+  return null;
+}

@@ -36,7 +36,9 @@ import {
   STOP_MATCH_WORD,
   VERDICT_TONE,
   VERDICT_WORD,
+  attemptWord,
   inputPartWord,
+  sharedInputsLine,
 } from "../words";
 import { Chip, JsonBlock, MetricsLine, NewTabLink, StateLine, detailPageHref } from "./parts";
 
@@ -91,6 +93,16 @@ function parsedStructure(text: string): Record<string, unknown> | unknown[] | nu
   }
 }
 
+/**
+ * Tool arguments as the structure they are (V1 D15): the live call's arguments
+ * are recorded as canonical JSON TEXT, which rendered as one escaped string.
+ * A string that parses as a JSON object or array is shown as that value.
+ */
+export function structuredArgs(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  return parsedStructure(value) ?? value;
+}
+
 function errorMessage(error: unknown): string | null {
   const record = obj(error);
   if (!record) return str(error);
@@ -110,6 +122,12 @@ function sharedInput(doorArgs: unknown): { userInput: string | null; variables: 
 
 export function CandidateRunBody({ row }: { row: CandidateRunRow }) {
   const [run, setRun] = useState(row.run);
+  // A heartbeat re-read (CandidateRecordBody) hands a newer pair: take it.
+  const [seen, setSeen] = useState(row.run);
+  if (seen !== row.run) {
+    setSeen(row.run);
+    setRun(row.run);
+  }
   const candidate = row.candidate;
   const payload = run.payload ?? null;
 
@@ -228,6 +246,11 @@ function ReviewBlock({
           </span>
         ) : null}
         {run.stop_match ? <Chip>{STOP_MATCH_WORD[run.stop_match]}</Chip> : null}
+        {attemptWord(run.attempts) ? (
+          <Chip className="bg-sky-500/15 text-sky-700 dark:text-sky-400">
+            <span title="Interrupted, then run again." data-candidate-attempt>{attemptWord(run.attempts)}</span>
+          </Chip>
+        ) : null}
       </div>
       {reasoning ? <p className="text-sm leading-relaxed">{reasoning}</p> : null}
       {run.status === "failed" || run.status === "timed_out" ? (
@@ -307,22 +330,27 @@ function InputBlock({
   const flagged = Array.isArray(differences?.flagged) ? (differences.flagged as string[]) : [];
   const expected = Array.isArray(differences?.expected) ? (differences.expected as string[]) : [];
   const unmeasured = Array.isArray(differences?.unmeasured) ? (differences.unmeasured as string[]) : [];
-  const identical = differences?.identical === true;
+  // P10 / A4: the pair LEADS with one line — shared inputs identical, or which
+  // shared parts differed — before any per-part detail.
+  const lead = sharedInputsLine(differences ? { flagged, unmeasured } : null);
   const input = sharedInput(payload?.door_args);
   const hasInput = input.userInput !== null || (input.variables && Object.keys(input.variables).length > 0);
 
   return (
     <section className="space-y-2" data-candidate-input>
       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Input</h4>
+      <p
+        className={cn(
+          "text-sm font-medium",
+          lead.tone === "same" && "text-emerald-700 dark:text-emerald-400",
+          lead.tone === "differed" && "text-red-700 dark:text-red-400",
+          lead.tone === "unknown" && "text-amber-700 dark:text-amber-400",
+        )}
+        data-candidate-shared-inputs={lead.tone}
+      >
+        {lead.text}
+      </p>
       <div className="flex flex-wrap items-center gap-1.5 text-xs" data-candidate-input-line>
-        {identical ? (
-          <Chip className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">Inputs identical</Chip>
-        ) : null}
-        {flagged.map((part) => (
-          <Chip key={`f-${part}`} className="bg-red-500/15 text-red-700 dark:text-red-400">
-            {inputPartWord(part)} differed
-          </Chip>
-        ))}
         {expected.map((part) => (
           <Chip key={`e-${part}`}>{inputPartWord(part)}: the candidate's own</Chip>
         ))}
@@ -331,7 +359,6 @@ function InputBlock({
             {inputPartWord(part)} not measured
           </Chip>
         ))}
-        {!differences ? <Chip>Not measured yet</Chip> : null}
       </div>
       {payload && hasInput ? (
         <div className="space-y-1.5">
@@ -593,7 +620,7 @@ function ToolsBlock({
           <div className="grid grid-cols-1 gap-2 @lg:grid-cols-2">
             <div className="min-w-0 space-y-1">
               <div className="text-[11px] text-muted-foreground">Candidate proposed</div>
-              <JsonBlock value={stopped.args ?? null} />
+              <JsonBlock value={structuredArgs(stopped.args ?? null)} />
             </div>
             <div className="min-w-0 space-y-1">
               <div className="text-[11px] text-muted-foreground">
@@ -605,7 +632,7 @@ function ToolsBlock({
                   "Live run made no call here"
                 )}
               </div>
-              {liveAtStep ? <JsonBlock value={liveAtStep.canonical_args ?? null} /> : null}
+              {liveAtStep ? <JsonBlock value={structuredArgs(liveAtStep.canonical_args ?? null)} /> : null}
             </div>
           </div>
         </div>

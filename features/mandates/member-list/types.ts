@@ -10,6 +10,7 @@
 
 import type { MandateStatus } from "@/features/mandates/status/mandate-status";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { MandateCandidateCell } from "@/features/mandates/admin-list/rpc";
 
 /** Which seat the list answers from. The admin seat is ../admin-list. */
 export type MandateListLevel = "person" | "organization";
@@ -46,4 +47,9 @@ export interface MandateMemberRow {
   status: MandateStatus;
   updatedAt: string | null;
   createdAt: string | null;
+  /**
+   * The open live candidate (Mandate Candidates, V1 D4) from
+   * `public.mnd_candidate_cells` — `null` = none open; absent = not read.
+   */
+  candidate?: MandateCandidateCell | null;
 }

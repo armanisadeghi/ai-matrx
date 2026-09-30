@@ -69864,6 +69864,67 @@ export interface components {
             finished_at?: string | null;
         };
         /**
+         * DescendAnswer
+         * @description What the unit ANSWERED — the other half of "what the agent saw".
+         *
+         *     ``source='message'`` is the persisted assistant row;
+         *     ``source='recorded_call'`` is the snapshot's recorded response (the run kept
+         *     no messages). ``text`` is the visible answer (text parts joined);
+         *     ``structured`` is that text parsed when it is a JSON object/array — the
+         *     client renders it through the canonical answer view, never as a dump.
+         */
+        DescendAnswer: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "message" | "recorded_call";
+            producer: components["schemas"]["ProducerRef"];
+            /** Parts */
+            parts?: components["schemas"]["DescendAnswerPart"][];
+            /** Text */
+            text?: string | null;
+            structured?: components["schemas"]["JsonValue"] | null;
+            /** Finish Reason */
+            finish_reason?: string | null;
+            /**
+             * Chars
+             * @default 0
+             */
+            chars?: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /** Value Ref */
+            value_ref?: string | null;
+        };
+        /**
+         * DescendAnswerPart
+         * @description One piece of the answer, in the order the model produced it.
+         */
+        DescendAnswerPart: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "thinking" | "tool_call";
+            /** Text */
+            text?: string | null;
+            /** Tool Name */
+            tool_name?: string | null;
+            /** Call Id */
+            call_id?: string | null;
+            arguments?: components["schemas"]["JsonValue"] | null;
+            /** Outcome */
+            outcome?: ("failed" | "no_record" | "ran" | "stopped") | null;
+            /** Outcome Detail */
+            outcome_detail?: string | null;
+            /** Tool Call Row Id */
+            tool_call_row_id?: string | null;
+        };
+        /**
          * DescendInput
          * @description One input the unit received on its turn.
          */
@@ -69901,6 +69962,13 @@ export interface components {
             producer?: components["schemas"]["DescendProducer"] | null;
             /** Inputs */
             inputs?: components["schemas"]["DescendInput"][];
+            answer?: components["schemas"]["DescendAnswer"] | null;
+            /**
+             * Transcript
+             * @default messages
+             * @enum {string}
+             */
+            transcript?: "messages" | "none" | "recorded_call";
             /** Snapshot Refs */
             snapshot_refs?: string[];
             /**

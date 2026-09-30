@@ -4,6 +4,7 @@ import { filtersFromSearchParams } from "@/features/cx-dashboard/utils/filters";
 import { UsageContent } from "@/features/cx-dashboard/components/UsageContent";
 import { CxErrorPanel } from "@/features/cx-dashboard/components/CxErrorPanel";
 import { CxUsageSkeleton } from "@/features/cx-dashboard/components/CxTabSkeletons";
+import { AiCallsExplorer } from "@/features/admin/usage-drill/UsageGrainExplorers";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -32,5 +33,14 @@ async function UsageData({ searchParams }: Props) {
     return <CxErrorPanel what="usage analytics" message={result.error} />;
   }
 
-  return <UsageContent analytics={result.data} />;
+  // THE NEW SCREEN BESIDE THE OLD (lane DRILL-PRESETS-RETIRE, COPY mode): the model calls explorer
+  // (`ai_calls`, whose built-in views are this tab's cuts). The old content goes at the flip.
+  return (
+    <>
+      <UsageContent analytics={result.data} />
+      <section className="flex h-[85dvh] min-h-0 flex-col border-t border-border" data-cx-usage-calls-explorer>
+        <AiCallsExplorer />
+      </section>
+    </>
+  );
 }

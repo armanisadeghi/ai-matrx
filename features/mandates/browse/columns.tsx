@@ -29,6 +29,7 @@ import {
 import { MandateCoverageBadge } from "./CoverageBadge";
 import { MandateHomeBadge } from "./MandateHome";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { CandidateListCell } from "@/features/mandates/candidates/components/CandidateListCell";
 
 // The filter vocabularies are the DATABASE's, named once in ./types.ts —
 // listing them a second time here is how `global`, `holder unreachable` and
@@ -309,6 +310,19 @@ export function mandateColumnsFor(
             </Badge>
           );
         },
+      },
+    },
+    // THE CANDIDATES CELL — the same one every mandate list shows (V1 D4).
+    {
+      id: "candidate",
+      label: "Candidates",
+      column: {
+        id: "candidate",
+        header: "Candidates",
+        filter: false,
+        sortable: false,
+        width: 110,
+        cell: (row) => <CandidateListCell mandateId={row.id} cell={row.candidate} href={hrefFor(row)} />,
       },
     },
     {

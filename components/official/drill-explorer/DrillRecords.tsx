@@ -13,16 +13,24 @@
 // that Measure's unit (money through the one switch, durations, counts), a column a Dimension reads
 // by that Dimension's words (a choice's label, the door's or the resolver's name, Yes / No), a
 // moment as a date and time. An invoker definition's records are its own rows (kg_cost's recent runs).
+//
+// Lane DRILL-LIVE-FIXES (VERIFY-DRILL-LIVE F3, F4, F8): the count's noun is the records' own grain
+// ("one row per execution …" → 1,026 executions, never the host's `rowNoun` "requests" of the number
+// above it); the header row carries what the rows add up to (the door's first-page `measures`) and,
+// when a late cost moved them off the counted number, a "Settling" badge whose tooltip has both; the
+// table is source-paged (controlled-append) so its pager reads the TRUE total; every moment column
+// (any ISO timestamp, whichever Dimension it feeds or none) prints as a date and time in the calendar
+// the numbers are cut in, and an id nothing names prints short, whole in its tooltip.
 
 import { useEffect, useState } from "react";
 import type { DrillDefinition, DrillSource } from "@ai-matrx/records";
 import type { RecordsClient } from "@ai-matrx/records/core";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import type { MatrxDrillDimension, MatrxDrillMeasure, MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
+import type { MatrxDataTableQueryState, MatrxDrillDimension, MatrxDrillMeasure, MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
 import AppLink from "@/components/navigation/AppLink";
-import { Button } from "@/components/ui/button";
+import { InfoHint } from "@/components/official/InfoHint";
 import { readOf } from "@/components/read-state/ReadGate";
 
 import { doorWindow } from "./useDrillExplorer";
@@ -30,10 +38,43 @@ import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, ty
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
 import { plainWords } from "./dimensionWords";
+import { grainNoun, isMoment, measureFactWords, momentWords, pluralNoun, shortId } from "./explorerWords";
 import { formatCount } from "@ai-matrx/kit/format";
 
 const PAGE = 100;
+/** Sums the header row names at most (the first Measures the question shows). */
+const SUMS_SHOWN = 3;
 type Row = Record<string, unknown> & { __row: string };
+type Settling = NonNullable<DrillRowsPageSums["settling"]>;
+interface DrillRowsPageSums {
+  measures?: Record<string, number | string | null>;
+  counted?: Record<string, number | string | null>;
+  settling?: Record<string, { counted: number | string | null; now: number | string | null; difference: number }>;
+}
+
+/**
+ * THE RECORDS' NOUN: a definer definition whose records are ANOTHER declared definition's rows (ai_usage
+ * → ai_usage_executions) takes that definition's grain; any other takes its own ("one row per ingest
+ * run" → "ingest run"). Null until known; the host's `rowNoun` stands in only when no grain says.
+ */
+export function useRecordsNoun(client: RecordsClient | null, def: DrillDefinition, records: DrillRecordsDeclaration): string | null {
+  const own = grainNoun(def.grain);
+  const other = def.mode === "definer" && records.fact !== def.key ? records.fact : null;
+  const [read, setRead] = useState<{ fact: string; noun: string | null } | null>(null);
+  useEffect(() => {
+    if (!client || !other) return;
+    let cancelled = false;
+    void client.drillDescribe({ source: { kind: "entity", token: other } }).then((got) => {
+      if (!cancelled) setRead({ fact: other, noun: got.ok ? grainNoun(got.data?.grain) : null });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [client, other]);
+  if (!other) return own;
+  if (read?.fact !== other) return null;
+  return read.noun ?? own;
+}
 
 export function DrillRecords({
   client,
@@ -48,6 +89,7 @@ export function DrillRecords({
   carried,
   resolvers,
   openRecord,
+  timeZone,
 }: {
   client: RecordsClient | null;
   source: DrillSource;
@@ -66,11 +108,14 @@ export function DrillRecords({
   resolvers?: Record<string, DrillNameResolver> | undefined;
   /** How one record opens (THE DOOR LAW): its id column becomes the record's door. */
   openRecord?: DrillRecordOpener | undefined;
+  /** The calendar the numbers are cut in ("UTC" on the platform lane); the reader's own when absent. */
+  timeZone?: string | undefined;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState<number | null>(null);
   const [asOf, setAsOf] = useState<string | null>(null);
   const [says, setSays] = useState<string | null>(null);
+  const [sums, setSums] = useState<DrillRowsPageSums>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
@@ -144,6 +189,15 @@ export function DrillRecords({
         setTotal(page.total);
         setAsOf(asOfPage(page));
         setSays(page.says ?? null);
+        // the sums ride the FIRST page only: a later page keeps them
+        if (offset === 0) {
+          const withSums = page as DrillRowsPageSums;
+          setSums({
+            ...(withSums.measures ? { measures: withSums.measures } : {}),
+            ...(withSums.counted ? { counted: withSums.counted } : {}),
+            ...(withSums.settling ? { settling: withSums.settling } : {}),
+          });
+        }
       });
     return () => {
       cancelled = true;
@@ -183,43 +237,105 @@ export function DrillRecords({
         }
         if (v === null || v === undefined) return <span className="text-muted-foreground">{dim?.labelFor ? dim.labelFor(null) : "—"}</span>;
         if (typeof v === "number" && format) return <span className="tabular-nums">{format(v)}</span>;
-        if (dim?.kind === "time" && typeof v === "string") {
-          const at = new Date(v);
-          if (!Number.isNaN(at.getTime())) return <span className="tabular-nums">{at.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>;
-        }
+        // A MOMENT reads as a date and time, whichever Dimension it feeds or none (F4: usage's
+        // created_at feeds no Dimension and printed "2026-09-12T23:59:36.392599+00:00")
+        if (isMoment(v)) return <span className="whitespace-nowrap tabular-nums">{momentWords(v, timeZone)}</span>;
         if (dimKey && typeof v === "string" && recordNames[dimKey]?.[v]) return <span>{recordNames[dimKey][v]}</span>;
         if (dim?.labelFor && (typeof v === "string" || typeof v === "boolean")) return <span>{dim.labelFor(String(v))}</span>;
         if (typeof v === "boolean") return <span>{v ? "Yes" : "No"}</span>;
         // a code no Dimension names ("landed_only") reads in plain words, never as the code
         if (typeof v === "string" && /^[a-z]+(_[a-z0-9]+)+$/.test(v)) return <span>{plainWords(v)}</span>;
+        // an id nothing names reads short (the whole id in its tooltip), never a whole UUID leading a row
+        const short = typeof v === "string" ? shortId(v) : null;
+        if (short) return <span className="font-mono text-muted-foreground" title={String(v)}>{short}</span>;
         return <span className={typeof v === "number" ? "tabular-nums" : undefined}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</span>;
       },
     };
   });
 
+  const noun = useRecordsNoun(client, def, records) ?? rowNoun;
+  const measureOf = (key: string) => def.measures.find((m) => m.key === key);
+  const fmtSum = (key: string, v: number | string | null | undefined) => {
+    if (v === null || v === undefined) return "—";
+    const n = Number(v);
+    const f = measures.find((m) => m.key === key)?.format;
+    return f ? f(n) : formatCount(n);
+  };
+  // what these records add up to, for the Measures the question shows (the header's own first)
+  const sumKeys = question.show.filter((k) => sums.measures && k in sums.measures).slice(0, SUMS_SHOWN);
+  const settling: Settling | undefined = sums.settling && Object.keys(sums.settling).length > 0 ? sums.settling : undefined;
+  const settlingTip = settling
+    ? Object.entries(settling)
+        .filter(([k]) => sumKeys.includes(k) || sumKeys.length === 0)
+        .slice(0, 2)
+        .map(([k, s]) => `${measureOf(k)?.label ?? k}: counted ${fmtSum(k, s.counted)}, now ${fmtSum(k, s.now)}`)
+        .join(" · ")
+    : "";
+
+  const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({ page: 1, pageSize: PAGE, search: "", anyOf: "", columnFilters: {}, sort: null });
+
   return (
     <div className="flex min-h-0 flex-col" data-drill-explorer-records>
-      <p className="px-4 py-1 text-xs text-muted-foreground">
-        {total !== null ? `${total.toLocaleString()} ${total === 1 ? rowNoun : `${rowNoun}s`}` : null}
-        {asOf ? ` · as of ${new Date(asOf).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : null}
-        {says ? ` · ${says}` : null}
-      </p>
+      {/* ONE header row: the count in the records' own noun, what they add up to, when they are cut */}
+      <div data-drill-explorer-records-header className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-4 py-1 text-xs text-muted-foreground">
+        {total !== null ? (
+          <span data-drill-explorer-records-count className="font-medium text-foreground">
+            {`${formatCount(total)} ${pluralNoun(noun, total)}`}
+          </span>
+        ) : null}
+        {total !== null
+          ? sumKeys.map((k) => (
+              <span key={k} data-drill-explorer-records-sum={k} className="whitespace-nowrap tabular-nums">
+                <span aria-hidden="true">· </span>
+                {measureFactWords(measureOf(k)?.label ?? k, measureOf(k)?.unit, fmtSum(k, sums.measures?.[k]))}
+              </span>
+            ))
+          : null}
+        {asOf ? (
+          <span className="whitespace-nowrap">
+            <span aria-hidden="true">· </span>
+            {`as of ${momentWords(asOf, timeZone)}`}
+          </span>
+        ) : null}
+        {settling ? (
+          <span data-drill-explorer-records-settling className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+            Settling
+            <InfoHint text={settlingTip || "A late cost moved these records off the counted number."} label="Why these differ" />
+          </span>
+        ) : null}
+        {says ? <InfoHint text={says} label="About these records" /> : null}
+      </div>
       <MatrxDataTable
         data={rows}
         columns={tableColumns}
         getRowId={(r) => r.__row}
         isLoading={loading && rows.length === 0}
-        read={readOf({ loading: loading && rows.length === 0, error }, { what: `${rowNoun}s`, onRetry: () => setOffset(0) })}
-        emptyState={{ title: `No ${rowNoun}s`, description: "" }}
+        isFetching={loading && rows.length > 0}
+        read={readOf({ loading: loading && rows.length === 0, error }, { what: pluralNoun(noun, 2), onRetry: () => setOffset(0) })}
+        emptyState={{ title: `No ${pluralNoun(noun, 2)}`, description: "" }}
         pageSize={PAGE}
+        // SOURCE-PAGED (F3): the door pages the records, so the pager reads the door's total, not the
+        // rows held ("1-100 of 100" over 1,026 records); the next page appends as the person scrolls.
+        query={{
+          mode: "controlled-append",
+          state: tableQuery,
+          onStateChange: setTableQuery,
+          sourceProcessing: { search: "local", columnFilters: "local", sort: "local", ...(total !== null ? { sourceTotal: total } : {}) },
+          pagination: {
+            queryKey: `${sourceKey}|${askKey}|${columnsKey}`,
+            rows,
+            loading: loading && rows.length === 0,
+            isFetchingNextPage: loading && rows.length > 0,
+            error: error ? new Error(error) : null,
+            hasNextPage: total !== null && rows.length < total,
+            loadNextPage: async () => {
+              if (!loading && total !== null && rows.length < total) setOffset(rows.length);
+            },
+            refresh: () => setOffset(0),
+            totalItems: total ?? undefined,
+          },
+        }}
       />
-      {total !== null && rows.length < total ? (
-        <div className="px-4 py-2">
-          <Button type="button" variant="ghost" size="xs" disabled={loading} onClick={() => setOffset(rows.length)}>
-            {`Show ${formatCount(Math.min(PAGE, total - rows.length))} more`}
-          </Button>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -7,7 +7,10 @@
 // graded impact row, and "Set as live candidate" on a test-bench result. It:
 //   · reuses the ONE holder chooser (`HolderAssignment` — agent or workflow,
 //     pinned version or latest; the bench's and the member Test tab's picker);
-//   · names the rung it applies to (default: the seat the person is viewing);
+//   · names the rung it applies to — by default the rung whose holder actually
+//     serves this mandate's runs for this person (the live holder's rung, V1
+//     D18; a door that names its own rung keeps it), each rung with one label
+//     for what it collects;
 //   · asks how many runs (empty = the `mandates.candidate_default_runs` knob,
 //     read through `platform.knob_resolve`; the server applies the same knob);
 //   · shows the P17 forecast BEFORE confirming — which doors this job ran
@@ -43,6 +46,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { HolderAssignment } from "@/features/bindings/HolderAssignment";
+import { useMandateHolder } from "@/features/mandates/useMandateHolder";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -57,8 +61,10 @@ import {
 } from "./api";
 import {
   EMPTY_TARGET,
+  RUNG_COLLECTS,
   RUNG_LABEL,
   doorLabel,
+  liveRungOf,
   holderOfDraft,
   workflowRefusalOf,
   type CandidateRungChoice,
@@ -70,8 +76,13 @@ export interface SetCandidateDialogProps {
   mandateName: string;
   /** Pre-filled target (impact row, bench result). */
   initialTarget?: HolderDraft | null;
-  /** The rung the person is viewing — the default. */
+  /** The rung the person is viewing — the default until the live rung answers. */
   rung: CandidateRungChoice;
+  /**
+   * Default "Applies to" to the rung the live holder sits at (the record's
+   * Candidates tab). Doors that already name a rung (an impact row) leave it off.
+   */
+  followLiveRung?: boolean;
   /** The mandate's declared output kind, for the workflow picker. */
   outputKind?: string | null;
   onClose: () => void;
@@ -114,7 +125,8 @@ export function SetCandidateDialog(props: SetCandidateDialogProps) {
 function SetCandidateBody({
   mandateKey,
   initialTarget,
-  rung: initialRung,
+  rung: seatRung,
+  followLiveRung = false,
   outputKind = null,
   onClose,
   onSet,
@@ -124,7 +136,15 @@ function SetCandidateBody({
   // org-filter: server-call a candidate's default run count is read for the org the run executes in
   const activeOrgId = useAppSelector(selectOrganizationId);
   const [draft, setDraft] = useState<HolderDraft>(initialTarget ?? EMPTY_TARGET);
-  const [rung, setRung] = useState<CandidateRungChoice>(initialRung);
+  // The live holder's rung for this person: where the runs a candidate would
+  // collect are actually decided.
+  const live = useMandateHolder(followLiveRung ? mandateKey : "");
+  const liveRung = followLiveRung
+    ? liveRungOf(live.holder?.provenance ?? null, live.holder?.organizationId ?? activeOrgId, userId)
+    : null;
+  const initialRung = liveRung ?? seatRung;
+  const [picked, setRung] = useState<CandidateRungChoice | null>(null);
+  const rung = picked ?? initialRung;
   const [runs, setRuns] = useState("");
   const [defaultRuns, setDefaultRuns] = useState<number | null>(null);
   const [state, setState] = useState<LiveCandidatesResponse | null>(null);
@@ -135,7 +155,7 @@ function SetCandidateBody({
   // The rungs this seat can name: the one it is viewing, Everyone, the
   // viewer's own, and the active organization's. The server decides rights.
   const rungChoices = useMemo(() => {
-    const out: CandidateRungChoice[] = [initialRung];
+    const out: CandidateRungChoice[] = [initialRung, seatRung];
     const add = (choice: CandidateRungChoice) => {
       if (!out.some((c) => c.rung === choice.rung)) out.push(choice);
     };
@@ -143,7 +163,7 @@ function SetCandidateBody({
     if (activeOrgId) add({ rung: "org", principalId: activeOrgId });
     if (userId) add({ rung: "user", principalId: userId });
     return [...out].sort((a, b) => RUNG_ORDER.indexOf(a.rung) - RUNG_ORDER.indexOf(b.rung));
-  }, [initialRung, activeOrgId, userId]);
+  }, [initialRung, seatRung, activeOrgId, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -264,10 +284,16 @@ function SetCandidateBody({
                 value={`${choice.rung}:${choice.principalId ?? ""}`}
               >
                 {RUNG_LABEL[choice.rung]}
+                {liveRung && sameRung(liveRung, choice) ? " · live" : ""}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+
+        <span className="hidden sm:block" />
+        <span className="text-[11px] text-muted-foreground" data-candidate-rung-collects>
+          {RUNG_COLLECTS[rung.rung]}
+        </span>
 
         <label htmlFor="candidate-runs" className="text-[12px] font-medium">
           Runs to collect
@@ -312,6 +338,10 @@ function SetCandidateBody({
       </div>
     </div>
   );
+}
+
+function sameRung(a: CandidateRungChoice, b: CandidateRungChoice): boolean {
+  return a.rung === b.rung && (a.principalId ?? null) === (b.principalId ?? null);
 }
 
 /** P17 — the honest forecast: which doors ran lately, how many could feed it. */

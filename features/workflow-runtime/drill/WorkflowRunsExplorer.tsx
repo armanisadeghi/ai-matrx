@@ -72,6 +72,8 @@ export function WorkflowRunsExplorer({ lane }: { lane: "platform" | "mine" }) {
       source={WORKFLOW_RUNS_SOURCE}
       lane={lane}
       organizationId={organizationId}
+      // the platform organization's calendar is UTC; her own organization's is the door's to say
+      {...(lane === "platform" ? { timeZone: "UTC" } : {})}
       title={lane === "platform" ? "Workflow runs" : "Your runs, analyzed"}
       rootLabel={lane === "platform" ? "Every run" : "Runs you started"}
       firstQuestion={WORKFLOW_RUNS_FIRST_QUESTION}

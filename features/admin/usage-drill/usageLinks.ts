@@ -94,3 +94,40 @@ export function spendAddressToUsage(params: URLSearchParams): { href: string; dr
   const view = (first ? `spend_by_${first}` : "spend_by_person") as UsageViewKey;
   return { href: usageViewHref(view, filters, window), dropped };
 }
+
+// ── THE THREE GRAINS ON ONE SCREEN (VERIFY-DRILL-LIVE F2) ────────────────────────────────────────
+// /administration/usage answers all three definitions; `def=<token>` in the address picks which one
+// the explorer asks (absent = ai_usage). The Saved views menu and the findings panel offer the other
+// two's built-in views and findings, grouped by these names.
+
+export const USAGE_DEFINITIONS = {
+  ai_usage: "Usage",
+  ai_usage_executions: "Per execution",
+  ai_calls: "Model calls",
+} as const;
+export type UsageDefinition = keyof typeof USAGE_DEFINITIONS;
+
+/** The definition an address asks (`def=`), else ai_usage. */
+export function usageDefinitionOf(params: URLSearchParams): UsageDefinition {
+  const def = params.get("def");
+  return def && def in USAGE_DEFINITIONS ? (def as UsageDefinition) : "ai_usage";
+}
+
+/** The usage screen on one definition: a built-in view, or a question in the address grammar. */
+export function usageDefinitionHref(token: UsageDefinition, open: { view?: string; params?: URLSearchParams } = {}): string {
+  const params = new URLSearchParams(open.params);
+  if (token !== "ai_usage") params.set("def", token);
+  if (open.view) params.set("view", `builtin:${open.view}`);
+  const query = params.toString();
+  return query ? `${USAGE_PATH}?${query}` : USAGE_PATH;
+}
+
+/** The other two grains, as the explorer's siblings; `go` is the host's navigation (a router push). */
+export function usageSiblings(
+  current: UsageDefinition,
+  go: (href: string) => void,
+): Array<{ token: UsageDefinition; group: string; go: (open: { view?: string; params?: URLSearchParams }) => void }> {
+  return (Object.keys(USAGE_DEFINITIONS) as UsageDefinition[])
+    .filter((t) => t !== current)
+    .map((token) => ({ token, group: USAGE_DEFINITIONS[token], go: (open) => go(usageDefinitionHref(token, open)) }));
+}

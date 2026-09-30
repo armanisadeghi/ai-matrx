@@ -66,7 +66,13 @@ export function DrillSavedViews({
   question,
   onOpen,
   homeOrganizationId,
+  builtInLabel,
+  more,
 }: {
+  /** The heading over the definition's own views when sibling groups follow ("Usage"); "Built in" otherwise. */
+  builtInLabel?: string | undefined;
+  /** Sibling definitions' built-in views, one group each; opening one goes to that definition (lane DRILL-PRESETS-RETIRE). */
+  more?: ReadonlyArray<{ label: string; views: ReadonlyArray<{ key: string; label: string; open: () => void }> }> | undefined;
   /**
    * Where the person's views live when the explorer names a home (the platform lane: the platform
    * organization — the admin seat never reads or writes through whichever tenant is active).
@@ -155,7 +161,8 @@ export function DrillSavedViews({
     });
   };
 
-  const count = builtIn.length + (totalViews ?? views?.length ?? 0);
+  const moreCount = (more ?? []).reduce((n, g) => n + g.views.length, 0);
+  const count = builtIn.length + moreCount + (totalViews ?? views?.length ?? 0);
   return (
     <>
       <DropdownMenu>
@@ -167,7 +174,7 @@ export function DrillSavedViews({
         <DropdownMenuContent align="end" className="min-w-[16rem]">
           {builtIn.length > 0 ? (
             <>
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Built in</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{builtInLabel ?? "Built in"}</DropdownMenuLabel>
               {builtIn.map((view) => (
                 <DropdownMenuItem
                   key={view.key}
@@ -196,6 +203,17 @@ export function DrillSavedViews({
               <DropdownMenuSeparator />
             </>
           ) : null}
+          {(more ?? []).filter((g) => g.views.length > 0).map((group) => (
+            <div key={group.label} data-drill-explorer-view-group={group.label}>
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{group.label}</DropdownMenuLabel>
+              {group.views.map((view) => (
+                <DropdownMenuItem key={view.key} data-drill-explorer-view={`${group.label}:${view.key}`} onSelect={() => view.open()}>
+                  <span className="min-w-0 flex-1 truncate">{view.label}</span>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+            </div>
+          ))}
           {organizationState === "ready" ? (
             <DropdownMenuItem data-drill-explorer-save-view onSelect={() => setNaming({ question, suggested: "" })}>
               Save this question as a view…

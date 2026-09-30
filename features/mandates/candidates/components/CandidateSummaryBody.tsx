@@ -38,9 +38,11 @@ import {
   RECOMMENDATION_WORD,
   VERDICT_TONE,
   doorWord,
+  attemptWord,
   runOutcomeWord,
   skipWord,
 } from "../words";
+import { CandidateHolderName } from "./CandidateHolderName";
 import { Chip, NewTabLink, StateLine, detailPageHref } from "./parts";
 
 export interface CandidateSummaryRow extends Record<string, unknown> {
@@ -64,6 +66,12 @@ function canPutBack(candidate: LiveCandidate): boolean {
 
 export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
   const [candidate, setCandidate] = useState(row.candidate);
+  // A heartbeat re-read (CandidateRecordBody) hands a newer candidate: take it.
+  const [seen, setSeen] = useState(row.candidate);
+  if (seen !== row.candidate) {
+    setSeen(row.candidate);
+    setCandidate(row.candidate);
+  }
   const runs = [...row.runs].sort((a, b) => a.number - b.number);
   const openMandate = useOpenMandateWindowNext();
   const counts = candidate.counts;
@@ -118,11 +126,23 @@ export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
           ) : null}
         </div>
         <div className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{candidate.holder_name}</span>
+          <CandidateHolderName
+            type={candidate.holder_type}
+            id={candidate.holder_id}
+            versionId={candidate.holder_version_id ?? null}
+            name={candidate.holder_name}
+          />
           {" replacing "}
-          <span className="font-medium text-foreground">
-            {candidate.baseline_holder_name ?? "nothing of its own"}
-          </span>
+          {candidate.baseline_holder_id && candidate.baseline_holder_type ? (
+            <CandidateHolderName
+              type={candidate.baseline_holder_type}
+              id={candidate.baseline_holder_id}
+              versionId={candidate.baseline_holder_version_id ?? null}
+              name={candidate.baseline_holder_name ?? null}
+            />
+          ) : (
+            <span className="font-medium text-foreground">nothing of its own</span>
+          )}
         </div>
       </section>
 
@@ -181,6 +201,11 @@ function RunsList({ runs }: { runs: LiveCandidateRun[] }) {
             >
               <span className="w-10 shrink-0 tabular-nums text-muted-foreground">#{run.number}</span>
               <Chip className={tone}>{runOutcomeWord(run)}</Chip>
+              {attemptWord(run.attempts) ? (
+                <span className="shrink-0 text-[10px] text-muted-foreground" title="Interrupted, then run again.">
+                  {attemptWord(run.attempts)}
+                </span>
+              ) : null}
               <span className="min-w-0 flex-1 truncate text-muted-foreground">{doorWord(run.door)}</span>
               <span className="hidden shrink-0 tabular-nums text-muted-foreground sm:inline" title="Live · candidate">
                 {liveMs == null ? "—" : formatDurationMs(liveMs)} · {candMs == null ? "—" : formatDurationMs(candMs)}

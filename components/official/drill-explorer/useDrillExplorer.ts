@@ -11,7 +11,7 @@
 // when the contract carries them — built-in views, findings, records) is `platform.drill_describe`.
 // Id-valued Dimensions read their words from the door's own labels, then the host's name resolvers.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import type { DrillAnswer, DrillDefinition, DrillQuestion, DrillSource } from "@ai-matrx/records";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -149,12 +149,17 @@ export function useDrillExplorer(args: {
   carried?: DrillCarried | null | undefined;
   /** Measures the header says beside the total (asked on the total only, never as table columns). */
   headlineAlso?: readonly string[] | undefined;
+  /**
+   * The header's own number (VERIFY-DRILL-LIVE F6): asked on the total whatever the question shows,
+   * so a Saved view whose Measures leave it out keeps the header's total instead of "—".
+   */
+  headlineMeasure?: string | null | undefined;
   /** The auto-grain lines (the knobs), or null for the package's own. */
   grainLines?: DrillGrainLines | null | undefined;
   /** False while the settings are still being read: nothing is asked until the grain is known. */
   ready?: boolean | undefined;
 }): DrillExplorerData {
-  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried, headlineAlso, grainLines = null, ready = true } = args;
+  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried, headlineAlso, headlineMeasure = null, grainLines = null, ready = true } = args;
   const client = organizationId ? drillClientFor(organizationId, userId) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
@@ -165,6 +170,8 @@ export function useDrillExplorer(args: {
   const [says, setSays] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [asOf, setAsOf] = useState<string | null>(null);
+  // Relation crumbs already asked for their name (per definition), so a trail never asks twice.
+  const crumbsAsked = useRef<Set<string>>(new Set());
 
   // THE DEFINITION — once per organization and source.
   useEffect(() => {
@@ -182,7 +189,7 @@ export function useDrillExplorer(args: {
 
   const askKey = JSON.stringify({ lines: grainLines, by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null, sort: question.sort ?? null, carried: carried ?? null });
   const resolverKeys = Object.keys(resolvers ?? {}).sort().join(",");
-  const alsoKey = (headlineAlso ?? []).join(",");
+  const alsoKey = [headlineMeasure ?? "", ...(headlineAlso ?? [])].join(",");
 
   // THE ANSWERS — every request the table needs, plus the whole (no trail) for coverage.
   useEffect(() => {
@@ -198,9 +205,10 @@ export function useDrillExplorer(args: {
     const rates = new Set(def.measures.filter((m) => (m.op as string) === "rate").map((m) => m.key));
     const noStart = !windowPart.window;
     const askable = (keys: readonly string[]) => (noStart ? keys.filter((k) => !rates.has(k)) : [...keys]);
-    const leftOut = noStart ? [...asked.show, ...(headlineAlso ?? [])].filter((k) => rates.has(k)) : [];
+    const headerAsks = [...(headlineMeasure ? [headlineMeasure] : []), ...(headlineAlso ?? [])];
+    const leftOut = noStart ? [...asked.show, ...headerAsks].filter((k) => rates.has(k)) : [];
     const doorShow = askable(countMeasure && !asked.show.includes(countMeasure) ? [...asked.show, countMeasure] : asked.show);
-    const totalShow = [...doorShow, ...askable((headlineAlso ?? []).filter((k) => !doorShow.includes(k) && def.measures.some((m) => m.key === k)))];
+    const totalShow = [...doorShow, ...askable([...new Set(headerAsks)].filter((k) => !doorShow.includes(k) && def.measures.some((m) => m.key === k)))];
     const where = doorWhere(asked);
     const sortKey = asked.sort && doorShow.includes(asked.sort.key) ? asked.sort.key : doorShow[0];
     const requests = drillRequests(asked);
@@ -277,6 +285,32 @@ export function useDrillExplorer(args: {
       setAnswered({ key: answeredFor, answers: out, whole: wholeRow });
       setSays(sentences);
       setAsOf(counted);
+      // A TRAIL CRUMB READS THE NAME ITS ROWS DO (VERIFY-DRILL-LIVE F7). A crumb's value is a filter,
+      // so no row of a narrowed answer carries its label (the rows are grouped by the next level); a
+      // relation crumb the door named on an earlier screen kept it, but one opened from an address, a
+      // record or a finding read "A workflow whose name you cannot read" above rows that name it. The
+      // same door names it: grouped by that Dimension, filtered to just these ids, read as the seat.
+      const unnamedCrumbs: Record<string, string[]> = {};
+      for (const w of asked.where) {
+        const key = parseDimensionRef(w.dim).key;
+        const dim = def.dimensions.find((d) => d.key === key);
+        if (!dim || dim.kind !== "relation" || named.has(key) || typeof w.value !== "string" || !w.value) continue;
+        const seen = `${def.key}:${key}:${w.value}`;
+        if (doorLabels[key]?.[w.value] || crumbsAsked.current.has(seen)) continue;
+        crumbsAsked.current.add(seen);
+        (unnamedCrumbs[key] ??= []).push(w.value);
+      }
+      // any Measure that is not a run rate (a rate needs a window with a start; the name needs none)
+      const nameShow = def.measures.filter((m) => !rates.has(m.key)).slice(0, 1).map((m) => m.key);
+      for (const [key, values] of Object.entries(unnamedCrumbs)) {
+        void client
+          .drillAsk({ source: src, question: { by: [key], show: nameShow, where: { [key]: values }, lane, limit: values.length } })
+          .then((got) => {
+            if (cancelled || !got.ok) return;
+            const map = drillDoorLabels(got.data!.rows)[key];
+            if (map) setNames((held) => ({ ...held, [key]: { ...(held[key] ?? {}), ...map } }));
+          });
+      }
       for (const [key, set] of Object.entries(ids)) {
         const resolver = resolvers?.[key];
         const unnamed = [...set].filter((id) => !doorLabels[key]?.[id]);

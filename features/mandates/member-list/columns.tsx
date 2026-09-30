@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import type { MandateMemberRow } from "./types";
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
+import { CandidateListCell } from "@/features/mandates/candidates/components/CandidateListCell";
 
 type Spec = EntityColumnSpec<MandateMemberRow>;
 
@@ -123,6 +124,8 @@ export interface MemberColumnOptions {
   canManage?: (row: MandateMemberRow) => boolean;
   /** Re-ask the list after a status change. */
   onChanged?: () => void;
+  /** The row's record page — the Candidates cell opens its Candidates tab. */
+  recordHref?: (row: MandateMemberRow) => string;
 }
 
 export function memberMandateColumns(options: MemberColumnOptions = {}): Spec[] {
@@ -175,6 +178,29 @@ export function memberMandateColumns(options: MemberColumnOptions = {}): Spec[] 
       </span>
     )),
     facetColumn("health", "Health", 170, (row) => <MemberHealthBadge health={row.health} />),
+    // THE CANDIDATES CELL — the same one the admin list shows (V1 D4).
+    ...(options.recordHref
+      ? [
+          {
+            id: "candidate",
+            label: "Candidates",
+            column: {
+              id: "candidate",
+              header: "Candidates",
+              filter: false as const,
+              sortable: false,
+              width: 110,
+              cell: (row: MandateMemberRow) => (
+                <CandidateListCell
+                  mandateId={row.id}
+                  cell={row.candidate}
+                  href={options.recordHref!(row)}
+                />
+              ),
+            },
+          } satisfies Spec,
+        ]
+      : []),
     {
       id: "updatedAt",
       label: "Updated",

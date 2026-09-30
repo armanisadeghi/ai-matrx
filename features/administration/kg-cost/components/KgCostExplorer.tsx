@@ -26,7 +26,9 @@ export const KG_COST_FIRST_QUESTION: MatrxDrillQuestion = {
   // the old table's money columns and its unit economics: the projection, the cache-hit rate and the
   // enrichment multiplier; "What a successful run costs" (a built-in view) holds p50 / p90 / max / cost
   // per 1,000 characters, which the old section counted over successful runs only
-  show: ["runs", "cost", "embedding_cost", "extraction_cost", "enrichment_cost", "cache_hit_rate", "enrichment_multiplier"],
+  // cleanup cost is a column as it was in the old section's table (fetchUnitEconomics' cleanup_cost_usd,
+  // git 35a31050ee), so a row's four parts add up to its cost (VERIFY-DRILL-LIVE F6)
+  show: ["runs", "cost", "embedding_cost", "extraction_cost", "cleanup_cost", "enrichment_cost", "cache_hit_rate", "enrichment_multiplier"],
   where: [],
   sort: { key: "cost", direction: "desc" },
   window: "30d",
@@ -43,6 +45,7 @@ export function KgCostExplorer() {
       source={KG_COST_SOURCE}
       lane="platform"
       organizationId={SYSTEM_ORGANIZATION_ID}
+      timeZone="UTC"
       title="Knowledge ingestion cost"
       rootLabel="Every ingest run"
       firstQuestion={KG_COST_FIRST_QUESTION}

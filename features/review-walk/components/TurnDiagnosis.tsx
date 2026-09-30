@@ -36,10 +36,12 @@ import {
   Wrench,
 } from "lucide-react";
 import MarkdownStream from "@/components/MarkdownStream";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import type { DescendInput, DescendOut } from "../types";
+import type { DescendAnswer, DescendAnswerPart, DescendInput, DescendOut } from "../types";
+import { TOOL_OUTCOME_WORD, isStoppedToolRow } from "../answer";
 import type { AssistantPart, ConversationTurn } from "../turns";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -474,12 +476,15 @@ function AssistantPartCard({
           defaultExpanded={isFinalText}
           rawValue={part.text}
         >
-          <Md content={part.text} />
+          {isFinalText ? <AnswerValueView value={parseStructure(part.text)} text={part.text} /> : <Md content={part.text} />}
         </DiagCard>
       );
     case "tool": {
       const row = part.row;
-      const failed = row ? row.is_error === true || row.success === false : false;
+      // A call candidate containment stopped never ran — never "failed".
+      const stopped = isStoppedToolRow(row);
+      const failed =
+        !stopped && row ? row.is_error === true || row.success === false : false;
       const wrongInput = row ? (descendIndex.toolByRowId.get(row.id) ?? null) : null;
       const output = row ? (row.output ?? row.output_preview) : null;
       return (
@@ -494,12 +499,14 @@ function AssistantPartCard({
                 <span
                   className={cn(
                     "rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
-                    failed
-                      ? "border-red-500/40 text-red-700 dark:text-red-300"
-                      : "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+                    stopped
+                      ? "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                      : failed
+                        ? "border-red-500/40 text-red-700 dark:text-red-300"
+                        : "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
                   )}
                 >
-                  {failed ? "failed" : "succeeded"}
+                  {stopped ? TOOL_OUTCOME_WORD.stopped : failed ? "failed" : "succeeded"}
                 </span>
               )}
               {row && row.duration_ms > 0 && (
@@ -539,13 +546,18 @@ function AssistantPartCard({
               <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 What came back
               </div>
-              {row?.error_message && (
+              {stopped ? (
+                <div className="text-xs text-muted-foreground">
+                  Nothing — it was stopped before it ran.
+                </div>
+              ) : null}
+              {!stopped && row?.error_message && (
                 <div className="mb-1 rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-[11px] text-red-700 dark:text-red-300">
                   {row.error_message}
                   <ErrorAlchemyMenu error={row.error_message} />
                 </div>
               )}
-              {output == null ? (
+              {stopped ? null : output == null ? (
                 <div className="text-xs text-muted-foreground">
                   No recorded result.
                 </div>
@@ -1072,6 +1084,22 @@ export function GroupedInputsView({
   const unitKey = `layer:${out.unit.kind}:${out.unit.id}`;
   return (
     <div className="space-y-2">
+      {out.transcript === "recorded_call" ? (
+        <div
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+          data-walk-transcript="recorded_call"
+        >
+          <Link2 className="h-3 w-3" aria-hidden />
+          Rebuilt from the recorded call — this run kept no chat
+        </div>
+      ) : out.transcript === "none" ? (
+        <div
+          className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground"
+          data-walk-transcript="none"
+        >
+          This run kept no chat and no recorded call.
+        </div>
+      ) : null}
       {groups.user.length > 0 && (
         <>
           <SectionHeading
@@ -1122,6 +1150,17 @@ export function GroupedInputsView({
           {groups.tools.map((i) => card(i, unitKey))}
         </>
       )}
+      {out.answer ? (
+        <AnswerSection
+          answer={out.answer}
+          unitKey={unitKey}
+          expand={expand}
+          onToggle={onToggle}
+          raw={raw}
+          disabled={disabled}
+          flags={flags}
+        />
+      ) : null}
       {groups.other.length > 0 && (
         <>
           <SectionHeading
@@ -1132,12 +1171,177 @@ export function GroupedInputsView({
           {groups.other.map((i) => card(i, unitKey))}
         </>
       )}
-      {(out.inputs ?? []).length === 0 && (
+      {(out.inputs ?? []).length === 0 && out.transcript !== "none" && (
         <div className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
           No recorded inputs for this unit. If the output is wrong, the fault
           is here.
         </div>
       )}
+    </div>
+  );
+}
+
+// ── what the agent answered ─────────────────────────────────────────────────
+
+/** A text answer that is JSON is handed to the canonical answer view as the
+ * STRUCTURE it is (a `__kind` renders through its own component). */
+function parseStructure(text: string): unknown {
+  const t = text.trim();
+  if (!((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]")))) {
+    return undefined;
+  }
+  try {
+    const v = JSON.parse(t) as unknown;
+    return v !== null && typeof v === "object" ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const OUTCOME_TONE: Record<NonNullable<DescendAnswerPart["outcome"]>, string> = {
+  ran: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  failed: "border-red-500/40 text-red-700 dark:text-red-300",
+  stopped: "border-amber-500/40 text-amber-700 dark:text-amber-300",
+  no_record: "border-border text-muted-foreground",
+};
+
+/** What the unit answered — text (and its structure) through the canonical
+ * answer view, thinking folded, each tool call with what became of it. A call
+ * candidate containment stopped shows its PROPOSED arguments and "Stopped
+ * before it ran" — it never ran and the agent never worked from a result. */
+export function AnswerSection({
+  answer,
+  unitKey,
+  expand,
+  onToggle,
+  raw,
+  disabled,
+  flags,
+}: {
+  answer: DescendAnswer;
+  unitKey: string;
+  expand: ExpandState;
+  onToggle: (id: string, expanded: boolean) => void;
+  raw: boolean;
+  disabled?: boolean;
+  flags: FlagsApi;
+}) {
+  const parts = answer.parts ?? [];
+  const lastTextIndex = parts.map((p) => p.kind).lastIndexOf("text");
+  const common = { expand, onToggle, raw, disabled, flags };
+  return (
+    <div className="space-y-2" data-walk-answer={answer.source}>
+      <SectionHeading
+        icon={<Brain className="h-3.5 w-3.5" aria-hidden />}
+        title="What the agent answered"
+        meta={answer.finish_reason ? `finished: ${answer.finish_reason}` : undefined}
+      />
+      {parts.map((part, i) => {
+        const id = `${unitKey}:answer:${i}`;
+        if (part.kind === "thinking") {
+          return (
+            <DiagCard
+              {...common}
+              key={id}
+              id={id}
+              icon={<Brain className="h-3.5 w-3.5" aria-hidden />}
+              title="Thinking"
+              chips={charsChip(part.text?.length)}
+              rawValue={part.text}
+            >
+              <div className="text-sm italic text-muted-foreground">
+                <Md content={part.text ?? ""} />
+              </div>
+            </DiagCard>
+          );
+        }
+        if (part.kind === "text") {
+          const isFinal = i === lastTextIndex;
+          const text = part.text ?? "";
+          return (
+            <DiagCard
+              {...common}
+              key={id}
+              id={id}
+              icon={<MessageSquare className="h-3.5 w-3.5" aria-hidden />}
+              title={isFinal ? "Agent answer" : "Agent text"}
+              chips={charsChip(text.length)}
+              defaultExpanded={isFinal}
+              rawValue={isFinal && answer.structured != null ? answer.structured : text}
+            >
+              {isFinal ? (
+                <AnswerValueView
+                  value={answer.structured ?? parseStructure(text)}
+                  text={text}
+                />
+              ) : (
+                <Md content={text} />
+              )}
+              {isFinal && answer.truncated && (
+                <div className="text-[10px] text-muted-foreground">
+                  Shown truncated.
+                </div>
+              )}
+            </DiagCard>
+          );
+        }
+        const outcome = part.outcome ?? "no_record";
+        const stopped = outcome === "stopped";
+        const args =
+          part.arguments !== null &&
+          typeof part.arguments === "object" &&
+          !Array.isArray(part.arguments)
+            ? (part.arguments as Record<string, unknown>)
+            : null;
+        return (
+          <DiagCard
+            {...common}
+            key={id}
+            id={id}
+            icon={<Wrench className="h-3.5 w-3.5" aria-hidden />}
+            title={`Tool — ${part.tool_name ?? "tool"}`}
+            defaultExpanded={stopped}
+            chips={
+              <span
+                className={cn(
+                  "rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                  OUTCOME_TONE[outcome],
+                )}
+                data-walk-tool-outcome={outcome}
+                title={part.outcome_detail ?? undefined}
+              >
+                {TOOL_OUTCOME_WORD[outcome]}
+              </span>
+            }
+            rawValue={{
+              call_id: part.call_id,
+              arguments: part.arguments,
+              outcome,
+              detail: part.outcome_detail,
+            }}
+          >
+            <div className="space-y-2">
+              <div>
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {stopped ? "Proposed arguments" : "What the agent asked for"}
+                </div>
+                {args ? (
+                  <KeyValueTable record={args} />
+                ) : part.arguments != null ? (
+                  <RawValue value={part.arguments} />
+                ) : (
+                  <div className="text-xs text-muted-foreground">No arguments.</div>
+                )}
+              </div>
+              {outcome === "failed" && part.outcome_detail ? (
+                <div className="rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-[11px] text-red-700 dark:text-red-300">
+                  {part.outcome_detail}
+                </div>
+              ) : null}
+            </div>
+          </DiagCard>
+        );
+      })}
     </div>
   );
 }

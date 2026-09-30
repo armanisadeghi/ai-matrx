@@ -1,0 +1,209 @@
+{
+  "live_server_run": {
+    "unit": {
+      "kind": "agent_request",
+      "id": "7d20b186-31c5-4e66-bdb8-79d3056b722a",
+      "conversation_id": "f551ef80-2e0e-40d4-a7d5-2163b8a8bad0",
+      "position": null,
+      "status": "completed",
+      "error": null
+    },
+    "producer": {
+      "kind": "cx_request",
+      "id": "7d20b186-31c5-4e66-bdb8-79d3056b722a",
+      "iteration": 1,
+      "model": "6e3260dc-3d46-4fd1-86ca-5b9c05b80abf",
+      "provider": "google",
+      "snapshot_id": "8922ad43-d4a3-49a6-a3e0-83168f26fd29",
+      "spec_type": null,
+      "confidence": "linked"
+    },
+    "inputs": [
+      {
+        "key": "user_text",
+        "kind": "markdown",
+        "label": "User message (as the model received it)",
+        "value": "Page Title: Tide pools\nPage URL: \n\nPage Text:\nTide pools are rocky depressions along ocean shorelines that fill with seawater at high tide and stay wet when the tide goes out. They host anemones, sea stars, mussels, crabs and small fish that must survive changing temperature, salinity and oxygen twice a day. Visitors are asked not to remove animals or turn rocks, because exposure kills many of the organisms living underneath.\n\nAnalyze the page text above and produce the key points and audience statement according to your instructions.",
+        "value_ref": null,
+        "chars": 540,
+        "truncated": false,
+        "producer": {
+          "kind": "request_snapshot",
+          "id": "8922ad43-d4a3-49a6-a3e0-83168f26fd29",
+          "descend_ref": null,
+          "confidence": "linked"
+        }
+      },
+      {
+        "key": "system_prompt",
+        "kind": "markdown",
+        "label": "System prompt (as sent to the provider)",
+        "value": "<!--matrx:current_date-->Current date: 2026-09-30<!--matrx:/current_date-->\n\nYou are a precise web content analyst. Your job is to read the text of a single web page and produce a faithful, high-value summary for a busy professional reader.\n\n# Task\nExtract between 3 and 5 key points from the page text. Each key point must:\n- Be a complete, standalone sentence stating a concrete fact, claim, offer, or takeaway that is actually present in the page text.\n- Be under 30 words.\n- Not repeat or overlap with another key point.\n- Contain no navigation labels, cookie notices, boilerplate footers, or menu items.\n\nThen write exactly one sentence naming the intended audience of the page, inferred from its wording, offers, and terminology.\n\n# Style\nWrite for a busy professional reader: specific, concrete, no marketing fluff, no hedging language.\n\n# Rules\n- Never invent facts, numbers, names, or claims that are not explicitly supported by the page text.\n- Use the page title and URL only as context to understand the page; the key points themselves must come from the body text, never from the title or URL alone.\n- If the page covers several topics, prioritize what the page is primarily about.\n- If the page text is too thin, garbled, off-topic, or otherwise cannot be summarized honestly, set quality_ok to false and explain the specific reason in quality_note. In that case, still do your best to provide whatever key points and audience statement are reasonably supportable, or leave them minimal but non-empty if truly nothing can be extracted.\n- Otherwise, quality_ok must be true and quality_note must be an empty string.\n\n# Output\nReturn a JSON object with exactly these fields: key_points (an array of 3-5 strings), audience (a single sentence string), quality_ok (a boolean), and quality_note (a string, empty when quality_ok is true). Do not add, rename, or omit any fields.",
+        "value_ref": null,
+        "chars": 1885,
+        "truncated": false,
+        "producer": {
+          "kind": "request_snapshot",
+          "id": "8922ad43-d4a3-49a6-a3e0-83168f26fd29",
+          "descend_ref": null,
+          "confidence": "linked"
+        }
+      }
+    ],
+    "answer": {
+      "source": "recorded_call",
+      "producer": {
+        "kind": "request_snapshot",
+        "id": "8922ad43-d4a3-49a6-a3e0-83168f26fd29",
+        "descend_ref": null,
+        "confidence": "linked"
+      },
+      "parts": [
+        {
+          "kind": "text",
+          "text": "{\"audience\": \"This page is intended for beach visitors and nature enthusiasts interested in coastal ecosystems.\", \"key_points\": [\"Tide pools are rocky depressions on ocean shorelines that retain seawater during low tide.\", \"Marine organisms like anemones, sea stars, mussels, and crabs inhabit these pools.\", \"Inhabitants must adapt to daily fluctuations in temperature, salinity, and oxygen levels.\", \"Visitors are prohibited from removing animals or turning rocks to protect fragile organisms from lethal exposure.\"], \"quality_ok\": true, \"quality_note\": \"\"}",
+          "tool_name": null,
+          "call_id": null,
+          "arguments": null,
+          "outcome": null,
+          "outcome_detail": null,
+          "tool_call_row_id": null
+        }
+      ],
+      "text": "{\"audience\": \"This page is intended for beach visitors and nature enthusiasts interested in coastal ecosystems.\", \"key_points\": [\"Tide pools are rocky depressions on ocean shorelines that retain seawater during low tide.\", \"Marine organisms like anemones, sea stars, mussels, and crabs inhabit these pools.\", \"Inhabitants must adapt to daily fluctuations in temperature, salinity, and oxygen levels.\", \"Visitors are prohibited from removing animals or turning rocks to protect fragile organisms from lethal exposure.\"], \"quality_ok\": true, \"quality_note\": \"\"}",
+      "structured": {
+        "audience": "This page is intended for beach visitors and nature enthusiasts interested in coastal ecosystems.",
+        "key_points": [
+          "Tide pools are rocky depressions on ocean shorelines that retain seawater during low tide.",
+          "Marine organisms like anemones, sea stars, mussels, and crabs inhabit these pools.",
+          "Inhabitants must adapt to daily fluctuations in temperature, salinity, and oxygen levels.",
+          "Visitors are prohibited from removing animals or turning rocks to protect fragile organisms from lethal exposure."
+        ],
+        "quality_ok": true,
+        "quality_note": ""
+      },
+      "finish_reason": "stop",
+      "chars": 559,
+      "truncated": false,
+      "value_ref": null
+    },
+    "transcript": "recorded_call",
+    "snapshot_refs": [
+      "8922ad43-d4a3-49a6-a3e0-83168f26fd29"
+    ],
+    "capturable": true,
+    "notes": []
+  },
+  "candidate_stopped": {
+    "unit": {
+      "kind": "agent_request",
+      "id": "2e692431-2340-4be9-886e-56fa384d1b00",
+      "conversation_id": "3cb55bfb-1404-4793-ad5a-7e36e202805c",
+      "position": 1,
+      "status": "completed",
+      "error": null
+    },
+    "producer": {
+      "kind": "cx_request",
+      "id": "2e692431-2340-4be9-886e-56fa384d1b00",
+      "iteration": 1,
+      "model": "6e3260dc-3d46-4fd1-86ca-5b9c05b80abf",
+      "provider": "google",
+      "snapshot_id": "cb6df8dd-05db-490f-adee-2a0845f96ece",
+      "spec_type": null,
+      "confidence": "linked"
+    },
+    "inputs": [
+      {
+        "key": "user_text",
+        "kind": "markdown",
+        "label": "User message (as the model received it)",
+        "value": "Page Title: Atacama Desert\n\nPage Text:\nThe Atacama Desert in northern Chile is one of the driest places on Earth; some weather stations there have never recorded rain. Astronomers build observatories on its high plateau because the dry, thin air gives exceptionally clear skies. Its salt flats also hold a large share of the world lithium reserves.",
+        "value_ref": null,
+        "chars": 348,
+        "truncated": false,
+        "producer": {
+          "kind": "user",
+          "id": "b7178671-bf12-4298-b579-23db668a00b5",
+          "descend_ref": null,
+          "confidence": "inferred"
+        }
+      },
+      {
+        "key": "system_prompt",
+        "kind": "markdown",
+        "label": "System prompt (as sent to the provider)",
+        "value": "<!--matrx:current_date-->Current date: 2026-09-30<!--matrx:/current_date-->\n\nYou summarize a web page for the user. You MUST do exactly two steps, in order.\nStep 1: call the `note` tool exactly once with action \"create\", label \"V1CAND-1790806846\" and content = your summary.\nStep 2: after the tool returns, reply with the summary text only.\nThe summary is three sentences long.",
+        "value_ref": null,
+        "chars": 377,
+        "truncated": false,
+        "producer": {
+          "kind": "request_snapshot",
+          "id": "cb6df8dd-05db-490f-adee-2a0845f96ece",
+          "descend_ref": null,
+          "confidence": "linked"
+        }
+      },
+      {
+        "key": "toolset",
+        "kind": "json",
+        "label": "Tools offered on this call (1)",
+        "value": [
+          {
+            "id": "116f5956-0744-41cf-abd8-38f82bf5d835",
+            "kind": "registered",
+            "name": "note"
+          }
+        ],
+        "value_ref": null,
+        "chars": 86,
+        "truncated": false,
+        "producer": {
+          "kind": "message",
+          "id": "b7178671-bf12-4298-b579-23db668a00b5",
+          "descend_ref": null,
+          "confidence": "inferred"
+        }
+      }
+    ],
+    "answer": {
+      "source": "message",
+      "producer": {
+        "kind": "message",
+        "id": "4c7c5341-d597-472a-90b7-e512fe09a2f0",
+        "descend_ref": null,
+        "confidence": "linked"
+      },
+      "parts": [
+        {
+          "kind": "tool_call",
+          "text": null,
+          "tool_name": "note",
+          "call_id": "gemini_e229c612cc4840e5",
+          "arguments": {
+            "label": "V1CAND-1790806846",
+            "action": "create",
+            "content": "The Atacama Desert in northern Chile is globally recognized as one of the driest locations on Earth, with some areas never experiencing rainfall. Its high altitude and arid atmosphere create ideal conditions for astronomical observatories to achieve clear sky observations. Additionally, the region's vast salt flats serve as a crucial source for a significant portion of the world's lithium reserves."
+          },
+          "outcome": "stopped",
+          "outcome_detail": "side_effect_class 'db_write' changes things; only read_only / paid_read run for real",
+          "tool_call_row_id": "5d3a3c69-20e0-4039-8eec-eb96991b65b4"
+        }
+      ],
+      "text": null,
+      "structured": null,
+      "finish_reason": "stop",
+      "chars": 0,
+      "truncated": false,
+      "value_ref": null
+    },
+    "transcript": "messages",
+    "snapshot_refs": [
+      "cb6df8dd-05db-490f-adee-2a0845f96ece"
+    ],
+    "capturable": true,
+    "notes": [
+      "trigger user message located by position (no recorded trigger_message_id) — its inputs are marked inferred"
+    ]
+  }
+}

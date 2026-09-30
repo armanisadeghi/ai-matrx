@@ -20,6 +20,13 @@ import { DrillExplorer } from "@/components/official/drill-explorer/DrillExplore
 import type { DrillReconcileSpec } from "@/components/official/drill-explorer/useDrillReconcile";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
+import { useRouter, useSearchParams } from "next/navigation";
+
+import type { DrillSibling } from "@/components/official/drill-explorer/drillSiblings";
+import { pushAppHref } from "@/lib/deployment/navigate";
+
+import { AiCallsExplorer, AiUsageExecutionsExplorer } from "./UsageGrainExplorers";
+import { USAGE_DEFINITIONS, usageDefinitionOf, usageSiblings } from "./usageLinks";
 import { USAGE_SOURCE, usageNameResolvers, useUsageFreshness } from "./useUsageDrill";
 
 /** The first screen: everyone's spend in the last 30 days, by person, costliest first (the definition's own default). */
@@ -38,6 +45,19 @@ export const USAGE_RECONCILE = {
 } as const satisfies DrillReconcileSpec;
 
 export function UsageExplorer() {
+  // ONE SCREEN, THREE GRAINS (lane DRILL-PRESETS-RETIRE): `def=` picks the definition; each mount is
+  // keyed by it, so switching starts the explorer fresh on the other definition's address.
+  const params = useSearchParams();
+  const router = useRouter();
+  const go = (href: string) => pushAppHref(router, href);
+  const definition = usageDefinitionOf(new URLSearchParams(params.toString()));
+  if (definition === "ai_calls") return <AiCallsExplorer key="ai_calls" siblings={usageSiblings("ai_calls", go)} groupLabel={USAGE_DEFINITIONS.ai_calls} />;
+  if (definition === "ai_usage_executions")
+    return <AiUsageExecutionsExplorer key="ai_usage_executions" siblings={usageSiblings("ai_usage_executions", go)} groupLabel={USAGE_DEFINITIONS.ai_usage_executions} />;
+  return <AiUsageHourlyExplorer key="ai_usage" siblings={usageSiblings("ai_usage", go)} />;
+}
+
+function AiUsageHourlyExplorer({ siblings }: { siblings: readonly DrillSibling[] }) {
   // THE PLATFORM LANE ASKS IN THE PLATFORM'S OWN ORGANIZATION. The door needs an organization only
   // to know whose calendar cuts the periods; the admin seat never acts as itself (no active-org
   // dependency in admin), and the platform organization's calendar is UTC — the rollup's own hours.
@@ -49,6 +69,7 @@ export function UsageExplorer() {
       source={USAGE_SOURCE}
       lane="platform"
       organizationId={organizationId}
+      timeZone="UTC"
       title="AI usage"
       rootLabel="All usage"
       firstQuestion={USAGE_FIRST_QUESTION}
@@ -65,6 +86,8 @@ export function UsageExplorer() {
       reconcile={USAGE_RECONCILE}
       windowAlign="hour"
       dataAttributes={{ "data-usage-explorer": "" }}
+      siblings={siblings}
+      groupLabel={USAGE_DEFINITIONS.ai_usage}
       headerExtras={
         <AppLink href="/administration/users/usage" className="underline-offset-2 hover:underline">
           Old usage page

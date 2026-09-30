@@ -1,22 +1,27 @@
 "use client";
 
 // components/official/drill-explorer/useDrillKnobs.ts — THE EXPLORER'S SETTINGS, READ ONCE
-// (lane DRILL-ADOPT; program DRILL-FINISH decisions 5, 8, 16, 28; VERIFY-DRILL-WAVE2 W2-5).
+// (lane DRILL-ADOPT; program DRILL-FINISH decisions 4, 5, 8, 16, 28; VERIFY-DRILL-WAVE2 W2-5;
+// VERIFY-DRILL-LIVE F1).
 //
 // Every line the explorer draws by is a feature knob an organization can move, never a constant:
-//   drill.chart      top_n          series a chart draws before Other            (MatrxDrillChart seriesLimit)
-//   drill.pareto     share_pct      the share the Pareto line marks               (answer table `pareto`)
-//   drill            pivot_columns  pivot columns before the rest column          (answer table `pivotColumnCap`)
-//   drill.auto_grain hour_max_days / day_max_days / week_max_days — the window lengths up to which a
-//                    time group reads by hour, by day, by week (longer: by month)  (grain.ts)
-// A knob that cannot be read is SAID, in words, with what the screen does instead (the package's own
-// line) — a missing knob is never silent (lib/knobs/featureKnobs.ts: a missing knob raises).
+//   drill.chart.top_n                 series a chart draws before Other          (MatrxDrillChart seriesLimit)
+//   drill.pareto.share_pct            the share the Pareto line marks             (answer table `pareto`)
+//   drill.pivot_columns               pivot columns before the rest column        (answer table `pivotColumnCap`)
+//   drill.auto_grain.hour_max_days / day_max_days / week_max_days — the window lengths up to which a
+//                                     time group reads by hour, by day, by week (longer: by month) (grain.ts)
+//   <definition's stale_after_knob>   minutes after which the door's as_of is "behind" (usage: 20)
+// Every name is read through `readDrillKnob` (drillKnob.ts): the door's own address rule and the
+// effective value — never a hand-split pair (F1: the stale knob was split at its first dot and read as
+// missing on every usage answer).
+//
+// A knob that cannot be read is STATE on screen (the explorer's "Defaults" badge, the names in its
+// tooltip) and the package's own line is used — a missing knob is never silent.
 
 import { useEffect, useState } from "react";
 
-import { knobNumber } from "@/lib/knobs/featureKnobs";
-
 import type { DrillGrainLines } from "./grain";
+import { readDrillKnob, type DrillLane } from "./drillKnob";
 
 export interface DrillKnobs {
   /** False until every read answered (a value or a failure). */
@@ -26,83 +31,98 @@ export interface DrillKnobs {
   pivotColumns: number | null;
   /** The auto-grain lines, or null when any of them could not be read (the package's own lines then). */
   grainLines: DrillGrainLines | null;
-  /** Each knob that could not be read, in words, with what the screen does instead. */
-  says: string[];
+  /** Each setting that could not be read: its short name (for the badge's tooltip) and why (for the code/log). */
+  unread: Array<{ name: string; label: string; why: string }>;
 }
 
-const READS = [
-  { feature: "drill.chart", key: "top_n", instead: "the chart draws the package's 10 series before Other" },
-  { feature: "drill.pareto", key: "share_pct", instead: "the Pareto line is left out" },
-  { feature: "drill", key: "pivot_columns", instead: "a pivot keeps the package's 24 columns" },
-  { feature: "drill.auto_grain", key: "hour_max_days", instead: "time reads at the package's own grain lines" },
-  { feature: "drill.auto_grain", key: "day_max_days", instead: "time reads at the package's own grain lines" },
-  { feature: "drill.auto_grain", key: "week_max_days", instead: "time reads at the package's own grain lines" },
+/** The settings every explorer reads, with the short label the "Defaults" tooltip names them by. */
+export const DRILL_KNOB_READS = [
+  { name: "drill.chart.top_n", label: "Chart series" },
+  { name: "drill.pareto.share_pct", label: "Pareto share" },
+  { name: "drill.pivot_columns", label: "Pivot columns" },
+  { name: "drill.auto_grain.hour_max_days", label: "Time grain" },
+  { name: "drill.auto_grain.day_max_days", label: "Time grain" },
+  { name: "drill.auto_grain.week_max_days", label: "Time grain" },
 ] as const;
 
 type Got = { ok: true; value: number } | { ok: false; message: string };
+type Seat = { lane: DrillLane; organizationId: string | null; userId: string | null };
 
-let shared: Promise<Got[]> | null = null;
-let sharedAt = 0;
-/** One read of the six per minute, shared by every explorer on the page (the knob cache is 60 s too). */
-function readAll(): Promise<Got[]> {
-  if (!shared || Date.now() - sharedAt > 60_000) {
-    sharedAt = Date.now();
-    shared = Promise.all(
-      READS.map((r) =>
-        knobNumber(r.feature, r.key).then(
-          (value): Got => ({ ok: true, value }),
-          (e: unknown): Got => ({ ok: false, message: e instanceof Error ? e.message : String(e) }),
-        ),
+const shared = new Map<string, { at: number; got: Promise<Got[]> }>();
+/** One read of the settings per seat per minute, shared by every explorer on the page (the snapshot's cache is 60 s too). */
+function readAll(seat: Seat, names: readonly string[]): Promise<Got[]> {
+  const key = JSON.stringify([seat.lane, seat.lane === "platform" ? null : seat.organizationId, seat.userId, names]);
+  const held = shared.get(key);
+  if (held && Date.now() - held.at <= 60_000) return held.got;
+  const got = Promise.all(
+    names.map((name) =>
+      readDrillKnob(name, seat).then(
+        (value): Got => ({ ok: true, value }),
+        (e: unknown): Got => ({ ok: false, message: e instanceof Error ? e.message : String(e) }),
       ),
-    );
-  }
-  return shared;
+    ),
+  );
+  shared.set(key, { at: Date.now(), got });
+  return got;
 }
 
-/** The knobs as the explorer reads them, from the six answers (pure, for tests). */
+/** The knobs as the explorer reads them, from the answers in `DRILL_KNOB_READS` order. Pure, for tests. */
 export function drillKnobsOf(got: readonly Got[]): Omit<DrillKnobs, "settled"> {
-  const says: string[] = [];
-  let grainSaid = false;
-  const value = (i: number): number | null => {
+  const unread: DrillKnobs["unread"] = [];
+  const value = (i: number, name: string, label: string): number | null => {
     const g = got[i];
     if (g?.ok) return g.value;
-    const r = READS[i]!;
-    // the three grain lines share one consequence: said once
-    if (r.feature === "drill.auto_grain") {
-      if (grainSaid) return null;
-      grainSaid = true;
-    }
-    const message = g && !g.ok ? g.message : "no answer";
-    // a setting not seeded on this database yet reads in one short line, not the resolver's whole remedy
-    const why = /missing feature knob/i.test(message) ? "is not on this database yet" : `could not be read (${message})`;
-    says.push(`The setting ${r.feature}.${r.key} ${why}, so ${r.instead}.`);
+    unread.push({ name, label, why: g && !g.ok ? g.message : "no answer" });
     return null;
   };
-  const chartTopN = value(0);
-  const paretoSharePct = value(1);
-  const pivotColumns = value(2);
-  const hour = value(3);
-  const day = value(4);
-  const week = value(5);
+  const [chartTopN, paretoSharePct, pivotColumns, hour, day, week] = DRILL_KNOB_READS.map((r, i) => value(i, r.name, r.label));
   return {
-    chartTopN,
-    paretoSharePct,
-    pivotColumns,
-    grainLines: hour !== null && day !== null && week !== null ? { hourMaxDays: hour, dayMaxDays: day, weekMaxDays: week } : null,
-    says,
+    chartTopN: chartTopN ?? null,
+    paretoSharePct: paretoSharePct ?? null,
+    pivotColumns: pivotColumns ?? null,
+    grainLines: hour != null && day != null && week != null ? { hourMaxDays: hour, dayMaxDays: day, weekMaxDays: week } : null,
+    unread,
   };
 }
 
-export function useDrillKnobs(): DrillKnobs {
-  const [held, setHeld] = useState<DrillKnobs>({ settled: false, chartTopN: null, paretoSharePct: null, pivotColumns: null, grainLines: null, says: [] });
+const UNSETTLED: DrillKnobs = { settled: false, chartTopN: null, paretoSharePct: null, pivotColumns: null, grainLines: null, unread: [] };
+
+export function useDrillKnobs(seat: Seat): DrillKnobs {
+  const key = JSON.stringify([seat.lane, seat.organizationId, seat.userId]);
+  const [held, setHeld] = useState<{ key: string; knobs: DrillKnobs }>({ key: "", knobs: UNSETTLED });
   useEffect(() => {
     let cancelled = false;
-    void readAll().then((got) => {
-      if (!cancelled) setHeld({ settled: true, ...drillKnobsOf(got) });
+    void readAll({ lane: seat.lane, organizationId: seat.organizationId, userId: seat.userId }, DRILL_KNOB_READS.map((r) => r.name)).then((got) => {
+      if (!cancelled) setHeld({ key, knobs: { settled: true, ...drillKnobsOf(got) } });
     });
     return () => {
       cancelled = true;
     };
-  }, []);
-  return held;
+    // `key` carries every input
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return held.key === key ? held.knobs : UNSETTLED;
+}
+
+/**
+ * The definition's stale line (`stale_after_knob`, e.g. drill.usage.stale_after_minutes), read the same
+ * way. `unread` is set when the definition names one and it could not be read (the badge says so).
+ */
+export function useDrillStaleAfter(name: string | null, seat: Seat): { minutes: number | null; unread: DrillKnobs["unread"][number] | null } {
+  const key = JSON.stringify([name, seat.lane, seat.organizationId, seat.userId]);
+  const [held, setHeld] = useState<{ key: string; minutes: number | null; unread: DrillKnobs["unread"][number] | null }>({ key: "", minutes: null, unread: null });
+  useEffect(() => {
+    if (!name) return;
+    let cancelled = false;
+    void readAll({ lane: seat.lane, organizationId: seat.organizationId, userId: seat.userId }, [name]).then(([got]) => {
+      if (cancelled) return;
+      if (got?.ok) setHeld({ key, minutes: got.value, unread: null });
+      else setHeld({ key, minutes: null, unread: { name, label: "Stale after", why: got && !got.ok ? got.message : "no answer" } });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return held.key === key ? { minutes: held.minutes, unread: held.unread } : { minutes: null, unread: null };
 }

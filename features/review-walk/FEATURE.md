@@ -18,6 +18,28 @@ drives the outcome:
   server declares walkable via `descend_ref`) → descends one layer down.
   Hops accumulate; breadcrumbs climb back up; flags reset per layer.
 
+## What the agent answered, and runs that kept no chat (FX-W, 2026-09-30)
+
+Every walk layer shows what the unit RECEIVED **and what it ANSWERED** — the
+owner's "what the agent saw, what the agent responded".
+
+- **`out.answer`** (server `DescendAnswer`) renders as **What the agent
+  answered** (`AnswerSection` in `TurnDiagnosis.tsx`): the final text through
+  the canonical `AnswerValueView` (a JSON answer as the structure it is, a
+  `__kind` through its own component), earlier text/thinking folded, each tool
+  call with what became of it (`ran` / `failed` / `Stopped before it ran` /
+  `no record`). The turn view's final answer goes through the same view.
+- **`out.transcript`**: `recorded_call` ⇒ one quiet line "Rebuilt from the
+  recorded call — this run kept no chat" (the server rebuilt the user message,
+  toolset and answer from the call's request snapshot); `none` ⇒ one line,
+  nothing else.
+- **A call candidate containment stopped is never a tool result the agent
+  worked from.** The server moves it out of the inputs; the answer shows it
+  open, with **Proposed arguments** and "Stopped before it ran". The turn view
+  reads the tool row itself via `answer.ts` `isStoppedToolRow`.
+- Guard: `__tests__/walkShowsTheAnswer.test.tsx` over REAL descend payloads
+  captured from the clone (`__tests__/fixtures/descend-recorded-clone-2026-09-30.json`).
+
 ## Server contract
 
 `GET /review/descend?unit_kind=&unit_id=` and
@@ -41,6 +63,7 @@ error toast):
 
 | File | Role |
 |---|---|
+| `answer.ts` | tool-call outcome words + `isStoppedToolRow` (candidate containment) |
 | `types.ts` | contract aliases + walk state shapes (`WalkLayer`, `RecordedHop`) |
 | `api.ts` | typed client (`descend`, `findingFromWalk`, `describeWalkError`) — same pattern as `features/hindsight/api.ts`, deliberately NOT merged into it (that file is admin-scoped and separately owned) |
 | `turns.ts` | the TRUE-TURN model: folds the conversation (fetched DIRECT from Supabase via the canonical `fetchConversationBundle` + parsed through `parsePersistedMessageContent` — never a second parser) into turns: user message, context items, attachments, toolset, collab notes, and the agent's response parts (thinking / tool+result / text) in order. Provider framing (tool results as "user" messages) never reaches the UI |

@@ -36,7 +36,7 @@ export type DrillReconcileState =
   | { state: "counting" }
   /** The other definition's words and its measured value for the same window and filters. */
   | { state: "counted"; label: string; value: number }
-  /** Why the line is left out, in words. */
+  /** Why the line is left out, in words (the chip's tooltip). */
   | { state: "said"; sentence: string };
 
 export function useDrillReconcile(args: {
@@ -74,7 +74,7 @@ export function useDrillReconcile(args: {
       if (cancelled) return;
       if (!described.ok || !asked.ok) {
         const message = (!described.ok ? described.error.message : !asked.ok ? asked.error.message : "") || "no answer";
-        setHeld({ key, state: { state: "said", sentence: `How this number reconciles with the ${spec.source.kind === "entity" ? spec.source.token.replace(/_/g, " ") : "other count"} could not be counted: ${message}` } });
+        setHeld({ key, state: { state: "said", sentence: `Could not be counted: ${message}` } });
         return;
       }
       const total = asked.data!.rows.find((r) => r.kind === "total") ?? asked.data!.rows[0];
@@ -91,23 +91,26 @@ export function useDrillReconcile(args: {
 
   if (!spec || !enabled) return { state: "idle" };
   if (unshared.length > 0) {
-    return { state: "said", sentence: `The reconciliation with the other count is left out: it cannot be narrowed by ${unshared.map((k) => labelOf(k).toLowerCase()).join(" or ")}.` };
+    return { state: "said", sentence: `Not narrowable by ${unshared.map((k) => labelOf(k).toLowerCase()).join(" or ")}.` };
   }
   return held.key === key ? held.state : { state: "counting" };
 }
 
 /**
- * The reconciliation in words, from the two measured parts: "31,200,000 points of these 47,893,508 points
- * are AI model calls; 16,693,508 points (35%) is spend with no model call behind it." `format` prints a
- * value as the screen does. A negative rest (more calls than ledger) is said as such.
+ * The reconciliation as a chip (lane DRILL-LIVE-FIXES, interface text is layout): the label is the other
+ * definition's name and its share of these ("AI model calls 80%"); the tooltip has the two measured parts
+ * ("38,608,227 points of 48,053,287 points; 9,445,060 points (20%) with no model call"). `format` prints a
+ * value as the screen does. A negative rest (more calls than ledger) reads "+N more" in the tooltip.
  */
-export function drillReconcileSentence(ledger: number, other: number, otherLabel: string, format: (v: number) => string): string {
+export function drillReconcileChip(ledger: number, other: number, otherLabel: string, format: (v: number) => string): { label: string; tip: string } {
   const rest = ledger - other;
-  const pct = ledger > 0 ? Math.round((Math.abs(rest) / ledger) * 100) : null;
+  const pct = ledger > 0 ? Math.round((other / ledger) * 100) : null;
   // "Model calls" → "model calls"; an acronym keeps its case ("AI model calls")
   const what = /^[A-Z][a-z]/.test(otherLabel) ? otherLabel.charAt(0).toLowerCase() + otherLabel.slice(1) : otherLabel;
+  const label = `${otherLabel}${pct !== null ? ` ${pct}%` : ""}`;
   if (rest >= 0) {
-    return `${format(other)} of these ${format(ledger)} are ${what}; ${format(rest)}${pct !== null ? ` (${pct}%)` : ""} is spend with no ${what.replace(/s$/, "")} behind it.`;
+    const restPct = ledger > 0 ? Math.round((rest / ledger) * 100) : null;
+    return { label, tip: `${format(other)} of ${format(ledger)}; ${format(rest)}${restPct !== null ? ` (${restPct}%)` : ""} with no ${what.replace(/s$/, "")}` };
   }
-  return `The ${what} count ${format(other)}, ${format(-rest)} more than these ${format(ledger)}: calls whose spend the ledger has not recorded in this window.`;
+  return { label, tip: `${format(other)} of ${format(ledger)}: ${format(-rest)} more than the ledger holds` };
 }

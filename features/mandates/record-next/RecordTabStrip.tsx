@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import type { RecordTab, RecordTabCount, RecordTabId } from "./record-tabs";
 
 /** A tab's optional badge ("2/3"), toned by what it counts. */
-function TabCount({ count }: { count: RecordTabCount }) {
+export function TabCount({ count }: { count: RecordTabCount }) {
   return (
     <span
       data-testid="record-tab-count"

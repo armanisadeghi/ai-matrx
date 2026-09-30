@@ -120,3 +120,36 @@ export const INPUT_PART_WORD: Record<string, string> = {
 export function inputPartWord(part: string): string {
   return INPUT_PART_WORD[part] ?? part;
 }
+
+/**
+ * P16 — a pair that was interrupted (a restart, a deploy) and run again says
+ * so. `null` on a first attempt.
+ */
+export function attemptWord(attempts: number | null | undefined): string | null {
+  return typeof attempts === "number" && attempts > 1 ? `Attempt ${attempts}` : null;
+}
+
+/**
+ * P10 as amended (A4): every pair leads with ONE explicit line — "Shared inputs
+ * identical", or the shared parts that differed. Shared = every measured part
+ * except the candidate's own (its instructions and tool offer, `expected`).
+ * `null` differences = not measured yet.
+ */
+export function sharedInputsLine(
+  differences: { flagged: readonly string[]; unmeasured: readonly string[] } | null,
+): { text: string; tone: "same" | "differed" | "unknown" } {
+  if (!differences) return { text: "Shared inputs not measured yet", tone: "unknown" };
+  if (differences.flagged.length > 0) {
+    return {
+      text: `Shared inputs differed: ${differences.flagged.map(inputPartWord).join(", ")}`,
+      tone: "differed",
+    };
+  }
+  if (differences.unmeasured.length > 0) {
+    return {
+      text: `Shared inputs not measured: ${differences.unmeasured.map(inputPartWord).join(", ")}`,
+      tone: "unknown",
+    };
+  }
+  return { text: "Shared inputs identical", tone: "same" };
+}

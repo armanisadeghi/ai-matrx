@@ -3,22 +3,25 @@
 // features/admin/usage-drill/UsageGrainExplorers.tsx — THE OTHER TWO GRAINS OF AI USAGE, EACH A MOUNT
 // OF THE ONE EXPLORER (lane DRILL-PRESETS-RETIRE; PROGRESS-DRILL-FINISH decisions 12, 13, 24).
 //
-//   /administration/usage/calls       `ai_calls` — one row per MODEL CALL (chat.request): the CX usage
+//   /administration/usage?def=ai_calls             `ai_calls` — one row per MODEL CALL (chat.request): the CX usage
 //                                     tab's cuts are its built-in Saved views (cx_by_model, cx_by_provider,
 //                                     cx_by_day, cx_by_origin, cx_cost_share, cx_latency), latency kept
-//   /administration/usage/executions  `ai_usage_executions` — the ledger one row per EXECUTION: the Spend
+//   /administration/usage?def=ai_usage_executions  `ai_usage_executions` — the ledger one row per EXECUTION: the Spend
 //                                     page's conversation / sign-in session cuts, its most expensive
 //                                     requests and six of its seven "dig here" signals (the findings)
 //
-// Both are counted live (no rollup, so no Recount); ids read through the same names door as
+// The CX usage tab also mounts AiCallsExplorer beside its old content until the flip. Both are counted live (no rollup, so no Recount); ids read through the same names door as
 // /administration/usage, in the platform organization (the admin seat never acts as itself).
 
 import { DrillExplorer } from "@/components/official/drill-explorer/DrillExplorer";
+import type { DrillSibling } from "@/components/official/drill-explorer/drillSiblings";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 import { usageNameResolvers } from "./useUsageDrill";
 
-export function AiCallsExplorer() {
+type GrainProps = { siblings?: readonly DrillSibling[]; groupLabel?: string };
+
+export function AiCallsExplorer({ siblings, groupLabel }: GrainProps = {}) {
   const organizationId = SYSTEM_ORGANIZATION_ID;
   return (
     <DrillExplorer
@@ -33,11 +36,13 @@ export function AiCallsExplorer() {
       countMeasure="calls"
       location="Administration › AI model calls"
       dataAttributes={{ "data-usage-calls-explorer": "" }}
+      siblings={siblings}
+      groupLabel={groupLabel}
     />
   );
 }
 
-export function AiUsageExecutionsExplorer() {
+export function AiUsageExecutionsExplorer({ siblings, groupLabel }: GrainProps = {}) {
   const organizationId = SYSTEM_ORGANIZATION_ID;
   return (
     <DrillExplorer
@@ -52,6 +57,8 @@ export function AiUsageExecutionsExplorer() {
       countMeasure="calls"
       location="Administration › AI spend by execution"
       dataAttributes={{ "data-usage-executions-explorer": "" }}
+      siblings={siblings}
+      groupLabel={groupLabel}
     />
   );
 }

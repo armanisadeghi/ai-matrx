@@ -163351,6 +163351,189 @@
         ],
         "title": "DeriveRunRecord"
       },
+      "DescendAnswer": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "message",
+              "recorded_call"
+            ],
+            "title": "Source"
+          },
+          "producer": {
+            "$ref": "#/components/schemas/ProducerRef"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/DescendAnswerPart"
+            },
+            "type": "array",
+            "title": "Parts"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "structured": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finish_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finish Reason"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars",
+            "default": 0
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "value_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "producer"
+        ],
+        "title": "DescendAnswer",
+        "description": "What the unit ANSWERED — the other half of \"what the agent saw\".\n\n``source='message'`` is the persisted assistant row;\n``source='recorded_call'`` is the snapshot's recorded response (the run kept\nno messages). ``text`` is the visible answer (text parts joined);\n``structured`` is that text parsed when it is a JSON object/array — the\nclient renders it through the canonical answer view, never as a dump."
+      },
+      "DescendAnswerPart": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "thinking",
+              "tool_call"
+            ],
+            "title": "Kind"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "tool_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Name"
+          },
+          "call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "failed",
+                  "no_record",
+                  "ran",
+                  "stopped"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "outcome_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome Detail"
+          },
+          "tool_call_row_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Row Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "DescendAnswerPart",
+        "description": "One piece of the answer, in the order the model produced it."
+      },
       "DescendInput": {
         "properties": {
           "key": {
@@ -163436,6 +163619,26 @@
             },
             "type": "array",
             "title": "Inputs"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DescendAnswer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcript": {
+            "type": "string",
+            "enum": [
+              "messages",
+              "none",
+              "recorded_call"
+            ],
+            "title": "Transcript",
+            "default": "messages"
           },
           "snapshot_refs": {
             "items": {

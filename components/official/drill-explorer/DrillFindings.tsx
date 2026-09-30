@@ -9,8 +9,13 @@
 // finding's row DRILLS — it opens the explorer on that finding's grouping narrowed to the row, the
 // same answer one click away. Rendered only when describe returns findings; the control lives in
 // the explorer's existing toolbar row.
+//
+// A FINDING PAST THE GROUP CAP SAYS SO (lane DRILL-LIVE-FIXES, VERIFY-DRILL-LIVE F5): the door lists at
+// most `drill.groups_per_level` groups (100) and carries the true count on every row
+// (`distinct_groups`: 120 hours met the spike rule, 2026-09-30). The finding's badge is that true
+// count; "and N more" counts from it; the tooltip says how many the list holds. Never a silent cut.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { SearchCheck } from "lucide-react";
 import type { DrillSource } from "@ai-matrx/records";
 import type { RecordsClient } from "@ai-matrx/records/core";
@@ -28,6 +33,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { doorWindow, drillRowOf } from "./useDrillExplorer";
 import { findingQuestion, type DrillFinding } from "./types";
 import { formatCount } from "@ai-matrx/kit/format";
+import { InfoHint } from "@/components/official/InfoHint";
+
+import { findingCount } from "./explorerWords";
 
 /** Rows a finding shows before "and N more" (the finding's own drill shows the rest). */
 const ROWS_SHOWN = 5;
@@ -35,7 +43,15 @@ const ROWS_SHOWN = 5;
 type FindingAnswer =
   | { state: "reading" }
   | { state: "failed"; message: string }
-  | { state: "answered"; rows: Array<{ groups: Record<string, string | null>; value: number | null; rowCount: number }>; more: number };
+  | {
+      state: "answered";
+      rows: Array<{ groups: Record<string, string | null>; value: number | null; rowCount: number }>;
+      /** Groups that meet the rule — the door's true count, past its cap. */
+      count: number;
+      /** Groups the door listed (its cap), when fewer than `count`. */
+      listed: number | null;
+      more: number;
+    };
 
 
 export function DrillFindings({
@@ -49,7 +65,13 @@ export function DrillFindings({
   paths,
   emptyLabel,
   onOpen,
+  label,
+  sections,
 }: {
+  /** The heading over this definition's findings when sibling sections follow ("Usage"). */
+  label?: string | undefined;
+  /** Sibling definitions' findings in the same panel (DrillSiblingFindings), each under its heading. */
+  sections?: ReadonlyArray<{ label: string; count: number; render: (open: boolean, close: () => void) => ReactNode }> | undefined;
   client: RecordsClient | null;
   source: DrillSource;
   lane: "mine" | "organization" | "platform";
@@ -86,11 +108,16 @@ export function DrillFindings({
           let answer: FindingAnswer;
           if (!got.ok) answer = { state: "failed", message: got.error.message || "This finding could not be read." };
           else {
-            const groups = got.data!.rows.filter((r) => r.kind === "group").map((row) => drillRowOf(row));
+            const raw = got.data!.rows;
+            const groups = raw.filter((r) => r.kind === "group").map((row) => drillRowOf(row));
+            const distinct = raw.find((r) => typeof r.distinct_groups === "number")?.distinct_groups ?? null;
+            const { count, capped } = findingCount(groups.length, distinct);
             answer = {
               state: "answered",
               rows: groups.slice(0, ROWS_SHOWN).map((r) => ({ groups: r.groups, value: measure ? (r.measures[measure] ?? null) : null, rowCount: r.row_count })),
-              more: Math.max(0, groups.length - ROWS_SHOWN),
+              count,
+              listed: capped ? groups.length : null,
+              more: Math.max(0, count - Math.min(ROWS_SHOWN, groups.length)),
             };
           }
           setAnswers((held) => ({ ...held, [finding.key]: answer }));
@@ -108,11 +135,12 @@ export function DrillFindings({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button type="button" variant="ghost" size="xs" className="gap-1" data-drill-explorer-findings>
-          <SearchCheck className="h-3 w-3" /> Findings ({findings.length})
+          <SearchCheck className="h-3 w-3" /> Findings ({findings.length + (sections ?? []).reduce((n, x) => n + x.count, 0)})
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
         <ul className="max-h-[70vh] divide-y divide-border overflow-auto text-sm">
+          {sections?.length && findings.length > 0 ? <li className="bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">{label ?? "Findings"}</li> : null}
           {findings.map((finding) => {
             const answer = answers[finding.key] ?? { state: "reading" };
             const asked = findingQuestion(finding, question);
@@ -120,7 +148,17 @@ export function DrillFindings({
             const measure = measures.find((m) => m.key === measureKey);
             return (
               <li key={finding.key} data-drill-explorer-finding={finding.key} className="px-3 py-2">
-                <p className="text-sm font-medium text-foreground">{finding.label}</p>
+                <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <span className="min-w-0 truncate">{finding.label}</span>
+                  {answer.state === "answered" && answer.count > 0 ? (
+                    <span data-drill-explorer-finding-count className="rounded bg-muted px-1.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                      {formatCount(answer.count)}
+                    </span>
+                  ) : null}
+                  {answer.state === "answered" && answer.listed !== null ? (
+                    <InfoHint text={`${formatCount(answer.count)} groups meet the rule; the list holds the top ${formatCount(answer.listed)}.`} label="Past the group cap" />
+                  ) : null}
+                </p>
                 {answer.state === "reading" ? (
                   <div className="mt-1 h-4 w-40 animate-pulse rounded bg-muted" />
                 ) : answer.state === "failed" ? (
@@ -155,6 +193,14 @@ export function DrillFindings({
               </li>
             );
           })}
+          {(sections ?? []).map((section) => (
+            <li key={section.label} className="contents">
+              <ul className="divide-y divide-border">
+                <li className="bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">{section.label}</li>
+                {section.render(open, () => setOpen(false))}
+              </ul>
+            </li>
+          ))}
         </ul>
       </PopoverContent>
     </Popover>

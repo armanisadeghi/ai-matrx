@@ -18,19 +18,21 @@
 //   · skips + uncovered doors  → P17: nothing sits silently at "0 of 3"
 //   · history                  → past candidates; a row opens its summary
 //                                (F3's `useOpenCandidateSummary`)
+//   · the heartbeat            → while anything collects or a pair is running,
+//                                the tab re-reads itself (V1 D3,
+//                                features/mandates/candidates/live.ts)
 //
 // Every read and write is aidream's live-candidate doors
 // (features/mandates/candidate-dialog/api.ts); counts are the server's derived
 // counts, never recomputed here.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Plus, Undo2, Trash2, ArrowUpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Cost } from "@/components/cost/Cost";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -64,6 +66,9 @@ import {
   useOpenCandidateSummary,
 } from "@/features/mandates/candidates/openers";
 import { announceCandidatesChanged, onCandidatesChanged } from "./useCandidateCount";
+import { useCandidatePollMs, useHeartbeat } from "@/features/mandates/candidates/live";
+import { CandidateHolderName } from "@/features/mandates/candidates/components/CandidateHolderName";
+import { attemptWord } from "@/features/mandates/candidates/words";
 
 const VERDICT_TONE: Record<string, string> = {
   better: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -122,6 +127,8 @@ export function MandateCandidatesPanel({
   } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reads, setReads] = useState(0);
+  // Reads in flight — a heartbeat never stacks a read on one still running.
+  const inFlight = useRef(0);
 
   const reload = useCallback(() => {
     setFailure(null);
@@ -131,7 +138,10 @@ export function MandateCandidatesPanel({
 
   useEffect(() => {
     let cancelled = false;
-    fetchLiveCandidates(dispatch, mandateKey).then(
+    inFlight.current += 1;
+    fetchLiveCandidates(dispatch, mandateKey).finally(() => {
+      inFlight.current -= 1;
+    }).then(
       (answer) => {
         if (cancelled) return;
         setFailure(null);
@@ -151,7 +161,10 @@ export function MandateCandidatesPanel({
   useEffect(() => {
     if (!activeId) return;
     let cancelled = false;
-    fetchLiveCandidate(dispatch, activeId).then(
+    inFlight.current += 1;
+    fetchLiveCandidate(dispatch, activeId).finally(() => {
+      inFlight.current -= 1;
+    }).then(
       (detail) => {
         if (!cancelled) setPairs({ candidateId: activeId, runs: detail.runs ?? [], failure: null });
       },
@@ -171,7 +184,16 @@ export function MandateCandidatesPanel({
 
   const changed = useCallback(() => announceCandidatesChanged(mandateKey), [mandateKey]);
 
-  if (failure) {
+  const working =
+    (state?.open ?? []).some((c) => c.status === "collecting") ||
+    (runs ?? []).some((run) => run.status === "queued" || run.status === "running");
+  const pollMs = useCandidatePollMs(working);
+  const beat = useCallback(() => {
+    if (inFlight.current === 0) setReads((n) => n + 1);
+  }, []);
+  useHeartbeat(working, pollMs, beat);
+
+  if (failure && !state) {
     return (
       <div className="space-y-2 py-6 text-center">
         <p className="text-sm text-destructive">
@@ -198,6 +220,14 @@ export function MandateCandidatesPanel({
 
   return (
     <div className="space-y-4" data-testid="mandate-candidates-panel">
+      {failure ? (
+        <p className="text-xs text-destructive">
+          {failure} <ErrorAlchemyMenu error={failure} />{" "}
+          <button type="button" className="underline" onClick={reload}>
+            Retry
+          </button>
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-xs text-muted-foreground">
           {active ? null : "No candidate is collecting. Set one to try a change on real runs first."}
@@ -249,6 +279,7 @@ export function MandateCandidatesPanel({
           mandateName={mandateName}
           outputKind={outputKind}
           rung={rung}
+          followLiveRung
           onClose={() => setDialogOpen(false)}
           onSet={changed}
         />
@@ -279,12 +310,18 @@ function CandidateCard({
       )}
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-        <HolderName type={candidate.holder_type} id={candidate.holder_id} name={candidate.holder_name} />
+        <CandidateHolderName
+          type={candidate.holder_type}
+          id={candidate.holder_id}
+          versionId={candidate.holder_version_id ?? null}
+          name={candidate.holder_name}
+        />
         <span className="text-xs text-muted-foreground">instead of</span>
         {candidate.baseline_holder_id && candidate.baseline_holder_type ? (
-          <HolderName
+          <CandidateHolderName
             type={candidate.baseline_holder_type}
             id={candidate.baseline_holder_id}
+            versionId={candidate.baseline_holder_version_id ?? null}
             name={candidate.baseline_holder_name ?? null}
           />
         ) : (
@@ -367,26 +404,6 @@ function countsOf(candidate: LiveCandidate) {
     runs_pending: c.runs_pending ?? 0,
     verdicts: c.verdicts ?? {},
   };
-}
-
-function HolderName({
-  type,
-  id,
-  name,
-}: {
-  type: "agent" | "workflow";
-  id: string;
-  name: string | null;
-}) {
-  return (
-    <EntityRef
-      token={type === "workflow" ? "workflow" : "agent"}
-      id={id}
-      name={name}
-      showIcon={false}
-      className="min-w-0 font-medium"
-    />
-  );
 }
 
 /** Promote / Put back / Discard — only when the server says this viewer decides. */
@@ -611,6 +628,20 @@ function PairsTable({ runs }: { runs: LiveCandidateRun[] | null }) {
 }
 
 function PairOutcome({ run }: { run: LiveCandidateRun }) {
+  const attempt = attemptWord(run.attempts);
+  return (
+    <span className="inline-flex items-center gap-1">
+      <PairOutcomeBadge run={run} />
+      {attempt ? (
+        <span className="text-[10px] text-muted-foreground" title="Interrupted, then run again.">
+          {attempt}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function PairOutcomeBadge({ run }: { run: LiveCandidateRun }) {
   if (run.status === "queued" || run.status === "running") {
     return (
       <Badge variant="outline" className="gap-1 text-[11px] text-muted-foreground">
