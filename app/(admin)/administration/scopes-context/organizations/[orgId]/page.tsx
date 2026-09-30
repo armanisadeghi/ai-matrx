@@ -34,7 +34,7 @@ export default function AdminOrganizationScopesPage() {
             {org?.admin_lane
               ? "Platform admin view; you are not a member."
               : org
-                ? "You are a member of this organization."
+                ? "Member view; you belong to it."
                 : null}
           </span>
         </div>

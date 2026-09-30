@@ -32,7 +32,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -226,7 +225,7 @@ const SERVER_SCENARIOS: ServerScenario[] = [
   {
     name: "slow-chunks",
     description:
-      "25s gap between chunks (under the 30s watchdog). Heartbeats keep it alive.",
+      "25s gaps under the 30s watchdog; heartbeats keep it alive.",
     expected: "Succeeds — heartbeats prevent timeout",
     heartbeatTimeoutMs: 30_000,
     maxLifetimeMs: 600_000,
@@ -267,7 +266,7 @@ const SERVER_SCENARIOS: ServerScenario[] = [
   {
     name: "heartbeat-only",
     description:
-      "Heartbeats every N ms forever — tests absolute lifetime ceiling.",
+      "Heartbeats forever; tests the absolute lifetime ceiling.",
     expected: "TotalTimeoutError (maxLifetime)",
     heartbeatTimeoutMs: 30_000,
     maxLifetimeMs: 8_000,
@@ -475,7 +474,7 @@ export default function ResilienceLabPage() {
       key: "connect-blackhole",
       title: "1. Connect black hole",
       description:
-        "POST to a routable-but-silent host. resilientFetch's connect timeout should fire at 15s.",
+        "POST to a routable-but-silent host; the connect timeout should fire.",
       icon: Skull,
       expected: "ConnectTimeoutError after ~15s",
       run: () =>
@@ -502,7 +501,7 @@ export default function ResilienceLabPage() {
       key: "headers-then-silence",
       title: "2. Headers then silence",
       description:
-        "200 OK with a stream that never emits a single event. Monitor must abort on heartbeat timeout.",
+        "200 OK with a stream that never emits an event; the monitor must abort on heartbeat timeout.",
       icon: Radio,
       expected: "HeartbeatTimeoutError after 3s",
       run: () =>
@@ -530,7 +529,7 @@ export default function ResilienceLabPage() {
       key: "tab-sleep",
       title: "3. Tab sleep / stream stalls mid-flight",
       description:
-        "Stream emits two chunks, then pauses for 10s (beyond heartbeat deadline). Simulates laptop going to sleep.",
+        "Two chunks, then a 10s pause past the heartbeat deadline, as when a laptop sleeps.",
       icon: Pause,
       expected: "HeartbeatTimeoutError after 2 events + 4s of silence",
       run: () =>
@@ -567,7 +566,7 @@ export default function ResilienceLabPage() {
       key: "heartbeat-no-progress",
       title: "4. Heartbeat without progress",
       description:
-        "Heartbeats every second forever but zero real events. Tests the absolute lifetime ceiling.",
+        "Heartbeats every second but no real events, testing the absolute lifetime ceiling.",
       icon: Timer,
       expected: "TotalTimeoutError after ~8s lifetime",
       run: () =>
@@ -612,7 +611,7 @@ export default function ResilienceLabPage() {
       key: "truncated-ndjson",
       title: "5. Truncated NDJSON",
       description:
-        "Server sends half a JSON line then closes socket cleanly. Should throw, not silently complete.",
+        "Half a JSON line, then a clean socket close; it should throw, not silently complete.",
       icon: AlertTriangle,
       expected: "JSON parse error",
       run: () =>
@@ -644,8 +643,9 @@ export default function ResilienceLabPage() {
     {
       key: "offline-toggle",
       title: "6. Offline toggle",
+      // onLine=false alone never blocks — it must be corroborated by a real fetch failure.
       description:
-        "Flip navigator.onLine → false, fire a submit at a dead endpoint, then bring it back. Verifies netHealth flips and a genuine failure is classified as OfflineError. (onLine=false alone never blocks — it must be corroborated by a real fetch failure.)",
+        "Goes offline, fires a submit at a dead endpoint, then reconnects; the failure must classify as OfflineError.",
       icon: WifiOff,
       expected: "OfflineError (after failure)",
       run: async () => {
@@ -687,7 +687,7 @@ export default function ResilienceLabPage() {
       key: "mid-stream-throw",
       title: "7. Mid-stream generator throw",
       description:
-        "Emits 3 events, then the iterator throws. Confirms the failure path runs markFailed.",
+        "Three events, then the iterator throws; the request must be marked failed.",
       icon: Zap,
       expected: "Thrown error surfaced, record saved",
       run: () =>
@@ -732,7 +732,7 @@ export default function ResilienceLabPage() {
       key: "slow-but-alive",
       title: "8. Slow-but-alive stream (negative test)",
       description:
-        "Chunks arrive every 2.5s for 10s, under the 3s heartbeat. Should NOT trigger a timeout.",
+        "Chunks every 2.5s for 10s, under the 3s heartbeat; must not time out.",
       icon: Network,
       expected: "Success — 4 events received",
       run: () =>
@@ -843,13 +843,13 @@ export default function ResilienceLabPage() {
           return (
             <Card key={s.key}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
+                <CardTitle
+                  className="text-sm flex items-center gap-2"
+                  title={s.description}
+                >
                   <Icon className="w-4 h-4" />
                   {s.title}
                 </CardTitle>
-                <CardDescription className="text-xs leading-snug">
-                  {s.description}
-                </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 <div className="text-[11px] text-muted-foreground">
