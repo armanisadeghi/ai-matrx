@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Info, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { SourceManifest, SourceRef, SourceSet } from "@ai-matrx/agents/sources";
 import { Button, ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -153,18 +153,9 @@ export function SourceReview({
 
   const canLookUp = !options.deliveries || options.deliveries.includes("context");
 
-  const intro =
-    options.reason === "large"
-      ? "These Sources are large, so here is exactly what will go in. Change anything below, or use them as they are."
-      : "Here is exactly what will go in. Open a Source to choose a version, parts, a size limit, or how the AI gets it.";
-
   return (
     <div className="matrx-touch-targets flex h-full min-h-0 flex-col">
       <div className="shrink-0 space-y-3 border-b border-border px-4 pb-3 pt-1">
-        <p className="text-sm text-muted-foreground">
-          {options.purpose ? <span className="text-foreground">For {options.purpose}. </span> : null}
-          {intro}
-        </p>
         {initial.switchedNote ? (
           <p className="text-xs text-amber-700 dark:text-amber-400" role="status">
             {initial.switchedCount > 1
@@ -280,17 +271,11 @@ function BudgetSummary({
 }) {
   const v = VERDICT[plan.verdict];
   const pct = Math.round(plan.share * 100);
-  const reader = plan.windowIsFallback ? "a typical AI model" : (modelLabel ?? "the AI model");
   const onDemand = plan.entries.filter((e) => e.status === "on_demand").length;
-  const why =
-    plan.verdict === "empty"
-      ? "Nothing is being sent yet."
-      : plan.verdict === "too_much"
-        ? `${plan.leftOut.length === 1 ? "One Source doesn't" : `${plan.leftOut.length} Sources don't`} fit in what ${reader} can read at once, so ${plan.leftOut.length === 1 ? "it" : "they"} will be left out.`
-        : plan.verdict === "heavy"
-          ? `This fills ${pct}% of what ${reader} can read at once, leaving little room for your instructions and its answer.`
-          : `This uses ${pct}% of what ${reader} can read at once.`;
-
+  // One line, value only (R9): the verdict, the share and the size it is measured against.
+  const size = `${pct}% of ${formatTokens(plan.windowTokens)} tokens${
+    plan.windowIsFallback ? "" : modelLabel ? ` · ${modelLabel}` : ""
+  }`;
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -298,7 +283,7 @@ function BudgetSummary({
           <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", v.dot)} />
           <span className={cn("text-sm font-semibold", v.text)}>{v.label}</span>
         </span>
-        <span className="text-sm text-foreground">{why}</span>
+        {plan.verdict === "empty" ? null : <span className="text-sm text-foreground">{size}</span>}
       </div>
 
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
@@ -308,21 +293,12 @@ function BudgetSummary({
         />
       </div>
 
-      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-        <Info className="mt-px h-3.5 w-3.5 shrink-0" />
-        <span>
-          <span title={`${plan.sentChars.toLocaleString()} characters`} data-sent-chars={plan.sentChars}>
-            {formatChars(plan.sentChars)} characters
-          </span>
-          , about {formatTokens(plan.sentTokens)} tokens of{" "}
-          {formatTokens(plan.windowTokens)}. AI models measure reading in tokens — roughly three characters each.{" "}
-          {plan.windowIsFallback
-            ? `We don't know which model will read this, so it is sized against ${formatTokens(plan.windowTokens)} tokens, a common size.`
-            : null}
-          {onDemand > 0
-            ? ` ${onDemand === 1 ? "One Source is" : `${onDemand} Sources are`} looked up only when needed and not counted here.`
-            : null}
+      <p className="truncate text-xs text-muted-foreground">
+        <span title={`${plan.sentChars.toLocaleString()} characters`} data-sent-chars={plan.sentChars}>
+          {formatChars(plan.sentChars)} characters
         </span>
+        {` · about ${formatTokens(plan.sentTokens)} tokens`}
+        {onDemand > 0 ? ` · ${onDemand} looked up when needed` : null}
       </p>
 
       {plan.leftOut.length > 0 && (
@@ -335,7 +311,7 @@ function BudgetSummary({
               Let the AI look {plan.leftOut.length === 1 ? "it" : "them"} up instead
             </Button>
           ) : (
-            <span className="text-xs">Open {plan.leftOut.length === 1 ? "it" : "each one"} below to choose parts or set a size limit.</span>
+            null
           )}
         </div>
       )}

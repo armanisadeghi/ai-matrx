@@ -7,7 +7,7 @@
 // other details · Get results" — no secret buttons. Three steps on ONE page:
 //
 //   1. Sources — the one Source input (`features/resource-manager/source-input`)
-//      with "Just a topic" as one of its tiles; beside it, "Import a deck file"
+//      with "Topic" as one of its tiles; beside it, "Import a deck file"
 //      (the no-AI path, `DeckFileImport`).
 //   2. Style and details — one set of controls for every way in.
 //   3. Generate — the live card-by-card stream, then the deck.
@@ -34,13 +34,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   Clock,
-  FileSpreadsheet,
   Loader2,
 } from "lucide-react";
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, SegmentedControl } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -268,7 +267,7 @@ export function CreateDeckPage() {
       : landing.length
     ? `Wait until ${landing.length === 1 ? "your new source has" : `${landing.length} new sources have`} finished adding.`
     : !hasSources && !topic
-      ? "Pick at least one source, or choose Just a topic and type one."
+      ? "Add a source or a topic."
       : null;
   const canGenerate = !blockedReason && !busy;
 
@@ -441,24 +440,18 @@ export function CreateDeckPage() {
           )}
         >
           {/* How to start: make cards, or bring a deck you already have. */}
-          <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="How do you want to start?">
-            <StartTile
-              selected={mode === "make"}
-              disabled={busy}
-              icon={<AGENT_ICON className="h-4 w-4" />}
-              label="Make cards"
-              helper="From your material, a web page, a video — or just a topic."
-              onSelect={() => setMode("make")}
-            />
-            <StartTile
-              selected={mode === "import"}
-              disabled={busy}
-              icon={<FileSpreadsheet className="h-4 w-4" />}
-              label="Import a deck file"
-              helper="Quizlet, CSV, Anki or a pasted list — exactly as it is."
-              onSelect={() => setMode("import")}
-            />
-          </div>
+          <SegmentedControl
+            value={mode}
+            onValueChange={(v) => {
+              if (!busy) setMode(v === "import" ? "import" : "make");
+            }}
+            data={[
+              { value: "make", label: "Make cards" },
+              { value: "import", label: "Import a deck file" },
+            ]}
+            fullWidth
+            className="max-lg:[&_[role=tab]]:min-h-11!"
+          />
 
           {mode === "import" ? (
             <Step n={1} title="Your deck file">
@@ -521,9 +514,7 @@ export function CreateDeckPage() {
                         <p className="text-[11px] text-muted-foreground">
                           {countMax === null
                             ? "Reading the most cards one run may make…"
-                            : hasSources
-                              ? `Spread across everything you picked (${MIN_CARDS_PER_RUN}–${countMax}).`
-                              : `Between ${MIN_CARDS_PER_RUN} and ${countMax}.`}
+                            : `${MIN_CARDS_PER_RUN}–${countMax}`}
                         </p>
                       )}
                     </div>
@@ -782,45 +773,3 @@ function Step({
   );
 }
 
-function StartTile({
-  selected,
-  disabled,
-  icon,
-  label,
-  helper,
-  onSelect,
-}: {
-  selected: boolean;
-  disabled: boolean;
-  icon: React.ReactNode;
-  label: string;
-  helper: string;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      disabled={disabled}
-      onClick={onSelect}
-      className={cn(
-        "group flex min-h-11 w-full flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all disabled:opacity-60",
-        selected
-          ? "border-primary/60 bg-primary/5 shadow-sm ring-1 ring-primary/30"
-          : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
-      )}
-    >
-      <span
-        className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-lg",
-          selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-        )}
-      >
-        {icon}
-      </span>
-      <span className="text-sm font-medium leading-tight text-foreground">{label}</span>
-      <span className="text-xs leading-snug text-muted-foreground">{helper}</span>
-    </button>
-  );
-}

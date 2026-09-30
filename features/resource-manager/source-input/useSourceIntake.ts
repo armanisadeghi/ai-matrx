@@ -64,9 +64,8 @@ import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
 // org-refusal-presented-by: features/sources/addFailure.ts
 import { addFailureSentence } from "@/features/sources/addFailure";
 import { createSourceRef } from "@ai-matrx/agents/sources";
-import { isAssociationTargetType } from "@ai-matrx/associations";
+import { isAssociationTargetType, isRegisteredPair } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { supabase } from "@/utils/supabase/client";
 import type { UploadedFile } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import {
   KEEP_WAITING_FOR_ORGANIZATION,
@@ -437,12 +436,7 @@ export function useSourceIntake(
     const what = target.label ? `"${target.label}"` : "what you are making";
     // The edge goes the way the registry declares it (`fc_set → file`, but
     // `file → task`); writing it backwards is refused (USI-3e).
-    let direction: Awaited<ReturnType<typeof registeredFileEdge>>;
-    try {
-      direction = await registeredFileEdge(target.entityType);
-    } catch (err) {
-      return `It was uploaded, but it could not be filed with ${what}: ${addFailureSentence(err)}`;
-    }
+    const direction = registeredFileEdge(target.entityType);
     if (!direction)
       return `It was uploaded, but a file cannot be filed with ${what} (a ${target.entityType.replace(/_/g, " ")}), so it is not listed there.`;
     const targetType = target.entityType;
@@ -594,23 +588,12 @@ export function useSourceIntake(
 }
 
 /**
- * Which way a file ↔ `targetType` edge is registered in
- * `platform.association_types` — or null when it is not registered at all.
+ * Which way a file ↔ `targetType` edge is registered — read from the
+ * package's generated association registry (`@ai-matrx/associations`), never
+ * from `platform.association_types` by hand — or null when it is not registered.
  */
-async function registeredFileEdge(
-  targetType: string,
-): Promise<"file_to_target" | "target_to_file" | null> {
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("association_types")
-    .select("source_type, target_type")
-    .eq("is_active", true)
-    .or(
-      `and(source_type.eq.file,target_type.eq.${targetType}),and(source_type.eq.${targetType},target_type.eq.file)`,
-    );
-  if (error) throw error;
-  const rows = (data ?? []) as { source_type: string; target_type: string }[];
-  if (rows.some((r) => r.source_type === "file")) return "file_to_target";
-  if (rows.some((r) => r.target_type === "file")) return "target_to_file";
+function registeredFileEdge(targetType: string): "file_to_target" | "target_to_file" | null {
+  if (isRegisteredPair("file", targetType)) return "file_to_target";
+  if (isRegisteredPair(targetType, "file")) return "target_to_file";
   return null;
 }
