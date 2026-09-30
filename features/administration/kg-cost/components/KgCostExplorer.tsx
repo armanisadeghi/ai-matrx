@@ -50,6 +50,7 @@ export function KgCostExplorer() {
       headline={{ measure: "cost", also: ["runs", "monthly_projection", "monthly_projection_10x", "embedding_saved"] }}
       rowNoun="run"
       countMeasure="runs"
+      location="Administration › Knowledge ingestion cost"
       dataAttributes={{ "data-kg-cost-explorer": "" }}
       headerExtras={
         <AppLink href="/administration/knowledge/kg-cost" className="underline-offset-2 hover:underline">

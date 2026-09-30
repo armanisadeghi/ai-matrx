@@ -25,7 +25,8 @@ import { carriedWords, doorQuestionOf, explorerQuestionParts, splitExplorerQuest
 import { recordsCellName, recordsColumnHeader } from "../recordsColumns";
 import { drillQuestionJson } from "../savedViews";
 import { explorerQuestionOf, findingQuestion, recordsOf } from "../types";
-import { doorSort, explorerWindowLabel, explorerWindowRange } from "../useDrillExplorer";
+import { drillWindowLabel } from "@ai-matrx/design-system/data-table";
+import { doorSort, explorerWindowRange } from "../useDrillExplorer";
 
 const DEF = {
   key: "ai_usage",
@@ -77,10 +78,10 @@ describe("F3 · a declared question survives whole", () => {
     expect(door).toMatchObject({ where: { origin: ["chat", "api"], tokens_in: { from: 1000, to: 50000 }, cached: true }, limit: 10, having: RICH.having });
   });
 
-  it("a window with a time of day stays that window (the published reader would have made it all time)", () => {
+  it("a window with a time of day stays that window (the package reads windows of moments since 0.49.40)", () => {
     expect(explorerWindowRange("2026-09-28T14:00Z..2026-09-28T18:30Z")).toEqual({ from: "2026-09-28T14:00Z", to: "2026-09-28T18:30Z" });
-    expect(explorerWindowLabel("2026-09-28T14:00Z..2026-09-28T18:30Z", () => "package words")).toBe("Sep 28, 2026 14:00 – 18:30 UTC");
-    expect(explorerWindowLabel("30d", () => "Last 30 days")).toBe("Last 30 days");
+    expect(drillWindowLabel("2026-09-28T14:00Z..2026-09-28T18:30Z")).toBe("Sep 28, 2026 14:00 – 18:30 UTC");
+    expect(drillWindowLabel("30d")).toBe("Last 30 days");
   });
 
   it("says what still narrows the answer, and names what this screen cannot draw", () => {

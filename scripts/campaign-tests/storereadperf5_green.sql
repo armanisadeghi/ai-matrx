@@ -14,10 +14,9 @@
 --   B. custom.seen_among = custom.levels_of's "s": both seats over every scope of every live
 --      organization; every other member of an organization that keeps a scope type over her own
 --      organizations' scopes.
--- FIXTURES (rolled back with everything else), so the "shown to" context has something to get wrong:
--- one scope test@test.com sees becomes shown_to = my_team (created by a teammate of hers, the
--- teammates part is read), one becomes only_me (created by someone else), and an archived scope type
--- whose rendered document the mask reads.
+-- FIXTURES (rolled back with everything else), so each plant has something to get wrong: a Table in
+-- her Table list made my_team by a teammate (the teammates part is read), a scope made only_me by
+-- someone else, and a scope granted to her by name in an organization that shows only what is shared.
 -- This transaction writes (the DDL, the fixtures, the captures), so every statement memo is OFF here;
 -- the memo path is the one storereadperf5_timing.sql times, in READ COMMITTED with nothing written.
 --   Plants (-v plant=...): ctx      the "shown to" helper never hands back the teammates (A goes RED)
@@ -73,23 +72,51 @@ create temp table ans (phase text, seat text, door text, k text, payload text) o
 grant select on seats, all_orgs, ctx_tables, seat_ctx, ctx_pages to authenticated;
 grant all on ans to authenticated;
 
--- FIXTURES. Two scopes test@test.com sees in an organization she shares with admin@admin.com.
+-- FIXTURES (rolled back). (1) A live Table test@test.com's Table list shows in an organization where
+-- admin@admin.com is her teammate becomes shown_to = my_team, created by admin@admin.com: the list reads
+-- the teammates part of the "shown to" context for it. (2) A scope she sees becomes only_me, created by
+-- admin@admin.com. (3) She is granted viewer on one scope of an organization that shows her only what is
+-- shared (admin's Workspace): a NAMED record, which walks alone.
 select set_config('request.jwt.claims', json_build_object('sub', (select id from auth.users where email = 'test@test.com'), 'role', 'authenticated')::text, true) \g /dev/null
+create temp table fx_team_org on commit drop as
+  select e.key::uuid as org from jsonb_each(platform.shown_to_context('record')) e
+   where e.value -> 't' ? (select id::text from auth.users where email = 'admin@admin.com')
+   order by 1 limit 1;
+create temp table fx_team on commit drop as
+  select o.org, v.v as id from fx_team_org o cross join lateral custom.query_visible_ids(o.org, custom.table_kernel_id()) v(v)
+   order by 2 limit 1;
 create temp table fx_seen on commit drop as
   select (e ->> 'id')::uuid as id, (e ->> 'organization_id')::uuid as org
     from jsonb_array_elements(custom.context_tree(array(
            select m.organization_id from iam.organization_member m
-            where m.user_id = (select id from auth.users where email = 'test@test.com')
-              and m.organization_id in (select organization_id from iam.organization_member
-                                         where user_id = (select id from auth.users where email = 'admin@admin.com')))) -> 'scopes') e
-   order by 2, 1 limit 2;
+            where m.user_id = (select id from auth.users where email = 'test@test.com'))) -> 'scopes') e
+   order by 2, 1 limit 1;
+create temp table fx_shared_org on commit drop as
+  select '884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f'::uuid as org;
+create temp table fx_named on commit drop as
+  select r.organization_id as org, r.id
+    from custom.record t join custom.record r on r.organization_id = t.organization_id and r.table_id = t.id and r.deleted_at is null
+   where t.organization_id = (select org from fx_shared_org) and t.table_id = custom.table_kernel_id()
+     and t.deleted_at is null and t.data ->> 'kept_for' = 'context'
+     and not (r.id in (select (e ->> 'id')::uuid from jsonb_array_elements(custom.context_tree(array[(select org from fx_shared_org)]) -> 'scopes') e))
+   order by r.id limit 1;
 select set_config('request.jwt.claims', '', true) \g /dev/null
-update custom.record r
-   set shown_to = case when r.id = (select min(id::text)::uuid from fx_seen) then 'my_team' else 'only_me' end::platform.shown_to,
-       created_by = (select id from auth.users where email = 'admin@admin.com')
+update custom.record r set shown_to = 'my_team'::platform.shown_to, created_by = (select id from auth.users where email = 'admin@admin.com')
+  from fx_team f where r.organization_id = f.org and r.id = f.id;
+update custom.record r set shown_to = 'only_me'::platform.shown_to, created_by = (select id from auth.users where email = 'admin@admin.com')
   from fx_seen f where r.organization_id = f.org and r.id = f.id;
-select count(*) as fixture_scopes from fx_seen \gset
-\echo 'shown-to fixture:' :fixture_scopes 'scopes test@test.com sees made my_team / only_me, created by admin@admin.com'
+insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, status, created_by)
+select 'record', f.id, (select id from auth.users where email = 'test@test.com'), 'viewer', 'active',
+       (select id from auth.users where email = 'admin@admin.com')
+  from fx_named f;
+select (select count(*) from fx_team) as fx_team, (select count(*) from fx_seen) as fx_seen, (select count(*) from fx_named) as fx_named \gset
+\echo 'fixtures: my_team Table' :fx_team ', only_me scope' :fx_seen ', named (granted) scope' :fx_named
+select :fx_team = 1 and :fx_seen = 1 and :fx_named = 1 as fixtures_ok \gset
+\if :fixtures_ok
+\else
+\echo 'a fixture found nothing to stand on - the plants below could not go red'
+select 1 / 0 as fixture_missing;
+\endif
 
 create function pg_temp.capture(p_phase text) returns void language plpgsql as $$
 declare s record; o record; v text; o_ids uuid[]; ids uuid[]; i int;

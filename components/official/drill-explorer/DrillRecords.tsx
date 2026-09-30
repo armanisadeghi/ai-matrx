@@ -21,11 +21,12 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import type { MatrxDrillDimension, MatrxDrillMeasure, MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
+import AppLink from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
 import { readOf } from "@/components/read-state/ReadGate";
 
 import { doorWindow } from "./useDrillExplorer";
-import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordsDeclaration } from "./types";
+import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, type DrillRecordsDeclaration } from "./types";
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
 import { plainWords } from "./dimensionWords";
@@ -45,6 +46,7 @@ export function DrillRecords({
   rowNoun,
   carried,
   resolvers,
+  openRecord,
 }: {
   client: RecordsClient | null;
   source: DrillSource;
@@ -61,6 +63,8 @@ export function DrillRecords({
   carried?: DrillCarried | null | undefined;
   /** The host's name resolvers (a person's name); every other id is named by the door. */
   resolvers?: Record<string, DrillNameResolver> | undefined;
+  /** How one record opens (THE DOOR LAW): its id column becomes the record's door. */
+  openRecord?: DrillRecordOpener | undefined;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState<number | null>(null);
@@ -163,6 +167,19 @@ export function DrillRecords({
       header: recordsColumnHeader(def, records, key),
       cell: (row) => {
         const v = row[key];
+        if (openRecord && key === openRecord.column && typeof v === "string" && v) {
+          const words = openRecord.label;
+          const href = openRecord.href?.(v);
+          return href ? (
+            <AppLink href={href} className="underline underline-offset-2" data-drill-explorer-record-open={v}>
+              {words}
+            </AppLink>
+          ) : (
+            <button type="button" className="underline underline-offset-2" data-drill-explorer-record-open={v} onClick={() => openRecord.open?.(v)}>
+              {words}
+            </button>
+          );
+        }
         if (v === null || v === undefined) return <span className="text-muted-foreground">{dim?.labelFor ? dim.labelFor(null) : "—"}</span>;
         if (typeof v === "number" && format) return <span className="tabular-nums">{format(v)}</span>;
         if (dim?.kind === "time" && typeof v === "string") {

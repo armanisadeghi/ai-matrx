@@ -1,66 +1,45 @@
 // components/official/drill-explorer/types.ts — THE EXPLORER'S TYPES, IN ONE PLACE (lane DRILL-EXPLORER).
 //
-// The contract additions below (built-in Saved views, findings, records, `having`, `as_of`,
-// `stale_after_knob`, the `ratio` Measure) are being added to `@ai-matrx/records` drill.ts by lane
-// DRILL-LEDGER-RECORDS (program DRILL-FINISH decision 25). The published @ai-matrx/records does not
-// carry them yet, so they are written HERE, once, as optional fields read defensively from the
-// door's JSON; when the package publishes them, these become re-exports of the package's own types
-// (PROGRESS-DRILL-EXPLORER "After publish").
+// The contract additions (built-in Saved views, findings, records, `having`, `as_of`,
+// `stale_after_knob`) are `@ai-matrx/records`' own types since 0.58.109 (lane DRILL-LEDGER-RECORDS,
+// program DRILL-FINISH decision 25); lane DRILL-ADOPT re-exports them here under the names the
+// explorer already used. The door's JSON is still read defensively (a malformed entry is dropped).
 
 import type { ReactNode } from "react";
-import type { DrillAnswer, DrillDefinition, DrillQuestion, DrillSource } from "@ai-matrx/records";
+import type {
+  DrillAnswer,
+  DrillDefinition,
+  DrillFinding as PackageDrillFinding,
+  DrillHaving as PackageDrillHaving,
+  DrillQuestion,
+  DrillRecords,
+  DrillSource,
+  DrillView,
+} from "@ai-matrx/records";
 import type { MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
 import { explorerQuestionParts, type ExplorerQuestion } from "./questionParts";
+import type { DrillReconcileSpec } from "./useDrillReconcile";
 
-// ── the contract additions (decision 25), read as optional ──────────────────
+// ── the contract additions (decision 25): the package's types ───────────────
 
 /** A threshold on a Measure, applied by the door before the group limit (a finding's rule). */
-export interface DrillHaving {
-  measure: string;
-  op: ">=" | ">";
-  value?: number;
-  share_of_total?: number;
-  times_median?: number;
-  median_nonzero?: boolean;
-  /** A feature knob whose value replaces `value` (`drill.finding.<definition>.<finding>.<knob>`). */
-  knob?: string;
-}
+export type DrillHaving = PackageDrillHaving;
 
 /** A door question with the additions (`having`). */
 export type DrillQuestionWithHaving = DrillQuestion & { having?: DrillHaving[] };
 
 /** A built-in Saved view declared in the definition file: read-only, listed first. */
-export interface DrillBuiltInView {
-  key: string;
-  label: string;
-  question: DrillQuestionWithHaving;
-}
+export type DrillBuiltInView = DrillView;
 
 /** A finding ("dig here"): a question whose `having` picks the groups worth a look. */
-export interface DrillFinding {
-  key: string;
-  label: string;
-  question: DrillQuestionWithHaving;
-  knobs?: Record<string, { default: number; label: string; unit: string }>;
-}
+export type DrillFinding = PackageDrillFinding;
 
 /** The records behind a number, when the definition declares them (read through `drill_rows`). */
-export interface DrillRecordsDeclaration {
-  fact: string;
-  columns: string[];
-  /** The words a person reads for a column where its name would mislead ("Request's top model"; decision 14). */
-  labels?: Record<string, string>;
-}
+export type DrillRecordsDeclaration = DrillRecords;
 
-/** What `drill_describe` returns, with the additions. */
-export type DrillDefinitionPlus = DrillDefinition & {
-  views?: DrillBuiltInView[];
-  findings?: DrillFinding[];
-  records?: DrillRecordsDeclaration | null;
-  /** The feature knob naming how old an answer may be before the screen says so. */
-  stale_after_knob?: string | null;
-};
+/** What `drill_describe` returns (the package's definition carries the additions). */
+export type DrillDefinitionPlus = DrillDefinition;
 
 // ── defensive readers of the door's JSON ────────────────────────────────────
 
@@ -191,6 +170,18 @@ export interface DrillExplorerHeadline {
   also?: string[] | undefined;
 }
 
+/**
+ * How one record of the definition's `records` opens (THE DOOR LAW: every record the UI names opens).
+ * `column` holds the record's id; the cell reads `label` and opens through `href` (a page the seat
+ * may open) or `open` (a window or peek — the admin seat's door, never the person's own list).
+ */
+export interface DrillRecordOpener {
+  column: string;
+  label: string;
+  href?: ((id: string) => string) | undefined;
+  open?: ((id: string) => void) | undefined;
+}
+
 /** "See these records" when the definition declares no records: a link to where they live. */
 export interface DrillExplorerRecordsLink {
   href: (question: MatrxDrillQuestion) => string;
@@ -222,8 +213,15 @@ export interface DrillExplorerProps {
   recordsLink?: DrillExplorerRecordsLink | undefined;
   /** What one answer row counts ("hourly total"). */
   rowNoun?: string | undefined;
-  /** Grains the door's periods may not be cut into here (the usage rollup's `hour`). */
-  hideGrains?: readonly string[] | undefined;
+  /** How one record opens, when the definition declares records (its id column becomes its door). */
+  openRecord?: DrillRecordOpener | undefined;
+  /**
+   * THE RECONCILIATION LINE (decisions 12, 29): the headline asked of another definition for the same
+   * window and filters, and the difference said in words from the two measured numbers.
+   */
+  reconcile?: DrillReconcileSpec | undefined;
+  /** Where a copied group was copied from ("Administration › AI usage"); default the title. */
+  location?: string | undefined;
   /**
    * PLAIN WORDS for code-valued Dimensions whose definition declares no `choices` yet (an origin's
    * `child_agent` → "An agent it started"), per Dimension key. The definition's own `choices` and the

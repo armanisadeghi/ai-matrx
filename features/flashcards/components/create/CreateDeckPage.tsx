@@ -79,7 +79,10 @@ import { DEPTH_TIERS } from "../../data/enhanceCard";
 import { FC_MANDATES } from "../../data/mandates";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { fcService } from "../../data/fcService";
-import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
+import {
+  generatedDeckName,
+  generatedSetFromEnvelope,
+} from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
 import {
   MIN_CARDS_PER_RUN,
@@ -310,7 +313,11 @@ export function CreateDeckPage() {
     const saved = await fcService.createGeneratedSetForConversation(
       extracted.conversationId,
       {
-        name: deckName.trim() || result.title?.trim() || topic,
+        name: generatedDeckName({
+          typedName: deckName,
+          generatedTitle: result.title,
+          topic,
+        }),
         topic,
         difficulty,
       },

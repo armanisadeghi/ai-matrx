@@ -63,3 +63,20 @@ export async function saveDrillView(args: {
   return { ok: true };
 }
 
+
+/**
+ * One of the person's Saved views by id — how an address that names an open view (`view=<id>`)
+ * reopens what the view carries beyond the address. `null` when it is gone or not readable.
+ */
+export async function readDrillView(surfaceKey: string, id: string): Promise<{ name: string; definition: unknown } | null> {
+  const { data, error } = await supabase
+    .schema("platform")
+    .from("saved_view")
+    .select("name, definition")
+    .eq("surface_key", surfaceKey)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error || !data) return null;
+  return { name: data.name, definition: data.definition };
+}

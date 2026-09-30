@@ -38,7 +38,7 @@ describe("the contract additions are optional", () => {
     expect(findingsOf(DEF)).toEqual([]);
     expect(recordsOf(DEF)).toBeNull();
     expect(staleAfterKnobOf(DEF)).toBeNull();
-    expect(asOfAnswer({ rows: [], says: [], total: null })).toBeNull();
+    expect(asOfAnswer({ rows: [], says: [], total: null, as_of: null })).toBeNull();
   });
 
   it("reads built-in views, findings, records and the stale knob when it does, dropping malformed entries", () => {
@@ -56,7 +56,7 @@ describe("the contract additions are optional", () => {
     expect(findingsOf(def)[0]!.question.having?.[0]?.knob).toBe("drill.finding.ai_usage.hogs.hog_share_pct");
     expect(recordsOf(def)).toEqual({ fact: "ai_usage_executions", columns: ["created_at", "person", "model", "cost"] });
     expect(staleAfterKnobOf(def)).toBe("drill.usage.stale_after_minutes");
-    expect(asOfAnswer({ rows: [{ as_of: "2026-09-30T05:00:00Z" } as never], says: [], total: null })).toBe("2026-09-30T05:00:00Z");
+    expect(asOfAnswer({ rows: [{ as_of: "2026-09-30T05:00:00Z" } as never], says: [], total: null, as_of: null })).toBe("2026-09-30T05:00:00Z");
   });
 });
 
@@ -92,12 +92,23 @@ describe("a declared question becomes the address's question", () => {
     expect(findingQuestion({ ...f, question: { ...f.question, window: { preset: "24h" } } }, { by: [], show: [], where: [], window: "7d" }).window).toBe("24h");
   });
 
-  it("a time group with no grain reads at the grain its window reads best at", () => {
-    expect(drillExplorerAutoGrain("30d")).toBe("day");
-    expect(drillExplorerAutoGrain("365d")).toBe("week");
-    expect(drillExplorerAutoGrain(null)).toBe("month");
-    expect(withAutoGrain(DEF, { by: ["at", "model"], across: "at", show: ["cost"], where: [], window: "365d" })).toMatchObject({ by: ["at:week", "model"], across: "at:week" });
-    expect(withAutoGrain(DEF, { by: ["at:month"], show: ["cost"], where: [], window: "30d" }).by).toEqual(["at:month"]);
+  it("a time group with no grain reads at the grain its window reads best at (the package's lines while the settings are unread)", () => {
+    expect(drillExplorerAutoGrain("24h", null)).toBe("hour");
+    expect(drillExplorerAutoGrain("30d", null)).toBe("day");
+    expect(drillExplorerAutoGrain("365d", null)).toBe("week");
+    expect(drillExplorerAutoGrain(null, null)).toBe("month");
+    expect(withAutoGrain(DEF, { by: ["at", "model"], across: "at", show: ["cost"], where: [], window: "365d" }, null)).toMatchObject({ by: ["at:week", "model"], across: "at:week" });
+    expect(withAutoGrain(DEF, { by: ["at:month"], show: ["cost"], where: [], window: "30d" }, null).by).toEqual(["at:month"]);
+  });
+
+  it("the auto-grain lines are the settings when they are read (W2-5), clamped to the grains offered", () => {
+    const lines = { hourMaxDays: 0.5, dayMaxDays: 14, weekMaxDays: 60 };
+    expect(drillExplorerAutoGrain("24h", lines)).toBe("day");
+    expect(drillExplorerAutoGrain("30d", lines)).toBe("week");
+    expect(drillExplorerAutoGrain("90d", lines)).toBe("month");
+    // a Dimension that offers no hour steps to the nearest coarser grain it does offer
+    expect(drillExplorerAutoGrain("24h", { hourMaxDays: 2, dayMaxDays: 90, weekMaxDays: 366 }, ["day", "week", "month"])).toBe("day");
+    expect(withAutoGrain(DEF, { by: ["at"], show: ["cost"], where: [], window: "30d" }, lines).by).toEqual(["at:week"]);
   });
 });
 

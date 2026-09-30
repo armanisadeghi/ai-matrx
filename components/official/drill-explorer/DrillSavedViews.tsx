@@ -34,6 +34,14 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { saveDrillView } from "./savedViews";
 import { explorerQuestionOf, type DrillBuiltInView } from "./types";
 
+const VIEWS_PAGE = 50;
+
+/** Which view is open: `builtin:<key>` or a saved row's id, and its name. */
+export interface DrillOpenView {
+  ref: string;
+  label: string;
+}
+
 interface PersonalView {
   id: string;
   name: string;
@@ -68,7 +76,8 @@ export function DrillSavedViews({
   /** The definition's own views, listed first and read-only. */
   builtIn: readonly DrillBuiltInView[];
   question: MatrxDrillQuestion;
-  onOpen: (question: MatrxDrillQuestion) => void;
+  /** Open a view: its question, and which view it is (`builtin:<key>` or the saved row's id) with its name. */
+  onOpen: (question: MatrxDrillQuestion, view: DrillOpenView) => void;
 }) {
   // A Saved view is the person's own, kept in the organization they are working in (a saved view
   // row needs one); the answer itself is counted in the explorer's lane whatever it is.
@@ -80,17 +89,22 @@ export function DrillSavedViews({
   /** The question being named: the current one, or a built-in view's ("Save a copy"). */
   const [naming, setNaming] = useState<{ question: MatrxDrillQuestion; suggested: string } | null>(null);
   const [version, setVersion] = useState(0);
+  // THE LIST IS PAGED, NEVER CUT SILENTLY (VERIFY-DRILL-WAVE2 W2-5 d): the most recently used first,
+  // PAGE at a time, with how many there are said and "Show more" while some are not listed.
+  const [shown, setShown] = useState(VIEWS_PAGE);
+  const [totalViews, setTotalViews] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let read = supabase.schema("platform").from("saved_view").select("id, name, definition").eq("surface_key", surfaceKey);
+    let read = supabase.schema("platform").from("saved_view").select("id, name, definition", { count: "exact" }).eq("surface_key", surfaceKey);
     // A named home reads only the views kept there.
     if (homeOrganizationId) read = read.eq("organization_id", homeOrganizationId);
     void read
       .is("deleted_at", null)
       .order("last_used_at", { ascending: false, nullsFirst: false })
-      .limit(50)
-      .then(({ data, error: e }) => {
+      .order("id", { ascending: true })
+      .range(0, shown - 1)
+      .then(({ data, error: e, count: n }) => {
         if (cancelled) return;
         if (e) {
           setError(`Saved views could not be read: ${e.message}`);
@@ -98,6 +112,7 @@ export function DrillSavedViews({
           return;
         }
         setError(null);
+        setTotalViews(n ?? null);
         setViews(
           (data ?? []).flatMap((row) => {
             const q = questionOf(row.definition);
@@ -108,7 +123,7 @@ export function DrillSavedViews({
     return () => {
       cancelled = true;
     };
-  }, [surfaceKey, homeOrganizationId, version]);
+  }, [surfaceKey, homeOrganizationId, version, shown]);
 
   const save = async (name: string) => {
     if (!organizationId || !naming) return;
@@ -133,13 +148,13 @@ export function DrillSavedViews({
   };
 
   const open = (view: PersonalView) => {
-    onOpen(view.question);
+    onOpen(view.question, { ref: view.id, label: view.name });
     void supabase.rpc("saved_view_save", { p_surface_key: surfaceKey, p_id: view.id, p_touch: true }).then(({ error: e }) => {
       if (e) console.error("[drill-explorer] saved view touch failed:", e.message);
     });
   };
 
-  const count = builtIn.length + (views?.length ?? 0);
+  const count = builtIn.length + (totalViews ?? views?.length ?? 0);
   return (
     <>
       <DropdownMenu>
@@ -156,7 +171,7 @@ export function DrillSavedViews({
                 <DropdownMenuItem
                   key={view.key}
                   data-drill-explorer-view={`builtin:${view.key}`}
-                  onSelect={() => onOpen(explorerQuestionOf(view.question))}
+                  onSelect={() => onOpen(explorerQuestionOf(view.question), { ref: `builtin:${view.key}`, label: view.label })}
                   className="flex items-center gap-2"
                 >
                   <span className="min-w-0 flex-1 truncate">{view.label}</span>
@@ -191,7 +206,12 @@ export function DrillSavedViews({
           )}
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs text-muted-foreground">
-            {error ?? (views === null ? "Reading your saved views…" : views.length === 0 ? "No saved views yet" : homeOrganizationId ? "Platform saved views" : "Your saved views")}
+            {error ??
+              (views === null
+                ? "Reading your saved views…"
+                : views.length === 0
+                  ? "No saved views yet"
+                  : `${homeOrganizationId ? "Platform saved views" : "Your saved views"}${totalViews !== null && totalViews > views.length ? ` (${views.length} of ${totalViews.toLocaleString()}, most recently used first)` : ""}`)}
           </DropdownMenuLabel>
           {(views ?? []).map((view) => (
             <DropdownMenuItem key={view.id} data-drill-explorer-view={view.id} onSelect={() => open(view)} className="flex items-center gap-2">
@@ -210,6 +230,17 @@ export function DrillSavedViews({
               </button>
             </DropdownMenuItem>
           ))}
+          {views !== null && totalViews !== null && totalViews > views.length ? (
+            <DropdownMenuItem
+              data-drill-explorer-views-more
+              onSelect={(event) => {
+                event.preventDefault();
+                setShown((n) => n + VIEWS_PAGE);
+              }}
+            >
+              Show {Math.min(VIEWS_PAGE, totalViews - views.length).toLocaleString()} more
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
       <TextInputDialog

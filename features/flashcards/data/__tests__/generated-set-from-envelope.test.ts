@@ -12,7 +12,10 @@ import {
   KIND_KEY,
   type KindSchema,
 } from "@ai-matrx/content-ir";
-import { generatedSetFromEnvelope } from "../generated-set-from-envelope";
+import {
+  generatedDeckName,
+  generatedSetFromEnvelope,
+} from "../generated-set-from-envelope";
 
 function envelopeFor(source: string, schemas?: Record<string, KindSchema>) {
   return normalizeJsonRegion(source, {
@@ -70,22 +73,67 @@ describe("generatedSetFromEnvelope", () => {
     }
   });
 
-  it("returns null (→ extraction fallback) when an old-shape payload fails the NEW schema's required title", () => {
-    // Against the canonical schema `title` is required — a payload carrying
-    // only the retired set_title key degrades to a raw root, so the typed
-    // path steps aside (null) rather than inventing a title.
+  it("an old-shape payload with no title still saves its cards, and the deck is named from the topic — never blank", () => {
+    // @ai-matrx/content-ir 0.19.21 (A MISSING FIELD NEVER DEGRADES A BLOCK):
+    // an absent required field no longer degrades the root to raw — the block
+    // resolves and `title` is filled blank. So a payload carrying only the
+    // retired `set_title` reaches the typed save path as a real set whose
+    // title is "". The contract that matters is what persistence is handed:
+    // every card, and a deck name that is never blank.
     const envelope = envelopeFor(
       JSON.stringify({
         set_title: "Old Shape",
         cards: [{ __kind: "flashcard", front: "Q?", back: "A" }],
       }),
     );
-    // content-ir PRESERVES the kind on a schema failure (KIND PRESERVATION,
-    // 2026-08-29) so callers can say a flashcard_set is BROKEN rather than
-    // seeing an anonymous object, and `status` reports only that parsing
-    // finished. `kindState` is the validity signal — this assertion used to
-    // read `root.kind`, which is exactly the misread that let
-    // generatedSetFromEnvelope persist a degraded root as a real set.
+    expect(envelope.root.kind).toBe("flashcard_set");
+    expect(envelope.root.status).toBe("complete");
+
+    const set = generatedSetFromEnvelope(envelope);
+    expect(set?.cards).toHaveLength(1);
+    expect(set?.cards[0]).toMatchObject({ front: "Q?", back: "A" });
+    // The set title is the kind's `title` only (2026-08-22) — "" here.
+    expect(set?.title).toBe("");
+
+    // CreateDeckPage saves under generatedDeckName(...) — exactly this call.
+    expect(
+      generatedDeckName({
+        typedName: "",
+        generatedTitle: set?.title,
+        topic: "Volcanoes",
+      }),
+    ).toBe("Volcanoes");
+  });
+
+  it("generatedDeckName never returns a blank name, whatever is missing", () => {
+    const blanks = [undefined, null, "", "   "];
+    for (const typedName of blanks) {
+      for (const generatedTitle of blanks) {
+        for (const topic of blanks) {
+          expect(
+            generatedDeckName({ typedName, generatedTitle, topic }).trim(),
+          ).not.toBe("");
+        }
+      }
+    }
+    // Precedence: what the person typed, then the agent's title, then the topic.
+    expect(
+      generatedDeckName({ typedName: " Mine ", generatedTitle: "Agent", topic: "T" }),
+    ).toBe("Mine");
+    expect(
+      generatedDeckName({ typedName: " ", generatedTitle: " Agent ", topic: "T" }),
+    ).toBe("Agent");
+    expect(generatedDeckName({ generatedTitle: "", topic: " T " })).toBe("T");
+  });
+
+  it("returns null (→ extraction fallback) when a PRESENT field has the wrong type", () => {
+    // The one contract violation content-ir still degrades on: the root keeps
+    // its kind (KIND PRESERVATION, 2026-08-29) and `status` reports only that
+    // parsing finished — `kindState: "raw"` is the validity signal, and the
+    // typed path steps aside on it rather than persisting a degraded root.
+    const envelope = envelopeFor(
+      JSON.stringify({ title: "Broken", cards: "not a list" }),
+    );
     expect(envelope.root.kind).toBe("flashcard_set");
     expect(envelope.root.status).toBe("complete");
     expect(envelope.root.kindState).toBe("raw");

@@ -24,8 +24,17 @@
 // appears (owner ruling, 2026-09-30). Codes and ids read as the definition's and the door's words
 // (`dimensionWords.ts`), never a mount's copy of them.
 // Usage, CX usage, KG cost and workflow runs are mounts of this screen.
+//
+// Since lane DRILL-ADOPT (design-system 0.49.40+): the stacked chart (`MatrxDrillChart`, split = the
+// first non-time grouping, bars at the auto grain, click a segment to drill, a period to narrow) sits
+// above the answer; the answer draws the Pareto line, row actions (Copy / Copy for AI, ticks), export,
+// coverage and its note itself; the window menu's presets (All time, Today, Yesterday, … Custom range)
+// are the package's; every line (chart Top N, Pareto share, pivot columns, auto-grain) is a knob
+// (`useDrillKnobs`). An open Saved view is named in the address (`view=`), so its link reopens it
+// whole and Explain this hands its conditions over.
 
 import { useEffect, useState } from "react";
+import { MatrxDrillChart } from "@ai-matrx/design-system/data-table/drill-chart";
 import { RefreshCw } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 import {
@@ -54,14 +63,17 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { DrillExplainButton } from "./DrillExplainButton";
 import { DrillFindings } from "./DrillFindings";
 import { DrillRecords } from "./DrillRecords";
-import { DrillSavedViews } from "./DrillSavedViews";
-import { drillSavedViewSurface } from "./savedViews";
-import { explorerWindowLabel, explorerWindowRange, useDrillExplorer } from "./useDrillExplorer";
+import { DrillSavedViews, type DrillOpenView } from "./DrillSavedViews";
+import { drillSavedViewSurface, readDrillView } from "./savedViews";
+import { explorerWindowRange, useDrillExplorer } from "./useDrillExplorer";
+import { useDrillKnobs } from "./useDrillKnobs";
+import { useDrillChart } from "./useDrillChart";
+import { drillReconcileSentence, useDrillReconcile } from "./useDrillReconcile";
 import { DrillExplorerHeadline, costColumnLabel } from "./DrillExplorerHeadline";
 import { carriedWords, splitExplorerQuestion, type DrillCarried, type ExplorerQuestion } from "./questionParts";
 import { drillUnitAdds, drillUnitFormatter } from "./measureFormat";
 import { drillDimensionLabelFor } from "./dimensionWords";
-import { drillExplorerAutoGrain, withAutoGrain } from "./grain";
+import { autoTimeRef, drillExplorerAutoGrain, withAutoGrain } from "./grain";
 import {
   builtInViewsOf,
   explorerQuestionOf,
@@ -111,6 +123,17 @@ function useStaleAfterMinutes(knob: string | null): { minutes: number | null; pr
 }
 
 const EMPTY_QUESTION: MatrxDrillQuestion = { by: [], show: [], where: [] };
+/** The address parameter naming the open Saved view (`builtin:<key>` or a saved row's id). */
+export const DRILL_VIEW_PARAM = "view";
+
+/** Put (or take out) the open view's name in the address, without a history step of its own. */
+function writeViewParam(ref: string | null) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (ref) url.searchParams.set(DRILL_VIEW_PARAM, ref);
+  else url.searchParams.delete(DRILL_VIEW_PARAM);
+  if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url.href);
+}
 const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 export function DrillExplorer({
@@ -125,13 +148,15 @@ export function DrillExplorer({
   freshness,
   recordsLink,
   rowNoun = "record",
-  hideGrains = [],
   headerExtras,
   dataAttributes,
   words,
   countMeasure,
   windowAlign,
   mineScope,
+  openRecord,
+  reconcile,
+  location,
 }: DrillExplorerProps) {
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
@@ -143,32 +168,67 @@ export function DrillExplorer({
   // range filters, group limit and thresholds ride beside the address question — asked with every
   // request and said on screen — until another view opens or the person drops them.
   const [carried, setCarried] = useState<DrillCarried | null>(null);
-  const openQuestion = (next: ExplorerQuestion) => {
+  // WHICH VIEW IS OPEN (VERIFY-DRILL-WAVE2 W2-1): named in the address, so the link reopens the view
+  // whole (what it carries included) and Explain this tells a model exactly what was answered.
+  const [openView, setOpenView] = useState<DrillOpenView | null>(null);
+  const openQuestion = (next: ExplorerQuestion, view?: DrillOpenView) => {
     const { question: q, door } = splitExplorerQuestion(next);
     setCarried(door);
+    setOpenView(view ?? null);
+    writeViewParam(view?.ref ?? null);
     setQuestion(q);
   };
+  const dropCarried = () => {
+    setCarried(null);
+    setOpenView(null);
+    writeViewParam(null);
+  };
 
+  const knobs = useDrillKnobs();
   // The hook asks exactly what the table draws: the address question with the auto grain applied.
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried, headlineAlso: headline?.also });
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried, headlineAlso: headline?.also, grainLines: knobs.grainLines, ready: knobs.settled });
   const { def, answers: rawAnswers, whole: rawWhole, names, says, error, asOf, client } = drill;
   if (!firstQuestion && def && !definitionDefault) {
-    const { question: q, door } = splitExplorerQuestion(explorerQuestionOf(def.default));
+    const { question: q, door } = def.default ? splitExplorerQuestion(explorerQuestionOf(def.default)) : { question: EMPTY_QUESTION, door: null };
     setDefinitionDefault(q);
     // the default's own filters hold only while the screen IS the default (the address asks nothing)
     if (door && typeof window !== "undefined" && !addressHasDrill(new URLSearchParams(window.location.search))) setCarried(door);
   }
 
-  const autoGrain = drillExplorerAutoGrain(asked.window ?? null);
-  const question = withAutoGrain(def, asked);
-  const timeKeys = new Set((def?.dimensions ?? []).filter((d) => d.kind === "time").map((d) => d.key));
+  // AN ADDRESS THAT NAMES A VIEW REOPENS IT WHOLE: the question is the address's; what the view
+  // carries beyond it is read back from the view (a built-in from describe, a person's from its row).
+  const [viewRead, setViewRead] = useState<string | null>(null);
+  useEffect(() => {
+    if (!def || typeof window === "undefined") return;
+    const ref = new URLSearchParams(window.location.search).get(DRILL_VIEW_PARAM);
+    if (!ref || ref === viewRead || openView?.ref === ref) return;
+    setViewRead(ref);
+    if (ref.startsWith("builtin:")) {
+      const view = builtInViewsOf(def).find((v) => `builtin:${v.key}` === ref);
+      if (!view) return;
+      setCarried(splitExplorerQuestion(explorerQuestionOf(view.question)).door);
+      setOpenView({ ref, label: view.label });
+      return;
+    }
+    void readDrillView(drillSavedViewSurface(def.key), ref).then((row) => {
+      if (!row) return;
+      const stored = (row.definition as { question?: ExplorerQuestion } | null)?.question;
+      setCarried(stored?.door && Object.keys(stored.door).length > 0 ? stored.door : null);
+      setOpenView({ ref, label: row.name });
+    });
+  }, [def, viewRead, openView?.ref]);
+
+  const timeDims = (def?.dimensions ?? []).filter((d) => d.kind === "time");
+  const autoGrain = drillExplorerAutoGrain(asked.window ?? null, knobs.grainLines, timeDims[0]?.grains);
+  const question = withAutoGrain(def, asked, knobs.grainLines);
+  const timeKeys = new Set(timeDims.map((d) => d.key));
   const grainWasChosen = [...asked.by, ...(asked.across ? [asked.across] : [])].some((ref) => timeKeys.has(ref));
 
 
   const dimensions: MatrxDrillDimension[] = (def?.dimensions ?? []).map((d) => {
     const dim: MatrxDrillDimension = { key: d.key, label: d.label, kind: d.kind };
     if (d.cardinality) dim.cardinality = d.cardinality;
-    if (d.grains) dim.grains = d.grains.filter((g): g is NonNullable<MatrxDrillDimension["grains"]>[number] => g !== "hour" && !hideGrains.includes(g));
+    if (d.grains) dim.grains = d.grains as NonNullable<MatrxDrillDimension["grains"]>;
     // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as the door's label or the resolver's
     // name, a code as the definition's choice label — never the id or the code itself.
     const labelFor = drillDimensionLabelFor(d, { names: names[d.key], resolver: resolvers?.[d.key], hostWords: words?.[d.key] });
@@ -216,13 +276,57 @@ export function DrillExplorer({
       : null;
 
   const emptyLabel = "None";
-  const windowWords = explorerWindowLabel(question.window ?? null, drillWindowLabel);
+  const windowWords = drillWindowLabel(question.window ?? null);
   const labelOfKey = (key: string) =>
     dimensions.find((d) => d.key === parseDimensionRef(key).key)?.label ?? measures.find((m) => m.key === key)?.label ?? key;
   const carriedSaid = carriedWords(carried, labelOfKey);
   // "Save this question as a view" keeps what the open view carries, so a copy is never wider.
   const savedQuestion: ExplorerQuestion = carried ? { ...asked, door: carried } : asked;
   const dimensionWords = dimensions.map((d) => d.label.toLowerCase());
+  const conditions = [
+    ...(openView ? [`Saved view "${openView.label}" is open.`] : []),
+    ...(carriedSaid.kept ? [carriedSaid.kept] : []),
+    ...(carriedSaid.leftOut ? [carriedSaid.leftOut] : []),
+  ];
+
+  // THE CHART above the answer: split = the first non-time grouping, bars at the auto grain.
+  // the Measure stacked: the headline's (the screen's own number), else the first one shown
+  const chartMeasure = headlineKey ?? question.show[0] ?? null;
+  const chart = useDrillChart({
+    client,
+    source,
+    lane,
+    question,
+    dimensions,
+    measures,
+    measure: chartMeasure,
+    time: autoTimeRef(def, question, knobs.grainLines),
+    seriesLimit: knobs.chartTopN ?? undefined,
+    carried,
+    windowAlign,
+    countMeasure,
+    version: freshness?.version,
+    enabled: Boolean(def) && knobs.settled && question.by.length > 0,
+  });
+
+  // THE RECONCILIATION LINE (W2-3): the header's total against the other definition's, same window and filters.
+  const reconciled = useDrillReconcile({
+    client,
+    lane,
+    spec: reconcile,
+    question,
+    carried,
+    windowAlign,
+    labelOf: labelOfKey,
+    version: freshness?.version,
+    enabled: Boolean(def) && knobs.settled,
+  });
+  const reconcileLine =
+    reconciled.state === "counted" && headlineKey && total?.measures[headlineKey] != null
+      ? drillReconcileSentence(total.measures[headlineKey]!, reconciled.value, reconciled.label, (v) => fmt(headlineKey, v))
+      : reconciled.state === "said"
+        ? reconciled.sentence
+        : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-drill-explorer {...dataAttributes}>
@@ -289,12 +393,13 @@ export function DrillExplorer({
                   onClick={() => setUnit(u)}
                   className={`rounded px-2 py-0.5 ${unit === u ? "bg-muted font-medium text-foreground" : ""}`}
                 >
-                  {u === "usd" ? "$" : "Credits"}
+                  {/* the word every cost cell prints (VERIFY-DRILL-WAVE2 W2-5 f) */}
+                  {u === "usd" ? "$" : "Points"}
                 </button>
               ))}
             </div>
           ) : null}
-          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} homeOrganizationId={lane === "platform" ? organizationId : null} builtIn={builtIn} question={savedQuestion} onOpen={openQuestion} /> : null}
+          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} homeOrganizationId={lane === "platform" ? organizationId : null} builtIn={builtIn} question={savedQuestion} onOpen={(q, view) => openQuestion(q, view)} /> : null}
           {def && question.by.length > 0 ? (
             <DrillExplainButton
               input={{
@@ -313,6 +418,9 @@ export function DrillExplorer({
                 range,
                 asOf: countedThrough,
                 says,
+                // what the open view asks beyond the address, in words (W2-1)
+                ...(conditions.length > 0 ? { conditions } : {}),
+                // the address is read at the click (the view is named in it): see DrillExplainButton
                 address: null,
                 rowNoun,
                 emptyLabel,
@@ -341,16 +449,16 @@ export function DrillExplorer({
               measures={measures}
               paths={paths}
               emptyLabel={emptyLabel}
-              onOpen={openQuestion}
+              onOpen={(q) => openQuestion(q)}
             />
           ) : null}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         {question.by.length === 0 ? (
           def && records ? (
-            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={carried} resolvers={resolvers} />
+            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={carried} resolvers={resolvers} openRecord={openRecord} />
           ) : (
             <p className="p-6 text-sm text-muted-foreground">
               Pick a way to group (Group by, on the right){dimensionWords.length > 0 ? ` — by ${dimensionWords.slice(0, -1).join(", ")}${dimensionWords.length > 1 ? ", or " : ""}${dimensionWords.at(-1)}` : ""}.
@@ -368,55 +476,80 @@ export function DrillExplorer({
           )
         ) : (
           <>
-            {/* The answer's own sentences, one line above it. After @ai-matrx/design-system 0.49.38+
-                is installed this line moves into the table's `note` (PROGRESS-DRILL-EXPLORER "After publish"). */}
-            <p data-drill-explorer-note className="px-4 py-1 text-xs text-muted-foreground">
-              {grainWasChosen ? <span>Shown by {autoGrain} — the grain {windowWords.toLowerCase()} reads best at. </span> : null}
-              {question.where.length > 0 && headlineKey && whole?.measures[headlineKey] != null && total?.measures[headlineKey] != null ? (
-                <span data-drill-explorer-coverage>
-                  This slice is {fmt(headlineKey, total.measures[headlineKey])} of the {fmt(headlineKey, whole.measures[headlineKey])} the whole window holds
-                  {whole.measures[headlineKey]! > 0 ? ` (${Math.round((total.measures[headlineKey]! / whole.measures[headlineKey]!) * 100)}%)` : ""}.{" "}
-                </span>
-              ) : null}
-              {carriedSaid.kept || carriedSaid.leftOut ? (
-                <span data-drill-explorer-carried>
-                  {carriedSaid.kept ? `${carriedSaid.kept} ` : null}
-                  {carriedSaid.leftOut ? `${carriedSaid.leftOut} ` : null}
-                  <button type="button" data-drill-explorer-carried-drop className="underline underline-offset-2" onClick={() => setCarried(null)}>
-                    Show the answer without them
-                  </button>{" "}
-                </span>
-              ) : null}
-              {behind ? <span className="text-destructive">{behind} </span> : null}
-              {stale.problem ? <span className="text-destructive">{stale.problem} </span> : null}
-              {says.map((s) => (
-                <span key={s}>{s} </span>
-              ))}
-              {freshness?.error ? <span className="text-destructive">{freshness.error} </span> : null}
-              {!records && recordsLink ? (
-                <span>
-                  {typeof recordsLink.lead === "function" ? recordsLink.lead(question) : recordsLink.lead}{" "}
-                  <AppLink href={recordsLink.href(question)} className="underline underline-offset-2">
-                    {recordsLink.label}
-                  </AppLink>
-                  .
-                </span>
-              ) : null}
-            </p>
+            {def ? (
+              <div data-drill-explorer-chart className="shrink-0 border-b border-border px-4 py-2">
+                <MatrxDrillChart
+                  dimensions={dimensions}
+                  measures={measures}
+                  question={question}
+                  onQuestionChange={setQuestion}
+                  answers={chart.answers}
+                  seriesLimit={knobs.chartTopN ?? undefined}
+                  measure={chartMeasure}
+                  time={autoTimeRef(def, question, knobs.grainLines)}
+                  paths={paths}
+                  error={chart.error}
+                  emptyLabel={emptyLabel}
+                  height={200}
+                />
+              </div>
+            ) : null}
             {/* THE PHONE (VERIFIER-32 F4): the group's words give way to the numbers — its label is
-                capped and its count line hidden under 640 px, so the money column is on screen. */}
-            <div className="max-sm:[&_[data-matrx-drill-answer]_td>div]:max-w-[42vw] max-sm:[&_[data-matrx-drill-answer]_td>div]:overflow-hidden max-sm:[&_[data-matrx-drill-answer]_td>div>span.whitespace-nowrap]:hidden">
-            <MatrxDrillAnswerTable
-              dimensions={dimensions}
-              measures={measures}
-              question={question}
-              onQuestionChange={setQuestion}
-              answers={answers}
-              paths={paths}
-              error={error}
-              rowNoun={rowNoun}
-              emptyLabel={emptyLabel}
-            />
+                capped and its count line hidden under 640 px, so the money column is on screen.
+                The wrapper is a flex column so the package's own scroll box keeps the header row in view. */}
+            <div className="flex min-h-[18rem] flex-1 flex-col max-sm:[&_[data-matrx-drill-answer]_td>div]:max-w-[42vw] max-sm:[&_[data-matrx-drill-answer]_td>div]:overflow-hidden max-sm:[&_[data-matrx-drill-answer]_td>div>span.whitespace-nowrap]:hidden">
+              <MatrxDrillAnswerTable
+                dimensions={dimensions}
+                measures={measures}
+                question={question}
+                onQuestionChange={setQuestion}
+                answers={answers}
+                paths={paths}
+                error={error}
+                rowNoun={rowNoun}
+                emptyLabel={emptyLabel}
+                exportTitle={title}
+                {...(question.where.length > 0 && headlineKey ? { coverage: { whole: whole?.measures[headlineKey] ?? null, measure: headlineKey } } : {})}
+                {...(headlineKey && knobs.paretoSharePct !== null ? { pareto: { measure: headlineKey, sharePct: knobs.paretoSharePct } } : {})}
+                rowActions={{ label: `${title} group`, location: location ?? title, kind: "drill-group", selectable: true }}
+                {...(knobs.pivotColumns !== null ? { pivotColumnCap: knobs.pivotColumns } : {})}
+                note={
+                  <span data-drill-explorer-note>
+                    {grainWasChosen ? <span>Shown by {autoGrain} — the grain {windowWords.toLowerCase()} reads best at. </span> : null}
+                    {reconcileLine ? <span data-drill-explorer-reconcile>{reconcileLine} </span> : null}
+                    {carriedSaid.kept || carriedSaid.leftOut ? (
+                      <span data-drill-explorer-carried>
+                        {openView ? `Saved view "${openView.label}". ` : null}
+                        {carriedSaid.kept ? `${carriedSaid.kept} ` : null}
+                        {carriedSaid.leftOut ? `${carriedSaid.leftOut} ` : null}
+                        <button type="button" data-drill-explorer-carried-drop className="underline underline-offset-2" onClick={dropCarried}>
+                          Show the answer without them
+                        </button>{" "}
+                      </span>
+                    ) : null}
+                    {behind ? <span className="text-destructive">{behind} </span> : null}
+                    {stale.problem ? <span className="text-destructive">{stale.problem} </span> : null}
+                    {knobs.says.map((s) => (
+                      <span key={s} data-drill-explorer-knob-said>
+                        {s}{" "}
+                      </span>
+                    ))}
+                    {says.map((s) => (
+                      <span key={s}>{s} </span>
+                    ))}
+                    {freshness?.error ? <span className="text-destructive">{freshness.error} </span> : null}
+                    {!records && recordsLink ? (
+                      <span>
+                        {typeof recordsLink.lead === "function" ? recordsLink.lead(question) : recordsLink.lead}{" "}
+                        <AppLink href={recordsLink.href(question)} className="underline underline-offset-2">
+                          {recordsLink.label}
+                        </AppLink>
+                        .
+                      </span>
+                    ) : null}
+                  </span>
+                }
+              />
             </div>
           </>
         )}

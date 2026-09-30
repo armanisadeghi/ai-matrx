@@ -49,7 +49,7 @@ import { kindValidator } from "@/features/content-ir/registry/kind-schema-source
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { selectIsAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { alchemyOrganizationId, onAdminLaneChange } from "./alchemy-organization";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 
 /** The two store methods the identity port reads. */
@@ -112,7 +112,10 @@ function readIdentity(state: RootState): Identity | null {
   if (!userId) return null;
   return {
     userId,
-    organizationId: selectOrganizationId(state),
+    // THE ADMIN SEAT (VERIFY-DRILL-WAVE2 W2-6): the same organization the host and the destinations
+    // work in — the platform tenant in the admin section, the selected workspace elsewhere — so the
+    // action registry and the knob principal never ask an admin to pick a workspace.
+    organizationId: alchemyOrganizationId(state),
     isAuthenticated: true,
     // ADMIN POWER: true only inside the admin section; on a user page an admin
     // reads like everyone else.
@@ -134,12 +137,19 @@ export function createIdentityPort(store: AlchemyIdentityStore): IdentityPort {
     current: () => readIdentity(store.getState()),
     onChange(listener) {
       let last = readIdentity(store.getState());
-      return store.subscribe(() => {
+      const check = () => {
         const next = readIdentity(store.getState());
         if (sameIdentity(last, next)) return;
         last = next;
         listener();
-      });
+      };
+      // the organization also moves when the admin lane flips (a navigation, not a store change)
+      const offStore = store.subscribe(check);
+      const offLane = onAdminLaneChange(check);
+      return () => {
+        offStore();
+        offLane();
+      };
     },
   };
 }

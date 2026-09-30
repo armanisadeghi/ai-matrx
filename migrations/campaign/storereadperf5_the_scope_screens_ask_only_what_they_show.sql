@@ -53,8 +53,6 @@
 -- scripts/campaign-tests/storereadperf5_timing.sql is RED on the bodies before this file and GREEN
 -- after. Inverse: migrations/inverse/storereadperf5_the_scope_screens_ask_only_what_they_show_down.sql.
 
-set local lock_timeout = '30s';
-
 -- ─── 1. the "shown to" context of the rows one list reads ───
 
 CREATE OR REPLACE FUNCTION custom._record_shown_to_ctx(p_organization_ids uuid[], p_table_id uuid)

@@ -84,10 +84,11 @@ export function featureWords(code: string): string {
 
 /** Plain words per code-valued Dimension of the `ai_usage` definition. */
 /** Words for an id the names door did not name (it answers every id once its v2 is applied). */
-export const UNNAMED: Record<"person" | "organization" | "agent", string> = {
+export const UNNAMED: Record<"person" | "organization" | "agent" | "session", string> = {
   person: "A person whose name could not be read",
   organization: "An organization whose name could not be read",
   agent: "An agent whose name could not be read",
+  session: "A sign-in session whose sign-in could not be read",
 };
 
 export const USAGE_WORDS: Record<string, (value: string) => string> = {

@@ -17,6 +17,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { bucketWindow, drillWindowRange, parseDimensionRef, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
 import { DrillExplorer } from "@/components/official/drill-explorer/DrillExplorer";
+import type { DrillReconcileSpec } from "@/components/official/drill-explorer/useDrillReconcile";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 import { USAGE_SOURCE, usageNameResolvers, useUsageFreshness } from "./useUsageDrill";
@@ -30,6 +31,12 @@ export const USAGE_FIRST_QUESTION: MatrxDrillQuestion = {
   sort: { key: "cost", direction: "desc" },
   window: "30d",
 };
+
+export const USAGE_RECONCILE = {
+  source: { kind: "entity", token: "ai_calls" },
+  measure: "cost",
+  shared: ["organization", "person", "agent", "at"],
+} as const satisfies DrillReconcileSpec;
 
 export function UsageExplorer() {
   // THE PLATFORM LANE ASKS IN THE PLATFORM'S OWN ORGANIZATION. The door needs an organization only
@@ -51,6 +58,11 @@ export function UsageExplorer() {
       recordsLink={{ href: spendHref, lead: spendLead, label: "Spend Explorer" }}
       rowNoun="request"
       countMeasure="requests"
+      location="Administration › AI usage"
+      // THE RECONCILIATION (decisions 12, 29; W2-3): the ledger's spend against the model calls' cost,
+      // same window and filters. Only ids and periods mean the same thing in both (their model and
+      // provider words differ), so only those crumbs carry across; any other is said.
+      reconcile={USAGE_RECONCILE}
       windowAlign="hour"
       words={USAGE_WORDS}
       dataAttributes={{ "data-usage-explorer": "" }}

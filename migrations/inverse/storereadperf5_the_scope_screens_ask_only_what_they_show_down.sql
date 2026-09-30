@@ -9,8 +9,6 @@
 -- based-on: public.get_scope_tree(uuid, uuid) 2d7ca36003ad1329062d2d1580fac2084b07b5fffd859db085439d0c65a8b42e
 -- based-on: public.get_user_full_context(uuid) 903e122be00981ce60c08f0b13912cd1ed75877dbd71add80ff48d79e66ebb3a
 
-set local lock_timeout = '30s';
-
 CREATE OR REPLACE FUNCTION custom.tables_seen_once_per_group(p_user_id uuid, p_organization_ids uuid[])
  RETURNS TABLE(organization_id uuid, id uuid, seen boolean)
  LANGUAGE plpgsql
