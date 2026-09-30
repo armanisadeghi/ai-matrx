@@ -59,7 +59,16 @@ system's `MatrxDrillAnswerTable`, which this screen also renders.
   clamped to the grains the Dimension offers.
 - `useDrillKnobs.ts` — every line the screen draws by, read once per minute: `drill.chart.top_n` (chart
   series), `drill.pareto.share_pct` (the Pareto line), `drill.pivot_columns` (pivot cap), the three
-  auto-grain lines. A knob not on the database is SAID with what the screen does instead.
+  auto-grain lines, and (`useDrillStaleAfter`) the definition's `stale_after_knob`. A knob that cannot be
+  read is a "Defaults" chip naming it in its tooltip; the package's line is used.
+- `drillKnob.ts` — THE one way the explorer reads a drill setting: `platform.drill_knob`'s address rule
+  (feature = all but the last segment) and the effective value from the knob snapshot
+  (`lib/scoped-config/effectiveKnobs.ts`); the platform lane reads with no organization. No file here
+  may import `lib/knobs/featureKnobs.ts` (guarded by `drill-live-fixes.test.tsx`).
+- `explorerWords.ts` — small labels from data: a records noun from the grain, moments in the door's
+  calendar, short ids, a finding's true count past the cap, "148 requests" / "Cost 3,578 points".
+- `DrillExplorerNotes.tsx` — the answer's note row as chips with tooltips (grain, reconciliation, open
+  view, Behind, Defaults, Recount failed) and the door's own sentences behind "Notes (n)".
 - `useDrillChart.ts` — the chart's two rounds through the door (`drillChartQuestions` → series +
   periods, then `drillChartCellsQuestion` → cells), same lane / window / open view as the table.
   `MatrxDrillChart` (subpath `@ai-matrx/design-system/data-table/drill-chart`) draws above the answer:
@@ -109,7 +118,13 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   the screen says so — never a failed answer.
 - Controls live in the header row and the toolbar row; no third stacked row.
 - Freshness: the door's `as_of` wins over a host's own count; staleness reads the knob describe names
-  (`stale_after_knob`) through `lib/knobs/featureKnobs.ts` — a missing knob is said, never replaced by a constant.
+  (`stale_after_knob`) through `drillKnob.ts` — an unreadable knob is a chip, never replaced by a constant.
+- Times print in the calendar the door cuts periods in: describe's `calendar.time_zone` when the door
+  carries it, else the host's `timeZone` (UTC on the platform lane mounts); a chip says it once.
+- The header asks its own headline Measure on the total whatever the open view shows.
+- Records: the count's noun is the records' grain (a definer's records relation that is another
+  definition is described for its grain); the door's first-page `measures` are the header row's sums;
+  `settling` is a chip; the table is `controlled-append`, so its pager reads the door's total.
 
 ## Tests
 
@@ -131,6 +146,10 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   naming a Saved view reopens it and Explain this carries its conditions; knob sentences; the
   reconciliation words (lane DRILL-ADOPT).
 - Walk: `scripts/drill-adopt-walk.mjs` (live and clone previews).
+- `__tests__/drill-live-fixes.test.tsx`, `__tests__/drill-live-fixes-door.test.tsx` — VERIFY-DRILL-LIVE
+  F1 and F3–F9: the knob rule and the no-other-knob-reader guard, records noun / sums / pager / cells,
+  the finding's true count, the header's own Measure, a crumb's name asked of the door, the chips.
+- Walk: `scripts/drill-live-fixes-walk.mjs` (live preview, read-only, 1280 / 390, light / dark).
 
 ## Change log
 
@@ -150,3 +169,8 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   `hideGrains`, the local moment-window reader and the newest-first pivot reorder removed; the open
   Saved view named in the address and handed to Explain this; the reconciliation line; the unit
   switch says "Points"; saved views paged; records open through `openRecord`; package contract types.
+- `2026-09-30` — Lane DRILL-LIVE-FIXES (VERIFY-DRILL-LIVE): one knob reader (`drillKnob.ts`, the door's
+  address rule, effective values); records in their own noun with sums, settling and a source-paged
+  pager; moments formatted, ids short; findings show the true count past the cap; the header asks its
+  headline Measure; relation crumbs named through the door; the door's calendar said once; toolbar
+  controls wrap instead of clipping; the note row is chips (interface text is layout).
