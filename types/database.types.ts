@@ -72396,273 +72396,6 @@ export type Database = {
           },
         ]
       }
-      candidate: {
-        Row: {
-          baseline_holder_id: string | null
-          baseline_holder_type: string | null
-          baseline_holder_version_id: string | null
-          created_at: string
-          created_by: string | null
-          decided_at: string | null
-          decided_by: string | null
-          decision_note: string | null
-          holder_id: string
-          holder_type: string
-          holder_version_id: string | null
-          id: string
-          mandate_id: string
-          mandate_key: string
-          metadata: Json
-          organization_id: string
-          promotion_ref: Json | null
-          recommendation: string | null
-          recommendation_reason: string | null
-          rung: string
-          rung_principal_id: string | null
-          runs_claimed: number
-          runs_wanted: number
-          set_by: string
-          skips: Json
-          status: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          baseline_holder_id?: string | null
-          baseline_holder_type?: string | null
-          baseline_holder_version_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          decided_at?: string | null
-          decided_by?: string | null
-          decision_note?: string | null
-          holder_id: string
-          holder_type: string
-          holder_version_id?: string | null
-          id?: string
-          mandate_id: string
-          mandate_key: string
-          metadata?: Json
-          organization_id: string
-          promotion_ref?: Json | null
-          recommendation?: string | null
-          recommendation_reason?: string | null
-          rung: string
-          rung_principal_id?: string | null
-          runs_claimed?: number
-          runs_wanted: number
-          set_by: string
-          skips?: Json
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          baseline_holder_id?: string | null
-          baseline_holder_type?: string | null
-          baseline_holder_version_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          decided_at?: string | null
-          decided_by?: string | null
-          decision_note?: string | null
-          holder_id?: string
-          holder_type?: string
-          holder_version_id?: string | null
-          id?: string
-          mandate_id?: string
-          mandate_key?: string
-          metadata?: Json
-          organization_id?: string
-          promotion_ref?: Json | null
-          recommendation?: string | null
-          recommendation_reason?: string | null
-          rung?: string
-          rung_principal_id?: string | null
-          runs_claimed?: number
-          runs_wanted?: number
-          set_by?: string
-          skips?: Json
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "candidate_mandate_id_fkey"
-            columns: ["mandate_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "candidate_mandate_id_fkey"
-            columns: ["mandate_id"]
-            isOneToOne: false
-            referencedRelation: "shortcut_key_map"
-            referencedColumns: ["mandate_id"]
-          },
-          {
-            foreignKeyName: "candidate_mandate_id_fkey"
-            columns: ["mandate_id"]
-            isOneToOne: false
-            referencedRelation: "vw_shortcut"
-            referencedColumns: ["mandate_id"]
-          },
-        ]
-      }
-      candidate_run: {
-        Row: {
-          attempts: number
-          candidate_conversation_id: string | null
-          candidate_error: Json | null
-          candidate_execution_id: string | null
-          candidate_id: string
-          candidate_input_digest: Json | null
-          candidate_metrics: Json | null
-          candidate_output: Json | null
-          candidate_request_id: string | null
-          candidate_resolved_holder_id: string | null
-          candidate_resolved_version_id: string | null
-          candidate_wf_run_id: string | null
-          created_at: string
-          created_by: string | null
-          door: string
-          door_args: Json
-          human_agreement: string | null
-          id: string
-          input_differences: Json | null
-          judge: Json | null
-          judge_verdict_id: string | null
-          lease_expires_at: string | null
-          live_conversation_id: string | null
-          live_error: Json | null
-          live_execution_id: string | null
-          live_input_digest: Json | null
-          live_metrics: Json | null
-          live_organization_id: string | null
-          live_output: Json | null
-          live_request_id: string
-          live_tool_results: Json | null
-          live_user_id: string | null
-          live_wf_run_id: string | null
-          metadata: Json
-          notified_at: string | null
-          organization_id: string
-          status: string
-          stop_match: string | null
-          stopped_at: Json | null
-          tool_dispositions: Json
-          updated_at: string
-          updated_by: string | null
-          verdict: string | null
-          version: number
-        }
-        Insert: {
-          attempts?: number
-          candidate_conversation_id?: string | null
-          candidate_error?: Json | null
-          candidate_execution_id?: string | null
-          candidate_id: string
-          candidate_input_digest?: Json | null
-          candidate_metrics?: Json | null
-          candidate_output?: Json | null
-          candidate_request_id?: string | null
-          candidate_resolved_holder_id?: string | null
-          candidate_resolved_version_id?: string | null
-          candidate_wf_run_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          door: string
-          door_args: Json
-          human_agreement?: string | null
-          id?: string
-          input_differences?: Json | null
-          judge?: Json | null
-          judge_verdict_id?: string | null
-          lease_expires_at?: string | null
-          live_conversation_id?: string | null
-          live_error?: Json | null
-          live_execution_id?: string | null
-          live_input_digest?: Json | null
-          live_metrics?: Json | null
-          live_organization_id?: string | null
-          live_output?: Json | null
-          live_request_id: string
-          live_tool_results?: Json | null
-          live_user_id?: string | null
-          live_wf_run_id?: string | null
-          metadata?: Json
-          notified_at?: string | null
-          organization_id: string
-          status?: string
-          stop_match?: string | null
-          stopped_at?: Json | null
-          tool_dispositions?: Json
-          updated_at?: string
-          updated_by?: string | null
-          verdict?: string | null
-          version?: number
-        }
-        Update: {
-          attempts?: number
-          candidate_conversation_id?: string | null
-          candidate_error?: Json | null
-          candidate_execution_id?: string | null
-          candidate_id?: string
-          candidate_input_digest?: Json | null
-          candidate_metrics?: Json | null
-          candidate_output?: Json | null
-          candidate_request_id?: string | null
-          candidate_resolved_holder_id?: string | null
-          candidate_resolved_version_id?: string | null
-          candidate_wf_run_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          door?: string
-          door_args?: Json
-          human_agreement?: string | null
-          id?: string
-          input_differences?: Json | null
-          judge?: Json | null
-          judge_verdict_id?: string | null
-          lease_expires_at?: string | null
-          live_conversation_id?: string | null
-          live_error?: Json | null
-          live_execution_id?: string | null
-          live_input_digest?: Json | null
-          live_metrics?: Json | null
-          live_organization_id?: string | null
-          live_output?: Json | null
-          live_request_id?: string
-          live_tool_results?: Json | null
-          live_user_id?: string | null
-          live_wf_run_id?: string | null
-          metadata?: Json
-          notified_at?: string | null
-          organization_id?: string
-          status?: string
-          stop_match?: string | null
-          stopped_at?: Json | null
-          tool_dispositions?: Json
-          updated_at?: string
-          updated_by?: string | null
-          verdict?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "candidate_run_candidate_id_fkey"
-            columns: ["candidate_id"]
-            isOneToOne: false
-            referencedRelation: "candidate"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       definition: {
         Row: {
           accepts_user_input: boolean
@@ -85156,6 +84889,78 @@ export type Database = {
         }
         Relationships: []
       }
+      soft_delete_cascade_job: {
+        Row: {
+          absorb_stamps: string[]
+          assoc_token: string | null
+          attempts: number
+          completed_edges: string[]
+          direction: string
+          enqueued_at: string
+          finished_at: string | null
+          id: string
+          last_error: string | null
+          parent_column: string
+          parent_key: string
+          parent_schema: string
+          parent_table: string
+          requested_by: string | null
+          rows_done: number
+          rows_total: number | null
+          stamp: string
+          started_at: string | null
+          state: string
+          steps: number
+          updated_at: string
+        }
+        Insert: {
+          absorb_stamps?: string[]
+          assoc_token?: string | null
+          attempts?: number
+          completed_edges?: string[]
+          direction: string
+          enqueued_at?: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          parent_column?: string
+          parent_key: string
+          parent_schema: string
+          parent_table: string
+          requested_by?: string | null
+          rows_done?: number
+          rows_total?: number | null
+          stamp: string
+          started_at?: string | null
+          state?: string
+          steps?: number
+          updated_at?: string
+        }
+        Update: {
+          absorb_stamps?: string[]
+          assoc_token?: string | null
+          attempts?: number
+          completed_edges?: string[]
+          direction?: string
+          enqueued_at?: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          parent_column?: string
+          parent_key?: string
+          parent_schema?: string
+          parent_table?: string
+          requested_by?: string | null
+          rows_done?: number
+          rows_total?: number | null
+          stamp?: string
+          started_at?: string | null
+          state?: string
+          steps?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       soft_delete_edge: {
         Row: {
           action: string
@@ -86452,6 +86257,7 @@ export type Database = {
         Args: { p_has_is_published: boolean; p_has_status: boolean }
         Returns: string
       }
+      _reachability_touch_edges: { Args: { p_edges: Json }; Returns: number }
       _record_arman_class_approval: {
         Args: {
           p_approved_on: string
@@ -86544,6 +86350,25 @@ export type Database = {
           s: string
           tb: string
         }[]
+      }
+      _soft_delete_cascade_enqueue: {
+        Args: {
+          p_direction: string
+          p_key: string
+          p_parent_column: string
+          p_schema: string
+          p_stamp: string
+          p_table: string
+        }
+        Returns: string
+      }
+      _soft_delete_cascade_job_json: {
+        Args: { p_job_id: string }
+        Returns: Json
+      }
+      _soft_delete_cascade_knob: {
+        Args: { p_default: number; p_key: string }
+        Returns: number
       }
       _store_pick_list_document: {
         Args: { p_list_id: string; p_shape?: string; p_viewer: string }
@@ -87923,6 +87748,13 @@ export type Database = {
         Args: { p_partition: string }
         Returns: number
       }
+      lifecycle_partition_count_span: {
+        Args: { p_after_id: number; p_limit: number; p_partition: string }
+        Returns: {
+          counted: number
+          last_id: number
+        }[]
+      }
       lifecycle_partition_page: {
         Args: { p_after_id?: number; p_limit: number; p_partition: string }
         Returns: Json
@@ -89030,6 +88862,14 @@ export type Database = {
         Returns: Json
       }
       sign_in_freeze_grab_ms: { Args: never; Returns: number }
+      soft_delete_cascade_drain: {
+        Args: { p_budget_ms?: number }
+        Returns: Json
+      }
+      soft_delete_cascade_step: {
+        Args: { p_budget_ms?: number; p_job_id: string }
+        Returns: Json
+      }
       soft_delete_orphan_census: {
         Args: never
         Returns: {
@@ -100528,6 +100368,14 @@ export type Database = {
         Returns: number
       }
       shx_since_bucket: { Args: { p_bucket: string }; Returns: string }
+      soft_delete_cascade_advance: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
+      soft_delete_cascade_progress: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
       soft_delete_file: { Args: { p_file_id: string }; Returns: boolean }
       soft_delete_folder: { Args: { p_folder_id: string }; Returns: Json }
       split_feedback_item: {
@@ -116438,6 +116286,10 @@ export type Database = {
           rendition_kind: string
         }[]
       }
+      fn_prune_topic_placement_queue: {
+        Args: { p_keep_keyword_ids: string[]; p_site_id: string }
+        Returns: number
+      }
       fn_reconcile_site_offering_facts: {
         Args: { p_site_id: string }
         Returns: {
@@ -116553,6 +116405,21 @@ export type Database = {
           input_index: number
           o_created: boolean
           o_id: string
+        }[]
+      }
+      fn_upsert_topic_placement_demand: {
+        Args: {
+          p_as_of: string
+          p_clicks: number[]
+          p_impressions: number[]
+          p_keyword_ids: string[]
+          p_site_id: string
+          p_window_days: number
+        }
+        Returns: {
+          now_done: number
+          now_pending: number
+          scanned: number
         }[]
       }
       fn_value_baseline: { Args: { p_site_id: string }; Returns: number }
