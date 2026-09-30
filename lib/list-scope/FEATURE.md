@@ -19,11 +19,11 @@ record — that is the record's access level (law:
   `platform.set_shown_to(type, id, value)` (creator or admin on the record;
   refused on a child row); read with `platform.shown_to_state(type, id)`.
 - **Per type:** the knob `access.shown_to_default/<token>` (system →
-  organization → person, `platform.feature_knob`). It is also where a list
-  OPENS: `only_me` → Mine, anything else → the organization
-  (`platform.entity_default_list_scope`, and the `platform.list_scope_registry`
-  view `resolveListScope` reads). `entity_types.default_list_scope` is no
-  longer read by any list.
+  organization → person, `platform.feature_knob`) decides who a list SHOWS a row to. It does NOT
+  decide where a list opens: that is its own knob `lists.landing_tab/<token>` (`mine` |
+  `organization`, same ladder), read by `resolveListScope` from the one knob snapshot and, for SQL
+  callers, by `platform.entity_default_list_scope` and the `platform.list_scope_registry` view
+  (2026-09-29). New types get both rows from `platform.seed_shown_to_default_knob`.
 - **The predicate:** `platform.shown_to_lists(shown_to, visibility, created_by,
   organization_id, viewer, ctx)` — creator always; else the row's value, else a
   legacy `visibility = 'personal'` read as Only me (until T-13), else the knob;
@@ -276,6 +276,7 @@ Invariants the template carries, all of them learned the hard way:
 
 ## Change log
 
+- 2026-09-29 — **Where a list opens is its own knob, never its visibility.** `resolveListScope` (and so every `registryToken` list, `defaultListFilter`, `defaultListScopeFor`) now resolves the Feature Knob `lists.landing_tab/<token>` (`mine` | `organization`; organization and person may override) through `lib/list-scope` `resolveListScope` and the one knob snapshot; it no longer derives from `access.shown_to_default`. Each of the 580 rows was seeded once from the old derivation, so nothing moved except flashcard decks (`fc_set`) and quizzes/practice tests (`assessment`), which open on Mine while their visibility default stays "everyone" (Arman 2026-09-29: never tighten a visibility default to change a tab). A URL-carried or clicked scope still wins. Test: `lib/list-scope/__tests__/defaultListFilter.test.ts` (red on the old reader, green now).
 - 2026-09-28 — Invariants 10 and 11 (lane-only Shown-to context, cross-token
   teammate cache, plpgsql `iam.team_members_resolved`, materialized join keys,
   one read per row-secured table): see the numbers in

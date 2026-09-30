@@ -48,6 +48,12 @@ import { useCloudTree } from "@/features/files/hooks/useCloudTree";
 import { useFileMutation } from "@/features/files/hooks/useFileMutation";
 import { fileUrls } from "@/features/files/handler/utils/python-base";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
+import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
+import { ShowSystemFilesToggle } from "@/features/files/components/core/ShowSystemFilesToggle";
+import {
+  isListedFile,
+  isListedFolderPath,
+} from "@/features/files/utils/user-visible";
 import { MediaThumbnail } from "@ai-matrx/media/react";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { filesDb, FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
@@ -422,6 +428,8 @@ interface TreeNodeProps {
   defaultOpen?: boolean;
   /** Only this organization's files (see `FilesResourcePickerProps.organizationId`). */
   organizationId?: string | null;
+  /** The effective `files.show_system_files` knob (the one list rule). */
+  showSystemFiles: boolean;
 }
 
 function FolderNode({
@@ -437,6 +445,7 @@ function FolderNode({
   selectedFileIds,
   defaultOpen = false,
   organizationId = null,
+  showSystemFiles,
 }: TreeNodeProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
@@ -463,12 +472,21 @@ function FolderNode({
             (f): f is CloudFileRecord =>
               !!f &&
               !f.deletedAt &&
+              isListedFile(f, showSystemFiles) &&
               inOrganization(f, organizationId) &&
               matchesFileFilter(f, fileFilter, processedFileIds),
           ),
         fileSort,
       ),
-    [children.fileIds, filesById, fileFilter, fileSort, processedFileIds, organizationId],
+    [
+      children.fileIds,
+      filesById,
+      fileFilter,
+      fileSort,
+      processedFileIds,
+      organizationId,
+      showSystemFiles,
+    ],
   );
 
   const paddingLeft = level * 1.25;
@@ -535,6 +553,8 @@ function FolderNode({
               {children.folderIds.map((id) => {
                 const folder = foldersById[id];
                 if (!folder || folder.deletedAt) return null;
+                if (!isListedFolderPath(folder.folderPath, showSystemFiles))
+                  return null;
                 return (
                   <FolderNode
                     key={id}
@@ -549,6 +569,7 @@ function FolderNode({
                     multiple={multiple}
                     selectedFileIds={selectedFileIds}
                     organizationId={organizationId}
+                    showSystemFiles={showSystemFiles}
                   />
                 );
               })}
@@ -664,6 +685,7 @@ export function FilesResourcePicker({
   }, [controlledKey, syncFromControlled]);
   const [fileFilter, setFileFilter] = useState<FileFilter>(initialFilter);
   const [fileSort, setFileSort] = useState<FileSort>("updated");
+  const { showSystemFiles } = useShowSystemFiles();
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [resolvedProcessedFiles, setResolvedProcessedFiles] = useState<
     CloudFileRecord[]
@@ -802,6 +824,7 @@ export function FilesResourcePicker({
         filter: fileFilter,
         sort: fileSort,
         processedFileIds,
+        showSystemFiles,
       }),
     [
       filesById,
@@ -811,6 +834,7 @@ export function FilesResourcePicker({
       fileFilter,
       fileSort,
       processedFileIds,
+      showSystemFiles,
     ],
   );
   const visibleSearchResults = searchResults.files;
@@ -822,12 +846,17 @@ export function FilesResourcePicker({
   const rootFolders = useMemo<CloudFolderRecord[]>(() => {
     const all = rootFolderIds
       .map((id) => foldersById[id])
-      .filter((f): f is CloudFolderRecord => !!f && !f.deletedAt);
+      .filter(
+        (f): f is CloudFolderRecord =>
+          !!f &&
+          !f.deletedAt &&
+          isListedFolderPath(f.folderPath, showSystemFiles),
+      );
     if (allowedBuckets && allowedBuckets.length > 0) {
       return all.filter((f) => allowedBuckets.includes(f.folderName));
     }
     return all;
-  }, [rootFolderIds, foldersById, allowedBuckets]);
+  }, [rootFolderIds, foldersById, allowedBuckets, showSystemFiles]);
 
   const notifyFileSelection = async (
     file: CloudFileRecord,
@@ -1057,6 +1086,7 @@ export function FilesResourcePicker({
           <option value="name">Name</option>
           <option value="size">Size</option>
         </select>
+        <ShowSystemFilesToggle />
       </div>
 
       {/* Content. The scroller lives inside a non-scrolling wrapper so the
@@ -1145,6 +1175,7 @@ export function FilesResourcePicker({
                           multiple={selectionMode === "multiple"}
                           selectedFileIds={selectedFileIds}
                           organizationId={organizationId}
+                          showSystemFiles={showSystemFiles}
                         />
                       ))}
                     </div>
@@ -1191,6 +1222,7 @@ export function FilesResourcePicker({
                         multiple={selectionMode === "multiple"}
                         selectedFileIds={selectedFileIds}
                         organizationId={organizationId}
+                        showSystemFiles={showSystemFiles}
                       />
                     ))}
                   </div>

@@ -423,8 +423,9 @@ export function buildAssessmentListConfig(input: {
   const plural = config.pluralLabel.toLowerCase();
   return {
     surfaceKey: `education-assessments-${config.base}`,
-    // Where the list OPENS comes from platform.entity_types (assessment),
-    // never a literal.
+    // Where the list OPENS is the landing-tab knob lists.landing_tab/assessment
+    // (Mine), never a literal and never "Shown to by default" (which stays
+    // "everyone" — who sees a test is a separate choice).
     registryToken: "assessment",
     entityLabel: { singular: config.noun, plural },
     sourceFeature: "education-assessment",

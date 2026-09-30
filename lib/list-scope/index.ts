@@ -31,14 +31,15 @@
  * person's rows where the organization's belong is the defect; a screen that says "showing only
  * yours — the registry was unreachable" is honest.
  *
- * DESTINATION. The registry metadata this reads is already mirrored client-side by
- * `@ai-matrx/associations` (see `features/scopes/registry/entityRegistry.ts`), and
- * `default_list_scope` belongs in that generated metadata so every client app inherits it without a
- * query. Until that package regenerates, this module reads the column directly — once per session,
- * for the whole registry — rather than 27 features each inventing their own read.
+ * WHERE THE ANSWER LIVES (2026-09-29). The landing tab is the Feature Knob family
+ * `lists.landing_tab/<token>` (see LANDING_TAB_FEATURE below), read from the ONE knob snapshot
+ * (`lib/scoped-config/effectiveKnobs.ts`), so an organization or a person can override where a list
+ * opens without touching who can see anything. `platform.list_scope_registry` (the view) and
+ * `platform.entity_default_list_scope` read the same knob's platform value for SQL callers.
  */
 
-import { supabase } from "@/utils/supabase/client";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { sessionKnobPrincipals } from "@/lib/scoped-config/sessionKnob";
 import type { ListScope } from "./types";
 import { fetchShownToContext, shownToMyOrgsFilter } from "./shownTo";
 
@@ -59,9 +60,6 @@ export type ListScopeWord = "mine" | "organization";
 /** The narrower screen is the safe fallback: never wrong, only sometimes emptier. */
 export const FALLBACK_LIST_SCOPE: ListScopeWord = "mine";
 
-/** A whole-registry snapshot, fetched once per browser session. */
-let registryPromise: Promise<Map<string, ListScopeWord>> | null = null;
-
 /** Announce when a stand-in fired. Wired by the host to `captureError`. */
 export type ListScopeFallbackReporter = (message: string, cause: unknown) => void;
 
@@ -74,64 +72,42 @@ export function setListScopeFallbackReporter(fn: ListScopeFallbackReporter): voi
   reportFallback = fn;
 }
 
-/** Test seam: forget the cached registry so a test can serve a different one. */
-export function resetListScopeCache(): void {
-  registryPromise = null;
-}
-
-async function loadRegistry(): Promise<Map<string, ListScopeWord>> {
-  // 🚨 `platform.list_scope_registry`, NOT `platform.entity_types`. The table is admin-only by a
-  // RESTRICTIVE policy (`platform_admin_only`), which ANDs with everything else — so reading it
-  // from a browser returned `200 []` for every user who is not a platform administrator, this
-  // module announced its fallback, and EVERY list on the platform opened on `mine`. Measured live
-  // as `test@test.com` on 2026-09-12 and fixed by DD-137c8, which publishes the two columns a
-  // client actually needs through a view and nothing else.
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("list_scope_registry")
-    .select("token,default_list_scope");
-  if (error) {
-    throw new Error(error.message);
-  }
-  const map = new Map<string, ListScopeWord>();
-  for (const row of data ?? []) {
-    const scope = row.default_list_scope;
-    // A view's columns are nullable to the generated types even when the view filters NULLs out,
-    // so both halves are checked rather than asserted away.
-    if (row.token && (scope === "mine" || scope === "organization")) {
-      map.set(row.token, scope);
-    }
-  }
-  if (map.size === 0) {
-    // An empty registry is not a registry. Treating it as "everything is mine" would hide every
-    // organization's data behind a silent read failure.
-    throw new Error("platform.entity_types returned no list scopes");
-  }
-  return map;
-}
+/**
+ * The Feature Knob family that decides WHICH TAB a list opens on: `lists.landing_tab/<token>`,
+ * `mine` | `organization`, overridable per organization and per person (2026-09-29).
+ *
+ * 🚨 It is NOT `access.shown_to_default/<token>` and never reads it. Who a record is shown to is a
+ * visibility default (law 6: defaults lean open); where a list starts is a convenience. Until
+ * 2026-09-29 the landing tab was DERIVED from the visibility knob, so the only way to make
+ * /education/flashcards open on Mine was to hide every new deck from the organization — which a lane
+ * did. The two are separate knobs now; each row was seeded once from the old derivation.
+ */
+export const LANDING_TAB_FEATURE = "lists.landing_tab";
 
 /**
- * Where this token's list should open. Reads the registry once per session; on any failure returns
- * `mine` AND reports it.
+ * Where this token's list should open, for THIS person in their active organization (person
+ * override → organization override → platform value, one cached snapshot — never a read per list).
+ * On any failure returns `mine` AND reports it.
  */
 export async function resolveListScope(token: string): Promise<ListScopeWord> {
+  const { organizationId, userId } = sessionKnobPrincipals();
   try {
-    registryPromise ??= loadRegistry();
-    const map = await registryPromise;
-    const scope = map.get(token);
-    if (scope) return scope;
+    const value = await ensureEffectiveKnob(organizationId, userId, {
+      feature: LANDING_TAB_FEATURE,
+      key: token,
+    });
+    if (value === "mine" || value === "organization") return value;
     reportFallback(
-      `No default_list_scope is registered for "${token}", so this list is showing only your own rows. ` +
-        `Classify the token in platform.entity_types (DD-137b) and the screen will open where it belongs.`,
+      `The landing tab for "${token}" (${LANDING_TAB_FEATURE}) answered ${JSON.stringify(value)}, which is ` +
+        `neither "mine" nor "organization", so this list is showing only your own rows.`,
       null,
     );
     return FALLBACK_LIST_SCOPE;
   } catch (cause) {
-    // A failed read must not poison the session forever — the next call retries.
-    registryPromise = null;
     reportFallback(
-      `Could not read where this list should open (platform.list_scope_registry), so it is showing only your ` +
-        `own rows. If the organization's data is missing from this screen, that is why.`,
+      `No landing tab is registered for "${token}" (${LANDING_TAB_FEATURE}) or it could not be read, so this ` +
+        `list is showing only your own rows. Types without a "Shown to" knob (Private, Confidential, child ` +
+        `records) have none on purpose; any other type needs its row seeded.`,
       cause,
     );
     return FALLBACK_LIST_SCOPE;

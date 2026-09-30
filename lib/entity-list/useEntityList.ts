@@ -98,8 +98,9 @@ export interface UseEntityListArgs<TRow> {
    * those rows readable by every one of those people. Nobody decided that; the
    * literal `{ kind: "mine" }` in `DEFAULT_LIST_SCOPE` did, for every list on
    * the platform at once. A surface that names its token here opens where the
-   * registry says it should, and `platform.entity_types.default_list_scope` is
-   * one row to change when an organization decides otherwise.
+   * landing-tab knob `lists.landing_tab/<token>` says it should — its own knob,
+   * never the visibility knob `access.shown_to_default` — and an organization or
+   * a person overrides it in configuration without touching who sees anything.
    *
    * `defaultScope` still wins: a shell that is ALREADY about one scope (the
    * admin System Agents route) is making a statement the registry cannot know.
@@ -210,8 +211,8 @@ export function useEntityList<TRow>({
   supportsArchived = true,
   searchSpansDefaultFilters = false,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
-  // Where the registry says this list lands. It arrives ASYNCHRONOUSLY (one
-  // read of platform.entity_types, cached for the whole session), so it is
+  // Where the landing-tab knob says this list lands. It arrives ASYNCHRONOUSLY
+  // (the one knob snapshot, cached for the session), so it is
   // seeded null and applied by the same late-value rule the archive knob uses
   // below — see THE LATE-KNOB PROBLEM. On any failure `resolveListScope` has
   // already announced itself and answered `mine`, the narrower screen.

@@ -201,6 +201,7 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-29` — /education/flashcards opens on **Mine** through its own landing knob `lists.landing_tab/fc_set`; a new deck's "Shown to" default stays **everyone** (`access.shown_to_default/fc_set`), so it is visible to the organization and appears in Mine. The two used to be one knob, which is why a lane had set decks to "only me" (reverted by the chair). Same for `/education/quizzes` (`assessment`).
 - `2026-09-29` — V3-C copy: progress second line "Last done: <part>" / "Cards appear below."; waiting-for-clean one line; Add more cards description one line ("This deck's material. Existing cards stay."); depth "Exam-level" blurb "Fine detail & tricky cases" (no longer restates its label); MadeFromSource "Open the kit" → "Everything made from it".
 
 - `2026-09-29` — A3-F: (1) surface ownership moved from a module-level Set to the launch option `surfaceOwnsOutput` on the conversation record (survives reload/resume). (2) Add more cards is a plain `Dialog` (bottom sheet on mobile by itself); the hand-rolled Drawer switch is gone. (3) The card-count ceiling `COUNT_MAX = 50` (Create deck + Add more cards) is the knob `flashcards.max_cards_per_run`, one shared read `data/useMaxCardsPerRun.ts`; a failed read is shown and blocks the run.

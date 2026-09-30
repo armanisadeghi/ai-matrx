@@ -445,6 +445,12 @@ export interface CloudTreeFileRow {
   deleted_at: string | null;
   /** Device that wrote the row (desktop sync), null for an in-app write. */
   origin_device_id: string | null;
+  /**
+   * The row's metadata as the RPC returns it — carries `system_artifact`, the
+   * marker every file list reads through `isListedFile` (2026-09-29; the tree
+   * used to drop it, so system files could not be told apart in the store).
+   */
+  metadata: Record<string, unknown>;
 }
 
 export interface CloudTreeFolderRow {
@@ -459,6 +465,7 @@ export interface CloudTreeFolderRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  metadata: Record<string, unknown>;
 }
 
 export type CloudTreeRow = CloudTreeFileRow | CloudTreeFolderRow;

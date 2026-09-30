@@ -468,6 +468,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
       created_at: created,
       updated_at: updated,
       deleted_at: str(row, "deleted_at"),
+      metadata: toMetadataObject(row.metadata),
     };
   }
 
@@ -487,6 +488,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
     updated_at: updated,
     deleted_at: str(row, "deleted_at"),
     origin_device_id: str(row, "origin_device_id"),
+    metadata: toMetadataObject(row.metadata),
   };
 }
 

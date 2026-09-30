@@ -14,6 +14,7 @@
 
 "use client";
 
+import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -131,6 +132,7 @@ export function FileTable({
   const focusedId = useAppSelector(selectFocusedId);
   const { sortBy, sortDir } = useAppSelector(selectSort);
   const kindFilter = useAppSelector(selectKindFilter);
+  const { showSystemFiles } = useShowSystemFiles();
   const columnFilters = useAppSelector(selectColumnFilters);
   const visibleColumns = useAppSelector(selectVisibleColumns);
   const currentUserId = useAppSelector(selectUserId);
@@ -157,6 +159,7 @@ export function FileTable({
         ragStatusByFileId: ragStatuses,
         sortBy,
         sortDir,
+        showSystemFiles,
       }),
     [
       folders,
@@ -170,6 +173,7 @@ export function FileTable({
       ragStatuses,
       sortBy,
       sortDir,
+      showSystemFiles,
     ],
   );
 

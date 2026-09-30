@@ -13,7 +13,17 @@
  *   files.is_recent_activity(files.files)   — RECENTS: visible, not device-written
  *                                             (origin_device_id), not machine output under
  *                                             the person's roots, not carried for an
- *                                             organization (`page-captures-<org>/…`)
+ *                                             organization (`page-captures-<org>/…`), and
+ *                                             not a SYSTEM FILE (metadata.system_artifact,
+ *                                             matrx-files 050, 2026-09-29)
+ *
+ * SYSTEM FILES (Arman 2026-09-29: "By default, it should never show system files unless that
+ * feature is turned on. default off. And they should never show in recents anyways."): a file the
+ * system marked as its own — `metadata.system_artifact = true`, stamped by aidream
+ * `user_visible.machine_artifact_marker` on every machine path, the same marker
+ * `platform._inventory_filter` hides — is never Recents, and every other list shows it only when
+ * the Feature Knob `files.show_system_files` (default off; organization and person may override)
+ * is on. `isListedFile` / `isListedFolderPath` below are that ONE rule for every list.
  *
  * Declared once in aidream packages/matrx-files/matrx_files/user_visible.py. The
  * rule and how a machine writer registers: common-docs
@@ -169,8 +179,65 @@ export function isRecentActivityPath(
   );
 }
 
+/** A file record's metadata, the only field the system-file rule reads. */
+export interface SystemFileShape {
+  metadata?: Record<string, unknown> | null;
+}
+
+/**
+ * A SYSTEM FILE: one the system made and marked as its own
+ * (`metadata.system_artifact = true`). Mirror of the conjunct
+ * `NOT (metadata @> '{"system_artifact": true}')` that `files.is_recent_activity`
+ * and `platform._inventory_filter` both carry.
+ */
+export function isSystemFile(file: SystemFileShape): boolean {
+  return file.metadata?.["system_artifact"] === true;
+}
+
+/**
+ * Mirror of aidream `MACHINE_CARRIED_ROOTS` — the carried roots whose every file
+ * is stamped a system file (`machine_artifact_marker`). A folder at such a root
+ * (`page-captures-<org uuid>/…`) holds nothing but system files. The person's own
+ * deliverables (`PERSON_CARRIED_ROOTS`: payroll exports, timesheet reports, HR
+ * letters, texted attachments) are not here.
+ */
+const SYSTEM_CARRIED_ROOTS = [
+  "record-store",
+  "web-crawls",
+  "seo-data",
+  "login-captures",
+  "page-captures",
+  "coding-transcripts",
+] as const;
+const SYSTEM_CARRIED_ROOT_SEGMENT = new RegExp(
+  `^(${SYSTEM_CARRIED_ROOTS.join("|")})-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`,
+);
+
+/** A folder only the system writes into (a system-carried root or anything under it). */
+export function isSystemFolderPath(path: string | null | undefined): boolean {
+  if (path === null || path === undefined) return false;
+  return SYSTEM_CARRIED_ROOT_SEGMENT.test(firstSegment(path));
+}
+
+/**
+ * THE ONE LIST RULE for files: every file list (the Files page, the file picker,
+ * search) shows a system file only when `files.show_system_files` is on.
+ * Recents never shows one either way (`isRecentActivityFile`).
+ */
+export function isListedFile(file: SystemFileShape, showSystemFiles: boolean): boolean {
+  return showSystemFiles || !isSystemFile(file);
+}
+
+/** The folder half of the list rule. */
+export function isListedFolderPath(
+  path: string | null | undefined,
+  showSystemFiles: boolean,
+): boolean {
+  return showSystemFiles || !isSystemFolderPath(path);
+}
+
 /** The fields Recents needs from a file record (domain or row shape). */
-export interface RecentActivityFileShape {
+export interface RecentActivityFileShape extends SystemFileShape {
   filePath: string | null | undefined;
   /** The registered device that wrote the row; null for an in-app write. */
   originDeviceId?: string | null;
@@ -185,6 +252,7 @@ export interface RecentActivityFileShape {
  * (folder-sync DECISIONS R3).
  */
 export function isRecentActivityFile(file: RecentActivityFileShape): boolean {
+  if (isSystemFile(file)) return false;
   if (file.originDeviceId) return false;
   if (file.parentFileId) return false;
   if (file.derivationKind) return false;

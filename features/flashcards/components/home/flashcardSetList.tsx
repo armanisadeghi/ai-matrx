@@ -356,13 +356,11 @@ export function buildFlashcardSetListConfig(input: {
 }): EntityListConfig<FlashcardSetListRow> {
   return {
     surfaceKey: "education-flashcard-sets",
-    // Where the list OPENS is the registry (platform.list_scope_registry),
-    // never a literal here. Since access-ladder T-11 (2026-09-27) that view
-    // derives from the "Shown to by default" knob access.shown_to_default/
-    // fc_set: Only me → Mine, anything else → My Orgs. fc_set's system value
-    // is "everyone" — the table default (Arman 2026-09-29: visible to all,
-    // editable by the owner; never tighten a default). Which tab opens is a
-    // separate choice from who sees a deck.
+    // Where the list OPENS is the landing-tab knob lists.landing_tab/fc_set
+    // (Mine; overridable per organization and person), never a literal here
+    // and never "Shown to by default" (access.shown_to_default/fc_set stays
+    // "everyone" — Arman 2026-09-29: visible to all, editable by the owner).
+    // Which tab opens is a separate choice from who sees a deck.
     registryToken: "fc_set",
     entityLabel: { singular: "deck", plural: "decks" },
     sourceFeature: "education-flashcards",

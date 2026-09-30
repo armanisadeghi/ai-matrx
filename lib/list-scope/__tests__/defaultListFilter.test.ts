@@ -5,20 +5,36 @@
  * organization list through Shown to; this test fails against the old yes/no door (no `.or`).
  */
 const rpc = jest.fn();
-const registryRows = [
-  { token: "note", default_list_scope: "organization" },
-  { token: "task", default_list_scope: "mine" },
-];
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     schema: () => ({
       rpc: (...args: unknown[]) => rpc(...args),
-      from: () => ({ select: async () => ({ data: registryRows, error: null }) }),
     }),
   },
 }));
 
-import { defaultListFilter, resetListScopeCache } from "../index";
+// Where a list opens is the landing-tab knob, answered from the one knob snapshot
+// (person → organization → platform). The snapshot is faked at its seam, keyed by the address.
+const landing: Record<string, unknown> = {
+  "lists.landing_tab.note": "organization",
+  "lists.landing_tab.task": "mine",
+};
+const ensureEffectiveKnob = jest.fn(
+  async (_org: string | null, _user: string | null, ref: { feature: string; key: string }) => {
+    const full = `${ref.feature}.${ref.key}`;
+    if (!(full in landing)) throw new Error(`no knob is registered for ${full}`);
+    return landing[full];
+  },
+);
+jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+  ensureEffectiveKnob: (...args: [string | null, string | null, { feature: string; key: string }]) =>
+    ensureEffectiveKnob(...args),
+}));
+jest.mock("@/lib/scoped-config/sessionKnob", () => ({
+  sessionKnobPrincipals: () => ({ organizationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", userId: "11111111-1111-4111-8111-111111111111" }),
+}));
+
+import { defaultListFilter, resolveListScope, setListScopeFallbackReporter } from "../index";
 import { shownToMyOrgsFilter, type ShownToContext } from "../shownTo";
 
 const ME = "11111111-1111-4111-8111-111111111111";
@@ -63,7 +79,6 @@ describe("shownToMyOrgsFilter", () => {
 
 describe("defaultListFilter", () => {
   beforeEach(() => {
-    resetListScopeCache();
     rpc.mockReset();
   });
 
@@ -93,5 +108,33 @@ describe("defaultListFilter", () => {
   it("a failed Shown-to read throws instead of listing wider", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "boom" } });
     await expect(defaultListFilter("note", { userId: ME })).rejects.toThrow(/Shown to|shown to/i);
+  });
+});
+
+describe("where a list opens is its own knob, never its visibility (2026-09-29)", () => {
+  const reported: string[] = [];
+  beforeAll(() => setListScopeFallbackReporter((m) => reported.push(m)));
+  beforeEach(() => {
+    reported.length = 0;
+    ensureEffectiveKnob.mockClear();
+  });
+
+  it("reads lists.landing_tab for the person in their organization, never access.shown_to_default", async () => {
+    landing["lists.landing_tab.fc_set"] = "mine";
+    await expect(resolveListScope("fc_set")).resolves.toBe("mine");
+    expect(ensureEffectiveKnob).toHaveBeenCalledWith(ORG_A, ME, { feature: "lists.landing_tab", key: "fc_set" });
+    for (const call of ensureEffectiveKnob.mock.calls) {
+      expect(call[2].feature).not.toBe("access.shown_to_default");
+    }
+  });
+
+  it("a person's or organization's override (what the snapshot resolves) decides the tab", async () => {
+    landing["lists.landing_tab.fc_set"] = "organization";
+    await expect(resolveListScope("fc_set")).resolves.toBe("organization");
+  });
+
+  it("a type with no landing knob opens on mine and says so", async () => {
+    await expect(resolveListScope("private_thing")).resolves.toBe("mine");
+    expect(reported.join(" ")).toMatch(/lists\.landing_tab/);
   });
 });

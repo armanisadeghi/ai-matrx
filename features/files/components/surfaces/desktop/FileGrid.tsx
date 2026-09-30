@@ -8,6 +8,7 @@
 
 "use client";
 
+import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -98,6 +99,7 @@ export function FileGrid({
   );
 
   const kindFilter = useAppSelector(selectKindFilter);
+  const { showSystemFiles } = useShowSystemFiles();
   const { sortBy, sortDir } = useAppSelector(selectSort);
   // FileGrid never paginates / caps; it just needs the rows. Discard
   // `totalBeforeCap` / `capped` — only FileTable renders those banners.
@@ -113,6 +115,7 @@ export function FileGrid({
         permissionsByResourceId,
         sortBy,
         sortDir,
+        showSystemFiles,
       }),
     [
       folders,
@@ -124,6 +127,7 @@ export function FileGrid({
       permissionsByResourceId,
       sortBy,
       sortDir,
+      showSystemFiles,
     ],
   );
 

@@ -287,8 +287,9 @@ export interface EntityListConfig<TRow> {
    * THE REGISTRY TOKEN whose `default_list_scope` decides where this list OPENS
    * (DD-137c / VISIBILITY-BY-CLASS §3.3, the second axis).
    *
-   * Declared here, once per surface, so the shell can read
-   * `platform.entity_types.default_list_scope` instead of every list starting
+   * Declared here, once per surface, so the shell can read the landing-tab
+   * knob `lists.landing_tab/<token>` (person → organization → platform;
+   * `lib/list-scope` `resolveListScope`) instead of every list starting
    * on the literal `{ kind: "mine" }`. That literal is what four people in one
    * organization met when each of them saw only their own SEO research — rows
    * every one of them could read. The page's own `defaultScope` still wins, and

@@ -9,6 +9,11 @@
 
 "use client";
 
+import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
+import {
+  isListedFile,
+  isListedFolderPath,
+} from "@/features/files/utils/user-visible";
 import { useCallback, useMemo, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -68,6 +73,8 @@ export function useTreeExpansion(
   const foldersById = useAppSelector(selectAllFoldersMap);
   const filesById = useAppSelector(selectAllFilesMap);
   const sort = useAppSelector(selectSort);
+  // System files list only while files.show_system_files is on (user-visible.ts).
+  const { showSystemFiles } = useShowSystemFiles();
 
   const isExpanded = useCallback(
     (folderId: string) => expanded.has(folderId),
@@ -161,11 +168,17 @@ export function useTreeExpansion(
       );
       for (const id of sorted.folderIds) {
         const child = foldersById[id];
-        if (child && !child.deletedAt) pushFolder(child, depth + 1);
+        if (
+          child &&
+          !child.deletedAt &&
+          isListedFolderPath(child.folderPath, showSystemFiles)
+        )
+          pushFolder(child, depth + 1);
       }
       for (const id of sorted.fileIds) {
         const child = filesById[id];
         if (!child || child.deletedAt) continue;
+        if (!isListedFile(child, showSystemFiles)) continue;
         result.push({
           kind: "file",
           id: child.id,
@@ -185,11 +198,17 @@ export function useTreeExpansion(
     );
     for (const id of rootSorted.folderIds) {
       const folder = foldersById[id];
-      if (folder && !folder.deletedAt) pushFolder(folder, 0);
+      if (
+        folder &&
+        !folder.deletedAt &&
+        isListedFolderPath(folder.folderPath, showSystemFiles)
+      )
+        pushFolder(folder, 0);
     }
     for (const id of rootSorted.fileIds) {
       const file = filesById[id];
       if (!file || file.deletedAt) continue;
+      if (!isListedFile(file, showSystemFiles)) continue;
       result.push({
         kind: "file",
         id: file.id,
@@ -209,6 +228,7 @@ export function useTreeExpansion(
     filesById,
     sort.sortBy,
     sort.sortDir,
+    showSystemFiles,
   ]);
 
   return {

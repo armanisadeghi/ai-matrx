@@ -80,6 +80,7 @@ which this codebase has been bitten by before.
 
 ## Change log
 
+- **2026-09-29** — Saved view prefs still hold style only; the tab a list OPENS on is the Feature Knob `lists.landing_tab/<token>` (person → organization → platform), read by `lib/list-scope` — see `lib/entity-list/FEATURE.md` Change log.
 - **2026-08-09** — Migrated the last four hand-rolled `localStorage` blocks
   (ProjectsHub, TaskListPane, `/documents`, CloudImagesTab) onto the hook;
   documented the two-axis mapping for non-canonical toggles.

@@ -15,7 +15,11 @@
  */
 
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
-import { isRecentActivityFile } from "@/features/files/utils/user-visible";
+import {
+  isListedFile,
+  isListedFolderPath,
+  isRecentActivityFile,
+} from "@/features/files/utils/user-visible";
 import {
   searchFiles,
   searchFolders,
@@ -120,6 +124,11 @@ export interface FilesPickerListOptions {
   filter: FilesResourcePickerFilter;
   sort: FilesPickerSort;
   processedFileIds?: ReadonlySet<string>;
+  /**
+   * The effective `files.show_system_files` knob (default off). Search and
+   * folder lists show system files only while it is on; Recents never does.
+   */
+  showSystemFiles?: boolean;
 }
 
 /** Every Recents file in the library, filtered and sorted — never capped. */
@@ -155,12 +164,19 @@ export function pickerSearch(
   filesById: Record<string, CloudFileRecord>,
   foldersById: Record<string, CloudFolderRecord>,
   query: string,
-  { organizationId, filter, sort, processedFileIds }: FilesPickerListOptions,
+  {
+    organizationId,
+    filter,
+    sort,
+    processedFileIds,
+    showSystemFiles = false,
+  }: FilesPickerListOptions,
 ): FilesPickerSearchResult {
   if (!query.trim()) return { files: [], folders: [] };
   const files = sortFiles(
     searchFiles(filesById, query).filter(
       (f) =>
+        isListedFile(f, showSystemFiles) &&
         inOrganization(f, organizationId) &&
         matchesFileFilter(f, filter, processedFileIds),
     ),
@@ -175,6 +191,7 @@ export function pickerSearch(
         .filter(
           (f) =>
             f.source?.kind !== "virtual" &&
+            isListedFolderPath(f.folderPath, showSystemFiles) &&
             f.folderName.toLowerCase().includes(query.trim().toLowerCase()),
         )
         .sort((a, b) => a.folderPath.localeCompare(b.folderPath));

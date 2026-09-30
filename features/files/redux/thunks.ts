@@ -376,6 +376,7 @@ export const loadUserFileTree = createAsyncThunk<
             updatedAt: row.updated_at,
             deletedAt: row.deleted_at,
             originDeviceId: row.origin_device_id,
+            metadata: row.metadata,
           });
         } else {
           folders.push({
@@ -388,6 +389,7 @@ export const loadUserFileTree = createAsyncThunk<
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             deletedAt: row.deleted_at,
+            metadata: row.metadata,
           });
         }
       }
@@ -435,7 +437,7 @@ export const loadUserFileTree = createAsyncThunk<
               visibility: f.visibility,
               currentVersion: f.currentVersion,
               parentFolderId: f.parentFolderId ?? null,
-              metadata: {},
+              metadata: f.metadata ?? {},
               createdAt: f.createdAt,
               updatedAt: f.updatedAt,
               deletedAt: f.deletedAt,
@@ -470,7 +472,7 @@ export const loadUserFileTree = createAsyncThunk<
               folderName: f.folderName,
               parentId: f.parentId ?? null,
               visibility: f.visibility,
-              metadata: {},
+              metadata: f.metadata ?? {},
               createdAt: f.createdAt,
               updatedAt: f.updatedAt,
               deletedAt: f.deletedAt,

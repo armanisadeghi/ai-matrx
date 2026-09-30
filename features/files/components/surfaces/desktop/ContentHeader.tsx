@@ -12,6 +12,7 @@
 
 "use client";
 
+import { ShowSystemFilesToggle } from "@/features/files/components/core/ShowSystemFilesToggle";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, Settings2, Share2 } from "lucide-react";
@@ -240,7 +241,10 @@ export function ContentHeader({
               onChange={(next) => dispatch(setKindFilter(next))}
             />
           </div>
-          <ViewModeToggle />
+          <div className="flex items-center gap-1">
+            <ShowSystemFilesToggle />
+            <ViewModeToggle />
+          </div>
         </div>
       ) : null}
 

@@ -33,6 +33,8 @@ import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { toEpochMs } from "@/utils/datetime";
 import {
+  isListedFile,
+  isListedFolderPath,
   isRecentActivityFile,
   isRecentActivityPath,
 } from "@/features/files/utils/user-visible";
@@ -145,6 +147,8 @@ export interface BuildRowsArg {
    */
   sortBy?: SortBy;
   sortDir?: SortDirection;
+  /** The effective `files.show_system_files` knob (default off). */
+  showSystemFiles?: boolean;
 }
 
 export interface BuildRowsResult {
@@ -170,6 +174,7 @@ export function buildRows({
   ragStatusByFileId,
   sortBy = "name",
   sortDir = "asc",
+  showSystemFiles = false,
 }: BuildRowsArg): BuildRowsResult {
   const q = searchQuery.trim().toLowerCase();
   const nameFilter = columnFilters?.name?.trim().toLowerCase() ?? "";
@@ -181,6 +186,9 @@ export function buildRows({
   const filterFiles = (file: CloudFileRecord): boolean => {
     if (file.deletedAt && section !== "trash") return false;
     if (!file.deletedAt && section === "trash") return false;
+    // System files (metadata.system_artifact) list only while the knob
+    // files.show_system_files is on — the one list rule (user-visible.ts).
+    if (!isListedFile(file, showSystemFiles)) return false;
 
 
     // Recents is the person's own recent activity — the DATABASE's rule
@@ -249,6 +257,7 @@ export function buildRows({
   const filterFolders = (folder: CloudFolderRecord): boolean => {
     if (folder.deletedAt && section !== "trash") return false;
     if (!folder.deletedAt && section === "trash") return false;
+    if (!isListedFolderPath(folder.folderPath, showSystemFiles)) return false;
     if (filter === "recents" && !isRecentActivityPath(folder.folderPath))
       return false;
     if (section === "photos") return false; // photos view never shows folders
