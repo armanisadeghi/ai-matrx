@@ -5,7 +5,7 @@
  */
 import { spendHandoff, spendHref, spendLead } from "../UsageExplorer";
 import { drillDimensionLabelFor, plainWords } from "@/components/official/drill-explorer/dimensionWords";
-import { spendAddressToUsage, usagePersonHref } from "../usageLinks";
+import { spendAddressToUsage, usageDefinitionOf, usagePersonHref, usageSiblings } from "../usageLinks";
 
 jest.mock("@/components/official/drill-explorer/DrillExplorer", () => ({ DrillExplorer: () => null }));
 jest.mock("../useUsageDrill", () => ({ USAGE_SOURCE: {}, usageNameResolvers: () => ({}), useUsageFreshness: () => ({}) }));
@@ -108,5 +108,24 @@ describe("names and numbers keep their shape", () => {
     )!;
     expect(session("5d0b07f8-54b5-499b-86a8-557c46ea8a59")).toBe("Reading the name…");
     expect(session("")).toBe("No session");
+  });
+});
+
+describe("one screen, three grains", () => {
+  it("the address picks the definition; absent or unknown is ai_usage", () => {
+    expect(usageDefinitionOf(new URLSearchParams("def=ai_calls"))).toBe("ai_calls");
+    expect(usageDefinitionOf(new URLSearchParams("def=nope"))).toBe("ai_usage");
+    expect(usageDefinitionOf(new URLSearchParams(""))).toBe("ai_usage");
+  });
+  it("a sibling's view and a sibling's drilled question land at that definition's address", () => {
+    const went: string[] = [];
+    const [executions, calls] = usageSiblings("ai_usage", (h) => went.push(h));
+    expect([executions!.group, calls!.group]).toEqual(["Per execution", "Model calls"]);
+    calls!.go({ view: "cx_by_model" });
+    executions!.go({ params: new URLSearchParams("by=request&f.conversation=C1") });
+    expect(went).toEqual([
+      "/administration/usage?def=ai_calls&view=builtin%3Acx_by_model",
+      "/administration/usage?by=request&f.conversation=C1&def=ai_usage_executions",
+    ]);
   });
 });
