@@ -2,6 +2,7 @@
 export function diagnosticToastCopy(
   source: "messaging" | "meet",
   message: string,
+  details?: { message?: string; operation?: string; isRetryable?: boolean },
 ): { title: string; description: string } {
   if (source === "meet") {
     if (/camera|microphone|device/i.test(message)) {
@@ -16,11 +17,12 @@ export function diagnosticToastCopy(
     };
   }
 
-  const operation = message.match(/^([A-Za-z]+):/)?.[1];
+  const operation = details?.operation ?? message.match(/^([A-Za-z]+):/)?.[1];
+  const cannotRetry = details?.isRetryable === false;
   if (operation === "listConversations") {
     return {
       title: "Couldn't load conversations",
-      description: "Refresh to try again.",
+      description: cannotRetry ? "Open the error details." : "Refresh to try again.",
     };
   }
   if (
@@ -33,29 +35,29 @@ export function diagnosticToastCopy(
   ) {
     return {
       title: "Couldn't update conversations",
-      description: "Refresh to try again.",
+      description: cannotRetry ? "Open the error details." : "Refresh to try again.",
     };
   }
   if (operation === "openConversation" || operation === "loadOlderMessages") {
     return {
       title: "Couldn't load messages",
-      description: "Refresh to try again.",
+      description: cannotRetry ? "Open the error details." : "Refresh to try again.",
     };
   }
   if (operation === "editMessage" || operation === "deleteMessage") {
     return {
       title: "Couldn't update the message",
-      description: "Try again.",
+      description: cannotRetry ? "Open the error details." : "Try again.",
     };
   }
   if (operation === "markRead") {
     return {
       title: "Couldn't mark messages as read",
-      description: "Try again.",
+      description: cannotRetry ? "Open the error details." : "Try again.",
     };
   }
   return {
     title: "Messaging couldn't finish that action",
-    description: "Try again in a moment.",
+    description: cannotRetry ? "Open the error details." : "Try again in a moment.",
   };
 }

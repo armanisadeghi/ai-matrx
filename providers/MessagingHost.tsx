@@ -165,7 +165,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
       event.remedy !== undefined ? ` → ${event.remedy}` : ""
     }`;
     if (event.level === "error") {
-      const copy = diagnosticToastCopy("messaging", event.message);
+      const copy = diagnosticToastCopy("messaging", event.message, event);
       captureMessagingError(event, `${copy.title} — ${copy.description}`);
       console.info(line);
       if (!shownRef.current.has(event.message)) {

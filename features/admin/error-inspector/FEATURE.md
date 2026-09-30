@@ -35,6 +35,8 @@ second symptom instead of deduping the incident.
   and user-facing handling. Failures without an earlier capture (including zero-row
   writes) get a structured `messaging` capture. The toast uses the existing
   already-captured presentation path; console output does not mirror an incident.
+  Non-retryable package failures point to error details instead of asking the
+  person to repeat a refused write.
 
 - **Mandate fast paths** — `features/mandates/fast-path-guard.ts`
   (`verifyFastPathAgainstMandate`, and `<FastPathMandateGuard>` for Server

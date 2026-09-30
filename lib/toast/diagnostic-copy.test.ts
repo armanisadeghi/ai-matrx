@@ -19,3 +19,8 @@ it("does not expose call diagnostics or remedies in the toast", () => {
       description: "Try again in a moment.",
     });
 });
+
+it("does not suggest retrying a non-retryable messaging refusal", () => {
+  expect(diagnosticToastCopy("messaging", "markRead: denied", { message: "markRead: denied", isRetryable: false }))
+    .toEqual({ title: "Couldn't mark messages as read", description: "Open the error details." });
+});
