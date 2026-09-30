@@ -41,7 +41,7 @@ import {
 import { Loader2 } from "lucide-react";
 
 import { readTypedTime, type RecordsError } from "@ai-matrx/records";
-import { RefusalNotice } from "@ai-matrx/records-ui";
+import { FieldControl, RefusalNotice } from "@ai-matrx/records-ui";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input, Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
@@ -58,9 +58,10 @@ import { RatingInput } from "./RatingInput";
 import { AttachmentInput } from "./AttachmentInput";
 import { DateCellEditor } from "./DateCellEditor";
 import { isDirectClickEditor, type GridMove } from "@ai-matrx/design-system/data-table/grid-selection";
-import { readChoiceNudge, upsertCell, upsertCellAddingChoice } from "../service";
+import { isRecordStoreTable, readChoiceNudge, upsertCell, upsertCellAddingChoice } from "../service";
 import { decideTypedChoice } from "../choice-option-nudge";
 import { readCellWord } from "../cell-word";
+import { storeFieldForRelationColumn } from "../relation-cell";
 import { ChoiceNudgeAsk, type PendingChoiceAsk } from "./ChoiceNudgeAsk";
 import { validateCellValue, type ValidationRules } from "../validation";
 import { columnRuleRefusal, type ColumnRuleRefusal } from "../validation-refusal";
@@ -70,6 +71,8 @@ import { isServiceFailure, type FieldDataType } from "../types";
 type Props = {
   tableId: string;
   rowId: string;
+  /** The column's id (the store Field's id on a record-store table). A Relation cell's picker reads it. */
+  fieldId?: string;
   fieldName: string;
   fieldDisplayName: string;
   dataType: FieldDataType | string;
@@ -141,6 +144,7 @@ type Props = {
 export function EditableCell({
   tableId,
   rowId,
+  fieldId,
   fieldName,
   fieldDisplayName,
   dataType,
@@ -691,6 +695,30 @@ export function EditableCell({
   // an unformatted column edits exactly as it always has.
 
   const editorKind = format ? getFieldFormat(format.id)?.editor : undefined;
+
+  // A RELATION CELL EDITS THROUGH THE GRID'S OWN PICKER (BREAKER-3 B3-01): records-ui's one
+  // RelationPicker, reached through `FieldControl` — the target table's records, searchable, with
+  // "New …" — never a choice list that offers to keep typed words. One pick saves (a single
+  // reference); several are saved when the cell is left, like a several-choice cell.
+  const relationField =
+    format?.id === "relation" && fieldId && isRecordStoreTable(tableId)
+      ? storeFieldForRelationColumn({ id: fieldId, field_name: fieldName, display_name: fieldDisplayName, format })
+      : null;
+  if (relationField) {
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="py-0.5" data-sheet-relation-editor="">
+        <FieldControl
+          field={relationField}
+          value={draft}
+          autoOpen
+          onChange={(next) => {
+            setDraft(next);
+            if (!relationField.multi) void commitEdit({ value: next, answered: true });
+          }}
+        />
+      </div>
+    );
+  }
 
   if (
     editorKind === "email" ||

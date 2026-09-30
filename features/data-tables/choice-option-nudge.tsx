@@ -24,7 +24,7 @@
 
 import { ToastAction } from "@/components/ui/toast";
 import { toast } from "@/components/ui/use-toast";
-import { inlineChoices, isChoiceFormat } from "@/lib/field-formats/choices";
+import { inlineChoices, isWordChoiceFormat } from "@/lib/field-formats/choices";
 import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { FieldChoice, FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
@@ -48,7 +48,7 @@ export type NudgeDecision =
 /** Which of the saved value(s) are not among the column's declared options. */
 export function decideChoiceNudge(field: NudgeField, saved: unknown): NudgeDecision {
   const format = resolveFieldFormat(field.data_type, field.metadata);
-  if (!isChoiceFormat(format.id) || format.id === "person") return { kind: "none" };
+  if (!isWordChoiceFormat(format.id)) return { kind: "none" };
   const values = (Array.isArray(saved) ? saved : [saved])
     .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
     .filter(Boolean);
@@ -87,7 +87,8 @@ export function decideTypedChoice(
   saved: unknown,
   nudge: "ask" | "always_add" | "never_add",
 ): TypedChoiceDecision {
-  if (!format || !isChoiceFormat(format.id) || format.id === "person") return { kind: "none" };
+  // Only a column whose cells hold choice WORDS is asked about (a Relation holds record ids: B3-01).
+  if (!format || !isWordChoiceFormat(format.id)) return { kind: "none" };
   if (format.options?.structuredList?.listId) return { kind: "none" };
   const declared = new Set(inlineChoices(format.options).flatMap((c) => [c.value.toLowerCase(), (c.label ?? c.value).toLowerCase()]));
   const words = [

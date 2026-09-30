@@ -20,7 +20,7 @@
 import { readTypedNumber, readTypedTime } from "@ai-matrx/records";
 import { parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { FieldChoice, FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
-import { inlineChoices, isChoiceFormat } from "@/lib/field-formats/choices";
+import { inlineChoices, isChoiceFormat, isWordChoiceFormat } from "@/lib/field-formats/choices";
 import { splitListWords } from "@/lib/field-formats/list-words";
 
 export type CellWordColumn = {
@@ -111,7 +111,7 @@ export function readCellWord(raw: unknown, column: CellWordColumn): CellWord {
 /** The words of a choice value that are none of the column's choices — what the enum ask asks about. */
 export function offListChoiceWords(value: unknown, column: CellWordColumn): string[] {
   const format = formatOf(column);
-  if (!isChoiceFormat(format.id) || format.id === "person" || format.options?.structuredList?.listId) return [];
+  if (!isWordChoiceFormat(format.id) || format.options?.structuredList?.listId) return [];
   const choices = inlineChoices(format.options);
   const words = (Array.isArray(value) ? value : [value]).map((v) => (v == null ? "" : String(v).trim())).filter(Boolean);
   return [...new Set(words.filter((w) => !choiceFor(choices, w)))];

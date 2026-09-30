@@ -31,6 +31,7 @@
  */
 
 import { useMemo } from "react";
+import { STYLE_COLOR_LABELS } from "@ai-matrx/design-system/data-table/table-style";
 
 import {
   useStructuredListForSelection,
@@ -89,6 +90,17 @@ export function isChoiceFormat(id: string | undefined | null): boolean {
 }
 
 /**
+ * A COLUMN WHOSE CELLS HOLD CHOICE WORDS — Choice and Multi-choice, and nothing else (BREAKER-3 B3-01,
+ * 2026-09-30). `isChoiceFormat` also holds `person` and `relation` because they DRAW like chips; they
+ * hold ids. Asking "Add “Call Sean” to the choices for Follow-up Task?" on a Relation column offered to
+ * store a person's typing as a choice word in a column of record ids. Every "is this word one of the
+ * choices?" question — the enum nudge, a default, a paste — asks this predicate.
+ */
+export function isWordChoiceFormat(id: string | undefined | null): boolean {
+  return id === "choice" || id === "multi_choice";
+}
+
+/**
  * The chip palette. Names, never raw hex, so a chip is legible on both grounds
  * and a theme change moves them all at once. `color` on a choice holds one of
  * these keys; anything unrecognized falls back to neutral rather than breaking.
@@ -110,6 +122,22 @@ export type ChoiceColorName = keyof typeof CHOICE_COLORS;
 export const CHOICE_COLOR_NAMES = Object.keys(
   CHOICE_COLORS,
 ) as ChoiceColorName[];
+
+/**
+ * THE COLOUR'S NAME AS A PERSON SAYS IT (BREAKER-2 B2-28): the option editor listed the palette's
+ * keys ("neutral", "slate"). The names are the table palette's own (`STYLE_COLOR_LABELS`, the words
+ * the highlight menu already uses), plus "Plain" for the uncoloured chip.
+ */
+export const CHOICE_COLOR_LABELS: Record<ChoiceColorName, string> = {
+  neutral: "Plain",
+  ...STYLE_COLOR_LABELS,
+};
+
+export function choiceColorLabel(color: string | undefined): string {
+  return color && color in CHOICE_COLOR_LABELS
+    ? CHOICE_COLOR_LABELS[color as ChoiceColorName]
+    : CHOICE_COLOR_LABELS.neutral;
+}
 
 export function choiceColorClass(color: string | undefined): string {
   if (color && color in CHOICE_COLORS) {

@@ -14,6 +14,7 @@ import {
   type SheetViewProps,
 } from "@/features/data-tables/components/sheet-chrome";
 import * as RecordsUi from "@ai-matrx/records-ui";
+import { storeFieldForRelationColumn } from "@/features/data-tables/relation-cell";
 import {
   Table,
   TableBody,
@@ -4346,6 +4347,10 @@ const UserTableViewer = ({
         const formulaError = S().formulaErrors.get(
           `${row.id}::${field.field_name}`,
         );
+        const relationStoreField =
+          fieldFormat.id === "relation" && isRecordStoreTable(S().tableId)
+            ? storeFieldForRelationColumn({ id: field.id, field_name: field.field_name, display_name: field.display_name, format: fieldFormat })
+            : null;
         const display = withheldCell ? (
           <SheetWithheldCell cell={withheldCell} />
         ) : formulaError ? (
@@ -4355,6 +4360,15 @@ const UserTableViewer = ({
           >
             #ERROR
             <ErrorAlchemyMenu />
+          </span>
+        ) : relationStoreField ? (
+          // A REFERENCE IS THE GRID'S OWN CHIP (BREAKER-3 B3-01): records-ui's `renderValue` draws it,
+          // a link that opens the record it names — never plain text. Its words are the ones the
+          // Sheet already resolved for this column (the store's relation words).
+          <span className="flex min-w-0 max-w-full items-center" data-sheet-reference="">
+            {RecordsUi.renderValue(relationStoreField, rawValue, undefined, (_f, id) =>
+              (fieldFormat.options?.choices ?? []).find((c) => c.value === id)?.label ?? null,
+            )}
           </span>
         ) : hasCustomFormat || S().validationByField.has(field.field_name) ? (
           <FormattedFieldValue
@@ -4556,6 +4570,7 @@ const UserTableViewer = ({
                 <EditableCell
                   tableId={S().tableId}
                   rowId={row.id}
+                  fieldId={field.id}
                   fieldName={field.field_name}
                   fieldDisplayName={field.display_name}
                   dataType={field.data_type as FieldDataType}
