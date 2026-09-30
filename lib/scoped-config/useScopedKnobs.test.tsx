@@ -1,6 +1,8 @@
 /** @jest-environment jsdom */
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { Provider } from "react-redux";
+import { configureStore, createSlice } from "@reduxjs/toolkit";
 import { useScopedKnobs } from "./useScopedKnobs";
 import { fetchKnobIndex } from "./service";
 import type { ScopedKnob } from "./types";
@@ -46,5 +48,21 @@ it("retries a failure, and with NO organization still asks (null organization) i
   await act(async () => root.render(<Harness organizationId={null} />));
   expect(fetchIndex).toHaveBeenLastCalledWith(expect.objectContaining({ organizationId: null }));
   expect(current).toMatchObject({ error: null, isLoading: false });
+  expect(current.knobs).toHaveLength(1);
+});
+
+it("a SIGNED-OUT surface never calls knob_index and never errors; signing in then reads", async () => {
+  const auth = createSlice({
+    name: "userAuth",
+    initialState: { id: null as string | null },
+    reducers: { signIn: (state) => { state.id = "user-1"; } },
+  });
+  const store = configureStore({ reducer: { userAuth: auth.reducer } });
+  fetchIndex.mockResolvedValue([row]);
+  await act(async () => root.render(<Provider store={store}><Harness organizationId={null} /></Provider>));
+  expect(fetchIndex).not.toHaveBeenCalled();
+  expect(current).toMatchObject({ knobs: [], error: null, isLoading: false });
+  await act(async () => { store.dispatch(auth.actions.signIn()); });
+  expect(fetchIndex).toHaveBeenCalledTimes(1);
   expect(current.knobs).toHaveLength(1);
 });

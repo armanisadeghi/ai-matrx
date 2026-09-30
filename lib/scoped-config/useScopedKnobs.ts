@@ -8,11 +8,30 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState, useSyncExternalStore } from "react";
+import { ReactReduxContext } from "react-redux";
 
 import { fetchKnobIndex } from "./service";
 import type { ScopedKnob } from "./types";
 import { extractErrorMessage } from "@/utils/errors";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import type { RootState } from "@/lib/redux/store";
+
+/**
+ * Whether a signed-in person exists, read from the app store when one is
+ * mounted (a bare test harness has none and counts as signed in). A
+ * signed-out surface never calls `knob_index` — it needs a caller — so it gets
+ * no knobs and no error; its consumers keep their own defaults.
+ */
+function useSignedIn(): boolean {
+  const redux = useContext(ReactReduxContext);
+  const store = redux?.store;
+  return useSyncExternalStore(
+    (listener) => (store ? store.subscribe(listener) : () => {}),
+    () => (store ? Boolean(selectUserId(store.getState() as RootState)) : true),
+    () => true,
+  );
+}
 
 export type ScopedKnobsValue = {
   knobs: ScopedKnob[];
@@ -31,9 +50,10 @@ export function useScopedKnobs(options: {
   overriddenOnly?: boolean;
 }): ScopedKnobsValue {
   const { organizationId, featurePrefix, userId, overriddenOnly } = options;
+  const signedIn = useSignedIn();
   // Mask old configuration synchronously when ANY resolver input changes.
   // An effect-only reset briefly exposes the previous user's/org's policy.
-  const requestKey = JSON.stringify([organizationId, featurePrefix, userId, overriddenOnly]);
+  const requestKey = JSON.stringify([organizationId, featurePrefix, userId, overriddenOnly, signedIn]);
   const [snapshot, setSnapshot] = useState<{
     requestKey: string;
     knobs: ScopedKnob[];
@@ -48,6 +68,7 @@ export function useScopedKnobs(options: {
     // with a null organization and answers the platform defaults (the user and
     // organization layers are skipped). A selected organization still adds its
     // own layer.
+    if (!signedIn) return;
     let cancelled = false;
     void fetchKnobIndex({ organizationId: organizationId ?? null, featurePrefix, userId, overriddenOnly })
       .then((knobs) => {
@@ -58,11 +79,11 @@ export function useScopedKnobs(options: {
           error: extractErrorMessage(err) });
       });
     return () => { cancelled = true; };
-  }, [organizationId, featurePrefix, userId, overriddenOnly, requestKey, generation]);
+  }, [organizationId, featurePrefix, userId, overriddenOnly, requestKey, generation, signedIn]);
 
-  const current = snapshot?.requestKey === requestKey ? snapshot : null;
+  const current = signedIn && snapshot?.requestKey === requestKey ? snapshot : null;
   const knobs = current?.knobs ?? [];
-  const isLoading = !current;
+  const isLoading = signedIn && !current;
   const error = current?.error ?? null;
   const missing = knobs.filter((knob) => knob.origin === "missing");
 
