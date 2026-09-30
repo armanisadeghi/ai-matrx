@@ -1,6 +1,6 @@
 -- lane: DRILL-CALLS
 -- lock: platform
--- based-on: platform.drill_def__ai_usage() a788fd8873f608fe4ea65215755359f56653e98e5aeb91ed9a73379b30d8eb4b
+-- based-on: platform.drill_def__ai_usage() 617d4700e7d5fecab5940591fe3adf9283c6b4050a73fa1fceb14b3ddd432fdd
 -- Written by aidream apps/shared/records/scripts/drill-sync.ts from: aidream/apps/shared/records/scripts/drill-definitions/ai_calls.drill.ts, aidream/apps/shared/records/scripts/drill-definitions/ai_usage.drill.ts, aidream/apps/shared/records/scripts/drill-definitions/ai_usage_executions.drill.ts
 -- Declared drill definitions, one function each (platform.drill_def__<key>()). Code, not data.
 
