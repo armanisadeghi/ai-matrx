@@ -44,7 +44,18 @@ import {
   GOOGLE_WORKSPACE_FILE_SCOPES,
 } from "@/lib/googleScopes";
 import type { OverlayId } from "@/features/overlays/catalogue";
-import type { ConnectorId } from "./types";
+import type { ConnectorId, ConnectorLogo } from "./types";
+import {
+  GmailMark,
+  GoogleAnalyticsMark,
+  GoogleCalendarMark,
+  GoogleContactsMark,
+  GoogleDriveMark,
+  GoogleTasksMark,
+  SearchConsoleMark,
+  TagManagerMark,
+  YouTubeMark,
+} from "./marks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /**
@@ -114,6 +125,8 @@ export interface ConnectorProduct {
   /** Group key; must exist in the provider's `groups`. */
   group: string;
   icon: LucideIcon;
+  /** The product's own color artwork, shown in its row tile. Falls back to `icon`. */
+  mark?: ConnectorLogo;
   /**
    * Every SERVER capability key this row covers. The row is togglable only
    * when the server says every one of them is available to this account.
@@ -236,8 +249,8 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
     cta: "Connect Google",
   },
   dialog: {
-    title: "Choose what to connect",
-    subtitle: "You can change this any time in Settings → Connectors.",
+    title: "Choose Google apps to connect",
+    subtitle: "You can change this anytime in Settings",
     cta: "Connect selected",
   },
   groups: [
@@ -260,6 +273,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Open, create and edit only the files you pick. We never see the rest of your Drive.",
       group: WORKSPACE_GROUP,
       icon: FileSpreadsheet,
+      mark: GoogleDriveMark,
       // 🚨 FOUR SERVER CAPABILITIES, ONE ROW. `slides` was missing until
       // 2026-09-17 (VERIFY-U-P2-R4, V13-3): the catalog ships it as
       // `available`, one live connection had already recorded a `slides.read`
@@ -290,6 +304,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Send emails you have reviewed. This sending permission cannot read your inbox.",
       group: WORKSPACE_GROUP,
       icon: Mail,
+      mark: GmailMark,
       capabilityKeys: ["gmail_send"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.gmailSend],
       attachableResourceTypes: [],
@@ -310,6 +325,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Search and open messages when you ask. If you separately register this mailbox for outreach, matched replies are saved in CRM.",
       group: WORKSPACE_GROUP,
       icon: Mail,
+      mark: GmailMark,
       capabilityKeys: ["gmail_read"],
       scopes: GOOGLE_GMAIL_READ_SCOPES,
       attachableResourceTypes: [],
@@ -327,6 +343,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Change an opened message only when you choose Archive, Restore to inbox, Read, Unread, Star, or a label action. No automatic changes or Gmail Snooze.",
       group: WORKSPACE_GROUP,
       icon: Mail,
+      mark: GmailMark,
       capabilityKeys: ["gmail_modify"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.gmailModify],
       attachableResourceTypes: [],
@@ -343,6 +360,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       promise: "See your own upcoming events. We never change your calendar.",
       group: WORKSPACE_GROUP,
       icon: CalendarDays,
+      mark: GoogleCalendarMark,
       capabilityKeys: ["calendar"],
       scopes: [
         ...GOOGLE_IDENTITY_SCOPES,
@@ -370,6 +388,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "See the calendars Google makes available to this account and review one you select. We never change Google events.",
       group: WORKSPACE_GROUP,
       icon: CalendarDays,
+      mark: GoogleCalendarMark,
       capabilityKeys: ["calendar_shared"],
       scopes: [
         ...GOOGLE_IDENTITY_SCOPES,
@@ -395,6 +414,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Bring a contact you choose into your People. We never edit Google Contacts.",
       group: WORKSPACE_GROUP,
       icon: Contact,
+      mark: GoogleContactsMark,
       capabilityKeys: ["contacts"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.contactsReadonly],
       attachableResourceTypes: [],
@@ -423,6 +443,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Review and import one suggested contact. We never change Google.",
       group: WORKSPACE_GROUP,
       icon: Contact,
+      mark: GoogleContactsMark,
       capabilityKeys: ["other_contacts"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.contactsOtherReadonly],
       attachableResourceTypes: [],
@@ -440,6 +461,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "Bring tasks you choose into your tasks. We never change Google Tasks.",
       group: WORKSPACE_GROUP,
       icon: ListChecks,
+      mark: GoogleTasksMark,
       capabilityKeys: ["tasks"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.tasksReadonly],
       attachableResourceTypes: [],
@@ -463,6 +485,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       promise: "See how your sites perform in Google Search. Read-only.",
       group: MARKETING_GROUP,
       icon: Search,
+      mark: SearchConsoleMark,
       capabilityKeys: ["search_console"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.webmastersReadonly],
       attachableResourceTypes: ["search_console_property"],
@@ -479,6 +502,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       promise: "See your website analytics. Read-only, no settings changed.",
       group: MARKETING_GROUP,
       icon: BarChart3,
+      mark: GoogleAnalyticsMark,
       capabilityKeys: ["analytics"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.analyticsReadonly],
       attachableResourceTypes: ["analytics_property"],
@@ -495,6 +519,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       promise: "See which tags are installed on your sites. Read-only.",
       group: MARKETING_GROUP,
       icon: Tag,
+      mark: TagManagerMark,
       capabilityKeys: ["tag_manager"],
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.tagManagerReadonly],
       attachableResourceTypes: [],
@@ -530,6 +555,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         "See your channel's videos and performance. We never publish or change anything.",
       group: MARKETING_GROUP,
       icon: MonitorPlay,
+      mark: YouTubeMark,
       // Two server capabilities, one row: reading the channel and reading its
       // reports are one decision for the person, and Google's bounded consent
       // for `youtube_analytics` carries both scopes.

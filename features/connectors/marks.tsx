@@ -31,6 +31,28 @@ function MarkSvg({
   );
 }
 
+/** Full-color product artwork on the 48-unit grid Google's product marks use. */
+function BrandSvg({
+  className,
+  viewBox = "0 0 48 48",
+  children,
+}: {
+  className?: string;
+  viewBox?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <svg
+      viewBox={viewBox}
+      aria-hidden
+      focusable="false"
+      className={cn("shrink-0", className)}
+    >
+      {children}
+    </svg>
+  );
+}
+
 /** Google — the multicolor G. Used for any Google account connection. */
 export function GoogleMark({ colored = false, className }: ConnectorLogoProps) {
   if (!colored) {
@@ -65,15 +87,26 @@ export function GoogleMark({ colored = false, className }: ConnectorLogoProps) {
   );
 }
 
-/** Gmail — the envelope. */
+/** Gmail — the four-color M. `colored={false}` keeps a single-ink envelope. */
 export function GmailMark({ colored = false, className }: ConnectorLogoProps) {
+  if (!colored) {
+    return (
+      <MarkSvg className={className}>
+        <path
+          fill="currentColor"
+          d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457Z"
+        />
+      </MarkSvg>
+    );
+  }
   return (
-    <MarkSvg className={className}>
-      <path
-        fill={colored ? "#EA4335" : "currentColor"}
-        d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457Z"
-      />
-    </MarkSvg>
+    <BrandSvg className={className}>
+      <path fill="#4caf50" d="M45 16.2l-5 2.75-5 4.75V40h7a3 3 0 0 0 3-3V16.2z" />
+      <path fill="#1e88e5" d="M3 16.2l3.614 1.71L13 23.7V40H6a3 3 0 0 1-3-3V16.2z" />
+      <path fill="#e53935" d="M35 11.2l-11 8.25-11-8.25-1 5.8 1 6.7 11 8.25 11-8.25 1-6.7z" />
+      <path fill="#c62828" d="M3 12.298V16.2l10 7.5V11.2L9.876 8.859A4.298 4.298 0 0 0 7.298 8 4.298 4.298 0 0 0 3 12.298z" />
+      <path fill="#fbc02d" d="M45 12.298V16.2l-10 7.5V11.2l3.124-2.341A4.298 4.298 0 0 1 40.702 8 4.298 4.298 0 0 1 45 12.298z" />
+    </BrandSvg>
   );
 }
 
@@ -100,4 +133,97 @@ export function lucideMark(Icon: LucideIcon): ConnectorLogo {
   }
   LucideConnectorMark.displayName = `LucideConnectorMark(${Icon.displayName ?? "icon"})`;
   return LucideConnectorMark;
+}
+
+/**
+ * Google product marks for the connect dialog and Settings. Each is the
+ * product's own color artwork; with `colored={false}` they fall back to a
+ * single-ink silhouette so a muted row still reads in both themes.
+ */
+export function GoogleDriveMark({ colored = false, className }: ConnectorLogoProps) {
+  const ink = colored ? undefined : "currentColor";
+  return (
+    <BrandSvg className={className} viewBox="0 0 87.3 78">
+      <path fill={ink ?? "#0066da"} d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" />
+      <path fill={ink ?? "#00ac47"} d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" />
+      <path fill={ink ?? "#ea4335"} d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" />
+      <path fill={ink ?? "#00832d"} d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" />
+      <path fill={ink ?? "#2684fc"} d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" />
+      <path fill={ink ?? "#ffba00"} d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" />
+    </BrandSvg>
+  );
+}
+
+export function GoogleCalendarMark({ colored = false, className }: ConnectorLogoProps) {
+  const ink = colored ? undefined : "currentColor";
+  return (
+    <BrandSvg className={className}>
+      <path fill={colored ? "#fff" : "none"} d="M13 13h22v22H13z" />
+      <path fill={ink ?? "#1e88e5"} d="M25.68 20.92l1.008 1.44 1.584-1.152v8.352H30V18.616h-1.44zM22.943 23.745c.625-.574 1.013-1.37 1.013-2.249 0-1.747-1.533-3.168-3.417-3.168-1.602 0-2.972 1.009-3.33 2.453l1.657.421c.165-.664.868-1.146 1.673-1.146.942 0 1.709.646 1.709 1.44 0 .794-.767 1.44-1.709 1.44h-.997v1.728h.997c1.081 0 1.993.751 1.993 1.64 0 .904-.866 1.64-1.931 1.64-.962 0-1.784-.61-1.914-1.418L17 26.802c.262 1.636 1.81 2.87 3.6 2.87 2.007 0 3.64-1.511 3.64-3.368 0-1.023-.504-1.941-1.297-2.559z" />
+      <path fill={ink ?? "#fbc02d"} d="M34 42H14l-1-4 1-4h20l1 4z" />
+      <path fill={ink ?? "#4caf50"} d="M38 35l4-1V14l-4-1-4 1v20z" />
+      <path fill={ink ?? "#1e88e5"} d="M34 14l1-4-1-4H9a3 3 0 0 0-3 3v25l4 1 4-1V14h20z" />
+      <path fill={ink ?? "#e53935"} d="M34 34v8l8-8z" />
+      <path fill={ink ?? "#1565c0"} d="M39 6h-5v8h8V9a3 3 0 0 0-3-3zM9 42h5v-8H6v5a3 3 0 0 0 3 3z" />
+    </BrandSvg>
+  );
+}
+
+export function GoogleContactsMark({ colored = false, className }: ConnectorLogoProps) {
+  return (
+    <BrandSvg className={className}>
+      <circle cx="24" cy="16" r="8" fill={colored ? "#1a73e8" : "currentColor"} />
+      <path fill={colored ? "#1a73e8" : "currentColor"} d="M8 38c0-7.2 7.2-12 16-12s16 4.8 16 12v2a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z" />
+      {colored ? <path fill="#8ab4f8" d="M8 36h32v4a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z" /> : null}
+    </BrandSvg>
+  );
+}
+
+export function GoogleTasksMark({ colored = false, className }: ConnectorLogoProps) {
+  return (
+    <BrandSvg className={className}>
+      <circle cx="24" cy="24" r="20" fill={colored ? "#1a73e8" : "currentColor"} />
+      <path fill="none" stroke={colored ? "#fff" : "var(--background, #fff)"} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" d="M15 24.5l6 6 12-13" />
+      {colored ? <circle cx="37" cy="37" r="6" fill="#fbbc04" /> : null}
+    </BrandSvg>
+  );
+}
+
+export function SearchConsoleMark({ colored = false, className }: ConnectorLogoProps) {
+  return (
+    <BrandSvg className={className}>
+      <path fill="none" stroke={colored ? "#4285f4" : "currentColor"} strokeWidth="5" d="M20 8a12 12 0 1 1 0 24 12 12 0 0 1 0-24z" />
+      <path fill="none" stroke={colored ? "#34a853" : "currentColor"} strokeWidth="6" strokeLinecap="round" d="M29.5 29.5 40 40" />
+      {colored ? <path fill="#fbbc04" d="M15 23h3v4h-3zM19 19h3v8h-3zM23 16h3v11h-3z" /> : null}
+    </BrandSvg>
+  );
+}
+
+export function GoogleAnalyticsMark({ colored = false, className }: ConnectorLogoProps) {
+  return (
+    <BrandSvg className={className}>
+      <rect x="30" y="5" width="11" height="38" rx="5.5" fill={colored ? "#f9ab00" : "currentColor"} />
+      <rect x="18.5" y="18" width="11" height="25" rx="5.5" fill={colored ? "#e37400" : "currentColor"} />
+      <circle cx="12.5" cy="37.5" r="5.5" fill={colored ? "#e37400" : "currentColor"} />
+    </BrandSvg>
+  );
+}
+
+export function TagManagerMark({ colored = false, className }: ConnectorLogoProps) {
+  return (
+    <BrandSvg className={className}>
+      <path fill={colored ? "#8ab4f8" : "currentColor"} d="M21.2 4.8a4 4 0 0 1 5.6 0l16.4 16.4a4 4 0 0 1 0 5.6L26.8 43.2a4 4 0 0 1-5.6 0L4.8 26.8a4 4 0 0 1 0-5.6z" />
+      {colored ? <path fill="#4285f4" d="M24 9.5 38.5 24 24 38.5 9.5 24z" /> : null}
+      <circle cx="24" cy="31" r="4.5" fill={colored ? "#246fdb" : "var(--background, #fff)"} />
+    </BrandSvg>
+  );
+}
+
+export function YouTubeMark({ colored = false, className }: ConnectorLogoProps) {
+  return (
+    <BrandSvg className={className}>
+      <path fill={colored ? "#ff0000" : "currentColor"} d="M44.1 14.1a5.5 5.5 0 0 0-3.9-3.9C36.8 9.3 24 9.3 24 9.3s-12.8 0-16.2.9a5.5 5.5 0 0 0-3.9 3.9C3 17.5 3 24 3 24s0 6.5.9 9.9a5.5 5.5 0 0 0 3.9 3.9c3.4.9 16.2.9 16.2.9s12.8 0 16.2-.9a5.5 5.5 0 0 0 3.9-3.9c.9-3.4.9-9.9.9-9.9s0-6.5-.9-9.9z" />
+      <path fill={colored ? "#fff" : "var(--background, #fff)"} d="M20 30.5 30.8 24 20 17.5z" />
+    </BrandSvg>
+  );
 }
