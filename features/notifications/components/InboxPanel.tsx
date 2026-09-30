@@ -265,21 +265,24 @@ export function InboxPanel({
               }}
             />
           ) : null}
-          {/* WHAT WAITS ON YOU IN YOUR TABLES, one row per organization, each named — it opens
-              that organization's inbox (`/data-v2?org=`), whichever organization is selected. */}
-          {counts.workByOrganization.map((o) => (
+          {/* WHAT WAITS ON YOU IN YOUR TABLES — ONE row with the total across
+              every organization you belong to (active-org law, rule 5: never a
+              row per organization). It opens /data-v2 on All organizations;
+              the organization is a column and a filter there. */}
+          {counts.workByOrganization.length > 0 ? (
             <PinnedRow
-              key={o.organization_id}
               icon={<InboxIcon />}
-              label={`In your tables · ${o.organization_name ?? "an organization"}`}
-              count={o.waiting}
+              label="In your tables"
+              count={counts.workByOrganization.reduce(
+                (sum, o) => sum + o.waiting,
+                0,
+              )}
               onClick={() => {
-                const href = `/data-v2?org=${o.organization_id}`;
-                startTransition(() => router.push(href));
+                startTransition(() => router.push("/data-v2"));
                 onNavigate?.();
               }}
             />
-          ))}
+          ) : null}
         </div>
       ) : null}
 
