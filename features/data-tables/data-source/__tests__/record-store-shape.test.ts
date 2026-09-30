@@ -254,3 +254,23 @@ describe("a table's hand-set order (G13) reaches the grid as the older row order
     ).toBe(sort);
   });
 });
+
+describe("an entity reference in the Sheet reads as its things' words (lane REFERENCE-CARRY)", () => {
+  // admin's Workspace · Model Picks: "Model" points at AI models (an entity reference). The Sheet
+  // drew "[object Object]" in every Model cell (walk, 2026-09-29).
+  const model = field({ key: "model", label: "Model", type: "relation", multi: false, config: { target_mode: "any", allowed_types: ["ai_model"] } } as never);
+
+  it("has no older look (the older grid's relation is ids of one table)", () => {
+    expect(olderFormat(model, null)).toBeNull();
+  });
+
+  it("a cell holding {token, id, label} reads as the label, and a list as its labels", () => {
+    const one = { token: "ai_model", id: "eabcd5b0-53dc-4cef-bcd0-067d4bac56ed", label: "gemini-3.5-flash-lite" };
+    const two = { token: "ai_model", id: "8c3c4436-d3b1-489d-b802-29456fb7f659", label: "claude-opus-5-5" };
+    const cols = [{ field_name: "model", data_type: "string" }] as never;
+    expect(olderRowData({ model: one }, cols)).toEqual({ model: "gemini-3.5-flash-lite" });
+    expect(olderRowData({ model: [one, two] }, cols)).toEqual({ model: "gemini-3.5-flash-lite, claude-opus-5-5" });
+    // Anything else is exactly as stored.
+    expect(olderRowData({ purpose: "Cheap, high-volume simple work", tags: ["a", "b"] }, cols)).toEqual({ purpose: "Cheap, high-volume simple work", tags: ["a", "b"] });
+  });
+});

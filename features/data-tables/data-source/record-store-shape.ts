@@ -14,7 +14,7 @@
 // move did not carry (a currency's code, a percent's scale) is absent here, not
 // guessed, and `record-store.ts` names every such gap where a screen would see it.
 
-import type { Field } from "@ai-matrx/records";
+import { entityRefsOf, type Field } from "@ai-matrx/records";
 
 import { getFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { FieldChoice, FieldFormatConfig, FieldFormatId } from "@ai-matrx/design-system/field-formats";
@@ -98,6 +98,11 @@ export function olderFormat(
   const displayed = (id: string): Record<string, unknown> =>
     display && display.id === id && display.options ? { ...(display.options as Record<string, unknown>) } : {};
 
+  // AN ENTITY REFERENCE (a column pointing at platform things — an agent, a note, an AI model)
+  // has no look in the older grid, which draws a relation as ids of ONE table. It reads as its
+  // things' words (`olderRowData`) and edits on the table page's picker (lane REFERENCE-CARRY:
+  // the Sheet drew "[object Object]" in every Model cell of admin's Model Picks).
+  if (behaviour === "relation" && config.target_mode === "any") return null;
   if (behaviour === "relation") {
     const id: FieldFormatId = word === "person" || word === "attachment" ? word : "relation";
     const options: NonNullable<FieldFormatConfig["options"]> = displayed(id);
@@ -568,6 +573,12 @@ export function olderRowData(
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(document)) {
     if (key.startsWith("_")) continue;
+    // An entity reference's value ({token, id, label}, or a list of them) reads as its words.
+    const refs = entityRefsOf(value);
+    if (refs.length > 0 && (Array.isArray(value) ? refs.length === value.length : true)) {
+      out[key] = refs.map((r) => r.label ?? "Something you have not been given access to").join(", ");
+      continue;
+    }
     if (jsonKeys.has(key) && typeof value === "string") {
       try {
         out[key] = JSON.parse(value);
