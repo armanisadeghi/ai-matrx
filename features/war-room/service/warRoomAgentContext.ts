@@ -405,7 +405,7 @@ export function buildThreadOfferedValues(
   const thread = selectThreadById(threadId)(state);
   if (!thread) return { delegation_mode: delegationMode };
 
-  const roomId = selectActiveSessionId(state);
+  const roomId = selectRoomIdForThread(threadId)(state);
   const room = roomId ? selectSessionById(roomId)(state) : null;
   const roomTitle = room?.title?.trim();
   const projectId = roomId

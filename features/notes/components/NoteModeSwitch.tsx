@@ -6,7 +6,6 @@
 // note tile, `NoteWorkspace`) render THIS component, so the control is the
 // same everywhere.
 
-import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 import {
   NAV_ITEM_SELECTED,
@@ -16,7 +15,7 @@ import {
   useNoteEditorMode,
   useSelectNoteMode,
 } from "../hooks/usePreferredDefaultEditorMode";
-import { NOTE_VIEW_MODES } from "./NoteViewControls";
+import { NOTE_VIEW_MODES, type NoteViewMode } from "./NoteViewControls";
 
 export interface NoteModeSwitchProps {
   noteId: string;
@@ -37,12 +36,7 @@ export function NoteModeSwitch({
   const editorMode = useNoteEditorMode(noteId);
   const selectNoteMode = useSelectNoteMode();
 
-  const setMode = useCallback(
-    (mode: string) => {
-      selectNoteMode(noteId, mode);
-    },
-    [noteId, selectNoteMode],
-  );
+  const setMode = (mode: NoteViewMode) => selectNoteMode(noteId, mode);
 
   return (
     // Equal columns: the control's width never depends on which view is
