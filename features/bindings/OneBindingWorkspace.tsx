@@ -922,7 +922,12 @@ function BindingDraft({
     holderSettings: ReturnType<typeof buildInstanceBaseSettings>;
     sources: Record<string, string>;
   }>({ holderSettings: {}, sources: {} });
-  const inheritanceOrganizationId = rung === "org" ? organizationId : activeOrganizationId;
+  // What a binding inherits is read against the org it is BOUND in (the org rung) or else the
+  // mandate's OWN home org — never the org the person happens to have active (active-org law:
+  // a display never follows the active org). A system mandate has no home org; its user-rung
+  // preview then reads the org the job would RUN in, which at runtime is the active one.
+  const inheritanceOrganizationId =
+    rung === "org" ? organizationId : (homeOrganizationId ?? activeOrganizationId);
   const settingsVisible =
     settingsOpen || activeSection === "overrides" || overridesReady;
   const selectedVersionId = holder.useLatest ? null : holder.agentVersionId;

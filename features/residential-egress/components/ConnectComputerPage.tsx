@@ -125,12 +125,9 @@ function Downloads() {
 
   const resolved = useMemo(() => resolveDownloadBaseUrl(knobs), [knobs]);
 
-  // NO ORGANIZATION YET IS NOT AN ANSWER. The resolver answers per
-  // organization and holds its read until one is active, so before the shell
-  // has hydrated it returns an empty list — which would otherwise read as
-  // "not published", a confident wrong sentence on every first paint. It is a
-  // wait, and it says so.
-  if (!organizationId || isLoading) {
+  // A KNOB NEVER BLOCKS A READ: with no active organization the resolver answers the platform
+  // defaults, so the download appears without one. Only the real wait is shown.
+  if (isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-4 text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />

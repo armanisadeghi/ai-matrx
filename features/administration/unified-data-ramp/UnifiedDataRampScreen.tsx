@@ -30,7 +30,6 @@ import { AlertTriangle, Check, Compass, Loader2, Play, ShieldAlert, Table2, X } 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
-import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
@@ -100,15 +99,15 @@ export function UnifiedDataRampScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const active = getActiveOrgId();
-    if (active) setOrganizationId(active);
+    // The subject organization is PICKED here, never seeded from the admin's active
+    // organization (active-org-is-never-a-list-filter law): the screen opens on no
+    // organization until one is chosen from the selector below.
     // THE ORGANIZATION, BY NAME. This screen used to ask a person to paste an
     // organization id by hand, which is a machine identifier at the user and
     // also the only way to reach the switch every refusal in the product names.
     void getUserOrganizations()
       .then((rows) => {
         setOrganizations(rows.map((row) => ({ id: row.id, name: row.name })));
-        if (!active && rows[0]) setOrganizationId(rows[0].id);
       })
       .catch(() => setOrganizations([]));
   }, []);
@@ -304,9 +303,11 @@ export function UnifiedDataRampScreen() {
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOrganizationId(e.target.value)}
             className="w-[22rem] rounded-md border border-border bg-background px-2 py-1 text-base text-foreground md:text-sm"
           >
-            {organizations.length === 0 ? (
-              <option value="">Looking for the organizations you are in…</option>
-            ) : null}
+            <option value="">
+              {organizations.length === 0
+                ? "Looking for the organizations you are in…"
+                : "Pick an organization"}
+            </option>
             {organizations.map((organization) => (
               <option key={organization.id} value={organization.id}>
                 {organization.name}
