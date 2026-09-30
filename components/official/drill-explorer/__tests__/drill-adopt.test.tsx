@@ -206,7 +206,7 @@ describe("the explorer's settings and words", () => {
     expect(some.chartTopN).toBeNull();
     expect(some.grainLines).toBeNull();
     expect(some.says).toHaveLength(2);
-    expect(some.says[0]).toMatch(/drill\.chart\.top_n could not be read .* 10 series before Other/);
+    expect(some.says[0]).toBe("The setting drill.chart.top_n is not on this database yet, so the chart draws the package's 10 series before Other.");
   });
 
   it("builds the reconciliation from the measured parts", () => {

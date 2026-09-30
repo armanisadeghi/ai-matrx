@@ -72,7 +72,10 @@ export function drillKnobsOf(got: readonly Got[]): Omit<DrillKnobs, "settled"> {
       if (grainSaid) return null;
       grainSaid = true;
     }
-    says.push(`The setting ${r.feature}.${r.key} could not be read (${g && !g.ok ? g.message : "no answer"}), so ${r.instead}.`);
+    const message = g && !g.ok ? g.message : "no answer";
+    // a setting not seeded on this database yet reads in one short line, not the resolver's whole remedy
+    const why = /missing feature knob/i.test(message) ? "is not on this database yet" : `could not be read (${message})`;
+    says.push(`The setting ${r.feature}.${r.key} ${why}, so ${r.instead}.`);
     return null;
   };
   const chartTopN = value(0);

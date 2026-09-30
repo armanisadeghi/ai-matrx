@@ -30,7 +30,10 @@ system's `MatrxDrillAnswerTable`, which this screen also renders.
   `rootLabel`, `firstQuestion?` (default: the definition's own default), `names?` (per-Dimension
   `DrillNameResolver` for id-valued Dimensions), `headline?` (`{ measure, also? }`), `freshness?`
   (a host-kept count + Recount, until the door says `as_of`), `recordsLink?` (where records live when
-  the definition declares none), `rowNoun?`, `hideGrains?`, `headerExtras?`, `dataAttributes?`.
+  the definition declares none), `rowNoun?`, `openRecord?` (a record's door: its id column opens by
+  `href` or `open` — a window on the admin seat), `reconcile?` (the headline against another
+  definition's Measure, same window + filters — `useDrillReconcile.ts`), `location?` (where a copied
+  group came from), `headerExtras?`, `dataAttributes?`.
 - `useDrillExplorer.ts` — the data hook: describe once, `drillRequests(question)` + the whole (no
   trail) for the coverage sentence, names through the resolvers, `as_of` from the answers. Answers
   belong to ONE question: while a new window/trail is counted the screen shows its loading state,
@@ -51,7 +54,19 @@ system's `MatrxDrillAnswerTable`, which this screen also renders.
   question in Alchemy; nothing is sent from here, no agent or prompt is chosen in code, and the answer
   rides as an attached resource — never `user_input`. No content_ir kind fits (searched 2026-09-30:
   `aggregate_result` lacks question/window/trail/Other), so the Alchemy structured form is used.
-- `grain.ts` — the grain a window reads best at (a time group asked with no grain).
+- `grain.ts` — the grain a window reads best at (a time group asked with no grain): the knobs
+  `drill.auto_grain.{hour,day,week}_max_days`; while unread, the package's `drillAutoGrain` (said on screen);
+  clamped to the grains the Dimension offers.
+- `useDrillKnobs.ts` — every line the screen draws by, read once per minute: `drill.chart.top_n` (chart
+  series), `drill.pareto.share_pct` (the Pareto line), `drill.pivot_columns` (pivot cap), the three
+  auto-grain lines. A knob not on the database is SAID with what the screen does instead.
+- `useDrillChart.ts` — the chart's two rounds through the door (`drillChartQuestions` → series +
+  periods, then `drillChartCellsQuestion` → cells), same lane / window / open view as the table.
+  `MatrxDrillChart` (subpath `@ai-matrx/design-system/data-table/drill-chart`) draws above the answer:
+  split = the first non-time grouping, bars at the auto grain, a segment click drills, a period click narrows.
+- `useDrillReconcile.ts` — decisions 12/29: the headline's total vs another definition's Measure for the
+  same window and the filters both read the same way (`shared`); a crumb it cannot carry is said; the
+  sentence is built from the two measured numbers (`drillReconcileSentence`).
 - `measureFormat.ts` — every unit the contract carries, formatted ONE way (`usd` through the one
   credits/$ switch, `tokens`, `count`, `characters`, `ms` → human durations, `share` → %, `percent`,
   `times` → ×). Every value is rounded on its own: a value reads the same wherever it appears (owner
@@ -60,15 +75,24 @@ system's `MatrxDrillAnswerTable`, which this screen also renders.
   door's relation `labels` (merged by the hook before any host resolver); a code no definition names
   reads in plain words. A person's name is the one thing still read through a host resolver (the
   platform's names door).
-- `types.ts` — the ONE place the contract additions (`views`, `findings`, `records`, `having`,
-  `as_of`, `stale_after_knob`) are typed and read defensively until `@ai-matrx/records` publishes them.
+- `types.ts` — the explorer's types; the contract additions (`views`, `findings`, `records`, `having`)
+  are `@ai-matrx/records`' own types (0.58.109+), still read defensively from describe's JSON.
+- The answer (`MatrxDrillAnswerTable`) carries the Pareto line, row actions (Copy / Copy for AI, ticks),
+  export (Copy, CSV), the coverage line, the pivot cap and the explorer's `note` (grain, reconciliation,
+  the open view's conditions, freshness, knob sentences); its wrapper is a flex column so the table's
+  own scroll box keeps its header row in view. The window menu's presets are the package's (All time,
+  Today, Yesterday, 24 h … 12 months, Custom range). The unit switch reads "Points" / "$".
+- An open Saved view is named in the address (`view=builtin:<key>` or the saved row's id), so its link
+  reopens it WHOLE (what it carries beyond the address included) and Explain this hands a model its
+  `conditions` (VERIFY-DRILL-WAVE2 W2-1). The saved-views list is paged 50 at a time and says "N of M".
 
 Mounts: `features/admin/usage-drill/UsageExplorer.tsx` (`/administration/usage`),
 `features/administration/kg-cost/components/KgCostExplorer.tsx` (`/administration/knowledge/kg-cost/explore`,
 definition `kg_cost`, platform lane), `features/workflow-runtime/drill/WorkflowRunsExplorer.tsx`
 (`/administration/automation/workflow-runs` platform lane; `/workflows/runs/analyze` mine lane; definition
-`workflow_runs`). The KG cost dashboard's unit-economics section IS the kg_cost mount
-(`KgCostDashboard.tsx`, lane DRILL-GAPS). A mount passes no words of its own for a definition that
+`workflow_runs`). The KG cost dashboard's unit-economics section becomes the kg_cost mount
+with the one-line flip `KG_UNIT_ECONOMICS_ON_THE_EXPLORER` (`KgCostDashboard.tsx`), set in the same step as
+the production apply of the drillgaps files; until then the old section (`fn_kg_cost_unit_economics`) shows. A mount passes no words of its own for a definition that
 declares its choices (lane DRILL-GAPS); the mine lane's header says "Your <rowNoun>s across all your
 organizations" (`mineScope`), because the door counts the person's rows in every organization.
 
@@ -76,9 +100,9 @@ organizations" (`mineScope`), because the door counts the person's rows in every
 
 ## Invariants & gotchas
 
-- Import only what the PUBLISHED `@ai-matrx/design-system` / `@ai-matrx/records` export. Package abilities
-  waiting on a publish (the chart, Pareto, row actions, export/coverage/note props, `drillAutoGrain`)
-  are listed in PROGRESS-DRILL-EXPLORER "After publish" — never a placeholder in the UI.
+- Import only what the PUBLISHED `@ai-matrx/design-system` / `@ai-matrx/records` export (lane
+  DRILL-ADOPT adopted design-system 0.49.40+, records 0.58.109+, records-ui 0.93.83+; installed 0.49.42 /
+  0.58.111 / 0.93.85 on 2026-09-30).
 - Money: a Measure with unit `usd` prints through the platform's one credits/$ switch
   (`selectCostUnit`, `formatAdminPoints` / `formatAdminUsd`); the toggle shows only to someone who may flip it.
 - A run rate (`op: "rate"`) needs a window with a start: with "all time" it is left out of the ask and
@@ -102,6 +126,12 @@ organizations" (`mineScope`), because the door counts the person's rows in every
 - Walk: `scripts/drill-explorer-walk.mjs` (`PART=app` on the shared preview; `PART=package` on the
   design-system demo).
 
+- `__tests__/drill-adopt.test.tsx` — the chart above the answer with the knob's Top N and the auto
+  grain; the answer's Pareto / pivot cap / row actions / export / coverage; the unit word; an address
+  naming a Saved view reopens it and Explain this carries its conditions; knob sentences; the
+  reconciliation words (lane DRILL-ADOPT).
+- Walk: `scripts/drill-adopt-walk.mjs` (live and clone previews).
+
 ## Change log
 
 - `2026-09-30` — Created (lane DRILL-EXPLORER): generalized from the usage page's explorer; built-in
@@ -114,3 +144,9 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   rounds every value independently (`apportion.ts` deleted), says the mine lane's scope, asks the
   header's `also` Measures on the total only, formats records cells by unit and words, and names record
   ids through the door; the KG cost dashboard's unit-economics section switched to the kg_cost mount.
+- `2026-09-30` — Lane DRILL-ADOPT: adopted the published packages — `MatrxDrillChart` above the answer,
+  Pareto, row actions, export / coverage / note on the answer, the package's window presets and
+  moment windows, the pivot cap from `drill.pivot_columns`, `drillAutoGrain` (its lines now knobs);
+  `hideGrains`, the local moment-window reader and the newest-first pivot reorder removed; the open
+  Saved view named in the address and handed to Explain this; the reconciliation line; the unit
+  switch says "Points"; saved views paged; records open through `openRecord`; package contract types.
