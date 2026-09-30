@@ -34,6 +34,7 @@ import {
   RESIZE_HANDLE_SCREEN_PX,
   type ResizeHandle,
   doubleClickAction,
+  pressAction,
   resizeRect,
 } from "../engine/tile-gestures";
 import type { PaceTier } from "../engine/lod";
@@ -87,9 +88,12 @@ export interface SpatialTileProps {
   actions?: ReactNode;
   /** Moves the tile, in world px. Header drag calls it; omit to pin the tile. */
   onMove?: (id: string, x: number, y: number) => void;
-  /** Resizes the tile to a world rect. The eight handles call it; omit to fix
-   * the tile's size. Persist it the way a move persists (`useBoard.resizeTile`). */
-  onResize?: (id: string, rect: Rect) => void;
+  /** Resizes the tile to a world rect; the eight handles call it. REQUIRED so
+   * no board can forget resize: pass `useBoard.resizeTile` (it persists and
+   * undoes like a move), or `null` only when the host's own layout model
+   * cannot store a size — and say why at the call site
+   * (`__tests__/resize-wiring.test.ts` holds every board to this). */
+  onResize: ((id: string, rect: Rect) => void) | null;
   /** A header drag released with speed. The tile has already flown off and
    * returned to where the drag began; the host carries out the action (and
    * may keep the tile, e.g. when a delete is declined). */
@@ -206,13 +210,20 @@ export function SpatialTile({
       lastPressRef.current = target;
       if (target.closest("[data-spatial-resize]")) return; // the handle owns it
       const inHeader = !!headerRef.current?.contains(target);
-      if (target.closest(INTERACTIVE_SELECTOR)) {
+      const press = pressAction({
+        pointerType: e.pointerType,
+        inHeader,
+        onControl: !!target.closest(INTERACTIVE_SELECTOR),
+        interacting: store.getEditing() === id,
+      });
+      if (press === "control") {
         if (!inHeader) store.setEditing(id);
         else store.select(id);
         return; // the control handles its own press
       }
-      if (!inHeader && store.getEditing() === id) return; // native inside
+      if (press === "native") return; // native inside
       store.select(id);
+      if (press === "select-native") return; // a finger scrolls the content
       if (!canMove) return;
       start = { px: e.clientX, py: e.clientY, x: rectRef.current.x, y: rectRef.current.y };
       tracker.reset({ x: e.clientX, y: e.clientY, t: e.timeStamp });
@@ -352,7 +363,9 @@ export function SpatialTile({
         <div
           data-spatial-body
           className={cn("h-full", interacting ? "select-text" : "select-none")}
-          style={{ contentVisibility: overview ? "hidden" : "visible" }}
+          // The board root is `touch-action: none` (its own pan/pinch); a
+          // finger on a tile body scrolls the content natively instead.
+          style={{ contentVisibility: overview ? "hidden" : "visible", touchAction: "pan-x pan-y" }}
         >
           {children(tier)}
         </div>

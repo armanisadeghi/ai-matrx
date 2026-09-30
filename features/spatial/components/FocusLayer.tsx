@@ -22,7 +22,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { aMenuOrPopoverIsOpen } from "@/features/shell/canvas-chrome/open-layer";
+import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
 import { useFocusedTile, useSpatialStore } from "../engine/react";
 
 const noSubscribe = () => () => {};
@@ -36,18 +36,10 @@ export function FocusLayer({ onHost }: { onHost: (el: HTMLElement | null) => voi
   const at = focused ? order.indexOf(focused) + 1 : 0;
 
   // Escape always leaves — before the content (a composer, an editor) can
-  // swallow it. An open menu / popover / listbox keeps the key for itself.
+  // swallow it — and leaves only the top full screen (the shared layer stack).
   useEffect(() => {
     if (!focused) return undefined;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (aMenuOrPopoverIsOpen()) return;
-      e.preventDefault();
-      e.stopPropagation();
-      store.unfocus();
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    return pushFullScreenLayer(() => store.unfocus());
   }, [focused, store]);
 
   const layer = (
