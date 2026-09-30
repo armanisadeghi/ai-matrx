@@ -438,8 +438,9 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // names one next.
   processed_document: {
     Icon: FileText,
-    // Plain words (A5-P): the text read out of a file or page — never "Processed document".
-    labelPlural: "Document texts",
+    // Plain words: what a person saved in Knowledge — pasted text, web pages, captions, recordings
+    // (the inventory lists only saved Sources, one per Source) — never "Processed document".
+    labelPlural: "Saved sources",
     hrefFor: (id) => `/knowledge/sources/${encodeURIComponent(id)}`,
   },
   conversation: {

@@ -11,17 +11,21 @@
  * Also the answer to the input's one search box: with words typed, every kind
  * that has items shows its first matches, each kind openable for the rest.
  *
+ * A row of a kind that has a stage (a saved Source) carries the Knowledge hub's
+ * Stage word as a small badge (`itemStage.ts`, the hub's own facts read).
+ *
  * UI only: picking goes through `useSourceIntake().addExisting`.
  */
 
 import { useEffect, useEffectEvent, useState } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { Badge, Input } from "@ai-matrx/design-system";
 import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
 import { cn } from "@/utils/cn";
 
 /** How many matches each kind shows under the one search box before "Show more". */
@@ -234,6 +238,11 @@ function Rows({
   isPicked: UseExistingProps["isPicked"];
   onToggle: UseExistingProps["onToggle"];
 }) {
+  const shown = limit === undefined ? list.items : list.items.slice(0, limit);
+  const stageFor = useKindItemStages(
+    token,
+    shown.map((item) => item.id),
+  );
   if (list.loading)
     return (
       <div className="flex justify-center py-4 text-muted-foreground">
@@ -251,7 +260,6 @@ function Rows({
       </p>
     );
   if (list.items.length === 0) return <p className="py-3 text-center text-sm text-muted-foreground">No matches</p>;
-  const shown = limit === undefined ? list.items : list.items.slice(0, limit);
   const more = (limit !== undefined && list.items.length > limit) || (limit === undefined && list.hasMore);
   return (
     <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded-lg border border-border">
@@ -277,6 +285,25 @@ function Rows({
                 {picked ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
               </span>
               <span className="min-w-0 flex-1 truncate text-sm text-foreground">{item.title}</span>
+              {(() => {
+                const stage = stageFor(item.id);
+                return stage ? (
+                  <Badge
+                    variant={
+                      stage.stage === "failed"
+                        ? "error"
+                        : stage.stage === "searchable"
+                          ? "success"
+                          : stage.stage === "indexing"
+                            ? "info"
+                            : "neutral"
+                    }
+                    className="shrink-0 px-1.5 py-0 text-[11px] font-normal"
+                  >
+                    {stage.label}
+                  </Badge>
+                ) : null;
+              })()}
               <span className="shrink-0 text-xs text-muted-foreground">{shortDate(item.updatedAt)}</span>
             </button>
           </li>
