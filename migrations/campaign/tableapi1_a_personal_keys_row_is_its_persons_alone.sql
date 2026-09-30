@@ -1,5 +1,6 @@
 -- chair-step: it CREATES one restrictive SELECT policy on iam.api_keys so a personal-key row is visible only to the person it is (and to platform admins). No row, function or grant changes. CREATE POLICY takes the platform's sign-in freeze (an ACCESS EXCLUSIVE lock on auth.users) for the moment it runs, which is why it is its own file.
 -- lane: TABLE-API-1
+-- window-class: CREATE POLICY on iam.api_keys takes ACCESS EXCLUSIVE plus the 23-relation supautils set (measured 2176 ms on the clone, 2026-09-29); apply between 0100 and 0400 Pacific only
 -- lock: iam
 --
 -- TABLE-API-1 — A PERSONAL KEY'S ROW IS ITS PERSON'S ALONE.
