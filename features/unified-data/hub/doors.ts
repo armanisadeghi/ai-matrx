@@ -345,6 +345,64 @@ export function dataHomeItems(
   );
 }
 
+/** An archived Table of any organization the person belongs to (`custom.archived_tables_everywhere`). */
+export interface ArchivedEverywhereRow {
+  id: string;
+  document: { name?: string } | null;
+  archived_at: string | null;
+  archived_by_name: string | null;
+  organization_id: string;
+  organization_name: string | null;
+}
+
+/**
+ * THE ARCHIVED TABLES OF EVERY ORGANIZATION THE PERSON BELONGS TO, one page at a time, each row
+ * naming its organization (org-filter sweep, 2026-09-29). Newest first; `limit` is capped at 200.
+ */
+export async function archivedTablesEverywhere(
+  dataSource: RecordsDataSource,
+  page: { limit: number; offset: number },
+): Promise<DoorAnswer<ArchivedEverywhereRow[]>> {
+  const answered = await call<{ tables?: ArchivedEverywhereRow[] }>(dataSource, "archived_tables_everywhere", {
+    p_lane: "org",
+    p_limit: page.limit,
+    p_offset: page.offset,
+  });
+  return answered.ok ? { ok: true, data: answered.data.tables ?? [] } : answered;
+}
+
+/** An archived portal of any organization the person belongs to (`custom.list_portals_everywhere`). */
+export interface ArchivedPortalEverywhereRow {
+  portal_id: string;
+  title: string | null;
+  client_table_id: string;
+  client_table: string | null;
+  organization_id: string;
+  organization_name: string | null;
+}
+
+export async function archivedPortalsEverywhere(
+  dataSource: RecordsDataSource,
+): Promise<DoorAnswer<ArchivedPortalEverywhereRow[]>> {
+  const answered = await call<{ portals?: ArchivedPortalEverywhereRow[] }>(dataSource, "list_portals_everywhere", {
+    p_archived: "archived",
+  });
+  return answered.ok ? { ok: true, data: answered.data.portals ?? [] } : answered;
+}
+
+/** Bring one archived record back, in the organization it lives in (all-organizations archive). */
+export async function restoreRecordIn(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  recordId: string,
+): Promise<DoorAnswer<null>> {
+  const answered = await call<unknown>(dataSource, "record_restore", {
+    p_organization_id: organizationId,
+    p_record_id: recordId,
+  });
+  return answered.ok ? { ok: true, data: null } : answered;
+}
+
 /** One (organization, kind, ids) question for `custom.data_home_changed_by`. */
 export interface ChangedByAsk {
   organization_id: string;

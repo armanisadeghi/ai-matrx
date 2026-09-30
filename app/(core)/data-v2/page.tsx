@@ -241,9 +241,8 @@ export default function UnifiedDataPage() {
                  front door with thirty-seven approval cards (VERIFIER-14 §3).
                  The hub puts it under the listings. */
               inbox={
-                // `custom.work_inbox` answers for ONE organization (no all-organizations mode yet), so under
-                // All Orgs the inbox is absent rather than quietly showing the header's organization's.
-                !organizationId ? undefined : (
+                // `custom.work_inbox` takes NULL = every organization the person belongs to; rows carry no
+                // organization column, so opening one goes through the `/o/<id>` resolver below.
                 <ActionInbox
                   className="max-h-64"
                   /* THE ONE ADDRESS (lane ROUTE-RESOLVER). An approval raised in
@@ -257,7 +256,6 @@ export default function UnifiedDataPage() {
                     )
                   }
                 />
-                )
               }
             />
           </RecordsMount>

@@ -27,6 +27,10 @@ export interface ArchivedTable {
   name: string;
   archivedAt: string;
   archivedByName: string | null;
+  /** Named when the archive spans several organizations. */
+  organizationName?: string | null;
+  /** The organization the row lives in (all-organizations archive; restore asks it). */
+  organizationId?: string | null;
 }
 
 export interface ArchivedTablesListProps {
@@ -76,6 +80,11 @@ export function ArchivedTablesList({ tables, readTrouble, note, onBringBack }: A
               className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-border py-2 first:border-t-0"
             >
               <span className="text-sm text-foreground">{table.name}</span>
+              {table.organizationName ? (
+                <span className="text-xs text-muted-foreground" data-archived-table-org={table.id}>
+                  {table.organizationName}
+                </span>
+              ) : null}
               <span className="text-xs text-muted-foreground">
                 {table.archivedByName ? `${table.archivedByName}, ` : ""}
                 {new Date(table.archivedAt).toLocaleString(undefined, {

@@ -61,6 +61,7 @@ import {
   withHubTableFacts,
 } from "./capabilities";
 import { ArchivedTablesList, type ArchivedTable } from "./ArchivedTablesList";
+import { ArchivedPortalsEverywhere } from "./ArchivedPortalsEverywhere";
 import { HubListing, type HubListingState } from "./HubListing";
 import * as doors from "./doors";
 import type { DataHomeItemRow, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
@@ -387,12 +388,37 @@ export function OrganizationHub({
   // the same door a table's own archive uses, addressed at the kernel that
   // holds every Table, so it is one call and not one per table.
   const readArchive = useCallback(async () => {
-    // ALL ORGS: the store's archive doors answer for ONE organization, and there is no door that
-    // answers across them yet — so the archive says so and points at the dropdown, never a silent
-    // empty archive and never the header's organization standing in.
+    // ALL ORGS: every organization's archive, in one door (`custom.archived_tables_everywhere`),
+    // each row naming its organization; restoring a row asks the organization it lives in.
     if (!organizationId) {
+      const PAGE = 200;
+      const MAX_PAGES = 25;
+      const all: doors.ArchivedEverywhereRow[] = [];
+      let complete = false;
+      for (let page = 0; page < MAX_PAGES; page += 1) {
+        const answered = await doors.archivedTablesEverywhere(dataSource, { limit: PAGE, offset: page * PAGE });
+        if (!answered.ok) {
+          setArchiveTrouble(answered.error.message);
+          return;
+        }
+        all.push(...answered.data);
+        if (answered.data.length < PAGE) {
+          complete = true;
+          break;
+        }
+      }
       setArchiveTrouble(null);
-      setArchivedTables([]);
+      setArchiveNote(complete ? null : `More than ${PAGE * MAX_PAGES} tables are archived; the newest ${PAGE * MAX_PAGES} are listed.`);
+      setArchivedTables(
+        all.map((row) => ({
+          id: row.id,
+          name: row.document?.name?.trim() || "(unnamed table)",
+          archivedAt: row.archived_at ?? "",
+          archivedByName: row.archived_by_name,
+          organizationName: row.organization_name,
+          organizationId: row.organization_id,
+        })),
+      );
       return;
     }
     const kernel = await doors.tableKernelId(dataSource);
@@ -455,13 +481,25 @@ export function OrganizationHub({
   // to the list, which draws it on the row and keeps every other row where it was.
   const bringBack = useCallback(
     async (tableId: string) => {
+      const home = organizationId ? null : archivedTables?.find((t) => t.id === tableId)?.organizationId;
+      if (!organizationId && home) {
+        const restored = await doors.restoreRecordIn(dataSource, home, tableId);
+        if (!restored.ok) return {
+          code: "refused_by_rule",
+          message: restored.error.message,
+          ...(restored.error.hint ? { hint: restored.error.hint } : {}),
+        };
+        await readArchive();
+        router.refresh();
+        return null;
+      }
       const answered = await client.recordRestore({ record_id: tableId });
       if (!answered.ok) return answered.error;
       await readArchive();
       router.refresh();
       return null;
     },
-    [client, readArchive, router],
+    [client, dataSource, organizationId, archivedTables, readArchive, router],
   );
 
   /**
@@ -713,15 +751,9 @@ export function OrganizationHub({
             onBringBack={bringBack}
           />
         </ArchivedDisclosure>
-        {organizationId ? (
-          <div className="mt-2">
-            <ArchivedPortals />
-          </div>
-        ) : (
-          <p className="mt-2 text-xs text-muted-foreground" data-hub-archive-needs-organization="">
-            Archived tables and portals are kept per organization. Choose one in the Organization menu above to see its archive.
-          </p>
-        )}
+        <div className="mt-2">
+          {organizationId ? <ArchivedPortals /> : <ArchivedPortalsEverywhere dataSource={dataSource} />}
+        </div>
       </section>
     </div>
   );
