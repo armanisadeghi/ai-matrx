@@ -123,6 +123,10 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
               (row.organizationId && orgName.get(row.organizationId)) ?? "",
             header: "Organization",
             width: 170,
+            // The on-page organization filter (the table's own column filter):
+            // default is every organization; narrowing is the person's choice.
+            filter: "select",
+            filterOptions: organizations.map((o) => ({ value: o.name, label: o.name })),
             entityToken: (row: RunRowView) =>
               row.organizationId ? "organization" : undefined,
             entityId: (row: RunRowView) => row.organizationId ?? undefined,
