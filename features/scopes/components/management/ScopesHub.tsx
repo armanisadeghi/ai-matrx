@@ -37,7 +37,10 @@ import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTypeTables } from "@/features/scopes/hooks/useScopeTypeTables";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { DynamicIcon } from "@ai-matrx/icons";
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import {
+  MatrxDataTable,
+  TABLE_CARD_DEFAULT_INITIAL_ROWS,
+} from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { HeavyHitterSuggestionsInbox } from "@/features/kg-suggestions/components/HeavyHitterSuggestionsInbox";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -301,6 +304,9 @@ function ScopeTypeTable({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // The section's own header row hosts the table's toolbar (view tabs, search,
+  // copy, columns) — one row, never a second stacked bar under the title.
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null);
   const typeHref = `/organizations/${org.slug ?? org.id}/scopes/${type.id}`;
 
   const columns = items.slice(0, MAX_ITEM_COLUMNS);
@@ -354,7 +360,7 @@ function ScopeTypeTable({
 
   return (
     <section className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 border-b border-border/60">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 sm:px-4 py-2 border-b border-border/60">
         <span style={{ color: type.color }}>
           <DynamicIcon name={type.icon} className="h-4 w-4" />
         </span>
@@ -380,7 +386,13 @@ function ScopeTypeTable({
             />
           </span>
         )}
-        <span className="ml-auto flex items-center gap-1 shrink-0">
+        {/* Phone: the toolbar takes its own line under the title instead of
+            being squeezed to nothing beside it. */}
+        <div
+          ref={setToolbarSlot}
+          className="flex min-w-0 justify-end empty:hidden max-sm:order-last max-sm:basis-full sm:ml-auto sm:flex-1"
+        />
+        <span className="flex items-center gap-1 shrink-0 max-sm:ml-auto">
           {hiddenCount > 0 && (
             <span className="hidden sm:inline text-[10px] text-muted-foreground mr-1">
               +{hiddenCount} more column{hiddenCount === 1 ? "" : "s"} on the
@@ -418,8 +430,16 @@ function ScopeTypeTable({
           getRowId={(scope) => scope.id}
           detail={{ enabled: false }}
           isFetching={cellsStatus === "loading"}
+          // Frameless inside the section card (no box-in-box), and the same
+          // progressive "Show more" the org page's table card uses — never a
+          // numbered pager over a handful of rows.
+          appearance="embedded"
+          pageSize={TABLE_CARD_DEFAULT_INITIAL_ROWS}
+          localPagination={{ mode: "progressive" }}
           toolbar={{
             searchPlaceholder: `Search ${type.label_plural.toLowerCase()}…`,
+            portalInto: toolbarSlot,
+            singleRow: true,
           }}
           onRowOpen={(scope) =>
             startTransition(() => router.push(`${typeHref}/${scope.id}`))
