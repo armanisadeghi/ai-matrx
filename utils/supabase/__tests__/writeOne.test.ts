@@ -32,7 +32,7 @@ it("keeps PostgreSQL code, details and hint through the result-style writer", as
   expect(writeFailureStatus(result.error)).toBe(403);
 });
 
-it.each([["23505",409],["PGRST116",404],["XX000",500]] as const)(
+it.each([["23505",409],["PGRST116",404],["PGRST301",401],["PGRST302",401],["PGRST303",401],["XX000",500]] as const)(
   "keeps the HTTP meaning of %s distinct from unknown failures", (code, status) => {
     expect(writeFailureStatus({ code, message: "Database refusal" })).toBe(status);
   },

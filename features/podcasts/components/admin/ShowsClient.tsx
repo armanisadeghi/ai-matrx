@@ -221,7 +221,6 @@ export function ShowsClient() {
           isLoading={isLoading}
           isFetching={isPending}
           density="condensed"
-          copy={false}
           detail={{ enabled: false }}
           pageSize={0}
           coverage={{ noun: "show", answeredBy: "client" }}

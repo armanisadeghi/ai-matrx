@@ -81,7 +81,7 @@ export function EntityCard({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-border bg-card",
+        "overflow-hidden rounded-xl border border-border bg-card text-card-foreground",
         className,
       )}
     >

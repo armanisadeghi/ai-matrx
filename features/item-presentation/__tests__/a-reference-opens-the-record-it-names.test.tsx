@@ -47,13 +47,13 @@ jest.mock("@ai-matrx/detail/react", () => ({
 
 import { useOpenItemPresentation } from "../useOpenItemPresentation";
 import type { ItemType } from "../types";
-import { REFERENCE_RESOLVERS } from "@/features/matrx-envelope/referenceResolvers";
+import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const ID = "5c3b7d1e-2f4a-4b6c-8d9e-0a1b2c3d4e5f";
 
-function openWith(type: ItemType): Promise<boolean | null> {
+async function openWith(type: ItemType): Promise<boolean | null> {
   let opened: boolean | null = null;
   function Probe() {
     const open = useOpenItemPresentation();
@@ -65,13 +65,12 @@ function openWith(type: ItemType): Promise<boolean | null> {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  return act(async () => {
+  await act(async () => {
     root.render(<Probe />);
-  }).then(() => {
-    act(() => root.unmount());
-    container.remove();
-    return opened;
   });
+  act(() => root.unmount());
+  container.remove();
+  return opened;
 }
 
 beforeEach(() => {
@@ -81,7 +80,7 @@ beforeEach(() => {
 
 describe("a note reference opens the note", () => {
   it("the note chip's noun resolves to the note item type", () => {
-    expect(REFERENCE_RESOLVERS.note?.openItemType).toBe("note");
+    expect(getReferenceResolver("note")?.openItemType).toBe("note");
   });
 
   it("opens the Notes window ON the note — never the info/stats panel", async () => {
@@ -93,22 +92,38 @@ describe("a note reference opens the note", () => {
 });
 
 describe("census: each reference type the picker offers first opens its record", () => {
-  // noun → the opener that must run
-  const CASES: Array<[string, () => jest.Mock]> = [
-    ["task", () => openDetail],
-    ["project", () => openDetail],
-    ["workbook", () => openDetail],
-    ["udt_document", () => openDetail],
-    ["transcript_session", () => openDetail],
-    ["file", () => openFile],
-    ["transcript", () => openFile],
-    ["agent", () => openAgent],
+  // noun → the ref the picker emits → the opener that must run
+  const CASES: Array<[string, Record<string, string>, () => jest.Mock]> = [
+    ["task", { id: ID }, () => openDetail],
+    ["project", { id: ID }, () => openDetail],
+    ["workbook", { id: ID }, () => openDetail],
+    ["udt_document", { id: ID }, () => openDetail],
+    ["dataset", { id: ID }, () => openDetail],
+    ["transcript", { id: ID }, () => openDetail],
+    ["transcript_segment", { transcript_id: ID, segment_index: "0" }, () => openDetail],
+    ["transcript_session", { id: ID }, () => openDetail],
+    ["file", { file_id: ID }, () => openFile],
+    ["agent", { id: ID }, () => openAgent],
   ];
-  it.each(CASES)("%s", async (noun, expected) => {
-    const openType = REFERENCE_RESOLVERS[noun]?.openItemType as ItemType;
-    expect(openType).toBeTruthy();
+  it.each(CASES)("%s", async (noun, ref, expected) => {
+    const resolver = getReferenceResolver(noun);
+    // The chip is DISABLED unless the resolver yields an id to open — a
+    // resolver whose openId returns nothing is a dead chip (transcript, until
+    // 2026-09-30).
+    expect(resolver?.openId(ref)).toBe(ID);
+    const openType = resolver?.openItemType as ItemType;
     expect(await openWith(openType)).toBe(true);
     expect(expected()).toHaveBeenCalledTimes(1);
     expect(openNoteInfo).not.toHaveBeenCalled();
+  });
+
+  it("a transcript opens as a transcript record — never the file preview", async () => {
+    expect(getReferenceResolver("transcript")?.openItemType).toBe("transcript");
+    expect(getReferenceResolver("transcript_segment")?.openItemType).toBe("transcript");
+    await openWith("transcript");
+    expect(openFile).not.toHaveBeenCalled();
+    expect(openDetail).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "transcript", id: ID }),
+    );
   });
 });

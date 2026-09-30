@@ -771,7 +771,6 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                     }}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
-                    copy={false}
                     read={readOf({ loading, error: loadError }, { what: "the test samples", onRetry: () => void load() })}
                     emptyState={{
                         title: samples.length === 0

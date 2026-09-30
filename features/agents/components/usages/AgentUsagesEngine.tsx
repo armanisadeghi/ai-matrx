@@ -524,7 +524,6 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
           defaultSort={{ id: "risk", direction: "asc" }}
           density="condensed"
           pageSize={50}
-          copy={false}
           toolbar={{ search: true, searchPlaceholder: "Search usages…" }}
           emptyState={{
             title: active && active !== "history"

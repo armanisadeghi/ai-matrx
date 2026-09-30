@@ -35,6 +35,7 @@
 import type {
   DirectiveHost,
   DirectiveApplyResult,
+  DirectiveAskRequest,
   DirectiveCopyProps,
   DirectiveOpenItemOptions,
 } from "@ai-matrx/content-ir-react";
@@ -43,12 +44,12 @@ import type {
   DirectiveNounCatalog,
   DirectiveNounEntry,
 } from "@ai-matrx/content-ir";
-import {
-  SIDE_EFFECT_CLASSES,
-  nounLabel,
-  parseDirectiveSlug,
-} from "@ai-matrx/content-ir";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import {
+  DirectiveRecordLink,
+  appliedRecords,
+  directiveConsequenceDialog,
+} from "@/features/matrx-envelope/components/DirectiveConsequence";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
@@ -109,18 +110,19 @@ function requireStore() {
 }
 
 /**
- * THE CONSEQUENCE, NAMED BEFORE THE CLICK.
+ * THE CONSEQUENCE, NAMED BEFORE THE CLICK — the package's `ask` seam.
  *
  * A side-effect directive that lands in CONTENT renders as a card with an Apply
- * button (the package's `SideEffectDirectiveCard`), and that button used to run
- * a server-side write on ONE unguarded click — including `directive_v1_delete_*`
- * pasted into a note by anyone. The position law's "only a human click runs it"
- * was honored so literally that the human was never told what the click does.
+ * button (the package's `SideEffectDirectiveCard`). That button used to run a
+ * server-side write on ONE unguarded click; then (9ea2888a3f) it asked, but in
+ * words that named no record ("Delete this task?"), on a blue button, from
+ * INSIDE `confirm` — so the card already read "Applying 1 item…" while the
+ * question was still open (reviewer, 2026-09-30).
  *
- * The gate belongs HERE rather than in the package's button: this seam is the
- * single place every in-content directive executes through, and the confirm
- * dialog is host property (`ConfirmDialogHost`). Every card in the app inherits
- * it — the class, not the instance.
+ * Now the package calls `ask` FIRST and stays idle until the answer; the dialog
+ * names every record by its live name (`DirectiveConsequence`), lists what an
+ * update overwrites, and a delete is styled destructive and says where the
+ * record goes — matching the Tasks page ("This moves 'X' to the trash.").
  *
  * `ProposedDirectivesZone` does NOT come through here (it calls
  * `confirmDirective` directly and already carries the server-composed
@@ -129,50 +131,8 @@ function requireStore() {
  * Law: common-docs/policies/destructive-and-expensive-actions.md — a generic
  * "Are you sure?" fails; the sentence has to name what changes.
  */
-async function confirmConsequence(slug: string, itemCount: number): Promise<boolean> {
-  const parsed = parseDirectiveSlug(slug);
-  // An unparseable slug never reaches a real handler, but refusing to name it
-  // is still better than executing something we cannot describe.
-  const directiveClass = parsed?.directiveClass ?? null;
-  if (directiveClass && !SIDE_EFFECT_CLASSES.has(directiveClass)) return true;
-
-  const noun = parsed ? nounLabel(parsed.noun, matrxDirectiveNouns) : null;
-  const subject =
-    noun && itemCount === 1
-      ? `this ${noun.toLowerCase()}`
-      : noun
-        ? `${itemCount} ${noun.toLowerCase()} items`
-        : `${itemCount} item${itemCount === 1 ? "" : "s"}`;
-
-  const byClass: Record<string, { title: string; description: string; confirmLabel: string }> = {
-    delete: {
-      title: `Delete ${subject}?`,
-      description: `This runs now, as you, and removes ${subject} from where it lives — not just from this text. It can be restored from the trash; anything already pointing at it will stop resolving until then.`,
-      confirmLabel: "Delete",
-    },
-    create: {
-      title: `Create ${subject}?`,
-      description: `This runs now, as you, and adds ${subject} to your workspace for real. Clicking again will not add a second copy.`,
-      confirmLabel: "Create",
-    },
-    update: {
-      title: `Update ${subject}?`,
-      description: `This runs now, as you, and overwrites the named fields on ${subject} with the values in this block. The previous values are not kept here.`,
-      confirmLabel: "Update",
-    },
-  };
-
-  const copy = directiveClass
-    ? byClass[directiveClass]
-    : undefined;
-
-  return confirmDialog(
-    copy ?? {
-      title: `Run this action on ${subject}?`,
-      description: `This runs now, as you, and changes data outside this text. Only continue if you know where this block came from.`,
-      confirmLabel: "Run it",
-    },
-  ).then((ok) => ok);
+function ask(request: DirectiveAskRequest): Promise<boolean> {
+  return confirmDialog(directiveConsequenceDialog(request, matrxDirectiveNouns));
 }
 
 async function confirm(shell: {
@@ -180,14 +140,6 @@ async function confirm(shell: {
   items: Record<string, unknown>[];
 }): Promise<DirectiveApplyResult> {
   const baseUrl = selectResolvedBaseUrl(requireStore().getState());
-  if (!(await confirmConsequence(shell.__kind, shell.items.length))) {
-    // Declining must LEAVE THE BUTTON USABLE. The package treats any returned
-    // result as "applied" and replaces the control with a tally, so returning
-    // `{applied: 0, failed: 0}` would read as "Applied 0" and strand someone
-    // who simply changed their mind. Throwing keeps the button (the package
-    // re-renders it beside the message) and shows this sentence verbatim.
-    throw new Error("Not run — you cancelled it.");
-  }
   try {
     const result = await confirmDirective(baseUrl, {
       // The SLUG is the identity — the server's DirectiveConfirmRequest refuses
@@ -195,7 +147,15 @@ async function confirm(shell: {
       directive: shell.__kind,
       items: shell.items,
     });
-    return { applied: result.applied, failed: result.failed };
+    return {
+      applied: result.applied,
+      failed: result.failed,
+      // The server's own receipt sentence — never recomposed here (DD-118).
+      message: result.message,
+      // THE TALLY IS A DOOR: every record the apply wrote, so "Applied 1" is a
+      // way into what was created/changed (no dead ends).
+      records: appliedRecords(shell.__kind, result.receipts),
+    };
   } catch (error) {
     // Prefer the server's gentle user_message; never dump Pydantic/wire detail.
     // The package shows an Error's message verbatim, so it must already be safe.
@@ -269,7 +229,9 @@ function renderCopy({ label, value, kind, size }: DirectiveCopyProps) {
  * would churn every memo inside the package.
  */
 export const matrxDirectiveHost: DirectiveHost = {
+  ask,
   confirm,
+  renderRecord: (props) => <DirectiveRecordLink {...props} />,
   openItem,
   renderCopy,
   nouns: matrxDirectiveNouns,

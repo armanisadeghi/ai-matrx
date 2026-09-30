@@ -23,6 +23,7 @@ import {
   Tag,
   Box,
   Image as ImageIcon,
+  Mic,
   Video,
   AudioLines,
   File as FileIcon,
@@ -581,6 +582,40 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     // one table is chosen, this entry gets a `detailSource` and nothing else
     // changes.
     open: { kind: "session" },
+  },
+  // A stored transcript — `transcripts.transcripts`. Until 2026-09-30 a
+  // transcript reference chip had NO door (its resolver's `openId` returned
+  // nothing, so the chip rendered disabled) and a transcript SEGMENT chip sent
+  // the transcript's id to the FILE preview. The Detail primitive is its
+  // in-place presentation; the `transcript` token's `hrefFor` is the door to
+  // its page (`/transcripts/processor?focus=<id>`).
+  transcript: {
+    type: "transcript",
+    label: "Transcript",
+    icon: Mic,
+    accent: {
+      text: "text-rose-600 dark:text-rose-400",
+      bg: "bg-rose-500/10",
+      ring: "ring-rose-500/20",
+    },
+    open: { kind: "transcript" },
+    detailSource: {
+      table: "transcripts",
+      schemaName: "transcripts",
+      titleField: "title",
+    },
+    enrich: (s, id) =>
+      fetchRow(
+        s,
+        "transcripts",
+        id,
+        "title, description",
+        (r) => ({
+          name: clip(r.title, 80),
+          about: clip(r.description),
+        }),
+        "transcripts",
+      ),
   },
   table: {
     type: "table",

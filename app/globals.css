@@ -2600,3 +2600,16 @@
 html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
   top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
 }
+
+/* A toast action owns a full tap target; inline error text sizing must not
+   overflow the card or overlap its sibling content. */
+[data-sonner-toast] > [data-content] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+[data-sonner-toast] > .error-toast-copy {
+  width: 36px;
+  height: 36px;
+  margin-left: 4px;
+  flex: 0 0 36px;
+}

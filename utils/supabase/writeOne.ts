@@ -213,7 +213,8 @@ export async function tryWriteOne<Row>(
 export function writeFailureStatus(error: unknown): number {
   if (error instanceof WriteDidNotLandError) return error.status;
   if (error && typeof error === "object" && "code" in error) {
-    if (error.code === "42501" || error.code === "PGRST301" || error.code === "PGRST302") return 403;
+    if (error.code === "42501") return 403;
+    if (error.code === "PGRST301" || error.code === "PGRST302" || error.code === "PGRST303") return 401;
     if (error.code === "PGRST116") return 404;
     if (error.code === "23505" || error.code === "40001" || error.code === "40P01") return 409;
   }

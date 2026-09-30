@@ -32,6 +32,8 @@ export type KnownItemType =
   | "audio"
   | "file"
   | "session"
+  // A stored transcript — `transcripts.transcripts` (2026-09-30).
+  | "transcript"
   | "table"
   | "structured_list"
   // "picklist" retained read-only for pre-rename historical payloads; new

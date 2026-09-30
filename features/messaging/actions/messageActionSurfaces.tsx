@@ -60,30 +60,25 @@ interface SurfaceProps<TPayload> {
   isOwn: boolean;
 }
 
-function chipClass(isOwn: boolean): string {
-  return [
-    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
-    "transition-colors",
-    isOwn
-      ? "border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
-      : "border-border bg-background/70 text-foreground hover:bg-background",
-  ].join(" ");
+function chipClass(): string {
+  // A chip owns its surface/foreground pair; never inherit an outgoing bubble's white text.
+  return "mx-msg__chip transition-colors";
 }
 
-function AgentDriftChips({ payload, isOwn }: SurfaceProps<AgentDriftActionPayload>) {
+function AgentDriftChips({ payload }: SurfaceProps<AgentDriftActionPayload>) {
   const openFindUsages = useOpenAgentFindUsagesWindow();
   if (!payload?.agent_id) return null;
   return (
     <>
       <button
         type="button"
-        className={chipClass(isOwn)}
+        className={chipClass()}
         onClick={() => openFindUsages({ agentId: payload.agent_id })}
       >
         <Search className="h-3 w-3" aria-hidden />
         Review usages
       </button>
-      <Link href="/reports/agent-drift" className={chipClass(isOwn)}>
+      <Link href="/reports/agent-drift" className={chipClass()}>
         <FileChartColumn className="h-3 w-3" aria-hidden />
         Drift report
       </Link>
@@ -96,7 +91,9 @@ function AgentDriftChips({ payload, isOwn }: SurfaceProps<AgentDriftActionPayloa
  * recipient. Uses the shared EntityCard primitive + registry icon/URL so it
  * works for every shareable type, and opens the resource in the app.
  */
-function ResourceSharedCard({ payload }: SurfaceProps<ResourceSharedActionPayload>) {
+function ResourceSharedCard({
+  payload,
+}: SurfaceProps<ResourceSharedActionPayload>) {
   const p = payload;
   if (!p?.resource_type || !p?.resource_id) return null;
   const href = getResourceSharePath(p.resource_type, p.resource_id);
@@ -123,11 +120,16 @@ function ResourceSharedCard({ payload }: SurfaceProps<ResourceSharedActionPayloa
  * `open_link` — the generic single deep-link chip for system DMs that point
  * the user at an in-app page (external URLs are refused).
  */
-function OpenLinkChip({ payload, isOwn }: SurfaceProps<OpenLinkActionPayload>) {
+function OpenLinkChip({ payload }: SurfaceProps<OpenLinkActionPayload>) {
   const p = payload;
   if (!p?.href || !p?.label || !p.href.startsWith("/")) return null;
   return (
-    <Link href={p.href} className={chipClass(isOwn)} target="_blank" rel="noopener noreferrer">
+    <Link
+      href={p.href}
+      className={chipClass()}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <ExternalLink className="h-3 w-3" aria-hidden />
       {p.label}
     </Link>
@@ -139,7 +141,9 @@ function OpenLinkChip({ payload, isOwn }: SurfaceProps<OpenLinkActionPayload>) {
  * Open navigates; Complete and Snooze act inline through the canonical task
  * services (recurrence-aware completion; per-user snooze state).
  */
-function TaskReminderChips({ payload, isOwn }: SurfaceProps<TaskReminderActionPayload>) {
+function TaskReminderChips({
+  payload,
+}: SurfaceProps<TaskReminderActionPayload>) {
   const p = payload;
   const [done, setDone] = useState<"completed" | "snoozed" | null>(null);
   if (!p?.task_id) return null;
@@ -181,23 +185,28 @@ function TaskReminderChips({ payload, isOwn }: SurfaceProps<TaskReminderActionPa
 
   return (
     <>
-      <Link href={`/tasks/${p.task_id}`} className={chipClass(isOwn)} target="_blank" rel="noopener noreferrer">
+      <Link
+        href={`/tasks/${p.task_id}`}
+        className={chipClass()}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <ExternalLink className="h-3 w-3" aria-hidden />
         Open task
       </Link>
       {done === null ? (
         <>
-          <button type="button" className={chipClass(isOwn)} onClick={complete}>
+          <button type="button" className={chipClass()} onClick={complete}>
             <CircleCheck className="h-3 w-3" aria-hidden />
             Complete
           </button>
-          <button type="button" className={chipClass(isOwn)} onClick={snooze}>
+          <button type="button" className={chipClass()} onClick={snooze}>
             <AlarmClock className="h-3 w-3" aria-hidden />
             Snooze 1d
           </button>
         </>
       ) : (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-inherit">
           {done === "completed" ? "Completed" : "Snoozed"}
         </span>
       )}
@@ -213,7 +222,10 @@ function TaskReminderChips({ payload, isOwn }: SurfaceProps<TaskReminderActionPa
  * request that gets answered and one that rots. The requester's own copy of the
  * message shows the same card with no buttons, so they can see what they sent.
  */
-function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestActionPayload>) {
+function AccessRequestChips({
+  payload,
+  isOwn,
+}: SurfaceProps<AccessRequestActionPayload>) {
   const p = payload;
   const currentUserId = useAppSelector(selectUserId);
   const [done, setDone] = useState<AccessRequestStatus | null>(null);
@@ -236,17 +248,14 @@ function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestAction
   // The sender sees their own ask; only the recipient can answer it.
   if (isOwn) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-primary-foreground/80">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-inherit">
         <KeyRound className="h-3 w-3" aria-hidden />
         Access requested
       </span>
     );
   }
 
-  async function decide(
-    decision: "grant" | "decline",
-    level?: RequestedLevel,
-  ) {
+  async function decide(decision: "grant" | "decline", level?: RequestedLevel) {
     setBusy(true);
     try {
       const { decideAccessRequest } =
@@ -293,7 +302,7 @@ function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestAction
 
   if (done) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-inherit">
         {done === "granted"
           ? "Access granted"
           : done === "declined"
@@ -309,7 +318,7 @@ function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestAction
     <>
       <button
         type="button"
-        className={chipClass(isOwn)}
+        className={chipClass()}
         disabled={busy}
         onClick={() => void decide("grant", "viewer")}
       >
@@ -318,7 +327,7 @@ function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestAction
       </button>
       <button
         type="button"
-        className={chipClass(isOwn)}
+        className={chipClass()}
         disabled={busy}
         onClick={() => void decide("grant", "editor")}
       >
@@ -327,7 +336,7 @@ function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestAction
       </button>
       <button
         type="button"
-        className={chipClass(isOwn)}
+        className={chipClass()}
         disabled={busy}
         onClick={() => void decide("grant", "admin")}
       >
@@ -336,7 +345,7 @@ function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestAction
       </button>
       <button
         type="button"
-        className={chipClass(isOwn)}
+        className={chipClass()}
         disabled={busy}
         onClick={() => void decide("decline")}
       >
@@ -345,7 +354,7 @@ function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestAction
       </button>
       <button
         type="button"
-        className={chipClass(isOwn)}
+        className={chipClass()}
         disabled={busy}
         onClick={() => void report()}
       >
@@ -382,11 +391,16 @@ function SettingAccessRequestChips({ payload, isOwn }: SurfaceProps<unknown>) {
  * version not listed, renders nothing at all — never a chip that fails when
  * pressed.
  */
-export const MESSAGE_ACTION_SURFACES: readonly MessageActionRenderer<never>[] = [
-  { kind: "access_request", versions: [1], render: AccessRequestChips },
-  { kind: "agent_drift", versions: [1], render: AgentDriftChips },
-  { kind: "open_link", versions: [1], render: OpenLinkChip },
-  { kind: "resource_shared", versions: [1], render: ResourceSharedCard },
-  { kind: "setting_access_request", versions: [1], render: SettingAccessRequestChips },
-  { kind: "task_reminder", versions: [1], render: TaskReminderChips },
-] as readonly MessageActionRenderer<never>[];
+export const MESSAGE_ACTION_SURFACES: readonly MessageActionRenderer<never>[] =
+  [
+    { kind: "access_request", versions: [1], render: AccessRequestChips },
+    { kind: "agent_drift", versions: [1], render: AgentDriftChips },
+    { kind: "open_link", versions: [1], render: OpenLinkChip },
+    { kind: "resource_shared", versions: [1], render: ResourceSharedCard },
+    {
+      kind: "setting_access_request",
+      versions: [1],
+      render: SettingAccessRequestChips,
+    },
+    { kind: "task_reminder", versions: [1], render: TaskReminderChips },
+  ] as readonly MessageActionRenderer<never>[];

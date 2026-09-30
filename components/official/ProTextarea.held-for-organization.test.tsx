@@ -5,7 +5,7 @@
  * the person chose a workspace and nothing continued. While a choice is being
  * awaited the popover stays open; once it is not, it closes normally.
  */
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 
 import { TooltipProvider } from "@ai-matrx/design-system";
@@ -53,7 +53,12 @@ const fakeState = {
     context: null,
   },
   userAuth: { id: "test-user", createdAt: null },
-  appContext: { organization_id: null, project_id: null, task_id: null, conversation_id: null },
+  appContext: {
+    organization_id: null,
+    project_id: null,
+    task_id: null,
+    conversation_id: null,
+  },
   userPreferences: {
     mediaDevices: {
       audioInputDeviceId: "default",
@@ -91,7 +96,9 @@ jest.mock("@/utils/supabase/client", () => ({
     schema: () => ({
       from: () => ({
         select: () => ({
-          is: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }),
+          is: () => ({
+            eq: () => ({ maybeSingle: async () => ({ data: null }) }),
+          }),
         }),
       }),
     }),
@@ -121,24 +128,29 @@ jest.mock("@/features/surfaces/hooks/useSurfaceConfig", () => ({
   useSurfaceAgentRoles: () => ({ roles: {}, loading: false }),
 }));
 
-
 let pendingChoice = false;
 jest.mock("@/lib/organization/organization-gate", () => ({
   hasPendingOrganizationRequest: () => pendingChoice,
 }));
 
-async function mount() {
+async function mount(props: ComponentProps<typeof ProTextarea> = {}) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
   await act(async () => {
     root.render(
       <TooltipProvider>
-        <ProTextarea value="some text" onChange={() => {}} />
+        <ProTextarea value="some text" onChange={() => {}} {...props} />
       </TooltipProvider>,
     );
   });
-  return root;
+  return {
+    container,
+    unmount: async () => {
+      await act(async () => root.unmount());
+      container.remove();
+    },
+  };
 }
 
 // The ⋯ menu's own open panel. (Its entries follow the one registry tree —
@@ -148,7 +160,9 @@ const menuVisible = () =>
   document.querySelector('[role="dialog"][data-state="open"]') !== null;
 
 async function openMenu() {
-  const trigger = document.querySelector<HTMLButtonElement>('button[aria-label="More options"]');
+  const trigger = document.querySelector<HTMLButtonElement>(
+    'button[aria-label="More options"]',
+  );
   expect(trigger).not.toBeNull();
   await act(async () => {
     trigger!.click();
@@ -164,7 +178,7 @@ async function pressEscape() {
 }
 
 it("the menu stays open while a workspace choice is awaited, and closes after", async () => {
-  const root = await mount();
+  const box = await mount();
   await openMenu();
   expect(menuVisible()).toBe(true);
 
@@ -175,5 +189,56 @@ it("the menu stays open while a workspace choice is awaited, and closes after", 
   pendingChoice = false;
   await pressEscape();
   expect(menuVisible()).toBe(false);
-  await act(async () => root.unmount());
+  await box.unmount();
+});
+
+it("keeps empty submit opt-in while explicit submitDisabled remains authoritative", async () => {
+  const defaultSubmit = jest.fn();
+  const defaultBox = await mount({
+    value: "",
+    onSubmit: defaultSubmit,
+    submitLabel: "Send default empty",
+  });
+  const defaultButton = defaultBox.container.querySelector<HTMLButtonElement>(
+    'button[aria-label="Send default empty"]',
+  );
+  expect(defaultButton).not.toBeNull();
+  expect(defaultButton!.disabled).toBe(true);
+  defaultButton!.click();
+  expect(defaultSubmit).not.toHaveBeenCalled();
+  await defaultBox.unmount();
+
+  const attachmentSubmit = jest.fn();
+  const attachmentBox = await mount({
+    value: "",
+    onSubmit: attachmentSubmit,
+    submitLabel: "Send attachment",
+    allowEmptySubmit: true,
+  });
+  const attachmentButton =
+    attachmentBox.container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Send attachment"]',
+    );
+  expect(attachmentButton).not.toBeNull();
+  expect(attachmentButton!.disabled).toBe(false);
+  await act(async () => attachmentButton!.click());
+  expect(attachmentSubmit).toHaveBeenCalledTimes(1);
+  await attachmentBox.unmount();
+
+  const blockedSubmit = jest.fn();
+  const blockedBox = await mount({
+    value: "",
+    onSubmit: blockedSubmit,
+    submitLabel: "Send blocked attachment",
+    allowEmptySubmit: true,
+    submitDisabled: true,
+  });
+  const blockedButton = blockedBox.container.querySelector<HTMLButtonElement>(
+    'button[aria-label="Send blocked attachment"]',
+  );
+  expect(blockedButton).not.toBeNull();
+  expect(blockedButton!.disabled).toBe(true);
+  blockedButton!.click();
+  expect(blockedSubmit).not.toHaveBeenCalled();
+  await blockedBox.unmount();
 });

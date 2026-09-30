@@ -28,7 +28,7 @@ export const decorateErrorToast: ErrorToastDecorator = (message, options, record
       : undefined,
     source: "toast",
   };
-  const menu = createElement(ErrorAlchemyMenu, { input, label: message });
+  const menu = createElement(ErrorAlchemyMenu, { input, label: message, className: "error-toast-copy" });
   if (options?.action === undefined) return { ...options, action: menu };
   if (options?.cancel === undefined) return { ...options, cancel: menu };
   return options;

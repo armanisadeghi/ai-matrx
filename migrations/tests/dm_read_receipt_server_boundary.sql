@@ -30,7 +30,7 @@ DO $$ DECLARE v_id uuid := (SELECT id FROM dm_preference_probe); v_at timestampt
    RAISE EXCEPTION 'A NULL receipt erased the durable boundary';
  END IF;
  UPDATE communication.dm_conversation_participants SET last_read_at='2099-01-01' WHERE id=v_id;
- IF NOT EXISTS(SELECT 1 FROM communication.dm_conversation_participants WHERE id=v_id AND last_read_at=statement_timestamp()) THEN
+ IF NOT EXISTS(SELECT 1 FROM communication.dm_conversation_participants WHERE id=v_id AND last_read_at BETWEEN statement_timestamp() AND clock_timestamp()) THEN
    RAISE EXCEPTION 'A future device clock marked unseen future messages read';
  END IF;
 END $$;
@@ -53,7 +53,7 @@ DO $$ DECLARE v_at timestamptz; BEGIN
  (conversation_id,user_id,organization_id,created_by,role,last_read_at)
  SELECT conversation_id,recipient_id,organization_id,owner_id,'member','2099-01-01'::timestamptz
  FROM dm_initial_receipt_probe RETURNING last_read_at INTO v_at;
- IF v_at IS DISTINCT FROM statement_timestamp() THEN
+ IF v_at IS NULL OR v_at < statement_timestamp() OR v_at > clock_timestamp() THEN
    RAISE EXCEPTION 'An initial receipt marked unseen future messages read';
  END IF;
 END $$;

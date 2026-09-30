@@ -157,6 +157,9 @@ export function useOpenItemPresentation() {
         // is keyed on this row's id, so the Detail primitive IS its
         // presentation, from the one registration in `registry.tsx`.
         case "web_youtube_video":
+        // A stored transcript (2026-09-30): the Detail record, whose door is
+        // the transcript's page. There is no transcript-by-id window.
+        case "transcript":
           return openGenericDetail();
         default:
           return openGenericDetail();

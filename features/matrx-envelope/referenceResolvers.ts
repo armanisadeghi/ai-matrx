@@ -702,18 +702,17 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     },
   },
 
-  transcript: {
-    ...createRecordResolver({
-      openItemType: "file",
-      table: "transcripts",
-      schema: "transcripts",
-      select: "title, description",
-      titleFields: ["title"],
-      bodyFields: ["description"],
-    }),
-    // No transcript window wired in item-presentation yet — resolve-only chip.
-    openId: () => undefined,
-  },
+  // A reference is a LINK: a transcript chip opens the transcript (its Detail
+  // record, whose door is `/transcripts/processor?focus=<id>`). Until
+  // 2026-09-30 `openId` returned nothing and the chip rendered disabled.
+  transcript: createRecordResolver({
+    openItemType: "transcript",
+    table: "transcripts",
+    schema: "transcripts",
+    select: "title, description",
+    titleFields: ["title"],
+    bodyFields: ["description"],
+  }),
   transcript_session: createRecordResolver({
     openItemType: "session",
     table: "studio_sessions",
@@ -731,7 +730,9 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
 
   /** One segment inside a stored transcript (`segment_index` = 0-based parse order). */
   transcript_segment: {
-    openItemType: "file",
+    // The segment's transcript — never the FILE preview (a transcript id is
+    // not a file id; that door opened nothing until 2026-09-30).
+    openItemType: "transcript",
     openId: (ref) => ref.transcript_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.transcript_id) return undefined;

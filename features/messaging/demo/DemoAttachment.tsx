@@ -45,7 +45,7 @@ export function DemoAttachment({ attachment }: { attachment: Attachment }) {
       <FileText size={24} />
       <span>
         Design sample.svg
-        <small className="block opacity-70">Download attachment</small>
+        <small className="block">Download attachment</small>
       </span>
     </a>
   );
