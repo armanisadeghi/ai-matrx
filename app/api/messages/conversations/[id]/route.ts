@@ -16,6 +16,17 @@ import { isDurableMediaUrl } from "@/lib/media/durability";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
+function participantWriteErrorResponse(error: Error, conversationId: string) {
+  return NextResponse.json({
+    success: false,
+    msg: error.message,
+    code: "code" in error ? error.code : error.name,
+    details: "details" in error ? error.details : undefined,
+    hint: "hint" in error ? error.hint : undefined,
+    conversationId,
+  }, { status: writeFailureStatus(error) });
+}
+
 // ============================================
 // Validation Schemas
 // ============================================
@@ -116,13 +127,7 @@ export async function GET(
       }),
     );
 
-    // Update last_read_at for current user
-    await supabase
-      .schema("communication")
-      .from("dm_conversation_participants")
-      .update({ last_read_at: new Date().toISOString() })
-      .eq("conversation_id", conversationId)
-      .eq("user_id", userId);
+    // Metadata is not a read receipt: only the message viewer confirms loaded messages.
 
     return NextResponse.json({
       success: true,
@@ -200,7 +205,7 @@ export async function PUT(
     const { data: participation, error: participationError } = await supabase
       .schema("communication")
       .from("dm_conversation_participants")
-      .select("role")
+      .select("role, organization_id")
       .is("deleted_at", null)
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
@@ -213,22 +218,37 @@ export async function PUT(
       );
     }
 
+    // Resolve the destination from the conversation, never a drifted participant row.
+    const { data: destination, error: destinationError } = await supabase
+      .schema("communication").from("dm_conversations")
+      .select("organization_id").eq("id", conversationId)
+      .is("deleted_at", null).single();
+    if (destinationError || !destination) {
+      return NextResponse.json({ success: false, msg: "Conversation not found" }, { status: 404 });
+    }
+
     // Update participant settings (mute, archive)
     if (is_muted !== undefined || is_archived !== undefined) {
       const participantUpdate: TablesUpdate<
         { schema: "communication" },
         "dm_conversation_participants"
       > = {};
+      participantUpdate.organization_id = destination.organization_id;
       if (is_muted !== undefined) participantUpdate.is_muted = is_muted;
       if (is_archived !== undefined)
         participantUpdate.is_archived = is_archived;
 
-      await supabase
-        .schema("communication")
-        .from("dm_conversation_participants")
-        .update(participantUpdate)
-        .eq("conversation_id", conversationId)
-        .eq("user_id", userId);
+      const { error: preferenceError } = await tryWriteOne(
+        supabase.schema("communication").from("dm_conversation_participants")
+          .update(participantUpdate)
+          .eq("organization_id", destination.organization_id)
+          .eq("conversation_id", conversationId).eq("user_id", userId)
+          .is("deleted_at", null).select("id"),
+        { action: "save", noun: "conversation preferences" },
+      );
+      if (preferenceError) {
+        return participantWriteErrorResponse(preferenceError, conversationId);
+      }
     }
 
     // Update group settings (only owner/admin can do this)
@@ -333,7 +353,7 @@ export async function DELETE(
     const { data: conversation } = await supabase
       .schema("communication")
       .from("dm_conversations")
-      .select("type, created_by")
+      .select("type, created_by, organization_id")
       .is("deleted_at", null)
       .eq("id", conversationId)
       .single();
@@ -384,12 +404,17 @@ export async function DELETE(
     }
 
     // Otherwise, just leave the conversation (archive it)
-    await supabase
-      .schema("communication")
-      .from("dm_conversation_participants")
-      .update({ is_archived: true })
-      .eq("conversation_id", conversationId)
-      .eq("user_id", userId);
+    const { error: preferenceError } = await tryWriteOne(
+      supabase.schema("communication").from("dm_conversation_participants")
+        .update({ is_archived: true, organization_id: conversation.organization_id })
+        .eq("organization_id", conversation.organization_id)
+        .eq("conversation_id", conversationId).eq("user_id", userId)
+        .is("deleted_at", null).select("id"),
+      { action: "archive", noun: "conversation" },
+    );
+    if (preferenceError) {
+      return participantWriteErrorResponse(preferenceError, conversationId);
+    }
 
     return NextResponse.json({
       success: true,

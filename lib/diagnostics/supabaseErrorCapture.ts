@@ -62,6 +62,20 @@ interface ChainContext {
 /** Marks a proxy so we never double-wrap. */
 const WRAPPED = Symbol.for("matrx.supabaseCaptureWrapped");
 const SET_CAPTURE_ENABLED = Symbol.for("matrx.supabaseCaptureEnabled");
+const capturedErrorIds = new WeakMap<object, string>();
+
+/** Find the original capture through typed wrappers without copying an incident. */
+export function supabaseErrorCaptureId(error: unknown): string | undefined {
+  const seen = new Set<object>();
+  let current = error;
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const id = capturedErrorIds.get(current);
+    if (id) return id;
+    current = "cause" in current ? current.cause : undefined;
+  }
+  return undefined;
+}
 
 /** Opt one query out when its caller owns retry plus final capture. */
 export function suppressSupabaseErrorCapture<T>(builder: T): T {
@@ -203,7 +217,7 @@ function captureResult(
 ): void {
   const e = res.error;
   if (!e) return;
-  captureError({
+  const id = captureError({
     source: "supabase-postgrest",
     operation: ctx.operation,
     schema: ctx.schema,
@@ -228,6 +242,7 @@ function captureResult(
     sessionState: sessionStateMarker(),
     raw: e,
   });
+  capturedErrorIds.set(e, id);
 }
 
 function captureException(
@@ -236,7 +251,7 @@ function captureException(
   caller: Error,
 ): void {
   const status = (err as { status?: number } | undefined)?.status;
-  captureError({
+  const id = captureError({
     source: "supabase-exception",
     operation: ctx.operation,
     schema: ctx.schema,
@@ -249,6 +264,7 @@ function captureException(
     sessionState: sessionStateMarker(),
     raw: serializeThrown(err),
   });
+  if (err && typeof err === "object") capturedErrorIds.set(err, id);
 }
 
 /**
