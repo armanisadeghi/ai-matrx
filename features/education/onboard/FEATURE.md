@@ -292,6 +292,12 @@ with the stated vision.
 
 ## Change log
 
+- **2026-09-29** — The study kit's organization is resolved AT THE BUTTON, never inside the run.
+  `useKitGeneration` called `ensureOrgId` after ingest, so a learner with no workspace selected got a
+  blocking "Which organization is this for?" dialog mid-run. `StartHero` now holds the press when no
+  workspace is chosen (inline `OrganizationContextNotice` beside the button, button reads "Waiting for
+  a workspace — then building"), replays it the moment one is chosen, and `run(input, kinds, options,
+  orgId)` carries that org into the namer and every generator (`convertMany(..., orgId)`).
 - **2026-09-27** — page-pass `/education/summaries` + `/education/summaries/[id]` (education fleet
   wave 3): type list + single-record (view-only). Root cause found: neither route had an entry in
   `route-to-surface.ts`, so both fell through the `/education` prefix to the education hub
