@@ -22,6 +22,7 @@ const TABLE = "0b7b4a5e-6d57-4c55-9a61-1f3b3a0f0c11";
 type Call = { relation: string; op: string; args: unknown[] };
 const tableCalls: Call[] = [];
 const doorCalls: Array<{ door: string; args: unknown }> = [];
+let storeListRefuses = false;
 
 function builder(relation: string) {
   const b: Record<string, unknown> = {};
@@ -173,7 +174,9 @@ jest.mock("@ai-matrx/records/core", () => ({
       ),
       recordWrite: door("recordWrite", () => "store-record-1"),
       recordWriteGraph: door("recordWriteGraph", () => ({ parent_id: "store-record-2" })),
-      list: door("list", () => ({
+      list: door("list", () => {
+        if (storeListRefuses) throw new Error("the store refused this list");
+        return {
         rows: [
           {
             id: "store-record-1",
@@ -189,7 +192,8 @@ jest.mock("@ai-matrx/records/core", () => ({
           },
         ],
         total: null,
-      })),
+        };
+      }),
       recordHeaders: door("recordHeaders", () => [
         { id: "store-record-1", updated_at: "2026-09-27T10:00:00Z" },
       ]),
@@ -210,6 +214,7 @@ const writeDoors = () =>
   doorCalls.filter((c) => c.door !== "tableList").map((c) => c.door);
 
 beforeEach(() => {
+  storeListRefuses = false;
   tableCalls.length = 0;
   doorCalls.length = 0;
 });
@@ -298,6 +303,16 @@ describe("an organization that has not adopted the store for kind records", () =
     expect(entries.map((e) => e.id)).toContain("legacy-row-1");
     // Reading the store-side organization is fine; a legacy organization never WRITES to a store.
     expect(writeDoors().filter((d) => d.startsWith("recordWrite") || d === "recordDelete")).toEqual([]);
+  });
+
+  it("names an organization it could not read instead of dropping it silently", async () => {
+    storeListRefuses = true;
+    const unreadable: Array<{ id: string; name: string | null }> = [];
+    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, LEGACY_ORG, (orgs) =>
+      unreadable.push(...orgs),
+    );
+    expect(entries.map((e) => e.id)).toEqual(["legacy-row-1"]);
+    expect(unreadable).toEqual([expect.objectContaining({ id: STORE_ORG, name: "Store Cellars" })]);
   });
 
   it("lists the same across-organization set when no organization is selected", async () => {
