@@ -30,12 +30,19 @@ import { fetchVaultItems } from "@/features/secrets/vault-service";
 import type { VaultItem } from "@/features/secrets/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
+import {
+  initialRecipients,
+  recipientRoster,
+} from "@/features/marketing/monitor-setup/model";
 
 import { saveMonitorDelivery } from "./api";
 
 /** The incoming-webhook credential kinds the Slack channel accepts (aidream
  * `notifications/channels/slack.py::WEBHOOK_DEFINITION_KEYS`). */
-const SLACK_DEFINITION_KEYS = new Set(["incoming_webhook", "slack_incoming_webhook"]);
+const SLACK_DEFINITION_KEYS = new Set([
+  "incoming_webhook",
+  "slack_incoming_webhook",
+]);
 const NO_SLACK = "__none__";
 
 export interface DeliveryChoice {
@@ -46,27 +53,40 @@ export interface DeliveryChoice {
 export function DeliveryControls({
   organizationId,
   trackerId,
+  currentUserId,
   savedRecipients,
   savedSlackItemId,
   registerCommit,
 }: {
   organizationId: string;
   trackerId: string | null;
+  /** The person saving: a NEW monitor's one preselected recipient, and nobody else. */
+  currentUserId: string | null;
   savedRecipients: string[];
   savedSlackItemId: string | null;
   /** The editor calls the registered function after it saves the monitor. */
-  registerCommit?: (commit: ((trackerId: string) => Promise<void>) | null) => void;
+  registerCommit?: (
+    commit: ((trackerId: string) => Promise<void>) | null,
+  ) => void;
 }) {
   const dispatch = useAppDispatch();
-  const { members, loading: membersLoading, error: membersError } =
-    useOrganizationMembers(organizationId);
+  const {
+    members,
+    loading: membersLoading,
+    error: membersError,
+  } = useOrganizationMembers(organizationId);
   const [slackItems, setSlackItems] = useState<VaultItem[] | null>(null);
   const [vaultError, setVaultError] = useState<string | null>(null);
+  // A new monitor starts with exactly the person saving it — saved explicitly —
+  // never another member (acceptance defect C); a saved one shows its own list.
+  const [initial] = useState(() =>
+    initialRecipients({ trackerId, saved: savedRecipients, currentUserId }),
+  );
   const [choice, setChoice] = useState<DeliveryChoice>({
-    recipients: savedRecipients,
+    recipients: initial.recipients,
     slackItemId: savedSlackItemId,
   });
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirty] = useState(initial.commitOnSave);
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -75,14 +95,21 @@ export function DeliveryControls({
   const [appliedKey, setAppliedKey] = useState(savedKey);
   if (!dirty && appliedKey !== savedKey) {
     setAppliedKey(savedKey);
-    setChoice({ recipients: savedRecipients, slackItemId: savedSlackItemId });
+    setChoice({
+      recipients: [...new Set(savedRecipients)],
+      slackItemId: savedSlackItemId,
+    });
   }
 
   useEffect(() => {
     let alive = true;
     fetchVaultItems({ kind: "organization", organizationId })
-      .then((items) =>
-        alive && setSlackItems(items.filter((i) => SLACK_DEFINITION_KEYS.has(i.definition_key))),
+      .then(
+        (items) =>
+          alive &&
+          setSlackItems(
+            items.filter((i) => SLACK_DEFINITION_KEYS.has(i.definition_key)),
+          ),
       )
       .catch((error: unknown) => {
         if (!alive) return;
@@ -132,15 +159,17 @@ export function DeliveryControls({
       <p className="text-sm text-foreground">
         {choice.recipients.length
           ? `${choice.recipients.length} ${choice.recipients.length === 1 ? "person hears" : "people hear"} about it, each on their own notification preferences.`
-          : "If you pick nobody, the person who saves this monitor is told, on their own notification preferences."}
+          : "If you pick nobody, whoever created this monitor is told, on their own notification preferences."}
       </p>
       {membersError ? (
-        <p className="text-xs text-destructive">Could not load this organization&apos;s people: {membersError}</p>
+        <p className="text-xs text-destructive">
+          Could not load this organization&apos;s people: {membersError}
+        </p>
       ) : membersLoading ? (
         <p className="text-xs text-muted-foreground">Loading people…</p>
       ) : (
         <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-          {members.map((m) => (
+          {recipientRoster(members, currentUserId).map((m) => (
             <li key={m.userId}>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox
@@ -151,7 +180,9 @@ export function DeliveryControls({
                   {m.user?.displayName || m.user?.email || "A member"}
                 </span>
                 {m.user?.displayName && m.user.email ? (
-                  <span className="truncate text-xs text-muted-foreground">{m.user.email}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {m.user.email}
+                  </span>
                 ) : null}
               </label>
             </li>
@@ -164,10 +195,16 @@ export function DeliveryControls({
           value={choice.slackItemId ?? NO_SLACK}
           onValueChange={(v) => {
             setDirty(true);
-            setChoice((cur) => ({ ...cur, slackItemId: v === NO_SLACK ? null : v }));
+            setChoice((cur) => ({
+              ...cur,
+              slackItemId: v === NO_SLACK ? null : v,
+            }));
           }}
         >
-          <SelectTrigger className="h-8 w-64 text-sm" aria-label="Slack channel">
+          <SelectTrigger
+            className="h-8 w-64 text-sm"
+            aria-label="Slack channel"
+          >
             <SelectValue placeholder={slackItems ? "No Slack" : "Loading…"} />
           </SelectTrigger>
           <SelectContent>
@@ -188,7 +225,11 @@ export function DeliveryControls({
             , then pick it here.
           </span>
         ) : null}
-        {vaultError ? <span className="text-destructive">Could not read the Vault: {vaultError}</span> : null}
+        {vaultError ? (
+          <span className="text-destructive">
+            Could not read the Vault: {vaultError}
+          </span>
+        ) : null}
       </div>
       {problem ? <p className="text-xs text-destructive">{problem}</p> : null}
       {trackerId ? (
@@ -199,16 +240,24 @@ export function DeliveryControls({
             disabled={!dirty || saving}
             onClick={() =>
               void commit(trackerId)
-                .then(() => toast.success("Saved who hears about this monitor."))
+                .then(() =>
+                  toast.success("Saved who hears about this monitor."),
+                )
                 .catch(() => undefined)
             }
           >
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
             {dirty ? "Save who hears about it" : "Saved"}
           </Button>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Saved together with the monitor.</p>
+        <p className="text-xs text-muted-foreground">
+          Saved together with the monitor.
+        </p>
       )}
     </div>
   );

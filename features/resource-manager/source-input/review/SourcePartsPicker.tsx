@@ -4,8 +4,8 @@
  * Choose the parts of one Source — search, never "show 50 more".
  *
  * Parts are the manifest's Segments (a page of a PDF, a chunk of a note). The
- * search box matches words (in a part's label, its opening words, and — read on
- * the first word search — its full text), a page number ("12") or a page range
+ * search box matches words (in a part's label and opening words here, and in its
+ * full text on the server — `POST /sources/parts/search`), a page number ("12") or a page range
  * ("3-10"), through THE one matcher (`../partsSearch.ts`). "Choose all shown" /
  * "Clear shown" act on what the search shows, so "pages 40 to 80" is two
  * keystrokes and one click. Each part shows its opening words.
@@ -18,7 +18,7 @@ import { Button, Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatChars } from "@/lib/tokens/estimate";
 import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
-import { useSourcePartsText } from "../useSourcePartsText";
+import { useSourcePartsSearch } from "../useSourcePartsText";
 
 interface SourcePartsPickerProps {
   /** The Source whose parts these are — its text is read for a word search. */
@@ -31,9 +31,9 @@ interface SourcePartsPickerProps {
 export function SourcePartsPicker({ sourceRef, segments, selected, onChange }: SourcePartsPickerProps) {
   const [query, setQuery] = useState("");
   const words = isWordQuery(query);
-  const partsText = useSourcePartsText(sourceRef, words);
+  const partsText = useSourcePartsSearch(sourceRef, query);
   const chosen = new Set(selected);
-  const shown = findParts(segments, query, partsText.text);
+  const shown = findParts(segments, query, partsText.matches);
   const chosenChars = segments.filter((s) => chosen.has(s.id)).reduce((n, s) => n + s.chars, 0);
   const hasPages = segments.some((s) => s.page !== undefined);
 
@@ -60,9 +60,12 @@ export function SourcePartsPicker({ sourceRef, segments, selected, onChange }: S
           className="pl-8"
         />
       </div>
-      {words && (partsText.reading || partsText.error) && (
+      {words && (partsText.reading || partsText.error || partsText.truncated) && (
         <p className="text-xs text-muted-foreground" aria-live="polite">
-          {partsText.error ?? "Searching inside the text…"}
+          {partsText.error ??
+            (partsText.reading
+              ? "Searching inside the text…"
+              : "More parts hold these words than can be listed — add a word to narrow the search.")}
         </p>
       )}
 

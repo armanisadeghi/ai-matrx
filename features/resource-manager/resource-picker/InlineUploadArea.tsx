@@ -42,6 +42,7 @@ import {
 import { formatFileSize } from "@ai-matrx/kit/format";
 import type { CanonicalStorageImport } from "@/features/files/storage-sources/types";
 import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
+import { matchStorageAccept } from "@/features/files/storage-sources/accept";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface UploadedFile {
@@ -82,6 +83,12 @@ interface InlineUploadAreaProps {
    * TABLE's organization). Declared, the upload choke point files it there without asking.
    */
   organizationId?: string | null;
+  /**
+   * What the chooser and a drop accept (an `<input accept>` string, e.g.
+   * "image/*"). A dropped file outside it is refused out loud, never uploaded.
+   * Omitted = anything.
+   */
+  accept?: string;
 }
 
 function classifyUploadType(mimeType: string): string {
@@ -330,6 +337,7 @@ export function InlineUploadArea({
   onBusyChange,
   selectionMode = "multiple",
   organizationId = null,
+  accept,
 }: InlineUploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -541,7 +549,18 @@ export function InlineUploadArea({
       e.stopPropagation();
       setIsDragging(false);
       void collectDroppedFiles(e.dataTransfer)
-        .then(handleFiles)
+        .then((dropped) => {
+          if (!accept) return handleFiles(dropped);
+          const refused = dropped.filter(
+            ({ file }) => !matchStorageAccept(file.name, file.type, accept).accepted,
+          );
+          if (refused.length) {
+            setUploadError(
+              `${refused.map(({ file }) => file.name).join(", ")} ${refused.length === 1 ? "is" : "are"} not a kind this takes, so ${refused.length === 1 ? "it was" : "they were"} not uploaded.`,
+            );
+          }
+          return handleFiles(dropped.filter((c) => !refused.includes(c)));
+        })
         .catch((error: unknown) => {
           console.error(
             "[InlineUploadArea] failed to read dropped files",
@@ -554,7 +573,7 @@ export function InlineUploadArea({
           );
         });
     },
-    [handleFiles],
+    [handleFiles, accept],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -611,6 +630,7 @@ export function InlineUploadArea({
                 disabled={isLoading}
                 onFiles={(files) => handleFiles(files.map(candidateFromFile))}
                 multiple={selectionMode === "multiple"}
+                accept={accept}
                 storageImportFolderPath={composeUploadFolderPath(
                   "userContent",
                   "prompt-attachments",

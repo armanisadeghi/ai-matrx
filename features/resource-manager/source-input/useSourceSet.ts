@@ -53,8 +53,7 @@ import type { ManagedResource } from "@/features/agents/types/instance.types";
 import { fetchSourceManifest, resolveSourceSet } from "./sourceSetApi";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import { useSyncHydrated } from "@/lib/sync/useSyncHydrated";
-import { reloadedCard } from "./interrupted";
-import { WAITING_FOR_ORGANIZATION } from "./organizationHold";
+import { reloadedCard, WAITING_FOR_ORGANIZATION } from "./interrupted";
 import type { SourceCardModel, SourceDraft } from "./types";
 
 /** The instanceResources key for one surface's Source input. */

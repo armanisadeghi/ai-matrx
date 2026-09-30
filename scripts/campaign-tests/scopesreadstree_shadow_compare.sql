@@ -94,7 +94,23 @@ grant usage on schema l6_old to authenticated, service_role;
 grant execute on all functions in schema l6_old to authenticated, service_role;
 set local session_replication_role = origin;
 
+\i migrations/campaign/scopesreadstree_the_scope_readers_switch.sql
 \i migrations/campaign/scopesreadstree_the_scope_tree_and_values_read_the_store.sql
+-- THE SWITCH OFF: every door answers exactly as its old body (checked on the service seat of every
+-- organization for the list doors, and 300 scopes' values).
+create temp table l6_off on commit drop as
+  select o.organization_id,
+         (select public.get_scope_tree(o.organization_id)) = (select l6_old.get_scope_tree(o.organization_id)) as tree,
+         (select public.list_scope_types(o.organization_id)) = (select l6_old.list_scope_types(o.organization_id)) as types
+    from (select distinct organization_id from context.scope_types where deleted_at is null) o
+   where set_config('request.jwt.claims', '{"role":"service_role"}', true) is not null;
+\echo ==== SWITCH OFF: the doors answer as the old bodies
+select count(*) as organizations, count(*) filter (where tree and types) as identical from l6_off;
+select count(*) as scopes, count(*) filter (where public.get_scope_context(s.id, null, true) = l6_old.get_scope_context(s.id, null, true)) as identical
+  from (select id from context.scopes where deleted_at is null order by id limit 300) s;
+select set_config('request.jwt.claims', '', true) is not null as cleared;
+-- THE SWITCH ON for the rest of this transaction.
+update platform.feature_knob set value = 'true'::jsonb where feature = 'custom' and key = 'scope_readers_read_the_store';
 set local statement_timeout = 0;
 set local lock_timeout = '120s';
 -- The campaign file's own grant sweeps every undeclared definer; the scratch copies get theirs back.

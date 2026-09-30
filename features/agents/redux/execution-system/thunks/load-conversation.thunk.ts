@@ -35,6 +35,8 @@ import {
   setMessagesHydrationFailure,
 } from "../messages/messages.slice";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
+import { parsePersistedSurfaceOwnsOutput } from "../conversations/surface-owns-output.persistence";
+import { selectConversationSurfaceOwnsOutput } from "../conversations/conversations.selectors";
 import { conversationSandboxBindingFromRow } from "@/lib/sandbox/conversation-binding-row";
 import { hydrateObservability } from "../observability/observability.slice";
 import { hydrateRequestsFromObservability } from "../active-requests/active-requests.slice";
@@ -343,6 +345,11 @@ export const loadConversation = createAsyncThunk<
           typeof conv.metadata === "object" && conv.metadata !== null
             ? (conv.metadata as Record<string, unknown>)
             : undefined,
+        // Surface-owned output survives the reload (only ever set, never
+        // cleared here: a live launch may hold it before the row has it).
+        ...(parsePersistedSurfaceOwnsOutput(conv.metadata)
+          ? { surfaceOwnsOutput: true }
+          : {}),
         // THE compute-target binding — the same shape a locally-created
         // conversation carries, so nothing downstream can tell a fetched
         // conversation from a fresh one.
@@ -406,7 +413,13 @@ export const loadConversation = createAsyncThunk<
     // not the deprecated `user_id`. A viewer must never mint canvas_items rows
     // for someone else's conversation.
     // component-created-by-ok: chat.conversation is an entity — its created_by is the conversation's owner
-    if (authedUserId && conv.created_by === authedUserId) {
+    // A surface-owned conversation's result was saved by its surface — never
+    // reconcile its replies into a twin record.
+    if (
+      authedUserId &&
+      conv.created_by === authedUserId &&
+      !selectConversationSurfaceOwnsOutput(getState(), conversationId)
+    ) {
       void reconcileMessagesArtifacts(
         messageRecords
           .filter(

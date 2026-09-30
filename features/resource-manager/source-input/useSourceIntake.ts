@@ -7,41 +7,48 @@
  * with a sentence and a remedy. Nothing is ever sent onward as a blob.
  *
  *   pasted text   → `POST /sources/land` (`buildPastedTextLanding`), kept.
- *   a web page    → the scraper route, which lands at its result boundary;
- *                   then `POST /sources/{id}/keep` files it against the thing
- *                   being made.
- *   a file/image  → `useFileUpload().uploadMany` — UploadGuardHost's SHA-256
- *                   check offers "use the one you already have". The upload's
- *                   finalize starts the one reading run on the server (the file
- *                   adapters make the Source). The file is filed against
- *                   `attachTo` at once through the ONE associations chokepoint
- *                   (`file → target`), and its Source — new or already there —
- *                   is kept and filed through the door (`fileLanded`), driven by
- *                   the server's state (`fileSource.ts`, `useSourceRecovery`).
+ *   a web page    → `WebpageResourcePickerCore` scrapes it (the scraper lands
+ *                   the page at its result boundary) and hands over the landed
+ *                   Source (`addScrapedPage`); `POST /sources/{id}/keep` files it
+ *                   against the thing being made. A link typed before a reload
+ *                   is scraped again (`addWebPage`).
+ *   a file/image  → `InlineUploadArea` (the canonical upload surface) uploads
+ *                   through the one upload choke point and hands over file ids
+ *                   (`addUploaded`). The upload's finalize starts the one
+ *                   reading run on the server. The file is filed against
+ *                   `attachTo` through the ONE associations chokepoint, and its
+ *                   Source is kept and filed through the door (`fileLanded`),
+ *                   driven by the server's state (`fileSource.ts`,
+ *                   `useSourceRecovery`). A card whose upload a reload cut off
+ *                   is re-chosen through the same surface (`retryFile`).
+ *   existing      → a registry item from Use existing (`addExisting`).
  *   YouTube/audio → no landing door of their own yet: the transcript comes
  *                   from Start's readers (`fetchYouTubeTranscript`,
  *                   `transcribeCloudFile`) and lands through
- *                   `POST /sources/land`. The card says so.
- *   stored things → the picker's `Resource`, through THE ONE total mapping
- *                   `resourceToSourceRef` (lane USI-1).
+ *                   `POST /sources/land`.
  *
  * Never lose input: every landing keeps what the person handed over in the
  * draft (`SourceDraft.input` — text, link, uploaded recording; never bytes)
- * until it settles, so `resume` can land it again after a reload or a failure.
+ * until it settles, so `resume` can land it again after a reload, a failure,
+ * or once an organization is chosen (`useSourceRecovery` replays every card
+ * waiting for one — from state, never an in-memory queue).
  * Landing twice is safe: the door dedupes by (organization, identity, content
  * hash) and returns the same Source.
  */
 
-import type { Resource } from "@/features/agents/resources/types";
 import { useEffect, useState } from "react";
+import { knobInt } from "@/lib/knobs/featureKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { holdDeliberateIntent } from "@/lib/organization/organization-gate";
+import {
+  holdDeliberateIntent,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { fetchYouTubeTranscript } from "@/features/education/onboard/youtubeTranscript";
 import { youtubeId } from "@/lib/media/youtube";
@@ -60,13 +67,15 @@ import { createSourceRef } from "@ai-matrx/agents/sources";
 import { isAssociationTargetType } from "@ai-matrx/associations";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { supabase } from "@/utils/supabase/client";
-import { isNeedsIntake, resourceToSourceRef } from "./resourceToSourceRef";
+import type { UploadedFile } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import {
-  createOrganizationHold,
+  KEEP_WAITING_FOR_ORGANIZATION,
+  MAX_KEPT_TEXT_KNOB,
+  NOT_KEPT_FOR_RELOAD,
   WAITING_FOR_ORGANIZATION,
-  waitsForOrganization,
-} from "./organizationHold";
-import { MAX_KEPT_TEXT_CHARS, resumableInput } from "./interrupted";
+  resumableInput,
+} from "./interrupted";
+import { draftKindForToken } from "./sourceKinds";
 import type { UseSourceSetResult } from "./useSourceSet";
 import type {
   SourceAttachTo,
@@ -106,6 +115,11 @@ function isSaveItNotice(remedy: string | null | undefined): boolean {
   return typeof remedy === "string" && remedy.startsWith("save_it");
 }
 
+/** True when a landing stopped only because no organization is chosen yet. */
+export function waitsForOrganization(error: unknown): boolean {
+  return isOrganizationRequiredError(error) || isOrganizationSelectionCancelled(error);
+}
+
 function landedNotes(notices: { message: string }[] | undefined): string[] {
   return (notices ?? []).map((n) => n.message).filter(Boolean);
 }
@@ -113,15 +127,19 @@ function landedNotes(notices: { message: string }[] | undefined): string[] {
 export interface UseSourceIntakeResult {
   addPastedText: (text: string, name?: string) => Promise<void>;
   addWebPage: (url: string) => Promise<void>;
+  /** A page the web picker already read (and the scraper landed); null id = land its text instead. */
+  addScrapedPage: (page: { url: string; title: string; text: string; processedDocumentId: string | null }) => Promise<void>;
+  /** Files `InlineUploadArea` already uploaded. */
+  addUploaded: (files: UploadedFile[], kind: SourceKindId) => Promise<void>;
+  /** A recording `InlineUploadArea` already uploaded — written out, then landed. */
+  addUploadedRecording: (file: UploadedFile) => Promise<void>;
+  /** Something the person already has (Use existing / search). Returns false when already picked. */
+  addExisting: (item: { token: string; id: string; title: string }) => boolean;
   addYouTube: (url: string) => Promise<void>;
-  addFiles: (files: File[], kind: SourceKindId) => Promise<void>;
-  addRecording: (file: File) => Promise<void>;
-  /** A picker selection. Returns false (and says why) when it cannot be a Source yet. */
-  addPicked: (resource: Resource, kind: SourceKindId) => boolean;
   /** Land a card's kept input again (after a reload or a failure). False when nothing was kept. */
   resume: (card: SourceCardModel) => boolean;
-  /** The person chose the file again for a card whose upload was cut off. */
-  retryFile: (card: SourceCardModel, file: File) => Promise<void>;
+  /** The person chose the file again (uploaded) for a card whose upload was cut off. */
+  retryFile: (card: SourceCardModel, file: UploadedFile) => Promise<void>;
   /** Reading an uploaded file made its Source: keep it and file it against `attachTo`. */
   fileLanded: (card: SourceCardModel, processedDocumentId: string) => Promise<void>;
 }
@@ -134,24 +152,28 @@ export function useSourceIntake(
   const activeOrgId = useAppSelector(selectOrganizationId);
   const backendApi = useBackendApi();
   const { scrapeUrl } = useScraperApi();
-  const { uploadMany } = useFileUpload();
   const attachTo = attachTargets(options.attachTo);
 
-  // No organization yet: the landing waits and runs again the moment one is
-  // set (`organizationHold.ts`) — never a dead error on the card.
-  const [orgHold] = useState(createOrganizationHold);
+  // The largest pasted text kept in the draft for a reload is a knob; while
+  // it is unread (or unreadable) nothing is kept and the card says so.
+  const [maxKeptChars, setMaxKeptChars] = useState<number | null>(null);
   useEffect(() => {
-    if (activeOrgId) orgHold.release();
-  }, [activeOrgId, orgHold]);
+    let live = true;
+    knobInt(MAX_KEPT_TEXT_KNOB.feature, MAX_KEPT_TEXT_KNOB.key)
+      .then((n) => live && setMaxKeptChars(n))
+      .catch((err: unknown) => console.error("[useSourceIntake] kept-draft size could not be read:", err));
+    return () => {
+      live = false;
+    };
+  }, []);
 
-  /** Fail the card — or, when only the organization is missing, hold it and say so. */
-  const failOrHold = (id: string, err: unknown, replay: () => Promise<void>) => {
-    if (waitsForOrganization(err)) {
-      orgHold.hold(id, () => (set.restart(id) ? replay() : undefined));
-      set.fail(id, WAITING_FOR_ORGANIZATION);
-      return;
-    }
-    set.fail(id, addFailureSentence(err));
+  /**
+   * Fail the card — or, when only the organization is missing, say it is
+   * waiting. The card's kept input is its replay: `useSourceRecovery` lands it
+   * again the moment an organization is set (state, not a queue).
+   */
+  const failOrHold = (id: string, err: unknown) => {
+    set.fail(id, waitsForOrganization(err) ? WAITING_FOR_ORGANIZATION : addFailureSentence(err));
   };
 
   const needUser = (): string => {
@@ -171,10 +193,12 @@ export function useSourceIntake(
   const addPastedText = async (text: string, name?: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    const kept = maxKeptChars !== null && trimmed.length <= maxKeptChars;
     const id = set.addPending({
       kind: "paste",
       label: name?.trim() || "Pasted text",
-      input: trimmed.length <= MAX_KEPT_TEXT_CHARS ? { text: trimmed, name } : undefined,
+      input: kept ? { text: trimmed, name } : undefined,
+      notes: kept ? undefined : [NOT_KEPT_FOR_RELOAD],
     });
     await holdDeliberateIntent(() => landPaste(id, trimmed, name));
   };
@@ -196,7 +220,7 @@ export function useSourceIntake(
         notes: landed.notes,
       });
     } catch (err) {
-      failOrHold(id, err, () => landPaste(id, trimmed, name));
+      failOrHold(id, err);
     }
   };
 
@@ -251,8 +275,87 @@ export function useSourceIntake(
         notes,
       });
     } catch (err) {
-      failOrHold(id, err, () => landWebPage(id, url));
+      failOrHold(id, err);
     }
+  };
+
+  const addScrapedPage = async (page: {
+    url: string;
+    title: string;
+    text: string;
+    processedDocumentId: string | null;
+  }) => {
+    const label = page.title || hostOf(page.url);
+    if (!page.processedDocumentId) {
+      // The scrape did not land a Source (or the person edited the text): land what they confirmed.
+      const id = set.addPending({ kind: "web", label, origin: page.url, input: { url: page.url } });
+      await holdDeliberateIntent(() => landPaste(id, page.text, label));
+      return;
+    }
+    const pdId = page.processedDocumentId;
+    const id = set.addPending({ kind: "web", label, origin: page.url, input: { url: page.url } });
+    await holdDeliberateIntent(async () => {
+      let notes: string[] = [];
+      try {
+        const organizationId = await ensureOrgId(activeOrgId);
+        const kept = await keepSource(pdId, { attachTo, organizationId });
+        notes = landedNotes(kept.notices);
+      } catch (err) {
+        notes = waitsForOrganization(err)
+          ? [KEEP_WAITING_FOR_ORGANIZATION]
+          : [
+              `It is in your Sources, but it could not be kept for reuse${
+                attachTo.length ? " or filed with what you are making" : ""
+              }: ${addFailureSentence(err)}`,
+            ];
+      }
+      set.settle(id, {
+        label,
+        ref: createSourceRef("processed_document", pdId),
+        processedDocumentId: pdId,
+        notes,
+      });
+    });
+  };
+
+  const addUploaded = async (files: UploadedFile[], kind: SourceKindId) => {
+    for (const file of files) {
+      if (set.hasRef("file", file.fileId)) continue;
+      const id = set.addPending({ kind, label: file.name, origin: "Uploaded file", fileId: file.fileId });
+      let notes: string[] = [];
+      try {
+        const organizationId = await ensureOrgId(activeOrgId);
+        const filed = await fileAgainstTarget(file.fileId, organizationId);
+        if (filed) notes = [filed];
+      } catch (err) {
+        if (!waitsForOrganization(err)) notes = [`It was uploaded, but it could not be filed: ${addFailureSentence(err)}`];
+      }
+      // The Source itself is kept and filed by `useSourceRecovery` from the server's state.
+      set.settle(id, { label: file.name, ref: createSourceRef("file", file.fileId), fileId: file.fileId, notes });
+    }
+  };
+
+  const addUploadedRecording = async (file: UploadedFile) => {
+    const id = set.addPending({
+      kind: "audio",
+      label: file.name,
+      origin: "Recording",
+      fileId: file.fileId,
+      input: { fileId: file.fileId },
+    });
+    await holdDeliberateIntent(() => transcribeRecording(id, file.fileId, file.name));
+  };
+
+  const addExisting = (item: { token: string; id: string; title: string }): boolean => {
+    if (set.hasRef(item.token, item.id)) return false;
+    set.addReady({
+      kind: draftKindForToken(item.token),
+      label: item.title,
+      ref: createSourceRef(item.token, item.id),
+      fileId: item.token === "file" ? item.id : undefined,
+      processedDocumentId: item.token === "processed_document" ? item.id : undefined,
+    });
+    return true;
   };
 
   const addYouTube = async (raw: string) => {
@@ -319,7 +422,7 @@ export function useSourceIntake(
         notes: note ? [...landed.notes, note] : landed.notes,
       });
     } catch (err) {
-      failOrHold(id, err, () => landYouTube(id, url, videoId));
+      failOrHold(id, err);
     }
   };
 
@@ -367,74 +470,6 @@ export function useSourceIntake(
       : `It was uploaded, but it could not be filed with ${what}: ${linked.error.message}`;
   };
 
-  const addFiles = async (files: File[], kind: SourceKindId) => {
-    for (const file of files) {
-      const id = set.addPending({ kind, label: file.name, origin: "Uploaded file" });
-      await holdDeliberateIntent(() => landFile(id, file));
-    }
-  };
-
-  const landFile = async (id: string, file: File) => {
-    try {
-      const organizationId = await ensureOrgId(activeOrgId);
-      // One at a time so each card knows its own file; the duplicate check
-      // still runs for every one and offers the copy already stored.
-      const result = await uploadMany([file], { visibility: "internal" });
-      if (result.cancelled) {
-        set.fail(id, "The upload was cancelled, so nothing was added. Add it again when you are ready.");
-        return;
-      }
-      const reused = result.aliased[0]?.existingFileId;
-      const fileId = reused ?? result.uploaded[0];
-      if (!fileId) {
-        set.fail(
-          id,
-          result.failed[0]?.error
-            ? `The upload failed: ${result.failed[0].error}. Try again.`
-            : "The upload finished but the server did not return the file. Try again.",
-        );
-        return;
-      }
-      const notes = reused ? ["You already had this file — the stored copy is used, nothing new was uploaded."] : [];
-      const filed = await fileAgainstTarget(fileId, organizationId);
-      if (filed) notes.push(filed);
-      // No run is started here: the upload's finalize already started the one
-      // reading run on the server, and a reused copy may already have its
-      // Source. `useSourceRecovery` reads the server's state for the card and
-      // keeps + files the Source (or starts the one run only when nothing is
-      // reading it) — the same for a new upload, a reused copy and a reload.
-      set.settle(id, { label: file.name, ref: createSourceRef("file", fileId), fileId, notes });
-    } catch (err) {
-      failOrHold(id, err, () => landFile(id, file));
-    }
-  };
-
-  const addRecording = async (file: File) => {
-    const id = set.addPending({ kind: "audio", label: file.name, origin: "Recording" });
-    await holdDeliberateIntent(() => landRecording(id, file));
-  };
-
-  const landRecording = async (id: string, file: File) => {
-    try {
-      const organizationId = await ensureOrgId(activeOrgId);
-      const result = await uploadMany([file], { visibility: "internal" });
-      if (result.cancelled) {
-        set.fail(id, "The upload was cancelled, so nothing was added. Add it again when you are ready.");
-        return;
-      }
-      const fileId = result.aliased[0]?.existingFileId ?? result.uploaded[0];
-      if (!fileId) {
-        set.fail(id, "The recording did not upload. Try again.");
-        return;
-      }
-      // Uploaded: from here a reload re-transcribes the stored copy.
-      set.updateDraft(id, { input: { fileId }, fileId });
-      await transcribeRecording(id, fileId, file.name, organizationId);
-    } catch (err) {
-      failOrHold(id, err, () => landRecording(id, file));
-    }
-  };
-
   const transcribeRecording = async (
     id: string,
     fileId: string,
@@ -467,32 +502,13 @@ export function useSourceIntake(
         notes: landed.notes,
       });
     } catch (err) {
-      failOrHold(id, err, () => transcribeRecording(id, fileId, fileName));
+      failOrHold(id, err);
     }
-  };
-
-  const addPicked = (resource: Resource, kind: SourceKindId): boolean => {
-    const outcome = resourceToSourceRef(resource);
-    const label = pickedLabel(resource);
-    if (isNeedsIntake(outcome)) {
-      const id = set.addPending({ kind, label });
-      set.fail(id, outcome.reason);
-      return false;
-    }
-    if (set.hasRef(outcome.resource_type, outcome.resource_id)) return true;
-    set.addReady({
-      kind,
-      label,
-      ref: outcome,
-      fileId: outcome.resource_type === "file" ? outcome.resource_id : undefined,
-    });
-    return true;
   };
 
   const resume = (card: SourceCardModel): boolean => {
     const input: SourceIntakeInput | null = resumableInput(card.draft);
     if (!input) return false;
-    orgHold.drop(card.id);
     set.restart(card.id);
     switch (card.draft.kind) {
       case "paste":
@@ -518,37 +534,43 @@ export function useSourceIntake(
     }
   };
 
-  const retryFile = async (card: SourceCardModel, file: File) => {
+  /** A card whose upload was cut off: the person chose the file again (already uploaded). */
+  const retryFile = async (card: SourceCardModel, file: UploadedFile) => {
     set.restart(card.id);
-    set.updateDraft(card.id, { label: file.name });
-    orgHold.drop(card.id);
-    await holdDeliberateIntent(() =>
-      card.draft.kind === "audio" ? landRecording(card.id, file) : landFile(card.id, file),
-    );
+    set.updateDraft(card.id, { label: file.name, fileId: file.fileId });
+    if (card.draft.kind === "audio") {
+      set.updateDraft(card.id, { input: { fileId: file.fileId } });
+      await holdDeliberateIntent(() => transcribeRecording(card.id, file.fileId, file.name));
+      return;
+    }
+    let notes: string[] = [];
+    try {
+      const organizationId = await ensureOrgId(activeOrgId);
+      const filed = await fileAgainstTarget(file.fileId, organizationId);
+      if (filed) notes = [filed];
+    } catch (err) {
+      if (!waitsForOrganization(err)) notes = [`It was uploaded, but it could not be filed: ${addFailureSentence(err)}`];
+    }
+    set.settle(card.id, { label: file.name, ref: createSourceRef("file", file.fileId), fileId: file.fileId, notes });
   };
 
   const fileLanded = async (card: SourceCardModel, processedDocumentId: string) => {
     // Every card opens its Source from now on (and a held keep's waiting note goes).
-    set.updateDraft(card.id, { processedDocumentId, notes: card.draft.notes });
+    const notes = (card.draft.notes ?? []).filter((n) => n !== KEEP_WAITING_FOR_ORGANIZATION);
+    set.updateDraft(card.id, { processedDocumentId, notes });
     try {
       const organizationId = await ensureOrgId(activeOrgId);
       await keepSource(processedDocumentId, { attachTo, organizationId });
     } catch (err) {
       if (waitsForOrganization(err)) {
-        orgHold.hold(card.id, () => fileLanded(card, processedDocumentId));
-        set.updateDraft(card.id, {
-          processedDocumentId,
-          notes: [
-            ...(card.draft.notes ?? []),
-            "It was read. Waiting for an organization to keep it for reuse — choose one and it is kept by itself.",
-          ],
-        });
+        // Kept again by `useSourceRecovery` once an organization is set.
+        set.updateDraft(card.id, { processedDocumentId, notes: [...notes, KEEP_WAITING_FOR_ORGANIZATION] });
         return;
       }
       set.updateDraft(card.id, {
         processedDocumentId,
         notes: [
-          ...(card.draft.notes ?? []),
+          ...notes,
           `It was read, but its Source could not be kept for reuse${
             attachTo.length ? " or filed with what you are making" : ""
           }: ${addFailureSentence(err)}`,
@@ -560,10 +582,11 @@ export function useSourceIntake(
   return {
     addPastedText,
     addWebPage,
+    addScrapedPage,
+    addUploaded,
+    addUploadedRecording,
+    addExisting,
     addYouTube,
-    addFiles,
-    addRecording,
-    addPicked,
     resume,
     retryFile,
     fileLanded,
@@ -590,19 +613,4 @@ async function registeredFileEdge(
   if (rows.some((r) => r.source_type === "file")) return "file_to_target";
   if (rows.some((r) => r.target_type === "file")) return "target_to_file";
   return null;
-}
-
-/** The name a picked record goes by on its card. */
-function pickedLabel(resource: Resource): string {
-  const data = resource.data as unknown as Record<string, unknown>;
-  const candidates = [
-    data.label,
-    data.title,
-    data.name,
-    data.filename,
-    data.table_name,
-    (data.details as Record<string, unknown> | undefined)?.filename,
-  ];
-  const found = candidates.find((c): c is string => typeof c === "string" && c.trim().length > 0);
-  return found ?? "Untitled";
 }

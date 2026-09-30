@@ -48,6 +48,19 @@ export const selectInstancesByAgent = (agentId: string) =>
     },
   );
 
+/**
+ * Whether the launching surface writes this conversation's result itself, so
+ * no materializer (stream commit or on-load reconcile) may turn its assistant
+ * turns into canvas items / feature records. Memoized on the record.
+ */
+export const selectConversationSurfaceOwnsOutput = createSelector(
+  (state: RootState, conversationId: string | null | undefined) =>
+    conversationId
+      ? state.conversations.byConversationId[conversationId]
+      : undefined,
+  (record): boolean => record?.surfaceOwnsOutput === true,
+);
+
 export const selectInstanceStatus =
   (conversationId: string) => (state: RootState) =>
     state.conversations.byConversationId[conversationId]?.status;

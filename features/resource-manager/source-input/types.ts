@@ -16,19 +16,23 @@ import type {
 } from "@ai-matrx/agents/sources";
 import type { SourceDelivery } from "./delivery";
 
-/** Every tile the input can show. ONE registry: `sourceKinds.ts`. */
-export type SourceKindId =
-  | "your_sources"
-  | "files"
-  | "notes"
-  | "records"
+/** Every tile a host can allow: the Add new doors, plus "existing" (Use existing + search). */
+export type SourceTileId =
   | "upload"
   | "paste"
   | "web"
   | "youtube"
   | "audio"
   | "image"
-  | "topic";
+  | "topic"
+  | "existing";
+
+/**
+ * What a picked Source is while the person chooses: the tile it came through,
+ * or — for something they already had — "files", "notes", "your_sources"
+ * (a Source screen) or "records" (any other registry kind).
+ */
+export type SourceKindId = SourceTileId | "your_sources" | "files" | "notes" | "records";
 
 /**
  * One picked Source while the person is still choosing. JSON only — it is
@@ -103,7 +107,7 @@ export interface SourceInputProps {
    * are held and persisted under it — two inputs never share picks.
    */
   surfaceKey: string;
-  /** Which tiles appear. Omitted = every kind. */
+  /** Which tiles appear ("existing" = Use existing + search). Omitted = every tile. */
   kinds?: readonly SourceKindId[];
   /** Most Sources the person may pick. Omitted = no limit. */
   max?: number;

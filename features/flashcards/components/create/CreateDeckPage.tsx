@@ -83,6 +83,11 @@ import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
 import {
+  MIN_CARDS_PER_RUN,
+  clampCardCount,
+  useMaxCardsPerRun,
+} from "../../data/useMaxCardsPerRun";
+import {
   backfillFileIds,
   FLASHCARD_SOURCE_DELIVERIES,
   generateDeckFromSources,
@@ -105,8 +110,6 @@ const DIFFICULTIES = [
 ] as const;
 type Difficulty = (typeof DIFFICULTIES)[number]["value"];
 
-const COUNT_MIN = 1;
-const COUNT_MAX = 50;
 /** How often a held run re-reads whether its Sources are clean yet. */
 const WAIT_POLL_MS = 5_000;
 
@@ -131,7 +134,9 @@ export function restoreStyleDraft(data: Record<string, unknown>): {
   const values: StyleDraft = {};
   const rejectedKeys: string[] = [];
   for (const [key, v] of Object.entries(data)) {
-    if (key === "count" && typeof v === "number" && v >= COUNT_MIN && v <= COUNT_MAX) values.count = v;
+    // The upper limit is a knob read after restore; an over-limit count is
+    // clamped to it on screen (safeCount), never refused here.
+    if (key === "count" && typeof v === "number" && Number.isInteger(v) && v >= MIN_CARDS_PER_RUN) values.count = v;
     else if (key === "difficulty" && DIFFICULTIES.some((d) => d.value === v)) values.difficulty = v as Difficulty;
     else if (key === "depth" && DEPTH_TIERS.some((t) => t.value === v)) values.depth = v as Depth;
     else if ((key === "gradeLevel" || key === "focus" || key === "deckName") && typeof v === "string") values[key] = v;
@@ -244,13 +249,23 @@ export function CreateDeckPage() {
   const waitingForClean = ready.filter(
     (s) => s.draft.waitForClean && s.manifest?.state !== "ready",
   );
-  const safeCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10));
+  // The most cards one run may make — the `flashcards.max_cards_per_run` knob.
+  const cardLimit = useMaxCardsPerRun();
+  const countMax = cardLimit.max;
+  const safeCount =
+    countMax === null
+      ? Math.max(MIN_CARDS_PER_RUN, count || 10)
+      : clampCardCount(count, countMax);
 
   // Stays on the progress view through the hand-off to the new deck, so the
   // cleared picks never flash "pick a source" while the deck opens.
   const running = phase !== "idle" || topicRun.isGenerating || isNavigating;
   const busy = running || isNavigating || cardGen.isChecking || holding;
-  const blockedReason = landing.length
+  const blockedReason = cardLimit.error
+    ? cardLimit.error
+    : countMax === null
+      ? "Reading the most cards one run may make…"
+      : landing.length
     ? `Wait until ${landing.length === 1 ? "your new source has" : `${landing.length} new sources have`} finished adding.`
     : !hasSources && !topic
       ? "Pick at least one source, or choose Just a topic and type one."
@@ -486,22 +501,31 @@ export function CreateDeckPage() {
                         id="fc-count"
                         type="number"
                         inputMode="numeric"
-                        min={COUNT_MIN}
-                        max={COUNT_MAX}
+                        min={MIN_CARDS_PER_RUN}
+                        max={countMax ?? undefined}
                         value={count}
                         onChange={(e) => {
                           const n = Number.parseInt(e.target.value, 10) || 0;
                           setCount(n);
-                          if (n >= COUNT_MIN && n <= COUNT_MAX) keep({ count: n });
+                          if (n >= MIN_CARDS_PER_RUN && (countMax === null || n <= countMax))
+                            keep({ count: n });
                         }}
                         className="h-11 text-base sm:h-9"
                         disabled={busy}
                       />
-                      <p className="text-[11px] text-muted-foreground">
-                        {hasSources
-                          ? `Spread across everything you picked (${COUNT_MIN}–${COUNT_MAX}).`
-                          : `Between ${COUNT_MIN} and ${COUNT_MAX}.`}
-                      </p>
+                      {cardLimit.error ? (
+                        <p role="alert" className="text-[11px] text-destructive">
+                          {cardLimit.error}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">
+                          {countMax === null
+                            ? "Reading the most cards one run may make…"
+                            : hasSources
+                              ? `Spread across everything you picked (${MIN_CARDS_PER_RUN}–${countMax}).`
+                              : `Between ${MIN_CARDS_PER_RUN} and ${countMax}.`}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="fc-difficulty">Difficulty</Label>

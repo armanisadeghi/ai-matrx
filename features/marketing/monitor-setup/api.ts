@@ -11,9 +11,20 @@ import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 
-import type { Basis, DeclareTrackerBody, SetupProposal } from "./model";
+import type { Basis, DeclareTrackerBodyWithId, SetupProposal } from "./model";
 
 export type SetupFacts = components["schemas"]["SetupFacts"];
+/**
+ * aidream e14812d1e4 added `SetupCost.estimated_run_usd` / `estimate_basis` and
+ * `SetupFacts.schedule_projections`; the generated types cannot be refreshed
+ * until the in-flight `visibility` schema drop is reconciled (the drop guard
+ * refuses). Optional, so an older server reads as "no estimate". Remove on the
+ * next `pnpm sync-types`.
+ */
+export interface SetupCostEstimate {
+  estimated_run_usd?: number | null;
+  estimate_basis?: "measured" | "setting" | null;
+}
 export type TrackerView = components["schemas"]["TrackerView"];
 export type ScheduleView = components["schemas"]["ScheduleView"];
 export type SchedulePresetId = components["schemas"]["ScheduleBody"]["preset"];
@@ -110,7 +121,7 @@ export async function proposeMonitorSetup(
 
 export async function saveMonitor(
   dispatch: AppDispatch,
-  body: DeclareTrackerBody,
+  body: DeclareTrackerBodyWithId,
   organizationId: string,
 ): Promise<TrackerView> {
   const outcome = await dispatch(

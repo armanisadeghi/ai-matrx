@@ -28,11 +28,10 @@ import {
   Loader2,
   RotateCcw,
   Scissors,
-  Upload,
   X,
 } from "lucide-react";
 import type { SourceManifestEntry } from "@ai-matrx/agents/sources";
-import { Input } from "@ai-matrx/design-system";
+import { Input, SegmentedControl } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -51,7 +50,11 @@ import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { asClause } from "@/lib/text/asClause";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { sourceKindDef, sourceKindNoun } from "../sourceKinds";
+import { sourceKindDef, sourceKindIcon, sourceKindNoun } from "../sourceKinds";
+import {
+  InlineUploadArea,
+  type UploadedFile,
+} from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import {
   DELIVERY_WORDS,
   deliveryChoicesFor,
@@ -60,9 +63,12 @@ import {
   type SourceDelivery,
 } from "../delivery";
 import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
-import { useSourcePartsText } from "../useSourcePartsText";
-import { resumableInput } from "../interrupted";
-import { chooseOrganizationForHeldSources, WAITING_FOR_ORGANIZATION } from "../organizationHold";
+import { useSourcePartsSearch } from "../useSourcePartsText";
+import { resumableInput, WAITING_FOR_ORGANIZATION } from "../interrupted";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import type { SourceCardModel } from "../types";
 import type { UseSourceSetResult } from "../useSourceSet";
 
@@ -121,12 +127,10 @@ export function SourceCard({
   /** Land the kept input again (shown when the draft kept one). */
   onTryAgain?: () => void;
   /** The person chose the file again after its upload was cut off. */
-  onChooseFileAgain?: (file: File) => void;
+  onChooseFileAgain?: (file: UploadedFile) => void;
 }) {
-  const fileAgainRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState<"form" | "parts" | null>(null);
-  const kind = sourceKindDef(card.draft.kind);
-  const Icon = kind.icon;
+  const Icon = sourceKindIcon(card.draft);
   const ref = card.draft.ref;
   const entry = card.manifest;
   const chars = cardChars(card);
@@ -182,7 +186,7 @@ export function SourceCard({
                 · {STATE_WORDS[entry.state]}
               </span>
             ) : null}
-            {card.draft.origin && card.draft.origin !== kind.label && card.draft.origin !== sourceKindNoun(card.draft) ? (
+            {card.draft.origin && card.draft.origin !== sourceKindNoun(card.draft) ? (
               <span className="truncate">· {card.draft.origin}</span>
             ) : null}
           </p>
@@ -203,7 +207,6 @@ export function SourceCard({
         <p className="flex items-center gap-2 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           {addingWords(card.draft.kind)}
-          {kind.fallbackNote ? <span className="hidden sm:inline">— {kind.fallbackNote}</span> : null}
         </p>
       ) : null}
 
@@ -227,7 +230,7 @@ export function SourceCard({
               variant="outline"
               size="sm"
               className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
-              onClick={() => void chooseOrganizationForHeldSources().catch(() => undefined)}
+              onClick={() => void chooseOrganization()}
             >
               <Building2 className="h-3.5 w-3.5" />
               Choose organization
@@ -244,35 +247,26 @@ export function SourceCard({
               Try again
             </Button>
           ) : null}
-          {!waitingForOrganization && !resumableInput(card.draft) && !ref && isUploadKind(card.draft.kind) && onChooseFileAgain ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
-                onClick={() => fileAgainRef.current?.click()}
-              >
-                <Upload className="h-3.5 w-3.5" />
-                Choose it again
-              </Button>
-              <input
-                ref={fileAgainRef}
-                type="file"
-                className="hidden"
-                accept={kind.accept}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = "";
-                  if (file) onChooseFileAgain(file);
-                }}
-              />
-            </>
-          ) : null}
           {waitingForOrganization ? null : (
             <ErrorAlchemyMenu error={card.error ?? "This could not be added."} operation={`Add ${card.draft.label}`} />
           )}
         </p>
+      ) : null}
+
+      {card.status === "error" &&
+      !waitingForOrganization &&
+      !resumableInput(card.draft) &&
+      !ref &&
+      isUploadKind(card.draft.kind) &&
+      onChooseFileAgain ? (
+        // Its upload was cut off: choose the file again through the one upload surface.
+        <InlineUploadArea
+          accept={sourceKindDef(card.draft.kind)?.accept}
+          selectionMode="single"
+          onSelect={(files) => {
+            if (files[0]) onChooseFileAgain(files[0]);
+          }}
+        />
       ) : null}
 
       {heldForOrganization ? (
@@ -284,7 +278,7 @@ export function SourceCard({
             variant="outline"
             size="sm"
             className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
-            onClick={() => void chooseOrganizationForHeldSources().catch(() => undefined)}
+            onClick={() => void chooseOrganization()}
           >
             <Building2 className="h-3.5 w-3.5" />
             Choose organization
@@ -352,27 +346,16 @@ export function SourceCard({
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-foreground">How the AI gets it</p>
             {deliveryChoices.length > 1 ? (
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="How the AI gets it">
-              {deliveryChoices.map((choice) => (
-                <button
-                  key={choice.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={delivery === choice.value}
-                  onClick={() => {
-                    if (choice.value !== delivery) set.updateRef(card.id, deliveryPatch(choice.value));
-                  }}
-                  className={cn(
-                    "min-h-11 rounded-lg border px-3 text-left text-xs font-medium transition-colors sm:min-h-9",
-                    delivery === choice.value
-                      ? "border-primary/60 bg-primary/10 text-foreground"
-                      : "border-border text-muted-foreground hover:bg-accent/50",
-                  )}
-                >
-                  {choice.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              value={delivery}
+              onValueChange={(v) => {
+                const choice = deliveryChoices.find((c) => c.value === v);
+                if (choice && choice.value !== delivery) set.updateRef(card.id, deliveryPatch(choice.value));
+              }}
+              data={deliveryChoices.map((c) => ({ value: c.value, label: c.label }))}
+              size="sm"
+              className="max-w-full max-lg:[&_[role=tab]]:min-h-11!"
+            />
             ) : (
               // The one way this page can use it — said, never a one-option control.
               <p className="text-xs text-foreground">{DELIVERY_WORDS[delivery].label}</p>
@@ -394,6 +377,19 @@ export function SourceCard({
   );
 }
 
+/**
+ * "Choose organization": the ONE picker (the person's memberships). Setting one
+ * lets every waiting card go on by itself (`useSourceRecovery`); closing it is
+ * "not now" and changes nothing.
+ */
+async function chooseOrganization(): Promise<void> {
+  try {
+    await ensureOrganizationContext({ interactive: true });
+  } catch (err) {
+    if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : String(err));
+  }
+}
+
 function isUploadKind(kind: SourceCardModel["draft"]["kind"]): boolean {
   return kind === "upload" || kind === "image" || kind === "audio";
 }
@@ -403,9 +399,8 @@ function addingWords(kind: SourceCardModel["draft"]["kind"]): string {
     case "web":
       return "Reading the page…";
     case "youtube":
-      return "Writing out what was said…";
     case "audio":
-      return "Uploading and writing out the recording…";
+      return "Writing it out…";
     case "upload":
     case "image":
       return "Uploading…";
@@ -428,26 +423,13 @@ function FormChooser({
     return <p className="text-xs text-muted-foreground">This Source has only one form so far.</p>;
   if (forms.length <= 4)
     return (
-      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="What goes in">
-        {forms.map((f) => (
-          <button
-            key={f.form}
-            type="button"
-            role="radio"
-            aria-checked={value === f.form}
-            onClick={() => onChange(f.form)}
-            className={cn(
-              "min-h-11 rounded-lg border px-3 text-left text-xs transition-colors sm:min-h-9",
-              value === f.form
-                ? "border-primary/60 bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground hover:bg-accent/50",
-            )}
-          >
-            <span className="block font-medium">{f.label}</span>
-            <span className="block text-[11px]">{formatChars(f.chars)}</span>
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        value={value}
+        onValueChange={onChange}
+        data={forms.map((f) => ({ value: f.form, label: `${f.label} · ${formatChars(f.chars)}` }))}
+        size="sm"
+        className="max-w-full max-lg:[&_[role=tab]]:min-h-11!"
+      />
     );
   return (
     <Select value={value} onValueChange={onChange}>
@@ -478,12 +460,12 @@ function PartsChooser({
 }) {
   const [query, setQuery] = useState("");
   const words = isWordQuery(query);
-  const partsText = useSourcePartsText(sourceRef, words);
+  const partsText = useSourcePartsSearch(sourceRef, query);
   // "pick" = the person chose to build the list from nothing. Until they tick
   // one, the whole Source still goes in (and the sentence says so).
   const [picking, setPicking] = useState(false);
   const pickedSet = new Set(picked);
-  const shown = findParts(segments, query, partsText.text);
+  const shown = findParts(segments, query, partsText.matches);
   const all = picked.length === 0 && !picking;
   const toggle = (id: string) => {
     // "No parts picked" means the whole Source; the first untick starts from all.

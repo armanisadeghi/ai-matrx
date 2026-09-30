@@ -15,12 +15,15 @@ import {
   USER_BASIS,
 } from "./model";
 
+const NO_PEOPLE = { names: [] as string[], refs: new Set<string>() };
+
 const base = () =>
   newDraft({
     brandName: "All Green Recycling",
     aliases: ["all green electronics recycling"],
     siteId: "site-1",
     timezone: "America/Los_Angeles",
+    people: NO_PEOPLE,
   });
 
 describe("monitor setup model", () => {
@@ -89,8 +92,13 @@ describe("monitor setup model", () => {
       "all green electronics recycling",
     ]);
     expect(
-      newDraft({ brandName: "X", aliases: [], siteId: null, timezone: "UTC" })
-        .coverage,
+      newDraft({
+        brandName: "X",
+        aliases: [],
+        siteId: null,
+        timezone: "UTC",
+        people: NO_PEOPLE,
+      }).coverage,
     ).toBe(false);
   });
 
@@ -100,33 +108,37 @@ describe("monitor setup model", () => {
       topics: [{ text: "e-waste recycling", basis: USER_BASIS }],
     };
     draft.keywords[0].means = "mine";
-    const next = applyProposal(draft, {
-      topics: [
-        {
-          text: "E-waste recycling",
-          basis: { kind: "site_page", ref: "page:1" },
-        },
-        {
-          text: "data destruction",
-          basis: { kind: "site_page", ref: "page:2" },
-        },
-      ],
-      coverage_keywords: [
-        {
-          keyword: "All Green Recycling",
-          means: "proposed",
-          side: "brand",
-          basis: { kind: "brand_record", ref: "brand:company_name" },
-        },
-        {
-          keyword: "all green electronics recycling",
-          means: "the ITAD company",
-          side: "brand",
-          basis: { kind: "brand_record", ref: "brand:aliases" },
-        },
-      ],
-      feed_picks: [{ feed_id: "ftc-press", why: "privacy enforcement" }],
-    });
+    const next = applyProposal(
+      draft,
+      {
+        topics: [
+          {
+            text: "E-waste recycling",
+            basis: { kind: "site_page", ref: "page:1" },
+          },
+          {
+            text: "data destruction",
+            basis: { kind: "site_page", ref: "page:2" },
+          },
+        ],
+        coverage_keywords: [
+          {
+            keyword: "All Green Recycling",
+            means: "proposed",
+            side: "brand",
+            basis: { kind: "brand_record", ref: "brand:company_name" },
+          },
+          {
+            keyword: "all green electronics recycling",
+            means: "the ITAD company",
+            side: "brand",
+            basis: { kind: "brand_record", ref: "brand:aliases" },
+          },
+        ],
+        feed_picks: [{ feed_id: "ftc-press", why: "privacy enforcement" }],
+      },
+      NO_PEOPLE,
+    );
     expect(next.topics.map((t) => t.text)).toEqual([
       "e-waste recycling",
       "data destruction",
@@ -189,6 +201,7 @@ describe("monitor setup model", () => {
       brandKey: "all-green",
       declaredRef: {},
       xTrendsWoeids: [1],
+      trackerId: null,
     });
     expect(body.lenses).toEqual(["coverage", "opportunity"]);
     expect(body.term_meanings?.["All Green Recycling"]).toEqual({
@@ -206,25 +219,37 @@ describe("monitor setup model", () => {
   });
 
   it("saves a new opportunity-only monitor site-less, even with a site preselected", () => {
-    const draft = { ...base(), coverage: false, opportunity: true, siteId: "site-1" };
+    const draft = {
+      ...base(),
+      coverage: false,
+      opportunity: true,
+      siteId: "site-1",
+    };
     const body = toDeclareBody(draft, {
       brandId: "b",
       brandKey: "all-green",
       declaredRef: {},
       xTrendsWoeids: [],
+      trackerId: null,
     });
     expect(body.site_id).toBeNull();
     expect(body.brand_id).toBe("b");
   });
 
   it("never re-parents a saved opportunity-only monitor that has a website", () => {
-    const draft = { ...base(), coverage: false, opportunity: true, siteId: "site-1" };
+    const draft = {
+      ...base(),
+      coverage: false,
+      opportunity: true,
+      siteId: "site-1",
+    };
     const body = toDeclareBody(draft, {
       brandId: "b",
       brandKey: "all-green",
       declaredRef: {},
       xTrendsWoeids: [],
       savedSiteId: "site-1",
+      trackerId: "t-1",
     });
     expect(body.site_id).toBe("site-1");
     expect(body.brand_id).toBeNull();

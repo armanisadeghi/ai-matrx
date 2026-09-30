@@ -6,7 +6,6 @@
 // Kept as a named seam because the converter contract wants a THROWING
 // `{ value, requestId, conversationId }` result with a live-UI handle.
 
-import { claimConversationForSurface } from "@/features/canvas/materialization/surfaceOwnedConversations";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
@@ -94,11 +93,12 @@ export async function runAgentExtraction(
     timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     pollIntervalMs: opts.pollIntervalMs ?? DEFAULT_POLL_MS,
     // Every converter generator writes its artifact itself (the contract in
-    // ./types.ts), so the run's conversation is surface-owned: claimed before
-    // the stream commits, the commit step never materializes a twin — neither
-    // one per section of a segmented run nor a race-lost duplicate of a
-    // single live run (both seen live 2026-09-28).
-    onConversationCreated: claimConversationForSurface,
+    // ./types.ts), so the run's conversation is surface-owned: the flag is
+    // stamped on its record at launch (before the stream commits) and saved
+    // with the row, so neither the commit step nor a reload's reconcile ever
+    // materializes a twin — neither one per section of a segmented run nor a
+    // race-lost duplicate of a single live run (both seen live 2026-09-28).
+    surfaceOwnsOutput: true,
     onRequestId: opts.onRequestId,
     failureMessages: {
       streamError: "The generation agent failed before returning a result",

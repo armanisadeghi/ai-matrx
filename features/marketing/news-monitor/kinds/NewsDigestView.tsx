@@ -12,17 +12,22 @@
  */
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { cn } from "@/lib/utils";
 
 import {
   counts,
   humanize,
   isRecord,
   num,
+  openTargetParam,
   records,
+  setAsideListOf,
   str,
   strings,
+  type OpenTarget,
 } from "../run-document";
 import { FactRow, KindCard, Pill, SmartLink, formatWhen } from "./shared";
 
@@ -30,6 +35,70 @@ export interface NewsDigestViewProps {
   value: Record<string, unknown>;
   /** Per-story controls the host adds (surface anyway, dismiss). */
   storyActions?: (storyKey: string) => ReactNode;
+  /**
+   * Opens the list behind a count. The run view passes it; anywhere else
+   * (a chat answer, the kind registry) every count links to the run view
+   * with `?open=`, which opens the same list there. A count is never plain
+   * text with only a tooltip.
+   */
+  onOpen?: (target: OpenTarget) => void;
+}
+
+const PILL_TONE = {
+  neutral: "border-border text-muted-foreground hover:border-primary/60 hover:text-foreground",
+  good: "border-success/40 bg-success/10 text-success hover:border-success",
+  warn: "border-warning/40 bg-warning/10 text-warning hover:border-warning",
+  info: "border-primary/40 bg-primary/10 text-primary hover:border-primary",
+} as const;
+
+/** A count that opens its list: a button in the run view, a link anywhere else. */
+function CountPill({
+  children,
+  target,
+  tone = "neutral",
+  title,
+  onOpen,
+  runView,
+}: {
+  children: ReactNode;
+  target: OpenTarget;
+  tone?: keyof typeof PILL_TONE;
+  title?: string;
+  onOpen?: (target: OpenTarget) => void;
+  runView: string;
+}) {
+  const className = cn(
+    "inline-flex items-center rounded-full border px-1.5 py-px text-[11px] leading-4 underline-offset-2 hover:underline",
+    PILL_TONE[tone],
+  );
+  const label = `${title ? `${title} — ` : ""}open this list`;
+  if (onOpen) {
+    return (
+      <button type="button" className={className} title={label} data-open-target={openTargetParam(target)} onClick={() => onOpen(target)}>
+        {children}
+      </button>
+    );
+  }
+  if (runView) {
+    const href = `${runView}${runView.includes("?") ? "&" : "?"}open=${encodeURIComponent(openTargetParam(target))}`;
+    return (
+      <Link href={href} className={className} title={label} data-open-target={openTargetParam(target)}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <Pill tone={tone} title={title}>
+      {children}
+    </Pill>
+  );
+}
+
+/** The digest's own grouping (aidream `engine/summary.py::watch_group`). */
+function watchGroupOf(reason: string): string {
+  return reason === "stale" ? "stale" : reason.startsWith("unverified_") || reason === "freshness_unverified"
+    ? "freshness_unverified"
+    : "set_aside";
 }
 
 function statusTone(status: string): "good" | "warn" | "bad" | "neutral" {
@@ -40,7 +109,7 @@ function statusTone(status: string): "good" | "warn" | "bad" | "neutral" {
   return "bad";
 }
 
-export function NewsDigestView({ value, storyActions }: NewsDigestViewProps) {
+export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewProps) {
   const { format: formatCost } = useCostDisplay();
   const headline = isRecord(value.headline) ? value.headline : {};
   const surfaced = records(value.surfaced);
@@ -52,6 +121,7 @@ export function NewsDigestView({ value, storyActions }: NewsDigestViewProps) {
   const windowInfo = isRecord(value.window) ? value.window : {};
   const unverified = counts(headline.unverified_by_status);
   const overflow = num(value.watch_overflow);
+  const runView = isRecord(value.links) ? str(value.links.run_view) : "";
 
   // Group the watch list by reason, keeping the engine's order within each.
   const byReason = new Map<string, Record<string, unknown>[]>();
@@ -75,20 +145,31 @@ export function NewsDigestView({ value, storyActions }: NewsDigestViewProps) {
       }
     >
       <div className="flex flex-wrap gap-1.5">
-        <Pill tone="good">{num(headline.surfaced)} surfaced</Pill>
-        <Pill tone="warn">{num(headline.watching_unverified)} watching, freshness unverified</Pill>
-        <Pill>{num(headline.stale)} stale</Pill>
+        <CountPill tone="good" target={{ kind: "surfaced" }} onOpen={onOpen} runView={runView}>
+          {num(headline.surfaced)} surfaced
+        </CountPill>
+        <CountPill tone="warn" target={{ kind: "watch", group: "freshness_unverified" }} onOpen={onOpen} runView={runView}>
+          {num(headline.watching_unverified)} watching, freshness unverified
+        </CountPill>
+        <CountPill target={{ kind: "watch", group: "stale" }} onOpen={onOpen} runView={runView}>
+          {num(headline.stale)} stale
+        </CountPill>
         {Object.entries(unverified).map(([k, n]) => (
-          <Pill key={k}>
+          <CountPill key={k} target={{ kind: "watch", group: k }} onOpen={onOpen} runView={runView}>
             {n} {humanize(k).toLowerCase()}
-          </Pill>
+          </CountPill>
         ))}
-        <Pill tone={num(headline.withheld_safety) ? "warn" : "neutral"}>
+        <CountPill
+          tone={num(headline.withheld_safety) ? "warn" : "neutral"}
+          target={{ kind: "set_aside", list: "withheld" }}
+          onOpen={onOpen}
+          runView={runView}
+        >
           {num(headline.withheld_hygiene)} hygiene · {num(headline.withheld_safety)} safety withheld
-        </Pill>
+        </CountPill>
       </div>
 
-      <div>
+      <div data-digest-part="surfaced" className="scroll-mt-24 rounded-md">
         <p className="text-xs font-medium text-foreground">Surfaced</p>
         {surfaced.length === 0 ? (
           <p className="text-xs text-muted-foreground">
@@ -118,13 +199,36 @@ export function NewsDigestView({ value, storyActions }: NewsDigestViewProps) {
       </div>
 
       {groups.length ? (
-        <div className="flex flex-wrap gap-1.5" aria-label="Watch groups">
-          {groups.map((g) => (
-            <Pill key={str(g.group)} title={Object.entries(counts(g.reasons)).map(([k, n]) => `${humanize(k)}: ${n}`).join(" · ")}>
-              {str(g.label) || humanize(str(g.group))}: {num(g.count)}
-              {num(g.listed) < num(g.count) ? ` (${num(g.listed)} listed)` : ""}
-            </Pill>
-          ))}
+        <div className="flex flex-col gap-1" aria-label="Watch groups">
+          <div className="flex flex-wrap gap-1.5">
+            {groups.map((g) => {
+              const group = str(g.group);
+              const target: OpenTarget =
+                group === "set_aside" ? { kind: "set_aside", list: "all" } : { kind: "watch", group };
+              return (
+                <CountPill key={group} target={target} onOpen={onOpen} runView={runView}>
+                  {str(g.label) || humanize(group)}: {num(g.count)}
+                </CountPill>
+              );
+            })}
+          </div>
+          {groups
+            .filter((g) => str(g.group) === "set_aside" && Object.keys(counts(g.reasons)).length)
+            .map((g) => (
+              <div key="set-aside-reasons" className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span>Set aside by reason:</span>
+                {Object.entries(counts(g.reasons)).map(([reason, n]) => (
+                  <CountPill
+                    key={reason}
+                    target={{ kind: "set_aside", list: setAsideListOf(reason) }}
+                    onOpen={onOpen}
+                    runView={runView}
+                  >
+                    {humanize(reason).toLowerCase()} {n}
+                  </CountPill>
+                ))}
+              </div>
+            ))}
         </div>
       ) : null}
 
@@ -135,7 +239,7 @@ export function NewsDigestView({ value, storyActions }: NewsDigestViewProps) {
         ) : (
           <div className="mt-1 flex flex-col gap-2">
             {[...byReason.entries()].map(([reason, entries]) => (
-              <div key={reason}>
+              <div key={reason} data-watch-reason={reason} data-watch-group={watchGroupOf(reason)} className="scroll-mt-24 rounded-md">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   {str(entries[0]?.label) || humanize(reason)} · {entries.length}
                 </p>

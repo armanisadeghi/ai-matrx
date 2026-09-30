@@ -50,10 +50,13 @@ import {
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useOrganizationMembers } from "@/features/organizations/hooks";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { DeliveryControls } from "@/features/marketing/news-monitor/DeliveryControls";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
 
 import {
@@ -67,6 +70,7 @@ import {
   saveMonitorSchedule,
   type ProposalRef,
   type ProposalResult,
+  type SetupCostEstimate,
   type SetupFacts,
 } from "./api";
 import {
@@ -82,21 +86,30 @@ import {
   useTracker,
 } from "./data";
 import {
+  acceptPersonOffer,
   applyProposal,
   basisChip,
   beatsOutsideWordRange,
   briefMarkdown,
   countWarning,
   defaultSchedule,
+  dismissPersonOffer,
   draftFromTracker,
   newDraft,
+  nextEditorSession,
   parseBriefMarkdown,
+  projectSchedules,
+  scheduleCostAdvice,
   scheduleOptions,
   toDeclareBody,
   USER_BASIS,
   type Basis,
   type DraftItem,
+  type EditorSession,
   type MonitorDraft,
+  type OfferTarget,
+  type PeopleIndex,
+  type PersonOffer,
 } from "./model";
 
 const NO_PROOF_SENTENCE =
@@ -274,9 +287,115 @@ function ItemList({
   );
 }
 
+const OFFER_TARGET_LABEL: Record<OfferTarget, string> = {
+  keywords: "coverage keywords",
+  competitors: "competitors",
+  topics: "beats",
+  searchTerms: "search terms",
+  standing: "standing",
+};
+
+/** Names setup found but did not add: a person is never watched unless someone picks them. */
+function PersonOffers({
+  offers,
+  rosterError,
+  onAccept,
+  onDismiss,
+}: {
+  offers: PersonOffer[];
+  /** Why the roster could not be read, when it could not. */
+  rosterError: string | null;
+  onAccept: (offer: PersonOffer) => void;
+  onDismiss: (offer: PersonOffer) => void;
+}) {
+  if (!offers.length) return null;
+  const unchecked = offers.some((o) => o.why === "unchecked");
+  return (
+    <section
+      className="rounded-md border border-border bg-card p-3"
+      data-surface-value="setup_person_offers"
+    >
+      <h2 className="text-sm font-semibold text-foreground">
+        Names we did not add
+      </h2>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {unchecked ? (
+          <>
+            We could not read your organization&apos;s people, so we could not
+            tell whether these brand names are people. Add one only if you want
+            articles that name it.{" "}
+            {rosterError ? <ErrorAlchemyMenu error={rosterError} /> : null}
+          </>
+        ) : (
+          "These name a person. We never watch a person's name unless you choose to — add one only if you want articles about them."
+        )}
+      </p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {offers.map((offer) => (
+          <li
+            key={`${offer.target}:${offer.text}`}
+            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs"
+            data-person-offer={offer.text}
+          >
+            <span className="rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+              {offer.why === "person" ? "person" : "not checked"}
+            </span>
+            <span className="text-foreground">{offer.text}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-1.5 text-xs text-primary"
+              onClick={() => onAccept(offer)}
+            >
+              <Plus className="h-3 w-3" /> Add to{" "}
+              {OFFER_TARGET_LABEL[offer.target]}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              aria-label={`Leave out ${offer.text}`}
+              onClick={() => onDismiss(offer)}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 // ── the editor ────────────────────────────────────────────────────────────
 
+/**
+ * One editor session per record: moving from one monitor — or from an edit —
+ * to "new" remounts the editor, so no id, draft or recipient of one monitor is
+ * carried into another. A new monitor's own id, adopted on its first save,
+ * keeps the session (so "Save and run now" keeps following its run).
+ */
 export function MonitorSetupEditor() {
+  const trackerParam = useSearchParams().get("tracker");
+  const [session, setSession] = useState<EditorSession>({
+    param: trackerParam,
+    key: 0,
+    adopted: null,
+  });
+  const next = nextEditorSession(session, trackerParam);
+  if (next !== session) setSession(next);
+  return (
+    <MonitorSetupEditorBody
+      key={next.key}
+      onAdopt={(id) => setSession((s) => ({ ...s, adopted: id }))}
+    />
+  );
+}
+
+function MonitorSetupEditorBody({
+  onAdopt,
+}: {
+  onAdopt: (trackerId: string) => void;
+}) {
   const brandCtx = useMarketingBrand();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -293,6 +412,8 @@ export function MonitorSetupEditor() {
   const brand = useBrand(brandCtx.id);
   const sites = useBrandSites(brandCtx.id);
   const facts = useBusinessFacts(brandCtx.id);
+  const currentUserId = useAppSelector(selectUserId);
+  const roster = useOrganizationMembers(brandCtx.organizationId);
   const [run, setRun] = useState<MonitorRunStarted | null>(null);
   const [polling, setPolling] = useState(false);
   const tracker = useTracker(trackerParam, polling ? 5000 : false);
@@ -366,11 +487,32 @@ export function MonitorSetupEditor() {
     return Array.isArray(raw) ? raw.map((a) => String(a)) : [];
   })();
   const siteRows = sites.data ?? [];
+  // Who is a person (defect A) — structured signals only: the organization's
+  // members and the brand's spokesperson facts. An unreadable roster is null,
+  // and every alias is then offered rather than preselected.
+  const spokespersonFacts = (facts.data ?? []).filter(isSpokesperson);
+  const people: PeopleIndex = {
+    names: roster.error
+      ? null
+      : [
+          ...roster.members.flatMap((m) =>
+            m.user?.displayName ? [m.user.displayName] : [],
+          ),
+          ...spokespersonFacts.flatMap((f) => {
+            const value = (f.value ?? {}) as Record<string, unknown>;
+            const name = String(value.name ?? value.text ?? "").trim();
+            return name ? [name] : [];
+          }),
+        ],
+    refs: new Set(spokespersonFacts.map((f) => `fact:${f.id}`)),
+  };
 
   // The draft is built once, from the saved monitor or from the brand.
   useEffect(() => {
     if (draft || !brandRow || sites.isPending) return;
     if (trackerParam && tracker.isPending) return;
+    // A new draft waits for who-is-a-person, so no alias is preselected by a race.
+    if (!trackerParam && (roster.loading || facts.isPending)) return;
     const tz = browserTimezone();
     if (tracker.data) {
       const fallback = newDraft({
@@ -378,6 +520,7 @@ export function MonitorSetupEditor() {
         aliases,
         siteId: null,
         timezone: tz,
+        people,
       });
       setDraft(draftFromTracker(tracker.data, fallback.keywords, tz));
       return;
@@ -385,8 +528,15 @@ export function MonitorSetupEditor() {
     const siteId =
       siteRows.find((s) => s.id === siteParam)?.id ?? siteRows[0]?.id ?? null;
     setDraft(
-      newDraft({ brandName: brandRow.name, aliases, siteId, timezone: tz }),
+      newDraft({
+        brandName: brandRow.name,
+        aliases,
+        siteId,
+        timezone: tz,
+        people,
+      }),
     );
+    // `people` is rebuilt every render from the two reads gated above.
   }, [
     draft,
     brandRow,
@@ -397,6 +547,8 @@ export function MonitorSetupEditor() {
     tracker.isPending,
     tracker.data,
     aliases,
+    roster.loading,
+    facts.isPending,
   ]);
 
   // A saved schedule preselects its choice once — whichever of the draft and
@@ -462,7 +614,17 @@ export function MonitorSetupEditor() {
       ? [{ woeid, label: String(loc.label ?? woeid) }]
       : [];
   });
-  const cost = setup?.cost;
+  const cost = setup?.cost as
+    (NonNullable<SetupFacts["cost"]> & SetupCostEstimate) | undefined;
+  // One run's cost: the measured average, or with no runs yet the org's
+  // `news.setup.estimated_run_usd` setting (served since aidream e14812d1e4).
+  const estimatedRunUsd = cost?.estimated_run_usd ?? cost?.average_run_usd;
+  const costAdvice = cost
+    ? scheduleCostAdvice(
+        projectSchedules(presets, estimatedRunUsd, cost.monthly_ceiling_usd),
+        scheduleId,
+      )
+    : null;
   const brandSeg = brandCtx.seg;
 
   const setLens = (lens: "coverage" | "opportunity", on: boolean) => {
@@ -487,7 +649,7 @@ export function MonitorSetupEditor() {
       );
       setProposal(result);
       setDraft((current) =>
-        current ? applyProposal(current, result.proposal) : current,
+        current ? applyProposal(current, result.proposal, people) : current,
       );
       const dropped = result.proposal.dropped_without_basis?.length ?? 0;
       toast.success(
@@ -529,12 +691,14 @@ export function MonitorSetupEditor() {
           {
             brandId: brandCtx.id,
             brandKey,
+            // A new monitor names no declarer intent: a shared ref here made
+            // every new opportunity monitor the same row (defect B).
             declaredRef:
               (tracker.data?.declared_ref as
-                Record<string, unknown> | undefined) ??
-              (draft.coverage ? {} : { surface: "tracker_editor" }),
+                Record<string, unknown> | undefined) ?? {},
             xTrendsWoeids: xLocations.map((loc) => loc.woeid),
             savedSiteId: tracker.data?.site_id ?? null,
+            trackerId,
           },
         ),
         brandRow.organization_id,
@@ -543,6 +707,7 @@ export function MonitorSetupEditor() {
       setTrackerId(saved.id);
       void invalidate();
       if (saved.id !== trackerParam) {
+        onAdopt(saved.id);
         const params = new URLSearchParams(searchParams.toString());
         params.set("tracker", saved.id);
         router.replace(`?${params.toString()}`, { scroll: false });
@@ -816,6 +981,13 @@ export function MonitorSetupEditor() {
               Edit in brand
             </Link>
           </Section>
+
+          <PersonOffers
+            offers={draft.personOffers}
+            rosterError={roster.error}
+            onAccept={(offer) => setDraft(acceptPersonOffer(draft, offer))}
+            onDismiss={(offer) => setDraft(dismissPersonOffer(draft, offer))}
+          />
 
           {draft.coverage ? (
             <Section
@@ -1295,6 +1467,7 @@ export function MonitorSetupEditor() {
             <DeliveryControls
               organizationId={brandRow.organization_id}
               trackerId={trackerId}
+              currentUserId={currentUserId}
               savedRecipients={savedMonitor?.alert_recipient_user_ids ?? []}
               savedSlackItemId={savedMonitor?.slack_credential_item_id ?? null}
               registerCommit={(commit) => {
@@ -1383,11 +1556,42 @@ export function MonitorSetupEditor() {
             >
               {cost?.average_run_usd != null
                 ? `A run has cost about ${formatCostDisplay(cost.average_run_usd)} (${cost.runs_measured} runs in the last 30 days)${preset ? `, so this schedule is about ${formatCostDisplay(cost.average_run_usd * preset.runsPerMonth)} a month` : ""}.`
-                : "No runs yet in this organization, so there is no cost per run to estimate — the first run measures it."}{" "}
+                : estimatedRunUsd != null
+                  ? `No runs measured yet in this organization; its setting estimates about ${formatCostDisplay(estimatedRunUsd)} a run${preset ? `, so this schedule is about ${formatCostDisplay(estimatedRunUsd * preset.runsPerMonth)} a month` : ""}. The first run measures the real cost.`
+                  : cost
+                    ? "No runs yet in this organization, so there is no cost per run to estimate — the first run measures it."
+                    : null}{" "}
               {cost
                 ? `Your organization has spent ${formatCostDisplay(cost.month_to_date_usd)} of its ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling.`
                 : null}
             </p>
+            {costAdvice && cost ? (
+              <div
+                className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/5 px-2 py-1.5 text-xs"
+                data-surface-value="setup_cost_warning"
+              >
+                <span className="text-warning">
+                  {`"${costAdvice.chosen.label}" projects about ${formatCostDisplay(costAdvice.chosen.monthlyUsd)} a month — over your organization's ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling. At the ceiling, scheduled runs pause until someone resumes them.`}{" "}
+                  {costAdvice.cheaper
+                    ? `"${costAdvice.cheaper.label}" fits at about ${formatCostDisplay(costAdvice.cheaper.monthlyUsd)} a month.`
+                    : `No scheduled choice fits at about ${formatCostDisplay(estimatedRunUsd ?? 0)} a run; "No schedule" with Run now when you need it spends only what you run.`}{" "}
+                  You can save anyway.
+                </span>
+                {costAdvice.cheaper ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7"
+                    onClick={() => {
+                      setScheduleTouched(true);
+                      update({ schedule: costAdvice.cheaper?.presetId ?? "" });
+                    }}
+                  >
+                    Use {costAdvice.cheaper.label}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
             {schedule?.message ? (
               <p className="text-xs text-muted-foreground">
                 {schedule.message}
@@ -1421,12 +1625,17 @@ export function MonitorSetupEditor() {
               )}
               {trackerId ? (
                 <Link
-                  href={marketingRoutes.brandMonitorRun(brandCtx.seg, trackerId, {
-                    runId: run.runId,
-                  })}
+                  href={marketingRoutes.brandMonitorRun(
+                    brandCtx.seg,
+                    trackerId,
+                    {
+                      runId: run.runId,
+                    },
+                  )}
                   className="mt-1 mr-3 inline-block text-xs font-medium text-primary"
                 >
-                  Read what it found — the report, watch list and set-aside lists
+                  Read what it found — the report, watch list and set-aside
+                  lists
                 </Link>
               ) : null}
               {run.runId ? (

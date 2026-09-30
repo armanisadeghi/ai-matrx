@@ -89,6 +89,7 @@ import {
 import {
   setInstanceStatus,
   setInstanceInitiation,
+  setInstanceSurfaceOwnsOutput,
   patchConversation,
 } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -199,6 +200,7 @@ export const launchAgentExecution = createAsyncThunk<
     organizationId,
     contextAnchor,
     initiation,
+    surfaceOwnsOutput,
   } = options;
 
   // ── Mandate-driven launch — THE SERVER RESOLVES, this thunk does not ────────
@@ -1129,6 +1131,17 @@ export const launchAgentExecution = createAsyncThunk<
   dispatch(
     setInstanceInitiation({ conversationId, initiation: initiation ?? "user" }),
   );
+
+  // ── Surface-owned output ──────────────────────────────────────────────────
+  // A surface that saves this run's result itself (flashcard generation, every
+  // converter generator) declares it here, BEFORE the first stream commits, so
+  // the commit step never materializes a twin record. Persisted with the
+  // conversation row after the first turn so a reload/resume keeps it.
+  if (surfaceOwnsOutput) {
+    dispatch(
+      setInstanceSurfaceOwnsOutput({ conversationId, surfaceOwnsOutput: true }),
+    );
+  }
 
   // ── Surface attribution ───────────────────────────────────────────────────
   // Stamp the surface this run LAUNCHED from onto the conversation record, so

@@ -81,3 +81,13 @@ export function openSourceReview(
 export function closeSourceReviewOverlay(): void {
   getStore()?.dispatch(closeOverlay({ overlayId: SOURCE_REVIEW_OVERLAY_ID }));
 }
+
+/**
+ * Cancel the open review, if any, and close it — for a host that is going away
+ * (the page navigated): a review never outlives the input that opened it.
+ */
+export function cancelSourceReview(): void {
+  if (!openCallbackId) return;
+  settleSourceReview(openCallbackId, { status: "cancelled" });
+  closeSourceReviewOverlay();
+}

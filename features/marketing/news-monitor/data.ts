@@ -63,6 +63,8 @@ export interface MonitorRunRow {
   created_at: string;
   completed_at: string | null;
   trigger: string | null;
+  /** The run document's honest ending (`summary.outcome`), e.g. `completed_with_failures`. */
+  outcome: string | null;
 }
 
 export async function listMonitorRuns(
@@ -73,7 +75,7 @@ export async function listMonitorRuns(
   const response = await client
     .schema("workflow")
     .from("run")
-    .select("id, status, created_at, completed_at, input")
+    .select("id, status, created_at, completed_at, input, outcome:output->group->run->summary->>outcome")
     .eq("input->>tracker_id", trackerId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -89,6 +91,7 @@ export async function listMonitorRuns(
       isRecord(row.input) && typeof row.input.trigger === "string"
         ? row.input.trigger
         : null,
+    outcome: typeof row.outcome === "string" ? row.outcome : null,
   }));
 }
 

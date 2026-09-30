@@ -2,17 +2,19 @@ const postJson = jest.fn();
 jest.mock("@/lib/python-client", () => ({ postJson: (...args: unknown[]) => postJson(...args) }));
 
 import { createSourceRef, createSourceSet } from "@ai-matrx/agents/sources";
-import { fetchSourceManifest, resolveSourceSet } from "./sourceSetApi";
-import * as reviewApi from "./review/api";
+import { fetchSourceManifest, resolveSourceSet, searchSourceParts } from "./sourceSetApi";
 
 /**
  * V1-A (verifier shot 03): a person with no organization selected picked a file and
  * saw "Sizes and parts could not be read: Select an organization before sending this
  * request." Both doors are reads the server admits without one (aidream
  * `read_by_access.py` BODY_CARRIED_READS), so the browser must send them as such —
- * never refuse them itself — and the review uses the same client.
+ * never refuse them itself — and the review uses the same client (its call shape
+ * passes an AbortSignal as the second argument).
  */
-const set = createSourceSet([createSourceRef("file", "0b8d1a52-2f0c-4a57-9d2c-3a6f0e8f1c11")]);
+const ref = createSourceRef("file", "0b8d1a52-2f0c-4a57-9d2c-3a6f0e8f1c11");
+const set = createSourceSet([ref]);
+const signal = new AbortController().signal;
 
 beforeEach(() => {
   postJson.mockReset();
@@ -20,16 +22,22 @@ beforeEach(() => {
 });
 
 it.each([
-  ["manifest", () => fetchSourceManifest(set), "/sources/manifest"],
-  ["resolve", () => resolveSourceSet(set), "/sources/resolve"],
-  ["review manifest", () => reviewApi.fetchSourceManifest(set), "/sources/manifest"],
-  ["review resolve", () => reviewApi.resolveSourceSet(set), "/sources/resolve"],
-])("%s is sent as an organization-free read", async (_name, call, path) => {
+  ["manifest", () => fetchSourceManifest(set), "/sources/manifest", { source_set: set }],
+  ["resolve", () => resolveSourceSet(set), "/sources/resolve", { source_set: set }],
+  ["review manifest", () => fetchSourceManifest(set, signal), "/sources/manifest", { source_set: set }],
+  ["review resolve", () => resolveSourceSet(set, signal), "/sources/resolve", { source_set: set }],
+  [
+    "part search",
+    () => searchSourceParts(ref, "photosynthesis"),
+    "/sources/parts/search",
+    { source_ref: ref, query: "photosynthesis" },
+  ],
+])("%s is sent as an organization-free read", async (_name, call, path, sent) => {
   await call();
   expect(postJson).toHaveBeenCalledTimes(1);
   const [calledPath, body, options] = postJson.mock.calls[0]!;
   expect(calledPath).toBe(path);
-  expect(body).toEqual({ source_set: set });
+  expect(body).toEqual(sent);
   expect(options).toMatchObject({ bodyCarriedRead: true });
   expect(options.organizationId).toBeUndefined();
 });
@@ -40,4 +48,9 @@ it("still names an organization a host already resolved", async () => {
     bodyCarriedRead: true,
     organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
   });
+});
+
+it("passes the review's AbortSignal through", async () => {
+  await fetchSourceManifest(set, signal);
+  expect(postJson.mock.calls[0]![2]).toMatchObject({ signal, bodyCarriedRead: true });
 });

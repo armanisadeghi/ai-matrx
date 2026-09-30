@@ -1,4 +1,4 @@
--- chair-step: the inverse of migrations/campaign/scopesreadstree_the_scope_tree_and_values_read_the_store.sql (lane SCOPES-READS-TREE) — puts public.get_scope_tree, list_scope_types, list_scope_type_items, get_scope_context, get_user_full_context, resolve_full_context and __scope_access_membrane_conformance back exactly as production held them before it (pg_get_functiondef, 2026-09-29; the same bodies on the dev clone), and drops the seven custom helpers and context.resolve_full_context_image with its registry row. Nothing of anybody's data is touched.
+-- chair-step: the inverse of migrations/campaign/scopesreadstree_the_scope_tree_and_values_read_the_store.sql (lane SCOPES-READS-TREE) — puts public.get_scope_tree, list_scope_types, list_scope_type_items, get_scope_context, get_user_full_context, resolve_full_context and __scope_access_membrane_conformance back exactly as production held them before it (pg_get_functiondef, 2026-09-29; the same bodies on the dev clone), and drops the seven custom helpers and the six context.*_from_the_image copies. The switch's knob row (scopesreadstree_the_scope_readers_switch.sql) stays, OFF. Nothing of anybody's data is touched.
 -- based-on: BASEDON_PLACEHOLDER
 
 set local lock_timeout = '2s';
@@ -693,8 +693,12 @@ $function$
 ;
 
 
-drop function if exists context.resolve_full_context_image(uuid, text, uuid, uuid[], text[]);
-delete from context.scope_door_registry where function_name = 'context.resolve_full_context_image';
+drop function if exists context.get_scope_tree_from_the_image(uuid, uuid);
+drop function if exists context.list_scope_types_from_the_image(uuid);
+drop function if exists context.list_scope_type_items_from_the_image(uuid);
+drop function if exists context.get_scope_context_from_the_image(uuid, uuid[], boolean);
+drop function if exists context.get_user_full_context_from_the_image(uuid);
+drop function if exists context.resolve_full_context_from_the_image(uuid, text, uuid, uuid[], text[]);
 drop function if exists custom.scope_items_of(uuid, uuid);
 drop function if exists custom.scope_value_columns(uuid, jsonb, text, jsonb);
 drop function if exists custom.scope_item_row_of(custom.record);

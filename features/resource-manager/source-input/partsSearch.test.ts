@@ -1,4 +1,4 @@
-import { findParts, isWordQuery, matchesPart, partPages, partTextFromGrounded, type SourcePart } from "./partsSearch";
+import { findParts, isWordQuery, matchesPart, partPages, type SourcePart } from "./partsSearch";
 
 /**
  * V1-A (verifier shot 06): "Search parts — words, a page (12) or pages (3-10)"
@@ -17,11 +17,13 @@ describe("finding a part", () => {
     expect(findParts(parts, "Cellular energetics").map((p) => p.id)).toEqual(["c-22"]);
   });
 
-  it("finds a word deep inside a part once its text has been read", () => {
-    const text = new Map([["c-22", "… the light-dependent reactions of photosynthesis occur in the thylakoid …"]]);
+  it("finds a word deep inside a part once the server names the parts that hold it", () => {
+    // `POST /sources/parts/search` answered: only c-22's text holds "thylakoid".
+    const serverMatches = new Set(["c-22"]);
     expect(findParts(parts, "thylakoid").map((p) => p.id)).toEqual([]);
-    expect(findParts(parts, "thylakoid", text).map((p) => p.id)).toEqual(["c-22"]);
-    expect(findParts(parts, "photosynthesis", text).map((p) => p.id)).toEqual(["c-22", "c-25"]);
+    expect(findParts(parts, "thylakoid", serverMatches).map((p) => p.id)).toEqual(["c-22"]);
+    // A preview match still shows while (or without) the server's answer.
+    expect(findParts(parts, "photosynthesis", serverMatches).map((p) => p.id)).toEqual(["c-22", "c-25"]);
   });
 
   it("a part spanning pages covers every page in its span", () => {
@@ -37,17 +39,5 @@ describe("finding a part", () => {
     expect(isWordQuery("12")).toBe(false);
     expect(isWordQuery("3-10")).toBe(false);
     expect(isWordQuery("  ")).toBe(false);
-  });
-
-  it("splits grounded text back into each part by id", () => {
-    const grounded = [
-      "### Chunk c-10 (page 10)\nCells are the basic unit of life.",
-      "### Chunk c-22 (page 22)\nEnzymes speed reactions.\n\nMore text.",
-      "### Chunk 57e0:3 (0:04–2:31)\nSpoken words.",
-    ].join("\n\n");
-    const byId = partTextFromGrounded(grounded);
-    expect(byId.get("c-10")).toBe("Cells are the basic unit of life.");
-    expect(byId.get("c-22")).toBe("Enzymes speed reactions.\n\nMore text.");
-    expect(byId.get("57e0:3")).toBe("Spoken words.");
   });
 });

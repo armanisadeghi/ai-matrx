@@ -20,7 +20,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { formatChars, formatTokens } from "@/lib/tokens/estimate";
-import { fetchSourceManifest } from "./api";
+import { fetchSourceManifest } from "../sourceSetApi";
 import { deliveryPatch, deliverySwitchedNote, fitDelivery } from "../delivery";
 import { sourceKey } from "../sourceKinds";
 import { reviewDefaultContextTokens } from "./knobs";

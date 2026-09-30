@@ -1,0 +1,11 @@
+{
+  "file": "tableapi1_a_personal_keys_row_is_its_persons_alone.sql",
+  "sha256": "4a04be6f18bd6016200a32120ad07b22ca66a9edc027262a6d778a4b776dc5a8",
+  "target": "clone",
+  "firstPolicyDdlToEndMs": 2176,
+  "tables": [
+    "iam.api_keys"
+  ],
+  "measuredAt": "2026-09-30T00:03:28.948Z",
+  "note": "First policy statement to the end of the measure-pass transaction, measured on the dev clone by pnpm db:rehearse. That span is the sign-in freeze. Bound to the file's sha256: edit the file and this record stops answering for it."
+}

@@ -176,6 +176,13 @@ export interface HeadlessAgentJsonOptions {
   signal?: AbortSignal;
   /** Fires with the conversation id BEFORE the stream runs (live UI handle). */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * The caller saves this run's result itself (a deck, a merged artifact), so
+   * the stream's commit and the on-load reconcile must never materialize it
+   * into a twin record. Carried on the conversation record from launch and
+   * persisted with the conversation row. Default false.
+   */
+  surfaceOwnsOutput?: boolean;
   /** Fires once the run's request id is known (progress / task tracking). */
   onRequestId?: (requestId: string) => void;
   /**
@@ -680,6 +687,7 @@ async function launchAndWait(
         ...(opts.initiation !== undefined
           ? { initiation: opts.initiation }
           : {}),
+        ...(opts.surfaceOwnsOutput ? { surfaceOwnsOutput: true } : {}),
         isEphemeral: opts.isEphemeral ?? false,
         ...(opts.organizationId !== undefined
           ? { organizationId: opts.organizationId }

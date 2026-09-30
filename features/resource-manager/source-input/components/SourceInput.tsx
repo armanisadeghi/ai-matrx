@@ -2,49 +2,69 @@
 
 /**
  * <SourceInput> — THE one Source input (common-docs
- * `projects/unified-source-input/DESIGN.md` §1).
+ * `projects/unified-source-input/DESIGN.md` §1, rebuilt on certified canonical
+ * primitives in A3-F).
  *
- * The Podcast Studio look (big icon tiles, every option visible at once, one
- * big input area per tile) — never the chat composer. It OPENS on "Your
- * sources" (reuse first) with the add-something-new tiles beside it; picked
- * Sources sit below as cards. Contextual configuration is by props only
- * (`kinds`, `max`, `required`, `defaultForm`, `title`, `attachTo`) — never a
- * fork. State and persistence: `useSourceSet(surfaceKey)`; new material:
- * `useSourceIntake`; tiles: `sourceKinds.ts`.
+ *   [ Search everything you have ]            Mine | <Org>
+ *   Add new       Upload · Paste text · Web page · YouTube · Recording · Image · Topic
+ *   Use existing  <kind> <count> …  (registry kinds, `useKindCounts`/`useKindItems`)
+ *   picked Sources as cards
  *
- * "Review what goes in" is always one click away and opens by itself when the
- * picked Sources pass the `sources.review_threshold_chars` knob.
+ * Every door is an existing primitive: `InlineUploadArea` (upload, image,
+ * recording), `WebpageResourcePickerCore`, `YouTubeResourcePicker`,
+ * `SegmentedControl`, the inventory hooks. Configuration is by props only
+ * (`kinds`, `max`, `required`, `defaultForm`, `title`, `attachTo`, `deliveries`).
+ * State: `useSourceSet(surfaceKey)`; new material: `useSourceIntake`; tiles:
+ * `sourceKinds.ts`. Copy law R9: nouns, no helper lines.
+ *
+ * "Review what goes in" is always one click away, opens by itself when the
+ * picked Sources pass the `sources.review_threshold_chars` knob, and closes
+ * when this input goes away (the page navigated).
  */
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { AlertCircle, ArrowRight, ListChecks, Loader2, Upload, X } from "lucide-react";
-import { Input, Textarea } from "@ai-matrx/design-system";
-import { createSourceRef } from "@ai-matrx/agents/sources";
+import { AlertCircle, ListChecks, Loader2, Search, X } from "lucide-react";
+import { Input, SegmentedControl, Textarea } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { youtubeId } from "@/lib/media/youtube";
+import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
-import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import type { Resource } from "@/features/agents/resources/types";
-import { openSourceReview } from "@/features/resource-manager/source-input/review/openSourceReview";
+import {
+  InlineUploadArea,
+  type UploadedFile,
+} from "@/features/resource-manager/resource-picker/InlineUploadArea";
+import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
+import { YouTubeResourcePicker } from "@/features/resource-manager/resource-picker/YouTubeResourcePicker";
+import type { KindScope } from "@/features/scopes/service/kindInventory";
+import {
+  cancelSourceReview,
+  openSourceReview,
+} from "@/features/resource-manager/source-input/review/openSourceReview";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { sourceKey, sourceKindNoun, visibleSourceKinds, type SourceKindDef } from "../sourceKinds";
+import {
+  showsExisting,
+  sourceKey,
+  sourceKindNoun,
+  visibleSourceKinds,
+  type SourceKindDef,
+} from "../sourceKinds";
 import { deliverySwitchedNote, fitDelivery } from "../delivery";
 import { useSourceSet } from "../useSourceSet";
 import { useSourceIntake } from "../useSourceIntake";
 import { useSourceRecovery } from "../useSourceRecovery";
 import { fileCardHeldForOrganization } from "../fileSource";
-import type { SourceInputProps, SourceKindId } from "../types";
+import type { SourceInputProps, SourceTileId } from "../types";
 import { SourceCard, formatChars } from "./SourceCard";
-import { YourSources } from "./YourSources";
+import { UseExisting } from "./UseExisting";
 
 const REVIEW_KNOB = { feature: "sources", key: "review_threshold_chars" } as const;
 const MEASURE_DEBOUNCE_MS = 400;
 
+type AddTileId = Exclude<SourceTileId, "existing">;
 
 export function SourceInput({
   surfaceKey,
@@ -60,8 +80,11 @@ export function SourceInput({
   className,
 }: SourceInputProps) {
   const tiles = visibleSourceKinds(kinds);
-  const [active, setActive] = useState<SourceKindId | null>(tiles[0]?.id ?? null);
-  const [searchEverything, setSearchEverything] = useState(false);
+  const existing = showsExisting(kinds);
+  const [active, setActive] = useState<AddTileId | null>(null);
+  const [webUrlForVideo, setWebUrlForVideo] = useState<string | undefined>(undefined);
+  const [query, setQuery] = useState("");
+  const [scopeChoice, setScopeChoice] = useState<"mine" | "organization">("mine");
   const set = useSourceSet(surfaceKey, { defaultForm });
   const runner = useProcessingRunner();
   const intake = useSourceIntake(set, { attachTo });
@@ -71,7 +94,22 @@ export function SourceInput({
 
   // Never lose input + file uploads' Sources — UI-free, in the hook.
   const activeOrgId = useAppSelector(selectOrganizationId);
+  const activeOrgName = useAppSelector(selectActiveOrganizationName);
   useSourceRecovery(set, intake, runner, { organizationId: activeOrgId });
+  // Mine | <Org>: a filter over what is listed, never permission.
+  const scope: KindScope =
+    scopeChoice === "organization" && activeOrgId
+      ? { kind: "organization", organizationId: activeOrgId }
+      : { kind: "mine" };
+
+  // A review this input opened closes when the input goes away (the page navigated).
+  const openedReview = useRef(false);
+  useEffect(
+    () => () => {
+      if (openedReview.current) cancelSourceReview();
+    },
+    [],
+  );
 
   const count = set.sources.length;
   const atMax = max !== undefined && count >= max;
@@ -133,6 +171,7 @@ export function SourceInput({
       return;
     }
     try {
+      openedReview.current = true;
       const outcome = await openSourceReview(sourceSet, {
         reason,
         purpose,
@@ -151,7 +190,7 @@ export function SourceInput({
       if (outcome.status === "applied" || outcome.status === "add_more") {
         set.applySourceSet(outcome.sourceSet);
       }
-      if (outcome.status === "add_more") setActive(tiles[0]?.id ?? null);
+      openedReview.current = false;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "The review could not open.");
     }
@@ -178,7 +217,7 @@ export function SourceInput({
   };
 
   /** Keep only as many files as there is room for, and say what was left out. */
-  const fitFiles = (files: File[]): File[] => {
+  const fitFiles = (files: UploadedFile[]): UploadedFile[] => {
     if (max === undefined) return files;
     const room = Math.max(0, max - set.liveCount());
     if (files.length > room)
@@ -188,88 +227,80 @@ export function SourceInput({
     return files.slice(0, room);
   };
 
-  const onPicked = (resource: Resource, kind: SourceKindId) => {
-    if (refuseOverMax()) return false;
-    return intake.addPicked(resource, kind);
-  };
-
-  const pickerViews =
-    searchEverything
-      ? (["files", "notes", "documents", "tables", "workbooks"] as const)
-      : activeDef?.pickerViews;
-
   return (
     <section className={cn("space-y-3", className)} aria-label={title}>
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <header className="flex items-center gap-x-3">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <span className="text-xs text-muted-foreground" aria-live="polite">
+        <span className="min-w-0 truncate text-xs text-muted-foreground" aria-live="polite">
           {/* read-gate-exempt: count of sources the person picked in this draft (local draft state); set.restoring covers the draft's read-back */}
           {set.restoring ? (
-            <span className="inline-flex items-center gap-1.5">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Bringing back what you picked…
-            </span>
-          ) : count === 0
-            ? required
-              ? tiles.some((t) => t.id === "topic")
-                ? "Add at least one source, or pick Just a topic."
-                : "Add at least one source."
-              : "Nothing picked yet."
-            : `${count} ${count === 1 ? "source" : "sources"}${
-                set.totalChars ? ` · ${formatChars(set.totalChars)}` : ""
-              }${max !== undefined ? ` · up to ${max}` : ""}`}
+            <Loader2 className="inline h-3 w-3 animate-spin" aria-label="Loading" />
+          ) : count > 0 ? (
+            `${count}${set.totalChars ? ` · ${formatChars(set.totalChars)}` : ""}${max !== undefined ? ` / ${max}` : ""}`
+          ) : null}
           {set.measuring ? <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" /> : null}
         </span>
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="ml-auto h-11 gap-1.5 sm:h-8"
+          className="ml-auto h-11 shrink-0 gap-1.5 sm:h-8"
           onClick={() => void openReview("requested")}
         >
           <ListChecks className="h-4 w-4" />
-          Review what goes in
+          Review
         </Button>
       </header>
 
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        {tiles.map((tile) => (
-          <Tile
-            key={tile.id}
-            tile={tile}
-            selected={active === tile.id}
-            onSelect={() => {
-              setSearchEverything(false);
-              setActive(tile.id);
-            }}
-          />
-        ))}
-      </div>
+      {existing ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search everything you have"
+              aria-label="Search everything you have"
+              className="pl-8 text-base sm:text-sm"
+            />
+          </div>
+          {activeOrgId ? (
+            <SegmentedControl
+              value={scope.kind === "organization" ? "organization" : "mine"}
+              onValueChange={(v) => setScopeChoice(v === "organization" ? "organization" : "mine")}
+              data={[
+                { value: "mine", label: "Mine" },
+                { value: "organization", label: activeOrgName || "Organization" },
+              ]}
+              size="sm"
+              className="max-w-full shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
+            />
+          ) : null}
+        </div>
+      ) : null}
 
-      {activeDef ? (
-        <div className="rounded-xl border border-border bg-card p-3">
-          {atMax && activeDef.control !== "your_sources" && activeDef.control !== "topic" ? (
-            <p className="text-sm text-muted-foreground">
-              You have picked {max} {max === 1 ? "source" : "sources"}, the most this takes. Remove one below to add another.
-            </p>
-          ) : searchEverything || activeDef.control === "picker" ? (
-            <div className="h-[26rem] overflow-hidden">
-              <ResourcePickerMenu
-                key={searchEverything ? "everything" : activeDef.id}
-                fillHost
-                selectionMode="multiple"
-                allowedViewIds={pickerViews}
-                initialView={!searchEverything && pickerViews?.length === 1 ? pickerViews[0] : null}
-                onExitInitialView={() => {
-                  setSearchEverything(false);
-                  setActive(tiles[0]?.id ?? null);
-                }}
-                onClose={() => setSearchEverything(false)}
-                onResourceSelected={(resource) =>
-                  onPicked(resource, searchEverything ? "records" : activeDef.id)
-                }
+      {query.trim() && existing ? null : (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-xs font-medium text-muted-foreground">Add new</h3>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+            {tiles.map((tile) => (
+              <Tile
+                key={tile.id}
+                tile={tile}
+                selected={active === tile.id}
+                onSelect={() => setActive(active === tile.id ? null : tile.id)}
               />
-            </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeDef && !(query.trim() && existing) ? (
+        <div className="rounded-xl border border-border bg-card p-3">
+          {atMax && activeDef.control !== "topic" ? (
+            <p className="text-sm text-muted-foreground">
+              {max} of {max} picked. Remove one to add another.
+            </p>
           ) : (
             <TileArea
               key={activeDef.id}
@@ -278,10 +309,34 @@ export function SourceInput({
               intake={intake}
               refuseOverMax={refuseOverMax}
               fitFiles={fitFiles}
-              onSearchEverything={() => setSearchEverything(true)}
+              initialUrl={activeDef.id === "youtube" ? webUrlForVideo : undefined}
+              onClose={() => setActive(null)}
+              onVideoLink={(url) => {
+                setWebUrlForVideo(url);
+                setActive("youtube");
+              }}
             />
           )}
         </div>
+      ) : null}
+
+      {existing ? (
+        <UseExisting
+          scope={scope}
+          query={query}
+          isPicked={(token, id) => set.hasRef(token, id)}
+          onToggle={(token, item) => {
+            const picked = set.sources.find(
+              (s) => s.draft.ref?.resource_type === token && s.draft.ref.resource_id === item.id,
+            );
+            if (picked) {
+              set.remove(picked.id);
+              return;
+            }
+            if (refuseOverMax()) return;
+            intake.addExisting({ token, id: item.id, title: item.title });
+          }}
+        />
       ) : null}
 
       {set.manifestError ? (
@@ -365,7 +420,7 @@ function Tile({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "group flex h-full min-h-11 w-full flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all",
+        "group flex min-h-16 w-full min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border px-1 py-2.5 transition-all",
         selected
           ? "border-primary/60 bg-primary/5 shadow-sm ring-1 ring-primary/30"
           : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
@@ -381,8 +436,9 @@ function Tile({
       >
         <Icon className="h-4 w-4" />
       </span>
-      <span className="text-sm font-medium leading-tight text-foreground">{tile.label}</span>
-      <span className="text-[11px] leading-snug text-muted-foreground">{tile.helper}</span>
+      <span className="max-w-full truncate whitespace-nowrap text-xs font-medium text-foreground sm:text-sm">
+        {tile.label}
+      </span>
     </button>
   );
 }
@@ -393,46 +449,24 @@ function TileArea({
   intake,
   refuseOverMax,
   fitFiles,
-  onSearchEverything,
+  initialUrl,
+  onClose,
+  onVideoLink,
 }: {
   tile: SourceKindDef;
   set: ReturnType<typeof useSourceSet>;
   intake: ReturnType<typeof useSourceIntake>;
   refuseOverMax: () => boolean;
-  fitFiles: (files: File[]) => File[];
-  onSearchEverything: () => void;
+  fitFiles: (files: UploadedFile[]) => UploadedFile[];
+  initialUrl?: string;
+  onClose: () => void;
+  /** A YouTube link typed into the web page box goes to the YouTube door. */
+  onVideoLink: (url: string) => void;
 }) {
   const [text, setText] = useState("");
   const [name, setName] = useState("");
-  const [url, setUrl] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
 
   switch (tile.control) {
-    case "your_sources":
-      return (
-        <YourSources
-          isPicked={(id) => set.hasRef("processed_document", id)}
-          onSearchEverything={onSearchEverything}
-          onToggle={(row) => {
-            const picked = set.sources.find(
-              (s) => s.draft.ref?.resource_type === "processed_document" && s.draft.ref.resource_id === row.id,
-            );
-            if (picked) {
-              set.remove(picked.id);
-              return;
-            }
-            if (refuseOverMax()) return;
-            set.addReady({
-              kind: "your_sources",
-              label: row.name || "Untitled",
-              ref: createSourceRef("processed_document", row.id),
-              processedDocumentId: row.id,
-              sourceKind: row.source_kind,
-            });
-          }}
-        />
-      );
     case "paste":
       return (
         <form
@@ -448,143 +482,80 @@ function TileArea({
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Paste your notes, an article, a chapter…"
+            placeholder="Paste text"
             rows={8}
             className="min-h-44 text-base"
-            aria-label="Text to add"
+            aria-label="Paste text"
           />
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Name it (optional — the first line is used)"
-              className="text-base sm:flex-1 sm:text-sm"
-              aria-label="Name"
+              placeholder="Name (optional)"
+              className="min-w-0 flex-1 text-base sm:text-sm"
+              aria-label="Name (optional)"
             />
-            <span className="text-xs text-muted-foreground">{text.length ? formatChars(text.length) : ""}</span>
-            <Button type="submit" className="h-11 sm:h-9" disabled={!text.trim()}>
-              Add this text
+            <span className="shrink-0 text-xs text-muted-foreground">{text.length ? formatChars(text.length) : ""}</span>
+            <Button type="submit" className="h-11 shrink-0 sm:h-9" disabled={!text.trim()}>
+              Add
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">It is kept as one of your Sources, so you can reuse it next time.</p>
         </form>
       );
     case "url":
-    case "youtube": {
-      const isVideo = !!youtubeId(url);
-      const asVideo = tile.control === "youtube" || isVideo;
       return (
-        <form
-          className="space-y-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!url.trim() || refuseOverMax()) return;
-            if (asVideo) {
-              if (!isVideo) {
-                toast.error("That doesn't look like a YouTube video link. Paste a link like youtube.com/watch?v=…");
-                return;
-              }
-              void intake.addYouTube(url);
-            } else {
-              void intake.addWebPage(url);
-            }
-            setUrl("");
-          }}
-        >
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={tile.control === "youtube" ? "https://www.youtube.com/watch?v=…" : "https://example.com/article"}
-              inputMode="url"
-              className="text-base sm:flex-1 sm:text-sm"
-              aria-label={tile.control === "youtube" ? "YouTube link" : "Web address"}
-            />
-            <Button type="submit" className="h-11 gap-1.5 sm:h-9" disabled={!url.trim()}>
-              {asVideo ? "Write it out" : "Read the page"}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {tile.control === "url" && isVideo
-              ? "This is a YouTube video — we'll write out what was said instead of reading the page."
-              : (tile.fallbackNote ?? "We read the page and keep a copy in your Sources.")}
-          </p>
-        </form>
-      );
-    }
-    case "upload":
-    case "audio":
-      return (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            const files = fitFiles(Array.from(e.dataTransfer.files));
-            if (!files.length) return;
-            if (tile.control === "audio") files.forEach((f) => void intake.addRecording(f));
-            else void intake.addFiles(files, tile.id);
-          }}
-          className={cn(
-            "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-10 text-center transition-colors",
-            dragging ? "border-primary bg-primary/5" : "border-border",
-          )}
-        >
-          <Upload className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm text-foreground">
-            Drop {tile.control === "audio" ? "a recording" : tile.id === "image" ? "an image" : "files"} here, or
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 sm:h-9"
-            onClick={() => fileRef.current?.click()}
-          >
-            Choose from this device
-          </Button>
-          <p className="max-w-md text-xs text-muted-foreground">
-            {tile.fallbackNote ??
-              "If you already added the same file, we offer the copy you have instead of uploading it again."}
-          </p>
-          <input
-            ref={fileRef}
-            type="file"
-            className="hidden"
-            multiple={tile.control !== "audio"}
-            accept={tile.accept}
-            onChange={(e) => {
-              const chosen = Array.from(e.target.files ?? []);
-              e.target.value = "";
-              const files = fitFiles(chosen);
-              if (!files.length) return;
-              if (tile.control === "audio") files.forEach((f) => void intake.addRecording(f));
-              else void intake.addFiles(files, tile.id);
+        <div className="max-h-[70dvh] overflow-y-auto">
+          <WebpageResourcePickerCore
+            onSwitchTo={(type, url) => {
+              if (type === "youtube") onVideoLink(url);
+            }}
+            onSelect={(content, landed) => {
+              if (refuseOverMax()) return;
+              void intake.addScrapedPage({
+                url: content.url,
+                title: content.title,
+                text: content.textContent,
+                processedDocumentId: landed.processedDocumentId,
+              });
             }}
           />
         </div>
       );
+    case "youtube":
+      return (
+        <YouTubeResourcePicker
+          initialUrl={initialUrl}
+          onBack={onClose}
+          onSelect={(video) => {
+            if (refuseOverMax()) return;
+            void intake.addYouTube(video.url);
+          }}
+        />
+      );
+    case "upload":
+    case "audio":
+      return (
+        <InlineUploadArea
+          accept={tile.accept}
+          selectionMode={tile.control === "audio" ? "single" : "multiple"}
+          onSelect={async (uploaded) => {
+            const files = fitFiles(uploaded);
+            if (!files.length) return;
+            if (tile.control === "audio") await Promise.all(files.map((f) => intake.addUploadedRecording(f)));
+            else await intake.addUploaded(files, tile.id);
+          }}
+        />
+      );
     case "topic":
       return (
-        <div className="space-y-2">
-          <Textarea
-            value={set.topic}
-            onChange={(e) => set.setTopic(e.target.value)}
-            placeholder="e.g. How photosynthesis turns light into sugar"
-            rows={3}
-            className="min-h-24 text-base"
-            aria-label="Topic"
-          />
-          <p className="text-xs text-muted-foreground">
-            A topic works on its own, or alongside your sources to say what to focus on.
-          </p>
-        </div>
+        <Textarea
+          value={set.topic}
+          onChange={(e) => set.setTopic(e.target.value)}
+          placeholder="Topic"
+          rows={3}
+          className="min-h-24 text-base"
+          aria-label="Topic"
+        />
       );
-    case "picker":
-      return null;
   }
 }

@@ -18,7 +18,7 @@ import { Button, Input } from "@ai-matrx/design-system";
 import { createSourceRef, createSourceSet, type SourceSet } from "@ai-matrx/agents/sources";
 import { SourceReview } from "@/features/resource-manager/source-input/review/SourceReview";
 import { openSourceReview } from "@/features/resource-manager/source-input/review/openSourceReview";
-import { fetchSourceManifest, resolveSourceSet } from "@/features/resource-manager/source-input/review/api";
+import { fetchSourceManifest, resolveSourceSet } from "@/features/resource-manager/source-input/sourceSetApi";
 import type { SourcePlan } from "@/features/resource-manager/source-input/review/plan";
 import type { SourceReviewOutcome } from "@/features/resource-manager/source-input/review/types";
 

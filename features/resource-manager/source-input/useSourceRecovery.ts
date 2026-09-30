@@ -6,7 +6,11 @@
  *  1. A Source a reload cut off while it was landing, whose input the draft
  *     kept (`interrupted.ts`), is handed back to the door once — the door
  *     dedupes by content hash, so a second landing reuses the same Source.
- *  2. A stored file's Source (new upload, reused copy, or picked file) is read
+ *  2. A landing that waited for an organization (its card says so) is landed
+ *     again the moment one is set — from the card's kept input, or, for a read
+ *     Source whose keep waited, by keeping it again. State, never an in-memory
+ *     queue, so it survives a reload too (A3-F: the second hold queue is gone).
+ *  3. A stored file's Source (new upload, reused copy, or picked file) is read
  *     from the SERVER's state (`fileSource.ts`): kept and filed against the
  *     thing being made once it exists (`useSourceIntake().fileLanded`), the one
  *     run started only when nothing is reading it, re-attached after a reload.
@@ -25,7 +29,11 @@ import {
   nextFileStep,
   readFileSourceState,
 } from "./fileSource";
-import { RELOADED_RESUMING } from "./interrupted";
+import {
+  KEEP_WAITING_FOR_ORGANIZATION,
+  RELOADED_RESUMING,
+  WAITING_FOR_ORGANIZATION,
+} from "./interrupted";
 import type { SourceCardModel } from "./types";
 import type { UseSourceIntakeResult } from "./useSourceIntake";
 import type { UseSourceSetResult } from "./useSourceSet";
@@ -57,6 +65,30 @@ export function useSourceRecovery(
   useEffect(() => {
     if (resumeKey) resumeInterrupted();
   }, [resumeKey]);
+
+  // ── Waited for an organization: go on the moment one is set ─────────────────
+  const waitingForOrgKey = options.organizationId
+    ? set.sources
+        .filter(
+          (s) =>
+            (s.status === "error" && s.error === WAITING_FOR_ORGANIZATION) ||
+            (!!s.draft.processedDocumentId && !!s.draft.notes?.includes(KEEP_WAITING_FOR_ORGANIZATION)),
+        )
+        .map((s) => s.id)
+        .join(",")
+    : "";
+  const continueAfterOrganization = useEffectEvent(() => {
+    for (const card of set.sources) {
+      if (card.status === "error" && card.error === WAITING_FOR_ORGANIZATION) {
+        intake.resume(card);
+      } else if (card.draft.processedDocumentId && card.draft.notes?.includes(KEEP_WAITING_FOR_ORGANIZATION)) {
+        void intake.fileLanded(card, card.draft.processedDocumentId);
+      }
+    }
+  });
+  useEffect(() => {
+    if (waitingForOrgKey) continueAfterOrganization();
+  }, [waitingForOrgKey]);
 
   // ── A stored file's Source: read the SERVER's state, never this tab's memory
   // (USI-3e). A new upload's finalize already started the one reading run; a

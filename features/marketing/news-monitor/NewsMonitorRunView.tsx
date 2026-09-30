@@ -74,11 +74,16 @@ import {
   humanize,
   isRecord,
   num,
+  openTargetParam,
+  parseOpenTarget,
   readSetAside,
   readSourceHealth,
+  records,
   reportIsReadable,
   str,
+  type OpenTarget,
   type SetAsideList,
+  type SetAsideListId,
 } from "./run-document";
 import { SetAsideLists } from "./SetAsideLists";
 import { StoryActions } from "./StoryActions";
@@ -123,6 +128,29 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
   const runParam = searchParams.get("run");
   const storyParam = searchParams.get("story");
   const viewParam = searchParams.get("view");
+  const openParam = searchParams.get("open");
+
+  // Every count on this page opens its list (spec §7.5): a watch group scrolls
+  // to its group in the digest; a set-aside count opens that set-aside list.
+  const [setAsideRequest, setSetAsideRequest] = useState<{ list: SetAsideListId | "all"; nonce: number } | null>(null);
+  const openList = (target: OpenTarget) => {
+    if (target.kind === "set_aside") {
+      setSetAsideRequest((cur) => ({ list: target.list, nonce: (cur?.nonce ?? 0) + 1 }));
+      return;
+    }
+    const selector =
+      target.kind === "surfaced"
+        ? '[data-digest-part="surfaced"]'
+        : `[data-watch-reason="${CSS.escape(target.group)}"], [data-watch-group="${CSS.escape(target.group)}"]`;
+    const el = document.querySelector<HTMLElement>(selector);
+    if (!el) {
+      toast.info("Nothing is in that list for this run.");
+      return;
+    }
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.add("ring-2", "ring-primary/50");
+    window.setTimeout(() => el.classList.remove("ring-2", "ring-primary/50"), 1600);
+  };
 
   const [live, setLive] = useState<{
     runId: string | null;
@@ -188,6 +216,16 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
       alive = false;
     };
   }, [dispatch, trackerId, brandCtx.id, brandCtx.organizationId, refreshKey]);
+
+  // `?open=` (a count in an alert or a chat answer) opens its list once the run has rendered.
+  const openedFromLink = useRef<string | null>(null);
+  useEffect(() => {
+    const target = parseOpenTarget(openParam);
+    if (!target || !parts.data || openedFromLink.current === openParam) return;
+    openedFromLink.current = openParam;
+    openList(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openParam, parts.data]);
 
   // A deep link to one story scrolls to it once the lists have rendered.
   useEffect(() => {
@@ -273,6 +311,14 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
     />
   );
   const performers = isRecord(summary?.performers) ? summary.performers : {};
+  const outcome = str(summary?.outcome) || "completed";
+  const failedStages: Record<string, string> = {};
+  if (isRecord(summary?.failed_stages)) {
+    for (const [k, v] of Object.entries(summary.failed_stages)) if (k !== "__kind") failedStages[k] = str(v);
+  }
+  const proofGated = records(isRecord(run?.triage) ? run.triage.triaged : null).filter(
+    (row) => row.proof_gated === true && str(row.tier) === "pitch_ready",
+  );
   const liveSources = health.filter((h) => h.items > 0);
   const quietSources = health.filter((h) => h.items === 0);
   const personActed = [...storyMap.values()].filter(
@@ -361,7 +407,9 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                     : running
                       ? "Running now"
                       : runStatus === "completed"
-                        ? "Run finished"
+                        ? outcome === "completed_with_failures"
+                          ? "Run finished with failures"
+                          : "Run finished"
                         : `The run ended: ${runStatus ?? "unknown"}`}
                 </h2>
                 {selectedRunId ? (
@@ -416,7 +464,8 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
               <SelectContent>
                 {(runs.data ?? []).map((r) => (
                   <SelectItem key={r.id} value={r.id}>
-                    {formatWhen(r.created_at)} · {humanize(r.trigger ?? "run")} · {r.status}
+                    {formatWhen(r.created_at)} · {humanize(r.trigger ?? "run")} ·{" "}
+                    {r.outcome === "completed_with_failures" ? "completed with failures" : r.status}
                   </SelectItem>
                 ))}
                 {selectedRunId && !(runs.data ?? []).some((r) => r.id === selectedRunId) ? (
@@ -485,6 +534,60 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                 </section>
               ) : null}
 
+              {outcome === "completed_with_failures" ? (
+                <section
+                  className="rounded-md border border-warning/50 bg-warning/10 p-3"
+                  data-surface-value="news_run_outcome"
+                  data-run-outcome={outcome}
+                >
+                  <h2 className="text-sm font-semibold text-foreground">Completed with failures</h2>
+                  <p className="text-xs text-muted-foreground">
+                    The run finished and delivered its digest, but part of it failed. What is below is everything
+                    that did work; the failed part is named here.
+                  </p>
+                  <ul className="mt-1 flex flex-col gap-0.5">
+                    {Object.entries(failedStages).map(([stage, why]) => (
+                      <li key={stage} className="text-xs">
+                        <span className="font-medium text-foreground">{humanize(stage)}:</span>{" "}
+                        <span className="text-muted-foreground">{why}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
+              {proofGated.length ? (
+                <section className="rounded-md border border-warning/50 bg-card p-3" data-surface-value="news_proof_gated">
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Pitch-ready once you add proof — {proofGated.length} stor{proofGated.length === 1 ? "y" : "ies"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Your brand has standing on these, but no spokesperson or proof is on file, so they cannot be
+                    pitched as they are. Add a spokesperson and at least one proof point (a number, a customer, a
+                    certification) and they become pitch-ready.
+                  </p>
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {proofGated.map((row) => (
+                      <li key={str(row.signal_id)} className="flex flex-wrap items-center gap-x-2 text-sm" data-story-key={str(row.signal_id)}>
+                        <span className="text-foreground">{str(row.signal_title)}</span>
+                        <Pill tone="warn">{humanize(str(row.tier))} · proof-gated</Pill>
+                        {storyActions(str(row.signal_id))}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button asChild size="sm" variant="outline" className="mt-2">
+                    <Link
+                      href={marketingRoutes.brandMonitorSetup(brandCtx.id, {
+                        trackerId: monitor.id,
+                        siteId: monitor.site_id ?? undefined,
+                      })}
+                    >
+                      Add a spokesperson and proof
+                    </Link>
+                  </Button>
+                </section>
+              ) : null}
+
               <div id="report" className={cn(viewParam === "report" && "ring-2 ring-primary/40 rounded-md")}>
                 {reportIsReadable(run.report) && run.report ? (
                   <NewsOpportunityReportView value={run.report} />
@@ -513,7 +616,15 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
 
               {run.digest ? (
                 <div data-surface-value="news_digest_host">
-                  <NewsDigestView value={run.digest} storyActions={(key) => <span data-story-key={key}>{storyActions(key)}</span>} />
+                  <NewsDigestView
+                    value={run.digest}
+                    storyActions={(key) => <span data-story-key={key}>{storyActions(key)}</span>}
+                    onOpen={(target) => {
+                      setParam("open", openTargetParam(target));
+                      openedFromLink.current = openTargetParam(target);
+                      openList(target);
+                    }}
+                  />
                 </div>
               ) : (
                 <p className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
@@ -526,6 +637,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                 stories={storyMap}
                 storyActions={storyActions}
                 initiallyOpen={viewParam === "withheld" ? "withheld" : null}
+                request={setAsideRequest}
               />
 
               {personActed.length ? (

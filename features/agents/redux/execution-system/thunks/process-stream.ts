@@ -3725,6 +3725,7 @@ export async function processStream({
             messageId: target.messageId,
             conversationId,
             content: target.content,
+            getState,
           })
             .then((res) => {
               // Mirror the rewrite into the store: a settled turn renders from

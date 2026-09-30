@@ -21,7 +21,6 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
-import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import { SettingsTextInput } from "@/components/official/settings/primitives/SettingsTextInput";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
@@ -208,21 +207,24 @@ export default function ApiKeysTab() {
               </p>
             )}
           </div>
-          <SettingsReadOnlyValue
-            label="API base URL"
-            value={PERSONAL_API_BASE_URL}
-            mono
-            copyable
-          />
-          <SettingsReadOnlyValue
-            label="Header"
-            value="Authorization: Bearer <key>"
-            mono
-            copyable
-          />
+          {/* Written out in full: a truncated URL is one a person cannot type. */}
+          <dl className="space-y-2 border-t border-border/40 px-4 py-3.5 text-sm">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <dt className="w-28 shrink-0 font-medium">API base URL</dt>
+              <dd className="min-w-0 break-all font-mono text-xs text-muted-foreground">
+                {PERSONAL_API_BASE_URL}
+              </dd>
+            </div>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <dt className="w-28 shrink-0 font-medium">Header</dt>
+              <dd className="min-w-0 break-all font-mono text-xs text-muted-foreground">
+                Authorization: Bearer &lt;key&gt;
+              </dd>
+            </div>
+          </dl>
           <SettingsButton
-            label="Copied it somewhere safe?"
-            description="Closing this removes the key from the screen for good."
+            label="Hide the key"
+            description="Closing this removes the key from the screen for good, so copy it first."
             actionLabel="Done"
             kind="default"
             onClick={() => {
@@ -272,9 +274,9 @@ export default function ApiKeysTab() {
             error={orgsError ?? undefined}
           />
           <SettingsButton
-            label="Create the key"
+            label="Create key"
             description="It works until you revoke it or it reaches your organization's maximum age."
-            actionLabel="Create key"
+            actionLabel="Create"
             kind="default"
             onClick={() => void handleCreate()}
             loading={creating}

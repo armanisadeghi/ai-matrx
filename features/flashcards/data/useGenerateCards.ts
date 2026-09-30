@@ -22,7 +22,6 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
-import { claimConversationForSurface } from "@/features/canvas/materialization/surfaceOwnedConversations";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { foldDepthIntoRequest } from "./enhanceCard";
 import { coerceCards, setTitleOf } from "./coerce-card";
@@ -189,14 +188,12 @@ export function useGenerateCards(): GenerateCardsResult {
               foldDepthIntoRequest(vars.depth, vars.user_request) ?? "",
           },
       // The caller saves the deck itself (createGeneratedSetForConversation);
-      // claim the conversation so the stream's commit never materializes a
-      // twin deck (a check-then-create race both writers could lose, seen
-      // live 2026-09-28 on /education/flashcards/new).
-      // The caller's own hook (e.g. stamping an existing deck) still runs.
-      onConversationCreated: (conversationId: string) => {
-        claimConversationForSurface(conversationId);
-        opts.onConversationCreated?.(conversationId);
-      },
+      // the conversation is surface-owned so neither the stream's commit nor
+      // a reload's reconcile materializes a twin deck (a check-then-create
+      // race both writers could lose, seen live 2026-09-28 on
+      // /education/flashcards/new). Carried on the conversation record.
+      surfaceOwnsOutput: true,
+      onConversationCreated: opts.onConversationCreated,
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       pollIntervalMs: POLL_INTERVAL_MS,
       failureMessages: {

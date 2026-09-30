@@ -135,6 +135,7 @@ import {
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { persistInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
+import { persistSurfaceOwnsOutput } from "../conversations/surface-owns-output.persistence";
 import { extractErrorMessage } from "@/utils/errors";
 
 /**
@@ -905,6 +906,9 @@ export const executeInstance = createAsyncThunk<
       // client id still goes on the wire (correlation); `store:false` is what
       // keeps the server from writing anything.
       const isEphemeral = instance.isEphemeral === true;
+      // Captured now: a background run's instance may be destroyed by its
+      // headless waiter before the post-stream persistence below runs.
+      const surfaceOwnsOutput = instance.surfaceOwnsOutput === true;
 
       // An ephemeral conversation has NO server row, so it can NEVER continue
       // via /ai/conversations/{id} — that route requires the row and 404s.
@@ -1175,6 +1179,12 @@ export const executeInstance = createAsyncThunk<
           // preserves every server-owned sibling key.
           if (!isEphemeral) {
             await dispatch(persistInputCapabilities({ conversationId }));
+            // A surface-owned conversation keeps that ownership across reloads
+            // and resumes (loadConversation restores it) so no reconcile or
+            // later commit materializes a twin of the surface's own record.
+            if (surfaceOwnsOutput) {
+              await dispatch(persistSurfaceOwnsOutput({ conversationId }));
+            }
             // Which of the launch variables the HOST wired — written beside
             // them so a reopen of this conversation can still tell the
             // person's words from the surface's. First turn only: the values

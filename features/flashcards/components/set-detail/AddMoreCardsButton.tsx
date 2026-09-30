@@ -35,14 +35,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -71,9 +63,12 @@ import {
   generateCardsFromSources,
   lineageSourceOf,
 } from "@/features/flashcards/data/generateDeckFromSources";
+import {
+  MIN_CARDS_PER_RUN,
+  clampCardCount,
+  useMaxCardsPerRun,
+} from "@/features/flashcards/data/useMaxCardsPerRun";
 
-const COUNT_MIN = 1;
-const COUNT_MAX = 50;
 /** The top-up never offers "Just a topic": the cards come from material. */
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
 
@@ -162,7 +157,8 @@ function AddMoreCardsDialog({
   onAdded?: () => void;
 }) {
   useFlashcardMandates(["generateFromSource"]);
-  const isMobile = useIsMobile();
+  // The most cards one run may make — the `flashcards.max_cards_per_run` knob.
+  const cardLimit = useMaxCardsPerRun();
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const surfaceKey = addMoreSurfaceKey(setId);
@@ -210,7 +206,10 @@ function AddMoreCardsDialog({
 
   const ready = set.sources.filter((s) => s.status === "ready" && s.draft.ref);
   const landing = set.sources.filter((s) => s.status === "pending" || s.status === "resolving");
-  const safeCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10));
+  const safeCount =
+    cardLimit.max === null
+      ? Math.max(MIN_CARDS_PER_RUN, count || 10)
+      : clampCardCount(count, cardLimit.max);
   const hasMaterial = origins !== null && origins.length > 0;
 
   const run = async () => {
@@ -310,7 +309,11 @@ function AddMoreCardsDialog({
           : "The material this deck was made from is already picked, with the same parts and settings. Keep it, add more, or remove any — new cards are added to this deck and every card you have is kept."
         : "This deck was not made from any material (it was imported or written by hand). Pick what the new cards should come from — new cards are added to this deck and every card you have is kept.";
 
-  const blocked = landing.length
+  const blocked = cardLimit.error
+    ? cardLimit.error
+    : cardLimit.max === null
+      ? "Reading the most cards one run may make…"
+      : landing.length
     ? "Wait until your new source has finished adding."
     : ready.length === 0
       ? "Pick at least one source."
@@ -333,13 +336,22 @@ function AddMoreCardsDialog({
           id="fc-add-count"
           type="number"
           inputMode="numeric"
-          min={COUNT_MIN}
-          max={COUNT_MAX}
+          min={MIN_CARDS_PER_RUN}
+          max={cardLimit.max ?? undefined}
           value={count}
           onChange={(e) => setCount(Number.parseInt(e.target.value, 10) || 0)}
           className="h-11 w-32 text-base sm:h-9"
           disabled={busy}
         />
+        {cardLimit.error ? (
+          <p role="alert" className="text-xs text-destructive">
+            {cardLimit.error}
+          </p>
+        ) : cardLimit.max !== null ? (
+          <p className="text-xs text-muted-foreground">
+            Between {MIN_CARDS_PER_RUN} and {cardLimit.max}.
+          </p>
+        ) : null}
       </div>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
@@ -378,19 +390,7 @@ function AddMoreCardsDialog({
     if (!next && !busy) onClose();
   };
 
-  if (isMobile) {
-    return (
-      <Drawer open onOpenChange={onOpenChange}>
-        <DrawerContent className="pb-safe">
-          <DrawerHeader>
-            <DrawerTitle className="text-base">Add more cards</DrawerTitle>
-            <DrawerDescription className="text-xs">{description}</DrawerDescription>
-          </DrawerHeader>
-          {body}
-        </DrawerContent>
-      </Drawer>
-    );
-  }
+  // A plain Dialog: it becomes a bottom sheet on mobile by itself.
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl gap-0 p-0">

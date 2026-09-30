@@ -8,26 +8,54 @@
  * as counts says exactly that.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import type { TrackerStoryRow } from "@/features/marketing/data/coverage-types";
 
-import { humanize, type SetAsideList } from "./run-document";
+import { humanize, type SetAsideList, type SetAsideListId } from "./run-document";
 import { domainOf, SmartLink } from "./kinds/shared";
 
+/**
+ * `request` opens a list from outside (a count on the digest, a `?open=` link):
+ * "all" opens every list that has something in it. Each new request (a new
+ * `nonce`) opens and scrolls again, so pressing the same count twice works.
+ */
 export function SetAsideLists({
   lists,
   stories,
   storyActions,
   initiallyOpen,
+  request,
 }: {
   lists: SetAsideList[];
   stories: Map<string, TrackerStoryRow>;
   storyActions: (storyKey: string) => ReactNode;
   initiallyOpen?: SetAsideList["id"] | null;
+  request?: { list: SetAsideListId | "all"; nonce: number } | null;
 }) {
-  const [open, setOpen] = useState<SetAsideList["id"] | null>(initiallyOpen ?? null);
+  const [openIds, setOpenIds] = useState<Set<SetAsideListId>>(
+    () => new Set(initiallyOpen ? [initiallyOpen] : []),
+  );
+  useEffect(() => {
+    if (!request) return;
+    const ids =
+      request.list === "all" ? lists.filter((l) => l.count > 0).map((l) => l.id) : [request.list];
+    setOpenIds(new Set(ids));
+    const target = document.querySelector(
+      request.list === "all" ? '[data-surface-value="news_set_aside"]' : `[data-set-aside="${request.list}"]`,
+    );
+    target?.scrollIntoView({ block: "start", behavior: "smooth" });
+    // `lists` changes on every poll; only a new request re-opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request?.nonce, request?.list]);
+  const toggle = (id: SetAsideListId) =>
+    setOpenIds((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   return (
     <section className="rounded-md border border-border bg-card p-3" data-surface-value="news_set_aside">
       <h2 className="text-sm font-semibold text-foreground">What this run set aside</h2>
@@ -37,14 +65,14 @@ export function SetAsideLists({
       </p>
       <ul className="mt-2 flex flex-col divide-y divide-border">
         {lists.map((list) => {
-          const isOpen = open === list.id;
+          const isOpen = openIds.has(list.id);
           return (
             <li key={list.id} className="py-1.5" data-set-aside={list.id}>
               <button
                 type="button"
                 className="flex w-full items-center gap-2 text-left text-sm"
                 aria-expanded={isOpen}
-                onClick={() => setOpen(isOpen ? null : list.id)}
+                onClick={() => toggle(list.id)}
               >
                 {isOpen ? (
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />

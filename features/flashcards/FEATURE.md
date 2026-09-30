@@ -55,9 +55,14 @@ through `persistImportedDeck`, no AI).
   `/education/flashcards-2` concept. `/new/from-source` and `/new/import` redirect here keeping the
   query (`?document=` / `?source=` / `?file=` / `?topic=` / `?name=` preselect; import → `?start=import`)
   via [createDeckHref.ts](./components/create/createDeckHref.ts).
-- Every generation here claims its conversation (`features/canvas/materialization/surfaceOwnedConversations.ts`),
-  so the stream's commit never materializes a twin deck — neither one per section of a segmented
+- Every generation here launches with `surfaceOwnsOutput: true` (carried on the conversation record,
+  saved with the row, restored on load — see `features/canvas/FEATURE.md`), so neither the stream's
+  commit nor a reload's reconcile materializes a twin deck — neither one per section of a segmented
   run (a 6-section deck used to land as 7 decks) nor the race-lost twin of a topic run.
+- The most cards one run may make is the feature knob `flashcards.max_cards_per_run` (default 50,
+  platform-locked, agent-set, review 2026-12-01), read once through `data/useMaxCardsPerRun.ts` by
+  both Create deck and Add more cards. A failed read is said on screen and blocks the run; there is
+  no constant fallback.
 
 ## Agent-generated decks — the single-writer contract (D-WP3-4)
 
@@ -196,6 +201,7 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-29` — A3-F: (1) surface ownership moved from a module-level Set to the launch option `surfaceOwnsOutput` on the conversation record (survives reload/resume). (2) Add more cards is a plain `Dialog` (bottom sheet on mobile by itself); the hand-rolled Drawer switch is gone. (3) The card-count ceiling `COUNT_MAX = 50` (Create deck + Add more cards) is the knob `flashcards.max_cards_per_run`, one shared read `data/useMaxCardsPerRun.ts`; a failed read is shown and blocks the run.
 - `2026-09-29` — V2-F: (1) flashcards declare `FLASHCARD_SOURCE_DELIVERIES = ["direct"]` (the segmented generator reads only resolved text) on Create deck and Add more cards; a looked-up Source can no longer reach the generator, and if one ever does the error names it instead of the false "none had any text". (2) THE DECK'S SOURCE SET — `data/deckSourceSet.ts`: Create deck and every top-up record the exact `SourceSet` (parts, form, cap) plus card names on `fc_set.metadata.source_set` / `source_names` (registered in `platform.metadata_reserved_keys` as system provenance) through `fcService.mergeSetMetadata`; Add more cards seeds from it (`topUpSeed`), falling back to lineage (whole Sources, said in the dialog) for older decks. Test `data/__tests__/deck-source-set.test.ts` (red on a scratch copy of the old lineage-only seed). Live: deck `d553a142…` from 3 of 73 parts → Add more cards opened at "3 of 73 parts · 15k characters".
 - `2026-09-28` — V1-B fixes from the independent verify of USI-5: (1) THE COUNT LAW — an explicit card count is delivered exactly: `convert/coverage.ts` folds neighbouring sections into at most that many balanced passes (`foldPacked`, `apportionItems`), `convert/segmentedGenerate.ts` asks each pass for one spare and `mergeSectionItems` keeps each section's share, fills gaps from spares and trims to the total; near-duplicates across sections are dropped (`isNearDuplicateQA`, e.g. "What is osmosis?" twice). Fixes every segmented caller (Start's kit included). Live: asked 5 → 5 (was 10). (2) Section runs are `initiation: "auto"` → server `client_auto` → Auto lane, and the live sidebar insert honours it (`lanes.ts laneOfClientMintedRow`), so "…section 3 of 6" chats no longer land in the chat sidebar. (3) "Add more cards" opens the ONE Source input (`AddMoreCardsButton`) holding the deck's lineage Sources — or, for an imported deck with none, says so and lets the person pick; cards come from `generateCardsFromSources` (shared with Create deck), never repeat existing cards, and every Source used is linked. (4) Citations speak plain words (`education/trust/plainWords.ts`): no chunk ids in "Grounded in", "Page 22" not "22", "Open the source" not "Open web source" for a note. (5) Create deck holds the ambient ask-anything dock away (`useSuppressAmbientAssistant`) and keeps Style and details across a reload via `useWizardDraft` with the put-back notice. "My Orgs" list error root cause: `platform.shown_to_context` called `iam.teammate_user_ids` for archived-org memberships — fixed live the same day by the page-pass lane (archived filter); verified desktop + 375.
 

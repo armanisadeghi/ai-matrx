@@ -1,5 +1,5 @@
 import {
-  MAX_KEPT_TEXT_CHARS,
+  MAX_KEPT_TEXT_KNOB,
   RELOADED_RESUMING,
   RELOADED_WHILE_ADDING,
   reloadedCard,
@@ -53,7 +53,7 @@ describe("a Source cut off by a reload", () => {
       action: "lost",
       sentence: RELOADED_WHILE_ADDING,
     });
-    expect(MAX_KEPT_TEXT_CHARS).toBeGreaterThan(100_000);
+    expect(MAX_KEPT_TEXT_KNOB).toEqual({ feature: "sources", key: "max_kept_draft_chars" });
   });
 
   it("leaves finished and failed cards exactly as they were", () => {

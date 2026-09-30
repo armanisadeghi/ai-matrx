@@ -63,5 +63,25 @@ export function reloadedCard(
   return { action: "lost", sentence: RELOADED_WHILE_ADDING };
 }
 
-/** Pasted text larger than this is not kept in the device draft (it would crowd the browser's storage). */
-export const MAX_KEPT_TEXT_CHARS = 2_000_000;
+/**
+ * The knob for the largest pasted text kept in the device draft (it would
+ * crowd the draft store). Read by the intake; while unread nothing is kept and
+ * the card says so.
+ */
+export const MAX_KEPT_TEXT_KNOB = { feature: "sources", key: "max_kept_draft_chars" } as const;
+
+/** Said on a pasted card whose text is too large (or the limit unreadable) to keep for a reload. */
+export const NOT_KEPT_FOR_RELOAD =
+  "Too large to keep on this device, so it will not come back if the page reloads before it is added.";
+
+/**
+ * A landing stopped only because no organization is chosen yet. The card
+ * waits; the moment one is set the intake lands every waiting card again from
+ * what its draft kept (state, never an in-memory queue — it survives a reload).
+ */
+export const WAITING_FOR_ORGANIZATION =
+  "Waiting for an organization — choose one and this continues by itself.";
+
+/** A read Source whose keep waits for an organization; kept again once one is set. */
+export const KEEP_WAITING_FOR_ORGANIZATION =
+  "Read. Waiting for an organization to keep it — choose one and it is kept by itself.";

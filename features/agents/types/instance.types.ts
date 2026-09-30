@@ -223,6 +223,17 @@ export interface ExecutionInstance {
    * the assemblers default to "user" for the interactive send paths.
    */
   initiation?: RequestInitiation;
+  /**
+   * The launching SURFACE writes this conversation's result itself (a deck, a
+   * mind map, one merged artifact of a segmented run), so the stream's commit
+   * step and the on-load reconcile must never materialize its assistant turns
+   * into canvas items / feature records — doing so minted one twin deck per
+   * section (live 2026-09-28). Stamped at launch (`surfaceOwnsOutput` launch
+   * option), persisted as `chat.conversation.metadata.surface_owns_output`,
+   * and restored by `loadConversation`, so a reload or resume keeps it. Read
+   * only through `selectConversationSurfaceOwnsOutput`.
+   */
+  surfaceOwnsOutput?: boolean;
   /** True until the server confirms this conversation ID via X-Conversation-ID header */
   cacheOnly: boolean;
   createdAt: string;
@@ -1161,6 +1172,13 @@ export interface ManagedAgentOptions {
    * agent-tool-driven sends) MUST pass "auto".
    */
   initiation?: RequestInitiation;
+
+  /**
+   * The launching surface saves this run's result itself — never materialize
+   * its assistant turns (see `ExecutionInstance.surfaceOwnsOutput`). Stamped
+   * on the conversation record before the first stream commits.
+   */
+  surfaceOwnsOutput?: boolean;
 
   // ═══════════════════════════════════════════════════════════
   // CONFIG BUNDLE — canonical customization surface

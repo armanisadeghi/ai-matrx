@@ -225,6 +225,21 @@ const conversationsSlice = createSlice({
       }
     },
 
+    /**
+     * Mark this conversation's output as written by its launching surface —
+     * the materializer skips it (see `ExecutionInstance.surfaceOwnsOutput`).
+     * Dispatched by `launchAgentExecution` before the first stream commits.
+     */
+    setInstanceSurfaceOwnsOutput(
+      state,
+      action: PayloadAction<{ conversationId: string; surfaceOwnsOutput: boolean }>,
+    ) {
+      const instance = state.byConversationId[action.payload.conversationId];
+      if (instance) {
+        instance.surfaceOwnsOutput = action.payload.surfaceOwnsOutput;
+      }
+    },
+
     /** Mark a conversation as server-confirmed (no longer cache-only). */
     confirmServerSync(state, action: PayloadAction<string>) {
       const instance = state.byConversationId[action.payload];
@@ -414,6 +429,7 @@ export const {
   setInstanceInitiation,
   confirmServerSync,
   setConversationLabel,
+  setInstanceSurfaceOwnsOutput,
   patchConversation,
   hydrateConversation,
   setDebugSession,

@@ -42,8 +42,17 @@ interface WebpageResourcePickerProps {
   initialUrl?: string;
 }
 
+/**
+ * What the scrape already made of the page: the Source the scraper landed at
+ * its result boundary — null when it landed none, or when the person edited or
+ * cut the text (then what they confirmed is the content, not the landed page).
+ */
+export interface WebpageLanded {
+  processedDocumentId: string | null;
+}
+
 interface WebpageResourcePickerCoreProps {
-  onSelect: (content: PreFetchedUrl) => void;
+  onSelect: (content: PreFetchedUrl, landed: WebpageLanded) => void;
   onSwitchTo?: (
     type: "youtube" | "image_url" | "file_url",
     url: string,
@@ -253,13 +262,17 @@ export function WebpageResourcePickerCore({
   const handleConfirm = () => {
     if (!data) return;
 
-    onSelect({
-      url,
-      title: data.overview.page_title || url,
-      textContent: effectiveContent,
-      charCount: effectiveContent.length,
-      scrapedAt: data.scrapedAt,
-    });
+    const unchanged = charLimit === 0 && editedContent === data.textContent;
+    onSelect(
+      {
+        url,
+        title: data.overview.page_title || url,
+        textContent: effectiveContent,
+        charCount: effectiveContent.length,
+        scrapedAt: data.scrapedAt,
+      },
+      { processedDocumentId: unchanged ? (data.processedDocumentId ?? null) : null },
+    );
 
     setShowPreview(false);
     reset();

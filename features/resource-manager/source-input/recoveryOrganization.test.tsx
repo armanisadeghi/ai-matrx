@@ -17,6 +17,7 @@ import { renderHook } from "@/test-utils/renderHook";
 import type { UseProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { useSourceRecovery } from "./useSourceRecovery";
 import { fileCardHeldForOrganization } from "./fileSource";
+import { KEEP_WAITING_FOR_ORGANIZATION, WAITING_FOR_ORGANIZATION } from "./interrupted";
 import type { SourceCardModel } from "./types";
 import type { UseSourceIntakeResult } from "./useSourceIntake";
 import type { UseSourceSetResult } from "./useSourceSet";
@@ -69,4 +70,46 @@ it("reads the file's state once an organization is picked", async () => {
   expect(fetchFileRagStatus).toHaveBeenCalledWith(FILE, expect.anything());
   expect(fileCardHeldForOrganization(card, "org-1")).toBe(false);
   await hook.unmount();
+});
+
+/**
+ * A3-F: the "waiting for an organization" replay lives in STATE, not in an
+ * in-memory queue. A paste that waited is landed again from its kept input the
+ * moment an organization is known — after a reload too, where a queue is gone.
+ */
+it("lands a card that waited for an organization once one is set — from state, not a queue", async () => {
+  const waiting: SourceCardModel = {
+    id: "waiting-paste",
+    draft: { kind: "paste", label: "Pasted text", ref: null, input: { text: "Mitochondria make ATP." } },
+    status: "error",
+    error: WAITING_FOR_ORGANIZATION,
+    manifest: null,
+  };
+  const { set, intake, runner } = fakes(waiting);
+  const none = await renderHook(() => useSourceRecovery(set, intake, runner, { organizationId: null }));
+  expect(intake.resume).not.toHaveBeenCalled();
+  await none.unmount();
+  const picked = await renderHook(() => useSourceRecovery(set, intake, runner, { organizationId: "org-1" }));
+  expect(intake.resume).toHaveBeenCalledWith(waiting);
+  await picked.unmount();
+});
+
+it("keeps a read Source whose keep waited for an organization once one is set", async () => {
+  const read: SourceCardModel = {
+    id: "waiting-keep",
+    draft: {
+      kind: "web",
+      label: "Photosynthesis — Wikipedia",
+      ref: createSourceRef("processed_document", FILE),
+      processedDocumentId: FILE,
+      notes: [KEEP_WAITING_FOR_ORGANIZATION],
+    },
+    status: "ready",
+    error: null,
+    manifest: null,
+  };
+  const { set, intake, runner } = fakes(read);
+  const picked = await renderHook(() => useSourceRecovery(set, intake, runner, { organizationId: "org-1" }));
+  expect(intake.fileLanded).toHaveBeenCalledWith(read, FILE);
+  await picked.unmount();
 });

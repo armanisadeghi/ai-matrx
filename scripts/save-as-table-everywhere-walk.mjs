@@ -51,8 +51,8 @@ const log = (...a) => console.log("·", ...a);
 
 async function unpark() {
   if (!page.url().includes("__dev-walk")) return;
-  await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
-  await sleep(6000);
+  await page.getByRole("button", { name: /Resume/ }).first().click({ timeout: 30000 }).catch(() => {});
+  await page.waitForURL((u) => !u.href.includes("__dev-walk"), { timeout: 180000 }).catch(() => {});
 }
 
 async function goto(path) {
@@ -61,17 +61,24 @@ async function goto(path) {
   if (page.url().includes("__dev-walk")) await page.goto(`${ORIGIN}${path}`, { waitUntil: "domcontentloaded", timeout: 300000 });
 }
 
-// The walk cap parks an idle preview host; ask its Resume from the page itself before signing in.
-await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
-await page
-  .evaluate(async () => {
-    const body = new FormData();
-    body.set("returnTo", "/login");
-    return (await fetch("/__dev-walk", { method: "POST", body, redirect: "manual" })).status;
-  })
-  .catch(() => null);
-await sleep(4000);
-const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
+// The walk cap parks a preview host (too many hosts walking at once); a person presses
+// "Resume this preview", and so does the walk — before and, if it parks mid-way, during sign-in.
+async function resumeIfParked() {
+  if (!page.url().includes("__dev-walk")) return;
+  await page.getByRole("button", { name: /Resume/ }).first().click({ timeout: 30000 }).catch(() => {});
+  await page.waitForURL((u) => !u.href.includes("__dev-walk"), { timeout: 180000 }).catch(() => {});
+}
+let who = null;
+for (let attempt = 1; attempt <= 4 && who !== "admin@admin.com"; attempt += 1) {
+  await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
+  await resumeIfParked();
+  try {
+    who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
+  } catch {
+    console.log(`  sign-in attempt ${attempt} was parked by the walk cap; resuming`);
+    await resumeIfParked();
+  }
+}
 log("signed in as", who);
 if (who !== "admin@admin.com") throw new Error(`wrong seat: ${who}`);
 await goto("/dashboard");
@@ -135,12 +142,139 @@ if (STEP === "note") {
   await until("made", async () => (await dlg.innerText()).includes("was made"), 90000);
   await sleep(1500);
   await shot("01-note-after-made");
-  console.log("after:", (await dlg.innerText()).slice(0, 600));
+  const made = await dlg.innerText();
+  console.log("after:", made.slice(0, 600));
+  state.tableName = made.match(/“([^”]+)” was made/)?.[1] ?? null;
   await dlg.getByRole("button", { name: "Open the table" }).click();
   await until("the grid", async () => page.url().includes("/data-v2/") && (await page.locator("thead th").count()) > 1, 120000);
   await sleep(4000);
   state.tableUrl = page.url();
   await shot("01-note-after-table");
+  save();
+}
+
+/** Choose a Radix Select option by the control's accessible name and the option's words. */
+async function choose(scope, label, option) {
+  const trigger = scope.getByLabel(label).first();
+  await trigger.click();
+  await sleep(700);
+  await page.getByRole("option", { name: option }).first().click();
+  await sleep(700);
+}
+
+async function askChat(prompt, until_) {
+  await goto("/chat");
+  await sleep(8000);
+  const box = page.locator("textarea").last();
+  await box.waitFor({ timeout: 90000 });
+  await box.click();
+  await page.keyboard.type(prompt);
+  await page.keyboard.press("Enter");
+  const got = await until("the answer", async () => (await page.locator("main").innerText()).includes(until_), 180000);
+  if (!got.v) throw new Error("the chat answer never arrived");
+  await sleep(12000); // let the stream settle
+}
+
+if (STEP === "chat") {
+  if (!state.tableName) throw new Error("run STEP=note first (it makes the table these rows are added to)");
+  await askChat(
+    "Reply with exactly three markdown bullet points and nothing else. Each bullet is a patient name, then an em dash with spaces around it, then a visit type: Nadia Karimi — Discharge Visit; Tom Reyes — Follow-up; Ivy Chen — Initial Evaluation.",
+    "Ivy Chen",
+  );
+  state.chatUrl = page.url();
+  await shot("02-chat-before");
+  await openRegistryAction(page.getByText("Nadia Karimi").last());
+  const dlg = await theDialog();
+  await sleep(1000);
+  console.log("dialog:", (await dlg.innerText()).slice(0, 500));
+  await choose(dlg, "How to read the list", /Split at the dash/);
+  await dlg.getByRole("radio", { name: "Add to a table" }).click();
+  await sleep(2500);
+  await choose(dlg, "Which table to add the rows to", state.tableName);
+  await until("the plan", async () => (await dlg.innerText()).includes("From "), 60000);
+  await sleep(3000);
+  await choose(dlg, "Where Detail goes", "Visit type").catch((e) => console.log("map detail:", String(e).slice(0, 200)));
+  await sleep(3000);
+  await shot("02-chat-mapping");
+  const ask = await until("the enum ask", async () => (await dlg.innerText()).includes("is not one of Visit type"), 30000);
+  console.log("enum ask fired:", Boolean(ask.v));
+  await shot("02-chat-enum-ask");
+  await dlg.getByRole("button", { name: "Add to Visit type" }).click();
+  await sleep(4000);
+  await shot("02-chat-choice-added");
+  // records-ui 0.93.70 still judges a choice column without its options (fixed in the next
+  // release); tick its "Import the rest anyway" when it is shown, and say so.
+  const goAhead = dlg.getByText("Import the rest anyway");
+  if (await goAhead.isVisible().catch(() => false)) {
+    console.log("pre-check still shown (0.93.70): ticking Import the rest anyway");
+    await goAhead.click();
+    await sleep(800);
+  }
+  const run = dlg.getByRole("button", { name: /^Import 3 rows/ });
+  await run.click();
+  await until("the report", async () => /landed|written|refused/i.test(await dlg.innerText()), 90000);
+  await sleep(2000);
+  await shot("02-chat-after-import");
+  console.log("report:", (await dlg.innerText()).slice(-700));
+  save();
+}
+
+async function makeNewTable(prefix) {
+  const dlg = await theDialog();
+  await sleep(1500);
+  await shot(`${prefix}-dialog`);
+  console.log("dialog:", (await dlg.innerText()).slice(0, 600));
+  await dlg.getByRole("button", { name: /^Make the table/ }).click();
+  await until("made", async () => (await dlg.innerText()).includes("was made"), 90000);
+  await sleep(1500);
+  await shot(`${prefix}-after-made`);
+  const made = await dlg.innerText();
+  console.log("after:", made.slice(0, 600));
+  return dlg;
+}
+
+if (STEP === "csv") {
+  const csv = [
+    "Room,Floor,Equipment,Opens",
+    "Gym A,1,Parallel bars,7:00 AM",
+    "Gym B,1,Treadmill,7:00 AM",
+    "Aquatic pool,Lower,Pool lift,8:30 AM",
+    "Private room 3,2,Treatment table,8:00 AM",
+  ].join("\n");
+  const box = await newNote(csv);
+  await shot("03-csv-before");
+  await openRegistryAction(box, { x: 120, y: 40 });
+  const dlg = await makeNewTable("03-csv");
+  await dlg.getByRole("button", { name: "Open the table" }).click();
+  await until("the grid", async () => page.url().includes("/data-v2/") && (await page.locator("thead th").count()) > 1, 120000);
+  await sleep(4000);
+  state.csvTableUrl = page.url();
+  await shot("03-csv-after-table");
+  save();
+}
+
+if (STEP === "canvas") {
+  await askChat(
+    "Make a markdown table of 4 balance exercises for knee rehab with the columns Exercise, Body area, Sets and Reps. Only the table.",
+    "Reps",
+  );
+  state.canvasChatUrl = page.url();
+  await sleep(4000);
+  await shot("04-canvas-before");
+  const saveTo = page.getByRole("button", { name: "Save this table to…" }).last();
+  await saveTo.scrollIntoViewIfNeeded();
+  const down = await saveTo.boundingBox();
+  await saveTo.click();
+  await sleep(1200);
+  await shot("04-canvas-menu");
+  await page.getByRole("menuitem", { name: /^A table/ }).first().click();
+  const dlg = await makeNewTable("04-canvas");
+  await dlg.getByRole("button", { name: "Done" }).click().catch(() => {});
+  await page.keyboard.press("Escape").catch(() => {});
+  const live = await until("the artifact is live", async () => (await page.locator("main").innerText()).includes("This table is live now") || (await page.getByRole("button", { name: /New record/ }).count()) > 0, 60000);
+  console.log("artifact live:", Boolean(live.v), down ? "" : "");
+  await sleep(5000);
+  await shot("04-canvas-after-live");
   save();
 }
 

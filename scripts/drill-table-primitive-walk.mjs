@@ -123,6 +123,34 @@ const trail = () => page.evaluate(() => document.querySelector("[data-matrx-dril
 const total = () => page.evaluate(() => document.querySelector("[data-matrx-drill-total]")?.innerText.replace(/\s+/g, " ").trim() ?? null);
 const search = () => new URL(page.url()).search;
 
+/**
+ * ONE STEP, AGAINST THE WALK CAP. Four preview hosts may walk the live database at once and a fifth
+ * evicts the least recently used; an evicted tab is parked. A step the cap interrupted is resumed
+ * and run again (its half-recorded lines dropped); a step that fails on its own is a friction.
+ */
+async function attempt(name, fn) {
+  for (let n = 1; n <= 6; n += 1) {
+    const mark = out.steps.length;
+    const marks = out.frictions.length;
+    let failed = null;
+    try {
+      await fn();
+    } catch (error) {
+      failed = error;
+    }
+    if (!(await parked())) {
+      if (failed) friction(`${name}: ${String(failed).slice(0, 300)}`);
+      return;
+    }
+    out.steps.length = mark;
+    out.frictions.length = marks;
+    console.log(`[walk] ${name}: parked by the walk cap (try ${n}) — resuming`);
+    await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await sleep(5000 * n);
+  }
+  friction(`${name}: the walk cap kept parking this tab`);
+}
+
 try {
   await resumeWalk();
   out.signed_in_as = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
@@ -153,112 +181,122 @@ try {
   }
 
   if (PHASE === "after") {
-    // ── 1 · group by Condition — the store's groups ─────────────────────────────────────────────
-    asked();
-    await open("?by=condition&show=count,sum_quantity");
-    await until("groups", async () => (await groupRows()).length > 0, 60000);
-    await shot("01-grouped-by-condition");
-    const g1 = await groupRows();
-    step("1 grouped by condition", { rows: g1, total: await total(), store_asked: asked() });
-    if (g1.length === 0) friction("no server groups drew for ?by=condition");
+    await attempt("1-2 group, then by", async () => {
+      // ── 1 · group by Condition — the store's groups ─────────────────────────────────────────────
+      asked();
+      await open("?by=condition&show=count,sum_quantity");
+      await until("groups", async () => (await groupRows()).length > 0, 60000);
+      await shot("01-grouped-by-condition");
+      const g1 = await groupRows();
+      step("1 grouped by condition", { rows: g1, total: await total(), store_asked: asked() });
+      if (g1.length === 0) friction("no server groups drew for ?by=condition");
 
-    // ── 2 · the group-by menu and a second level ────────────────────────────────────────────────
-    await page.locator("[data-matrx-table-group-by]").first().click();
-    await sleep(900);
-    await shot("02-group-by-menu");
-    const menuItems = await page.evaluate(() => [...document.querySelectorAll("[role=menu] [data-matrx-drill-level-menu]")].map((m) => m.innerText.replace(/\s+/g, " ").trim()));
-    step("2 group-by menu", { items: menuItems });
-    const thenBy = page.locator('[data-matrx-drill-level-menu="1"]');
-    if (await thenBy.count()) {
-      await thenBy.hover();
-      await sleep(700);
-      await shot("02b-then-by");
-      await page.locator('[data-matrx-drill-option="room"]').first().click();
+      // ── 2 · the group-by menu and a second level ────────────────────────────────────────────────
+      await page.locator("[data-matrx-table-group-by]").first().click();
+      await sleep(900);
+      await shot("02-group-by-menu");
+      const menuItems = await page.evaluate(() => [...document.querySelectorAll("[role=menu] [data-matrx-drill-level-menu]")].map((m) => m.innerText.replace(/\s+/g, " ").trim()));
+      step("2 group-by menu", { items: menuItems });
+      const thenBy = page.locator('[data-matrx-drill-level-menu="1"]');
+      if (await thenBy.count()) {
+        await thenBy.hover();
+        await sleep(700);
+        await shot("02b-then-by");
+        await page.locator('[data-matrx-drill-option="room"]').first().click();
+        await sleep(3500);
+      } else friction("no Then by in the group-by menu");
+      await page.keyboard.press("Escape");
+      await sleep(500);
+      await shot("02c-condition-then-room");
+      step("2 nested", { level0: await groupRows(0), level1: (await groupRows(1)).slice(0, 8), url: search(), store_asked: asked() });
+
+    });
+    await attempt("3 pivot", async () => {
+      // ── 3 · pivot Last Serviced by month across the top ─────────────────────────────────────────
+      await open("?by=condition&across=last_serviced:month&show=sum_quantity");
+      await until("pivot", async () => (await page.locator("[data-matrx-drill-pivot-column]").count()) > 0, 60000);
+      await shot("03-pivot-by-month");
+      step("3 pivot", {
+        columns: await page.evaluate(() => [...document.querySelectorAll("[data-matrx-drill-pivot-column]")].map((c) => c.innerText.trim())),
+        rows: await groupRows(),
+        store_asked: asked(),
+      });
+
+    });
+    await attempt("4 what to display", async () => {
+      // ── 4 · what to display ─────────────────────────────────────────────────────────────────────
+      await open("?by=condition&show=count");
+      await until("groups", async () => (await groupRows()).length > 0, 60000);
+      await page.locator("[data-matrx-drill-measures]").first().click();
+      await sleep(900);
+      await shot("04-measure-picker");
+      const measures = await page.evaluate(() => [...document.querySelectorAll("[data-matrx-drill-measure]")].map((m) => m.innerText.trim()));
+      step("4 measures offered", { measures });
+      const avg = page.locator('[data-matrx-drill-measure="avg_quantity"]');
+      if (await avg.count()) {
+        await avg.click();
+        await sleep(3000);
+      } else friction("Average Quantity not offered");
+      await page.keyboard.press("Escape");
+      await sleep(400);
+      await shot("04b-count-and-average");
+      step("4 shown", {
+        headers: await page.evaluate(() => [...document.querySelectorAll("[data-matrx-drill-sort]")].map((h) => h.innerText.trim())),
+        url: search(),
+        rows: await groupRows(),
+      });
+
+    });
+    await attempt("5-6 drill, records, zoom out", async () => {
+      // ── 5 · drill on a condition, the trail, See these records ──────────────────────────────────
+      await open("?by=condition&show=count,sum_quantity");
+      await until("groups", async () => (await groupRows()).length > 0, 60000);
+      asked();
+      const good = page.locator('[data-matrx-drill-level="0"] [data-matrx-drill-into]').first();
+      const goodLabel = (await good.innerText()).trim();
+      await good.click();
+      await until("drilled", async () => new URL(page.url()).searchParams.get("by") === "room", 20000);
+      await until("room groups", async () => (await groupRows()).length > 0, 60000);
+      await sleep(1500);
+      await shot("05-drilled-into-condition");
+      step("5 drilled", { clicked: goodLabel, url: search(), trail: await trail(), rows: await groupRows(), total: await total(), store_asked: asked() });
+      const menu = page.locator('[data-matrx-drill-level="0"] [data-matrx-drill-menu]').first();
+      await menu.click();
+      await sleep(800);
+      await shot("05b-drill-menu");
+      step("5 drill menu", { items: await page.evaluate(() => [...document.querySelectorAll("[role=menu] [role=menuitem]")].map((m) => m.innerText.trim())) });
+      await page.locator('[data-matrx-drill-action="records"]').first().click();
+      await sleep(4000);
+      await shot("05c-see-these-records");
+      step("5 records", {
+        url: search(),
+        trail: await trail(),
+        record_rows: await page.evaluate(() => [...document.querySelectorAll("tbody tr")].length),
+      });
+
+      // ── 6 · zoom back out; Back undoes one step ────────────────────────────────────────────────
+      await page.locator('[data-matrx-drill-crumb="-1"]').first().click();
       await sleep(3500);
-    } else friction("no Then by in the group-by menu");
-    await page.keyboard.press("Escape");
-    await sleep(500);
-    await shot("02c-condition-then-room");
-    step("2 nested", { level0: await groupRows(0), level1: (await groupRows(1)).slice(0, 8), url: search(), store_asked: asked() });
+      await shot("06-zoomed-out");
+      step("6 root crumb", { url: search(), trail: await trail(), rows: await groupRows() });
+      await page.goBack();
+      await sleep(3500);
+      step("6 back", { url: search(), trail: await trail() });
 
-    // ── 3 · pivot Last Serviced by month across the top ─────────────────────────────────────────
-    await open("?by=condition&across=last_serviced:month&show=sum_quantity");
-    await until("pivot", async () => (await page.locator("[data-matrx-drill-pivot-column]").count()) > 0, 60000);
-    await shot("03-pivot-by-month");
-    step("3 pivot", {
-      columns: await page.evaluate(() => [...document.querySelectorAll("[data-matrx-drill-pivot-column]")].map((c) => c.innerText.trim())),
-      rows: await groupRows(),
-      store_asked: asked(),
     });
-
-    // ── 4 · what to display ─────────────────────────────────────────────────────────────────────
-    await open("?by=condition&show=count");
-    await until("groups", async () => (await groupRows()).length > 0, 60000);
-    await page.locator("[data-matrx-drill-measures]").first().click();
-    await sleep(900);
-    await shot("04-measure-picker");
-    const measures = await page.evaluate(() => [...document.querySelectorAll("[data-matrx-drill-measure]")].map((m) => m.innerText.trim()));
-    step("4 measures offered", { measures });
-    const avg = page.locator('[data-matrx-drill-measure="avg_quantity"]');
-    if (await avg.count()) {
-      await avg.click();
-      await sleep(3000);
-    } else friction("Average Quantity not offered");
-    await page.keyboard.press("Escape");
-    await sleep(400);
-    await shot("04b-count-and-average");
-    step("4 shown", {
-      headers: await page.evaluate(() => [...document.querySelectorAll("[data-matrx-drill-sort]")].map((h) => h.innerText.trim())),
-      url: search(),
-      rows: await groupRows(),
+    await attempt("7 phone and dark", async () => {
+      // ── 7 · phone and dark ──────────────────────────────────────────────────────────────────────
+      await open("?by=condition&show=count,sum_quantity&f.room=Gym%20A", { width: 390, height: 844 });
+      await sleep(1500);
+      await shot("07-phone-390");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      step("7 phone", { horizontal_overflow_px: overflow, trail: await trail(), rows: await groupRows() });
+      if (overflow > 1) friction(`the page scrolls sideways by ${overflow}px at 390`);
+      await open("?by=condition,room&show=count,sum_quantity", { dark: true });
+      await sleep(1500);
+      await shot("07b-dark-1600");
+      step("7 dark", { rows: await groupRows(0) });
     });
-
-    // ── 5 · drill on a condition, the trail, See these records ──────────────────────────────────
-    await open("?by=condition&show=count,sum_quantity");
-    await until("groups", async () => (await groupRows()).length > 0, 60000);
-    asked();
-    const good = page.locator('[data-matrx-drill-level="0"] [data-matrx-drill-into]').first();
-    const goodLabel = (await good.innerText()).trim();
-    await good.click();
-    await until("drilled", async () => new URL(page.url()).searchParams.get("by") === "room", 20000);
-    await until("room groups", async () => (await groupRows()).length > 0, 60000);
-    await sleep(1500);
-    await shot("05-drilled-into-condition");
-    step("5 drilled", { clicked: goodLabel, url: search(), trail: await trail(), rows: await groupRows(), total: await total(), store_asked: asked() });
-    const menu = page.locator('[data-matrx-drill-level="0"] [data-matrx-drill-menu]').first();
-    await menu.click();
-    await sleep(800);
-    await shot("05b-drill-menu");
-    step("5 drill menu", { items: await page.evaluate(() => [...document.querySelectorAll("[role=menu] [role=menuitem]")].map((m) => m.innerText.trim())) });
-    await page.locator('[data-matrx-drill-action="records"]').first().click();
-    await sleep(4000);
-    await shot("05c-see-these-records");
-    step("5 records", {
-      url: search(),
-      trail: await trail(),
-      record_rows: await page.evaluate(() => [...document.querySelectorAll("tbody tr")].length),
-    });
-
-    // ── 6 · zoom back out; Back undoes one step ────────────────────────────────────────────────
-    await page.locator('[data-matrx-drill-crumb="-1"]').first().click();
-    await sleep(3500);
-    await shot("06-zoomed-out");
-    step("6 root crumb", { url: search(), trail: await trail(), rows: await groupRows() });
-    await page.goBack();
-    await sleep(3500);
-    step("6 back", { url: search(), trail: await trail() });
-
-    // ── 7 · phone and dark ──────────────────────────────────────────────────────────────────────
-    await open("?by=condition&show=count,sum_quantity&f.room=Gym%20A", { width: 390, height: 844 });
-    await sleep(1500);
-    await shot("07-phone-390");
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    step("7 phone", { horizontal_overflow_px: overflow, trail: await trail(), rows: await groupRows() });
-    if (overflow > 1) friction(`the page scrolls sideways by ${overflow}px at 390`);
-    await open("?by=condition,room&show=count,sum_quantity", { dark: true });
-    await sleep(1500);
-    await shot("07b-dark-1600");
-    step("7 dark", { rows: await groupRows(0) });
   }
 } catch (error) {
   friction(`walk stopped: ${String(error).slice(0, 400)}`);

@@ -36,7 +36,7 @@ const CONFIGS: { heading: string; props: SourceInputProps }[] = [
     props: {
       surfaceKey: "demo:required-single",
       title: "Your source",
-      kinds: ["your_sources", "files", "upload", "paste"],
+      kinds: ["existing", "upload", "paste"],
       max: 1,
       required: true,
     },

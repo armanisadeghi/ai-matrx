@@ -16,7 +16,8 @@
  *     Archives the original into content_history so it's fully reversible).
  */
 
-import { isConversationSurfaceOwned } from "./surfaceOwnedConversations";
+import { selectConversationSurfaceOwnsOutput } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 
@@ -29,6 +30,11 @@ export interface MaterializeParams {
   conversationId: string;
   /** The committed assistant content array (cx_message.content shape). */
   content: CxContentBlock[];
+  /**
+   * The store, read for the conversation's `surfaceOwnsOutput` flag (carried
+   * on its record from launch, restored from the row on load).
+   */
+  getState: () => RootState;
 }
 
 export interface MaterializeResult {
@@ -94,9 +100,15 @@ export async function materializeMessageArtifacts(
   }
 
   // A surface that writes this conversation's result itself (a segmented
-  // background generation) owns it: materializing here would create a second
-  // record per call (surfaceOwnedConversations.ts).
-  if (isConversationSurfaceOwned(params.conversationId)) {
+  // background generation, a flashcard deck) owns it: materializing here would
+  // create a second record per call. The flag rides the conversation record
+  // (launch option `surfaceOwnsOutput`), so it survives reload and resume.
+  if (
+    selectConversationSurfaceOwnsOutput(
+      params.getState(),
+      params.conversationId,
+    )
+  ) {
     return { materializedCount: 0, rewrittenContent: null, errors: [] };
   }
 

@@ -1,83 +1,90 @@
 "use client";
 
 /**
- * useSourcePartsText — the full text of one Source's parts, read only when a
- * person searches its parts by words.
+ * useSourcePartsSearch — which of one Source's parts hold every word a person
+ * typed, answered by the server.
  *
  * The manifest never carries bodies (only each part's opening words, A5), so a
- * word that sits deep inside a part is found by reading the Source once
- * through THE one server step (`POST /sources/resolve`, the same text the run
- * receives) and splitting it back into parts by their ids. One read per Source
- * and form per page load; nothing is persisted.
+ * word that sits deep inside a part is found by `POST /sources/parts/search`:
+ * the server walks the manifest's own parts (same ids, same access check) and
+ * returns only the ids that match. Nothing but ids crosses the wire, and
+ * nothing is cached beyond this hook's state.
+ *
+ * Asked only when the query is words (never a page or a range), after the
+ * person pauses typing.
  */
 
 import { useEffect, useState } from "react";
-import { createSourceRef, createSourceSet, type SourceRef } from "@ai-matrx/agents/sources";
-import { resolveSourceSet } from "./sourceSetApi";
-import { partTextFromGrounded, type PartTextIndex } from "./partsSearch";
+import { createSourceRef, type SourceRef } from "@ai-matrx/agents/sources";
+import { searchSourceParts } from "./sourceSetApi";
+import { isWordQuery, type PartMatchIds } from "./partsSearch";
 
-const cache = new Map<string, Promise<PartTextIndex>>();
+/** How long typing must pause before the server is asked. */
+const SEARCH_DEBOUNCE_MS = 250;
 
-function keyOf(ref: SourceRef): string {
-  return `${ref.resource_type}:${ref.resource_id}:${ref.representation ?? ""}`;
-}
+const COULD_NOT_SEARCH =
+  "Only part titles and opening words are searched — the full text could not be searched just now.";
 
-/** Read (once) the whole Source in the chosen form, split by part id. */
-export function readSourcePartsText(ref: SourceRef): Promise<PartTextIndex> {
-  const key = keyOf(ref);
-  let pending = cache.get(key);
-  if (!pending) {
-    // The whole Source in the chosen form: no parts, no limit, text included.
-    const whole = createSourceRef(ref.resource_type, ref.resource_id, {
-      representation: ref.representation,
-    });
-    pending = resolveSourceSet(createSourceSet([whole])).then((resolved) =>
-      partTextFromGrounded(resolved.sources[0]?.text ?? ""),
-    );
-    // A failed read is not remembered — the next search asks again.
-    pending.catch(() => cache.delete(key));
-    cache.set(key, pending);
-  }
-  return pending;
-}
-
-export interface SourcePartsText {
-  text: PartTextIndex | undefined;
-  /** Reading the Source's text so words inside a part can be found. */
+export interface SourcePartsSearchState {
+  /** Ids of the parts whose text holds every word (undefined until answered). */
+  matches: PartMatchIds | undefined;
+  /** The server is being asked about the current words ("Searching inside the text…"). */
   reading: boolean;
-  /** Said under the search when the text could not be read (the preview still matches). */
+  /** Said under the search when the text could not be searched (titles and previews still match). */
   error: string | null;
+  /** More parts matched than the server returns; the list shown is the first of them. */
+  truncated: boolean;
 }
 
-export function useSourcePartsText(ref: SourceRef | null, enabled: boolean): SourcePartsText {
-  const [state, setState] = useState<{ key: string; text?: PartTextIndex; error?: string } | null>(
-    null,
-  );
-  const key = ref ? keyOf(ref) : null;
+export function useSourcePartsSearch(ref: SourceRef | null, query: string): SourcePartsSearchState {
+  const [state, setState] = useState<{
+    key: string;
+    matches?: PartMatchIds;
+    truncated?: boolean;
+    error?: string;
+  } | null>(null);
+  const resourceType = ref?.resource_type ?? "";
+  const resourceId = ref?.resource_id ?? "";
+  const representation = ref?.representation ?? undefined;
+  const words = isWordQuery(query) ? query.trim().toLowerCase().split(/\s+/).join(" ") : "";
+  const key =
+    resourceId && words ? `${resourceType}:${resourceId}:${representation ?? ""}:${words}` : null;
+
   useEffect(() => {
-    if (!enabled || !ref || !key) return undefined;
-    let live = true;
-    readSourcePartsText(ref)
-      .then((text) => live && setState({ key, text }))
-      .catch(
-        () =>
-          live &&
-          setState({
-            key,
-            error:
-              "Only part titles and opening words are searched — the full text could not be read just now.",
-          }),
-      );
+    if (!key) return undefined;
+    // The whole Source in the chosen form: the person's picked parts never narrow a search.
+    const whole = createSourceRef(resourceType, resourceId, { representation });
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      searchSourceParts(whole, words, { signal: controller.signal })
+        .then((found) => {
+          if (controller.signal.aborted) return;
+          if (found.unavailable) {
+            setState({
+              key,
+              error: `Only part titles and opening words are searched — ${
+                found.detail ?? "the full text could not be searched."
+              }`,
+            });
+            return;
+          }
+          setState({ key, matches: new Set(found.segment_ids ?? []), truncated: !!found.truncated });
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setState({ key, error: COULD_NOT_SEARCH });
+        });
+    }, SEARCH_DEBOUNCE_MS);
     return () => {
-      live = false;
+      clearTimeout(timer);
+      controller.abort();
     };
-    // `ref` is identified by `key`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, key]);
-  const mine = state && state.key === key ? state : null;
+  }, [key, resourceType, resourceId, representation, words]);
+
+  const mine = key && state && state.key === key ? state : null;
   return {
-    text: mine?.text,
-    reading: enabled && !!key && !mine,
+    matches: mine?.matches,
+    reading: !!key && !mine,
     error: mine?.error ?? null,
+    truncated: mine?.truncated ?? false,
   };
 }

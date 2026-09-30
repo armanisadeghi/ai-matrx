@@ -43,7 +43,12 @@
 
 -- REPEATABLE READ: other lanes rehearse on this clone while the compare runs; the world is the one
 -- the transaction's first query saw, for the OLD run and the NEW run alike.
+\if :{?read_committed}
+-- (a re-run of probes another lane's concurrent update made unmeasurable under REPEATABLE READ)
+begin isolation level read committed;
+\else
 begin isolation level repeatable read;
+\endif
 set local statement_timeout = 0;
 set local lock_timeout = '180s';
 set local work_mem = '64MB';
@@ -402,6 +407,11 @@ select what, target from l7_plant;
 
 select kind, count(*) as probes from l7_probe group by kind order by kind;
 select count(*) as all_probes from l7_probe;
+\if :{?kinds}
+-- only these probe kinds (comma-separated), plus RED's own
+delete from l7_probe where kind not like 'red:%' and not (kind = any (string_to_array(:'kinds', ',')));
+select count(*) as kind_probes from l7_probe;
+\endif
 \if :{?chunks}
 -- ONE CHUNK of the compare (-v chunks=N -v chunk=k): every probe whose id is k modulo N, plus RED's own. Each chunk
 -- is a whole compare — OLD and NEW in its own transaction, over its own snapshot — so N chunks, each GREEN, prove

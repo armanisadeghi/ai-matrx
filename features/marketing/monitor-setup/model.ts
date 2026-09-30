@@ -78,6 +78,54 @@ export interface MonitorDraft {
   briefSourceId: string | null;
   schedule: SchedulePreset;
   timezone: string;
+  /** People's names setup found but did NOT add: each waits for the person to pick it (defect A). */
+  personOffers: PersonOffer[];
+}
+
+/** Where an offered name goes when the person picks it. */
+export type OfferTarget =
+  "keywords" | "competitors" | "topics" | "searchTerms" | "standing";
+
+/**
+ * A name setup will not add on its own. `person`: it matches someone we know is a
+ * person (a member of the brand's organization, or a spokesperson on file).
+ * `unchecked`: the organization's people could not be read, so a brand alias
+ * could not be checked — it is offered rather than guessed.
+ */
+export interface PersonOffer {
+  text: string;
+  target: OfferTarget;
+  basis: Basis;
+  why: "person" | "unchecked";
+}
+
+/**
+ * Who setup treats as a person — structured signals only, never name-guessing:
+ * the brand organization's members and the brand's spokesperson facts. `names`
+ * is `null` when the roster could not be read (every alias is then offered, not
+ * preselected). `refs` are the proposer refs that point at a spokesperson fact.
+ */
+export interface PeopleIndex {
+  names: string[] | null;
+  refs: Set<string>;
+}
+
+export function normalizeName(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+/** True when `text` is, or contains as whole words, a known person's name. */
+export function namesPerson(text: string, people: PeopleIndex): boolean {
+  const hay = ` ${normalizeName(text)} `;
+  if (hay.trim() === "") return false;
+  return (people.names ?? []).some((name) => {
+    const needle = normalizeName(name);
+    // A one-word display name ("Kelvin") is too weak a signal to hold back a beat.
+    return needle.includes(" ") && hay.includes(` ${needle} `);
+  });
 }
 
 export type CountRanges = Record<string, [number, number]>;
@@ -229,8 +277,10 @@ export type SetupProposal = Proposal;
  */
 export function applyProposal(
   draft: MonitorDraft,
-  proposal: Proposal,
+  rawProposal: Proposal,
+  people: PeopleIndex,
 ): MonitorDraft {
+  const { proposal, offers } = holdBackPeople(rawProposal, people);
   const items = (list: Proposal["topics"]) =>
     (list ?? []).map((i) => ({ text: i.text, basis: i.basis }));
   const brandKeywords = (proposal.coverage_keywords ?? []).filter(
@@ -318,6 +368,159 @@ export function applyProposal(
       (i) => i.text,
     ),
     feeds,
+    personOffers: mergeOffers(draft, offers),
+  };
+}
+
+function isPersonItem(
+  text: string,
+  basis: Basis | undefined,
+  people: PeopleIndex,
+): boolean {
+  return (
+    Boolean(basis && people.refs.has(basis.ref)) || namesPerson(text, people)
+  );
+}
+
+/**
+ * Setup never adds a person's name on its own (acceptance defect A): every
+ * proposed item that names a person — or came from a spokesperson fact — is
+ * taken out of the proposal and offered instead.
+ */
+export function holdBackPeople(
+  proposal: Proposal,
+  people: PeopleIndex,
+): { proposal: Proposal; offers: PersonOffer[] } {
+  const offers: PersonOffer[] = [];
+  const split = (
+    list: Proposal["topics"],
+    target: OfferTarget,
+  ): Proposal["topics"] =>
+    (list ?? []).filter((item) => {
+      if (!isPersonItem(item.text, item.basis, people)) return true;
+      offers.push({
+        text: item.text,
+        target,
+        basis: item.basis,
+        why: "person",
+      });
+      return false;
+    });
+  const coverage = (proposal.coverage_keywords ?? []).filter((k) => {
+    if (!isPersonItem(k.keyword, k.basis, people)) return true;
+    offers.push({
+      text: k.keyword,
+      target: k.side === "competitor" ? "competitors" : "keywords",
+      basis: k.basis,
+      why: "person",
+    });
+    return false;
+  });
+  return {
+    proposal: {
+      ...proposal,
+      topics: split(proposal.topics, "topics"),
+      competitors: split(proposal.competitors, "competitors"),
+      search_terms: split(proposal.search_terms, "searchTerms"),
+      standing: split(proposal.standing, "standing"),
+      coverage_keywords: coverage,
+    },
+    offers,
+  };
+}
+
+function draftTexts(draft: MonitorDraft, target: OfferTarget): string[] {
+  switch (target) {
+    case "keywords":
+      return draft.keywords.map((k) => k.keyword);
+    case "competitors":
+      return draft.competitors.map((c) => c.name);
+    default:
+      return draft[target].map((i) => i.text);
+  }
+}
+
+/** New offers, minus any already offered or already in the list they would go to. */
+function mergeOffers(
+  draft: MonitorDraft,
+  offers: PersonOffer[],
+): PersonOffer[] {
+  const key = (o: { text: string; target: OfferTarget }) =>
+    `${o.target}:${o.text.trim().toLowerCase()}`;
+  const seen = new Set(draft.personOffers.map(key));
+  const out = [...draft.personOffers];
+  for (const offer of offers) {
+    const k = key(offer);
+    const inList = draftTexts(draft, offer.target).some(
+      (t) => t.trim().toLowerCase() === offer.text.trim().toLowerCase(),
+    );
+    if (seen.has(k) || inList) continue;
+    seen.add(k);
+    out.push(offer);
+  }
+  return out;
+}
+
+/** The person picked an offered name: it joins its list as theirs, and leaves the offers. */
+export function acceptPersonOffer(
+  draft: MonitorDraft,
+  offer: PersonOffer,
+): MonitorDraft {
+  const personOffers = draft.personOffers.filter((o) => o !== offer);
+  switch (offer.target) {
+    case "keywords":
+      return {
+        ...draft,
+        personOffers,
+        keywords: dedupe(
+          [
+            ...draft.keywords,
+            {
+              keyword: offer.text,
+              means: "",
+              excludeHints: [],
+              basis: USER_BASIS,
+            },
+          ],
+          (k) => k.keyword,
+        ),
+      };
+    case "competitors":
+      return {
+        ...draft,
+        personOffers,
+        competitors: dedupe(
+          [
+            ...draft.competitors,
+            {
+              name: offer.text,
+              means: "",
+              excludeHints: [],
+              basis: USER_BASIS,
+            },
+          ],
+          (c) => c.name,
+        ),
+      };
+    default:
+      return {
+        ...draft,
+        personOffers,
+        [offer.target]: dedupe(
+          [...draft[offer.target], { text: offer.text, basis: USER_BASIS }],
+          (i) => i.text,
+        ),
+      };
+  }
+}
+
+export function dismissPersonOffer(
+  draft: MonitorDraft,
+  offer: PersonOffer,
+): MonitorDraft {
+  return {
+    ...draft,
+    personOffers: draft.personOffers.filter((o) => o !== offer),
   };
 }
 
@@ -424,6 +627,7 @@ export function draftFromTracker(
     briefSourceId: tracker.brief_source_id,
     schedule: "",
     timezone,
+    personOffers: [],
   };
 }
 
@@ -436,15 +640,36 @@ export function newDraft(input: {
   aliases: string[];
   siteId: string | null;
   timezone: string;
+  /** Who is a person. An alias naming one is offered, never preselected (defect A). */
+  people: PeopleIndex;
 }): MonitorDraft {
   const hasSite = Boolean(input.siteId);
+  const brandKey = normalizeName(input.brandName);
+  const aliases: string[] = [];
+  const personOffers: PersonOffer[] = [];
+  for (const alias of input.aliases) {
+    const unchecked = input.people.names === null;
+    if (
+      normalizeName(alias) !== brandKey &&
+      (unchecked || namesPerson(alias, input.people))
+    ) {
+      personOffers.push({
+        text: alias,
+        target: "keywords",
+        basis: { kind: "brand_record", ref: "brand:aliases" },
+        why: unchecked ? "unchecked" : "person",
+      });
+    } else {
+      aliases.push(alias);
+    }
+  }
   return {
     name: `${input.brandName} news monitor`,
     // Both lenses for a brand with a site; opportunity only without one (§5.1 1).
     coverage: hasSite,
     opportunity: true,
     siteId: input.siteId,
-    keywords: brandKeywordsFromBrand(input.brandName, input.aliases),
+    keywords: brandKeywordsFromBrand(input.brandName, aliases),
     competitors: [],
     topics: [],
     searchTerms: [],
@@ -456,6 +681,7 @@ export function newDraft(input: {
     briefSourceId: null,
     schedule: "",
     timezone: input.timezone,
+    personOffers,
   };
 }
 
@@ -491,6 +717,15 @@ export function parseBriefMarkdown(markdown: string): DraftBrief {
 }
 
 export type DeclareTrackerBody = components["schemas"]["DeclareTrackerBody"];
+/**
+ * aidream 3ee4081305 added `DeclareTrackerBody.tracker_id`. The generated types
+ * cannot be refreshed yet: aidream HEAD also drops `visibility` from six schemas
+ * this repo still reads, and the drop guard (rightly) refuses to write. Remove
+ * this alias on the next `pnpm sync-types`.
+ */
+export type DeclareTrackerBodyWithId = DeclareTrackerBody & {
+  tracker_id?: string | null;
+};
 
 /** The one save: `POST /coverage/trackers`. */
 export function toDeclareBody(
@@ -502,8 +737,14 @@ export function toDeclareBody(
     xTrendsWoeids: number[];
     /** The saved monitor's website, if it has one — an edit never re-parents it. */
     savedSiteId?: string | null;
+    /**
+     * The monitor this editor session is bound to: `null` for a new monitor
+     * (the save ALWAYS creates a record), the saved id for an edit (exactly that
+     * record is updated) — never a key the server derives (defect B).
+     */
+    trackerId: string | null;
   },
-): DeclareTrackerBody {
+): DeclareTrackerBodyWithId {
   // The website picker shows only with the coverage lens. A NEW opportunity-only
   // monitor is site-less (read through the brand — spec §11 test 7); a hidden
   // default site must never be saved as a choice the person could not see.
@@ -523,6 +764,7 @@ export function toDeclareBody(
     };
   }
   return {
+    tracker_id: input.trackerId,
     name: draft.name.trim(),
     lenses,
     site_id: siteId,
@@ -546,4 +788,119 @@ export function toDeclareBody(
     declared_by: "user",
     declared_ref: input.declaredRef as DeclareTrackerBody["declared_ref"],
   };
+}
+
+// ── which record an editor session is bound to (defect B) ─────────────────
+
+/**
+ * One editor session = one record. `param` is the `?tracker=` the page shows;
+ * `adopted` is the id a NEW monitor got when this session saved it (the URL then
+ * follows it without restarting the session). Any other change of `?tracker=` —
+ * including going from an edit to "new" — starts a fresh session, so nothing of
+ * one monitor (its id, draft, recipients) is ever carried into another.
+ */
+export interface EditorSession {
+  param: string | null;
+  key: number;
+  adopted: string | null;
+}
+
+export function nextEditorSession(
+  session: EditorSession,
+  param: string | null,
+): EditorSession {
+  if (param === session.param) return session;
+  if (param !== null && param === session.adopted) {
+    return { ...session, param };
+  }
+  return { param, key: session.key + 1, adopted: null };
+}
+
+// ── who hears about it (defect C) ─────────────────────────────────────────
+
+/**
+ * A NEW monitor's only recipient is the person saving it, preselected and saved
+ * explicitly; nobody else is ever preselected. A saved monitor shows exactly its
+ * own saved recipients (each once).
+ */
+export function initialRecipients(input: {
+  trackerId: string | null;
+  saved: string[];
+  currentUserId: string | null;
+}): { recipients: string[]; commitOnSave: boolean } {
+  if (!input.trackerId) {
+    return {
+      recipients: input.currentUserId ? [input.currentUserId] : [],
+      commitOnSave: Boolean(input.currentUserId),
+    };
+  }
+  return { recipients: [...new Set(input.saved)], commitOnSave: false };
+}
+
+/** The roster to pick from: each person once, the person saving first. */
+export function recipientRoster<T extends { userId: string }>(
+  members: T[],
+  currentUserId: string | null,
+): T[] {
+  const seen = new Set<string>();
+  const unique = members.filter((m) => {
+    if (seen.has(m.userId)) return false;
+    seen.add(m.userId);
+    return true;
+  });
+  return [
+    ...unique.filter((m) => m.userId === currentUserId),
+    ...unique.filter((m) => m.userId !== currentUserId),
+  ];
+}
+
+// ── the schedule's cost against the ceiling (defect D) ────────────────────
+
+export interface ScheduleProjectionView {
+  presetId: string;
+  label: string;
+  runsPerMonth: number;
+  monthlyUsd: number;
+  overCeiling: boolean;
+}
+
+/** Each choice's month: runs a month × one run's estimated cost, against the ceiling (0 = none). */
+export function projectSchedules(
+  presets: ScheduleOption[],
+  estimatedRunUsd: number | null | undefined,
+  ceilingUsd: number,
+): ScheduleProjectionView[] {
+  if (estimatedRunUsd == null || !Number.isFinite(estimatedRunUsd)) return [];
+  return presets.map((p) => {
+    const monthlyUsd = p.runsPerMonth * estimatedRunUsd;
+    return {
+      presetId: p.id,
+      label: p.label,
+      runsPerMonth: p.runsPerMonth,
+      monthlyUsd,
+      overCeiling: ceilingUsd > 0 && monthlyUsd > ceilingUsd,
+    };
+  });
+}
+
+export interface ScheduleCostAdvice {
+  chosen: ScheduleProjectionView;
+  /** The scheduled choice with the most runs that still fits; null when none does. */
+  cheaper: ScheduleProjectionView | null;
+}
+
+/**
+ * Advice for the chosen schedule when it projects over the ceiling, or null
+ * when it fits. It OFFERS a cheaper choice; it never blocks a save.
+ */
+export function scheduleCostAdvice(
+  projections: ScheduleProjectionView[],
+  chosenId: string,
+): ScheduleCostAdvice | null {
+  const chosen = projections.find((p) => p.presetId === chosenId);
+  if (!chosen || !chosen.overCeiling) return null;
+  const fits = projections
+    .filter((p) => p.runsPerMonth > 0 && !p.overCeiling)
+    .sort((a, b) => b.runsPerMonth - a.runsPerMonth);
+  return { chosen, cheaper: fits[0] ?? null };
 }

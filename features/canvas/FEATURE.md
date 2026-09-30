@@ -94,6 +94,11 @@ the rules an agent editing THIS directory must obey.
 - **The rewrite may NEVER change a message's tool_call blocks** — `cx_message_set_content` rejects
   it (`tool_call_graph_change_forbidden`). A rejection means the commit path mis-partitioned
   iterations; fix the partition, not the guard.
+- **A surface-owned conversation is never materialized.** A launch with `surfaceOwnsOutput: true`
+  (`launchAgentExecution` / `runHeadlessAgentJson`) stamps `surfaceOwnsOutput` on the conversation
+  record before the stream commits; `persistSurfaceOwnsOutput` saves it as
+  `chat.conversation.metadata.surface_owns_output` and `loadConversation` restores it and skips
+  reconcile. The materializer reads it only through `selectConversationSurfaceOwnsOutput`.
 - **Materialize chat from persisted `cx_message.content`, never stream reservation content.**
   Reservation bookkeeping is not source-content authority; reading the row first prevents a
   later iteration's artifacts from being attributed to an earlier message. The existence-sensitive
@@ -163,6 +168,7 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-29` — **Surface-owned conversations survive a reload.** The module-level `materialization/surfaceOwnedConversations.ts` Set (lost on every reload, never consulted by the on-load reconcile) is deleted; ownership is the launch option `surfaceOwnsOutput`, carried on the conversation record in the execution-system Redux state, persisted in the row's metadata, restored by `loadConversation`, and read by `materializeMessageArtifacts` (now given `getState`) via `selectConversationSurfaceOwnsOutput`. Tests: `education/convert/__tests__/segment-runs-never-materialize.test.ts` (red on a scratch copy of the old claim path), `materialization/__tests__/materializeMessageArtifacts.test.ts`.
 - `2026-09-28` — **Submitting a score and recording a view work again.** `hooks/canvas/useCanvasScore.ts` and `hooks/canvas/useSharedCanvas.ts` wrote `canvas.canvas_scores` / `canvas.canvas_views` directly, closed by the same 2026-09-21 sweep; they now call the new `canvas.submit_canvas_score` / `canvas.record_canvas_view` doors (migration `canvas_score_and_view_doors.sql`). Rank and high score now come from the door (the browser could only count its own scores).
 - `2026-09-28` — **Liking a canvas works again.** `hooks/canvas/useCanvasLike.ts` wrote `canvas.canvas_likes` directly, which the 2026-09-21 security sweep had closed (its census missed `hooks/`); it now calls the new `canvas.set_canvas_like` door (migration `canvas_set_canvas_like_door.sql`).
 - `2026-09-27` — **Chat beside a canvas** landed as `workspace/` (`ChatCanvasWorkspace`): the ONE layout where a canvas takes the page and the chat docks at 440px or floats — read [`workspace/FEATURE.md`](./workspace/FEATURE.md). The global side sheet stands down (⌘\\) on canvas-chrome pages.

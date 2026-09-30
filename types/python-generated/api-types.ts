@@ -39111,6 +39111,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sources/parts/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sources Parts Search
+         * @description The ids of one Source's parts (the manifest's Segments) holding every query word.
+         */
+        post: operations["sources_parts_search_sources_parts_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sources/internal/land": {
         parameters: {
             query?: never;
@@ -122763,6 +122783,44 @@ export interface components {
             web_url: string;
         };
         /**
+         * SourcePartsSearch
+         * @description The ids of one Source's Segments whose text contains every query word.
+         *
+         *     The same Segments, in the same chosen form, with the same ids ``/sources/manifest``
+         *     lists — never a body. A Source the person cannot search says why in
+         *     ``unavailable`` / ``detail`` instead of returning an empty list that reads as
+         *     "no match".
+         */
+        SourcePartsSearch: {
+            /** Segment Ids */
+            segment_ids?: string[];
+            /**
+             * Truncated
+             * @description More parts matched than the limit; only the first (in Source order) are listed.
+             * @default false
+             */
+            truncated?: boolean;
+            /** Unavailable */
+            unavailable?: ("no_access" | "missing" | "not_ready" | "failed") | null;
+            /** Detail */
+            detail?: string | null;
+        };
+        /** SourcePartsSearchRequest */
+        SourcePartsSearchRequest: {
+            /** @description The one Source whose parts are searched. */
+            source_ref: components["schemas"]["SourceRef"];
+            /**
+             * Query
+             * @description Words; a part matches when it holds every one.
+             */
+            query: string;
+            /**
+             * Limit
+             * @description Most ids returned; capped by the sources.parts_search_max_results knob.
+             */
+            limit?: number | null;
+        };
+        /**
          * SourceRef
          * @description The pointer — the existing ``resource_ref`` envelope, extended.
          */
@@ -203880,6 +203938,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResolvedSourceSet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_parts_search_sources_parts_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourcePartsSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourcePartsSearch"];
                 };
             };
             /** @description Validation Error */

@@ -19,6 +19,18 @@ jest.mock("../materializeBlocks", () => ({
 }));
 
 import { materializeMessageArtifacts } from "../materializeMessageArtifacts";
+import type { RootState } from "@/lib/redux/store";
+
+/** A store holding one conversation record, surface-owned or not. */
+const stateWith =
+  (conversationId: string, surfaceOwnsOutput?: boolean) => (): RootState =>
+    ({
+      conversations: {
+        byConversationId: {
+          [conversationId]: { conversationId, surfaceOwnsOutput },
+        },
+      },
+    }) as unknown as RootState;
 
 describe("materializeMessageArtifacts", () => {
   beforeEach(() => {
@@ -43,6 +55,7 @@ describe("materializeMessageArtifacts", () => {
     await materializeMessageArtifacts({
       messageId: "message-1",
       conversationId: "conversation-1",
+      getState: stateWith("conversation-1"),
       content: [{ type: "text", text: "<artifact>wrong iteration</artifact>" }],
     });
 
@@ -60,6 +73,7 @@ describe("materializeMessageArtifacts", () => {
     const result = await materializeMessageArtifacts({
       messageId: "guest-message",
       conversationId: "guest-conversation",
+      getState: stateWith("guest-conversation"),
       content: [{ type: "text", text: "<artifact>inline</artifact>" }],
     });
 
@@ -77,6 +91,7 @@ describe("materializeMessageArtifacts", () => {
     const result = await materializeMessageArtifacts({
       messageId: "message-1",
       conversationId: "conversation-1",
+      getState: stateWith("conversation-1"),
       content: [{ type: "text", text: "<artifact>untrusted</artifact>" }],
     });
 
@@ -94,6 +109,7 @@ describe("materializeMessageArtifacts", () => {
     const result = await materializeMessageArtifacts({
       messageId: "rolled-back-message",
       conversationId: "conversation-1",
+      getState: stateWith("conversation-1"),
       content: [{ type: "text", text: "<artifact>untrusted</artifact>" }],
     });
 
@@ -104,5 +120,22 @@ describe("materializeMessageArtifacts", () => {
       rewrittenContent: null,
       errors: [],
     });
+  });
+
+  it("a surface-owned conversation (flag on its record) reads nothing and materializes nothing", async () => {
+    const result = await materializeMessageArtifacts({
+      messageId: "message-owned",
+      conversationId: "conversation-owned",
+      content: [{ type: "text", text: "<artifact>deck section</artifact>" }],
+      getState: stateWith("conversation-owned", true),
+    });
+
+    expect(result).toEqual({
+      materializedCount: 0,
+      rewrittenContent: null,
+      errors: [],
+    });
+    expect(schema).not.toHaveBeenCalled();
+    expect(materializeBlocks).not.toHaveBeenCalled();
   });
 });

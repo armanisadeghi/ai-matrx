@@ -134,14 +134,81 @@ export function readSignalSummaries(value: unknown): SignalSummaryView[] {
  * run did not record says so (`listed: false`) — a count alone is hiding only
  * when a list exists and is not offered.
  */
+export type SetAsideListId =
+  | "rejected"
+  | "withheld"
+  | "pre_gated"
+  | "below_floor"
+  | "over_limit"
+  | "url_overlap"
+  | "s2_dropped"
+  | "seen_skipped";
+
+/**
+ * What a count on the run view opens. Every count is a door (spec §7.5, "a
+ * count alone is hiding"): a watch group or a freshness status opens its
+ * watch-list group; a set-aside reason opens its set-aside list.
+ */
+export type OpenTarget =
+  | { kind: "surfaced" }
+  | { kind: "watch"; group: string }
+  | { kind: "set_aside"; list: SetAsideListId | "all" };
+
+const SET_ASIDE_IDS: SetAsideListId[] = [
+  "rejected",
+  "withheld",
+  "pre_gated",
+  "below_floor",
+  "over_limit",
+  "url_overlap",
+  "s2_dropped",
+  "seen_skipped",
+];
+
+/** The set-aside list a digest reason key belongs to (`digest.watch_groups[set_aside].reasons`). */
+export function setAsideListOf(reason: string): SetAsideListId | "all" {
+  if (reason.startsWith("withheld_")) return "withheld";
+  if (reason === "coarse_rejected") return "rejected";
+  if (reason === "pre_gated_stale") return "pre_gated";
+  if (reason === "older_than_max_age" || reason === "no_title_or_excerpt") return "s2_dropped";
+  return (SET_ASIDE_IDS as string[]).includes(reason) ? (reason as SetAsideListId) : "all";
+}
+
+/** `?open=` in a run link: `surfaced`, `watch:<group>` or `set_aside[:<list>]`. */
+export function parseOpenTarget(value: string | null): OpenTarget | null {
+  if (!value) return null;
+  if (value === "surfaced") return { kind: "surfaced" };
+  const [kind, rest] = value.split(":", 2);
+  if (kind === "watch" && rest) return { kind: "watch", group: rest };
+  if (kind === "set_aside") {
+    const list = rest && (SET_ASIDE_IDS as string[]).includes(rest) ? (rest as SetAsideListId) : "all";
+    return { kind: "set_aside", list };
+  }
+  return null;
+}
+
+export function openTargetParam(target: OpenTarget): string {
+  if (target.kind === "surfaced") return "surfaced";
+  if (target.kind === "watch") return `watch:${target.group}`;
+  return target.list === "all" ? "set_aside" : `set_aside:${target.list}`;
+}
+
+/** The engine's `candidates.diagnostics.set_aside_items` for the given reasons (older runs have none). */
+export function readSetAsideItems(diagnostics: Record<string, unknown>, reasons: string[]): SignalSummaryView[] {
+  return records(diagnostics.set_aside_items)
+    .filter((i) => reasons.includes(str(i.reason)))
+    .map((i) => ({
+      id: str(i.id),
+      title: str(i.title),
+      reason: str(i.reason) || null,
+      rationale: str(i.detail) || null,
+      urls: strings(i.urls),
+      sources: [],
+    }));
+}
+
 export interface SetAsideList {
-  id:
-    | "rejected"
-    | "withheld"
-    | "pre_gated"
-    | "below_floor"
-    | "s2_dropped"
-    | "seen_skipped";
+  id: SetAsideListId;
   label: string;
   explain: string;
   count: number;
@@ -180,6 +247,11 @@ export function readSetAside(parts: RunParts): SetAsideList[] {
   const belowFloorByLane = counts(d.below_floor_by_lane ?? summaryCounts.below_floor_by_lane);
   const s2 = counts(d.s2_dropped ?? summaryCounts.s2_dropped);
   const seenSkipped = strings(d.seen_skipped);
+  const belowFloorItems = readSetAsideItems(d, ["below_floor"]);
+  const overLimitItems = readSetAsideItems(d, ["over_limit"]);
+  const overlapItems = readSetAsideItems(d, ["url_overlap"]);
+  const s2Items = readSetAsideItems(d, ["older_than_max_age", "no_title_or_excerpt"]);
+  const seenItems = readSetAsideItems(d, ["seen_skipped"]);
   const total = (m: Record<string, number>) =>
     Object.values(m).reduce((a, b) => a + b, 0);
   return [
@@ -226,20 +298,39 @@ export function readSetAside(parts: RunParts): SetAsideList[] {
         "Scored stories under the minimum relevance or major-news floor — newsjack drops these too; we count and list them.",
       count: Math.max(belowFloorIds.length, total(belowFloorByLane)),
       byReason: belowFloorByLane,
-      items: [],
-      ids: belowFloorIds,
-      listed: belowFloorIds.length > 0,
+      items: belowFloorItems,
+      ids: belowFloorItems.length ? [] : belowFloorIds,
+      listed: belowFloorItems.length > 0 || belowFloorIds.length > 0,
+    },
+    {
+      id: "over_limit",
+      label: "Over the run's story limit",
+      explain: "Stories above the floor that the per-run story limit cut, lowest priority first.",
+      count: Math.max(overLimitItems.length, strings(d.over_limit).length),
+      byReason: {},
+      items: overLimitItems,
+      ids: overLimitItems.length ? [] : strings(d.over_limit),
+      listed: overLimitItems.length > 0 || strings(d.over_limit).length > 0,
+    },
+    {
+      id: "url_overlap",
+      label: "Same link as a kept story",
+      explain: "Lower-priority stories whose article link a kept story already carries.",
+      count: Math.max(overlapItems.length, strings(d.url_overlap_dropped).length),
+      byReason: {},
+      items: overlapItems,
+      ids: overlapItems.length ? [] : strings(d.url_overlap_dropped),
+      listed: overlapItems.length > 0 || strings(d.url_overlap_dropped).length > 0,
     },
     {
       id: "s2_dropped",
       label: "Dropped before scoring",
-      explain:
-        "Articles removed at the age and completeness filter, by reason. The run records these as counts only.",
-      count: total(s2),
+      explain: "Articles removed at the age and completeness filter, each with its reason.",
+      count: Math.max(total(s2), s2Items.length),
       byReason: s2,
-      items: [],
+      items: s2Items,
       ids: [],
-      listed: false,
+      listed: s2Items.length > 0,
     },
     {
       id: "seen_skipped",
@@ -248,8 +339,8 @@ export function readSetAside(parts: RunParts): SetAsideList[] {
         "Stories this monitor already brought you, skipped because nothing about them is newer than the last time.",
       count: seenSkipped.length,
       byReason: {},
-      items: [],
-      ids: seenSkipped,
+      items: seenItems,
+      ids: seenItems.length ? [] : seenSkipped,
       listed: seenSkipped.length > 0,
     },
   ];
