@@ -200,6 +200,12 @@ export function EditableCell({
   const [ruleRefusal, setRuleRefusal] = useState<ColumnRuleRefusal | null>(null);
   /** The enum nudge's question, while the person answers it (nothing is saved until they do). */
   const [choiceAsk, setChoiceAsk] = useState<PendingChoiceAsk | null>(null);
+  /**
+   * A SAVE THE STORE NEVER RECEIVED (BREAKER-3 B3-24, BREAKER-2 B2-32). Offline mid-edit, the typed text
+   * vanished under "We could not reach your data … open this again" and nothing retried. Now the value
+   * is kept on the cell's notice, saved the moment the browser is back online, with Try now and Discard.
+   */
+  const [unsent, setUnsent] = useState<{ value: unknown; add?: string[] } | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   // Sync draft with prop when value changes from upstream (e.g. realtime).
@@ -444,6 +450,13 @@ export function EditableCell({
     setSaving(false);
     release();
 
+    if (isServiceFailure(result) && result.refusal?.code === "unreachable") {
+      // NOT A REFUSAL: the store never heard it. Keep it, say so, and send it again when we can.
+      setUnsent({ value: normalized, ...(add && add.length > 0 ? { add } : {}) });
+      setDraft(value);
+      return;
+    }
+    setUnsent(null);
     if (isServiceFailure(result)) {
       // THE STORE'S OWN SENTENCE, ON THE CELL — never a toast that times out, and
       // never a cell left wearing text the store refused. `refusal` is the whole
@@ -485,6 +498,17 @@ export function EditableCell({
     tableId,
     value,
   ]);
+
+  // THE UNSENT VALUE GOES AGAIN WHEN THE BROWSER IS BACK ONLINE (and on Try now).
+  const sendUnsent = useCallback(() => {
+    if (!unsent) return;
+    void commitEdit({ value: unsent.value, answered: true, ...(unsent.add ? { add: unsent.add } : {}) });
+  }, [unsent, commitEdit]);
+  useEffect(() => {
+    if (!unsent || typeof window === "undefined") return;
+    window.addEventListener("online", sendUnsent);
+    return () => window.removeEventListener("online", sendUnsent);
+  }, [unsent, sendUnsent]);
 
   // Enter or Tab that reached the grid before this editor had focus: commit what is held.
   const answeredCommit = useRef<number | null>(null);
@@ -654,6 +678,9 @@ export function EditableCell({
           refusal={refusal}
           ruleRefusal={ruleRefusal}
           choiceAsk={choiceAsk}
+          unsent={unsent ? { words: unsentWords(unsent.value) } : null}
+          onSendUnsent={sendUnsent}
+          onDiscardUnsent={() => setUnsent(null)}
           columnName={fieldDisplayName}
           onAnswer={answerChoiceAsk}
           onDismiss={() => {
@@ -965,6 +992,9 @@ export function EditableCell({
         refusal={refusal}
         ruleRefusal={ruleRefusal}
         choiceAsk={choiceAsk}
+        unsent={unsent ? { words: unsentWords(unsent.value) } : null}
+        onSendUnsent={sendUnsent}
+        onDiscardUnsent={() => setUnsent(null)}
         columnName={fieldDisplayName}
         onAnswer={answerChoiceAsk}
         onDismiss={() => {
@@ -989,6 +1019,9 @@ function CellRefusalPopover({
   refusal,
   ruleRefusal,
   choiceAsk = null,
+  unsent = null,
+  onSendUnsent,
+  onDiscardUnsent,
   columnName,
   onAnswer,
   onDismiss,
@@ -997,12 +1030,15 @@ function CellRefusalPopover({
   refusal: RecordsError | null;
   ruleRefusal: ColumnRuleRefusal | null;
   choiceAsk?: PendingChoiceAsk | null;
+  unsent?: { words: string } | null;
+  onSendUnsent?: () => void;
+  onDiscardUnsent?: () => void;
   columnName?: string;
   onAnswer?: (answer: "add" | "keep" | "cancel") => void;
   onDismiss: () => void;
   onDiscard?: () => void;
 }) {
-  const open = refusal !== null || ruleRefusal !== null || choiceAsk !== null;
+  const open = refusal !== null || ruleRefusal !== null || choiceAsk !== null || unsent !== null;
   return (
     <Popover
       open={open}
@@ -1041,7 +1077,22 @@ function CellRefusalPopover({
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >
-          {choiceAsk ? (
+          {unsent && !choiceAsk && !ruleRefusal ? (
+            <div data-matrx-cell-unsent="" className="max-w-[20rem] space-y-1.5 text-left text-sm">
+              <p>
+                Not saved yet: the connection dropped. {unsent.words ? <>&ldquo;{unsent.words}&rdquo; is kept here and</> : <>It is kept here and</>} is
+                saved as soon as you are back online.
+              </p>
+              <div className="flex flex-wrap gap-1">
+                <button type="button" className="rounded border bg-primary px-2 py-0.5 text-xs text-primary-foreground hover:bg-primary/90" onClick={() => onSendUnsent?.()}>
+                  Try now
+                </button>
+                <button type="button" className="rounded border px-2 py-0.5 text-xs hover:bg-muted" onClick={() => onDiscardUnsent?.()}>
+                  Discard
+                </button>
+              </div>
+            </div>
+          ) : choiceAsk ? (
             <ChoiceNudgeAsk ask={choiceAsk} columnName={columnName ?? ""} onAnswer={(a) => onAnswer?.(a)} />
           ) : ruleRefusal ? (
             <FieldRuleRefusal
@@ -1072,6 +1123,14 @@ function CellRefusalPopover({
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
+
+/** The words of a value that was not saved, as the person typed them (a list reads as its words). */
+function unsentWords(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.map((v) => (v === null || v === undefined ? "" : String(v))).filter(Boolean).join(", ");
+  if (typeof value === "object") return "";
+  return String(value);
+}
 
 /**
  * A value a relation column cannot store, refused before it is sent. It is a
