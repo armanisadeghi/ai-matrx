@@ -11,35 +11,16 @@
 // list with a `kind` column, paged/filtered/sorted/counted server-side.
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { ArrowRight, Library, Plus } from "lucide-react";
+import { Library, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { transcriptListConfig } from "../browse/listConfig";
 import { TranscriptsListHeader } from "./TranscriptsListHeader";
 import { TranscriptsSurfaceGuide } from "./TranscriptsSurfaceGuide";
-import { HUB_LIBRARIES_HREF, transcriptsToHubHref } from "@/features/knowledge/hub/legacyRoutes";
+import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
 
 export function TranscriptsListPage() {
-  // KEPT FOR COMPARISON (Arman, 2026-09-29): the Knowledge hub's Transcripts
-  // view is the live page (/transcripts redirects there). This list survives
-  // only at the review address /compare/old/transcripts until he confirms, then
-  // it is deleted. The banner says so and opens the new view on the SAME
-  // search, scope and filters; the new view links back here the same way.
-  const searchParams = useSearchParams();
-  const newViewHref = transcriptsToHubHref(Object.fromEntries(searchParams.entries()));
-  const compareNotice = (
-    <div
-      role="note"
-      className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/60 px-3 py-1.5 text-xs"
-    >
-      <span className="font-medium">Old page, kept for comparison</span>
-      <Link href={newViewHref} className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
-        Open the new Transcripts view <ArrowRight className="h-3 w-3" />
-      </Link>
-    </div>
-  );
   const newButton = (
     <Button asChild size="sm" className="h-11 lg:h-7">
       <Link href="/transcripts/new" aria-label="New transcript">
@@ -94,7 +75,6 @@ export function TranscriptsListPage() {
       </PageHeader>
       <EntityListPage
         config={transcriptListConfig}
-        notice={compareNotice}
         headerActions={headerActions}
         emptyAction={emptyAction}
       />
