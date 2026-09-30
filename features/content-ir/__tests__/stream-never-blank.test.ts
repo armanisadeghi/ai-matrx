@@ -1,18 +1,17 @@
 /**
  * THE NEVER-BLANK LAW.
  *
- * A stream does not end with the structured value on screen by accident — it
- * ends with a TRAILING EMPTY TEXT BLOCK after the region closes. Any consumer
- * that renders "the newest block" therefore blanks the moment the stream
- * finishes: the quiz/deck/table the reader was watching is replaced by an
- * empty text block. (Observed 2026-08-24 on the streaming-options demo: every
- * kind "went blank again at the end".)
+ * A stream used to end with a TRAILING EMPTY TEXT BLOCK after the structured
+ * region closed, so any consumer that rendered "the newest block" blanked the
+ * moment the stream finished. (Observed 2026-08-24 on the streaming-options
+ * demo: every kind "went blank again at the end".)
  *
- * Real chat never had the bug because it keeps blocks in a MAP keyed by
- * blockId and renders them all. This test pins the two facts a consumer must
- * respect: (1) the accumulator DOES emit a trailing block that is not the
- * structured one, and (2) selecting by the `__ir` envelope still yields the
- * structured, renderable block after `finalize`.
+ * Since 2684db5b52 / c0cbcad2ac the accumulator keeps that post-root text slot
+ * internal and never emits it when nothing follows the root. This test pins
+ * the contract that makes a blank ending impossible: (1) no upsert after the
+ * structured block is an empty completed block — the newest upsert IS the
+ * structured, non-empty answer — and (2) selecting by the `__ir` envelope
+ * yields the structured, renderable block after `finalize`.
  *
  * Source-independence: the SAME assertions run for a chunked stream and for a
  * single whole-document ingest (the DB-reload path). One pipeline, one result.
@@ -81,12 +80,19 @@ function pickStructured(
 describe.each(["chunked", "whole"] as const)(
   "quiz_set stream (%s) never ends blank",
   (mode) => {
-    it("emits a trailing block that is NOT the structured one", () => {
+    it("ends on the structured block, never on an empty trailing one", () => {
       const { ordered } = runStream(mode);
       const last = ordered[ordered.length - 1];
-      // This is the trap: naive "render the last upsert" renders this.
-      expect(readEnvelope(last.metadata)).toBeNull();
-      expect(last.content ?? "").toBe("");
+      // Even a naive "render the last upsert" consumer must land on the answer.
+      expect(readEnvelope(last.metadata)?.root.kind).toBe("quiz_set");
+      expect(last.status).toBe("complete");
+      expect((last.content ?? "").trim()).not.toBe("");
+
+      // No completed block anywhere in the stream is blank.
+      const blankCompleted = ordered.filter(
+        (b) => b.status === "complete" && !(b.content ?? "").trim(),
+      );
+      expect(blankCompleted).toEqual([]);
     });
 
     it("still holds a structured block that routes to the real renderer", () => {
