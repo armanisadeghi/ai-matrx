@@ -177,7 +177,7 @@ export default function MessagesShowcase() {
                 </button>
               ))}
             </div>
-            <div className="showcase-transcript">
+            <div className="showcase-transcript" key={`${category}:${search}`}>
               {examples.length === 0 && (
                 <div className="mx-msg__empty">
                   <h3>No matching examples</h3>
@@ -244,7 +244,8 @@ export default function MessagesShowcase() {
                   </div>
                 </section>
               ))}
-              {category === "Everything" || category === "States" ? (
+              {(category === "Everything" || category === "States") &&
+              (!search || "typing loading".includes(search.toLowerCase())) ? (
                 <section className="showcase-example">
                   <h2>Typing and loading</h2>
                   <div className="mx-msg__typing">
