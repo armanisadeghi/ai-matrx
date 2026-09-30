@@ -290,14 +290,14 @@ afterEach(async () => {
 });
 
 describe("AdminAttentionDock", () => {
-  it("waits for an explicit organization before polling organization-scoped sources", async () => {
+  it("polls every platform source with no organization selected and shows the live alarm", async () => {
     selectedOrganizationId = null;
+    fetchSystemScheduleAlarms.mockResolvedValue([alarm()]);
     await mount();
 
-    expect(fetchSystemScheduleAlarms).not.toHaveBeenCalled();
-    expect(fetchOpenOutages).not.toHaveBeenCalled();
-    expect(fetchDatedChanges).toHaveBeenCalledWith(false);
-    expect(container.innerHTML).toBe("");
+    expect(fetchSystemScheduleAlarms).toHaveBeenCalled();
+    expect(fetchOpenOutages).toHaveBeenCalled();
+    expect(container.innerHTML).not.toBe("");
   });
 
   it("shows a refused dated change to a super admin without an active organization", async () => {
@@ -314,8 +314,6 @@ describe("AdminAttentionDock", () => {
     }]);
     await mount();
 
-    expect(fetchSystemScheduleAlarms).not.toHaveBeenCalled();
-    expect(fetchOpenOutages).not.toHaveBeenCalled();
     expect(container.textContent).toContain("1 thing needs a person");
   });
 

@@ -5,10 +5,11 @@ person responsible for the platform — with a way out. Mounted once in
 `app/DeferredSingletonCore.tsx`; super-admin only; absent when nothing needs
 a person.
 
-The dock waits for auth before it polls. Schedule and provider sources also
-wait for an explicit active organization because their transport fails closed
-without that scope. Dated changes are a super-admin database read and remain
-visible when no organization is selected.
+The dock waits for auth before it polls, and for nothing else: every source
+is a platform-level read (schedules: super-admin RPC; outages: a GET, which
+the transport sends without an organization when none is selected; dated
+changes: super-admin read). None of them depends on the selected
+organization, so a super admin sees the platform's alerts with none picked.
 
 **Why it exists (Arman, 2026-09-14).** Two floating notices had grown side by
 side — the schedule alarm (bottom-right) and the provider outage notice
@@ -125,6 +126,12 @@ one card for two sources, doors, local vs server mute, non-admin issues no
 request, loud vs silent failure, never an all-clear, expired mute ignored).
 
 ## Change log
+
+- **2026-09-29** — The dock no longer waits for an active organization. Schedule alarms and
+  provider outages were gated on `selectOrganizationId`, so a super admin with no organization
+  picked got no request and no alerts (a switched-off job, an outage) while dated changes alone
+  showed. Neither read needs one (RPC / org-less GET). Test: "polls every platform source with no
+  organization selected".
 
 - **2026-09-29** — Dated changes: quiet until the lead window, loud inside it (owner's ruling
   joining Arman's "super annoying, always gets my attention" with the 2026-09-28 rule below, whose

@@ -77,7 +77,6 @@ import {
   selectAuthReady,
   selectIsSuperAdmin,
 } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { AttentionItemRow } from "./AttentionItemRow";
 import { buildAttentionNotice } from "./build-notice";
 import { DEFAULT_SNOOZE, readSnoozedUntil, SNOOZE_CHOICES, writeSnooze } from "./dock-snooze";
@@ -115,9 +114,7 @@ export default function AdminAttentionDock() {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const authReady = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
-  const organizationId = useAppSelector(selectOrganizationId);
   const canRead = Boolean(isSuperAdmin && authReady && accessToken);
-  const canReadOrganizationSources = Boolean(canRead && organizationId);
 
   // A new dock is compact without consulting browser storage. Retiring the
   // legacy preference happens after paint so rendering stays pure.
@@ -133,8 +130,8 @@ export default function AdminAttentionDock() {
 
   const queryClient = useQueryClient();
 
-  const schedules = useScheduleAlarmSource(canReadOrganizationSources);
-  const outages = useProviderOutageSource(canReadOrganizationSources);
+  const schedules = useScheduleAlarmSource(canRead);
+  const outages = useProviderOutageSource(canRead);
   const datedChanges = useDatedChangeSource(canRead);
   const sources = [datedChanges, schedules, outages];
 
