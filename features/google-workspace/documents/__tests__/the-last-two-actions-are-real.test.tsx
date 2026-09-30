@@ -88,7 +88,7 @@ jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
   selectActiveOrganizationId: () => ORG_ID,
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "u1" }));
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (_o: unknown, _u: unknown, ref: { key: string }) =>
     ref.key === "on_open_min_age_seconds" ? 300 : "dated",
 }));

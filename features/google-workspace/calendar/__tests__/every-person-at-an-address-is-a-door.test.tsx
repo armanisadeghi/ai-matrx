@@ -84,7 +84,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "dddddddd-1111-2222-3333-444444444444",
 }));
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (
     _org: unknown,
     _user: unknown,

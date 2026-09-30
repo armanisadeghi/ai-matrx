@@ -12,7 +12,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { createClient } from "@/utils/supabase/client";
 
-import { invalidateEffectiveKnob, useEffectiveKnob } from "../effectiveKnobs";
+import { invalidateEffectiveKnob } from "../effectiveKnobs";
+import { useEffectiveKnob } from "../effectiveKnobs.client";
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 jest.mock("@/lib/client-directives/directiveRegistry", () => ({

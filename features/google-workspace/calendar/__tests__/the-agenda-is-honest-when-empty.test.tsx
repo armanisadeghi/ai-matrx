@@ -82,7 +82,7 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
  * matches on the pair for exactly that reason: a mock that matched a dotted
  * string would keep passing while the surface asked for a different address.
  */
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (
     _org: unknown,
     _user: unknown,

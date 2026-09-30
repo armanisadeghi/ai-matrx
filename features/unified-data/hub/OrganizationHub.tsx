@@ -30,7 +30,7 @@ import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { cn } from "@ai-matrx/design-system";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserRole } from "@/features/organizations/hooks";

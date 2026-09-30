@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import { ConnectorMark } from "./ConnectorMark";
 import { getConnector } from "./registry";

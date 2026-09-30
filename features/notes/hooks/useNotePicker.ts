@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import {
   fetchNoteById,

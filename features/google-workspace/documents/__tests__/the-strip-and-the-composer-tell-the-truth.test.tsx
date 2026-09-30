@@ -162,7 +162,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => ({
 }));
 
 let refreshFloorSeconds = 300;
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (
     _org: unknown,
     _user: unknown,

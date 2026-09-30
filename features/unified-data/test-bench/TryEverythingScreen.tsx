@@ -79,7 +79,7 @@ import {
     writeKnobOverrideThroughDoor,
     type KnobWriteDoor,
 } from "@/lib/scoped-config/service";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { knobChoiceLabel } from "@/lib/scoped-config/choices";
 import { useKnobChoices } from "@/lib/scoped-config/useKnobChoices";
 import { useAppSelector } from "@/lib/redux/hooks";

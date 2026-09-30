@@ -40,7 +40,7 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

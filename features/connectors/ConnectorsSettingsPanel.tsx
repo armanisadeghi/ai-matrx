@@ -30,7 +30,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import type { OrgRole } from "@/features/scopes/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { isGoogleAuthorizationCancelled } from "@/providers/google-provider/GoogleApiProvider";

@@ -43,11 +43,9 @@
 // backstop for a missed directive, not the mechanism. A React face is
 // `useEffectiveKnob` (useSyncExternalStore), so a control showing the value
 // re-renders the moment a write lands.
-import { useEffect, useSyncExternalStore } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import { getWebDeviceId } from "./deviceId";
-import { useSignedIn } from "./useSignedIn";
 
 const TTL_MS = 60_000;
 
@@ -415,66 +413,13 @@ export function invalidateEffectiveKnob(_ref?: KnobRef): void {
   notify();
 }
 
-function subscribe(listener: () => void): () => void {
+export function subscribeEffectiveKnob(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
 }
 
-/**
- * React face: the effective value for the signed-in person in an
- * organization, re-rendering when a write lands. `undefined` until resolved.
- */
-export function useEffectiveKnob(
-  organizationId: string | null | undefined,
-  userId: string | null | undefined,
-  ref: KnobRef,
-  scopes?: readonly KnobScope[],
-): unknown {
-  const fullKey = fullKeyOf(ref);
-  // Scopes are compared by their address, so a caller may pass a fresh array
-  // literal every render without re-resolving on every render.
-  const scopeKey = scopeAddr(scopes);
-  const value = useSyncExternalStore(
-    subscribe,
-    () => peekEffectiveKnob(organizationId, userId, ref, scopes),
-    () => undefined,
-  );
-  // The store's own version, so a notification that leaves `value` at
-  // `undefined` still re-runs the effect below. Without it, a reader that has
-  // never had a value has nothing in its dependency list that can change, and
-  // it never asks again — see THE "NO VALUE YET" note beside `notify`.
-  const version = useSyncExternalStore(
-    subscribe,
-    () => storeVersion,
-    () => 0,
-  );
-  // A knob read needs a caller: before a person is signed in (boot, signed-out
-  // pages) the door answers 42501 to anon, so nothing is asked until then.
-  const signedIn = useSignedIn();
-  useEffect(() => {
-    if (value !== undefined || !signedIn) return;
-    void ensureEffectiveKnob(organizationId ?? null, userId ?? null, ref, scopes).catch(
-      (error: unknown) => {
-        // 🚨 IT SCREAMS (law 4). The old comment here said "the caller's screen
-        // reports the failure" — no caller did, and a knob whose RPC raised on
-        // every mount read exactly like a knob with no value (V13-2). A runtime
-        // read still never throws into render; it says what failed and what to
-        // do, once per address, where an agent and an operator will see it.
-        const address = knobAddress(ref);
-        console.error(
-          `[knob] ${fullKey} could not be resolved (feature='${address.feature}', ` +
-            `key='${address.key}'), so every reader is falling back to its own ` +
-            "default. Seed the row, or pass the register's { feature, key } pair:",
-          error,
-        );
-      },
-    );
-    // `scopes` is addressed by `scopeKey`; depending on the array identity
-    // would re-run this effect on every render for a caller that builds it
-    // inline, which every caller does.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, userId, fullKey, scopeKey, value, version, signedIn]);
-  return value;
+export function effectiveKnobStoreVersion(): number {
+  return storeVersion;
 }

@@ -31,7 +31,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import {
   zonesContaining,
   useSelectionZonesVersion,

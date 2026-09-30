@@ -70,7 +70,7 @@ jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: ({ sour
 jest.mock("@/features/rich-document/annotations/LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
 // The root's identity + knob reads (the knob answers "not loaded": the code default holds).
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null, useAppDispatch: () => jest.fn() }));
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({ useEffectiveKnob: () => undefined }));
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => undefined }));
 // The frame is split out with next/dynamic in the app; here it loads synchronously.
 jest.mock("next/dynamic", () => () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

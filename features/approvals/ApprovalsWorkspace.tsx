@@ -21,7 +21,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ApprovalQueue, type ApprovalQueueSummary } from "./ApprovalQueue";
 import { APPROVAL_PAGE_SIZE_KNOB } from "./data";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import {
   APPROVALS_EMPTY_BODY,
   APPROVALS_EMPTY_TITLE,

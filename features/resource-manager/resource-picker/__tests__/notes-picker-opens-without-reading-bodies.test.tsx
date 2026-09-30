@@ -20,7 +20,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => "org-1",
 }));
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (_org: string, _user: string, ref: { key: string }) =>
     ref.key === "notes_recent_count" ? 10 : 50,
 }));

@@ -183,7 +183,7 @@ jest.mock("@/lib/redux/store-singleton", () => ({
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
 }));
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (_org: unknown, _user: unknown, ref: { key: string }) =>
     ref.key === "on_open_min_age_seconds" ? 300 : "dated",
 }));

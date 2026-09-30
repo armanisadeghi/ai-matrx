@@ -27,7 +27,7 @@
 import { CalendarClock, MessageSquareWarning, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { cn } from "@/lib/utils";
 
 import { ruleAnchorId } from "../components/detail/RuleRelations";

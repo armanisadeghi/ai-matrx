@@ -258,7 +258,7 @@ jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
 let defaultScopeKnob: unknown = undefined;
 let defaultKindKnob: unknown = undefined;
 let defaultOrderKnob: unknown = undefined;
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (_org: string, _user: string, ref: { key: string }) =>
     ref.key === "data_home_default_scope"
       ? defaultScopeKnob

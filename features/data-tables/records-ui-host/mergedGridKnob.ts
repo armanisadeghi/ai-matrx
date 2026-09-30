@@ -15,7 +15,7 @@
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 
 export const MERGED_GRID_KNOB = { feature: "data_tables", key: "merged_grid" } as const;
 

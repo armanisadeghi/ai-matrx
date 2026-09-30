@@ -117,7 +117,7 @@ jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
   selectActiveOrganizationId: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "u1" }));
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (
     _org: unknown,
     _user: unknown,

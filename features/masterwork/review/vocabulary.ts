@@ -33,7 +33,7 @@
 // Opinions become knobs (law 6): an organization that trains its people on one
 // vocabulary sets it once and every Rulebook obeys.
 
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import type { Rulebook, RulebookRule } from "../types";
 
 /** The two wordings. `auto` is a KNOB value, never a rendered vocabulary. */

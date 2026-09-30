@@ -52,8 +52,8 @@ jest.mock("../data", () => ({
 // states, not the register, so the row is served at its seeded default.
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
   ensureEffectiveKnob: async () => 50,
-  useEffectiveKnob: () => 50,
 }));
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => 50 }));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));

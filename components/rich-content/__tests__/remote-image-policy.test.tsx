@@ -24,7 +24,7 @@ jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({ InlineCopyBu
 
 // The knob layer, at its network edge: tests set what the org/person resolved.
 const knobs: Record<string, unknown> = {};
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: (_o: unknown, _u: unknown, ref: { feature: string; key: string }) => knobs[`${ref.feature}.${ref.key}`],
 }));
 const principals = { organizationId: null as string | null, userId: null as string | null };

@@ -20,8 +20,6 @@
  * Provider (embeds, portals, unit tests) by answering `null`.
  */
 
-import { useContext, useSyncExternalStore } from "react";
-import { ReactReduxContext } from "react-redux";
 import { parsePointsRate } from "@ai-matrx/kit/format";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { RootState } from "@/lib/redux/store";
@@ -30,7 +28,6 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   ensureEffectiveKnob,
   peekEffectiveKnob,
-  useEffectiveKnob,
   type KnobAddress,
 } from "@/lib/scoped-config/effectiveKnobs";
 
@@ -76,28 +73,4 @@ export function currentPointsRate(): number | null {
     return null;
   }
   return parsePointsRate(raw);
-}
-
-const noopSubscribe = () => () => {};
-
-/** A string key so `useSyncExternalStore` compares by value, not by object identity. */
-function addressKey(state: RootState): string {
-  try {
-    const { organizationId, userId } = selectPointsRateAddress(state);
-    return `${organizationId ?? ""}|${userId ?? ""}`;
-  } catch {
-    return "|";
-  }
-}
-
-/** The viewer's rate, re-rendering when the snapshot lands or the organization changes. */
-export function usePointsRate(): number | null {
-  const store = useContext(ReactReduxContext)?.store ?? null;
-  const key = useSyncExternalStore(
-    store ? store.subscribe : noopSubscribe,
-    () => (store ? addressKey(store.getState() as RootState) : "|"),
-    () => "|",
-  );
-  const [org = "", user = ""] = key.split("|");
-  return parsePointsRate(useEffectiveKnob(org || null, user || null, POINTS_RATE_KNOB));
 }

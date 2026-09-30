@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import {
   useOrganizationRequired,
   type OrganizationState,

@@ -47,8 +47,8 @@ jest.mock("@ai-matrx/data/db", () => ({
 // row is served here at its seeded default.
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
   ensureEffectiveKnob: async () => 50,
-  useEffectiveKnob: () => 50,
 }));
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => 50 }));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({

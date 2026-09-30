@@ -32,7 +32,7 @@
 import React, { createContext, useContext, useState, type ReactNode } from "react";
 import { ImageOff } from "lucide-react";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { sessionKnobPrincipals } from "@/lib/scoped-config/sessionKnob";
 import { setUserKnobMapEntry } from "@/lib/scoped-config/service";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";

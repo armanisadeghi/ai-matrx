@@ -42,10 +42,11 @@ import {
 import type { RootState } from "@/lib/redux/store";
 import { selectCanToggleCostUnit, selectCostUnit } from "./costUnit";
 import { formatAdminCost } from "./formatAdminCost";
-import { usePointsRate } from "./pointsRate";
+import { usePointsRate } from "./pointsRate.client";
 
 export { currentCostUnit, selectCostUnit, selectShowCostInUsdPreference } from "./costUnit";
-export { currentPointsRate, POINTS_RATE_KNOB, usePointsRate } from "./pointsRate";
+export { currentPointsRate, POINTS_RATE_KNOB } from "./pointsRate";
+export { usePointsRate } from "./pointsRate.client";
 
 export interface CostDisplay {
   /** `"points"` for everyone; `"usd"` only for an admin who flipped the switch. */

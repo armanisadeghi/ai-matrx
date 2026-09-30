@@ -54,8 +54,8 @@ jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
     }
     return mockEnsureKnob(...args);
   },
-  useEffectiveKnob: () => 50,
 }));
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => 50 }));
 jest.mock("../registry", () => ({ APPROVAL_KINDS: [] }));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn() },

@@ -25,9 +25,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   ensureEffectiveKnob,
   peekEffectiveKnob,
-  useEffectiveKnob,
   type KnobRef,
 } from "./effectiveKnobs";
+import { useEffectiveKnob } from "./effectiveKnobs.client";
 
 type PrincipalState = {
   appContext?: { organization_id?: string | null };

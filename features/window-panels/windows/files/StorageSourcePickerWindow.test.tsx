@@ -43,8 +43,8 @@ jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
 // browses; the register itself is not what this test measures.
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
   ensureEffectiveKnob: async () => 50,
-  useEffectiveKnob: () => 50,
 }));
+jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => 50 }));
 jest.mock("@/features/window-panels/WindowPanel", () => ({
   WindowPanel: ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
     <div>{children}<button onClick={onClose}>Window close</button></div>
