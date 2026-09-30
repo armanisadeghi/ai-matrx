@@ -5471,7 +5471,7 @@
           "AI"
         ],
         "summary": "Enqueue Inbox Item",
-        "description": "Queue a message into a conversation without canceling a running agent.\n\nIf a run is in-flight, the running loop drains it at its next natural turn\nboundary (the next tool call / iteration) and the model sees it on the\nfollowing API call. If the conversation is idle, the item waits and is\ndelivered when the next run starts. Ownership-scoped: a caller can only\nenqueue into a conversation they own.",
+        "description": "Queue a message into a conversation without canceling a running agent.\n\nIf a run is in-flight, the running loop drains it at its next natural turn\nboundary (the next tool call / iteration) and the model sees it on the\nfollowing API call. If the conversation is idle, the item waits and is\ndelivered when the next run starts. Adding to a conversation CHANGES it, so\nthe caller needs EDITOR on it (iam.has_access_for) — its owner, or anyone it\nwas shared with at editor or above; everyone else gets the same 404 as a\nmissing conversation.",
         "operationId": "enqueue_inbox_item_ai_conversation__conversation_id__inbox_post",
         "parameters": [
           {
@@ -5522,7 +5522,7 @@
           "AI"
         ],
         "summary": "List Inbox Items",
-        "description": "List the caller's queued inbox items for a conversation (FIFO). Lets a\nclient rebuild its \"waiting its turn\" cards after reopening the panel.",
+        "description": "List a conversation's queued inbox items (FIFO) — for anyone who may VIEW\nit. Lets a client rebuild its \"waiting its turn\" cards after reopening the panel.",
         "operationId": "list_inbox_items_ai_conversation__conversation_id__inbox_get",
         "parameters": [
           {
@@ -5579,7 +5579,7 @@
           "AI"
         ],
         "summary": "Enqueue Inbox Item",
-        "description": "Queue a message into a conversation without canceling a running agent.\n\nIf a run is in-flight, the running loop drains it at its next natural turn\nboundary (the next tool call / iteration) and the model sees it on the\nfollowing API call. If the conversation is idle, the item waits and is\ndelivered when the next run starts. Ownership-scoped: a caller can only\nenqueue into a conversation they own.",
+        "description": "Queue a message into a conversation without canceling a running agent.\n\nIf a run is in-flight, the running loop drains it at its next natural turn\nboundary (the next tool call / iteration) and the model sees it on the\nfollowing API call. If the conversation is idle, the item waits and is\ndelivered when the next run starts. Adding to a conversation CHANGES it, so\nthe caller needs EDITOR on it (iam.has_access_for) — its owner, or anyone it\nwas shared with at editor or above; everyone else gets the same 404 as a\nmissing conversation.",
         "operationId": "enqueue_inbox_item_ai_conversations__conversation_id__inbox_post",
         "parameters": [
           {
@@ -5630,7 +5630,7 @@
           "AI"
         ],
         "summary": "List Inbox Items",
-        "description": "List the caller's queued inbox items for a conversation (FIFO). Lets a\nclient rebuild its \"waiting its turn\" cards after reopening the panel.",
+        "description": "List a conversation's queued inbox items (FIFO) — for anyone who may VIEW\nit. Lets a client rebuild its \"waiting its turn\" cards after reopening the panel.",
         "operationId": "list_inbox_items_ai_conversations__conversation_id__inbox_get",
         "parameters": [
           {
@@ -5687,7 +5687,7 @@
           "AI"
         ],
         "summary": "Cancel Inbox Item",
-        "description": "Retract a still-pending queued message. 409 if it already drained, 404 if\nthere is no such item the caller owns.",
+        "description": "Retract a still-pending queued message — anyone with EDITOR on the\nconversation. 409 if it already drained, 404 if there is no such item or the\ncaller may not change this conversation.",
         "operationId": "cancel_inbox_item_ai_conversation__conversation_id__inbox__injection_id__delete",
         "parameters": [
           {
@@ -5737,7 +5737,7 @@
           "AI"
         ],
         "summary": "Edit Inbox Item",
-        "description": "Edit a still-pending queued message's text. 409 if it already drained,\n404 if there is no such item the caller owns.",
+        "description": "Edit a still-pending queued message's text — anyone with EDITOR on the\nconversation. 409 if it already drained, 404 if there is no such item or the\ncaller may not change this conversation.",
         "operationId": "edit_inbox_item_ai_conversation__conversation_id__inbox__injection_id__patch",
         "parameters": [
           {
@@ -5799,7 +5799,7 @@
           "AI"
         ],
         "summary": "Cancel Inbox Item",
-        "description": "Retract a still-pending queued message. 409 if it already drained, 404 if\nthere is no such item the caller owns.",
+        "description": "Retract a still-pending queued message — anyone with EDITOR on the\nconversation. 409 if it already drained, 404 if there is no such item or the\ncaller may not change this conversation.",
         "operationId": "cancel_inbox_item_ai_conversations__conversation_id__inbox__injection_id__delete",
         "parameters": [
           {
@@ -5849,7 +5849,7 @@
           "AI"
         ],
         "summary": "Edit Inbox Item",
-        "description": "Edit a still-pending queued message's text. 409 if it already drained,\n404 if there is no such item the caller owns.",
+        "description": "Edit a still-pending queued message's text — anyone with EDITOR on the\nconversation. 409 if it already drained, 404 if there is no such item or the\ncaller may not change this conversation.",
         "operationId": "edit_inbox_item_ai_conversations__conversation_id__inbox__injection_id__patch",
         "parameters": [
           {
@@ -6064,7 +6064,7 @@
           "AI"
         ],
         "summary": "Get Conversation Sandbox",
-        "description": "Read the current sandbox binding for a conversation (ownership-scoped).",
+        "description": "Read the current sandbox binding for a conversation — anyone who may VIEW it\n(iam.has_access_for at viewer); everyone else gets the 404 of a missing one.",
         "operationId": "get_conversation_sandbox_ai_conversation__conversation_id__sandbox_get",
         "parameters": [
           {
@@ -6199,7 +6199,7 @@
           "AI"
         ],
         "summary": "Get Conversation Sandbox",
-        "description": "Read the current sandbox binding for a conversation (ownership-scoped).",
+        "description": "Read the current sandbox binding for a conversation — anyone who may VIEW it\n(iam.has_access_for at viewer); everyone else gets the 404 of a missing one.",
         "operationId": "get_conversation_sandbox_ai_conversations__conversation_id__sandbox_get",
         "parameters": [
           {
@@ -22268,7 +22268,7 @@
           "Google Integrations"
         ],
         "summary": "Google Other Contacts Admission",
-        "description": "Return the canonical internal-test admission without exposing a consent row.\n\nOther Contacts is intentionally absent from the generic capabilities catalog:\nthat catalog is exclusively for consent-requestable products. This unlinked\nreviewer needs its own safe, server-derived availability result instead.",
+        "description": "Return server-derived access for the catalogued internal-test reviewer.\n\nThe canonical product connector owns consent. This endpoint only reports\nwhether the signed-in caller may open the reviewer once connected.",
         "operationId": "google_other_contacts_admission_google_integrations_other_contacts_admission_get",
         "responses": {
           "200": {
@@ -78496,6 +78496,380 @@
         }
       }
     },
+    "/mandates/{mandate_key}/candidates": {
+      "post": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Post Mandate Candidate",
+        "operationId": "post_mandate_candidate_mandates__mandate_key__candidates_post",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveCandidateSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Get Mandate Candidates",
+        "operationId": "get_mandate_candidates_mandates__mandate_key__candidates_get",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidatesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandate-candidates/{candidate_id}": {
+      "get": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Get Mandate Candidate",
+        "operationId": "get_mandate_candidate_mandate_candidates__candidate_id__get",
+        "parameters": [
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidateDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandate-candidates/{candidate_id}/promote": {
+      "post": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Post Mandate Candidate Promote",
+        "operationId": "post_mandate_candidate_promote_mandate_candidates__candidate_id__promote_post",
+        "parameters": [
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveCandidatePromoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidatePromoteResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandate-candidates/{candidate_id}/put-back": {
+      "post": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Post Mandate Candidate Put Back",
+        "operationId": "post_mandate_candidate_put_back_mandate_candidates__candidate_id__put_back_post",
+        "parameters": [
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandate-candidates/{candidate_id}/discard": {
+      "post": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Post Mandate Candidate Discard",
+        "operationId": "post_mandate_candidate_discard_mandate_candidates__candidate_id__discard_post",
+        "parameters": [
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveCandidateDiscardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandate-candidate-runs/{run_id}": {
+      "get": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Get Mandate Candidate Run",
+        "operationId": "get_mandate_candidate_run_mandate_candidate_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidateRun"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandate-candidate-runs/{run_id}/agreement": {
+      "post": {
+        "tags": [
+          "Mandate Candidates"
+        ],
+        "summary": "Post Mandate Candidate Run Agreement",
+        "operationId": "post_mandate_candidate_run_agreement_mandate_candidate_runs__run_id__agreement_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveCandidateAgreementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveCandidateAgreementResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-usage/sync": {
       "post": {
         "tags": [
@@ -108010,6 +108384,61 @@
             ],
             "title": "Entity Rank"
           },
+          "processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Document Id"
+          },
+          "primary_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Page Id"
+          },
+          "page_numbers": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Page Numbers"
+          },
+          "derivation_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derivation Kind"
+          },
+          "physical_page_ref": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Physical Page Ref"
+          },
           "file_name": {
             "anyOf": [
               {
@@ -108100,6 +108529,63 @@
               }
             ],
             "title": "Error"
+          },
+          "sections": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "section_errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Section Errors"
+          },
+          "chips": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Chips"
+          },
+          "sections_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sections Text"
+          },
+          "relevance_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance Verdict"
+          },
+          "relevance_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance Note"
           }
         },
         "additionalProperties": false,
@@ -117666,6 +118152,17 @@
               }
             ],
             "title": "Skipped"
+          },
+          "refresh_deferred": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Deferred"
           }
         },
         "additionalProperties": false,
@@ -139363,6 +139860,27 @@
             "type": "integer",
             "title": "Ceiling",
             "default": 0
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "runs": {
+            "type": "integer",
+            "title": "Runs",
+            "default": 0
+          },
+          "spans_read": {
+            "type": "integer",
+            "title": "Spans Read",
+            "default": 0
           }
         },
         "additionalProperties": false,
@@ -155617,6 +156135,82 @@
       },
       "CreateWorkflowRequest": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "name": {
             "type": "string",
             "maxLength": 255,
@@ -204983,6 +205577,39 @@
             ],
             "title": "Score"
           },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank"
+          },
+          "lexical_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lexical Rank"
+          },
+          "rerank_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank Score"
+          },
           "match": {
             "anyOf": [
               {
@@ -205464,6 +206091,28 @@
             "title": "Note",
             "description": "What narrowed or changed this section, in words."
           },
+          "reranker_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reranker Model"
+          },
+          "rerank_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank Status"
+          },
           "took_ms": {
             "type": "integer",
             "title": "Took Ms",
@@ -205602,6 +206251,28 @@
             ],
             "title": "Note",
             "description": "What narrowed or changed this section, in words."
+          },
+          "reranker_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reranker Model"
+          },
+          "rerank_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank Status"
           },
           "took_ms": {
             "type": "integer",
@@ -210710,6 +211381,1170 @@
         ],
         "title": "ListenBrainzSitewideListeningActivity",
         "description": "Safe aggregate projection of two consecutive sitewide weekly periods."
+      },
+      "LiveCandidate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "mandate_id": {
+            "type": "string",
+            "title": "Mandate Id"
+          },
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "rung": {
+            "type": "string",
+            "enum": [
+              "global",
+              "org",
+              "user"
+            ],
+            "title": "Rung"
+          },
+          "rung_principal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rung Principal Id"
+          },
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type"
+          },
+          "holder_id": {
+            "type": "string",
+            "title": "Holder Id"
+          },
+          "holder_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Version Id"
+          },
+          "holder_name": {
+            "type": "string",
+            "title": "Holder Name"
+          },
+          "baseline_holder_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "agent",
+                  "workflow"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Holder Type"
+          },
+          "baseline_holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Holder Id"
+          },
+          "baseline_holder_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Holder Version Id"
+          },
+          "baseline_holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Holder Name"
+          },
+          "baseline_inherited": {
+            "type": "boolean",
+            "title": "Baseline Inherited",
+            "default": false
+          },
+          "set_by": {
+            "type": "string",
+            "title": "Set By"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "cancelled",
+              "collecting",
+              "discarded",
+              "promoted",
+              "ready"
+            ],
+            "title": "Status"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "hold",
+                  "promote",
+                  "reject"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation"
+          },
+          "recommendation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Reason"
+          },
+          "skips": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Skips"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/LiveCandidateCounts"
+          },
+          "stalled": {
+            "type": "boolean",
+            "title": "Stalled",
+            "default": false
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decision_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Note"
+          },
+          "promotion_ref": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promotion Ref"
+          },
+          "put_back_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Put Back Until"
+          },
+          "can_decide": {
+            "type": "boolean",
+            "title": "Can Decide",
+            "default": false
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "replaced": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveCandidateReplaced"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "mandate_id",
+          "mandate_key",
+          "rung",
+          "holder_type",
+          "holder_id",
+          "holder_name",
+          "set_by",
+          "organization_id",
+          "status",
+          "counts",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "LiveCandidate"
+      },
+      "LiveCandidateAgreementRequest": {
+        "properties": {
+          "agreement": {
+            "type": "string",
+            "enum": [
+              "agree",
+              "disagree"
+            ],
+            "title": "Agreement"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agreement"
+        ],
+        "title": "LiveCandidateAgreementRequest"
+      },
+      "LiveCandidateAgreementResult": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/LiveCandidateRun"
+          },
+          "settled": {
+            "type": "integer",
+            "title": "Settled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run",
+          "settled"
+        ],
+        "title": "LiveCandidateAgreementResult"
+      },
+      "LiveCandidateCounts": {
+        "properties": {
+          "runs_wanted": {
+            "type": "integer",
+            "title": "Runs Wanted"
+          },
+          "runs_in": {
+            "type": "integer",
+            "title": "Runs In",
+            "default": 0
+          },
+          "runs_failed": {
+            "type": "integer",
+            "title": "Runs Failed",
+            "default": 0
+          },
+          "runs_stopped": {
+            "type": "integer",
+            "title": "Runs Stopped",
+            "default": 0
+          },
+          "runs_pending": {
+            "type": "integer",
+            "title": "Runs Pending",
+            "default": 0
+          },
+          "verdicts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Verdicts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runs_wanted"
+        ],
+        "title": "LiveCandidateCounts",
+        "description": "Derived from the child rows every time — never stored twice (§2.1)."
+      },
+      "LiveCandidateDetail": {
+        "properties": {
+          "candidate": {
+            "$ref": "#/components/schemas/LiveCandidate"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/LiveCandidateRun"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidate"
+        ],
+        "title": "LiveCandidateDetail"
+      },
+      "LiveCandidateDiscardRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "title": "LiveCandidateDiscardRequest"
+      },
+      "LiveCandidateForecast": {
+        "properties": {
+          "doors": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Doors"
+          },
+          "eligible_of_recent": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Eligible Of Recent"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "sampled": {
+            "type": "integer",
+            "title": "Sampled",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_days"
+        ],
+        "title": "LiveCandidateForecast",
+        "description": "P17 — an honest forecast from the mandate's own recent run history, no schedule."
+      },
+      "LiveCandidatePromoteRequest": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "title": "LiveCandidatePromoteRequest"
+      },
+      "LiveCandidatePromoteResult": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "needs_version",
+              "promoted"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/LiveCandidate"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/LiveCandidateVersionChoice"
+            },
+            "type": "array",
+            "title": "Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "candidate"
+        ],
+        "title": "LiveCandidatePromoteResult",
+        "description": "``promoted`` — the rung now runs the candidate; ``needs_version`` — the pairs ran\nmore than one version, so the person picks one (P13) and nothing was written."
+      },
+      "LiveCandidateReplaced": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "holder_name": {
+            "type": "string",
+            "title": "Holder Name"
+          },
+          "runs_in": {
+            "type": "integer",
+            "title": "Runs In"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "holder_name",
+          "runs_in",
+          "message"
+        ],
+        "title": "LiveCandidateReplaced",
+        "description": "Set only on a set response: the candidate this one cancelled on the same rung (P7)."
+      },
+      "LiveCandidateRun": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "title": "Candidate Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "door": {
+            "type": "string",
+            "title": "Door"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "queued",
+              "running",
+              "stopped",
+              "timed_out"
+            ],
+            "title": "Status"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "better",
+                  "regressed",
+                  "same",
+                  "worse"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "stop_match": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "different_tool",
+                  "live_made_no_call",
+                  "same_call",
+                  "same_tool_different_args"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Match"
+          },
+          "judge_verdict_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Verdict Id"
+          },
+          "judge_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge Error Code"
+          },
+          "human_agreement": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "agree",
+                  "disagree"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Human Agreement"
+          },
+          "live_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live User Id"
+          },
+          "live_organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Organization Id"
+          },
+          "live_request_id": {
+            "type": "string",
+            "title": "Live Request Id"
+          },
+          "live_conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Conversation Id"
+          },
+          "live_wf_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Wf Run Id"
+          },
+          "live_execution_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Execution Id"
+          },
+          "live_metrics": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Metrics"
+          },
+          "live_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Error Code"
+          },
+          "candidate_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Request Id"
+          },
+          "candidate_conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Conversation Id"
+          },
+          "candidate_wf_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Wf Run Id"
+          },
+          "candidate_execution_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Execution Id"
+          },
+          "candidate_resolved_holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Resolved Holder Id"
+          },
+          "candidate_resolved_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Resolved Version Id"
+          },
+          "candidate_metrics": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Metrics"
+          },
+          "candidate_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Error Code"
+          },
+          "input_differences": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "tool_dispositions": {
+            "items": {
+              "$ref": "#/components/schemas/LiveCandidateToolDisposition"
+            },
+            "type": "array",
+            "title": "Tool Dispositions"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "default": 0
+          },
+          "notified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notified At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveCandidateRunPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payload_withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload Withheld Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "candidate_id",
+          "number",
+          "door",
+          "status",
+          "live_request_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "LiveCandidateRun"
+      },
+      "LiveCandidateRunPayload": {
+        "properties": {
+          "door_args": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "live_output": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "candidate_output": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "live_error": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "candidate_error": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "live_input_digest": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "candidate_input_digest": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "stopped_at": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "judge": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "live_tool_results": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "type": "object",
+        "title": "LiveCandidateRunPayload",
+        "description": "The sensitive half (A2) — only ever read under the viewer's own identity."
+      },
+      "LiveCandidateSetRequest": {
+        "properties": {
+          "rung": {
+            "type": "string",
+            "enum": [
+              "global",
+              "org",
+              "user"
+            ],
+            "title": "Rung"
+          },
+          "rung_principal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rung Principal Id"
+          },
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type"
+          },
+          "holder_id": {
+            "type": "string",
+            "title": "Holder Id"
+          },
+          "holder_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Version Id"
+          },
+          "runs_wanted": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runs Wanted"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rung",
+          "holder_type",
+          "holder_id"
+        ],
+        "title": "LiveCandidateSetRequest"
+      },
+      "LiveCandidateToolDisposition": {
+        "properties": {
+          "seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool"
+          },
+          "side_effect_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side Effect Class"
+          },
+          "disposition": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "borrowed",
+                  "real",
+                  "stopped"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposition"
+          },
+          "args_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args Digest"
+          },
+          "borrowed_from_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Borrowed From Call Id"
+          },
+          "stopped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stopped Reason"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "LiveCandidateToolDisposition"
+      },
+      "LiveCandidateVersionChoice": {
+        "properties": {
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "runs": {
+            "type": "integer",
+            "title": "Runs"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version_id",
+          "runs",
+          "label"
+        ],
+        "title": "LiveCandidateVersionChoice"
+      },
+      "LiveCandidatesResponse": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open": {
+            "items": {
+              "$ref": "#/components/schemas/LiveCandidate"
+            },
+            "type": "array",
+            "title": "Open"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/LiveCandidate"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "forecast": {
+            "$ref": "#/components/schemas/LiveCandidateForecast"
+          }
+        },
+        "type": "object",
+        "required": [
+          "forecast"
+        ],
+        "title": "LiveCandidatesResponse"
       },
       "LiveChatServiceStatus": {
         "properties": {
@@ -233974,7 +235809,7 @@
           "message"
         ],
         "title": "OtherContactsAdmission",
-        "description": "The verified caller's access to the unlinked Other Contacts reviewer."
+        "description": "The verified caller's access to the catalogued Other Contacts reviewer."
       },
       "OtherContactsImportRequest": {
         "properties": {
@@ -243505,6 +245340,19 @@
             },
             "type": "array",
             "title": "Top Phrases"
+          },
+          "keywords_unproposable": {
+            "type": "integer",
+            "title": "Keywords Unproposable",
+            "default": 0
+          },
+          "item_skips": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Item Skips"
           }
         },
         "additionalProperties": false,
@@ -264389,6 +266237,17 @@
               }
             ],
             "title": "Updated At"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
           }
         },
         "type": "object",
@@ -302508,6 +304367,19 @@
             },
             "type": "array",
             "title": "Unknown Topic Refs"
+          },
+          "keywords_unproposable": {
+            "type": "integer",
+            "title": "Keywords Unproposable",
+            "default": 0
+          },
+          "offering_proposal_skips": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Offering Proposal Skips"
           }
         },
         "additionalProperties": false,

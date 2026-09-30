@@ -2087,8 +2087,8 @@ export interface paths {
         };
         /**
          * List Inbox Items
-         * @description List the caller's queued inbox items for a conversation (FIFO). Lets a
-         *     client rebuild its "waiting its turn" cards after reopening the panel.
+         * @description List a conversation's queued inbox items (FIFO) — for anyone who may VIEW
+         *     it. Lets a client rebuild its "waiting its turn" cards after reopening the panel.
          */
         get: operations["list_inbox_items_ai_conversation__conversation_id__inbox_get"];
         put?: never;
@@ -2099,8 +2099,10 @@ export interface paths {
          *     If a run is in-flight, the running loop drains it at its next natural turn
          *     boundary (the next tool call / iteration) and the model sees it on the
          *     following API call. If the conversation is idle, the item waits and is
-         *     delivered when the next run starts. Ownership-scoped: a caller can only
-         *     enqueue into a conversation they own.
+         *     delivered when the next run starts. Adding to a conversation CHANGES it, so
+         *     the caller needs EDITOR on it (iam.has_access_for) — its owner, or anyone it
+         *     was shared with at editor or above; everyone else gets the same 404 as a
+         *     missing conversation.
          */
         post: operations["enqueue_inbox_item_ai_conversation__conversation_id__inbox_post"];
         delete?: never;
@@ -2118,8 +2120,8 @@ export interface paths {
         };
         /**
          * List Inbox Items
-         * @description List the caller's queued inbox items for a conversation (FIFO). Lets a
-         *     client rebuild its "waiting its turn" cards after reopening the panel.
+         * @description List a conversation's queued inbox items (FIFO) — for anyone who may VIEW
+         *     it. Lets a client rebuild its "waiting its turn" cards after reopening the panel.
          */
         get: operations["list_inbox_items_ai_conversations__conversation_id__inbox_get"];
         put?: never;
@@ -2130,8 +2132,10 @@ export interface paths {
          *     If a run is in-flight, the running loop drains it at its next natural turn
          *     boundary (the next tool call / iteration) and the model sees it on the
          *     following API call. If the conversation is idle, the item waits and is
-         *     delivered when the next run starts. Ownership-scoped: a caller can only
-         *     enqueue into a conversation they own.
+         *     delivered when the next run starts. Adding to a conversation CHANGES it, so
+         *     the caller needs EDITOR on it (iam.has_access_for) — its owner, or anyone it
+         *     was shared with at editor or above; everyone else gets the same 404 as a
+         *     missing conversation.
          */
         post: operations["enqueue_inbox_item_ai_conversations__conversation_id__inbox_post"];
         delete?: never;
@@ -2152,16 +2156,18 @@ export interface paths {
         post?: never;
         /**
          * Cancel Inbox Item
-         * @description Retract a still-pending queued message. 409 if it already drained, 404 if
-         *     there is no such item the caller owns.
+         * @description Retract a still-pending queued message — anyone with EDITOR on the
+         *     conversation. 409 if it already drained, 404 if there is no such item or the
+         *     caller may not change this conversation.
          */
         delete: operations["cancel_inbox_item_ai_conversation__conversation_id__inbox__injection_id__delete"];
         options?: never;
         head?: never;
         /**
          * Edit Inbox Item
-         * @description Edit a still-pending queued message's text. 409 if it already drained,
-         *     404 if there is no such item the caller owns.
+         * @description Edit a still-pending queued message's text — anyone with EDITOR on the
+         *     conversation. 409 if it already drained, 404 if there is no such item or the
+         *     caller may not change this conversation.
          */
         patch: operations["edit_inbox_item_ai_conversation__conversation_id__inbox__injection_id__patch"];
         trace?: never;
@@ -2178,16 +2184,18 @@ export interface paths {
         post?: never;
         /**
          * Cancel Inbox Item
-         * @description Retract a still-pending queued message. 409 if it already drained, 404 if
-         *     there is no such item the caller owns.
+         * @description Retract a still-pending queued message — anyone with EDITOR on the
+         *     conversation. 409 if it already drained, 404 if there is no such item or the
+         *     caller may not change this conversation.
          */
         delete: operations["cancel_inbox_item_ai_conversations__conversation_id__inbox__injection_id__delete"];
         options?: never;
         head?: never;
         /**
          * Edit Inbox Item
-         * @description Edit a still-pending queued message's text. 409 if it already drained,
-         *     404 if there is no such item the caller owns.
+         * @description Edit a still-pending queued message's text — anyone with EDITOR on the
+         *     conversation. 409 if it already drained, 404 if there is no such item or the
+         *     caller may not change this conversation.
          */
         patch: operations["edit_inbox_item_ai_conversations__conversation_id__inbox__injection_id__patch"];
         trace?: never;
@@ -2247,7 +2255,8 @@ export interface paths {
         };
         /**
          * Get Conversation Sandbox
-         * @description Read the current sandbox binding for a conversation (ownership-scoped).
+         * @description Read the current sandbox binding for a conversation — anyone who may VIEW it
+         *     (iam.has_access_for at viewer); everyone else gets the 404 of a missing one.
          */
         get: operations["get_conversation_sandbox_ai_conversation__conversation_id__sandbox_get"];
         /**
@@ -2298,7 +2307,8 @@ export interface paths {
         };
         /**
          * Get Conversation Sandbox
-         * @description Read the current sandbox binding for a conversation (ownership-scoped).
+         * @description Read the current sandbox binding for a conversation — anyone who may VIEW it
+         *     (iam.has_access_for at viewer); everyone else gets the 404 of a missing one.
          */
         get: operations["get_conversation_sandbox_ai_conversations__conversation_id__sandbox_get"];
         /**
@@ -8274,11 +8284,10 @@ export interface paths {
         };
         /**
          * Google Other Contacts Admission
-         * @description Return the canonical internal-test admission without exposing a consent row.
+         * @description Return server-derived access for the catalogued internal-test reviewer.
          *
-         *     Other Contacts is intentionally absent from the generic capabilities catalog:
-         *     that catalog is exclusively for consent-requestable products. This unlinked
-         *     reviewer needs its own safe, server-derived availability result instead.
+         *     The canonical product connector owns consent. This endpoint only reports
+         *     whether the signed-in caller may open the reviewer once connected.
          */
         get: operations["google_other_contacts_admission_google_integrations_other_contacts_admission_get"];
         put?: never;
@@ -35428,6 +35437,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/{mandate_key}/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Mandate Candidates */
+        get: operations["get_mandate_candidates_mandates__mandate_key__candidates_get"];
+        put?: never;
+        /** Post Mandate Candidate */
+        post: operations["post_mandate_candidate_mandates__mandate_key__candidates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandate-candidates/{candidate_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Mandate Candidate */
+        get: operations["get_mandate_candidate_mandate_candidates__candidate_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandate-candidates/{candidate_id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Mandate Candidate Promote */
+        post: operations["post_mandate_candidate_promote_mandate_candidates__candidate_id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandate-candidates/{candidate_id}/put-back": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Mandate Candidate Put Back */
+        post: operations["post_mandate_candidate_put_back_mandate_candidates__candidate_id__put_back_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandate-candidates/{candidate_id}/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Mandate Candidate Discard */
+        post: operations["post_mandate_candidate_discard_mandate_candidates__candidate_id__discard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandate-candidate-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Mandate Candidate Run */
+        get: operations["get_mandate_candidate_run_mandate_candidate_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandate-candidate-runs/{run_id}/agreement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Mandate Candidate Run Agreement */
+        post: operations["post_mandate_candidate_run_agreement_mandate_candidate_runs__run_id__agreement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-usage/sync": {
         parameters: {
             query?: never;
@@ -46415,6 +46544,18 @@ export interface components {
             entities?: string[];
             /** Entity Rank */
             entity_rank?: number | null;
+            /** Processed Document Id */
+            processed_document_id?: string | null;
+            /** Primary Page Id */
+            primary_page_id?: string | null;
+            /** Page Numbers */
+            page_numbers?: number[];
+            /** Derivation Kind */
+            derivation_kind?: string | null;
+            /** Physical Page Ref */
+            physical_page_ref?: {
+                [key: string]: unknown;
+            } | string | null;
             /** File Name */
             file_name?: string | null;
             /** Page Number */
@@ -46442,6 +46583,24 @@ export interface components {
             tool_result_text: string;
             /** Error */
             error?: string | null;
+            /** Sections */
+            sections?: {
+                [key: string]: unknown;
+            }[];
+            /** Section Errors */
+            section_errors?: {
+                [key: string]: unknown;
+            }[];
+            /** Chips */
+            chips?: {
+                [key: string]: unknown;
+            }[];
+            /** Sections Text */
+            sections_text?: string | null;
+            /** Relevance Verdict */
+            relevance_verdict?: string | null;
+            /** Relevance Note */
+            relevance_note?: string | null;
         };
         /** AgentToolSearchRequest */
         AgentToolSearchRequest: {
@@ -51022,6 +51181,8 @@ export interface components {
             autonomy_refusal?: string | null;
             /** Skipped */
             skipped?: string | null;
+            /** Refresh Deferred */
+            refresh_deferred?: string | null;
         };
         /** BacklinkEnrichmentBody */
         BacklinkEnrichmentBody: {
@@ -60109,6 +60270,18 @@ export interface components {
              * @default 0
              */
             ceiling?: number;
+            /** Since */
+            since?: string | null;
+            /**
+             * Runs
+             * @default 0
+             */
+            runs?: number;
+            /**
+             * Spans Read
+             * @default 0
+             */
+            spans_read?: number;
         };
         /**
          * ClientContext
@@ -66792,6 +66965,36 @@ export interface components {
         };
         /** CreateWorkflowRequest */
         CreateWorkflowRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
             /** Name */
             name: string;
             /** Description */
@@ -88675,6 +88878,12 @@ export interface components {
             origin?: string | null;
             /** Score */
             score?: number | null;
+            /** Vector Rank */
+            vector_rank?: number | null;
+            /** Lexical Rank */
+            lexical_rank?: number | null;
+            /** Rerank Score */
+            rerank_score?: number | null;
             /**
              * Match
              * @description Set on the top hit.
@@ -88840,6 +89049,10 @@ export interface components {
              * @description What narrowed or changed this section, in words.
              */
             note?: string | null;
+            /** Reranker Model */
+            reranker_model?: string | null;
+            /** Rerank Status */
+            rerank_status?: string | null;
             /**
              * Took Ms
              * @default 0
@@ -88915,6 +89128,10 @@ export interface components {
              * @description What narrowed or changed this section, in words.
              */
             note?: string | null;
+            /** Reranker Model */
+            reranker_model?: string | null;
+            /** Rerank Status */
+            rerank_status?: string | null;
             /**
              * Took Ms
              * @default 0
@@ -90843,6 +91060,378 @@ export interface components {
              * @constant
              */
             source_page?: "https://listenbrainz.org/";
+        };
+        /** LiveCandidate */
+        LiveCandidate: {
+            /** Id */
+            id: string;
+            /** Mandate Id */
+            mandate_id: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /**
+             * Rung
+             * @enum {string}
+             */
+            rung: "global" | "org" | "user";
+            /** Rung Principal Id */
+            rung_principal_id?: string | null;
+            /**
+             * Holder Type
+             * @enum {string}
+             */
+            holder_type: "agent" | "workflow";
+            /** Holder Id */
+            holder_id: string;
+            /** Holder Version Id */
+            holder_version_id?: string | null;
+            /** Holder Name */
+            holder_name: string;
+            /** Baseline Holder Type */
+            baseline_holder_type?: ("agent" | "workflow") | null;
+            /** Baseline Holder Id */
+            baseline_holder_id?: string | null;
+            /** Baseline Holder Version Id */
+            baseline_holder_version_id?: string | null;
+            /** Baseline Holder Name */
+            baseline_holder_name?: string | null;
+            /**
+             * Baseline Inherited
+             * @default false
+             */
+            baseline_inherited?: boolean;
+            /** Set By */
+            set_by: string;
+            /** Organization Id */
+            organization_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "cancelled" | "collecting" | "discarded" | "promoted" | "ready";
+            /** Recommendation */
+            recommendation?: ("hold" | "promote" | "reject") | null;
+            /** Recommendation Reason */
+            recommendation_reason?: string | null;
+            /** Skips */
+            skips?: {
+                [key: string]: number;
+            };
+            counts: components["schemas"]["LiveCandidateCounts"];
+            /**
+             * Stalled
+             * @default false
+             */
+            stalled?: boolean;
+            /** Decided By */
+            decided_by?: string | null;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Decision Note */
+            decision_note?: string | null;
+            /** Promotion Ref */
+            promotion_ref?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Put Back Until */
+            put_back_until?: string | null;
+            /**
+             * Can Decide
+             * @default false
+             */
+            can_decide?: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            replaced?: components["schemas"]["LiveCandidateReplaced"] | null;
+        };
+        /** LiveCandidateAgreementRequest */
+        LiveCandidateAgreementRequest: {
+            /**
+             * Agreement
+             * @enum {string}
+             */
+            agreement: "agree" | "disagree";
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** LiveCandidateAgreementResult */
+        LiveCandidateAgreementResult: {
+            run: components["schemas"]["LiveCandidateRun"];
+            /** Settled */
+            settled: number;
+        };
+        /**
+         * LiveCandidateCounts
+         * @description Derived from the child rows every time — never stored twice (§2.1).
+         */
+        LiveCandidateCounts: {
+            /** Runs Wanted */
+            runs_wanted: number;
+            /**
+             * Runs In
+             * @default 0
+             */
+            runs_in?: number;
+            /**
+             * Runs Failed
+             * @default 0
+             */
+            runs_failed?: number;
+            /**
+             * Runs Stopped
+             * @default 0
+             */
+            runs_stopped?: number;
+            /**
+             * Runs Pending
+             * @default 0
+             */
+            runs_pending?: number;
+            /** Verdicts */
+            verdicts?: {
+                [key: string]: number;
+            };
+        };
+        /** LiveCandidateDetail */
+        LiveCandidateDetail: {
+            candidate: components["schemas"]["LiveCandidate"];
+            /** Runs */
+            runs?: components["schemas"]["LiveCandidateRun"][];
+        };
+        /** LiveCandidateDiscardRequest */
+        LiveCandidateDiscardRequest: {
+            /** Note */
+            note?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /**
+         * LiveCandidateForecast
+         * @description P17 — an honest forecast from the mandate's own recent run history, no schedule.
+         */
+        LiveCandidateForecast: {
+            /** Doors */
+            doors?: {
+                [key: string]: number;
+            };
+            /** Eligible Of Recent */
+            eligible_of_recent?: number[];
+            /** Window Days */
+            window_days: number;
+            /**
+             * Sampled
+             * @default 0
+             */
+            sampled?: number;
+        };
+        /** LiveCandidatePromoteRequest */
+        LiveCandidatePromoteRequest: {
+            /** Note */
+            note?: string | null;
+            /** Version Id */
+            version_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /**
+         * LiveCandidatePromoteResult
+         * @description ``promoted`` — the rung now runs the candidate; ``needs_version`` — the pairs ran
+         *     more than one version, so the person picks one (P13) and nothing was written.
+         */
+        LiveCandidatePromoteResult: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "needs_version" | "promoted";
+            /** Message */
+            message: string;
+            candidate: components["schemas"]["LiveCandidate"];
+            /** Versions */
+            versions?: components["schemas"]["LiveCandidateVersionChoice"][];
+        };
+        /**
+         * LiveCandidateReplaced
+         * @description Set only on a set response: the candidate this one cancelled on the same rung (P7).
+         */
+        LiveCandidateReplaced: {
+            /** Id */
+            id: string;
+            /** Holder Name */
+            holder_name: string;
+            /** Runs In */
+            runs_in: number;
+            /** Message */
+            message: string;
+        };
+        /** LiveCandidateRun */
+        LiveCandidateRun: {
+            /** Id */
+            id: string;
+            /** Candidate Id */
+            candidate_id: string;
+            /** Number */
+            number: number;
+            /** Door */
+            door: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "completed" | "failed" | "queued" | "running" | "stopped" | "timed_out";
+            /** Verdict */
+            verdict?: ("better" | "regressed" | "same" | "worse") | null;
+            /** Stop Match */
+            stop_match?: ("different_tool" | "live_made_no_call" | "same_call" | "same_tool_different_args") | null;
+            /** Judge Verdict Id */
+            judge_verdict_id?: string | null;
+            /** Judge Error Code */
+            judge_error_code?: string | null;
+            /** Human Agreement */
+            human_agreement?: ("agree" | "disagree") | null;
+            /** Live User Id */
+            live_user_id?: string | null;
+            /** Live Organization Id */
+            live_organization_id?: string | null;
+            /** Live Request Id */
+            live_request_id: string;
+            /** Live Conversation Id */
+            live_conversation_id?: string | null;
+            /** Live Wf Run Id */
+            live_wf_run_id?: string | null;
+            /** Live Execution Id */
+            live_execution_id?: string | null;
+            /** Live Metrics */
+            live_metrics?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Live Error Code */
+            live_error_code?: string | null;
+            /** Candidate Request Id */
+            candidate_request_id?: string | null;
+            /** Candidate Conversation Id */
+            candidate_conversation_id?: string | null;
+            /** Candidate Wf Run Id */
+            candidate_wf_run_id?: string | null;
+            /** Candidate Execution Id */
+            candidate_execution_id?: string | null;
+            /** Candidate Resolved Holder Id */
+            candidate_resolved_holder_id?: string | null;
+            /** Candidate Resolved Version Id */
+            candidate_resolved_version_id?: string | null;
+            /** Candidate Metrics */
+            candidate_metrics?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Candidate Error Code */
+            candidate_error_code?: string | null;
+            input_differences?: components["schemas"]["JsonValue"];
+            /** Tool Dispositions */
+            tool_dispositions?: components["schemas"]["LiveCandidateToolDisposition"][];
+            /**
+             * Attempts
+             * @default 0
+             */
+            attempts?: number;
+            /** Notified At */
+            notified_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            payload?: components["schemas"]["LiveCandidateRunPayload"] | null;
+            /** Payload Withheld Reason */
+            payload_withheld_reason?: string | null;
+        };
+        /**
+         * LiveCandidateRunPayload
+         * @description The sensitive half (A2) — only ever read under the viewer's own identity.
+         */
+        LiveCandidateRunPayload: {
+            door_args?: components["schemas"]["JsonValue"];
+            live_output?: components["schemas"]["JsonValue"];
+            candidate_output?: components["schemas"]["JsonValue"];
+            live_error?: components["schemas"]["JsonValue"];
+            candidate_error?: components["schemas"]["JsonValue"];
+            live_input_digest?: components["schemas"]["JsonValue"];
+            candidate_input_digest?: components["schemas"]["JsonValue"];
+            stopped_at?: components["schemas"]["JsonValue"];
+            judge?: components["schemas"]["JsonValue"];
+            live_tool_results?: components["schemas"]["JsonValue"];
+        };
+        /** LiveCandidateSetRequest */
+        LiveCandidateSetRequest: {
+            /**
+             * Rung
+             * @enum {string}
+             */
+            rung: "global" | "org" | "user";
+            /** Rung Principal Id */
+            rung_principal_id?: string | null;
+            /**
+             * Holder Type
+             * @enum {string}
+             */
+            holder_type: "agent" | "workflow";
+            /** Holder Id */
+            holder_id: string;
+            /** Holder Version Id */
+            holder_version_id?: string | null;
+            /** Runs Wanted */
+            runs_wanted?: number | null;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** LiveCandidateToolDisposition */
+        LiveCandidateToolDisposition: {
+            /** Seq */
+            seq?: number | null;
+            /** Tool */
+            tool?: string | null;
+            /** Side Effect Class */
+            side_effect_class?: string | null;
+            /** Disposition */
+            disposition?: ("borrowed" | "real" | "stopped") | null;
+            /** Args Digest */
+            args_digest?: string | null;
+            /** Borrowed From Call Id */
+            borrowed_from_call_id?: string | null;
+            /** Stopped Reason */
+            stopped_reason?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** LiveCandidateVersionChoice */
+        LiveCandidateVersionChoice: {
+            /** Version Id */
+            version_id: string | null;
+            /** Runs */
+            runs: number;
+            /** Label */
+            label: string;
+        };
+        /** LiveCandidatesResponse */
+        LiveCandidatesResponse: {
+            active?: components["schemas"]["LiveCandidate"] | null;
+            /** Open */
+            open?: components["schemas"]["LiveCandidate"][];
+            /** History */
+            history?: components["schemas"]["LiveCandidate"][];
+            forecast: components["schemas"]["LiveCandidateForecast"];
         };
         /** LiveChatServiceStatus */
         LiveChatServiceStatus: {
@@ -101298,7 +101887,7 @@ export interface components {
         };
         /**
          * OtherContactsAdmission
-         * @description The verified caller's access to the unlinked Other Contacts reviewer.
+         * @description The verified caller's access to the catalogued Other Contacts reviewer.
          */
         OtherContactsAdmission: {
             /** Eligible */
@@ -105557,6 +106146,15 @@ export interface components {
             error?: string | null;
             /** Top Phrases */
             top_phrases?: string[];
+            /**
+             * Keywords Unproposable
+             * @default 0
+             */
+            keywords_unproposable?: number;
+            /** Item Skips */
+            item_skips?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * PlainServiceStatus
@@ -114798,6 +115396,8 @@ export interface components {
             source_count?: number;
             /** Updated At */
             updated_at?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
         };
         /**
          * ResearchUploadResponse
@@ -131480,6 +132080,15 @@ export interface components {
             unassignable?: number;
             /** Unknown Topic Refs */
             unknown_topic_refs?: string[];
+            /**
+             * Keywords Unproposable
+             * @default 0
+             */
+            keywords_unproposable?: number;
+            /** Offering Proposal Skips */
+            offering_proposal_skips?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * TopicCostSummary
@@ -200532,6 +201141,270 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateTestResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mandate_candidates_mandates__mandate_key__candidates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidatesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mandate_candidate_mandates__mandate_key__candidates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveCandidateSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mandate_candidate_mandate_candidates__candidate_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mandate_candidate_promote_mandate_candidates__candidate_id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveCandidatePromoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidatePromoteResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mandate_candidate_put_back_mandate_candidates__candidate_id__put_back_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mandate_candidate_discard_mandate_candidates__candidate_id__discard_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveCandidateDiscardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mandate_candidate_run_mandate_candidate_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidateRun"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mandate_candidate_run_agreement_mandate_candidate_runs__run_id__agreement_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveCandidateAgreementRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCandidateAgreementResult"];
                 };
             };
             /** @description Validation Error */
