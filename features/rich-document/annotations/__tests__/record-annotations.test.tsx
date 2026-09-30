@@ -188,7 +188,7 @@ it("5 — Highlight and Private note are absent on a kind with no annotates pair
 it("6 — which saved record a ContentSource is", () => {
   expect(annotationRecordOf({ type: "chat-message", messageId: "m1", conversationId: "c1" })).toMatchObject({ token: "message", id: "m1", href: "/chat/c1" });
   expect(annotationRecordOf({ type: "note", mode: "identity", noteId: "n1", sourceId: "s" })).toMatchObject({ token: "note", id: "n1" });
-  expect(annotationRecordOf({ type: "working-document", conversationId: "c1", kind: "working", documentId: "d1" })).toMatchObject({ token: "document", id: "d1" });
+  expect(annotationRecordOf({ type: "working-document", conversationId: "c1", kind: "working", documentId: "d1" })).toMatchObject({ token: "working_document", id: "d1" });
   expect(annotationRecordOf({ type: "working-document", conversationId: "c1", kind: "working", documentId: null })).toBeNull();
   expect(annotationRecordOf({ type: "raw" })).toBeNull();
 });

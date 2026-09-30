@@ -35,7 +35,10 @@ export function annotationRecordOf(source: ContentSource): AnnotationRecord | nu
         href: `/chat/${source.conversationId}`,
       };
     case "working-document":
-      return source.documentId ? { token: "document", id: source.documentId, title: "Working document" } : null;
+      // "working_document" (workbench.working_documents), NOT "document" (content.document, a different
+      // table): the wrong token made every access check ask about a row that does not exist, so a
+      // working document could never be commented on (2026-09-29).
+      return source.documentId ? { token: "working_document", id: source.documentId, title: "Working document" } : null;
     default:
       return null;
   }

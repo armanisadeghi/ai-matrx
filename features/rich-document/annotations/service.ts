@@ -143,7 +143,10 @@ export async function listCommentThreads(source: AnnotationSource): Promise<Comm
   const me = getUserId();
   const roots = new Map<string, AnnotationItem>();
   const replies: CommentRow[] = [];
-  let doors = rows.length > 0 ? rows.every((r) => "resolved_at" in r) : false;
+  // The RC-B11 doors are live everywhere (2026-09-26); an empty thread no longer "probes" for them.
+  // The probe called cmt_mention_candidates, whose refusal the error capture recorded as a red
+  // error on every empty thread the person could only view (2026-09-29).
+  const doors = rows.length > 0 ? rows.every((r) => "resolved_at" in r) : true;
   for (const row of rows) {
     if (row.parent_id) {
       replies.push(row);
@@ -180,23 +183,7 @@ export async function listCommentThreads(source: AnnotationSource): Promise<Comm
     };
     if (parent) parent.replies.push(reply);
   }
-  if (rows.length === 0) doors = await probeCollaborationDoors(source);
   return { items: [...roots.values()], collaborationDoors: doors };
-}
-
-/** An empty thread says nothing about the door's shape: ask the mention door instead. */
-async function probeCollaborationDoors(source: AnnotationSource): Promise<boolean> {
-  const { error } = await commentSeam("cmt_mention_candidates", {
-    p_entity_type: source.token,
-    p_entity_id: source.id,
-    p_search: "",
-    p_limit: 1,
-  });
-  if (!error) return true;
-  const code = (error as { code?: string }).code;
-  if (code === "PGRST202" || code === "42883") return false;
-  // Any other refusal (e.g. no commenter access) still proves the door exists.
-  return true;
 }
 
 export interface AddCommentInput {
