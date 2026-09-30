@@ -55,11 +55,26 @@ counted, collapsed group — context items are never presented as messages or as
 "inputs the user gave". The turn model failing to load is an enhancement
 failure only — the window falls back to `GroupedInputsView` over the descend
 payload with an honest banner.
-| `features/overlays/openers/reviewWalkWindow.tsx` | multi-instance opener; deterministic instanceId `review-walk\|{unit_kind}\|{unit_id}`, focus-don't-duplicate (modeled on `gscDrilldownWindow`) |
+| `features/overlays/openers/reviewWalkWindow.tsx` | multi-instance opener hook; dispatches `openReviewWalk` |
+| `address.ts` | the two identities in one place: instance id `review-walk\|{unit_kind}\|{unit_id}` and address `?panels=review_walk:<unitKind>.<unitId>` (+ parser, `isWalkUnitKind`, exhaustive over the server's `UnitKind`) |
+| `openReviewWalk.ts` | the ONE open primitive (thunk) — opener and URL hydrator both use it, so the same unit already floating is focused (un-minimised + raised), never duplicated or overwritten |
 
 Overlay registration: `reviewWalkWindow` in
-`features/overlays/catalogue.ts` (`multi`, window — its key is the overlay id), and a gated multi-instance
-block in `features/overlays/OverlayController.tsx`.
+`features/overlays/catalogue.ts` (`multi`, window — its key is the overlay id), a gated multi-instance
+block in `features/overlays/OverlayController.tsx` (accepts every `WalkUnitKind`, `wf_node_outcome`
+included), a registry row `review-walk-window` in `features/window-panels/registry/windowRegistryMetadata.ts`
+(multi; `mobilePresentation: "fullscreen"`; `urlSync.key: "review_walk"`; preserved on
+`unitKind`+`unitId` (required) plus `agentId`/`agentName`), and the `review_walk` hydrator in
+`features/window-panels/url-sync/initUrlHydration.ts`.
+
+## Address (deep link + restore)
+
+`?panels=review_walk:<unitKind>.<unitId>` — `unitKind` ∈ `assistant_message | agent_request |
+wf_node_outcome`. Any surface that wants a "what the agent saw / what it answered" door emits this
+token (or calls `useOpenReviewWalkWindow`). A reload restores the open walk from the local window
+workspace; the walk's hops, flags and draft report are NOT preserved — a restore re-opens the unit's
+root layer fresh. The agent fields are not in the address, so a link-opened walk's receipt uses the
+admin hindsight door. Guard: `__tests__/reviewWalkAddress.test.ts`.
 
 ## Entry points
 
