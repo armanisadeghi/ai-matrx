@@ -45,15 +45,14 @@
 // applies it. That is what makes every branch below testable from a seat
 // (`lib/organizations/__tests__/linkOrganization.test.ts`).
 
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+
 /**
  * The query key, platform-wide. The server stamps this on every deep link it
  * emits; `features/admin/users/components/OrganizationsAdminClient.tsx` has
  * read it since before this module existed. One spelling, in one place.
  */
 export const LINK_ORGANIZATION_QUERY_KEY = "org";
-
-/** Canonical UUID. */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * An organization's ADDRESS — its slug (`validateOrgSlug`: lowercase letters,
@@ -89,7 +88,7 @@ export type LinkOrganizationParam =
  */
 export function classifyLinkOrganizationValue(raw: string): LinkOrganizationParam {
   const value = raw.trim();
-  if (UUID.test(value)) return { kind: "named", organizationId: value };
+  if (isRfc4122Uuid(value)) return { kind: "named", organizationId: value };
   if (SLUG.test(value)) return { kind: "addressed", slug: value.toLowerCase() };
   return { kind: "malformed", raw: value };
 }
