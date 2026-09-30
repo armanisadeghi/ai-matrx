@@ -33,7 +33,7 @@ catalog) appears in every board's Add menu, Start panel and agent tools with no 
 | `Body` | The feature's canonical component for ONE record — never a new renderer |
 | `surface` | `{ name, Host? }` for every record item; `{ none: reason }` ONLY for board-only content (label, web page) |
 | `startNew` | One entry or a list (`startNewEntries()` reads both). Each is `create` — synchronous, returns the item to place NOW; the body creates the record through the feature's canonical create path (with the organization gate) on the person's FIRST ACTION (a Create click, or the first words typed), never in a mount effect (a remount or a removed tile would leave stray records; `NoteItemBody` only starts a client-side draft on mount) — or a `Picker` (e.g. chat's "Chat with an agent" uses the one agent picker) |
-| `bringIn` | A picker built from the feature's canonical picker |
+| `bringIn` | A picker built from the feature's canonical picker; most already exist in `features/resource-manager/resource-picker/` (Documents, Notes, Tables, Tasks, Files…) |
 | `href` | The record's page — no dead ends |
 
 The saved form is a REFERENCE (`{ kind: "entity", entity, id, meta? }`, `board/document.ts`), never a
