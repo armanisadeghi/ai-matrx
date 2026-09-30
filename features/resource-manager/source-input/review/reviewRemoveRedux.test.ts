@@ -1,7 +1,8 @@
 /**
  * verify-4 V4-F #3: a Source removed in "Review what goes in" stayed on the
- * page — the answer only rewrote the pointers it named. Drives the REAL runtime
- * controller through the REAL Redux binding; only the transport is faked.
+ * page — the answer only rewrote the pointers it named. The rule lives in the
+ * runtime (`@ai-matrx/agents` removedInReview); this drives the REAL controller
+ * through the REAL Redux binding; only the transport is faked.
  */
 const postJson = jest.fn();
 jest.mock("@/lib/python-client", () => ({ postJson: (...args: unknown[]) => postJson(...args) }));
@@ -13,7 +14,6 @@ import instanceResources from "@/features/agents/redux/execution-system/instance
 import wizardDraft from "@/lib/redux/slices/wizardDraftSlice";
 import type { AppStore } from "@/lib/redux/store";
 import { reduxSourceSetAdapter, sourceSurfaceKey } from "../useSourceSet";
-import { applyReviewAnswer } from "./removedInReview";
 
 const KEY = sourceSurfaceKey("flashcards:review-remove");
 const PDF = "11111111-1111-4111-8111-111111111111";
@@ -33,7 +33,7 @@ it("Remove in the review takes exactly that Source off the page", () => {
     createSourceRef("note", NOTE),
     createSourceRef("processed_document", PAGE, { include_segments: ["s2"] }),
   ]);
-  applyReviewAnswer(set, reviewed, answer);
+  set.applySourceSet(answer, { reviewed });
 
   expect(set.getState().cards.map((c) => c.id)).toEqual([note, page]);
   expect(set.getState().cards.find((c) => c.id === pdf)).toBeUndefined();

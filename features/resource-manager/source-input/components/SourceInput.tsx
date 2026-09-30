@@ -45,7 +45,6 @@ import {
   cancelSourceReview,
   openSourceReview,
 } from "@/features/resource-manager/source-input/review/openSourceReview";
-import { applyReviewAnswer } from "@/features/resource-manager/source-input/review/removedInReview";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
@@ -190,8 +189,9 @@ export function SourceInput({
         ),
       });
       if (outcome.status === "applied" || outcome.status === "add_more") {
-        // A Source removed in the review leaves the page too (V4-F #3).
-        applyReviewAnswer(set.controller, sourceSet, outcome.sourceSet);
+        // A Source removed in the review leaves the page too (V4-F #3) — the
+        // runtime removes exactly the ones sent in that did not come back.
+        set.controller.applySourceSet(outcome.sourceSet, { reviewed: sourceSet });
       }
       openedReview.current = false;
     } catch (err) {
