@@ -46,7 +46,13 @@ jobs:
       - name: Run every repo-only row (items on)
         env:
           MATRX_ITEMS: "1"
-        run: node scripts/checks/run.mjs --repo-only --json tmp/checks/findings.jsonl
+        # Memory every 20 s into tmp/checks/memory.log (uploaded with checks-logs): run 36653040837
+        # was shut down mid-run (exit 143) and nothing recorded why. The runner now also bounds
+        # its worker pool by this machine's cores and memory (scripts/checks/run.mjs defaultWorkers).
+        run: |
+          mkdir -p tmp/checks
+          ( while sleep 20; do echo "$(date -u +%T) $(free -m | awk '/^Mem:/{print "used_mb="$3" available_mb="$7}')"; done ) > tmp/checks/memory.log 2>&1 &
+          node scripts/checks/run.mjs --repo-only --json tmp/checks/findings.jsonl
       - name: Upload the findings artifact
         if: always()
         uses: actions/upload-artifact@v4

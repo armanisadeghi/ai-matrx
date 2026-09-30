@@ -57,6 +57,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { availableParallelism, totalmem } from "node:os";
 import { fileURLToPath } from "node:url";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ITEMS_END_PREFIX, ITEMS_ENV, ITEM_PREFIX, itemFingerprint, itemUnit, parseItems } from "./items.mjs";
@@ -64,6 +65,20 @@ import { ITEMS_END_PREFIX, ITEMS_ENV, ITEM_PREFIX, itemFingerprint, itemUnit, pa
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const LOG_DIR = join(REPO_ROOT, "tmp", "checks");
 const DEFAULT_WORKERS = 6;
+// Memory each concurrent row may take before the machine runs out. The heavy rows (the whole
+// type-check, the jest suites) take several GB each; a GitHub-hosted runner has 4 cores and 16 GB.
+const WORKER_MEMORY_GIB = 4;
+
+/**
+ * How many rows run at once: never more than the machine's cores or memory allow. Six fixed
+ * workers on the public repo's 4-core / 16 GB runner is how run 36653040837 (2026-09-30) died:
+ * the runner was shut down mid-run (exit 143) with no finding written. aidream's runner.py caps
+ * at the core count for the same reason (checks-run-in-the-app COORDINATOR, 2026-09-26).
+ */
+export function defaultWorkers({ cpus = availableParallelism(), memBytes = totalmem() } = {}) {
+  const byMemory = Math.floor(memBytes / (WORKER_MEMORY_GIB * 1024 ** 3));
+  return Math.max(1, Math.min(DEFAULT_WORKERS, cpus, byMemory));
+}
 const DEFAULT_DB_WORKERS = 3;
 // A timeout bounds a HANG, not contention: six concurrent scanners on one
 // machine make every row slower than it was when measured alone.
@@ -600,7 +615,7 @@ export function cloneTarget(env = process.env) {
 }
 
 function parseArgs(argv) {
-  const args = { lanes: [], only: [], json: null, workers: DEFAULT_WORKERS, dbWorkers: DEFAULT_DB_WORKERS, timeout: null, list: false, manifest: null, extras: true, skipLiveDb: false, repoOnly: false, classes: null };
+  const args = { lanes: [], only: [], json: null, workers: defaultWorkers(), workersChosen: false, dbWorkers: DEFAULT_DB_WORKERS, timeout: null, list: false, manifest: null, extras: true, skipLiveDb: false, repoOnly: false, classes: null };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -608,7 +623,7 @@ function parseArgs(argv) {
       case "--lane": args.lanes.push(next()); break;
       case "--only": args.only.push(next()); break;
       case "--json": args.json = resolve(next()); break;
-      case "--workers": args.workers = Number(next()); break;
+      case "--workers": args.workers = Number(next()); args.workersChosen = true; break;
       case "--db-workers": args.dbWorkers = Number(next()); break;
       case "--timeout": args.timeout = Number(next()); break;
       case "--list": args.list = true; break;
@@ -677,6 +692,8 @@ export async function main(argv = process.argv.slice(2)) {
     const unclassified = skipped.filter((r) => r.dbClass === UNCLASSIFIED).length;
     process.stdout.write(`checks: skipped ${skipped.length} live-db row${skipped.length === 1 ? "" : "s"}${unclassified ? ` (${unclassified} unclassified — run pnpm checks:classify)` : ""}; they live in ${LIVE_DB_HOME}\n`);
   }
+  // The bound is an intervention, so it says so (stderr: stdout's one-line contract is unchanged).
+  if (!args.workersChosen && args.workers < DEFAULT_WORKERS) process.stderr.write(`checks: ${args.workers} worker(s), not ${DEFAULT_WORKERS} — this machine has ${availableParallelism()} core(s) and ${Math.round(totalmem() / 1024 ** 3)} GB memory\n`);
   const started = Date.now();
   const scans = {};
   const metrics = {};

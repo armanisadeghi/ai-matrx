@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { EXTRA_ROWS, categorize, fingerprint, judge, parseRows, renderTable, slug } from "./run.mjs";
+import { EXTRA_ROWS, categorize, defaultWorkers, fingerprint, judge, parseRows, renderTable, slug } from "./run.mjs";
 
 const RUNNER = new URL("./run.mjs", import.meta.url).pathname;
 
@@ -491,4 +491,16 @@ test("--target clone without a prepared copy environment refuses to run", () => 
     () => runWithManifest(["Anything|true"], ["--target", "clone"], { env }),
     (error) => /--target clone REFUSED/.test(String(error.stderr)) && error.status === 2,
   );
+});
+
+// Run 36653040837 (2026-09-30): six fixed workers on the public repo's 4-core / 16 GB runner, and
+// the runner was shut down mid-run (exit 143) with no finding written. The worker count is bounded
+// by the machine it runs on.
+test("the worker count never exceeds the machine's cores or memory", () => {
+  const GiB = 1024 ** 3;
+  assert.equal(defaultWorkers({ cpus: 4, memBytes: 16 * GiB }), 4, "GitHub's hosted runner");
+  assert.equal(defaultWorkers({ cpus: 2, memBytes: 8 * GiB }), 2, "a 2-core private runner");
+  assert.equal(defaultWorkers({ cpus: 16, memBytes: 12 * GiB }), 3, "memory binds before cores");
+  assert.equal(defaultWorkers({ cpus: 16, memBytes: 64 * GiB }), 6, "a workstation keeps the full pool");
+  assert.equal(defaultWorkers({ cpus: 1, memBytes: 1 * GiB }), 1, "never zero");
 });
