@@ -75,10 +75,9 @@ export function useQuestionDeskKnobs(): QuestionDeskKnobs {
   const [knobs, setKnobs] = useState<QuestionDeskKnobs>({ state: "loading" });
 
   useEffect(() => {
-    if (!organizationId) {
-      setKnobs({ state: "loading" });
-      return undefined;
-    }
+    // These are view preferences, not a list filter or a write: with no active
+    // organization they resolve from the person and platform layers (a null org)
+    // instead of sitting on "loading" forever.
     let live = true;
     setKnobs({ state: "loading" });
     void (async () => {
