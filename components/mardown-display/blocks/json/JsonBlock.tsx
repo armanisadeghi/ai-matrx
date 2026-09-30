@@ -204,7 +204,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
         description: "A new table, or add these rows to one you have",
         category: "Data",
         showToast: false,
-        action: () =>
+        action: () => {
           openSaveToTable({
             grid: {
               headers: tabular.columns,
@@ -220,7 +220,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
               tabular.source === "wrapped-array" && tabular.wrapperKey
                 ? tabular.wrapperKey.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
                 : null,
-          }),
+          });
+        },
       });
     }
 
