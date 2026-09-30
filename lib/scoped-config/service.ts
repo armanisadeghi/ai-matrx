@@ -47,7 +47,11 @@ export async function fetchKnobIndex(options: {
 }): Promise<ScopedKnob[]> {
   const supabase = createClient();
   const { data, error } = await supabase.schema("platform").rpc("knob_index", {
-    p_organization_id: options.organizationId ?? undefined,
+    // NULL, sent explicitly — `p_organization_id` has no SQL default, so omitting
+    // it is a PostgREST 404. The generated `Args` type says `string`; the SQL
+    // function accepts NULL (platform defaults), hence the narrow cast until
+    // `pnpm db-types` learns the argument is nullable.
+    p_organization_id: (options.organizationId ?? null) as string,
     p_feature_prefix: options.featurePrefix,
     p_user_id: options.userId,
     p_device_id: options.deviceId,

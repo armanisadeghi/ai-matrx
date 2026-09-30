@@ -280,7 +280,9 @@ async function fetchKnobSnapshot(
       ) => Promise<{ data: unknown; error: { message: string } | null }>;
     }
   ).rpc("knob_snapshot", {
-    p_organization_id: organizationId ?? undefined,
+    // NULL, sent explicitly: `p_organization_id` has NO default in the SQL
+    // signature, so OMITTING it makes PostgREST answer 404 (no function matches).
+    p_organization_id: organizationId ?? null,
     p_user_id: userId ?? undefined,
     p_scopes: buildScopes(deviceId, scopes),
   });

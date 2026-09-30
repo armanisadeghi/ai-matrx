@@ -68,7 +68,9 @@ it("with NO organization the knob still resolves (platform default), and no org 
   await act(async () => root.render(<Reader org={null} />));
   expect(text()).toBe("50");
   expect(calls).toHaveLength(1);
-  expect(calls[0].p_organization_id).toBeUndefined();
+  // explicit NULL: the SQL argument has no default, so an omitted key is a 404
+  expect("p_organization_id" in calls[0]).toBe(true);
+  expect(calls[0].p_organization_id).toBeNull();
 });
 
 it("with an organization selected its override is resolved and the org is sent", async () => {
