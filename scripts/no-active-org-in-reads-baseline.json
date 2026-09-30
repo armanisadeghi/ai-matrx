@@ -36,11 +36,6 @@
       "owner": "agent-copy",
       "note": "orgId gates alchemy capabilities (ai/email/actions) and identity key; no list read"
     },
-    "components/agent-copy/alchemy-host-ports.ts": {
-      "class": "not-a-list",
-      "owner": "agent-copy",
-      "note": "org in identity port; used for knob reads (knobPrincipal, defaultRecipe); no list"
-    },
     "components/official/TableSavedViews.tsx": {
       "class": "write-target",
       "owner": "tables",
@@ -190,16 +185,6 @@
       "class": "write-target",
       "owner": "marketing",
       "note": "organizationId sent as organization_id on the run request"
-    },
-    "features/masterwork/components/detail/ScoutInterviewPanel.tsx": {
-      "class": "not-a-list",
-      "owner": "masterwork",
-      "note": "useOrganizationRequired only gates canLoad and notice; history read by rulebookId"
-    },
-    "features/masterwork/encore/EncoreRunPage.tsx": {
-      "class": "not-a-list",
-      "owner": "masterwork",
-      "note": "useOrganizationRequired only gates canLoad and notice"
     },
     "features/notes/components/NoteSidebar.tsx": {
       "class": "write-target",
