@@ -42,6 +42,10 @@ product feature that does not already have one.
 - `app/(admin)/administration/_nav/AdminNavTreeMenu.tsx` — compact header tree over the same hierarchy.
 - `app/(admin)/administration/utilities/all-routes/page.tsx` — filesystem route directory grouped by its declared registry location.
 
+**Analytics mounts**
+
+- `features/admin/usage-drill/UsageExplorer.tsx` — `/administration/usage`: a mount of `components/official/drill-explorer` (`FEATURE.md` there) for the declared definition `ai_usage` in the platform lane; `useUsageDrill.ts` adds only what usage needs (names of people/organizations/agents via `platform.ai_usage_names`, the rollup's freshness and Recount).
+
 **Canonical declarations**
 
 - `features/admin/constants/admin-navigation.ts` — the one placement and route-ownership registry.
@@ -271,6 +275,7 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-09-30` — `/administration/usage` became a thin mount of the shared `DrillExplorer` (lane DRILL-EXPLORER); `UsageSavedViews.tsx` removed (the explorer's `DrillSavedViews` keeps surface `drill/ai_usage`).
 - `2026-09-17` — Removed a double `decodeURIComponent` on `rowId` in `app/api/admin/users/acquisition/[rowId]/route.ts` — the App Router already decodes the value, so a row id carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 - `2026-09-15` — Codex: removed the permanent blue treatment from every Admin Launchpad launcher, made desktop/mobile Administration menus derive selected state only from exact registered route ownership, and browser-verified one active admin destination at a time.
 
