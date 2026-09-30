@@ -82,7 +82,7 @@ export async function fetchWorkflowBrowsePage(
       (row) => row.id,
       (row, isFavorite) => ({ ...row, is_favorite: isFavorite }),
     ),
-    attachFilledMandates("workflow", listed, (row) => row.id),
+    attachFilledMandates("workflow", listed, (row) => row.id, query.orgId),
   ]);
   const rows = starred.map((row, i) => ({
     ...row,

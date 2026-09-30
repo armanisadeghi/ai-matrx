@@ -96,7 +96,7 @@ export async function fetchAgentBrowsePage(
       (row) => row.id,
       (row, isFavorite) => ({ ...row, is_favorite: isFavorite }),
     ),
-    attachFilledMandates("agent", listed, (row) => row.id),
+    attachFilledMandates("agent", listed, (row) => row.id, query.orgId),
   ]);
   const rows = starred.map((row, i) => ({
     ...row,
