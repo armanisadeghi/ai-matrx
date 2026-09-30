@@ -527,7 +527,7 @@ export interface paths {
         };
         /**
          * List your tables
-         * @description Every table you can open in the request's organization.
+         * @description Every table you can open, in every organization you belong to.
          */
         get: operations["list_tables_v1_tables_get"];
         put?: never;
@@ -5240,7 +5240,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/user-secrets/": {
+    "/user-secrets": {
         parameters: {
             query?: never;
             header?: never;
@@ -5248,7 +5248,23 @@ export interface paths {
             cookie?: never;
         };
         /** List Secrets */
-        get: operations["list_secrets_user_secrets__get"];
+        get: operations["list_secrets_user_secrets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/user-secrets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         /** Create Secret */
         post: operations["create_secret_user_secrets__post"];
@@ -9988,7 +10004,7 @@ export interface paths {
         };
         /**
          * List Orders
-         * @description This organization's print orders, newest first.
+         * @description Print orders across the person's organizations, newest first.
          */
         get: operations["list_orders_lulu_orders_get"];
         put?: never;
@@ -22467,7 +22483,8 @@ export interface paths {
         };
         /**
          * List Collections
-         * @description LIST gate — DEF-12/WS-5: bounded by the effective org for query scope,
+         * @description LIST gate — DEF-12/WS-5: every organization the person belongs to (or the
+         *     one named by the explicit on-page filter — never the selected organization),
          *     then narrowed to ``iam.is_discoverable`` per row (identical to the
          *     standalone list route) so a contextually-reachable run never leaks into
          *     this enumeration.
@@ -35549,11 +35566,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Inventory Get Endpoint */
-        get: operations["inventory_get_endpoint_rag_search_lab_inventory_get"];
-        put?: never;
         /** Inventory Endpoint */
-        post: operations["inventory_endpoint_rag_search_lab_inventory_post"];
+        get: operations["inventory_endpoint_rag_search_lab_inventory_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -36547,13 +36563,16 @@ export interface paths {
         };
         /**
          * List Runs
-         * @description Recent runs scoped to the caller.
+         * @description Recent runs the caller can see.
          *
-         *     scope='mine' (default) returns this user's runs; scope='organization'
-         *     broadens to all runs in the caller's org. RLS keeps cross-tenant
-         *     access locked even if this endpoint is reached without auth.
-         *     ``include_children=true`` also lists durable subgraph child runs
-         *     (hidden by default so fan-outs don't flood the list).
+         *     scope='mine' (default) returns this user's runs in EVERY organization,
+         *     unioned with runs shared with her. scope='organization' lists one
+         *     organization's runs — the one the caller names in ``organization_id``,
+         *     and only one she belongs to. ``include_children=true`` also lists durable
+         *     subgraph child runs (hidden by default so fan-outs don't flood the list).
+         *
+         *     🚨 A LIST IS DECIDED BY ACCESS, NEVER BY THE SELECTED ORGANIZATION
+         *     (common-docs/policies/access-belongs-to-the-person.md).
          */
         get: operations["list_runs_runs_get"];
         put?: never;
@@ -72343,9 +72362,9 @@ export interface components {
         DriveBrowseRequest: {
             /**
              * Organization Id
-             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             * @description Optional hint. A Drive read answers from the connection's owner without one.
              */
-            organization_id: string;
+            organization_id?: string | null;
             /** Connection Id */
             connection_id: string;
             /** Search */
@@ -72373,9 +72392,9 @@ export interface components {
         DriveFileMetadataRequest: {
             /**
              * Organization Id
-             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             * @description Optional hint. A Drive read answers from the connection's owner without one.
              */
-            organization_id: string;
+            organization_id?: string | null;
             /** Connection Id */
             connection_id: string;
             /** File Id */
@@ -103181,6 +103200,8 @@ export interface components {
         PanelView: {
             /** Id */
             id: string;
+            /** Organization Id */
+            organization_id?: string | null;
             /** Site Id */
             site_id: string;
             /** Name */
@@ -116668,6 +116689,12 @@ export interface components {
             values: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /**
+             * Add Choices
+             * @description A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.
+             * @default false
+             */
+            add_choices?: boolean;
         };
         /**
          * RsvpInAppRequest
@@ -120215,7 +120242,7 @@ export interface components {
         /** SeoRunListResponse */
         SeoRunListResponse: {
             /** Organization Id */
-            organization_id: string;
+            organization_id?: string | null;
             /** Runs */
             runs: components["schemas"]["SeoRunStatusResponse"][];
         };
@@ -128515,10 +128542,18 @@ export interface components {
         };
         /** TableList */
         TableList: {
-            /** Organization Id */
-            organization_id: string;
+            /**
+             * Organization Id
+             * @description Set only when the list was narrowed to one organization; otherwise every organization you belong to is listed and each table names its own.
+             */
+            organization_id?: string | null;
             /** Tables */
             tables: components["schemas"]["TableSummary"][];
+            /**
+             * Not Listed
+             * @description Organizations whose tables could not be listed right now, each with why. Empty when everything was listed.
+             */
+            not_listed?: string[];
         };
         /** TableRowBookmark */
         TableRowBookmark: {
@@ -128579,6 +128614,16 @@ export interface components {
              * @description True for a table the app keeps for one of its own features (a context scope's table, for example); false for the organization's own data.
              */
             kept_by_the_app?: boolean | null;
+            /**
+             * Organization Id
+             * @description The organization that keeps this table.
+             */
+            organization_id?: string | null;
+            /**
+             * Organization
+             * @description That organization's name.
+             */
+            organization?: string | null;
         };
         /** TagCreate */
         TagCreate: {
@@ -131856,6 +131901,8 @@ export interface components {
         TrackerView: {
             /** Id */
             id: string;
+            /** Organization Id */
+            organization_id?: string | null;
             /** Site Id */
             site_id?: string | null;
             /** Brand Id */
@@ -134019,6 +134066,12 @@ export interface components {
             rows: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
+            /**
+             * Add Choices
+             * @description As on a single write: add words that are not yet a choice, instead of refusing them.
+             * @default false
+             */
+            add_choices?: boolean;
         };
         /** UpsertResult */
         UpsertResult: {
@@ -134028,8 +134081,19 @@ export interface components {
             created: number;
             /** Updated */
             updated: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged?: number;
             /** Rows */
             rows: components["schemas"]["UpsertedRow"][];
+            /**
+             * Replayed
+             * @description True when this is the stored answer to an earlier call with the same Idempotency-Key; nothing was written this time.
+             * @default false
+             */
+            replayed?: boolean;
         };
         /** UpsertedRow */
         UpsertedRow: {
@@ -134043,6 +134107,12 @@ export interface components {
             id: string;
             /** Created */
             created: boolean;
+            /**
+             * Changed
+             * @description False when every value already matched: nothing was written and the version did not move.
+             * @default true
+             */
+            changed?: boolean;
             /** Version */
             version?: number | null;
         };
@@ -140405,6 +140475,12 @@ export interface components {
             waiting?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Replayed
+             * @description True when this is the stored answer to an earlier call with the same Idempotency-Key; nothing was written this time.
+             * @default false
+             */
+            replayed?: boolean;
         };
         /**
          * WrittenRefs
@@ -143651,6 +143727,12 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             /**
+             * Add Choices
+             * @description A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.
+             * @default false
+             */
+            add_choices?: boolean;
+            /**
              * Expected Version
              * @description The version you read. When someone changed the row since, the update is refused (409) with both versions.
              */
@@ -145077,7 +145159,7 @@ export interface operations {
     list_rows_v1_tables__table__rows_get: {
         parameters: {
             query?: {
-                /** @description JSON object of column name -> value, e.g. {"Status":"AVAILABLE"}. */
+                /** @description JSON object of column name -> filter. A value = equals; a list = any of; null = empty; an object of gt, gte, lt, lte, ne, from, to, in, empty. Several columns = all must hold. e.g. {"Status":["AVAILABLE","RESTING"],"Total":{"gte":50}} — URL-encode it (curl -G --data-urlencode). */
                 where?: string | null;
                 /** @description Words to find in any column. */
                 search?: string | null;
@@ -149754,7 +149836,10 @@ export interface operations {
     };
     get_recording_journals_audio_recording_journal_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional on-page filter; omitted = the person's own recordings in every organization. */
+                organization_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -149768,6 +149853,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JournalRecording"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -153742,7 +153836,7 @@ export interface operations {
             };
         };
     };
-    list_secrets_user_secrets__get: {
+    list_secrets_user_secrets_get: {
         parameters: {
             query?: {
                 include_inactive?: boolean;
@@ -162104,7 +162198,10 @@ export interface operations {
     };
     list_orders_lulu_orders_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional on-page filter; omitted = orders in every organization the person belongs to. */
+                organization_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -162118,6 +162215,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PrintOrderPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -178798,6 +178904,7 @@ export interface operations {
     list_collections_seo_collections_get: {
         parameters: {
             query?: {
+                /** @description Optional on-page filter; omitted = runs in every organization the person belongs to. */
                 organization_id?: string | null;
                 limit?: number;
             };
@@ -189496,6 +189603,8 @@ export interface operations {
         parameters: {
             query?: {
                 site_id?: string | null;
+                /** @description Optional on-page filter; omitted = monitors in every organization the person belongs to. */
+                organization_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -189900,6 +190009,8 @@ export interface operations {
         parameters: {
             query?: {
                 site_id?: string | null;
+                /** @description Optional on-page filter; omitted = panels in every organization the person belongs to. */
+                organization_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -200585,38 +200696,7 @@ export interface operations {
             };
         };
     };
-    inventory_get_endpoint_rag_search_lab_inventory_get: {
-        parameters: {
-            query?: {
-                admin_bypass_acl?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InventoryResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    inventory_endpoint_rag_search_lab_inventory_post: {
+    inventory_endpoint_rag_search_lab_inventory_get: {
         parameters: {
             query?: {
                 admin_bypass_acl?: boolean;
@@ -201024,6 +201104,8 @@ export interface operations {
                 offset?: number;
                 archived?: string;
                 project_id?: string | null;
+                /** @description Optional on-page filter: only workflows in this organization. Omitted = every workflow the caller can access, in all of her organizations. The selected (header) organization never narrows. */
+                organization_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -202206,6 +202288,8 @@ export interface operations {
                 offset?: number;
                 scope?: "mine" | "organization";
                 include_children?: boolean;
+                /** @description scope='organization': the organization whose runs to list. scope='mine': an optional on-page filter — only this organization's runs. The selected (header) organization never decides a list. */
+                organization_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -206266,6 +206350,8 @@ export interface operations {
     list_handoffs_capture_handoffs_get: {
         parameters: {
             query?: {
+                /** @description Optional on-page filter; omitted = handoffs in every organization the person belongs to. */
+                organization_id?: string | null;
                 status?: string | null;
                 rung?: string | null;
                 batch_id?: string | null;

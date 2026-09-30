@@ -5,6 +5,12 @@
     "description": "REST API endpoints for AI Dream application",
     "version": "2.0.0"
   },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "This server; every path below is served under /api."
+    }
+  ],
   "paths": {
     "/auth/aimatrx": {
       "get": {
@@ -756,7 +762,7 @@
           "Table API v1"
         ],
         "summary": "List your tables",
-        "description": "Every table you can open in the request's organization.",
+        "description": "Every table you can open, in every organization you belong to.",
         "operationId": "list_tables_v1_tables_get",
         "responses": {
           "200": {
@@ -1015,10 +1021,10 @@
                   "type": "null"
                 }
               ],
-              "description": "JSON object of column name -> value, e.g. {\"Status\":\"AVAILABLE\"}.",
+              "description": "JSON object of column name -> filter. A value = equals; a list = any of; null = empty; an object of gt, gte, lt, lte, ne, from, to, in, empty. Several columns = all must hold. e.g. {\"Status\":[\"AVAILABLE\",\"RESTING\"],\"Total\":{\"gte\":50}} — URL-encode it (curl -G --data-urlencode).",
               "title": "Where"
             },
-            "description": "JSON object of column name -> value, e.g. {\"Status\":\"AVAILABLE\"}."
+            "description": "JSON object of column name -> filter. A value = equals; a list = any of; null = empty; an object of gt, gte, lt, lte, ne, from, to, in, empty. Several columns = all must hold. e.g. {\"Status\":[\"AVAILABLE\",\"RESTING\"],\"Total\":{\"gte\":50}} — URL-encode it (curl -G --data-urlencode)."
           },
           {
             "name": "search",
@@ -7622,17 +7628,47 @@
         ],
         "summary": "Get Recording Journals",
         "operationId": "get_recording_journals_audio_recording_journal_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional on-page filter; omitted = the person's own recordings in every organization.",
+              "title": "Organization Id"
+            },
+            "description": "Optional on-page filter; omitted = the person's own recordings in every organization."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/JournalRecording"
                   },
-                  "type": "array",
                   "title": "Response Get Recording Journals Audio Recording Journal Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -13399,13 +13435,13 @@
         }
       }
     },
-    "/user-secrets/": {
+    "/user-secrets": {
       "get": {
         "tags": [
           "User Secrets"
         ],
         "summary": "List Secrets",
-        "operationId": "list_secrets_user_secrets__get",
+        "operationId": "list_secrets_user_secrets_get",
         "parameters": [
           {
             "name": "include_inactive",
@@ -13440,7 +13476,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/user-secrets/": {
       "post": {
         "tags": [
           "User Secrets"
@@ -13448,14 +13486,14 @@
         "summary": "Create Secret",
         "operationId": "create_secret_user_secrets__post",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UserSecretCreateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -26064,30 +26102,6 @@
       }
     },
     "/lulu/orders": {
-      "get": {
-        "tags": [
-          "Lulu Print"
-        ],
-        "summary": "List Orders",
-        "description": "This organization's print orders, newest first.",
-        "operationId": "list_orders_lulu_orders_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PrintOrderPublic"
-                  },
-                  "type": "array",
-                  "title": "Response List Orders Lulu Orders Get"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "Lulu Print"
@@ -26096,14 +26110,14 @@
         "description": "Capture the live quote + plan markup, open Stripe Checkout, return its URL.",
         "operationId": "create_order_lulu_orders_post",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PrintOrderCreateRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -26112,6 +26126,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PrintOrderCheckout"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "List Orders",
+        "description": "Print orders across the person's organizations, newest first.",
+        "operationId": "list_orders_lulu_orders_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional on-page filter; omitted = orders in every organization the person belongs to.",
+              "title": "Organization Id"
+            },
+            "description": "Optional on-page filter; omitted = orders in every organization the person belongs to."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrintOrderPublic"
+                  },
+                  "title": "Response List Orders Lulu Orders Get"
                 }
               }
             }
@@ -45900,7 +45968,7 @@
           "SEO Collections"
         ],
         "summary": "List Collections",
-        "description": "LIST gate — DEF-12/WS-5: bounded by the effective org for query scope,\nthen narrowed to ``iam.is_discoverable`` per row (identical to the\nstandalone list route) so a contextually-reachable run never leaks into\nthis enumeration.",
+        "description": "LIST gate — DEF-12/WS-5: every organization the person belongs to (or the\none named by the explicit on-page filter — never the selected organization),\nthen narrowed to ``iam.is_discoverable`` per row (identical to the\nstandalone list route) so a contextually-reachable run never leaks into\nthis enumeration.",
         "operationId": "list_collections_seo_collections_get",
         "parameters": [
           {
@@ -45916,8 +45984,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Optional on-page filter; omitted = runs in every organization the person belongs to.",
               "title": "Organization Id"
-            }
+            },
+            "description": "Optional on-page filter; omitted = runs in every organization the person belongs to."
           },
           {
             "name": "limit",
@@ -61779,6 +61849,24 @@
               ],
               "title": "Site Id"
             }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional on-page filter; omitted = monitors in every organization the person belongs to.",
+              "title": "Organization Id"
+            },
+            "description": "Optional on-page filter; omitted = monitors in every organization the person belongs to."
           }
         ],
         "responses": {
@@ -62385,6 +62473,24 @@
               ],
               "title": "Site Id"
             }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional on-page filter; omitted = panels in every organization the person belongs to.",
+              "title": "Organization Id"
+            },
+            "description": "Optional on-page filter; omitted = panels in every organization the person belongs to."
           }
         ],
         "responses": {
@@ -78689,53 +78795,12 @@
       }
     },
     "/rag/search-lab/inventory": {
-      "post": {
-        "tags": [
-          "RAG Search Lab"
-        ],
-        "summary": "Inventory Endpoint",
-        "operationId": "inventory_endpoint_rag_search_lab_inventory_post",
-        "parameters": [
-          {
-            "name": "admin_bypass_acl",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Admin Bypass Acl"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InventoryResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
       "get": {
         "tags": [
           "RAG Search Lab"
         ],
-        "summary": "Inventory Get Endpoint",
-        "operationId": "inventory_get_endpoint_rag_search_lab_inventory_get",
+        "summary": "Inventory Endpoint",
+        "operationId": "inventory_endpoint_rag_search_lab_inventory_get",
         "parameters": [
           {
             "name": "admin_bypass_acl",
@@ -79364,6 +79429,24 @@
               ],
               "title": "Project Id"
             }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional on-page filter: only workflows in this organization. Omitted = every workflow the caller can access, in all of her organizations. The selected (header) organization never narrows.",
+              "title": "Organization Id"
+            },
+            "description": "Optional on-page filter: only workflows in this organization. Omitted = every workflow the caller can access, in all of her organizations. The selected (header) organization never narrows."
           }
         ],
         "responses": {
@@ -81274,7 +81357,7 @@
           "Workflow"
         ],
         "summary": "List Runs",
-        "description": "Recent runs scoped to the caller.\n\nscope='mine' (default) returns this user's runs; scope='organization'\nbroadens to all runs in the caller's org. RLS keeps cross-tenant\naccess locked even if this endpoint is reached without auth.\n``include_children=true`` also lists durable subgraph child runs\n(hidden by default so fan-outs don't flood the list).",
+        "description": "Recent runs the caller can see.\n\nscope='mine' (default) returns this user's runs in EVERY organization,\nunioned with runs shared with her. scope='organization' lists one\norganization's runs — the one the caller names in ``organization_id``,\nand only one she belongs to. ``include_children=true`` also lists durable\nsubgraph child runs (hidden by default so fan-outs don't flood the list).\n\n🚨 A LIST IS DECIDED BY ACCESS, NEVER BY THE SELECTED ORGANIZATION\n(common-docs/policies/access-belongs-to-the-person.md).",
         "operationId": "list_runs_runs_get",
         "parameters": [
           {
@@ -81338,6 +81421,24 @@
               "default": false,
               "title": "Include Children"
             }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "scope='organization': the organization whose runs to list. scope='mine': an optional on-page filter — only this organization's runs. The selected (header) organization never decides a list.",
+              "title": "Organization Id"
+            },
+            "description": "scope='organization': the organization whose runs to list. scope='mine': an optional on-page filter — only this organization's runs. The selected (header) organization never decides a list."
           }
         ],
         "responses": {
@@ -88255,6 +88356,24 @@
         "description": "What needs a browser right now, plus the count of every status.",
         "operationId": "list_handoffs_capture_handoffs_get",
         "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional on-page filter; omitted = handoffs in every organization the person belongs to.",
+              "title": "Organization Id"
+            },
+            "description": "Optional on-page filter; omitted = handoffs in every organization the person belongs to."
+          },
           {
             "name": "status",
             "in": "query",
@@ -169005,10 +169124,16 @@
       "DriveBrowseRequest": {
         "properties": {
           "organization_id": {
-            "type": "string",
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id",
-            "description": "The organization this Record belongs to. Required: nothing on the server chooses one for you."
+            "description": "Optional hint. A Drive read answers from the connection's owner without one."
           },
           "connection_id": {
             "type": "string",
@@ -169054,7 +169179,6 @@
         },
         "type": "object",
         "required": [
-          "organization_id",
           "connection_id"
         ],
         "title": "DriveBrowseRequest",
@@ -169100,10 +169224,16 @@
       "DriveFileMetadataRequest": {
         "properties": {
           "organization_id": {
-            "type": "string",
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id",
-            "description": "The organization this Record belongs to. Required: nothing on the server chooses one for you."
+            "description": "Optional hint. A Drive read answers from the connection's owner without one."
           },
           "connection_id": {
             "type": "string",
@@ -169120,7 +169250,6 @@
         },
         "type": "object",
         "required": [
-          "organization_id",
           "connection_id",
           "file_id"
         ],
@@ -238207,6 +238336,17 @@
             "type": "string",
             "title": "Id"
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
           "site_id": {
             "type": "string",
             "title": "Site Id"
@@ -268947,6 +269087,12 @@
             "type": "object",
             "title": "Values",
             "description": "Column name -> the value to write. Only the columns named are changed."
+          },
+          "add_choices": {
+            "type": "boolean",
+            "title": "Add Choices",
+            "description": "A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -277089,7 +277235,14 @@
       "SeoRunListResponse": {
         "properties": {
           "organization_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id"
           },
           "runs": {
@@ -277102,7 +277255,6 @@
         },
         "type": "object",
         "required": [
-          "organization_id",
           "runs"
         ],
         "title": "SeoRunListResponse"
@@ -295902,8 +296054,16 @@
       "TableList": {
         "properties": {
           "organization_id": {
-            "type": "string",
-            "title": "Organization Id"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Set only when the list was narrowed to one organization; otherwise every organization you belong to is listed and each table names its own."
           },
           "tables": {
             "items": {
@@ -295911,12 +296071,19 @@
             },
             "type": "array",
             "title": "Tables"
+          },
+          "not_listed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Listed",
+            "description": "Organizations whose tables could not be listed right now, each with why. Empty when everything was listed."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "organization_id",
           "tables"
         ],
         "title": "TableList"
@@ -296049,6 +296216,30 @@
             ],
             "title": "Kept By The App",
             "description": "True for a table the app keeps for one of its own features (a context scope's table, for example); false for the organization's own data."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The organization that keeps this table."
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization",
+            "description": "That organization's name."
           }
         },
         "additionalProperties": false,
@@ -303362,6 +303553,17 @@
             "type": "string",
             "title": "Id"
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
           "site_id": {
             "anyOf": [
               {
@@ -308212,6 +308414,12 @@
             "minItems": 1,
             "title": "Rows",
             "description": "The rows, each carrying the key column."
+          },
+          "add_choices": {
+            "type": "boolean",
+            "title": "Add Choices",
+            "description": "As on a single write: add words that are not yet a choice, instead of refusing them.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -308236,12 +308444,23 @@
             "type": "integer",
             "title": "Updated"
           },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged",
+            "default": 0
+          },
           "rows": {
             "items": {
               "$ref": "#/components/schemas/UpsertedRow"
             },
             "type": "array",
             "title": "Rows"
+          },
+          "replayed": {
+            "type": "boolean",
+            "title": "Replayed",
+            "description": "True when this is the stored answer to an earlier call with the same Idempotency-Key; nothing was written this time.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -308271,6 +308490,12 @@
           "created": {
             "type": "boolean",
             "title": "Created"
+          },
+          "changed": {
+            "type": "boolean",
+            "title": "Changed",
+            "description": "False when every value already matched: nothing was written and the version did not move.",
+            "default": true
           },
           "version": {
             "anyOf": [
@@ -323127,6 +323352,12 @@
             ],
             "title": "Waiting",
             "description": "When done is false: what is waiting, why, and where a person approves it."
+          },
+          "replayed": {
+            "type": "boolean",
+            "title": "Replayed",
+            "description": "True when this is the stored answer to an earlier call with the same Idempotency-Key; nothing was written this time.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -330095,6 +330326,12 @@
             "type": "object",
             "title": "Values",
             "description": "Column name -> the value to write. Only the columns named are changed."
+          },
+          "add_choices": {
+            "type": "boolean",
+            "title": "Add Choices",
+            "description": "A word that is not yet one of a choice column's choices is refused (409, naming the words) unless this is true; then the words are added to the column in the same change. Your organization's choice setting can forbid adding.",
+            "default": false
           },
           "expected_version": {
             "anyOf": [
