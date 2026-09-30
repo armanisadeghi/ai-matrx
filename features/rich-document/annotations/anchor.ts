@@ -17,6 +17,7 @@ import {
   blockAt,
   tokenizeSource,
 } from "@ai-matrx/content-ir/source";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export const TEXT_ANCHOR_KIND = "text_anchor" as const;
 /** The database refuses more (platform.text_anchor_problem). */
@@ -100,7 +101,7 @@ export function buildTextAnchor(
   const endCp = index.toCodePoint(e16);
   if (endCp - start > ANCHOR_EXACT_MAX) {
     throw new AnchorBuildError(
-      `That selection is longer than ${ANCHOR_EXACT_MAX.toLocaleString()} characters. Select a shorter passage.`,
+      `That selection is longer than ${formatCount(ANCHOR_EXACT_MAX)} characters. Select a shorter passage.`,
     );
   }
   const prefix = codePointSlice(body, Math.max(0, start - ANCHOR_CONTEXT_CODE_POINTS), start);

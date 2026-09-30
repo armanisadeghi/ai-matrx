@@ -54,6 +54,7 @@ import {
   auditRowsToAgentInput,
   type AuditTableCopyForAi,
 } from "../utils/aiExport";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export type { AuditTableCopyForAi };
 
@@ -585,7 +586,7 @@ export function AdminAuditTable<T>({
             loading ? "loading" : error ? "failed" : undefined
           }
           labelFormat={(_start, _end, total) =>
-            `${total.toLocaleString()} shown / ${rows.length.toLocaleString()} loaded`
+            `${formatCount(total)} shown / ${formatCount(rows.length)} loaded`
           }
         />
       </div>

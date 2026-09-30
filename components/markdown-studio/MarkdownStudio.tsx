@@ -77,6 +77,7 @@ import HeaderToggle from "@/features/shell/components/header/variants/variants/H
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import { ArchiveRecordDialog } from "@/features/trash/components/ArchiveRecordButton";
 import { annotationRecordOf } from "@/features/rich-document/annotations/record-of-source";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /**
  * The studio's modes an agent may switch to — the ONE vocabulary. `StudioMode`
@@ -487,7 +488,7 @@ export function MarkdownStudio() {
     }
     try {
       await navigator.clipboard.writeText(content);
-      toast.success(`Copied ${content.length.toLocaleString()} characters of source`);
+      toast.success(`Copied ${formatCount(content.length)} characters of source`);
     } catch {
       toast.error("The clipboard refused the copy — select the text and copy it instead.");
     }
@@ -503,7 +504,7 @@ export function MarkdownStudio() {
     setLoadedRef(null);
     setLoadedSampleName(null);
     setLoadedSource(null);
-    toast.success(`Restored the last draft (${saved.length.toLocaleString()} characters)`);
+    toast.success(`Restored the last draft (${formatCount(saved.length)} characters)`);
   };
 
   const handleUpdatePreview = () => setManualContent(content);

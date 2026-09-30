@@ -21,6 +21,7 @@ import type {
   AlchemyGroomerConfig,
   AlchemyGroomerSection,
 } from "@ai-matrx/design-system/content-transfer";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export type PageCaptureKind = "table-page" | "record" | "dialog" | "admin-page";
 
@@ -243,7 +244,7 @@ function compactValue(value: unknown): unknown {
   const text = toJson(value);
   if (text.length <= COMPACT_CHARS) return value;
   return {
-    omitted: `${(text.length - COMPACT_CHARS).toLocaleString("en-US")} characters left out of ${text.length.toLocaleString("en-US")} (${shapeOf(value)}); choose Full for all of it.`,
+    omitted: `${formatCount(text.length - COMPACT_CHARS)} characters left out of ${formatCount(text.length)} (${shapeOf(value)}); choose Full for all of it.`,
     preview: text.slice(0, COMPACT_CHARS),
   };
 }

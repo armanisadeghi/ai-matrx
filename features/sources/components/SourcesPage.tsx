@@ -42,7 +42,7 @@ import {
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
 import { Input, Textarea } from "@ai-matrx/design-system";
-import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { formatRelativeTime, formatCount } from "@ai-matrx/kit/format";
 import { useEntityTitles } from "@ai-matrx/associations/react";
 import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Badge } from "@/components/ui/badge";
@@ -450,7 +450,7 @@ export function SourcesPage() {
       transcriptSegmentCount(r),
       transcriptEnds.get(r.id) ?? null,
     );
-  const countWords = (n: number | null) => (n === null ? "…" : n.toLocaleString());
+  const countWords = (n: number | null) => formatCount(n, { unknown: "…" });
   const refresh = () => setRefreshKey((n) => n + 1);
   const byId = new Map(rows.map((r) => [r.id, r]));
   const selectedRows = selectedIds
@@ -1190,7 +1190,7 @@ export function SourcesPage() {
         {rows.length > 0 && total !== null && hasMore ? (
           <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
             <span title="Sources are listed newest first, a page at a time. The count above is the Sources loaded so far; recaptures of the same page are grouped into one Source.">
-              Showing the newest {visibleRows.length.toLocaleString()} Sources — more available
+              Showing the newest {formatCount(visibleRows.length)} Sources — more available
             </span>
             <Button
               size="sm"

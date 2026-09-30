@@ -30,6 +30,7 @@ import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, ty
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
 import { plainWords } from "./dimensionWords";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const PAGE = 100;
 type Row = Record<string, unknown> & { __row: string };
@@ -215,7 +216,7 @@ export function DrillRecords({
       {total !== null && rows.length < total ? (
         <div className="px-4 py-2">
           <Button type="button" variant="ghost" size="xs" disabled={loading} onClick={() => setOffset(rows.length)}>
-            {`Show ${Math.min(PAGE, total - rows.length).toLocaleString()} more`}
+            {`Show ${formatCount(Math.min(PAGE, total - rows.length))} more`}
           </Button>
         </div>
       ) : null}

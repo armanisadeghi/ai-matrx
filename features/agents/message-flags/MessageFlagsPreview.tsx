@@ -11,6 +11,7 @@ import { DatabaseZap } from "lucide-react";
 import { Cost } from "@/components/cost/Cost";
 import type { FlagPreview, MessageFlagProfile } from "./flags";
 import { ANTHROPIC_MIN_CACHEABLE_TOKENS } from "./flags";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export function MessageFlagsPreview({
   preview,
@@ -27,11 +28,11 @@ export function MessageFlagsPreview({
       data-testid="message-flags-preview"
     >
       <span className="tabular-nums">
-        Messages ≈{preview.totalTokens.toLocaleString()} tokens
+        Messages ≈{formatCount(preview.totalTokens)} tokens
       </span>
       {preview.exampleTokens > 0 && (
         <span className="tabular-nums" data-testid="message-flags-preview-examples">
-          Examples ≈{preview.exampleTokens.toLocaleString()}
+          Examples ≈{formatCount(preview.exampleTokens)}
           {preview.examplePairs > 0
             ? ` (${preview.examplePairs} ${preview.examplePairs === 1 ? "pair" : "pairs"})`
             : ""}
@@ -40,7 +41,7 @@ export function MessageFlagsPreview({
       {hasCache && (
         <span className="inline-flex items-center gap-1 tabular-nums">
           <DatabaseZap className="h-3 w-3" />
-          Cached ≈{preview.cachedPrefixTokens.toLocaleString()}
+          Cached ≈{formatCount(preview.cachedPrefixTokens)}
         </span>
       )}
       {hasCache &&
@@ -65,7 +66,7 @@ export function MessageFlagsPreview({
         )}
       {preview.belowCacheMinimum && (
         <span className="text-amber-600 dark:text-amber-400">
-          Under {ANTHROPIC_MIN_CACHEABLE_TOKENS.toLocaleString()} tokens — Claude does not
+          Under {formatCount(ANTHROPIC_MIN_CACHEABLE_TOKENS)} tokens — Claude does not
           cache a prefix this short.
         </span>
       )}

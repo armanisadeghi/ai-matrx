@@ -66,6 +66,8 @@ import {
   rungTitle,
   rungWords,
 } from "./format";
+import { formatCount } from "@ai-matrx/kit/format";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** The list's place in the URL — Back returns to the same page and filters. */
 export const RUN_URL_KEYS = {
@@ -80,7 +82,7 @@ const COMPACT_SIZE = 5;
 const ALL = "__all__";
 
 export interface MandateRunHistoryProps {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   view: RunHistoryView;
   /** org view: the organization (required). mine: optional narrowing. */
   organizationId?: string | null;
@@ -204,7 +206,7 @@ export function MandateRunHistory({
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h3 className="shrink-0 text-sm font-semibold text-foreground">Runs</h3>
           <span className="shrink-0 text-xs text-muted-foreground" aria-live="polite">
-            {!error && page ? `${total.toLocaleString()} ${total === 1 ? "run" : "runs"}` : " "}
+            {!error && page ? `${formatCount(total)} ${total === 1 ? "run" : "runs"}` : " "}
           </span>
           <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
             {view === "platform" ? (
@@ -321,7 +323,7 @@ export function MandateRunHistory({
         !error && page && total > 0 && seeAllHref ? (
           <div className="flex min-w-0 items-center justify-between gap-2 text-xs">
             <span className="text-muted-foreground">
-              {total > page.rows.length ? `Last ${page.rows.length} of ${total.toLocaleString()}` : `${total} ${total === 1 ? "run" : "runs"}`}
+              {total > page.rows.length ? `Last ${page.rows.length} of ${formatCount(total)}` : `${total} ${total === 1 ? "run" : "runs"}`}
             </span>
             <Link href={seeAllHref} className="shrink-0 font-medium text-primary hover:underline">
               All runs
@@ -331,7 +333,7 @@ export function MandateRunHistory({
       ) : !error && page && total > limit ? (
         <div className="flex min-w-0 items-center justify-end gap-2 text-xs text-muted-foreground">
           <span>
-            {offset + 1}–{Math.min(offset + limit, total)} of {total.toLocaleString()}
+            {offset + 1}–{Math.min(offset + limit, total)} of {formatCount(total)}
           </span>
           <Button
             variant="outline"

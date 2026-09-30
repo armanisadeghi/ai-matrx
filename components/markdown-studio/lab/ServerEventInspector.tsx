@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatCount } from "@ai-matrx/kit/format";
 
 // ─────────────────────────────────────────────────────
 // Types
@@ -383,7 +384,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
               style={{ fontSize: 12 }}
             />
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {content.length.toLocaleString()} chars
+              {formatCount(content.length)} chars
             </p>
           </div>
           )}

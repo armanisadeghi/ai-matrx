@@ -49,6 +49,7 @@ import {
   type SourceDelivery,
   type SourcePlanEntry,
 } from "@ai-matrx/agents/sources/runtime";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /** Phones: every segment is a 44px target (the package control is 28px at "sm"). */
 const SEGMENTED_TOUCH = "max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!";
@@ -145,7 +146,7 @@ export function SourceReviewRow({
           <span className="block truncate text-sm font-medium text-foreground">{describe?.name || entry.label}</span>
           <span
             className="block truncate text-xs text-muted-foreground"
-            title={`${plan.chars.toLocaleString()} characters go in`}
+            title={`${formatCount(plan.chars)} characters go in`}
             data-sent-chars={plan.sentChars}
           >
             {describe?.kind || kind.label}

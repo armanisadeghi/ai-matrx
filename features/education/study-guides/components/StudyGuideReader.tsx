@@ -81,6 +81,7 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { formatCount } from "@ai-matrx/kit/format";
 
 type InspectorTab = "notes" | "terms" | "resources";
 
@@ -552,7 +553,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
         if (saved) setGuide(saved);
         retryDetails();
         return {
-          summary: `Saved the guide "${current.label || "Untitled guide"}" (${next.length.toLocaleString()} characters, now version ${saved?.version ?? "?"}).`,
+          summary: `Saved the guide "${current.label || "Untitled guide"}" (${formatCount(next.length)} characters, now version ${saved?.version ?? "?"}).`,
           data: { id: current.id, version: saved?.version ?? null, characters: next.length },
         };
       },

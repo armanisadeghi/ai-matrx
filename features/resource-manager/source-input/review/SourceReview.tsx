@@ -32,6 +32,7 @@ import { sourcesClient } from "../sourceSetApi";
 import { reviewDefaultContextTokens } from "./knobs";
 import { SourceReviewRow } from "./SourceReviewRow";
 import type { SourceReviewOptions } from "./types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export interface SourceReviewProps {
   sourceSet: SourceSet;
@@ -310,7 +311,7 @@ function BudgetSummary({
 
       <p className="truncate text-xs text-muted-foreground">
         {/* THE one size (the same number the cards and the header show); the budget's exact wire length rides data-sent-chars. */}
-        <span title={`${plan.chars.toLocaleString()} characters`} data-sent-chars={plan.sentChars}>
+        <span title={`${formatCount(plan.chars)} characters`} data-sent-chars={plan.sentChars}>
           {formatChars(plan.chars)} characters
         </span>
         {` · ${pagesPhrase(plan.chars)}`}

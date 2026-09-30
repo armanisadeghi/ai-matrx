@@ -26,6 +26,7 @@ import React from "react";
 
 import { cn } from "@/lib/utils";
 import { matcherKindWords } from "@/features/marketing/seo/value-system/workbench/session/trial";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /** Every slug this family owns: seven collections and their seven items. */
 export const SEO_RULING_ITEM_KINDS = [
@@ -161,12 +162,9 @@ export const Phrase: React.FC<{ text: string | null; className?: string }> = ({
   </span>
 );
 
-/** Compact number: 1,240 → "1.2K". Tabular so a column of them aligns. */
-export function compactNumber(value: number): string {
-  return new Intl.NumberFormat(undefined, {
-    notation: value >= 10_000 ? "compact" : "standard",
-    maximumFractionDigits: 1,
-  }).format(value);
+/** Compact number: 1,240 → "1,240", 12,400 → "12k", unmeasured → "—". Tabular so a column of them aligns. */
+export function compactNumber(value: number | null | undefined): string {
+  return formatCount(value, { style: (value ?? 0) >= 10_000 ? "compact" : "plain" });
 }
 
 /** The frame an item uses when it stands alone (a collection draws its own). */

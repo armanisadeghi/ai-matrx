@@ -249,6 +249,7 @@ import {
   type TranscriptMenuAction,
 } from "@/features/knowledge/hub/transcripts/transcriptRows";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const GROUP_ID = "knowledge-hub";
 const GROUP_KEY = "knowledge-hub";
@@ -629,7 +630,7 @@ export function KnowledgeHubPage({
   // "24 of 180" while more pages wait; "3 matching" when facets or Stage narrow the loaded rows.
   const narrowed = hits.length !== baseHits.length;
   const resultNoun = transcriptsView ? "transcript" : "item";
-  const plural = (n: number) => `${n.toLocaleString("en-US")} ${resultNoun}${n === 1 ? "" : "s"}`;
+  const plural = (n: number) => `${formatCount(n)} ${resultNoun}${n === 1 ? "" : "s"}`;
   const resultCount =
     (searching && !serverTranscripts) ||
     triageView ||

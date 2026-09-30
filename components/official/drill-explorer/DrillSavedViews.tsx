@@ -33,6 +33,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 
 import { saveDrillView } from "./savedViews";
 import { explorerQuestionOf, type DrillBuiltInView } from "./types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const VIEWS_PAGE = 50;
 
@@ -211,7 +212,7 @@ export function DrillSavedViews({
                 ? "Reading your saved views…"
                 : views.length === 0
                   ? "No saved views yet"
-                  : `${homeOrganizationId ? "Platform saved views" : "Your saved views"}${totalViews !== null && totalViews > views.length ? ` (${views.length} of ${totalViews.toLocaleString()}, most recently used first)` : ""}`)}
+                  : `${homeOrganizationId ? "Platform saved views" : "Your saved views"}${totalViews !== null && totalViews > views.length ? ` (${views.length} of ${formatCount(totalViews)}, most recently used first)` : ""}`)}
           </DropdownMenuLabel>
           {(views ?? []).map((view) => (
             <DropdownMenuItem key={view.id} data-drill-explorer-view={view.id} onSelect={() => open(view)} className="flex items-center gap-2">
@@ -238,7 +239,7 @@ export function DrillSavedViews({
                 setShown((n) => n + VIEWS_PAGE);
               }}
             >
-              Show {Math.min(VIEWS_PAGE, totalViews - views.length).toLocaleString()} more
+              Show {formatCount(Math.min(VIEWS_PAGE, totalViews - views.length))} more
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>

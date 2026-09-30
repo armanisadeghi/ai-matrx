@@ -38,6 +38,7 @@ import {
   type SendToAgentDestinationOption,
 } from "./send-to-agent-plan";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export interface SendToAgentWindowProps {
   isOpen: boolean;
@@ -203,7 +204,7 @@ export default function SendToAgentWindow({
               {sourceTitle ?? "Response"}
             </span>
             <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">
-              {content.length.toLocaleString()} characters
+              {formatCount(content.length)} characters
             </span>
           </div>
 
@@ -243,7 +244,7 @@ export default function SendToAgentWindow({
                         option.disabledReason ??
                         (option.destination.kind === "important-context" &&
                         overInlineLimit
-                          ? `Over ${IMPORTANT_CONTEXT_INLINE_CHARS.toLocaleString()} characters: sent as a reference`
+                          ? `Over ${formatCount(IMPORTANT_CONTEXT_INLINE_CHARS)} characters: sent as a reference`
                           : undefined);
                       return (
                         <label

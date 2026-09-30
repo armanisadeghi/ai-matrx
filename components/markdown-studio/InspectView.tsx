@@ -17,6 +17,7 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { Cpu, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const ServerEventInspector = dynamic(() => import("./lab/ServerEventInspector"), { ssr: false });
 const MarkdownClassificationTester = dynamic(
@@ -53,7 +54,7 @@ export function InspectView({ content }: { content: string }) {
             ))}
           </div>
           <span className="ml-auto truncate text-[11px] text-muted-foreground">
-            {content.length.toLocaleString()} chars from the editor
+            {formatCount(content.length)} chars from the editor
           </span>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">

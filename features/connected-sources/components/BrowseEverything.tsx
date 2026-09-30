@@ -58,6 +58,7 @@ import {
   createConnectedSourcesListSurface,
   type ConnectedSourcesPageState,
 } from "../browse/surface";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const INTEGRATIONS_HREF = "/settings/integrations";
 /** Per-viewer convenience only: the account this browser last looked at. */
@@ -146,7 +147,7 @@ function reportLine(report: ConnectedBrowseReport): string {
   }
   return report.matched === report.scanned
     ? ""
-    : `${report.matched.toLocaleString()} of ${plural(report.scanned, "item", "items")} match`;
+    : `${formatCount(report.matched)} of ${plural(report.scanned, "item", "items")} match`;
 }
 
 export function BrowseEverything() {

@@ -4,6 +4,7 @@ import { ContentTransferMenu, tableDataFormat, tableSchemaFormat, type ContentTr
 import { directSource, normalizeTransferJson, type Json, type Source } from "@ai-matrx/kit/content-transfer";
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 import type { DataTableCopyField, DataTableCopyRow } from "@/features/data-tables/table-copy";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export interface TableCopyControlsProps {
   tableId: string;
@@ -115,7 +116,7 @@ export function TableCopyControls({ tableId, tableName, fields, hiddenColumns = 
     label={tableName}
     triggerVariant="outline"
     className={className}
-    table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Filtered view (all rows)", target: "Entire table", selected: "Selected rows" }, ...(totalRows === undefined ? {} : { size: `${totalRows.toLocaleString()} ${totalRows === 1 ? "row" : "rows"} · ${fields.length - hiddenColumns.length} of ${fields.length} columns` }) }}
+    table={{ availableScopes: ["view", ...(selectedRowIds.length ? ["selected" as const] : []), "target"], initialScope: "view", scopeLabels: { view: "Filtered view (all rows)", target: "Entire table", selected: "Selected rows" }, ...(totalRows === undefined ? {} : { size: `${formatCount(totalRows)} ${totalRows === 1 ? "row" : "rows"} · ${fields.length - hiddenColumns.length} of ${fields.length} columns` }) }}
     capabilities={{ formats: [tableDataFormat, tableSchemaFormat] }}
     references={references}
     referenceActions={[{ id: "choose-reference", label: "Get reference", run: onChooseReference }]}

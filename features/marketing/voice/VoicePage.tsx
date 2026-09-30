@@ -43,6 +43,7 @@ import {
   type VoiceSurface,
   type VoiceTextOutcome,
 } from "./service";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export interface VoicePageProps {
   scope: VoiceProfileScope;
@@ -195,7 +196,7 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
               </Badge>
               <span className="text-muted-foreground">Confidence {current.confidence}</span>
               <span className="text-muted-foreground">
-                {current.sample_count} samples · {current.sample_word_count.toLocaleString()} words
+                {current.sample_count} samples · {formatCount(current.sample_word_count)} words
               </span>
               <span className="text-muted-foreground">
                 Measured {new Date(current.last_extracted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -331,7 +332,7 @@ function Triage({ result }: { result: VoiceMeasureResult }) {
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Words</dt>
-          <dd>{(t.total_words ?? 0).toLocaleString()}</dd>
+          <dd>{formatCount(t.total_words)}</dd>
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">AI-edited share</dt>

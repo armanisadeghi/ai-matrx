@@ -45,6 +45,7 @@ import {
   diffLanguageOf,
   type SurfaceWriteReceipt,
 } from "./readSurfaceWrite";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /** Knob value → the package's view name. Unknown / unresolved → unified. */
 export function viewFromKnob(value: unknown): TextDiffView {
@@ -94,7 +95,7 @@ export function SurfaceWriteDiff({
       {receipt.truncated ? (
         <span
           className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
-          title={`This change was ${receipt.beforeChars.toLocaleString()} → ${receipt.afterChars.toLocaleString()} characters; the diff shows the first part only. Open the item itself to see all of it.`}
+          title={`This change was ${formatCount(receipt.beforeChars)} → ${formatCount(receipt.afterChars)} characters; the diff shows the first part only. Open the item itself to see all of it.`}
         >
           shortened
         </span>

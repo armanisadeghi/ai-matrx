@@ -27,6 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 
 import { doorWindow, drillRowOf } from "./useDrillExplorer";
 import { findingQuestion, type DrillFinding } from "./types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /** Rows a finding shows before "and N more" (the finding's own drill shows the rest). */
 const ROWS_SHOWN = 5;
@@ -143,7 +144,7 @@ export function DrillFindings({
                         >
                           <span className="min-w-0 flex-1 truncate">{labelOf(row.groups, asked.by)}</span>
                           <span className="tabular-nums text-muted-foreground">
-                            {row.value === null ? "—" : measure?.format ? measure.format(row.value) : row.value.toLocaleString()}
+                            {row.value === null ? "—" : measure?.format ? measure.format(row.value) : formatCount(row.value)}
                           </span>
                         </button>
                       </li>

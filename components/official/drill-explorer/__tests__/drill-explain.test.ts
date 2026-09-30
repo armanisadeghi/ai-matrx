@@ -20,9 +20,10 @@ import {
 } from "@ai-matrx/design-system/data-table";
 
 import { DRILL_EXPLAIN_KIND, drillExplainPayload, drillQuestionSentence, type DrillExplainInput } from "../explainPayload";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const PERSON = "4cf62e4e-9de0-4a4a-8a2a-6d1f6a1b2c3d";
-const credits = (usd: number | null) => (usd === null ? "—" : `${Math.round(usd * 1000).toLocaleString("en-US")} credits`);
+const credits = (usd: number | null) => (usd === null ? "—" : `${formatCount(Math.round(usd * 1000))} credits`);
 
 const dimensions: MatrxDrillDimension[] = [
   { key: "person", label: "Person", kind: "relation", labelFor: (v) => (v === PERSON ? "admin@admin.com" : v ?? "None") },

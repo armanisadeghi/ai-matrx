@@ -79,6 +79,7 @@ import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-
 import { RecordAnnotations } from "@/features/rich-document/annotations/RecordAnnotations";
 import { annotationRecordOf, type AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export type RichEditorView = "visual" | "source" | "preview";
 const VIEWS: RichEditorView[] = ["visual", "source", "preview"];
@@ -415,7 +416,7 @@ export default function RichEditorImpl({
     cycleView: () => switchView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length] ?? "visual"),
     showHelp: () => setHelpOpen(true),
     showWordCount: () =>
-      toast.info(`${metrics.words.toLocaleString()} words · ${metrics.characters.toLocaleString()} characters · ${metrics.readingMinutes} min read`),
+      toast.info(`${formatCount(metrics.words)} words · ${formatCount(metrics.characters)} characters · ${metrics.readingMinutes} min read`),
     editLink: () => setLinkDialog({ open: true, href: handle.current?.currentLink() ?? "https://" }),
     pickKind: () => new Promise<string | null>((resolve) => setKindRequest(() => resolve)),
     pickImage,
@@ -509,7 +510,7 @@ export default function RichEditorImpl({
   // What the old status bar row said, now carried by the toolbar's word count (its
   // tooltip) and the Save button — no row of its own (UI audit B, 2026-09-26).
   const documentFacts = [
-    `${metrics.words.toLocaleString()} words · ${metrics.characters.toLocaleString()} characters · ${metrics.readingMinutes} min read`,
+    `${formatCount(metrics.words)} words · ${formatCount(metrics.characters)} characters · ${metrics.readingMinutes} min read`,
     metrics.islands > 0 ? `${metrics.islands} protected (kinds, XML sections, code, math and variables are never rewritten by the editor)` : null,
     view === "visual" && lockedCount > 0 ? `${lockedCount} kept as written (edit with its pencil or in Source)` : null,
   ]
@@ -615,7 +616,7 @@ export default function RichEditorImpl({
       : []),
     { id: "shortcuts", label: "Keyboard shortcuts (⌘/)", icon: Keyboard, run: () => setHelpOpen(true) },
     // Desktop shows the count in the toolbar; a phone reads it from the tools menu.
-    ...(isMobile ? [{ id: "count", label: `${metrics.words.toLocaleString()} words · ${saveStatus}`, icon: Hash, run: () => toast.info(documentFacts) }] : []),
+    ...(isMobile ? [{ id: "count", label: `${formatCount(metrics.words)} words · ${saveStatus}`, icon: Hash, run: () => toast.info(documentFacts) }] : []),
   ];
 
   const micButton =
@@ -790,7 +791,7 @@ export default function RichEditorImpl({
               )}
               {!isMobile && (
                 <span className="shrink-0 whitespace-nowrap px-1 text-[11px] tabular-nums text-muted-foreground" title={documentFacts}>
-                  {metrics.words.toLocaleString()} words
+                  {formatCount(metrics.words)} words
                 </span>
               )}
               {toolbarExtras}

@@ -60,6 +60,7 @@ import { usePageCaptureContribution } from "@/components/agent-copy/page-capture
 import { useContextPreview, type ContextSelection } from "./useContextPreview";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { formatCount } from "@ai-matrx/kit/format";
 
 type ContextCompare = components["schemas"]["ContextCompare"];
 type CompareSide = components["schemas"]["ContextCompareSide"];
@@ -322,9 +323,9 @@ function DiffTab({
   else if (!store || !store.available)
     fedVerdict = `The record store could not be fed through the same function: ${store?.unavailable_reason ?? "it did not answer"}.`;
   else if (delivered?.identical)
-    fedVerdict = `Byte-identical — both systems feed the model the same ${(today.block_byte_length ?? 0).toLocaleString()} bytes (sha256 ${(today.block_sha256 ?? "").slice(0, 12)}).`;
+    fedVerdict = `Byte-identical — both systems feed the model the same ${formatCount(today.block_byte_length)} bytes (sha256 ${(today.block_sha256 ?? "").slice(0, 12)}).`;
   else
-    fedVerdict = `Different — ${(today.block_byte_length ?? 0).toLocaleString()} bytes today, ${(store.block_byte_length ?? 0).toLocaleString()} bytes from the record store.`;
+    fedVerdict = `Different — ${formatCount(today.block_byte_length)} bytes today, ${formatCount(store.block_byte_length)} bytes from the record store.`;
   return (
     <div className="flex flex-col" data-compare-diff>
       <Summary compare={compare} />
@@ -808,7 +809,7 @@ function AnswerBoth({
                     <span className="text-[10px] tabular-nums text-muted-foreground">
                       {a?.model && !/^[0-9a-f-]{36}$/i.test(a.model) ? a.model : ""}
                       {typeof a?.duration_ms === "number" ? ` ${(a.duration_ms / 1000).toFixed(1)} s` : ""}
-                      {typeof a?.input_tokens === "number" ? ` · ${a.input_tokens.toLocaleString()} tokens in` : ""}
+                      {typeof a?.input_tokens === "number" ? ` · ${formatCount(a.input_tokens)} tokens in` : ""}
                     </span>
                   </div>
                   {a?.error ? (

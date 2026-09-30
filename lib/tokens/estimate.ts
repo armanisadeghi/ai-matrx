@@ -95,5 +95,5 @@ export const CHARS_PER_PAGE = 3_000;
 /** A size a person understands: "about 36 pages". Never under one page. */
 export function pagesPhrase(chars: number): string {
   const pages = Math.max(1, Math.round((Number.isFinite(chars) ? chars : 0) / CHARS_PER_PAGE));
-  return `about ${pages.toLocaleString()} page${pages === 1 ? "" : "s"}`;
+  return `about ${formatCount(pages)} page${pages === 1 ? "" : "s"}`;
 }

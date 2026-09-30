@@ -59,6 +59,7 @@ import { getBlockTypeStyle } from "./block-type-colors";
 import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatCount } from "@ai-matrx/kit/format";
 
 interface AnalysisViewProps {
   content: string;
@@ -276,7 +277,7 @@ export function AnalysisView({
               { heading: "Templates", options: STUDIO_TEMPLATES.map((t) => `template:${t.id}`), collapsed: true },
             ]}
             getLabel={(id) => catalog.get(id)?.label ?? id}
-            getHint={(id) => `${(catalog.get(id)?.content.length ?? 0).toLocaleString()} chars`}
+            getHint={(id) => `${formatCount(catalog.get(id)?.content.length)} chars`}
             ariaLabel="Compare which text"
             compact
             className="w-56"

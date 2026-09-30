@@ -17,6 +17,7 @@ import { exampleRuns, flagPreview } from "@/features/agents/message-flags/flags"
 import { useMessageFlagProfile } from "@/features/agents/message-flags/useMessageFlagProfile";
 import { MessageFlagsPreview } from "@/features/agents/message-flags/MessageFlagsPreview";
 import { estimateTokensForText } from "@/lib/tokens/estimate";
+import { formatCount } from "@ai-matrx/kit/format";
 
 interface MessagesProps {
   agentId: string;
@@ -94,7 +95,7 @@ export function Messages({
             {/* read-gate-exempt: size of an example run that is present in the loaded agent, drawn only when the run exists */}
             {pairs > 0 ? `${pairs} ${pairs === 1 ? "pair" : "pairs"}` : `${count} messages`}
           </span>
-          <span className="ml-auto tabular-nums">≈{tokens.toLocaleString()} tokens</span>
+          <span className="ml-auto tabular-nums">≈{formatCount(tokens)} tokens</span>
         </button>,
       );
       if (!expanded) continue;

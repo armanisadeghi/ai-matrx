@@ -75,12 +75,10 @@ import {
 } from "@/lib/organization/organization-gate";
 import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
 import type { UseSourceSetResult } from "../useSourceSet";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export function formatChars(chars: number): string {
-  if (chars >= 1_000_000) return `${(chars / 1_000_000).toFixed(1)}M characters`;
-  if (chars >= 10_000) return `${Math.round(chars / 1000)}k characters`;
-  if (chars >= 1000) return `${(chars / 1000).toFixed(1)}k characters`;
-  return `${chars} characters`;
+  return `${formatCount(chars, { style: "compact" })} characters`;
 }
 
 const STATE_WORDS: Record<SourceManifestEntry["state"], string> = {

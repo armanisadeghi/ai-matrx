@@ -22,6 +22,7 @@
 import { nearestScrollRoot } from "@/lib/layout/scroll-root";
 import { useRenderAllRequested } from "@/components/mermaid/lazy-draw";
 import { startTransition, useEffect, useRef, useState, type ReactNode } from "react";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /** Blocks mounted in the first commit — above any real chat answer. */
 export const PROGRESSIVE_FIRST_SLICE = 200;
@@ -123,7 +124,7 @@ function ScrollSentinel({
     >
       {active ? (
         <button type="button" onClick={onVisible} className="underline-offset-2 hover:underline">
-          Showing {shown.toLocaleString()} of {total.toLocaleString()} blocks — more load as you scroll (or click)
+          Showing {formatCount(shown)} of {formatCount(total)} blocks — more load as you scroll (or click)
         </button>
       ) : (
         <>Loading {shown.toLocaleString()} of {total.toLocaleString()} blocks…</>

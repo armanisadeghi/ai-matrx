@@ -75,13 +75,13 @@ export const SeoRulingKeywordRow: React.FC<RowProps<SeoRulingKeyword>> = ({
         <span className="flex shrink-0 items-baseline gap-2.5 text-xs tabular-nums text-muted-foreground">
           <span>
             <span className="font-medium text-foreground">
-              {compactNumber(clicks ?? 0)}
+              {compactNumber(clicks)}
             </span>{" "}
             clicks
           </span>
           <span>
             <span className="font-medium text-foreground">
-              {compactNumber(impressions ?? 0)}
+              {compactNumber(impressions)}
             </span>{" "}
             impr.
           </span>

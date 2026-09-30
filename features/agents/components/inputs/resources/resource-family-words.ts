@@ -10,6 +10,7 @@
  */
 
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /** The "what the AI reads" choices, in the order they are offered. */
 export const PRIMARY_FORM_CHOICES: ReadonlyArray<{
@@ -78,7 +79,7 @@ export function familyWords(key: string, serverLabel: string, count: number): Fa
   const label = words?.label ?? serverLabel;
   const detail = words?.detail ?? "available if the AI needs it";
   // A count only says something when there is more than one of it.
-  return { label, detail: count > 1 ? `${detail} · ${count.toLocaleString()}` : detail };
+  return { label, detail: count > 1 ? `${detail} · ${formatCount(count)}` : detail };
 }
 
 const CAPABILITY_WORDS: Record<string, string> = {

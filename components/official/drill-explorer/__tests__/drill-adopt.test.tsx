@@ -26,7 +26,6 @@ jest.mock("@/lib/redux/preferences/userPreferencesSlice", () => ({ setModulePref
 jest.mock("@/lib/knobs/featureKnobs", () => ({ knobNumber: jest.fn(async () => 20) }));
 jest.mock("@/components/navigation/AppLink", () => ({ __esModule: true, default: ({ children }: { children: unknown }) => <a>{children as never}</a> }));
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
-jest.mock("@/components/cost/formatAdminCost", () => ({ formatAdminPoints: (v: number) => `${Math.round(v * 20000).toLocaleString()} points`, formatAdminCost: (v: number) => `$${v}` }));
 
 jest.mock("@ai-matrx/design-system/data-table", () => {
   const actual = jest.requireActual("@ai-matrx/design-system/data-table");
@@ -116,6 +115,7 @@ jest.mock("../useDrillExplorer", () => {
 import { DrillExplorer } from "../DrillExplorer";
 import { drillKnobsOf } from "../useDrillKnobs";
 import { drillReconcileSentence } from "../useDrillReconcile";
+import { formatPoints } from "@ai-matrx/kit/format";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -210,7 +210,7 @@ describe("the explorer's settings and words", () => {
   });
 
   it("builds the reconciliation from the measured parts", () => {
-    const f = (v: number) => `${v.toLocaleString()} points`;
+    const f = (v: number) => formatPoints(v);
     expect(drillReconcileSentence(2000, 1500, "AI model calls", f)).toBe("1,500 points of these 2,000 points are AI model calls; 500 points (25%) is spend with no AI model call behind it.");
     expect(drillReconcileSentence(2000, 2100, "Model calls", f)).toMatch(/^The model calls count 2,100 points, 100 points more than these 2,000 points/);
   });
