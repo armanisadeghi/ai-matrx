@@ -301,35 +301,3 @@ export function useDrillExplorer(args: {
   const current = answered.key === `${askKey}#${version}`;
   return { def, answers: current ? answered.answers : NO_ANSWERS, whole: current ? answered.whole : null, names, says, error, asOf, client };
 }
-
-// Restored 2026-09-30: an in-flight edit deleted these while DrillExplorer.tsx:59 and
-// __tests__/drill-wave1-fixes.test.tsx still import explorerWindowLabel — the missing export
-// made the dev server 500 EVERY route in the shared checkout, sign-in included.
-/**
- * A window of MOMENTS (`2026-09-28T14:00Z..2026-09-28T18:00Z`, a declared view's sub-day window —
- * VERIFY-DRILL-WAVE1 F3). The published design system (0.49.37) reads only day ranges and would
- * turn this into no window at all; read here until the version with moments is installed
- * (PROGRESS-DRILL-EXPLORER "After publish").
- */
-const MOMENT = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+\- ]\d{2}:\d{2})?`;
-const MOMENT_RANGE = new RegExp(`^(${MOMENT}|\\d{4}-\\d{2}-\\d{2})\\.\\.(${MOMENT}|\\d{4}-\\d{2}-\\d{2})$`);
-function momentRange(window: string | null | undefined): { from: string; to: string } | null {
-  if (!window || !window.includes("T")) return null;
-  const m = window.match(MOMENT_RANGE);
-  if (!m) return null;
-  const end = (v: string) => v.replace(/(T\d{2}:\d{2}(?::\d{2})?) (\d{2}:\d{2})$/, "$1+$2");
-  return { from: end(m[1]!), to: end(m[2]!) };
-}
-
-/** How a window reads — a window of moments with its clock ("Sep 28, 2026 14:00 – 18:00 UTC"), else the package's words. */
-export function explorerWindowLabel(window: string | null | undefined, packageLabel: (w: string | null | undefined) => string): string {
-  const range = momentRange(window);
-  if (!range) return packageLabel(window);
-  const words = (iso: string) => {
-    const d = new Date(iso);
-    return { day: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }), clock: d.toISOString().slice(11, 16) };
-  };
-  const a = words(range.from);
-  const b = words(range.to);
-  return `${a.day} ${a.clock} – ${a.day === b.day ? b.clock : `${b.day} ${b.clock}`} UTC`;
-}
