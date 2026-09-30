@@ -8,6 +8,7 @@
  * type. Changing a format never touches stored data, so this control needs no
  * confirmation and no warning — that is the whole point of the format layer.
  */
+import { severalChoiceSuggestions } from "./list-words";
 import {
   Select,
   SelectContent,
@@ -231,7 +232,8 @@ export function FieldFormatPicker({
           <ChoiceOptionsEditor
             options={options}
             onChange={(next) => onChange({ id: activeId, options: next })}
-            suggestions={suggestions}
+            // Several choices: "Knee, Hip" already in the column is offered as Knee and Hip (B3-02).
+            suggestions={activeId === "multi_choice" ? severalChoiceSuggestions(suggestions) : suggestions}
             siblingFields={siblingFields}
             usage={choiceUsage ?? null}
             {...(rehome ? { rehome } : {})}
@@ -266,6 +268,23 @@ export function FieldFormatPicker({
               </SelectContent>
             </Select>
           )}
+        </div>
+      )}
+
+      {/* A LINK THAT HOLDS SEVERAL RECORDS (BREAKER-3 B3-25, lane REFERENCE-CARRY): "Team members"
+          points at every member, not one. The store keeps it as the relation's cardinality —
+          `relation_max` above 1 is several (the store's own default for several is 25). */}
+      {activeId === "relation" && optionKeys.includes("relation_max") && (
+        <div className="flex items-center gap-1.5 pb-1">
+          <Switch
+            id="field-format-relation-several"
+            checked={typeof options.relation_max === "number" && options.relation_max > 1}
+            onCheckedChange={(checked) => setOption("relation_max", checked ? 25 : 1)}
+            aria-label="Can point at several records"
+          />
+          <Label htmlFor="field-format-relation-several" className="text-[11px] text-muted-foreground">
+            Can point at several records
+          </Label>
         </div>
       )}
 

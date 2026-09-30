@@ -137,7 +137,8 @@ function fieldUpdate({ field_id, patch }: { field_id: string; patch: Record<stri
     if (patch.rules) next.rules = patch.rules as unknown[];
   } else {
     // THE SETTINGS ARM.
-    for (const k of ["label", "required", "sort", "rules", "unique", "relation_target", "relation_max", "on_target_delete", "formula_text"]) {
+    // `multi` has its own settings arm since FIX-7B-FIELD (`fix7b_field_multi_arm.sql`).
+    for (const k of ["label", "required", "sort", "rules", "unique", "multi", "relation_target", "relation_max", "on_target_delete", "formula_text"]) {
       if (k in patch) {
         if (k === "formula_text") next.config.formula_text = patch[k];
         else next[k] = patch[k];
@@ -385,6 +386,28 @@ describe("September service board · autonumber prefix, relation settings", () =
     const saved = await rs.setFieldFormat(HOME, { tableId: TABLE, fieldId: F.customer, format });
     expect(saved.success).toBe(true);
     expect(await formatOf(rs, F.customer)).toEqual(format);
+  });
+});
+
+describe("B3-25 · a link column can point at several records (lane REFERENCE-CARRY)", () => {
+  it("Column settings' 'Can point at several records' makes the store's link hold several, and back", async () => {
+    const rs = await load();
+    const target = "c0ffee00-0000-4000-8000-000000000000";
+    const several = await rs.setFieldFormat(HOME, {
+      tableId: TABLE,
+      fieldId: F.customer,
+      format: { id: "relation", options: { relation_target: target, relation_max: 25, on_delete: "set_null" } },
+    });
+    expect(several.success).toBe(true);
+    expect(store.fields.get(F.customer)!.multi).toBe(true);
+    expect(store.fields.get(F.customer)!.relation_max).toBe(25);
+    const one = await rs.setFieldFormat(HOME, {
+      tableId: TABLE,
+      fieldId: F.customer,
+      format: { id: "relation", options: { relation_target: target, relation_max: 1, on_delete: "set_null" } },
+    });
+    expect(one.success).toBe(true);
+    expect(store.fields.get(F.customer)!.multi).toBe(false);
   });
 });
 

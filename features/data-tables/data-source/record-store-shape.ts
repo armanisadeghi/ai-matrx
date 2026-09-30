@@ -450,7 +450,12 @@ export function storeFormatWrite(
     if (typeof relation_target === "string" && relation_target && (!sameKind || relation_target !== field.relation_target)) {
       into.relation_target = relation_target;
     }
-    if (typeof relation_max === "number") into.relation_max = relation_max;
+    if (typeof relation_max === "number") {
+      into.relation_max = relation_max;
+      // SEVERAL IS THE FIELD'S `multi` (B3-25, lane REFERENCE-CARRY): a cardinality above one with
+      // `multi` left false is a one-record link the store caps at one, so the two travel together.
+      into.multi = relation_max > 1;
+    }
     if (typeof on_delete === "string") into.on_target_delete = on_delete;
     // The behaviour arm's spec has no `display`, so it always goes through the settings arm.
     if (typeof display === "string" && display) settings.display = display;
