@@ -23,6 +23,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import {
   createTrackedObjectUrl,
@@ -55,8 +56,10 @@ import { removeItemFile, uploadItemFile } from "../uploads";
 
 const NOTES_AUTOSAVE_MS = 800;
 
-function resumeKey(orgId: string) {
-  return `product-capture:current-item:${orgId}`;
+/** The remembered in-progress item is per PERSON — switching the active organization
+ *  never hides it (the active org is only where new work is saved). */
+function resumeKey(userId: string) {
+  return `product-capture:current-item:${userId}`;
 }
 
 export interface UseProductCaptureSessionResult {
@@ -139,6 +142,7 @@ export function useProductCaptureSession(
   // since 2026-09-17) settles `unavailable` and the capture refuses with the
   // remedy instead of writing.
   const organizationId = useAppSelector(selectOrganizationId);
+  const userId = useAppSelector(selectUserId);
 
   const [currentItem, setCurrentItem] = useState<CaptureItem | null>(null);
   const [artifacts, setArtifacts] = useState<PendingArtifact[]>([]);
@@ -173,22 +177,23 @@ export function useProductCaptureSession(
   const setCurrent = useCallback((item: CaptureItem | null) => {
     currentItemRef.current = item;
     setCurrentItem(item);
-    if (item) {
+    if (item && userId) {
       try {
-        window.localStorage.setItem(resumeKey(item.organizationId), item.id);
+        window.localStorage.setItem(resumeKey(userId), item.id);
       } catch {
         // Private mode degrades resume, never capture.
       }
     }
-  }, []);
+  }, [userId]);
 
-  const clearResumeKey = useCallback((orgId: string) => {
+  const clearResumeKey = useCallback(() => {
+    if (!userId) return;
     try {
-      window.localStorage.removeItem(resumeKey(orgId));
+      window.localStorage.removeItem(resumeKey(userId));
     } catch {
       // ignore
     }
-  }, []);
+  }, [userId]);
 
   // ── Notes autosave ────────────────────────────────────────────────────────
 
@@ -331,7 +336,7 @@ export function useProductCaptureSession(
         );
       }
     })();
-    if (item) clearResumeKey(item.organizationId);
+    if (item) clearResumeKey();
     // Preview URLs belong to the finished item's filmstrip — release them.
     previewUrlsRef.current.forEach((url) => revokeTrackedObjectUrl(url));
     previewUrlsRef.current.clear();
@@ -361,7 +366,7 @@ export function useProductCaptureSession(
         // A deleted item can remain in the per-org resume slot indefinitely.
         // Clear it at the authoritative not-found boundary so every later
         // route load starts clean instead of replaying the same dead UUID.
-        if (organizationId) clearResumeKey(organizationId);
+        clearResumeKey();
         toast.error("That item no longer exists.");
         return;
       }
@@ -384,7 +389,7 @@ export function useProductCaptureSession(
         })),
       );
     },
-    [finishCurrentItem, adoptItem, organizationId, clearResumeKey],
+    [finishCurrentItem, adoptItem, clearResumeKey],
   );
 
   // Resume on mount (once per org resolution): an explicit `?item=` deep
@@ -398,12 +403,14 @@ export function useProductCaptureSession(
     setResumeAttempt((n) => n + 1);
   };
   useEffect(() => {
-    if (!organizationId || resumeTriedRef.current) return;
+    // A record opens by its own id, and the remembered item is the person's —
+    // neither waits on (or follows) the active organization.
+    if (!userId || resumeTriedRef.current) return;
     resumeTriedRef.current = true;
     let stored: string | null = initialItemId;
     if (!stored) {
       try {
-        stored = window.localStorage.getItem(resumeKey(organizationId));
+        stored = window.localStorage.getItem(resumeKey(userId));
       } catch {
         resumeReady.resolve();
         return;
@@ -426,7 +433,7 @@ export function useProductCaptureSession(
         .finally(resumeReady.resolve);
     }, 0);
     return () => clearTimeout(timer);
-  }, [organizationId, resumeItem, initialItemId, resumeReady, resumeAttempt]);
+  }, [userId, resumeItem, initialItemId, resumeReady, resumeAttempt]);
 
   // ── Codes ─────────────────────────────────────────────────────────────────
 

@@ -669,7 +669,6 @@ export function CaptureScreen({
       <ItemsSheet
         open={itemsOpen}
         onOpenChange={setItemsOpen}
-        organizationId={session.organizationId}
         currentItemId={currentItemId}
         onResumeItem={session.resumeItem}
       />

@@ -30,6 +30,9 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: MockState) => unknown) =>
     selector(mockStore.getState()),
 }));
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({
+  selectUserId: () => "user-q28",
+}));
 jest.mock("@/lib/media/object-url-registry", () => ({
   createTrackedObjectUrl: () => "blob:q28",
   revokeTrackedObjectUrl: jest.fn(),
@@ -72,7 +75,7 @@ import {
   type UseProductCaptureSessionResult,
 } from "./useProductCaptureSession";
 
-const RESUME_KEY = "product-capture:current-item:org-q28";
+const RESUME_KEY = "product-capture:current-item:user-q28";
 
 function item(id: string, code: string): CaptureItem {
   return {
@@ -185,6 +188,18 @@ describe("useProductCaptureSession QR adoption", () => {
         version: value.version + 1,
       }),
     );
+  });
+
+  it("resumes the remembered item even when the active organization is switched away", async () => {
+    mockStore.dispatch(setOrganization({ id: "org-other", name: "Other" }));
+    mockLoadItem.mockResolvedValueOnce(item("item-stored", "QR-Q28-STORED"));
+    window.localStorage.setItem(RESUME_KEY, "item-stored");
+
+    const hook = await renderHook(() => useProductCaptureSession());
+    await settle(hook, () => mockLoadItem.mock.calls.length > 0);
+    expect(mockLoadItem).toHaveBeenCalledWith("item-stored");
+    await hook.unmount();
+    mockStore.dispatch(setOrganization({ id: "org-q28", name: "Q28 Warehouse" }));
   });
 
   it("waits for the persisted current item before applying a decoded QR", async () => {

@@ -27,8 +27,6 @@ import {
 } from "@/components/ui/drawer";
 import { Loader2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { toast } from "@/lib/toast";
 
 import type { CaptureFile, CaptureItem } from "../types";
@@ -39,7 +37,6 @@ import { ItemActionsDrawer, type ItemActionsTarget } from "./ItemActionsDrawer";
 interface ItemsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  organizationId: string | null;
   currentItemId: string | null;
   onResumeItem: (itemId: string) => Promise<void>;
 }
@@ -47,25 +44,11 @@ interface ItemsSheetProps {
 export function ItemsSheet({
   open,
   onOpenChange,
-  organizationId,
   currentItemId,
   onResumeItem,
 }: ItemsSheetProps) {
   const router = useRouter();
   const [items, setItems] = useState<CaptureItem[] | null>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
-  // useMandateInputSurface already fixed. `items` starts null and null paints
-  // the spinner, so a sheet opened with no organization spun FOREVER with no
-  // remedy. Before the bootstrap resolves, loading is the truth; once it has
-  // resolved with no organization, that is a settled fact and it is said.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [filesByItem, setFilesByItem] = useState<Map<string, CaptureFile[]>>(
     new Map(),
   );
@@ -80,9 +63,10 @@ export function ItemsSheet({
   });
 
   const refresh = useCallback(async () => {
-    if (!organizationId) return;
     try {
-      const recent = await listRecentItems(organizationId);
+      // Every item the person can see, across all their organizations — the
+      // active org is only where a NEW capture is saved.
+      const recent = await listRecentItems(null);
       setItems(recent);
       setFilesByItem(await listFilesForItems(recent.map((i) => i.id)));
     } catch (err) {
@@ -90,7 +74,7 @@ export function ItemsSheet({
       toast.error("Could not load recent items.");
       setItems([]);
     }
-  }, [organizationId]);
+  }, []);
 
   // Refresh on every open; a previously loaded list stays visible while the
   // fresh read runs (stale-while-refresh — no loading flash on re-open).
@@ -163,14 +147,7 @@ export function ItemsSheet({
             </DrawerDescription>
           </DrawerHeader>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4">
-            {organizationUnanswered ? (
-              <OrganizationContextNotice
-                state={organizationState}
-                compact
-                className="py-10"
-                description="No organization is selected, so captured items cannot be read — choose one from the organization picker in the header and this fills in."
-              />
-            ) : items === null ? (
+            {items === null ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
