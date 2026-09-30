@@ -822,15 +822,15 @@ export function KnowledgeHubPage({
   };
 
   const transcriptAgentInput = (rows: TranscriptListRow[]) => ({
-      kind: rows.length === 1 ? TRANSCRIPT_COPY_ROW_KIND : TRANSCRIPT_COPY_LIST_KIND,
-      location: "/knowledge?view=transcripts",
-      description:
-        rows.length === 1
-          ? "One transcript item from the Knowledge hub — a transcript, studio session, cleanup session or transcript Source. Metadata only; no transcript body."
-          : "Transcript items selected in the Knowledge hub. Metadata only; no transcript bodies.",
-      data: rows.length === 1 ? transcriptCopyAgent(rows[0], transcriptLink(rows[0])) : rows.map((r) => transcriptCopyAgent(r, transcriptLink(r))),
-      attributes: { rows: rows.length },
-    });
+    kind: rows.length === 1 ? TRANSCRIPT_COPY_ROW_KIND : TRANSCRIPT_COPY_LIST_KIND,
+    location: "/knowledge?view=transcripts",
+    description:
+      rows.length === 1
+        ? "One transcript item from the Knowledge hub — a transcript, studio session, cleanup session or transcript Source. Metadata only; no transcript body."
+        : "Transcript items selected in the Knowledge hub. Metadata only; no transcript bodies.",
+    data: rows.length === 1 ? transcriptCopyAgent(rows[0], transcriptLink(rows[0])) : rows.map((r) => transcriptCopyAgent(r, transcriptLink(r))),
+    attributes: { rows: rows.length, body_included: false },
+  });
   const transcriptAgentPayload = (rows: TranscriptListRow[]) => buildAgentPayload(transcriptAgentInput(rows));
 
   const onTranscriptAction = (hit: KnowledgeHit, action: TranscriptMenuAction) => {
@@ -1047,7 +1047,7 @@ export function KnowledgeHubPage({
         location: "/knowledge?view=transcripts",
         description:
           "One transcript item from the Knowledge hub — a transcript, studio session, cleanup session or transcript Source. Metadata only; no transcript body.",
-        attributes: { rows: 1 },
+        attributes: { rows: 1, body_included: false },
       };
     },
     copyListProjection: (rows) => {

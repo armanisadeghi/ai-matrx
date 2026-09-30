@@ -4,7 +4,7 @@
  * and gallery — and a failed lane shows its sentence with a retry instead of
  * vanishing.
  */
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -182,7 +182,7 @@ it("keeps a passage-only search result's total unknown", async () => {
 });
 
 it("uses the table-owned Alchemy control for transcript copy while retaining transcript links", async () => {
-  const copyProjection = jest.fn(() => ({
+  const transcriptProjection = {
     human: "Transcript: User interview\nDuration: 12 min\nWords: 1,250",
     agent: {
       id: "transcript-1",
@@ -197,12 +197,13 @@ it("uses the table-owned Alchemy control for transcript copy while retaining tra
     location: "/knowledge?view=transcripts",
     description: "One transcript item from the Knowledge hub — metadata only; no transcript body.",
     attributes: { rows: 1 },
-  }));
+  };
+  const copyProjection = jest.fn(() => transcriptProjection);
   const copyListProjection = jest.fn((rows: KnowledgeHit[]) => ({
     kind: "transcript-hub-list",
     location: "/knowledge?view=transcripts",
     description: "Transcript items selected in the Knowledge hub. Metadata only; no transcript bodies.",
-    data: rows.map((row) => copyProjection.mock.results[0]?.value.agent ?? row),
+    data: rows.map(() => transcriptProjection.agent),
     attributes: { rows: rows.length },
   }));
   const transcript = {
@@ -268,8 +269,121 @@ it("uses the table-owned Alchemy control for transcript copy while retaining tra
   expect(copyListProjection.mock.results[0]?.value).toMatchObject({
     kind: "transcript-hub-list",
     location: "/knowledge?view=transcripts",
+    data: [
+      {
+        duration_seconds: 720,
+        word_count: 1250,
+        href: "/transcripts/processor?focus=transcript-1",
+        body_included: false,
+      },
+    ],
     attributes: { rows: 1 },
   });
+});
+
+it("copies one selected transcript as one no-body transcript-list payload", async () => {
+  const rows = ["transcript-1", "transcript-2"].map(
+    (id) =>
+      ({
+        entity: "transcript",
+        id,
+        title: `Interview ${id}`,
+        source_kind: "transcript",
+      }) as KnowledgeHit,
+  );
+  const copyProjection = (row: KnowledgeHit) => ({
+    human: `Transcript: ${row.title}`,
+    agent: {
+      id: row.id,
+      kind: "transcript",
+      href: `/transcripts/processor?focus=${row.id}`,
+      body_included: false,
+    },
+    kind: "transcript-hub-item",
+    location: "/knowledge?view=transcripts",
+    description: "One transcript item from the Knowledge hub — metadata only; no transcript body.",
+    attributes: { rows: 1 },
+  });
+  const copyListProjection = jest.fn((visible: KnowledgeHit[]) => ({
+    kind: "transcript-hub-list",
+    location: "/knowledge?view=transcripts",
+    description: "Transcript items selected in the Knowledge hub. Metadata only; no transcript bodies.",
+    data: visible.map((row) => copyProjection(row).agent),
+    attributes: { rows: visible.length, body_included: false },
+  }));
+  function SelectionFixture() {
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const selectedHandlers: ResultHandlers = {
+      ...handlers,
+      selected,
+      onToggleSelect: (row) =>
+        setSelected((current) => {
+          const next = new Set(current);
+          const key = `${row.entity}:${row.id}`;
+          if (next.has(key)) next.delete(key);
+          else next.add(key);
+          return next;
+        }),
+      copyProjection,
+      copyListProjection,
+    };
+    return (
+      <div style={{ height: 800 }}>
+        <BrowseResults
+          layout="table"
+          sections={[]}
+          hits={rows}
+          handlers={selectedHandlers}
+          emptySentence="Nothing here."
+          onShowMore={jest.fn()}
+          onRetry={jest.fn()}
+        />
+      </div>
+    );
+  }
+
+  await act(async () => root.render(<SelectionFixture />));
+  copyListProjection.mockClear();
+  const select = host.querySelector<HTMLButtonElement>('[aria-label^="Select this transcript record"]');
+  expect(select).not.toBeNull();
+  await act(async () => select?.click());
+  const bulkBar = host.querySelector('[data-matrx-table-bulk-bar]');
+  expect(bulkBar).not.toBeNull();
+  const selectedAlchemy = bulkBar?.querySelector<HTMLElement>('[data-alchemy-trigger]');
+  expect(selectedAlchemy).not.toBeNull();
+  await act(async () => selectedAlchemy?.click());
+  const copyForAi = [...document.body.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
+    button.textContent?.trim().startsWith("Copy for AI"),
+  );
+  expect(copyForAi).toBeDefined();
+  const clipboard = jest.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: clipboard } });
+  await act(async () => copyForAi?.click());
+
+  const copied = clipboard.mock.calls[0]?.[0] as string;
+  expect(copied).toContain("transcript-hub-list");
+  expect(copied).toContain("transcript-1");
+  expect(copied).toContain('rows="1"');
+  expect(copied).toContain('body_included="false"');
+  expect(copied).toContain("metadata only");
+  expect(copied).not.toContain("transcript-2");
+
+  const selectedProjection = copyListProjection.mock.results
+    .map((result) => result.value)
+    .find((projection) => projection.attributes.rows === 1);
+  expect(selectedProjection).toMatchObject({
+    kind: "transcript-hub-list",
+    location: "/knowledge?view=transcripts",
+    data: [
+      {
+        id: "transcript-1",
+        href: "/transcripts/processor?focus=transcript-1",
+        body_included: false,
+      },
+    ],
+    attributes: { rows: 1, body_included: false },
+  });
+  expect(bulkBar?.textContent).toContain("1 transcript record (metadata only) selected");
 });
 
 it("a failed lane says so with a retry, and the other lanes still render", async () => {

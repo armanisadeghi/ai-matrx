@@ -570,11 +570,13 @@ function TableLayout({
   });
   const domainCopy = (hit: KnowledgeHit) => handlers.copyProjection?.(hit);
   const domainListCopy = handlers.copyListProjection?.(hits);
+  const listProjection = (rows: KnowledgeHit[]) => handlers.copyListProjection?.(rows);
+  const transcriptCopy = Boolean(domainListCopy);
   const rowSummary = (hit: KnowledgeHit) => domainCopy(hit)?.human ?? genericRowSummary(hit);
   const rowProjection = (hit: KnowledgeHit) => domainCopy(hit)?.agent ?? genericRowProjection(hit);
   const copy = {
-    label: "Knowledge item",
-    listLabel: "Knowledge items",
+    label: transcriptCopy ? "transcript record (metadata only)" : "Knowledge item",
+    listLabel: transcriptCopy ? "transcript records (metadata only)" : "Knowledge items",
     location: domainListCopy?.location ?? "Knowledge Hub (/knowledge)",
     rowKind: "knowledge-hub-item",
     listKind: domainListCopy?.kind ?? "knowledge-hub-items",
@@ -582,18 +584,33 @@ function TableLayout({
     listDescription: domainListCopy?.description ?? "The current filtered and sorted Knowledge Hub view.",
     humanRow: rowSummary,
     agentRow: rowProjection,
-    ...(domainListCopy ? { listAgent: () => domainListCopy } : {}),
+    ...(domainListCopy
+      ? {
+          listAgent: (visible: KnowledgeHit[], all: KnowledgeHit[]) => {
+            const projection = listProjection(visible);
+            if (projection) return projection;
+            return {
+              kind: "knowledge-hub-items",
+              location: "Knowledge Hub (/knowledge)",
+              description: "The current filtered and sorted Knowledge Hub view.",
+              data: visible.map(rowProjection),
+              summary: visible.map(rowSummary).join("\n---\n"),
+              attributes: { visible_items: visible.length, loaded_items: all.length },
+            };
+          },
+        }
+      : {}),
     rowAttributes: (hit: KnowledgeHit) => ({
       entity: hit.entity,
       source_kind: hit.source_kind ?? undefined,
       ...domainCopy(hit)?.attributes,
     }),
     listAttributes: (visible: KnowledgeHit[], all: KnowledgeHit[]) => ({
+      ...listProjection(visible)?.attributes,
       loaded_items: all.length,
       visible_items: visible.length,
       source_total: sourceTotal,
       source_may_have_more: sourceMayHaveMore,
-      ...domainListCopy?.attributes,
     }),
     listContext: () => ({
       source_total: sourceTotal,
@@ -673,7 +690,7 @@ function TableLayout({
               if (next.has(k) !== handlers.selected.has(k)) handlers.onToggleSelect(h);
             }
           },
-          noun: "item",
+          noun: transcriptCopy ? "transcript record (metadata only)" : "item",
         }}
         selectedId={handlers.focusedKey}
         onSelectedIdChange={(id) => {
