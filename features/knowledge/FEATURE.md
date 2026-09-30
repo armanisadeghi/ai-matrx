@@ -97,6 +97,15 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
 
 - **The search box must never overwrite what the person is typing** when its own commit lands in
   the URL (guard: `hub/__tests__/searchBox.test.tsx`, proven red on the old sync).
+- **The hub's organization filter (`?org_filter=`, `EntityOrgFilter`) is the ONLY organization that narrows a read**
+  (policy `active-org-is-never-a-list-filter`); the header's active org only feeds writes (`ensureOrgId`). In the
+  Transcripts view `p_org_id` rides on EVERY lane of `trx_list_scoped` / `trx_list_facets` and the Scope counts. The
+  per-organization numbers in the menu (`hooks/useHubOrgCounts.ts`) are the list's own count per organization,
+  fetched on the menu's first open: Transcripts = one `trx_list_scope_counts` read (Organizations lane; never one
+  `trx_list_scoped` per org — measured HTTP 500s), every other view = the search with `limit: 0` per organization.
+  Guard: `hub/__tests__/hubActiveOrgIsInert.test.tsx` (mounted; header switch changes nothing) + `transcriptOrgFilter.test.tsx`.
+- **Unsorted recordings are designed-absent from Trash** (`isTrashable`): a capture segment is a component with no
+  `user_artifact_kind`, so Trash could neither list nor restore it; they leave through Scribe's Unsorted pool.
 - **Tests:** `pnpm jest features/knowledge/hub` — URL round trip, selection → query, layouts from
   the fixture, peek open/close from the page, bulk file-under through the door with registry labels.
 
@@ -113,6 +122,8 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
   it there first, then mirror the labels here.
 
 ## Change log
+
+- **2026-09-30** — Hub org filter finished: Transcripts sends `p_org_id` on every lane, per-organization counts in the menu, empty state names the organization with Clear filters (also in Everything), unsorted recordings not trashable by design, trash/restore refreshes Inbox/Kept/Archived, mounted active-org-inert test.
 
 - **2026-09-29** — Knowledge table layout retains the canonical footer and source-coverage notice; browse totals exclude passage counts, while text search never invents a distinct-item total. The existing Load more advances section cursors.
 

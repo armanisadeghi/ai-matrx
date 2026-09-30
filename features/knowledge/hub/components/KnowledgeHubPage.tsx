@@ -520,6 +520,8 @@ export function KnowledgeHubPage({
   const refreshResults = () => {
     results.refresh();
     if (serverTranscripts) transcriptList.refresh();
+    // Inbox / Kept / Archived read the triage list, not the query: a trashed or restored row must leave or return there too.
+    if (triageView) triage.refresh();
   };
   const listSections: SectionState[] = serverTranscripts ? transcriptList.sections : results.sections;
   const baseHits: KnowledgeHit[] =
