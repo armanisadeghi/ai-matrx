@@ -43,6 +43,14 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # The full type-check alone peaks near 13 GB; with it running, this 16 GB runner measured
+      # 15.5 GB used and 500 MB available (runs 36670255447, 36671478127). 8 GB of swap turns the
+      # next spike into a slower row instead of a runner shut down mid-run (36653040837).
+      - name: Add 8 GB of swap
+        run: |
+          sudo fallocate -l 8G /matrx-swap && sudo chmod 600 /matrx-swap
+          sudo mkswap /matrx-swap >/dev/null && sudo swapon /matrx-swap
+          free -m
       - name: Run every repo-only row (items on)
         env:
           MATRX_ITEMS: "1"
@@ -51,7 +59,7 @@ jobs:
         # its worker pool by this machine's cores and memory (scripts/checks/run.mjs defaultWorkers).
         run: |
           mkdir -p tmp/checks
-          ( while sleep 20; do echo "$(date -u +%T) $(free -m | awk '/^Mem:/{print "used_mb="$3" available_mb="$7}')"; done ) > tmp/checks/memory.log 2>&1 &
+          ( while sleep 20; do echo "$(date -u +%T) $(free -m | awk '/^Mem:/{m="used_mb="$3" available_mb="$7} /^Swap:/{s=" swap_used_mb="$3} END{print m s}')"; done ) > tmp/checks/memory.log 2>&1 &
           node scripts/checks/run.mjs --repo-only --json tmp/checks/findings.jsonl
       - name: Upload the findings artifact
         if: always()
