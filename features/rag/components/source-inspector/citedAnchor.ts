@@ -7,7 +7,6 @@
 // chunk row is read by `useCitedChunk`.
 
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** What the viewer needs from the cited chunk's own row. */
 export interface CitedChunkFacts {
@@ -41,11 +40,6 @@ export function citedChunkFacts(row: {
 }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-
-/** A real indexed chunk id (a uuid). */
-export function isChunkId(id: string): boolean {
-  return isUuidShape(id);
-}
 
 /**
  * A resolver part id — `<document id>:<n>`, the n-th page that has text

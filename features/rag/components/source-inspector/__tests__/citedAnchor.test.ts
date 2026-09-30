@@ -1,5 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
-  isChunkId,
   pageForPartOrdinal,
   parsePartId,
   citedChunkFacts,
@@ -54,8 +54,8 @@ describe("a citation that names a PART (a document with no search index yet)", (
   const DOC = "19141cb7-8704-44f4-bccb-e2d99f1f9ca0";
 
   it("is told apart from a chunk id", () => {
-    expect(isChunkId("4b479083-7728-4777-9e9a-149a482dfa3a")).toBe(true);
-    expect(isChunkId(`${DOC}:16`)).toBe(false);
+    expect(isUuidShape("4b479083-7728-4777-9e9a-149a482dfa3a")).toBe(true);
+    expect(isUuidShape(`${DOC}:16`)).toBe(false);
     expect(parsePartId(`${DOC}:16`)).toEqual({ documentId: DOC, ordinal: 16 });
     expect(parsePartId("4b479083-7728-4777-9e9a-149a482dfa3a")).toBeNull();
     expect(parsePartId(`${DOC}:0`)).toBeNull();

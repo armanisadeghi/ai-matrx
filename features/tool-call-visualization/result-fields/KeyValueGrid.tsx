@@ -40,7 +40,6 @@ import {
   detectResultShape,
   humanizeEnumValue,
   humanizeKey,
-  looksLikeUuid,
   mediaElementHintForKey,
 } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
@@ -50,6 +49,7 @@ import {
   useStructuredDocumentPresentation,
   type SchemaFieldLabel,
 } from "./document-presentation";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface KeyValueGridProps {
   value: Record<string, unknown>;

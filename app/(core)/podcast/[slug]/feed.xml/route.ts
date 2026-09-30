@@ -41,10 +41,6 @@ const DEFAULT_OWNER_EMAIL = 'info@aimatrx.com';
 const DEFAULT_CATEGORY = 'Technology';
 const DEFAULT_LANGUAGE = 'en-us';
 
-function isUUID(str: string): boolean {
-    return isUuidShape(str);
-}
-
 /** Escape the five XML metacharacters for use in element text / attributes. */
 function escapeXml(value: string): string {
     return value
@@ -98,7 +94,7 @@ export async function GET(
         .from('pc_shows')
         .select(PC_SHOW_PUBLIC_SELECT)
         .is('deleted_at', null);
-    const { data: showRow, error: showError } = isUUID(slug)
+    const { data: showRow, error: showError } = isUuidShape(slug)
         ? await showQuery.eq('id', slug).single()
         : await showQuery.eq('slug', slug).single();
 

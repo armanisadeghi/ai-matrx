@@ -194,11 +194,6 @@ export function looksLikeImageUrl(value: string): boolean {
     return IMAGE_EXT_RE.test(trimmed);
 }
 
-/** A whole-string RFC-4122 UUID (rendered compactly with hover-to-copy). */
-export function looksLikeUuid(s: string): boolean {
-    return isUuidShape(s);
-}
-
 /**
  * "SklSkillType.REFERENCE" → "Reference"; "Enum.RENDER_BLOCK" → "Render block".
  * Recognizes dotted enum-repr strings whose LAST segment is CONSTANT_CASE and
@@ -565,7 +560,7 @@ export function detectResultShape(
         if (ours) return ours;
         const stringMedia = embedMedia ? coerceMediaRef(value) : null;
         if (stringMedia) return { kind: "media", ref: stringMedia };
-        if (looksLikeUuid(value)) return { kind: "uuid", value };
+        if (isUuidShape(value)) return { kind: "uuid", value };
         if (looksLikeUrl(value)) return { kind: "url", value: value.trim() };
         if (looksLikeMarkdown(value)) return { kind: "text", value, markdown: true };
         // Single-line, short, no markdown → scalar treatment.
@@ -590,7 +585,7 @@ export function detectResultShape(
             // Every item a UUID → a wall of ids conveys nothing in a chat.
             // Render as a count + copy-all chip instead (owner rule: never
             // show a user a list of raw UUIDs).
-            if (value.every((v) => typeof v === "string" && looksLikeUuid(v))) {
+            if (value.every((v) => typeof v === "string" && isUuidShape(v))) {
                 return { kind: "idList", ids: value as string[] };
             }
             return { kind: "list", items: value };

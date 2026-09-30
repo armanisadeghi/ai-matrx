@@ -13,18 +13,18 @@ import { ragDb } from "@/utils/supabase/ragDb";
 import { docprocDb } from "@/utils/supabase/docprocDb";
 import {
   citedChunkFacts,
-  isChunkId,
   pageForPartOrdinal,
   parsePartId,
   type CitedChunkFacts,
 } from "./citedAnchor";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** Read where one cited id sits: an indexed chunk's own row, or a part's page. */
 async function readCitedFacts(
   id: string,
   documentId: string | null,
 ): Promise<{ facts: CitedChunkFacts | null; error: string | null }> {
-  if (isChunkId(id)) {
+  if (isUuidShape(id)) {
     const { data, error } = await ragDb(supabase)
       .from("kg_chunks")
       .select("page_numbers, metadata")

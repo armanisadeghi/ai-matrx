@@ -18,10 +18,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const revalidate = 3600;
 
-function isUUID(str: string): boolean {
-  return isUuidShape(str);
-}
-
 type AgentAppMetadata = {
   name: string;
   tagline: string | null;
@@ -34,7 +30,7 @@ async function resolveAgentAppMetadata(
   slug: string,
 ): Promise<AgentAppMetadata | null> {
   const supabase = await createClient();
-  const isId = isUUID(slug);
+  const isId = isUuidShape(slug);
   const column = isId ? "id" : "slug";
 
   // Canonical: an app is anonymous-readable only when published to the web
@@ -104,7 +100,7 @@ export default async function PublicAppPage({
   const { slug } = await params;
   const { embed } = await searchParams;
   const supabase = await createClient();
-  const isId = isUUID(slug);
+  const isId = isUuidShape(slug);
 
   const { data: rpcRows } = await supabase.rpc("get_aga_public_data", {
     p_slug: !isId ? slug : undefined,

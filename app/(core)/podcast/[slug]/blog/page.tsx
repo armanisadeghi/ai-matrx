@@ -21,12 +21,6 @@ const SITE_URL = (
 ).replace(/\/$/, "");
 const DEFAULT_OG_IMAGE = `${SITE_URL}/images/podcast-default-og.png`;
 
-function isUUID(str: string): boolean {
-  return isUuidShape(
-    str,
-  );
-}
-
 // One DB round-trip shared by generateMetadata + the page. Resolves the
 // episode (by slug or UUID) and its PUBLISHED blog article.
 const resolveBlog = cache(async (slug: string) => {
@@ -40,7 +34,7 @@ const resolveBlog = cache(async (slug: string) => {
       // Signed-out visitors run as `anon`, a COLUMN grant: `*` is 42501 (DD-230).
       .select(PC_EPISODE_WITH_SHOW_PUBLIC_SELECT),
   );
-  const { data: episode } = isUUID(slug)
+  const { data: episode } = isUuidShape(slug)
     ? await episodeQuery.eq("id", slug).single()
     : await episodeQuery.eq("slug", slug).single();
   if (!episode) return null;

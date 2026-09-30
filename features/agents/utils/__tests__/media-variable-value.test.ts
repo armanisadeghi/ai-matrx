@@ -7,23 +7,23 @@
  * composer — all share `AgentVariablesInline`).
  */
 
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
-  isMediaFileId,
   readMediaVariableFileId,
   readMediaVariableValue,
 } from "../media-variable-value";
 
 const FILE_ID = "c04cdeea-fb9f-4482-a423-961a84dd8d57";
 
-describe("isMediaFileId", () => {
+describe("a media file id is a bare UUID (isUuidShape)", () => {
   it("recognizes a canonical cld_files UUID", () => {
-    expect(isMediaFileId(FILE_ID)).toBe(true);
+    expect(isUuidShape(FILE_ID)).toBe(true);
   });
 
   it("rejects a URL or arbitrary text", () => {
-    expect(isMediaFileId("https://example.com/image.png")).toBe(false);
-    expect(isMediaFileId("not-a-uuid")).toBe(false);
-    expect(isMediaFileId("")).toBe(false);
+    expect(isUuidShape("https://example.com/image.png")).toBe(false);
+    expect(isUuidShape("not-a-uuid")).toBe(false);
+    expect(isUuidShape("")).toBe(false);
   });
 });
 

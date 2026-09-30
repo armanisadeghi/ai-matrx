@@ -37,12 +37,6 @@ const SITE_URL = (
 ).replace(/\/$/, "");
 const DEFAULT_OG_IMAGE = `${SITE_URL}/images/podcast-default-og.png`;
 
-function isUUID(str: string): boolean {
-  return isUuidShape(
-    str,
-  );
-}
-
 // React.cache deduplicates calls within a single render pass —
 // generateMetadata and the page component share one DB round-trip.
 const resolveSlug = cache(async (slug: string) => {
@@ -61,7 +55,7 @@ const resolveSlug = cache(async (slug: string) => {
       .select(PC_EPISODE_WITH_SHOW_PUBLIC_SELECT),
   );
 
-  const { data: episode } = isUUID(slug)
+  const { data: episode } = isUuidShape(slug)
     ? await episodeQuery.eq("id", slug).single()
     : await episodeQuery.eq("slug", slug).single();
 
@@ -76,7 +70,7 @@ const resolveSlug = cache(async (slug: string) => {
     .select(PC_SHOW_PUBLIC_SELECT)
     .is("deleted_at", null);
 
-  const { data: show } = isUUID(slug)
+  const { data: show } = isUuidShape(slug)
     ? await showQuery.eq("id", slug).single()
     : await showQuery.eq("slug", slug).single();
 

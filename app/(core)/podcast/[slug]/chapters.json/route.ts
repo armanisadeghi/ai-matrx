@@ -22,12 +22,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const revalidate = 3600;
 
-function isUUID(str: string): boolean {
-  return isUuidShape(
-    str,
-  );
-}
-
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug: string }> },
@@ -43,7 +37,7 @@ export async function GET(
       .select(PC_EPISODE_PUBLIC_SELECT),
   );
 
-  const { data: episodeRow, error: episodeError } = isUUID(slug)
+  const { data: episodeRow, error: episodeError } = isUuidShape(slug)
     ? await episodeQuery.eq("id", slug).single()
     : await episodeQuery.eq("slug", slug).single();
 

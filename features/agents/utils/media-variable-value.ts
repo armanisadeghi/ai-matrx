@@ -16,11 +16,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
  * such summary through here instead of `variableValueToDisplay`.
  */
 
-// 36-char canonical UUID — what cld_files file_ids look like.
-export function isMediaFileId(value: string): boolean {
-  return isUuidShape(value);
-}
-
 /** Coerce a media variable's raw value (string or MediaRef-shaped object) to its stored string form. */
 export function readMediaVariableValue(value: unknown): string {
   if (typeof value === "string") return value;
@@ -37,5 +32,5 @@ export function readMediaVariableValue(value: unknown): string {
 /** The cld_files file_id when the value names a library file, else null (a URL or empty). */
 export function readMediaVariableFileId(value: unknown): string | null {
   const stored = readMediaVariableValue(value);
-  return stored && isMediaFileId(stored) ? stored : null;
+  return stored && isUuidShape(stored) ? stored : null;
 }

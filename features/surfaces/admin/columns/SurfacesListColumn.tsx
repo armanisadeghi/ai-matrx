@@ -89,18 +89,12 @@ function parseUrlQuery(raw: string): UrlMatch | null {
     const segments = u.pathname
       .split("/")
       .map((s) => s.toLowerCase())
-      .filter((s) => s.length > 0 && !looksLikeUuid(s));
+      .filter((s) => s.length > 0 && !isUuidShape(s));
     if (segments.length === 0) return null;
     return { segments };
   } catch {
     return null;
   }
-}
-
-function looksLikeUuid(segment: string): boolean {
-  return isUuidShape(
-    segment,
-  );
 }
 
 function surfaceMatchesUrl(surface: SurfaceWithStats, url: UrlMatch): boolean {

@@ -69,10 +69,10 @@ import {
   formatTemporal,
   looksLikeEmail,
   looksLikeUrl,
-  looksLikeUuid,
   temporalShape,
   urlLabel,
 } from "./cell-value-shapes";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * The portable type vocabulary the Python model declares
@@ -414,7 +414,7 @@ const StringCell: React.FC<{ value: string }> = ({ value }) => {
   if (trimmed === "") {
     return <EmptyCell title="Empty text — the source stored a value with nothing in it." />;
   }
-  if (looksLikeUuid(trimmed)) return <ShortId value={trimmed} />;
+  if (isUuidShape(trimmed)) return <ShortId value={trimmed} />;
   if (looksLikeUrl(trimmed)) return <UrlCell value={trimmed} />;
   if (looksLikeEmail(trimmed)) return <EmailCell value={trimmed} />;
   const shape = temporalShape(trimmed);

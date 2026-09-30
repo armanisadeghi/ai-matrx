@@ -16,10 +16,11 @@
  *
  * ── INVENTORY LAW ────────────────────────────────────────────────────────────
  * Nothing here re-implements a detector the platform already owns.
- * `looksLikeUuid`, `looksLikeUrl` and `humanizeKey` are the tool-result field
- * library's (`features/tool-call-visualization/result-fields/shape.ts`) — the
- * same functions `StructuredValueView` recognizes values with, so a UUID looks
- * the same in a table cell as it does in a tool result. What is added here and
+ * A UUID is `isUuidShape` (`@ai-matrx/kit/uuid`); `looksLikeUrl` and
+ * `humanizeKey` are the tool-result field library's
+ * (`features/tool-call-visualization/result-fields/shape.ts`) — the same
+ * functions `StructuredValueView` recognizes values with, so a UUID looks the
+ * same in a table cell as it does in a tool result. What is added here and
  * did not exist: whole-string EMAIL and ISO-TIMESTAMP recognition, and the
  * date-only formatting rule below.
  *
@@ -29,12 +30,9 @@
  * never promoted to a number (that is how `"01234"` stops being a ZIP code).
  */
 
-import {
-  looksLikeUrl,
-  looksLikeUuid,
-} from "@/features/tool-call-visualization/result-fields/shape";
+import { looksLikeUrl } from "@/features/tool-call-visualization/result-fields/shape";
 
-export { looksLikeUrl, looksLikeUuid };
+export { looksLikeUrl };
 
 /** A whole-string email address (no surrounding prose). */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;

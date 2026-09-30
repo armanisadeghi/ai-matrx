@@ -53,10 +53,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setRuntimeVariableResourcePolicy } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectRuntimeVariableResourcePolicies } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import {
-  isMediaFileId,
-  readMediaVariableValue,
-} from "@/features/agents/utils/media-variable-value";
+import { readMediaVariableValue } from "@/features/agents/utils/media-variable-value";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type MediaKind = "image" | "audio" | "video" | "document";
 
@@ -122,7 +120,7 @@ const KIND_META: Record<
 const readValue = readMediaVariableValue;
 
 function describeValue(value: string): string {
-  if (isMediaFileId(value))
+  if (isUuidShape(value))
     return `From your library · ${value.slice(0, 8)}…`;
   try {
     const u = new URL(value);
@@ -167,7 +165,7 @@ export function MediaVariableInput({
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
   const stored = readValue(value);
-  const isFileId = !!stored && isMediaFileId(stored);
+  const isFileId = !!stored && isUuidShape(stored);
 
   // Resolve a renderable URL when the stored value is a cld_files UUID.
   // Returns null while loading; we hide the thumbnail in that case.
