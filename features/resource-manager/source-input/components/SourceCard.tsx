@@ -156,9 +156,11 @@ export function SourceCard({
                 href={card.draft.processedDocumentId ? sourceHref(card.draft.processedDocumentId) : undefined}
                 openInNewTab
                 showIcon={false}
+                // A name is read, not guessed: up to two lines, never "Photosynthesis and …" (verify-4 #52).
+                labelClassName="line-clamp-2 whitespace-normal break-words"
               />
             ) : (
-              <span className="block truncate">{card.draft.label}</span>
+              <span className="line-clamp-2 break-words">{card.draft.label}</span>
             )}
           </div>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
@@ -250,6 +252,7 @@ export function SourceCard({
       onChooseFileAgain ? (
         // Its upload was cut off: choose the file again through the one upload surface.
         <InlineUploadArea
+          clearHandedOver
           accept={sourceKindDef(card.draft.kind)?.accept}
           selectionMode="single"
           onSelect={(files) => {

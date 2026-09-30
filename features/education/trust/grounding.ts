@@ -20,8 +20,14 @@ export interface SourceRefs {
   url?: string | null;
   /** Resolve a 1-based page for a given citation's `sourceId` (e.g. chunk id). */
   pageForCitation?: (citation: SourceCitation) => number | undefined;
-  /** Fallback display title when a citation has none. */
-  title?: string;
+  /**
+   * The Source's REAL name. When known it always wins over the agent's
+   * citation title — agents invent titles ("Industrial applications",
+   * "Enzyme Basics Transcript"); a citation names the Source the person
+   * picked (verify-4 V4-F #2). The agent's title stays only when the persisting
+   * surface does not know the name.
+   */
+  title?: string | null;
 }
 
 /** Backfill durable, openable references onto one citation (agent values win where present). */
@@ -36,7 +42,7 @@ export function attachRefsToCitation(
     documentId: citation.documentId ?? refs.documentId ?? undefined,
     url: citation.url ?? refs.url ?? undefined,
     page,
-    title: citation.title ?? refs.title,
+    title: refs.title || citation.title,
   };
 }
 

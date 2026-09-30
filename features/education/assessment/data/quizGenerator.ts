@@ -114,7 +114,8 @@ function makeRun(kind: "quiz" | "practice_test") {
               ...q,
               trust: attachSourceRefs(q.trust, {
                 documentId: anchorFileId,
-                title: source.title ?? generated.title,
+                // The Source's real name — never the quiz's own title.
+                title: source.title,
               }),
             }))
           : generated.questions;

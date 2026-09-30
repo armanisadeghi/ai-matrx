@@ -46,6 +46,13 @@ import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProven
 import { ChunksOnPage } from "@/features/rag/components/library/ChunkList";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
 import { usePageBundle } from "./usePageBundle";
+import { useCitedChunk } from "./useCitedChunk";
+import {
+  citedPages,
+  citedTargetPage,
+  pagesLabel,
+  timeRangeLabel,
+} from "./citedAnchor";
 
 // react-pdf is heavy — keep it out of the inspector chunk until a PDF is shown.
 const PdfPreview = dynamic(
@@ -115,21 +122,24 @@ export function SourceInspectorPane({
     ? (provenanceByFile.get(fileId) ?? null)
     : null;
 
-  // The page(s) the citation anchors to.
-  const matchPages = useMemo(() => {
-    const raw =
-      pageNumbers && pageNumbers.length
-        ? pageNumbers
-        : pageNumber != null
-          ? [pageNumber]
-          : [];
-    return [...new Set(raw)].filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
-  }, [pageNumbers, pageNumber]);
-  // Pages are 1-based on the wire; clamp so a stray 0/negative can't feed the
-  // 1-based PDF viewer or the page-content query (review P2).
-  const targetPage = Math.max(1, matchPages[0] ?? 1);
+  // The cited chunk's own anchor — a citation often names its chunk but not
+  // its page (web page, transcript, note), and page 1 is then the WRONG
+  // passage (verify-4 #33/#34). Read only when the citation has no page.
+  const citationHasPage =
+    (pageNumbers?.length ?? 0) > 0 || pageNumber != null;
+  const cited = useCitedChunk(chunkId);
+  const waitingForAnchor = !citationHasPage && cited.loading;
 
-  const [activePage, setActivePage] = useState(targetPage);
+  // The page(s) the citation anchors to (1-based, clamped).
+  const matchPages = useMemo(
+    () => citedPages(pageNumbers, pageNumber, cited.facts),
+    [pageNumbers, pageNumber, cited.facts],
+  );
+  const targetPage = citedTargetPage(matchPages);
+
+  // The person's own paging wins; until then the viewer sits on the match.
+  const [pickedPage, setActivePage] = useState<number | null>(null);
+  const activePage = pickedPage ?? targetPage;
 
   // Is the source a renderable PDF? (mime / filename hint; falls back to false
   // so a non-PDF never feeds garbage to pdfjs.)
@@ -154,12 +164,11 @@ export function SourceInspectorPane({
 
   const [tab, setTab] = useState<TabKey>("match");
 
-  const spanLabel =
-    matchPages.length === 0
-      ? null
-      : matchPages.length === 1
-        ? `Page ${matchPages[0]}`
-        : `Pages ${matchPages[0]}–${matchPages[matchPages.length - 1]}`;
+  // A timed segment (a video, a recording) is named by its time, never pages.
+  const timeLabel = cited.facts
+    ? timeRangeLabel(cited.facts.t0Ms, cited.facts.t1Ms)
+    : null;
+  const spanLabel = timeLabel ?? pagesLabel(matchPages);
   const onMatchPage = matchPages.includes(activePage) || matchPages.length === 0;
 
   // ── Visual pane (the real document) ──────────────────────────────────────
@@ -239,12 +248,27 @@ export function SourceInspectorPane({
               </div>
             )}
             <div className="min-h-0 flex-1">
-              {hasDoc && processedDocumentId ? (
-                <ChunksOnPage
-                  documentId={processedDocumentId}
-                  pageNumber={activePage}
-                  highlightChunkId={onMatchPage ? chunkId : null}
-                />
+              {waitingForAnchor ? (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" aria-label="Finding the passage" />
+                </div>
+              ) : hasDoc && processedDocumentId ? (
+                <div className="flex h-full min-h-0 flex-col">
+                  {cited.error && !citationHasPage ? (
+                    <p role="alert" className="shrink-0 border-b border-border px-3 py-1.5 text-xs text-warning">
+                      {cited.error}
+                    </p>
+                  ) : null}
+                  <div className="min-h-0 flex-1">
+                    <ChunksOnPage
+                      documentId={processedDocumentId}
+                      pageNumber={activePage}
+                      highlightChunkId={onMatchPage ? chunkId : null}
+                      plain
+                      highlightLabel={query ? "Matched" : "Cited"}
+                    />
+                  </div>
+                </div>
               ) : (
                 <ScrollArea className="h-full">
                   <div className="p-3">

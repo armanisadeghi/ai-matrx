@@ -45,6 +45,7 @@ import {
   cancelSourceReview,
   openSourceReview,
 } from "@/features/resource-manager/source-input/review/openSourceReview";
+import { applyReviewAnswer } from "@/features/resource-manager/source-input/review/removedInReview";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
@@ -184,7 +185,8 @@ export function SourceInput({
         ),
       });
       if (outcome.status === "applied" || outcome.status === "add_more") {
-        set.applySourceSet(outcome.sourceSet);
+        // A Source removed in the review leaves the page too (V4-F #3).
+        applyReviewAnswer(set.controller, sourceSet, outcome.sourceSet);
       }
       openedReview.current = false;
     } catch (err) {
@@ -222,6 +224,55 @@ export function SourceInput({
       );
     return files.slice(0, room);
   };
+
+  // What is picked sits right under the search box — above the doors and the
+  // kind list — so on a phone it is never scrolled past (verify-4 #52).
+  const pickedList = (
+    set.restoring ? (
+      <div className="space-y-2" aria-hidden>
+        <div className="h-16 animate-pulse rounded-xl border border-border bg-muted/40" />
+      </div>
+    ) : set.topic.trim() || count > 0 ? (
+      <ul className="space-y-2" aria-label="Picked sources">
+        {set.topic.trim() ? (
+          <li className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+            <span className="min-w-0 flex-1 text-sm">
+              <span className="text-muted-foreground">Topic: </span>
+              {set.topic}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              aria-label="Remove the topic"
+              onClick={() => set.setTopic("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </li>
+        ) : null}
+        {set.sources.map((card) => (
+          <SourceCard
+            key={card.id}
+            card={card}
+            set={set}
+            job={
+              card.draft.fileId
+                ? (runner.jobs.find((j) => j.cldFileId === card.draft.fileId) ?? null)
+                : null
+            }
+            deliveries={deliveries}
+            heldForOrganization={fileCardHeldForOrganization(card, activeOrgId, fileOrganizationId)}
+            onProcessingSettled={() => void set.manifest()}
+            // A retry is a card already in the list — it never counts against `max`.
+            onTryAgain={() => void intake.resume(card)}
+            onChooseFileAgain={(file) => void intake.retryFile(card, file)}
+          />
+        ))}
+      </ul>
+    ) : null
+  );
 
   return (
     <section className={cn("space-y-3", className)} aria-label={title}>
@@ -274,6 +325,8 @@ export function SourceInput({
           ) : null}
         </div>
       ) : null}
+
+      {pickedList}
 
       {query.trim() && existing ? null : (
         <div className="flex flex-col gap-2">
@@ -353,50 +406,6 @@ export function SourceInput({
         </p>
       ) : null}
 
-      {set.restoring ? (
-        <div className="space-y-2" aria-hidden>
-          <div className="h-16 animate-pulse rounded-xl border border-border bg-muted/40" />
-        </div>
-      ) : set.topic.trim() || count > 0 ? (
-        <ul className="space-y-2" aria-label="Picked sources">
-          {set.topic.trim() ? (
-            <li className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-              <span className="min-w-0 flex-1 text-sm">
-                <span className="text-muted-foreground">Topic: </span>
-                {set.topic}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 sm:h-8 sm:w-8"
-                aria-label="Remove the topic"
-                onClick={() => set.setTopic("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </li>
-          ) : null}
-          {set.sources.map((card) => (
-            <SourceCard
-              key={card.id}
-              card={card}
-              set={set}
-              job={
-                card.draft.fileId
-                  ? (runner.jobs.find((j) => j.cldFileId === card.draft.fileId) ?? null)
-                  : null
-              }
-              deliveries={deliveries}
-              heldForOrganization={fileCardHeldForOrganization(card, activeOrgId, fileOrganizationId)}
-              onProcessingSettled={() => void set.manifest()}
-              // A retry is a card already in the list — it never counts against `max`.
-              onTryAgain={() => void intake.resume(card)}
-              onChooseFileAgain={(file) => void intake.retryFile(card, file)}
-            />
-          ))}
-        </ul>
-      ) : null}
     </section>
   );
 }
@@ -547,6 +556,7 @@ function TileArea({
         );
       return (
         <InlineUploadArea
+          clearHandedOver
           accept={tile.accept}
           selectionMode="single"
           onSelect={async (uploaded) => {
@@ -558,6 +568,7 @@ function TileArea({
     case "upload":
       return (
         <InlineUploadArea
+          clearHandedOver
           accept={tile.accept}
           imageLinks={tile.id === "image"}
           selectionMode="multiple"

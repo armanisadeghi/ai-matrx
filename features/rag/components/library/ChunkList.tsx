@@ -50,6 +50,10 @@ import {
   type ChunkScope,
 } from "@/features/rag/chunk-copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  citedChunkFacts,
+  timeRangeLabel,
+} from "@/features/rag/components/source-inspector/citedAnchor";
 
 /** The structural shape ChunkCard needs. Any endpoint chunk row that carries
  *  these fields renders without adaptation. */
@@ -64,6 +68,8 @@ export interface ChunkLike {
   /** Sources embed with Voyage; a chunk with either embedding is searchable. */
   has_voyage_embedding?: boolean;
   section_kind: string | null;
+  /** Timed segments carry `t0_ms` / `t1_ms` here. */
+  metadata?: Record<string, unknown> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +84,19 @@ function formatPages(pages: number[] | null): string | null {
   return first === last ? `p.${first}` : `p.${first}–${last}`;
 }
 
+/** Where a chunk sits, in the reader's words: its time when it has one
+ *  (a video has no pages), else its page(s). */
+export function chunkPlaceLabel(chunk: ChunkLike): string | null {
+  const facts = citedChunkFacts(chunk);
+  const time = timeRangeLabel(facts.t0Ms, facts.t1Ms);
+  if (time) return time;
+  const pages = chunk.page_numbers ? [...chunk.page_numbers].sort((a, b) => a - b) : [];
+  if (!pages.length) return null;
+  const first = pages[0];
+  const last = pages[pages.length - 1];
+  return first === last ? `Page ${first}` : `Pages ${first}–${last}`;
+}
+
 // ---------------------------------------------------------------------------
 // Card
 // ---------------------------------------------------------------------------
@@ -88,8 +107,15 @@ export function ChunkCard({
   scope,
   onSelect,
   selectLabel,
+  plain = false,
+  highlightLabel = "Matched",
 }: {
   chunk: ChunkLike;
+  /** A reader's view (a citation opened from a card): only where it sits and
+   *  the text — no index, kind, token or embedding badges. */
+  plain?: boolean;
+  /** The highlighted chunk's badge word ("Cited" for a citation). */
+  highlightLabel?: string;
   /** Go to where this chunk sits (a portion, a timestamp). Renders a labelled button. */
   onSelect?: () => void;
   /** The button's words, e.g. "Play from 01:05" or "Go to Section 3". */
@@ -100,7 +126,7 @@ export function ChunkCard({
   /** Provenance for the per-chunk copy payload. Omit to hide the pair. */
   scope?: ChunkScope;
 }) {
-  const pageLabel = formatPages(chunk.page_numbers);
+  const pageLabel = plain ? chunkPlaceLabel(chunk) : formatPages(chunk.page_numbers);
   return (
     <div
       className={cn(
@@ -116,7 +142,7 @@ export function ChunkCard({
             variant="default"
             className="text-[10px] px-1.5 py-0 font-semibold"
           >
-            Matched
+            {highlightLabel}
           </Badge>
         )}
         {/* Page provenance first — the user's #1 question is "where did this
@@ -129,32 +155,36 @@ export function ChunkCard({
             {pageLabel}
           </Badge>
         )}
-        <Badge variant="outline" className="text-[10px] px-1 py-0">
-          #{chunk.chunk_index ?? "?"}
-        </Badge>
-        {chunk.chunk_kind && (
+        {plain ? null : (
+          <>
           <Badge variant="outline" className="text-[10px] px-1 py-0">
-            {chunk.chunk_kind}
+            #{chunk.chunk_index ?? "?"}
           </Badge>
-        )}
-        {chunk.token_count != null && (
-          <Badge variant="outline" className="text-[10px] px-1 py-0">
-            {chunk.token_count} tok
-          </Badge>
-        )}
-        {chunk.section_kind && (
-          <Badge variant="info" className="text-[10px] px-1 py-0">
-            {chunk.section_kind}
-          </Badge>
-        )}
-        {chunk.has_oai_embedding || chunk.has_voyage_embedding ? (
-          <Badge variant="success" className="text-[10px] px-1 py-0">
-            embedded
-          </Badge>
-        ) : (
-          <Badge variant="error" className="text-[10px] px-1 py-0">
-            no embed
-          </Badge>
+          {chunk.chunk_kind && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0">
+              {chunk.chunk_kind}
+            </Badge>
+          )}
+          {chunk.token_count != null && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0">
+              {chunk.token_count} tok
+            </Badge>
+          )}
+          {chunk.section_kind && (
+            <Badge variant="info" className="text-[10px] px-1 py-0">
+              {chunk.section_kind}
+            </Badge>
+          )}
+          {chunk.has_oai_embedding || chunk.has_voyage_embedding ? (
+            <Badge variant="success" className="text-[10px] px-1 py-0">
+              embedded
+            </Badge>
+          ) : (
+            <Badge variant="error" className="text-[10px] px-1 py-0">
+              no embed
+            </Badge>
+          )}
+          </>
         )}
         {scope && (
           <CopyButtons
@@ -355,9 +385,14 @@ export function ChunksOnPage({
   documentId,
   pageNumber,
   highlightChunkId = null,
+  plain = false,
+  highlightLabel,
 }: {
   documentId: string;
   pageNumber: number;
+  /** Reader's view of every card (see ChunkCard `plain`). */
+  plain?: boolean;
+  highlightLabel?: string;
   /** When set, that chunk floats to the top and renders as the "Matched" card. */
   highlightChunkId?: string | null;
 }) {
@@ -451,6 +486,8 @@ export function ChunksOnPage({
               key={c.id}
               chunk={c}
               scope={scope}
+              plain={plain}
+              highlightLabel={highlightLabel}
               highlighted={highlightChunkId != null && c.id === highlightChunkId}
             />
           ))}

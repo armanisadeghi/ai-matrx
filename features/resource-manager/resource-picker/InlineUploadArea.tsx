@@ -96,6 +96,13 @@ interface InlineUploadAreaProps {
    * fetched into a File and goes through the same upload as a chosen one.
    */
   imageLinks?: boolean;
+  /**
+   * The host shows what it received (the Source input's cards): once
+   * `onSelect` has taken a batch, its uploaded rows leave this area — a
+   * removed Source never lingers here as an upload (verify-4 V4-F #3).
+   * Failed rows stay with their retry.
+   */
+  clearHandedOver?: boolean;
 }
 
 /** The drop line names what this area takes. */
@@ -353,6 +360,7 @@ export function InlineUploadArea({
   organizationId = null,
   accept,
   imageLinks = false,
+  clearHandedOver = false,
 }: InlineUploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [link, setLink] = useState("");
@@ -548,6 +556,9 @@ export function InlineUploadArea({
         if (results.length > 0) {
           setIsFinalizing(true);
           await onSelect(results);
+          if (clearHandedOver) {
+            setFileStatuses((prev) => prev.filter((f) => f.status !== "done"));
+          }
         }
       } finally {
         // Upload + host-side durable wiring is one busy interval.
@@ -557,7 +568,7 @@ export function InlineUploadArea({
         setBusy(false);
       }
     },
-    [upload, onSelect, setBusy, organizationId],
+    [upload, onSelect, setBusy, organizationId, clearHandedOver],
   );
 
   const handleDrop = useCallback(
