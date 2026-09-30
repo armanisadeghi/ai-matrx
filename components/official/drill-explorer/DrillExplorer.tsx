@@ -228,6 +228,8 @@ export function DrillExplorer({
   const labelOfKey = (key: string) =>
     dimensions.find((d) => d.key === parseDimensionRef(key).key)?.label ?? measures.find((m) => m.key === key)?.label ?? key;
   const carriedSaid = carriedWords(carried, labelOfKey);
+  // "Save this question as a view" keeps what the open view carries, so a copy is never wider.
+  const savedQuestion: ExplorerQuestion = carried ? { ...asked, door: carried } : asked;
   const dimensionWords = dimensions.map((d) => d.label.toLowerCase());
 
   return (
@@ -291,7 +293,7 @@ export function DrillExplorer({
               ))}
             </div>
           ) : null}
-          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} homeOrganizationId={lane === "platform" ? organizationId : null} builtIn={builtIn} question={carried ? { ...asked, door: carried } : asked} onOpen={openQuestion} /> : null}
+          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} homeOrganizationId={lane === "platform" ? organizationId : null} builtIn={builtIn} question={savedQuestion} onOpen={openQuestion} /> : null}
           {def && question.by.length > 0 ? (
             <DrillExplainButton
               input={{

@@ -15,7 +15,21 @@
 //                   ORIGIN=http://drillfix.localhost:3001 PART=app node scripts/drill-wave1-fixes-walk.mjs
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
-import { signIn } from "./lib/seat-browser.mjs";
+import { signIn, sleep } from "./lib/seat-browser.mjs";
+
+/** The shared preview's live walk cap parks a tab when another session needs the slot; resume like a person. */
+async function gotoResuming(page, url) {
+  for (let n = 1; n <= 8; n += 1) {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120000 });
+    await sleep(1500);
+    const parked = page.url().includes("__dev-walk") || (await page.getByRole("button", { name: /Resume/ }).count()) > 0;
+    if (!parked) return;
+    console.log(`[walk] parked by the walk cap (try ${n}) — resuming`);
+    await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await sleep(5000 * n);
+  }
+  throw new Error("the walk cap kept parking this tab");
+}
 
 const PART = process.env.PART ?? "app";
 const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-wave1-fixes";
@@ -86,13 +100,14 @@ async function packageWalk() {
 
 async function appWalk() {
   const ORIGIN = process.env.ORIGIN ?? "http://drillfix.localhost:3001";
-  const env = readFileSync("/Users/armanisadeghi/code/matrx-frontend/.env", "utf8");
+  const env = ["/Users/armanisadeghi/code/matrx-frontend/.env", "/Users/armanisadeghi/code/matrx-frontend/.env.local"].map((f) => { try { return readFileSync(f, "utf8"); } catch { return ""; } }).join("\n");
   const val = (k) => env.match(new RegExp(`^${k}=["']?([^"'\\n]+)`, "m"))?.[1];
   for (const theme of ["light", "dark"]) {
     for (const width of [1280, 390]) {
       const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme });
       const page = await context.newPage();
       page.on("console", (m) => m.type() === "error" && out.console_errors.push(m.text().slice(0, 300)));
+      await gotoResuming(page, `${ORIGIN}/login`);
       const who = await signIn(page, ORIGIN, val("AI_ADMIN_USERNAME"), val("AI_ADMIN_PASSWORD"), "admin");
       if (theme === "light" && width === 1280) step("signed in", { who });
       await page.goto(`${ORIGIN}/administration/usage`, { waitUntil: "domcontentloaded", timeout: 180000 });

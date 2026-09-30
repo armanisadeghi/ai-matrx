@@ -36,11 +36,9 @@ export interface DrillCarried {
   adHoc?: Array<{ at: number; measure: AdHoc }>;
   /** A comparison the address cannot say (a chosen range, a period, to date) — never drawn here. */
   compare?: Exclude<DrillQuestion["compare"], string | undefined>;
-  /** The declared question's own path, lane, page and columns (kept so it round-trips). */
+  /** The declared question's own path and lane (kept so it round-trips). */
   path?: string;
   lane?: DrillQuestion["lane"];
-  offset?: number;
-  columns?: string[];
 }
 
 /** The address question with what it cannot say carried beside it (absent when there is nothing). */
@@ -99,8 +97,6 @@ export function explorerQuestionParts(q: DrillQuestionWithHaving): ExplorerQuest
   if (q.having && q.having.length > 0) door.having = q.having;
   if (q.path) door.path = q.path;
   if (q.lane) door.lane = q.lane;
-  if (typeof q.offset === "number") door.offset = q.offset;
-  if (q.columns) door.columns = q.columns;
   if (Object.keys(door).length > 0) out.door = door;
   return out;
 }
@@ -141,8 +137,6 @@ export function doorQuestionOf(q: ExplorerQuestion): DrillQuestionWithHaving {
   if (door.having) out.having = door.having;
   if (door.path) out.path = door.path;
   if (door.lane) out.lane = door.lane;
-  if (door.offset !== undefined) out.offset = door.offset;
-  if (door.columns) out.columns = door.columns;
   return out;
 }
 

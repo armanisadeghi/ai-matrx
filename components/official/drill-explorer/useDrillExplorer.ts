@@ -266,9 +266,20 @@ export function useDrillExplorer(args: {
           continue;
         }
         const kind = r.by.length === 0 ? "total" : "group";
-        out[r.key] = answer.rows
+        const rows = answer.rows
           .filter((row) => row.kind === kind && (kind === "group" || !row.groups || Object.keys(row.groups).length === 0))
           .map((row) => drillRowOf(row, countMeasure));
+        // A PIVOT ACROSS TIME KEEPS THE LATEST PERIODS (VERIFY-DRILL-WAVE1 F2). The installed design
+        // system (0.49.37) keeps the FIRST N across values it is handed, so the pivot's own totals go
+        // to it newest first and the cap keeps the latest periods; the rest column is the earlier
+        // ones. The design system with lane DRILL-WAVE1-FIXES' fix orders time columns itself
+        // (calendar order, latest kept, the rest said in words) — then this goes
+        // (PROGRESS-DRILL-EXPLORER "After publish").
+        const across = asked.across ?? null;
+        if (across && r.by.length === 1 && r.by[0] === across && timeKeys.has(parseDimensionRef(across).key)) {
+          rows.sort((a, b) => String(b.groups[across] ?? "").localeCompare(String(a.groups[across] ?? "")));
+        }
+        out[r.key] = rows;
         for (const row of answer.rows) for (const [dim, value] of Object.entries(row.groups ?? {})) note(dim, value);
       }
       for (const w of asked.where) note(w.dim, w.value);
