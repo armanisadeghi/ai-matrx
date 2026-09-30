@@ -84,6 +84,7 @@ select
 from runtime.global_execution e
 left join chat.user_request ur on ur.id = e.request_id;
 
+
 revoke all on runtime._ai_usage_calls from public, anon, authenticated;
 comment on view runtime._ai_usage_calls is
   'DRILL-LEDGER-RECORDS: the AI usage ledger, one row per execution, by public.admin_spend_breakdown''s rules — the ONE rules source: runtime.ai_usage_hourly_refresh rebuilds runtime._ai_usage_hourly from it, and the drill door reads the records behind an ai_usage number from it (token ai_usage_executions). Same column names as the rollup, including bucket (the UTC hour). Server-only.';

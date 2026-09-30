@@ -3,7 +3,7 @@
  * (Linear: filters, view and layout live in the address, so a link, a reload,
  * Back and a saved view all reproduce exactly what a person saw).
  *
- *   /knowledge?view=in:project:<id>&q=budget&types=note,task&layout=board&peek=note:<id>
+ *   /knowledge/hub?view=in:project:<id>&q=budget&types=note,task&layout=board&peek=note:<id>
  *
  * Pure: `hubStateFromParams` and `hubStateToParams` round-trip every
  * normalized state; `selectionQuery` is what choosing a sidebar item does to
@@ -410,7 +410,7 @@ export interface ReadonlyURLSearchParamsLike {
 
 export function hubHref(s: HubState): string {
   const qs = hubStateToParams(s).toString();
-  return qs ? `/knowledge/hub?${qs}` : "/knowledge";
+  return qs ? `/knowledge/hub?${qs}` : "/knowledge/hub";
 }
 
 // ─── Organization reach ─────────────────────────────────────────────────────

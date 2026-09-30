@@ -445,6 +445,67 @@ if (STEP === "read-select") {
   console.log("save-to-table offered in Read mode:", await item.isVisible().catch(() => false));
 }
 
+if (STEP === "read-bullets") {
+  // BREAKER-3 B3-16 / VERIFIER-30 #1: a nested list selected in Read mode, from the selection bar
+  // and from the right-click menu.
+  const list = ["## Home programme", "", "- Stretching", "  - Hamstring stretch", "  - Calf stretch", "- Strength", "  - Wall sit", "  - Add weight after week 2", "- Balance", "  - Single-leg stance"].join("\n");
+  await newNote(list);
+  await page.getByRole("button", { name: /^Read$/ }).first().click().catch(() => {});
+  await sleep(5000);
+  const selectList = () =>
+    page.evaluate(() => {
+      const ul = [...document.querySelectorAll("ul")].find((u) => (u.textContent ?? "").includes("Hamstring stretch") && u.closest("[contenteditable='true']") === null && u.parentElement?.closest("ul") === null);
+      if (!ul) return false;
+      const range = document.createRange();
+      range.selectNodeContents(ul);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      const r = ul.getBoundingClientRect();
+      ul.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: r.left + 20, clientY: r.top + 10 }));
+      document.dispatchEvent(new Event("selectionchange"));
+      return true;
+    });
+  console.log("selected the rendered list:", await selectList());
+  await sleep(2500);
+  const more = page.getByRole("button", { name: /More/ }).last();
+  if (await more.isVisible().catch(() => false)) await more.click();
+  await sleep(1200);
+  await shot("10-read-bullets-bar");
+  const barItem = page.getByRole("menuitem", { name: /Save to a table/ }).or(page.getByRole("button", { name: /Save to a table/ })).first();
+  console.log("selection bar offers it:", await barItem.isVisible().catch(() => false));
+  await barItem.click().catch(() => {});
+  const dlg = await theDialog().catch(() => null);
+  if (dlg) {
+    await sleep(1000);
+    await shot("10-read-bullets-dialog");
+    console.log("bar dialog:", (await dlg.innerText()).split("\n").slice(0, 8).join(" | "));
+    await page.keyboard.press("Escape");
+    await sleep(1000);
+  }
+  // The right-click menu over the same selection.
+  console.log("selected again:", await selectList());
+  await sleep(800);
+  const ulBox = await page.locator("ul").filter({ hasText: "Hamstring stretch" }).first().boundingBox();
+  if (ulBox) await page.mouse.click(ulBox.x + 30, ulBox.y + 10, { button: "right" });
+  await sleep(2000);
+  const direct = page.getByRole("menuitem", { name: /^Save to a table/ }).first();
+  if (!(await direct.isVisible().catch(() => false))) {
+    await page.getByRole("menuitem", { name: /^Save$/ }).first().hover().catch(() => {});
+    await sleep(1200);
+  }
+  await shot("10-read-bullets-rightclick");
+  const rc = page.getByRole("menuitem", { name: /^Save to a table/ }).first();
+  console.log("right-click offers it:", await rc.isVisible().catch(() => false));
+  if (await rc.isVisible().catch(() => false)) {
+    await rc.click();
+    const d2 = await theDialog();
+    await sleep(1000);
+    await shot("10-read-bullets-rightclick-dialog");
+    console.log("right-click dialog:", (await d2.innerText()).split("\n").slice(0, 8).join(" | "));
+  }
+}
+
 if (STEP === "explore") {
   await goto(process.env.PATHNAME ?? "/notes");
   await sleep(8000);

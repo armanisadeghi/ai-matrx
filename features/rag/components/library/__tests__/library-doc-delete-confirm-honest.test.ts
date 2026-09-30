@@ -8,8 +8,8 @@
  *
  * Class guard: scans every file that calls
  * `fn_delete_library_document_and_source` for permanence wording. The sheet
- * was retired 2026-09-26 with the old library page; the Knowledge hub's
- * trash (sourceActions.trashSource, H6a) is the surface guarded by name now.
+ * is gone; the Knowledge hub's trash (sourceActions.trashSource) is guarded
+ * by name, and the live Sources page is covered by the class scan.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -67,11 +67,11 @@ describe("library document 'delete file' confirm is honest about a soft delete",
       "utf8",
     );
     const door = readFileSync(join(REPO_ROOT, "features/sources/sourceActions.ts"), "utf8");
-    // The Sources page retired 2026-09-27 (KNOWLEDGE-HUB H6a); its delete moved here.
+    // The hub's Sources rows share the one soft-delete door (the Sources page is live again at /knowledge/library and guarded by the class scan above).
     expect(door).toMatch(/fn_delete_library_document_and_source/);
     expect(door).toMatch(/moved to the trash/);
     expect(hub).toMatch(/trashSource\(row\)/);
-    expect(hub).toMatch(/archiveConfirmSentence/);
+    expect(hub).toMatch(/trashConfirmSentence/);
     expect(hub).toMatch(/Move to Trash/);
   });
 });

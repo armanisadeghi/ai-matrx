@@ -1375,6 +1375,23 @@ try {
       await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=grid`, { waitUntil: "domcontentloaded", timeout: 300000 });
       await until("the grid", async () => (await page.locator("tbody tr").count()) > 0, 240000);
       await sleep(5000);
+      // A walk that pressed Duplicate by mistake leaves copies of "Alpha0": each goes the way a person
+      // removes a row (its Delete, then the confirm), so the table ends as it began.
+      if (process.env.REMOVE_COPIES) {
+        const removed = [];
+        for (let k = 0; k < Number(process.env.REMOVE_COPIES); k += 1) {
+          const copies = page.locator("tbody tr", { hasText: "Alpha0" });
+          if ((await copies.count()) <= 1) break;
+          await copies.last().getByRole("button", { name: "Delete", exact: true }).click();
+          await sleep(1200);
+          const ask = page.getByRole("alertdialog");
+          const said = (await ask.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 160);
+          await ask.getByRole("button").filter({ hasNotText: "Cancel" }).first().click();
+          await sleep(3500);
+          removed.push(said);
+        }
+        step("the walk's accidental copies removed (Delete)", { removed, alpha0_rows: await page.locator("tbody tr", { hasText: "Alpha0" }).count() });
+      }
       await page.locator("[data-matrx-table-scroll], main").first().evaluate((el) => {
         const sc = [...document.querySelectorAll("*")].find((n) => n.scrollWidth > n.clientWidth + 20 && getComputedStyle(n).overflowX !== "visible");
         if (sc) sc.scrollLeft = sc.scrollWidth;
@@ -1382,12 +1399,21 @@ try {
       await sleep(1500);
       const row = page.locator("tbody tr", { hasText: "Alpha0" }).first();
       const ths = await page.locator("thead th").allInnerTexts();
-      const ci = ths.findIndex((t) => /^Referring Clinic/.test(t.trim()));
+      // Headers are drawn in capitals; match the words, never by position.
+      const ci = ths.findIndex((t) => /^Referring Clinic/i.test(t.trim()));
+      if (ci < 0) throw new Error(`no Referring Clinic column in the Grid: ${ths.join(" | ")}`);
       const cell = row.locator("td").nth(ci);
-      await cell.click();
-      await sleep(500);
-      await page.keyboard.press("Enter");
-      await sleep(2500);
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        // Beside the chip, never on it: the chip is a link to the record it names.
+        const box = await cell.boundingBox();
+        await cell.click({ position: { x: Math.max(4, (box?.width ?? 20) - 5), y: Math.max(4, (box?.height ?? 20) - 4) } });
+        await sleep(700);
+        await page.keyboard.press("Enter");
+        await sleep(2500);
+        if (await page.locator("[data-matrx-cell-editor]").count()) break;
+        await page.keyboard.press("Escape").catch(() => {});
+        await sleep(3000);
+      }
       await shot("b3-07-ref-editor");
       const reach = await page.evaluate(() => {
         const ed = document.querySelector("[data-matrx-cell-editor]");

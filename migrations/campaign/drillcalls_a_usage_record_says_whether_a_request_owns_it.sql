@@ -1,6 +1,7 @@
 -- chair-step: lane DRILL-CALLS (program DRILL-FINISH, decisions 13 and 24) — A USAGE RECORD SAYS WHETHER A REQUEST OWNS IT. It REPLACES the server-only view runtime._ai_usage_calls (lane DRILL-LEDGER-RECORDS, registry token ai_usage_executions) with the identical select plus ONE column appended last, has_request boolean (the execution belongs to a chat.user_request row). Every existing column, its type, its comment and the view's grants (none to clients) are kept; nothing that reads the view by column name changes. No table, policy or row of anybody's data is touched.
 -- lane: DRILL-CALLS
 -- lock: platform
+-- based-on: view runtime._ai_usage_calls 16fc8c1137a0f7679276ccc1d4580ae18849731afab07e4e21872eea0c15b959
 --
 -- WHY. The Spend page's "dig here" signals (public.admin_spend_breakdown, the parity oracle) count
 -- context per model call, and ten-minute bursts, over the executions THAT HAVE A REQUEST only
@@ -12,8 +13,10 @@
 -- "Has a request"), and it also names the first part of the ledger-vs-model-call reconciliation
 -- (decision 29): the ledger spend that no request owns has, by construction, no model call.
 --
--- ORDER: after DRILL-LEDGER-RECORDS' drillledger_the_records_behind_a_usage_number_are_the_ledger.sql
--- (which creates the view); the select below is that file's, verbatim, with has_request appended.
+-- ORDER: after every DRILL-LEDGER-RECORDS file (its file 2,
+-- drillledger_the_records_behind_a_usage_number_are_the_ledger.sql, creates the view; the based-on
+-- line is that body as rehearsed on the clone — production does not have it until that apply). The
+-- select below is that file's, verbatim (re-read 2026-09-30 after its ff6bc97b0f), with has_request appended.
 -- INVERSE: migrations/inverse/drillcalls_a_usage_record_says_whether_a_request_owns_it_down.sql
 -- Proof: scripts/campaign-tests/drillcalls_green.sql (clone).
 

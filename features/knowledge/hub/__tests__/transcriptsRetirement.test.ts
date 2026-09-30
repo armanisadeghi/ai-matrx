@@ -1,10 +1,10 @@
 /**
  * H6d: the Transcripts LIST's actions in the hub's Transcripts view
- * (`/knowledge?view=transcripts`) — the address a retired `/transcripts` lands
- * on (search, scope, sort, filters kept), the per-kind row menu, the facets
- * and the CSV, all the real pure code the hub page calls. The real route
- * modules run: `/transcripts` redirects there, and the old list survives only
- * at the review address `/compare/old/transcripts` (Arman, 2026-09-29).
+ * (`/knowledge/hub?view=transcripts`) — the address `transcriptsToHubHref` builds
+ * (search, scope, sort, filters kept), the per-kind row menu, the facets
+ * and the CSV, all the real pure code the hub page calls. No page is retired
+ * into the hub (Arman, 2026-09-29): the real `/transcripts` route renders the
+ * list itself; `/compare/old/transcripts` is a review address only.
  */
 const redirect = jest.fn((to: string) => {
   throw Object.assign(new Error("NEXT_REDIRECT"), { to });
@@ -51,27 +51,28 @@ import { exportTranscriptRows } from "@/features/transcripts/browse/bulkExport";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import type { TranscriptListRow } from "@/features/transcripts/browse/types";
 
-/** The real /transcripts route: where it redirects (or "LANDING" / "LIST" when it renders). */
-async function land(search: Record<string, string>): Promise<string> {
+/** The real /transcripts route: "LANDING" for guests, "LIST" when it renders — it never redirects. */
+async function land(): Promise<string> {
   redirect.mockClear();
-  try {
-    const out = (await TranscriptsRoute({ searchParams: Promise.resolve(search) })) as { type: () => string };
-    return out.type();
-  } catch (e) {
-    return (e as { to: string }).to;
-  }
+  const out = (await TranscriptsRoute()) as { type: () => string };
+  return out.type();
 }
 
 const params = (href: string) => new URLSearchParams(href.split("?")[1] ?? "");
 
-describe("the /transcripts address maps to the hub's Transcripts view, keeping its address", () => {
-  it("bare /transcripts lands on view=transcripts", async () => {
-    expect(await land({})).toBe("/knowledge?view=transcripts");
-    expect(HUB_TRANSCRIPTS_HREF).toBe("/knowledge?view=transcripts");
+describe("/transcripts is a live page; the hub's Transcripts view is built by transcriptsToHubHref", () => {
+  it("bare /transcripts renders the list for a signed-in person and never redirects", async () => {
+    expect(await land()).toBe("LIST");
+    expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("keeps search, scope, sort and every filter", async () => {
-    const to = await land({
+  it("the hub's Transcripts link is view=transcripts on /knowledge/hub", () => {
+    expect(HUB_TRANSCRIPTS_HREF).toBe("/knowledge/hub?view=transcripts");
+    expect(new URL(HUB_TRANSCRIPTS_HREF, "https://x").pathname).toBe("/knowledge/hub");
+  });
+
+  it("keeps search, scope, sort and every filter", () => {
+    const to = transcriptsToHubHref({
       q: "board meeting",
       scope: "mine",
       sort: "title",
@@ -83,7 +84,8 @@ describe("the /transcripts address maps to the hub's Transcripts view, keeping i
         tags: { kind: "select", values: ["q3"] },
       }),
     });
-    const state = hubStateFromParams(params(to as string));
+    expect(to.startsWith("/knowledge/hub?")).toBe(true);
+    const state = hubStateFromParams(params(to));
     expect(state.view).toEqual({ kind: "preset", key: "transcripts" });
     expect(state.query).toEqual({ mode: "find", text: "board meeting", sort: "title" });
     expect(state.group).toEqual({
@@ -102,9 +104,9 @@ describe("the /transcripts address maps to the hub's Transcripts view, keeping i
     expect(hubStateFromParams(params(transcriptsToHubHref({ scope: "public" }))).group).toEqual({ scope: "public" });
   });
 
-  it("guests still get the Transcripts landing, not a redirect", async () => {
+  it("guests get the Transcripts landing, not a redirect", async () => {
     authed = false;
-    expect(await land({ q: "x" })).toBe("LANDING");
+    expect(await land()).toBe("LANDING");
     expect(redirect).not.toHaveBeenCalled();
     authed = true;
   });
@@ -149,7 +151,7 @@ describe("the /transcripts address maps to the hub's Transcripts view, keeping i
 
   it("the view round-trips with its facets (g.*)", () => {
     const href = hubHref({ ...DEFAULT_HUB_STATE, view: { kind: "preset", key: "transcripts" }, group: { status: "final" } });
-    expect(href).toBe("/knowledge?view=transcripts&g.status=final");
+    expect(href).toBe("/knowledge/hub?view=transcripts&g.status=final");
     expect(hubStateFromParams(params(href)).group).toEqual({ status: "final" });
   });
 });

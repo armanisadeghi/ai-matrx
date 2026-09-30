@@ -285,12 +285,19 @@ describe("L · three consecutive reads in one session, and the newest one wins",
         // The header hides a metrics error once numbers exist, so the ordering
         // only becomes visible when NOTHING loads: two failures in flight, and
         // the older one answering last. A person must read the newest truth.
-        getLibrary.mockResolvedValue({
-            id: LIBRARY_ID, name: "TED", handle: "@ted", sync_status: "idle",
+        // (An organization landing no longer re-reads — org-filter sweep F5: a
+        // Library read never keys on the header organization. The second read
+        // here is the one a finished sync triggers: the poll sees the row leave
+        // "syncing" and re-asks the numbers.)
+        const row = (sync_status: string) => ({
+            id: LIBRARY_ID, name: "TED", handle: "@ted", sync_status,
             sync_error: null, item_count: 5810, last_synced_at: null,
             last_sync_duration_ms: null, metrics: null,
             canonical_url: "https://youtube.com/@ted",
         });
+        getLibrary
+            .mockResolvedValueOnce(row("syncing"))   // the mount read: a sync is running elsewhere
+            .mockResolvedValue(row("idle"));          // the poll: it finished
 
         let rejectOlder: (e: unknown) => void = () => {};
         getLibraryMetrics
@@ -299,18 +306,28 @@ describe("L · three consecutive reads in one session, and the newest one wins",
                 Promise.reject(mediaError("the newest read failed", "network_error")),
             );
 
-        const node = await mountWithoutOrganization();     // read 1, still in flight
-        await resolveOrganization();                       // an org lands — read 2
-        expect(node.textContent).toContain("the newest read failed");
+        jest.useFakeTimers();
+        try {
+            const node = await mountWithoutOrganization();     // read 1, still in flight
+            await act(async () => {
+                jest.advanceTimersByTime(5100);                // the poll fires — read 2
+                await Promise.resolve();
+                await Promise.resolve();
+            });
+            expect(getLibraryMetrics).toHaveBeenCalledTimes(2);
+            expect(node.textContent).toContain("the newest read failed");
 
-        await act(async () => {
-            rejectOlder(mediaError("a read from before, answering last", "network_error"));
-            await Promise.resolve();
-        });
+            await act(async () => {
+                rejectOlder(mediaError("a read from before, answering last", "network_error"));
+                await Promise.resolve();
+            });
 
-        expect(getLibraryMetrics).toHaveBeenCalledTimes(2);
-        expect(node.textContent).toContain("the newest read failed");
-        expect(node.textContent).not.toContain("answering last");
+            expect(getLibraryMetrics).toHaveBeenCalledTimes(2);
+            expect(node.textContent).toContain("the newest read failed");
+            expect(node.textContent).not.toContain("answering last");
+        } finally {
+            jest.useRealTimers();
+        }
     });
 });
 

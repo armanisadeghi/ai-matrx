@@ -224,7 +224,7 @@ describe("keyboard flow", () => {
     type("battery aging");
     key("Enter", { meta: true });
     await settle(20);
-    expect(push).toHaveBeenCalledWith("/knowledge?q=battery+aging&mode=ask");
+    expect(push).toHaveBeenCalledWith("/knowledge/hub?q=battery+aging&mode=ask");
   });
 
   it("⌘K on the selected result opens its action panel; Attach appears only when a chat is open", async () => {

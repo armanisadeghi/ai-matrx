@@ -1,7 +1,9 @@
 /**
- * H6a: every retired Knowledge address lands in the hub with its filters (the Search Lab is NOT retired)
- * (Linear: an old link keeps its filters). The real route modules run; only
- * `redirect` is a double (Next throws from it).
+ * H6a: no Knowledge page is retired into the hub (Arman, 2026-09-29). `/knowledge/library`
+ * renders Sources, `/knowledge/search` the Search Lab, `/rag/*` is live, and the hub lives at
+ * `/knowledge/hub`. `libraryToHubHref` still builds the hub's Sources view with filters carried.
+ * Only `/knowledge/visualization` still redirects (to the flow animation). The real route
+ * modules run; only `redirect` is a double (Next throws from it).
  */
 const redirect = jest.fn((to: string) => {
   throw Object.assign(new Error("NEXT_REDIRECT"), { to });
@@ -10,6 +12,7 @@ jest.mock("next/navigation", () => ({ redirect: (to: string) => redirect(to) }))
 jest.mock("@/utils/supabase/sessionVerdict", () => ({ getSessionVerdict: async () => ({ isAuthenticated: true }) }));
 jest.mock("@/features/rag/components/search/RagSearchExperience", () => ({ RagSearchExperience: () => null }));
 jest.mock("@/features/auth/components/module-landing/landings/KnowledgeLanding", () => ({ __esModule: true, default: () => null }));
+jest.mock("@/features/sources/components/SourcesPage", () => ({ SourcesPage: () => null }));
 
 import LibraryRoute from "@/app/(core)/knowledge/library/page";
 import SearchRoute from "@/app/(core)/knowledge/search/page";
@@ -18,7 +21,7 @@ import RagVisualizationRoute from "@/app/(core)/rag/visualization/page";
 import { hubStateFromParams } from "@/features/knowledge/hub/hubState";
 import { HUB_SOURCES_HREF, libraryToHubHref, SEARCH_LAB_ADMIN_PATH, SEARCH_LAB_PATH, searchLabHref } from "@/features/knowledge/hub/legacyRoutes";
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 // next.config.js copies files on require, so its redirect list is read as text.
@@ -32,11 +35,17 @@ async function land(page: (p: { searchParams: Promise<Params> }) => unknown, sea
 }
 const stateOf = (href: string) => hubStateFromParams(new URL(href, "https://x").searchParams);
 
-describe("retired Sources page → the hub's Sources view", () => {
-  it("?show=saved keeps the saved filter and the search words", async () => {
-    const href = await land(LibraryRoute as never, { show: "saved", q: "invoice" });
+describe("Sources page → a live page; the hub's Sources view is one helper away", () => {
+  it("/knowledge/library renders Sources for a signed-in person and never redirects", async () => {
+    redirect.mockClear();
+    const tree = await (LibraryRoute as unknown as () => Promise<{ type: unknown }>)();
+    expect(tree).toBeTruthy();
+    expect(redirect).not.toHaveBeenCalled();
+  });
+  it("libraryToHubHref keeps the saved filter and the search words on /knowledge/hub", () => {
+    const href = libraryToHubHref({ show: "saved", q: "invoice" });
     const s = stateOf(href);
-    expect(new URL(href, "https://x").pathname).toBe("/knowledge");
+    expect(new URL(href, "https://x").pathname).toBe("/knowledge/hub");
     expect(s.view).toEqual({ kind: "kind", key: "processed_document" });
     expect(s.query.types).toEqual(["processed_document"]);
     expect(s.query.state).toEqual(["kept"]);
@@ -81,8 +90,9 @@ describe("the graph demo and the /rag aliases", () => {
     expect(() => (RagVisualizationRoute as () => void)()).toThrow("NEXT_REDIRECT");
     expect(redirect).toHaveBeenCalledWith("/knowledge/flow");
   });
-  it("every /rag/* path redirects to its /knowledge/* twin (query kept by Next)", () => {
-    expect(nextConfigText).toContain('{ source: "/rag", destination: "/knowledge", permanent: true }');
-    expect(nextConfigText).toContain('{ source: "/rag/:path*", destination: "/knowledge/:path*", permanent: true }');
+  it("/rag/* is live: next.config.js carries no /rag redirect, and the route folder exists", () => {
+    expect(nextConfigText).not.toMatch(/source:\s*["']\/rag(\/:path\*)?["']/);
+    expect(existsSync(join(__dirname, "..", "..", "..", "..", "app", "(core)", "rag", "page.tsx"))).toBe(true);
+    expect(existsSync(join(__dirname, "..", "..", "..", "..", "app", "(core)", "rag", "library", "page.tsx"))).toBe(true);
   });
 });
