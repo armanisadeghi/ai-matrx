@@ -121,6 +121,13 @@ const NOTE_TABLE = [
 async function newNote(text) {
   await goto("/notes");
   await sleep(6000);
+  // REUSE_NOTE="<words in an existing note>" opens that note instead of writing a new one — the
+  // read-only way to walk the live site (no new rows).
+  if (process.env.REUSE_NOTE) {
+    await page.getByText(process.env.REUSE_NOTE).first().click();
+    await sleep(6000);
+    return null;
+  }
   await page.getByRole("button", { name: /New Note/ }).last().click();
   const box = page.locator('textarea[placeholder="Start typing..."]').last();
   await box.waitFor({ timeout: 60000 });

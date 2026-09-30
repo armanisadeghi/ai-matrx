@@ -51,6 +51,7 @@ import { usageSettingsList } from "./unionUsageSettings";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
   type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
@@ -308,7 +309,6 @@ export default function DeprecatedModelsAudit({
     Number(filterProvider !== "__all__") +
     Number(filterHasUsage !== "all") +
     Number(filterMinTotal !== undefined || filterMaxTotal !== undefined);
-
 
   const clearDomainFilters = () => {
     setFilterProvider("__all__");
@@ -590,6 +590,69 @@ export default function DeprecatedModelsAudit({
     ],
     [activeModels],
   );
+  const copy = useMemo<MatrxDataTableCopyConfig<DeprecatedEntry>>(
+    () => ({
+      label: "Deprecated model",
+      listLabel: "Deprecated models (this view)",
+      location: "AI Matrx Admin — Deprecated model audit",
+      rowKind: "deprecated-model",
+      listKind: "deprecated-models",
+      rowDescription:
+        "One deprecated model and its current reference count and replacement choice.",
+      listDescription:
+        "Deprecated models currently shown after the audit's filters and sort.",
+      humanRow: (entry) =>
+        [
+          `Model: ${entry.model.common_name || entry.model.name}`,
+          `Identifier: ${entry.model.name}`,
+          `Provider: ${entry.model.maker ?? "Unknown"}`,
+          `References: ${totalUsage(entry)}`,
+          `Replacement: ${entry.replacementId || "Not selected"}`,
+          `Status: ${entry.replaced ? "replaced" : entry.replacing ? "replacing" : entry.loading ? "loading usage" : entry.error ? `error — ${entry.error}` : "ready"}`,
+        ].join("\n"),
+      agentRow: (entry) => ({
+        model: {
+          id: entry.model.id,
+          name: entry.model.name,
+          common_name: entry.model.common_name,
+          provider: entry.model.maker,
+        },
+        usage: {
+          prompts: entry.usage?.prompts.length ?? 0,
+          prompt_builtins: entry.usage?.promptBuiltins.length ?? 0,
+          agents: entry.usage?.agents.length ?? 0,
+          agent_templates: entry.usage?.agentTemplates.length ?? 0,
+          total: totalUsage(entry),
+        },
+        replacement_id: entry.replacementId || null,
+        state: entry.replaced
+          ? "replaced"
+          : entry.replacing
+            ? "replacing"
+            : entry.loading
+              ? "loading_usage"
+              : entry.error
+                ? "error"
+                : "ready",
+        error: entry.error,
+      }),
+      rowAttributes: (entry) => ({
+        model_id: entry.model.id,
+        provider: entry.model.maker ?? undefined,
+        references: totalUsage(entry),
+        replacement_selected: Boolean(entry.replacementId),
+        replaced: entry.replaced,
+      }),
+      listContext: () => ({
+        provider_filter:
+          filterProvider === "__all__" ? undefined : filterProvider,
+        usage_filter: filterHasUsage === "all" ? undefined : filterHasUsage,
+        minimum_references: filterMinTotal,
+        maximum_references: filterMaxTotal,
+      }),
+    }),
+    [filterHasUsage, filterMaxTotal, filterMinTotal, filterProvider],
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -619,18 +682,20 @@ export default function DeprecatedModelsAudit({
             onStateChange: setTableQuery,
           }}
           isLoading={
-            entries.length === 0 && allModels.some((model) => model.is_deprecated)
+            entries.length === 0 &&
+            allModels.some((model) => model.is_deprecated)
           }
           defaultSort={{ id: "total", direction: "desc" }}
           coverage={{ noun: "deprecated model", answeredBy: "client" }}
-          copy={false}
+          copy={copy}
           read={read}
           emptyState={{
-            icon: entries.length === 0 ? (
-              <CheckCircle2 className="h-10 w-10 opacity-30" />
-            ) : (
-              <Search className="h-10 w-10 opacity-30" />
-            ),
+            icon:
+              entries.length === 0 ? (
+                <CheckCircle2 className="h-10 w-10 opacity-30" />
+              ) : (
+                <Search className="h-10 w-10 opacity-30" />
+              ),
             title:
               entries.length === 0
                 ? "No deprecated models found"
@@ -664,13 +729,20 @@ export default function DeprecatedModelsAudit({
                         <SlidersHorizontal className="h-3.5 w-3.5" />
                         Filters
                         {activeDomainFilterCount > 0 && (
-                          <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                          <Badge
+                            variant="secondary"
+                            className="h-4 px-1 text-[10px]"
+                          >
                             {activeDomainFilterCount}
                           </Badge>
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent sizing="content" align="start" className="space-y-3">
+                    <PopoverContent
+                      sizing="content"
+                      align="start"
+                      className="space-y-3"
+                    >
                       <div className="space-y-1">
                         <span className="text-xs font-medium">Provider</span>
                         <Select
@@ -681,7 +753,9 @@ export default function DeprecatedModelsAudit({
                             <SelectValue placeholder="Provider" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__all__">All providers</SelectItem>
+                            <SelectItem value="__all__">
+                              All providers
+                            </SelectItem>
                             {deprecatedProviders.map((provider) => (
                               <SelectItem key={provider} value={provider}>
                                 {provider}
@@ -695,7 +769,9 @@ export default function DeprecatedModelsAudit({
                         <Select
                           value={filterHasUsage}
                           onValueChange={(value) =>
-                            setFilterHasUsage(value as "all" | "with" | "without")
+                            setFilterHasUsage(
+                              value as "all" | "with" | "without",
+                            )
                           }
                         >
                           <SelectTrigger className="h-8 w-full text-xs">
@@ -703,13 +779,19 @@ export default function DeprecatedModelsAudit({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All usage</SelectItem>
-                            <SelectItem value="with">Has references (&gt;0)</SelectItem>
-                            <SelectItem value="without">No references (0)</SelectItem>
+                            <SelectItem value="with">
+                              Has references (&gt;0)
+                            </SelectItem>
+                            <SelectItem value="without">
+                              No references (0)
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-xs font-medium">Total references</span>
+                        <span className="text-xs font-medium">
+                          Total references
+                        </span>
                         <div className="flex items-center gap-1">
                           <Input
                             value={
@@ -727,7 +809,9 @@ export default function DeprecatedModelsAudit({
                             className="h-8 w-full font-mono text-xs"
                             aria-label="Minimum total references"
                           />
-                          <span className="text-xs text-muted-foreground">to</span>
+                          <span className="text-xs text-muted-foreground">
+                            to
+                          </span>
                           <Input
                             value={
                               filterMaxTotal !== undefined
@@ -754,8 +838,8 @@ export default function DeprecatedModelsAudit({
             actions: (
               <div className="flex items-center gap-2">
                 {allLoaded &&
-                  visibleEntries.filter((entry) => totalUsage(entry) > 0).length >
-                    0 && (
+                  visibleEntries.filter((entry) => totalUsage(entry) > 0)
+                    .length > 0 && (
                     <Badge
                       variant="outline"
                       className="border-amber-300 bg-amber-50 px-1 text-[10px] text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
@@ -847,7 +931,6 @@ export default function DeprecatedModelsAudit({
             )
           }
         />
-
       </div>
 
       {/* ── Bulk replace confirm ────────────────────────────────────────── */}

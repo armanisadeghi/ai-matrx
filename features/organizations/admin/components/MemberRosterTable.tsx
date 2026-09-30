@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
 } from "@ai-matrx/design-system/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { OrgAdminMember } from "../types";
@@ -227,6 +228,41 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
     ],
     [unit],
   );
+  const selectionCopy = useMemo<MatrxDataTableCopyConfig<OrgAdminMember>>(
+    () => ({
+      label: "Organization member",
+      listLabel: "Organization members (selected)",
+      location: `AI Matrx — Org admin — Member roster (/organizations/${orgSlug}/admin)`,
+      rowKind: "org-admin-member",
+      listKind: "org-admin-members",
+      rowDescription: "One selected member from the organization roster.",
+      listDescription: "The selected members from the organization roster.",
+      humanRow: (member) => rosterMemberSummary(member, unit),
+      agentRow: rosterMemberRow,
+      rowAttributes: (member) => ({
+        user_id: member.userId,
+        email: member.email,
+        role: member.role,
+        status: member.status,
+      }),
+      listAttributes: (selected) => ({
+        selected_members: selected.length,
+        roster_total: members.length,
+      }),
+      listContext: () => ({
+        org_slug: orgSlug,
+        roster_total: members.length,
+        active_search: query || undefined,
+        active_sort: sort,
+      }),
+      // The roster header owns all-member human/JSON/CSV exports; each row
+      // owns its richer member-specific menu. Keep those controls and add
+      // only the table's selected-row Alchemy copy.
+      showToolbar: false,
+      showRow: false,
+    }),
+    [members.length, orgSlug, query, sort, unit],
+  );
 
   return (
     <div className="space-y-3">
@@ -306,14 +342,16 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
         )}
       </div>
 
-      {/* Search, domain sorting, and all-members export remain roster-owned. Generic inspector/window/copy are intentionally disabled because row navigation and row copy have richer member semantics. */}
+      {/* Search, domain sorting, and all-members export remain roster-owned.
+          The table contributes non-destructive selection and selected-row
+          Alchemy copy; each row keeps its richer member-specific menu. */}
       <MatrxDataTable<OrgAdminMember>
         tableId="organizations/admin/member-roster"
         data={rows}
         columns={columns}
         getRowId={(member) => member.userId}
         density="condensed"
-        copy={false}
+        copy={selectionCopy}
         toolbar={{ search: false }}
         detail={{ enabled: false }}
         window={{ enabled: false }}

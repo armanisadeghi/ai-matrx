@@ -3,7 +3,10 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import Link from "next/link";
 
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import {
+  MatrxDataTable,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
@@ -71,6 +74,48 @@ export const RESEARCH_PROJECTS_COVERAGE = {
   cap: 50,
   answeredBy: "client" as const,
 };
+
+export const RESEARCH_PROJECTS_COPY: MatrxDataTableCopyConfig<ResearchProjectTableRow> =
+  {
+    label: "Research project",
+    listLabel: "Research projects (this view)",
+    location: "AI Matrx Admin — Research system — Projects",
+    rowKind: "research-project",
+    listKind: "research-projects",
+    rowDescription: "One research topic and its linked project configuration.",
+    listDescription:
+      "Research projects currently shown after canonical table filters and sort.",
+    humanRow: (row) =>
+      [
+        `Topic: ${row.name}`,
+        `Status: ${row.status}`,
+        `Project: ${row.project_id ?? "None"}`,
+        `Template: ${row.template_name ?? row.template_id ?? "None"}`,
+        `Autonomy: ${row.autonomy_level}`,
+        `Agent overrides: ${row.agent_override_count}`,
+        `Created: ${researchProjectCreatedAt(row.created_at)}`,
+      ].join("\n"),
+    agentRow: (row) => ({
+      topic_id: row.id,
+      topic_name: row.name,
+      status: row.status,
+      project_id: row.project_id,
+      template_id: row.template_id,
+      template_name: row.template_name,
+      autonomy_level: row.autonomy_level,
+      agent_override_count: row.agent_override_count,
+      agent_config: row.agent_config,
+      created_at: row.created_at,
+    }),
+    rowAttributes: (row) => ({
+      topic_id: row.id,
+      project_id: row.project_id,
+      template_id: row.template_id,
+      status: row.status,
+      autonomy_level: row.autonomy_level,
+      agent_override_count: row.agent_override_count,
+    }),
+  };
 
 export function researchProjectStatusColor(status: string): string {
   switch (status) {
@@ -293,11 +338,14 @@ export function ProjectsOverview() {
               title: "Active Research Projects",
               refresh: { onRefresh: () => loadData() },
             }}
-            copy={false}
+            copy={RESEARCH_PROJECTS_COPY}
             detail={{ enabled: false }}
             window={{ enabled: false }}
             coverage={RESEARCH_PROJECTS_COVERAGE}
-            read={readOf({ loading, error: loadError }, { what: "research projects", onRetry: () => void loadData() })}
+            read={readOf(
+              { loading, error: loadError },
+              { what: "research projects", onRetry: () => void loadData() },
+            )}
             emptyState={{ title: "No research projects found." }}
           />
         </div>

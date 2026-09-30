@@ -109,6 +109,15 @@ select to_regproc('custom.scope_rows_of') is null as l6_need_up \gset
 \i migrations/campaign/scopesreadstree_the_scope_tree_and_values_read_the_store.sql
 \endif
 \i migrations/campaign/scopesreadstree_a_file_reference_names_the_file.sql
+-- STORE-READ-PERF-5 (2026-09-30): `-v with_perf5=1` compares the switched readers with that lane's
+-- bodies too (custom.seen_among instead of custom.levels_of; the lean "shown to" context; the scope doors'
+-- Table list among their scope Tables). With the file live on the clone it is already in place.
+\if :{?with_perf5}
+select to_regprocedure('custom.seen_among(uuid,uuid[])') is null as l6_need_perf5 \gset
+\if :l6_need_perf5
+\i migrations/campaign/storereadperf5_the_scope_screens_ask_only_what_they_show.sql
+\endif
+\endif
 -- THE SWITCH OFF: every door answers exactly as its old body (checked on the service seat of every
 -- organization for the list doors, and 300 scopes' values).
 create temp table l6_off on commit drop as

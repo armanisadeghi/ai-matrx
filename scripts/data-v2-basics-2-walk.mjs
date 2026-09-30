@@ -1385,12 +1385,17 @@ try {
           await copies.last().getByRole("button", { name: "Delete", exact: true }).click();
           await sleep(1200);
           const ask = page.getByRole("alertdialog");
-          const said = (await ask.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 160);
-          await ask.getByRole("button").filter({ hasNotText: "Cancel" }).first().click();
+          let said = (await ask.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 160);
+          const buttons = await ask.getByRole("button").allInnerTexts();
+          await ask.getByRole("button", { name: /^(Delete|Archive|Remove)/ }).last().click();
+          said += ` [buttons: ${buttons.join(", ")}]`;
           await sleep(3500);
           removed.push(said);
         }
-        step("the walk's accidental copies removed (Delete)", { removed, alpha0_rows: await page.locator("tbody tr", { hasText: "Alpha0" }).count() });
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await until("the grid", async () => (await page.locator("tbody tr").count()) > 0, 240000);
+        await sleep(4000);
+        step("the walk's accidental copies removed (Delete)", { removed, alpha0_rows_after_reload: await page.locator("tbody tr", { hasText: "Alpha0" }).count() });
       }
       await page.locator("[data-matrx-table-scroll], main").first().evaluate((el) => {
         const sc = [...document.querySelectorAll("*")].find((n) => n.scrollWidth > n.clientWidth + 20 && getComputedStyle(n).overflowX !== "visible");
@@ -1419,8 +1424,17 @@ try {
         const ed = document.querySelector("[data-matrx-cell-editor]");
         if (!ed) return { editor: false };
         const buttons = [...ed.querySelectorAll("button")].filter((b) => b.getBoundingClientRect().width > 0);
+        const td = ed.closest("td");
+        const chain = [];
+        for (let n = ed; n && n !== td; n = n.parentElement) chain.push(`${n.tagName.toLowerCase()} w=${Math.round(n.getBoundingClientRect().width)} ${(n.className?.toString?.() ?? "").slice(0, 90)}`);
         return {
           editor: true,
+          td_width: td ? Math.round(td.getBoundingClientRect().width) : null,
+          editor_width: Math.round(ed.getBoundingClientRect().width),
+          editor_class: (ed.className?.toString?.() ?? "").slice(0, 120),
+          computed: [ed, ed.firstElementChild, ed.parentElement, ed.parentElement?.parentElement].filter(Boolean).map((n) => { const c = getComputedStyle(n); return `${n.tagName.toLowerCase()} display=${c.display} width=${c.width} min=${c.minWidth} max=${c.maxWidth} flexBasis=${c.flexBasis} pos=${c.position} ovf=${c.overflow}`; }),
+          inner: [...ed.querySelectorAll("*")].filter((n) => n.getBoundingClientRect().width > (td?.getBoundingClientRect().width ?? 1e9)).slice(0, 4).map((n) => `${n.tagName.toLowerCase()} w=${Math.round(n.getBoundingClientRect().width)} ${(n.className?.toString?.() ?? "").slice(0, 100)}`),
+          chain,
           buttons: buttons.map((b) => {
             const r = b.getBoundingClientRect();
             const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);

@@ -61,8 +61,15 @@ create temp table ctx_tables on commit drop as
 create temp table seat_ctx on commit drop as
   select s.email, c.org, c.id
     from seats s join iam.organization_member m on m.user_id = s.id join ctx_tables c on c.org = m.organization_id;
+-- Every scope of every scope Table, in pages of 200 (the values door's cap), worked out here as the
+-- owner: the seats read nothing but the doors.
+create temp table ctx_pages on commit drop as
+  select z.tbl, (z.n - 1) / 200 + 1 as page, array_agg(z.id order by z.id) as ids
+    from (select r.table_id as tbl, r.id, row_number() over (partition by r.table_id order by r.id) as n
+            from ctx_tables c join custom.record r on r.organization_id = c.org and r.table_id = c.id and r.deleted_at is null) z
+   group by 1, 2;
 create temp table ans (phase text, seat text, door text, k text, payload text) on commit drop;
-grant select on seats, all_orgs, ctx_tables, seat_ctx to authenticated;
+grant select on seats, all_orgs, ctx_tables, seat_ctx, ctx_pages to authenticated;
 grant all on ans to authenticated;
 
 -- FIXTURES. Two scopes test@test.com sees in an organization she shares with admin@admin.com.
@@ -113,16 +120,12 @@ begin
       exception when others then v := 'ERR ' || sqlstate || ' ' || sqlerrm;
       end;
       insert into ans values (p_phase, s.email, 'query_visible_ids(scope Table)', o.id::text, v);
-      select coalesce(array_agg(r.id order by r.id), '{}') into ids
-        from custom.record r where r.organization_id = o.org and r.table_id = o.id and r.deleted_at is null;
-      i := 1;
-      while i <= greatest(cardinality(ids), 1) loop
+      for i, ids in select p.page, p.ids from ctx_pages p where p.tbl = o.id order by p.page loop
         begin
-          v := custom.context_values(ids[i:i + 199])::text;
+          v := custom.context_values(ids)::text;
         exception when others then v := 'ERR ' || sqlstate || ' ' || sqlerrm;
         end;
         insert into ans values (p_phase, s.email, 'context_values', o.id::text || '#' || i, v);
-        i := i + 200;
       end loop;
     end loop;
     select array_agg(m.organization_id) into o_ids from iam.organization_member m

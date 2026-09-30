@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ResearchProjectTableRow } from "./ProjectsOverview";
 import {
   RESEARCH_PROJECT_COLUMNS,
+  RESEARCH_PROJECTS_COPY,
   RESEARCH_PROJECTS_COVERAGE,
   loadResearchProjectSnapshot,
   researchProjectCreatedAt,
@@ -39,6 +40,24 @@ describe("ProjectsOverview canonical table contract", () => {
       cap: 50,
       answeredBy: "client",
     });
+  });
+
+  it("projects the selected-row Alchemy payload without dropping project wiring", () => {
+    expect(RESEARCH_PROJECTS_COPY.agentRow?.(row)).toEqual({
+      topic_id: "topic-1",
+      topic_name: "Pricing research",
+      status: "active",
+      project_id: "project-1",
+      template_id: null,
+      template_name: null,
+      autonomy_level: "semi",
+      agent_override_count: 1,
+      agent_config: { page_summary_agent_id: "agent-1" },
+      created_at: "2026-09-21T12:00:00.000Z",
+    });
+    expect(RESEARCH_PROJECTS_COPY.humanRow(row)).toContain(
+      "Project: project-1",
+    );
   });
 
   it("keeps every meaningful project value independently filterable", () => {
