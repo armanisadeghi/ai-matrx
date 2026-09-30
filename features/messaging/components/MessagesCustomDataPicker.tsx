@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useFields, useRecords, useTable } from "@ai-matrx/records/react";
+import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useFields, useRecordPage, useTable } from "@ai-matrx/records/react";
 import { fieldName, rowNameIn } from "@ai-matrx/records-ui";
 import { LoaderCircle, Search } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -14,7 +15,7 @@ import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEveryw
 import { buildDirectiveFence } from "@/features/matrx-envelope/referenceFence";
 import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
 
-const RECORD_PAGE_SIZE = 200;
+const RECORD_PAGE_SIZE = 100;
 
 export interface MessagesCustomDataPick {
   id: string;
@@ -31,7 +32,6 @@ export default function MessagesCustomDataPicker({
 }: MessagesCustomDataPickerProps) {
   const tables = useTablesEverywhere();
   const [tableId, setTableId] = useState<string | null>(null);
-  const [tableSearch, setTableSearch] = useState("");
   const chosenTable =
     tables.rows.find((table) => table.table_id === tableId) ?? null;
   const options: CreatableOption[] = tables.rows.map((table) => ({
@@ -49,7 +49,6 @@ export default function MessagesCustomDataPicker({
           options={options}
           onSelect={(id) => {
             setTableId(id);
-            setTableSearch("");
           }}
           placeholder={
             tables.loading
@@ -99,12 +98,7 @@ export default function MessagesCustomDataPicker({
             )
           }
         >
-          <TableRecords
-            table={chosenTable}
-            tableSearch={tableSearch}
-            onTableSearch={setTableSearch}
-            onPick={onPick}
-          />
+          <TableRecords table={chosenTable} onPick={onPick} />
         </CustomDataRecordsScope>
       ) : null}
     </div>
@@ -113,42 +107,38 @@ export default function MessagesCustomDataPicker({
 
 function TableRecords({
   table,
-  tableSearch,
-  onTableSearch,
   onPick,
 }: {
   table: DataHomeTableRow;
-  tableSearch: string;
-  onTableSearch: (value: string) => void;
   onPick: (item: MessagesCustomDataPick) => void;
 }) {
-  const [pageSize, setPageSize] = useState(RECORD_PAGE_SIZE);
+  const [page, setPage] = useState(0);
+  const [searchDraft, setSearchDraft] = useState("");
+  const search = useDebounce(searchDraft, 300);
   const tableDetails = useTable(table.table_id);
   const fields = useFields(table.table_id);
-  const records = useRecords(table.table_id, { pageSize });
+  // useRecordPage searches and paginates through the store's authorized query;
+  // page is zero-based and pageSize stays within the SDK's bounded page read.
+  const records = useRecordPage(table.table_id, {
+    pageSize: RECORD_PAGE_SIZE,
+    page,
+    search,
+  });
   const fieldList = fields.data ?? [];
   const rows = records.data?.rows ?? [];
-  const normalizedSearch = tableSearch.trim().toLocaleLowerCase();
-  const shownRows = rows.filter((row) => {
-    if (!normalizedSearch) return true;
-    const label = rowNameIn(tableDetails.data, row);
-    const values = fieldList
-      .map(
-        (field) =>
-          `${fieldName(field)} ${String(row.document[field.key] ?? "")}`,
-      )
-      .join(" ");
-    return `${label} ${values}`.toLocaleLowerCase().includes(normalizedSearch);
-  });
   const total = records.data?.total;
-  const hasMore = total !== null && total !== undefined && rows.length < total;
+  const pageCount =
+    total === null || total === undefined
+      ? null
+      : Math.max(1, Math.ceil(total / RECORD_PAGE_SIZE));
+  const hasMore = pageCount !== null && page + 1 < pageCount;
 
   const pickRecord = (row: (typeof rows)[number]) => {
     const label = rowNameIn(tableDetails.data, row);
-    const content = buildDirectiveFence("reference", "record", [
-      { id: row.id, label },
+    const content = buildDirectiveFence("reference", "table_row", [
+      { table_id: table.table_id, row_id: row.id, label },
     ]);
-    onPick({ id: row.id, label, content });
+    onPick({ id: `${table.table_id}:${row.id}`, label, content });
   };
 
   return (
@@ -161,10 +151,13 @@ function TableRecords({
         <span className="sr-only">Search records</span>
         <input
           type="search"
-          value={tableSearch}
-          onChange={(event) => onTableSearch(event.target.value)}
-          placeholder="Search records…"
-          aria-label="Search records"
+          value={searchDraft}
+          onChange={(event) => {
+            setSearchDraft(event.target.value);
+            setPage(0);
+          }}
+          placeholder="Search all records…"
+          aria-label="Search all records"
         />
       </label>
 
@@ -196,20 +189,18 @@ function TableRecords({
         </p>
       ) : null}
 
-      {records.error ? null : records.loading && rows.length === 0 ? (
+      {records.error ? null : records.loading || searchDraft !== search ? (
         <p className="messages-custom-data-picker__state" role="status">
           <LoaderCircle size={15} className="animate-spin" aria-hidden="true" />
-          Loading records…
+          {searchDraft ? "Searching records…" : "Loading records…"}
         </p>
-      ) : shownRows.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="messages-custom-data-picker__state" role="status">
-          {normalizedSearch
-            ? "No matching records"
-            : "No records in this table"}
+          {search.trim() ? "No matching records" : "No records in this table"}
         </p>
       ) : (
         <ul className="messages-custom-data-picker__rows">
-          {shownRows.map((row) => {
+          {rows.map((row) => {
             const label = rowNameIn(tableDetails.data, row);
             const hints = fieldList
               .filter(
@@ -244,15 +235,31 @@ function TableRecords({
         </ul>
       )}
 
-      {hasMore ? (
-        <button
-          type="button"
-          className="messages-custom-data-picker__more"
-          disabled={records.loading}
-          onClick={() => setPageSize((size) => size + RECORD_PAGE_SIZE)}
+      {!records.error && pageCount !== null && pageCount > 1 ? (
+        <div
+          className="messages-custom-data-picker__pagination"
+          aria-label="Record pages"
         >
-          {records.loading ? "Loading…" : "Load more records"}
-        </button>
+          <button
+            type="button"
+            className="messages-custom-data-picker__more"
+            disabled={records.loading || searchDraft !== search || page === 0}
+            onClick={() => setPage((current) => Math.max(0, current - 1))}
+          >
+            Previous page
+          </button>
+          <span aria-live="polite">
+            Page {page + 1} of {pageCount}
+          </span>
+          <button
+            type="button"
+            className="messages-custom-data-picker__more"
+            disabled={records.loading || searchDraft !== search || !hasMore}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            Next page
+          </button>
+        </div>
       ) : null}
     </section>
   );

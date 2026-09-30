@@ -16,28 +16,42 @@ export function MessagingAttachment({
   return (
     <div className="messages-media">
       {media && (
-        <InlineMediaRef
-          ref={{ file_id: attachment.fileId, mime_type: attachment.mimeType }}
-          size="fill"
-          fit="contain"
-          as={
-            (attachment.mimeType ?? "").startsWith("video/")
-              ? "video"
-              : (attachment.mimeType ?? "").startsWith("audio/")
-                ? "audio"
-                : "img"
-          }
-          controls={true}
-          crossOrigin="anonymous"
-          alt={attachment.fileName}
-          fallback="skeleton"
-          errorFallback="icon"
-          onClick={
-            (attachment.mimeType ?? "").startsWith("image/")
-              ? () => open({ fileId: attachment.fileId })
-              : undefined
-          }
-        />
+        <div
+          className="messages-media-frame"
+          style={{
+            aspectRatio: (attachment.mimeType ?? "").startsWith("audio/")
+              ? "auto"
+              : attachment.width && attachment.height
+                ? `${attachment.width} / ${attachment.height}`
+                : "4 / 3",
+            height: (attachment.mimeType ?? "").startsWith("audio/")
+              ? 54
+              : undefined,
+          }}
+        >
+          <InlineMediaRef
+            ref={{ file_id: attachment.fileId, mime_type: attachment.mimeType }}
+            size="fill"
+            fit="contain"
+            as={
+              (attachment.mimeType ?? "").startsWith("video/")
+                ? "video"
+                : (attachment.mimeType ?? "").startsWith("audio/")
+                  ? "audio"
+                  : "img"
+            }
+            controls={true}
+            crossOrigin="anonymous"
+            alt={attachment.fileName}
+            fallback="skeleton"
+            errorFallback="icon"
+            onClick={
+              (attachment.mimeType ?? "").startsWith("image/")
+                ? () => open({ fileId: attachment.fileId })
+                : undefined
+            }
+          />
+        </div>
       )}
       <button
         type="button"

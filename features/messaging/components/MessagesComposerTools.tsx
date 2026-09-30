@@ -69,6 +69,13 @@ export default function MessagesComposerTools({
           fillHost
           onClose={onClose}
           onExitInitialView={() => setView("menu")}
+          onResourceDeselected={(resource) => {
+            if (resource.type !== "file") return false;
+            const id = resource.data.fileId ?? resource.data.id;
+            if (!id) return false;
+            input.removeAddition(id);
+            return true;
+          }}
           onResourceSelected={(resource) => {
             if (resource.type !== "file") return false;
             const file = resource.data;

@@ -89,7 +89,9 @@ export function MessagesComposerInput({
             fallback={
               <div role="alert" className="p-4 text-sm">
                 Couldn’t open the picker.{" "}
-                <ErrorAlchemyMenu error={pickerError ?? "Picker could not open"} />
+                <ErrorAlchemyMenu
+                  error={pickerError ?? "Picker could not open"}
+                />
                 <button type="button" onClick={() => setMenu(null)}>
                   Close and try again
                 </button>
@@ -136,6 +138,7 @@ export function MessagesComposerInput({
           onSubmit={input.onSubmit}
           disabled={input.disabled}
           submitDisabled={!input.canSend}
+          allowEmptySubmit={input.additions.length > 0}
           submitLabel="Send reply"
           placeholder="Message"
           aria-label="Reply to conversation"
