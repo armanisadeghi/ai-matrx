@@ -24,9 +24,9 @@
  * readActiveOrganizationId / readActiveOrganizationForIdentity, the selectors selectOrganizationId /
  * selectActiveOrganizationId / selectEffectiveOrganizationId, a hand-read `state.appContext` /
  * `appContext.organization_id`, the shared cookie (`activeOrgCookie.read(...)`), and — across files —
- * any wrapper hook/selector (named use…, get…, select…, read…, resolve…, current…, active… or require…) whose body
- * reads one of those, wherever it is defined (a hook reading it in one file and a page listing in
- * another is the same read).
+ * any wrapper hook/selector named with the use, get, select, read, resolve, current, active, or
+ * require prefixes whose body reads one of those, wherever it is defined (a hook reading it in one
+ * file and a page listing in another is the same read).
  *
  *  RULE 1 (file level, legacy). A file that reads a source AND lists (useTables / list*() / use*List() /
  *  fetch*s() / rpc('list_…') / .from().select( / <RecordsProvider / RecordsMount): every source line must
