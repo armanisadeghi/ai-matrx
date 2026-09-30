@@ -50,7 +50,6 @@ import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export function ProjectManage() {
   const params = useParams();
   const projectParam = params.projectId as string;

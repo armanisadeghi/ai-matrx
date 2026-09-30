@@ -28,7 +28,6 @@ export interface ShortcutDirectoryRow {
   ownerDisplay: string | null;
 }
 
-
 export function isShortcutUuid(value: string): boolean {
   return isUuidShape(value.trim());
 }

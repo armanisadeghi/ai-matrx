@@ -56,7 +56,6 @@ export interface UsePinnedResult {
   reorder: (orderedIds: string[]) => void;
 }
 
-
 // Fixed namespace so a given nav href ALWAYS maps to the same synthetic uuid
 // (stable across reloads/devices). Arbitrary but constant — do not change, or
 // existing nav favorites would orphan their canonical rows.

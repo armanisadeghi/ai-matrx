@@ -32,7 +32,6 @@ export type TeamAddressResult = string | null;
 const cache = new Map<string, TeamAddressResult>();
 const inFlight = new Map<string, Promise<TeamAddressResult>>();
 
-
 /** Already-known answer, or `undefined` when this id has never been resolved. */
 export function peekTeamOrganizationId(id: string): TeamAddressResult | undefined {
   return cache.get(id);

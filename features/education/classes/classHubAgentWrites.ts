@@ -13,7 +13,6 @@ import { ASSIGNABLE_TOKENS, CLASS_CONTENT_TOKENS } from "./constants";
 import type { AssignableToken } from "./types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /** The most items one hub list write may carry. */
 export const MAX_HUB_ITEMS_PER_WRITE = 25;
 

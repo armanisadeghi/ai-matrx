@@ -11,7 +11,6 @@ import { selectTreeError, selectTreeStatus } from "@/features/scopes/redux/selec
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 interface ScopeNotFoundProps {
   /** Canonical entity token of the record the route segment addresses. */
   token: "scope_type" | "scope" | "context_item";

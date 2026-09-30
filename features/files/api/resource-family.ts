@@ -101,7 +101,6 @@ export async function getFileResourceFamily(
   return parseFileResourceFamilyInventory(data);
 }
 
-
 export function normalizeFileResourceId(value: unknown): string | null {
   let candidate: unknown = value;
   if (value && typeof value === "object" && !Array.isArray(value)) {

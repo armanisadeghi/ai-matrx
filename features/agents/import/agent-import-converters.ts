@@ -149,7 +149,6 @@ export function applyAgentDefaults(
 
 // ─── resolveTools ─────────────────────────────────────────────────────────────
 
-
 interface ToolResolutionResult {
   resolvedIds: string[];
   warnings: string[];

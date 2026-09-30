@@ -16,7 +16,6 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ProjectSidebar } from "@/features/projects/components/ProjectSidebar";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export function OrgProjectSettingsLayoutClient({
   children,
 }: {

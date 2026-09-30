@@ -46,7 +46,6 @@ interface RpcRow {
   version_number: number | null;
 }
 
-
 /** Already-known answer, or undefined when this id has never been resolved. */
 export function peekAgentAddress(id: string): AgentAddressResult | undefined {
   return cache.get(id);

@@ -20,7 +20,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const MESSAGE_PIN_ENTITY_TYPE = "message";
 
-
 let pinned = new Set<string>();
 let pending = new Set<string>();
 /** The last pin-state read failed: counts over `pinned` are not an answer until one succeeds. */

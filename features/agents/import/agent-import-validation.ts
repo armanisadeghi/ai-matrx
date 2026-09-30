@@ -9,7 +9,6 @@ import type { ToolIndex } from "./import-types";
 import { parsePasted } from "./agent-import-parse";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 const VALID_AGENT_TYPES = new Set(["user", "builtin"]);
 const VALID_MESSAGE_ROLES = new Set(["system", "user", "assistant"]);
 const VALID_CONTENT_BLOCK_TYPES = new Set([

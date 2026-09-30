@@ -38,7 +38,6 @@ const WORD_REPLACEMENTS: Record<string, string> = {
   ts: "TS",
 };
 
-
 /**
  * A crumb for a record's own address whose name the page has not published (yet):
  * the record's KIND, from the list it sits under — "Organization" under

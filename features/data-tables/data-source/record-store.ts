@@ -954,7 +954,6 @@ function storeDecorationWrite(
   }
 }
 
-
 function olderRowActions(actions: readonly StoreRowAction[], fields: readonly Field[]): unknown[] {
   return actions.map((a) => ({
     id: a.id,

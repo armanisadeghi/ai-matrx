@@ -7,7 +7,6 @@ import type { MediaRef } from "@/features/files/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 function isOwnedFileReference(ref: MediaRef | string | null | undefined) {
   if (!ref) return false;
   if (typeof ref === "string") return isUuidShape(ref);

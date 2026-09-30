@@ -73,7 +73,6 @@ import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
-
 // Tasks + projects have their own surfaces; don't double-count them as "resources".
 const EXCLUDE_FROM_RESOURCES = new Set(["task", "project"]);
 

@@ -73,7 +73,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 const RECEIPT_PILL: Record<DirectiveReceipt["status"], string> = {
   applied: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   already_applied: "bg-sky-500/15 text-sky-600 dark:text-sky-400",

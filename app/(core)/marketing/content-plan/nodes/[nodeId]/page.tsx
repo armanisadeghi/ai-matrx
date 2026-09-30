@@ -5,7 +5,6 @@ import { resolveLegacySiteAddress } from "@/features/marketing/lib/shim-resolve-
 import { createClient } from "@/utils/supabase/server";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /**
  * Resolve a plan-node identity to the exact node in its site workspace — now
  * the brand-first address /marketing/[brand]/content/plan/[site]. The tree is

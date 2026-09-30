@@ -7,7 +7,6 @@ import { ModuleSignInGate } from "@/features/auth/components/module-landing/Modu
 import { PartyRecordPage } from "@/features/crm/components/record/PartyRecordPage";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /** How long the tab-title read may take before the generic title is used. */
 const METADATA_READ_MS = 1500;
 

@@ -18,7 +18,6 @@ import { resolveShareToken } from "@/utils/permissions/shareLinks";
 import type { SharedCanvasItem } from "@/types/canvas-social";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export async function resolveSharedCanvas(
   tokenOrId: string,
   client: SupabaseClient,

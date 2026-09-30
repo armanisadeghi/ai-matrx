@@ -37,7 +37,6 @@ export type ResolvedId =
 /** The two ways "this function is not in the database" arrives through PostgREST. */
 const DOOR_ABSENT_CODES = new Set(["PGRST202", "42883"]);
 
-
 /** True when `raw` is an id the door can be asked about at all. */
 export function isResolvableId(raw: string): boolean {
   return isUuidShape(raw.trim());

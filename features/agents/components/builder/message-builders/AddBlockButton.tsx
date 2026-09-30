@@ -96,7 +96,6 @@ export type BlockType =
   | "decision_questions"
   | "speech_script";
 
-
 interface FieldConfig {
   key: string;
   label: string;

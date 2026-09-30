@@ -154,7 +154,6 @@ export function userShellPathForSystemAgentPath(pathname: string): string | null
   return `${AGENT_BASE_PATH}/${id}${sub}`;
 }
 
-
 /**
  * THE function. Everything that links to an agent ends up here.
  *

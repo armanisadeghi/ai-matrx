@@ -291,7 +291,6 @@ async function resolveCell(
   return ids.map((id) => byId.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
 }
 
-
 /**
  * The name of a table (the `table` / `dataset` reference), from whichever store holds it.
  * The id is `table_id` (canonical), `id` (the catalog's generic ref) or `dataset_id` (legacy).
@@ -1035,7 +1034,6 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
     },
   };
 }
-
 
 /** Resolve a reference `type` to its resolver, or `undefined` (graceful chip).
 

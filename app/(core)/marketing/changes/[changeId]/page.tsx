@@ -7,7 +7,6 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /**
  * Generic entity door → the owning site's canonical Changes workspace, which
  * is part of the SEO practice on that site:

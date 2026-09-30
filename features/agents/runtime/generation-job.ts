@@ -20,7 +20,6 @@ import { isJobOutputKind, runOutputKindFromModalities } from "@/lib/api/run-wait
 import type { RequestGenerationJob } from "@/features/agents/types/request.types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /** The model this conversation's next run uses: a run-time model override
  *  wins, else the agent's own model. Null when neither is known. */
 export function selectRunModelId(

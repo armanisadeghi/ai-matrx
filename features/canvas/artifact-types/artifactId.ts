@@ -20,7 +20,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
  * See `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md` (R1–R3).
  */
 
-
 /** True only for a canonical UUID — i.e. a real, persisted `canvas_items.id`. */
 export function isMaterializedArtifactId(id?: string | null): boolean {
   return typeof id === "string" && isUuidShape(id.trim());

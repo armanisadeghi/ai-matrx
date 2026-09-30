@@ -516,7 +516,6 @@ function humanDuration(ms: number | null | undefined): string | null {
   return formatDurationMs(ms, { style: "compact" });
 }
 
-
 /**
  * The written row's id, when the resumed step's output names one — a shallow
  * scan because the held-write template's key varies by change shape

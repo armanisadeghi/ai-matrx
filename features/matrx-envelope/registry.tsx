@@ -84,7 +84,6 @@ const PlanNodePatchRenderer = dynamic(
 );
 // ── Built-in renderers ───────────────────────────────────────────────────────
 
-
 /** Per-reference-type chip icon. Falls back to a generic link glyph. */
 function chipIcon(type: string): ComponentType<{ className?: string }> {
   switch (type) {

@@ -15,7 +15,6 @@ import ResearchTopicShell from "./ResearchTopicShell";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export async function generateMetadata({
   params,
 }: {

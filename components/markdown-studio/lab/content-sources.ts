@@ -109,7 +109,6 @@ export interface StudioSourceDef {
 /** How many recent items a picker shows. A picker, never a complete list. */
 export const STUDIO_SOURCE_RECENT_LIMIT = 30;
 
-
 export function isUuid(value: string): boolean {
   return isUuidShape(value.trim());
 }

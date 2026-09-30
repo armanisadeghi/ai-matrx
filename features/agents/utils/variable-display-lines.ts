@@ -45,7 +45,6 @@ import {
 import { getCachedEntityTitle } from "@/features/scopes/service/entityTitles";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export interface VariableDisplayLine {
   /** The raw variable name — a stable React key. */
   key: string;

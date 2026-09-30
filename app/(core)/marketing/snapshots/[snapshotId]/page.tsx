@@ -7,7 +7,6 @@ import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export default async function MarketingSnapshotPage({
   params,
 }: {

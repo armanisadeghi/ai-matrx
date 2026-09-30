@@ -41,7 +41,6 @@ export interface PdfSourceInputs {
   sourceId?: string | null;
 }
 
-
 /** Source wire for a known cld_files row id. */
 export function buildPdfSourceFromFileId(
   fileId: string,

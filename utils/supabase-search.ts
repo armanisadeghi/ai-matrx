@@ -12,7 +12,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
  *   query = query.or(buildSearchOr(term, ["name", "description"]));
  */
 
-
 /** True when `value` is a complete, well-formed UUID. */
 export function isFullUuid(value: string): boolean {
   return isUuidShape(value.trim());

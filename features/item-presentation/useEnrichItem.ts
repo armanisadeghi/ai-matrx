@@ -17,7 +17,6 @@ import { getItemConfig } from "./registry";
 import type { EnrichedItem, EnrichmentStatus, ItemType } from "./types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export function useEnrichItem(
   type: ItemType | null | undefined,
   id: string | null | undefined,

@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /** Resolve a research-tag identity to its topic-scoped detail route. */
 export default async function ResearchTagShortLink({
   params,

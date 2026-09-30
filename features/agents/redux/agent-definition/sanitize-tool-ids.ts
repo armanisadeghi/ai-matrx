@@ -8,7 +8,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
  * no longer identify an available tool.
  */
 
-
 export function sanitizeAgentToolIds(
   toolIds: readonly string[] | null | undefined,
   context: string,

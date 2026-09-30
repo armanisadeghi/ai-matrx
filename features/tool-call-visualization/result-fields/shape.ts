@@ -194,7 +194,6 @@ export function looksLikeImageUrl(value: string): boolean {
     return IMAGE_EXT_RE.test(trimmed);
 }
 
-
 /** A whole-string RFC-4122 UUID (rendered compactly with hover-to-copy). */
 export function looksLikeUuid(s: string): boolean {
     return isUuidShape(s);

@@ -38,7 +38,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 export const MANDATE_KEY_PATTERN =
   /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/;
 
-
 export type MandateAddressKind = "key" | "id" | "not-an-address";
 
 /** What a URL segment could possibly be. Pure — no DB read involved. */

@@ -22,7 +22,6 @@ import {
 } from "@/lib/media/durability";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export function pickStr(v: unknown): string | undefined {
   return typeof v === "string" && v.length > 0 ? v : undefined;
 }

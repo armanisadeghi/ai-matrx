@@ -175,7 +175,6 @@ export type DataHomeOrganization = string;
 /** The address word of the organization filter. */
 export const ORG_FILTER_PARAM = "org_filter";
 
-
 /**
  * Which organization the home shows: the address, or All organizations. `memberIds` null = the
  * person's memberships have not been read yet: an id is then taken on trust (the page holds the

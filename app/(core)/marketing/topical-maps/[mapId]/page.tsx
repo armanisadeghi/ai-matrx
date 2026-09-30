@@ -30,7 +30,6 @@ import { webDb } from "@/utils/supabase/webDb";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export default async function TopicalMapDoor({
   params,
   searchParams,

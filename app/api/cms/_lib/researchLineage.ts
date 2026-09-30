@@ -3,7 +3,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 type MainSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
-
 export class ResearchLineageValidationError extends Error {
   constructor(message: string) {
     super(message);

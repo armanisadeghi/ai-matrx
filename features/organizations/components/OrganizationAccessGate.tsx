@@ -29,7 +29,6 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolveAccessGateSlug } from "@/features/access-gate/service/accessDeniedContext";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export interface OrganizationAccessGateProps {
   /** The raw `[orgId]` route param — uuid or slug. */
   orgSlugOrId: string;

@@ -21,7 +21,6 @@ import { createLibraryListConfig } from "../browse/listConfig";
 import { CatalogPasteBox } from "./CatalogPasteBox";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /**
  * THE HANDOFF DOES NOT DROP THE CONTEXT. Masterwork's Sources panel and the
  * "how do you want to do this" step both send people here with

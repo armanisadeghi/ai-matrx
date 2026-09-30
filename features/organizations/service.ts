@@ -362,7 +362,6 @@ export async function getOrganizationBySlug(
   return transformOrganizationFromDb(data);
 }
 
-
 /**
  * Resolve an organization from either a UUID or a slug.
  * UUID format is detected via regex; anything else is treated as a slug.

@@ -101,7 +101,6 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-
 interface ClassHubViewProps {
   /** The route param — a class scope id OR slug. */
   classParam: string;

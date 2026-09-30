@@ -18,7 +18,6 @@ import type {
 } from "@/features/agent-apps/types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 // ---------------------------------------------------------------------------
 // Runtime validation of the `app.definition` row.
 //

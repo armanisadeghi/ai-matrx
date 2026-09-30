@@ -18,7 +18,6 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export function KnowledgeGraphClient({
   orgParam,
   scopeParam = null,

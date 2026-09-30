@@ -44,7 +44,6 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 function isObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }

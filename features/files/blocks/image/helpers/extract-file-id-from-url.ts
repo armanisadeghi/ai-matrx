@@ -13,7 +13,6 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
  * `file_id` consistently, this becomes dead code.
  */
 
-
 export function extractFileIdFromUrl(
   url: string | null | undefined,
 ): string | null {

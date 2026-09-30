@@ -53,7 +53,6 @@ import {
 import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 interface MandateFacts {
   id: string;
   mandateKey: AnyMandateKey;

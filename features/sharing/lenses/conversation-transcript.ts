@@ -85,7 +85,6 @@ function strOrNull(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v : null;
 }
 
-
 function parseOutput(raw: unknown): unknown {
   if (typeof raw !== "string") return raw ?? null;
   try {

@@ -4,7 +4,6 @@ import { ScopesRouteHeader } from "@/features/scope-system/components/ScopesRout
 import { ScopeAddressCanonicalizer } from "@/features/scope-system/components/ScopeAddressCanonicalizer";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export async function generateMetadata({
   params,
 }: {

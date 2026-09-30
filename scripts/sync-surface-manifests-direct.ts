@@ -41,7 +41,6 @@ import {
 } from "./lib/surface-sync-check";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 function usage(): never {
   throw new Error(
     "Usage: tsx scripts/sync-surface-manifests-direct.ts [--check] [--registration-only] [--self-test] [--surface <name>]…",

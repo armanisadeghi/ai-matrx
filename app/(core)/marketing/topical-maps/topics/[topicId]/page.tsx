@@ -17,7 +17,6 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 export default async function TopicalMapTopicDoor({
   params,
 }: {

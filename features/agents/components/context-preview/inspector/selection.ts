@@ -34,7 +34,6 @@ export const EMPTY_SELECTION: InspectorSelection = {
   item: null,
 };
 
-
 function idOrNull(value: string | null | undefined): string | null {
   const v = value?.trim() ?? "";
   return isUuidShape(v) ? v : null;

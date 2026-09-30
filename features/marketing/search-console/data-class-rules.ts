@@ -34,7 +34,6 @@ async function seoDb() {
 
 const assertData = makeAssertData("reach your keyword classification rules");
 
-
 export async function listClassRules(
   siteId: string,
   signal?: AbortSignal,

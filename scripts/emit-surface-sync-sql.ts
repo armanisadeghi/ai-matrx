@@ -124,7 +124,6 @@ function currentGitSha(): string | null {
   }
 }
 
-
 export interface EmitSurfaceSyncSqlOptions {
   surfaceNames?: readonly string[];
   organizationId: string;

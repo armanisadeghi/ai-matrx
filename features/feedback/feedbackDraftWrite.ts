@@ -141,7 +141,6 @@ export interface FeedbackAttachmentPatch {
   name?: string;
 }
 
-
 /**
  * Validate an agent-supplied `feedback_attachment` value — ONE existing file,
  * by its file id (an image the agent generated, a file in the person's

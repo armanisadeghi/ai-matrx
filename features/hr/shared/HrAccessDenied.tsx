@@ -49,7 +49,6 @@ import { resolveAccessGateSlug } from "@/features/access-gate/service/accessDeni
 import type { AccessDeniedContext } from "@/features/access-gate/types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-
 /**
  * The context an ABSOLUTE refusal renders through.
  *
