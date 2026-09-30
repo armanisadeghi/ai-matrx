@@ -116,7 +116,9 @@ const popups = () =>
   page.evaluate(() => [...document.querySelectorAll("[role=dialog],[role=alertdialog],[data-matrx-choice-nudge]")].map((d) => d.innerText.replace(/\s+/g, " ").slice(0, 300)));
 
 async function columnSettings(col) {
-  await page.locator("thead th", { hasText: col }).first().click({ button: "right" });
+  // The header whose words ARE the column's name — "Bin 12" must never open "Bin 12 (old shelf)".
+  const exact = new RegExp(`^\\s*${col.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*[↑↓]?\\s*$`);
+  await page.locator("thead th", { hasText: exact }).first().click({ button: "right" });
   await sleep(800);
   const items = page.locator("[role=menu] [role^=menuitem]");
   const texts = await items.allInnerTexts();
