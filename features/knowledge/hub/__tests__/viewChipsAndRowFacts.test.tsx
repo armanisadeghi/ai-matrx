@@ -81,10 +81,14 @@ it("a transcript row says its duration and words — never a draft flag no other
   expect(transcriptRowFacts(row({ duration_seconds: 0, word_count: 0 }))).toEqual([]);
   expect(transcriptRowFacts(undefined)).toEqual([]);
   expect(transcriptRowFacts(row({ kind: "session", status: "recording", duration_seconds: 3725 }))).toEqual([
-    "Session",
+    "Recording session",
+    "Recording now",
     "1h 2m",
-    "Recording",
   ]);
+  // A session with nothing in it says so in words — never "Idle".
+  expect(transcriptRowFacts(row({ kind: "session", status: "idle" }))).toEqual(["Empty recording session"]);
+  expect(transcriptRowFacts(row({ kind: "cleanup", status: "idle" }))).toEqual(["Empty cleanup"]);
+  expect(transcriptRowFacts(row({ kind: "session", status: "stopped", duration_seconds: 90 }))).toEqual(["Recording session", "2 min"]);
 });
 
 it("the kind word is dropped only when every row is the same kind", () => {
