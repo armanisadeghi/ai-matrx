@@ -199,6 +199,17 @@ function directText(el) {
   return collapse(s.replace(/…(\s*…)+/g, "…"));
 }
 
+/** Components whose body text explains a consequence or a state: dialogs, sheets, alerts, empty/error states. */
+const CONSEQUENCE_HOST = /(Dialog|AlertDialog|Sheet|Drawer|Alert|Confirm|EmptyState|ErrorState|ReadFailure|Notice|Empty)(Content|Body)?$/;
+function insideConsequenceHost(node) {
+  for (let p = node.parent; p; p = p.parent) {
+    if (ts.isJsxElement(p) && CONSEQUENCE_HOST.test(tagName(p) ?? "")) return true;
+    if (ts.isFunctionDeclaration(p) && p.name && CONSEQUENCE_HOST.test(p.name.text)) return true;
+    if (ts.isSourceFile(p)) break;
+  }
+  return false;
+}
+
 /** Name of the nearest enclosing JSX element that is a component (for empty/error-state context). */
 function enclosingComponent(node) {
   for (let p = node.parent; p; p = p.parent) {
@@ -246,7 +257,8 @@ export function scanSource(file, source) {
       const tag = tagName(node) ?? "";
       for (const a of attrsOf(node)) {
         const name = attrName(a);
-        const kind = SECONDARY_PROPS.has(name) ? "secondary" : TOOLTIP_PROPS.has(name) ? "tooltip" : PLACEHOLDER_PROPS.has(name) ? "placeholder" : null;
+        let kind = SECONDARY_PROPS.has(name) ? "secondary" : TOOLTIP_PROPS.has(name) ? "tooltip" : PLACEHOLDER_PROPS.has(name) ? "placeholder" : null;
+        if (kind === "secondary" && CONSEQUENCE_HOST.test(tag)) kind = "consequence";
         if (!kind) continue;
         for (const t of attrTexts(a)) {
           where = `${tag}.${name}`;
@@ -264,7 +276,7 @@ export function scanSource(file, source) {
       const isTextEl = /^(p|span|div|small|li|dd|td|label|CardDescription|FormDescription|DialogDescription|SheetDescription|AlertDescription|DrawerDescription)$/.test(tag);
       if (isTextEl) {
         const t = directText(node);
-        const consequence = /^(Dialog|AlertDialog|Alert|Sheet|Drawer)Description$/.test(tag) || /EmptyState|ErrorState|ReadFailure/.test(enclosingComponent(node));
+        const consequence = /^(Dialog|AlertDialog|Alert|Sheet|Drawer)Description$/.test(tag) || insideConsequenceHost(node);
         const secondary = /Description$/.test(tag) || /text-muted-foreground/.test(cls) || /text-(xs|\[1[01]px\])/.test(cls);
         where = `<${tag}>`;
         if (t) checkText(node.openingElement, t, consequence ? "consequence" : secondary ? "secondary" : "body");
