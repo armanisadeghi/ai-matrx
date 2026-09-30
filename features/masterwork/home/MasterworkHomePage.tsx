@@ -300,12 +300,8 @@ export function MasterworkHomePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 pb-10 sm:px-6">
-      {/* The one-line promise + primary actions */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-xl text-sm text-muted-foreground">
-          Your expertise, written down as rules you approve — then built into
-          systems that work exactly your way.
-        </p>
+      {/* Primary actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild size="sm">
             <Link href="/masterwork/new">

@@ -87,12 +87,6 @@ export function HowItsImprovingPanel() {
         </div>
       ) : (
       <div className="rounded-lg border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">
-          Five specialists do the work behind Masterwork — and each one is
-          under standing review: its real sessions are re-read on a schedule,
-          and when a review finds a better way, the specialist is revised. Your
-          feedback in the Studio feeds those reviews.
-        </p>
         {reviewsError !== null ? (
           <p className="mt-2 text-xs text-destructive">
             Review history couldn&apos;t be loaded, so review counts are
