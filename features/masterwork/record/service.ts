@@ -665,8 +665,10 @@ async function readExpertMessages(
 export async function listRulebookInterviews(
   rulebookId: string,
   rules: RulebookRule[] = [],
+  /** The Rulebook's OWN organization, for the healing write below — never the active org. */
+  organizationId?: string | null,
 ): Promise<RulebookInterview[]> {
-  return (await listRulebookInterviewsWithAccess(rulebookId, rules)).interviews;
+  return (await listRulebookInterviewsWithAccess(rulebookId, rules, organizationId)).interviews;
 }
 
 /**
@@ -677,6 +679,7 @@ export async function listRulebookInterviews(
 export async function listRulebookInterviewsWithAccess(
   rulebookId: string,
   rules: RulebookRule[] = [],
+  organizationId?: string | null,
 ): Promise<{ interviews: RulebookInterview[]; hiddenCount: number }> {
   const edgeIds = await interviewConversationIds(rulebookId);
 
@@ -733,6 +736,8 @@ export async function listRulebookInterviewsWithAccess(
         const linked = await linkInterviewConversation({
           rulebookId,
           conversationId,
+          // The heal is a write about an EXISTING record: it carries the Rulebook's own org.
+          ...(organizationId ? { orgId: organizationId } : {}),
         });
         if (linked) forgetPendingInterviewLink(conversationId);
       }),

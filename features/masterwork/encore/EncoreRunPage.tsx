@@ -28,12 +28,9 @@ import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
 import {
   getBenchProof,
-  ORGANIZATION_REQUIRED,
-  ORGANIZATION_UNAVAILABLE,
   UNAVAILABLE,
   type BenchProofState,
 } from "./benchProof";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ExpertSignOff } from "../review/ExpertSignOff";
 import { MASTERWORK_RUN_SUBJECT_TYPE } from "../review/signature";
 import { RunTheBench } from "./RunTheBench";
@@ -140,52 +137,32 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   // Masterwork has loaded. A viewer who cannot read the Rulebook gets the
   // "can't tell from here" sentence rather than a false "no proof".
   //
-  // 🚨 AND IT WAITS FOR THE ORGANIZATION (production walk 4, wall W3). Every
-  // Matrx transport refuses BEFORE networking when no organization is selected
-  // ("Select an organization before sending this request." — the production
-  // error row this wall left behind, 9ce676a8 at 02:58:27Z). This effect used
-  // to fire on `rulebookId` alone, so on a fresh load it raced the boot that
-  // selects the organization, ate that refusal, and rendered it as a PERMISSION
-  // message to the admin reloading mid-trial. `useOrganizationRequired` is the
-  // platform's one reading of that state: hold the skeleton while it resolves,
-  // ask only once a request can actually be sent, and say the honest thing when
-  // boot settles with no organization at all.
-  //
-  // 🚨 AND THE READ ITSELF CAN FAIL — the FOURTH state (R37). The boolean pair
-  // could not see it: under a failed organization read `organizationRequired`
-  // is false and `canLoad` is false, so this panel held `{ status: "loading" }`
-  // forever — the admin reloading mid-trial watched a skeleton that would never
-  // resolve. `organizationState` names all four, and the fourth gets its own
-  // sentence (`ORGANIZATION_UNAVAILABLE`), never the refusal.
+  // 🚨 A READ NEVER WAITS ON THE ACTIVE ORGANIZATION (active-org law, 2026-09-30; AO-198). The
+  // bench record is about ONE existing Rulebook, so the call carries THAT RECORD'S OWN organization
+  // (`scopeOverrides.organization_id`, the shared transport's per-call org) — never the one the
+  // person happens to be working in — and a read with no organization at all is sent org-less and
+  // answered by the server's read door, exactly as `callApi` treats every GET. Nothing here is held
+  // for, or narrowed by, the active organization.
   const rulebookId = masterwork?.rulebook?.id ?? null;
-  const { canLoad, organizationState } = useOrganizationRequired();
+  const rulebookOrganizationId = masterwork?.rulebook?.organization_id ?? null;
   const refreshBench = useCallback(() => {
-    if (!rulebookId || !canLoad) return;
-    void getBenchProof(rulebookId).then(setBench);
-  }, [rulebookId, canLoad]);
+    if (!rulebookId) return;
+    void getBenchProof(rulebookId, rulebookOrganizationId).then(setBench);
+  }, [rulebookId, rulebookOrganizationId]);
   useEffect(() => {
     let cancelled = false;
     if (!rulebookId) {
       setBench(UNAVAILABLE);
       return;
     }
-    if (organizationState === "required") {
-      setBench(ORGANIZATION_REQUIRED);
-      return;
-    }
-    if (organizationState === "unavailable") {
-      setBench(ORGANIZATION_UNAVAILABLE);
-      return;
-    }
     setBench({ status: "loading" });
-    if (organizationState === "resolving") return; // still booting — the skeleton is honest here
-    void getBenchProof(rulebookId).then((state) => {
+    void getBenchProof(rulebookId, rulebookOrganizationId).then((state) => {
       if (!cancelled) setBench(state);
     });
     return () => {
       cancelled = true;
     };
-  }, [rulebookId, organizationState]);
+  }, [rulebookId, rulebookOrganizationId]);
 
   const releaseThis = async () => {
     if (!masterwork) return;

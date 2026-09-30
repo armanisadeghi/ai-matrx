@@ -363,58 +363,6 @@ export const UNAVAILABLE: BenchProofState = {
   running: null,
 };
 
-export const ORG_REQUIRED_HEADLINE = "Bench proof: no organization selected";
-
-/**
- * 🚨 THE STATE THE WALL WAS ACTUALLY IN (production walk 4, wall W3).
- * Every Matrx transport fails CLOSED with no organization selected — it throws
- * before any networking, with "Select an organization before sending this
- * request.", which is the production error row this wall left behind. That is
- * not a permission answer and not a bench fact; it is an unfinished session,
- * and the remedy is a picker, not a reload. The Encore page now WAITS for the
- * organization rather than asking and mis-reading the refusal, and this is the
- * sentence for the genuinely terminal case.
- */
-export const ORGANIZATION_REQUIRED: BenchProofState = {
-  status: "unavailable",
-  headline: ORG_REQUIRED_HEADLINE,
-  reason:
-    "Every request is filed under one organization, and none is selected for " +
-    "this session. Pick one from the avatar menu and this will answer.",
-  canRunHere: false,
-  form: null,
-  howToRun: "",
-  running: null,
-};
-
-export const ORG_UNAVAILABLE_HEADLINE =
-  "Bench proof: we could not check your organization";
-
-/**
- * 🚨 THE FOURTH STATE — THE ORGANIZATION READ ITSELF FAILED (R37, 2026-09-18).
- * `ORGANIZATION_REQUIRED` above is a claim about this person's memberships, and
- * it may only be made once they have been READ. When the read failed — an
- * aborted fetch, a thrown membership read, a degraded the old own-organization lookup
- * — nobody looked, so telling the admin mid-trial to pick an organization is a
- * claim nobody verified, and leaving the panel on `{ status: "loading" }` is a
- * skeleton that never resolves. This is the sentence for that state: it says
- * what happened, says plainly that picking is NOT the remedy, and names the one
- * remedy this panel does offer.
- */
-export const ORGANIZATION_UNAVAILABLE: BenchProofState = {
-  status: "unavailable",
-  headline: ORG_UNAVAILABLE_HEADLINE,
-  reason:
-    "Something went wrong while reading which organization you are working in, " +
-    "so the bench proof was not checked. This does not mean you need to pick " +
-    "one — we simply could not check. Reload to try again.",
-  error: new Error("The organization read failed, so the bench proof was not checked."),
-  canRunHere: false,
-  form: null,
-  howToRun: "",
-  running: null,
-};
-
 /**
  * 🚨 A FAILED READ IS NOT A DENIED ONE (production walk 4, wall W3).
  * This function used to be one line — every error became `UNAVAILABLE`, whose
@@ -459,6 +407,8 @@ export function checkFailed(raw: unknown): BenchProofState {
  */
 export async function getBenchProof(
   rulebookId: string,
+  /** The Rulebook's OWN organization — the call is about that record, never the active org. */
+  organizationId?: string | null,
 ): Promise<BenchProofState> {
   const store = getStoreSingleton();
   if (!store) return UNAVAILABLE;
@@ -468,6 +418,7 @@ export async function getBenchProof(
       path: BENCH_PROOF_PATH,
       method: "GET",
       pathParams: { rulebook_id: rulebookId } as never,
+      ...(organizationId ? { scopeOverrides: { organization_id: organizationId } } : {}),
     }),
   );
   const error = (result as { error?: { message?: string; status?: number } })

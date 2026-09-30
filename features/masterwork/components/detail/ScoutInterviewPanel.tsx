@@ -44,8 +44,6 @@ import { selectUserInputText } from "@/features/agents/redux/execution-system/in
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useMandate } from "@/features/mandates/useMandate";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -691,13 +689,18 @@ export function ScoutInterviewContent({
   // alone cannot see it: under a failed organization read it is false and
   // `canLoad` is false, so this panel held its skeleton forever. `organizationState`
   // names all four, and the shared notice renders the two terminal answers.
-  const { canLoad, organizationState, retry } = useOrganizationRequired();
+  // 🚨 THE HISTORY READ NEVER WAITS ON THE ACTIVE ORGANIZATION (active-org law, 2026-09-30;
+  // AO-198). It is a read of one existing Rulebook's interviews, so it waits only for the
+  // Rulebook document (whose own organization the healing write carries) — never for, or on,
+  // whichever organization the person happens to be working in.
+  const rulebookOrganizationId = rulebookDoc.organizationId;
+  const rulebookDocLoading = rulebookDoc.loading;
   useEffect(() => {
-    if (!canLoad) return undefined;
+    if (rulebookDocLoading) return undefined;
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await listRulebookInterviews(rulebookId);
+        const rows = await listRulebookInterviews(rulebookId, [], rulebookOrganizationId);
         if (cancelled) return;
         setHistoryError(null);
         setInterviews(rows);
@@ -720,7 +723,7 @@ export function ScoutInterviewContent({
     return () => {
       cancelled = true;
     };
-  }, [rulebookId, canLoad, historyAttempt]);
+  }, [rulebookId, rulebookDocLoading, rulebookOrganizationId, historyAttempt]);
 
   const startNew = useCallback(() => {
     const key = freshKey + 1;
@@ -729,21 +732,6 @@ export function ScoutInterviewContent({
   }, [freshKey]);
 
   if (loading || rulebookDoc.loading || interviews === null) {
-    // No organization yet is a HOLD, not an empty history — the skeleton stays
-    // until the boot settles, and only a boot that settles with no
-    // organization at all says so.
-    if (organizationState === "required" || organizationState === "unavailable") {
-      return (
-        <OrganizationContextNotice
-          state={organizationState}
-          what="interviews"
-          description="Choose which organization this interview belongs to, at the top of the page, and it will pick up from here."
-          onRetry={retry}
-          compact
-          className="px-4 py-6"
-        />
-      );
-    }
     return (
       <InterviewOpening
         doing="Opening your interview…"
