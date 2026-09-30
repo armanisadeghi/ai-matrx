@@ -3,7 +3,7 @@
 import { createMatrxTransferPorts, type MatrxTransferContent } from "@ai-matrx/agents/content-transfer";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { alchemyOrganizationId } from "./alchemy-organization";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
@@ -18,7 +18,8 @@ type Host = { getCurrentState(): RootState; dispatch: AppDispatch; navigate(href
 export function createAlchemyDestinationPorts(host: Host) {
   const identity = () => {
     const state = host.getCurrentState();
-    const userId = selectUserId(state); const organizationId = selectOrganizationId(state);
+    // The admin section works in the platform tenant, like every other request from there.
+    const userId = selectUserId(state); const organizationId = alchemyOrganizationId(state);
     if (!userId || !organizationId) throw new Error("Sign in and select an organization to use Matrx destinations.");
     return { userId, organizationId };
   };

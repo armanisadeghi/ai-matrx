@@ -97,7 +97,8 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
       // identity) before the workspace opens. Dismiss = the workspace opens without destinations.
       void (async () => {
         try {
-          await ensureOrganizationForWrite();
+          // The person pressed to send: this IS the act, so the question is asked, never refused.
+          await ensureOrganizationForWrite(undefined, { interactive: true });
           for (let i = 0; i < 40 && !(capabilitiesRef.current.actions ?? []).length; i++) {
             await new Promise((r) => setTimeout(r, 50));
           }

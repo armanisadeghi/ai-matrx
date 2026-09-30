@@ -18,7 +18,7 @@ import { AlchemyWindowHost, createAlchemyWindowController } from "./AlchemyWindo
 import { focusWindow } from "@/lib/redux/slices/windowManagerSlice";
 import { createActionRegistry } from "@ai-matrx/alchemy/actions";
 import { AlchemyActionsProvider } from "@ai-matrx/alchemy/react/host";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import "@ai-matrx/design-system/content-transfer.css";
 import {
   useAppDispatch,
@@ -43,6 +43,7 @@ import {
 } from "@ai-matrx/agents/matrx";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { alchemyOrganizationId } from "./alchemy-organization";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { supabase } from "@/utils/supabase/client";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
@@ -144,7 +145,9 @@ export function useAlchemyHostPorts(): AlchemyHostPorts {
 export function AlchemyHost({ children }: { children: ReactNode }) {
   const store = useAppStore();
   const userId = useAppSelector(selectUserId);
-  const orgId = useAppSelector(selectOrganizationId);
+  // Re-read on every navigation: entering or leaving the admin section changes the organization.
+  usePathname();
+  const orgId = useAppSelector(alchemyOrganizationId);
   // Bound once per mount: the identity port reads the live store, so an
   // account or organization switch needs no new ports.
   // PP-01a: a live preparation session opens in a real WindowPanel, several at once.
@@ -206,7 +209,7 @@ function AlchemyHostSession({
       const state = store.getState();
       if (
         selectUserId(state) !== identity.userId ||
-        selectOrganizationId(state) !== identity.orgId
+        alchemyOrganizationId(state) !== identity.orgId
       ) {
         throw new Error(
           "Your account or organization changed. Reopen Alchemy to prepare this content in the current workspace.",
@@ -272,7 +275,7 @@ function AlchemyHostSession({
       },
     };
     const organizationId = () =>
-      requireOrganizationContext(selectOrganizationId(getCurrentState()));
+      requireOrganizationContext(alchemyOrganizationId(getCurrentState()));
     const onProgress = (progress: MatrxContentTransferProgress) => {
       try {
         getCurrentState();

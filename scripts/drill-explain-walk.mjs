@@ -101,7 +101,9 @@ try {
   await sleep(2500);
   const asked = await page.evaluate(() => {
     const dlg = [...document.querySelectorAll("[role=dialog]")].find((d) => /organization/i.test(d.textContent ?? ""));
-    return dlg ? { text: dlg.textContent?.slice(0, 400), options: [...dlg.querySelectorAll("[role=option], button")].map((b) => b.textContent?.trim()).filter(Boolean).slice(0, 30) } : null;
+    const toasts = [...document.querySelectorAll("[data-sonner-toast]")].map((t) => t.textContent?.slice(0, 200));
+    if (!dlg) return { dialog: null, toasts, dialogs: [...document.querySelectorAll("[role=dialog]")].map((d) => d.textContent?.slice(0, 120)) };
+    return { toasts, text: dlg.textContent?.slice(0, 400), options: [...dlg.querySelectorAll("[role=option], button")].map((b) => b.textContent?.trim()).filter(Boolean).slice(0, 30) };
   });
   step("organization question", { asked });
   await shot(page, "03a-organization-question");
@@ -190,8 +192,13 @@ try {
     return { group: true, summary: d.querySelector("summary")?.textContent ?? null, rows: [...d.querySelectorAll("button")].map((b) => b.textContent?.trim() ?? "") };
   });
   const orgState = await page.evaluate(() => {
-    const s = window.__NEXT_REDUX_STORE__?.getState?.() ?? null;
-    return s ? { org: s.appContext?.organization_id ?? null } : { org: "unknown (store not exposed)" };
+    // The Redux store, read the way React DevTools does (the Provider's props), for the record only.
+    const root = document.querySelector("[data-drill-explorer]");
+    const key = root && Object.keys(root).find((k) => k.startsWith("__reactFiber"));
+    let f = key ? root[key] : null;
+    while (f && !(f.memoizedProps && f.memoizedProps.store && f.memoizedProps.store.getState)) f = f.return;
+    const s = f?.memoizedProps.store.getState() ?? null;
+    return s ? { org: s.appContext?.organization_id ?? null } : { org: "unknown (store not found)" };
   });
   await sleep(400);
   await shot(page, "03b-alchemy-destinations");
