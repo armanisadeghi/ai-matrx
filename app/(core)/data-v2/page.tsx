@@ -169,7 +169,7 @@ export default function UnifiedDataPage() {
             down the page, then as a row of its own). Offered once the store can take one. */}
         <HeaderStructured
           back={goBack}
-          {...(organizationState === "ready" && storeOn
+          {...(organizationState === "ready" && storeOn && (organizationId ?? active.organizationId)
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => setMakeAsked((n) => ({ ...n, create: n.create + 1 })) },
@@ -225,6 +225,7 @@ export default function UnifiedDataPage() {
                 for it. Lane DATA-HUB, 2026-09-22. */}
             <OrganizationHub
               organizationId={organizationId}
+              knobOrganizationId={active.organizationId}
               dataSource={dataSource}
               organizationName={namedOrganization?.name ?? null}
               makeAsked={makeAsked}
@@ -240,6 +241,9 @@ export default function UnifiedDataPage() {
                  front door with thirty-seven approval cards (VERIFIER-14 §3).
                  The hub puts it under the listings. */
               inbox={
+                // `custom.work_inbox` answers for ONE organization (no all-organizations mode yet), so under
+                // All Orgs the inbox is absent rather than quietly showing the header's organization's.
+                !organizationId ? undefined : (
                 <ActionInbox
                   className="max-h-64"
                   /* THE ONE ADDRESS (lane ROUTE-RESOLVER). An approval raised in
@@ -253,6 +257,7 @@ export default function UnifiedDataPage() {
                     )
                   }
                 />
+                )
               }
             />
           </RecordsMount>

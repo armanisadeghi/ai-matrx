@@ -25,7 +25,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArchivedDisclosure, ArchivedPortals, TablesHome } from "@ai-matrx/records-ui";
-import { useRecordsClient, useTables } from "@ai-matrx/records/react";
+import { RecordsProvider, useRecordsClient, useTables } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { cn } from "@ai-matrx/design-system";
 
@@ -92,6 +92,11 @@ export interface OrganizationHubProps {
   /** The ONE organization the on-page dropdown chose; null = All Orgs (the person's own reach). */
   organizationId: string | null;
   /**
+   * The organization whose SETTINGS rung the home's knobs read (the header's selected one, or the
+   * chosen one). A setting is not access: it never narrows what is listed. Defaults to `organizationId`.
+   */
+  knobOrganizationId?: string | null | undefined;
+  /**
    * THE SAME data seam the mount above is bound to, handed down rather than
    * built a second time — one client, one session, one set of headers. It is
    * here at all because three of the doors this hub reads are newer than the
@@ -141,6 +146,7 @@ export interface OrganizationHubProps {
 
 export function OrganizationHub({
   organizationId,
+  knobOrganizationId,
   dataSource,
   inbox,
   organizationName: namedOrganizationName,
@@ -163,11 +169,11 @@ export function OrganizationHub({
   const selectedOrganizationName = useAppSelector(selectOrganizationName);
   const organizationName = namedOrganizationName ?? selectedOrganizationName;
   const knobUserId = useAppSelector(selectUserId);
-  const defaultScope = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_SCOPE_KNOB);
+  const defaultScope = useEffectiveKnob(organizationId ?? knobOrganizationId, knobUserId, DATA_HOME_DEFAULT_SCOPE_KNOB);
   const scope: DataHomeScope = resolveDataHomeScope(searchParams.get("scope"), defaultScope);
-  const defaultKind = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_KIND_KNOB);
+  const defaultKind = useEffectiveKnob(organizationId ?? knobOrganizationId, knobUserId, DATA_HOME_DEFAULT_KIND_KNOB);
   const kind = resolveDataHomeKind(searchParams.get("kind"), defaultKind);
-  const order = resolveDataHomeOrder(useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_ORDER_KNOB));
+  const order = resolveDataHomeOrder(useEffectiveKnob(organizationId ?? knobOrganizationId, knobUserId, DATA_HOME_DEFAULT_ORDER_KNOB));
   const chooseKind = useCallback(
     (next: string) => {
       const href = dataHomeKindHref(pathname, searchParams, next);
@@ -292,7 +298,7 @@ export function OrganizationHub({
    * never invents a sharing rule nobody measured.
    */
   const userId = useAppSelector(selectUserId);
-  const memberVisibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
+  const memberVisibility = useEffectiveKnob(organizationId ?? knobOrganizationId, userId, MEMBER_VISIBILITY);
   // THE SENTENCE IS THE READER'S (UI-FIX-19): shared-only speaks to a member, never to the
   // owner or an admin, whose own lane still reaches every table.
   const { role: myRole } = useUserRole(organizationId ?? undefined);
@@ -381,6 +387,14 @@ export function OrganizationHub({
   // the same door a table's own archive uses, addressed at the kernel that
   // holds every Table, so it is one call and not one per table.
   const readArchive = useCallback(async () => {
+    // ALL ORGS: the store's archive doors answer for ONE organization, and there is no door that
+    // answers across them yet — so the archive says so and points at the dropdown, never a silent
+    // empty archive and never the header's organization standing in.
+    if (!organizationId) {
+      setArchiveTrouble(null);
+      setArchivedTables([]);
+      return;
+    }
     const kernel = await doors.tableKernelId(dataSource);
     if (!kernel.ok) {
       setArchiveTrouble(kernel.error.message);
@@ -431,7 +445,7 @@ export function OrganizationHub({
         archivedByName: row.archivedByName,
       })),
     );
-  }, [client, dataSource]);
+  }, [client, dataSource, organizationId]);
 
   useEffect(() => {
     void readArchive();
@@ -631,15 +645,37 @@ export function OrganizationHub({
           keeps for itself behind Show everything; the package's home draws its own full lists
           unless told otherwise, so it is told `makingOnly` and one page never lists the same tables
           twice. */}
-      <TablesHome
-        makingOnly
-        {...(makeAsked ? { askedBy: makeAsked } : {})}
-        onOpenTable={(tableId: string, dashboardId?: string | null) =>
-          router.push(
-            dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,
-          )
-        }
-      />
+      {/* MAKING A TABLE NEEDS AN ORGANIZATION — where a NEW record lands (the one legitimate use of
+          the selected organization). With ONE organization chosen in the dropdown the mount is
+          already bound to it; under All Orgs the creation controls are bound to the header's
+          selected organization, and with none selected the page says how to choose one. */}
+      {organizationId ? (
+        <TablesHome
+          makingOnly
+          {...(makeAsked ? { askedBy: makeAsked } : {})}
+          onOpenTable={(tableId: string, dashboardId?: string | null) =>
+            router.push(
+              dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,
+            )
+          }
+        />
+      ) : knobOrganizationId ? (
+        <RecordsProvider config={{ ...client.config, organizationId: knobOrganizationId }}>
+          <TablesHome
+            makingOnly
+            {...(makeAsked ? { askedBy: makeAsked } : {})}
+            onOpenTable={(tableId: string, dashboardId?: string | null) =>
+              router.push(
+                dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,
+              )
+            }
+          />
+        </RecordsProvider>
+      ) : (
+        <p className="text-xs text-muted-foreground" data-hub-make-needs-organization="">
+          A new table is filed under one organization. Choose one in the header&rsquo;s organization menu to make one.
+        </p>
+      )}
 
       {HUB_CAPABILITIES.filter((capability) => listingShownUnderKind(capability.id, kind)).map((capability) => (
         <HubListing
@@ -677,9 +713,15 @@ export function OrganizationHub({
             onBringBack={bringBack}
           />
         </ArchivedDisclosure>
-        <div className="mt-2">
-          <ArchivedPortals />
-        </div>
+        {organizationId ? (
+          <div className="mt-2">
+            <ArchivedPortals />
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground" data-hub-archive-needs-organization="">
+            Archived tables and portals are kept per organization. Choose one in the Organization menu above to see its archive.
+          </p>
+        )}
       </section>
     </div>
   );
