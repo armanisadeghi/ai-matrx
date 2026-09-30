@@ -370,73 +370,84 @@ class Queue:
             raise RuntimeError('could not read this process start time; refusing to queue a check nobody can track')
         target = None
         try:
-            return self._wait(root, binary, args, env, cwd, stdout, stderr, rss_gb, key, me,
-                              lambda value=None: target if value is None else value)
-        finally:
-            pass
-
-    def _wait(self, *a):  # placeholder replaced below
-        raise NotImplementedError
-
-                cap = self.cap()
-                self.recover(data)
-                if target is None:
-                    run = next((r for r in data['runs'].values()
-                                if r['key'] == key and r['state'] == 'pending'), None)
-                    if run is None:
-                        rid = uuid.uuid4().hex
-                        run = {'id': rid, 'key': key, 'state': 'pending', 'waiters': 0,
-                               'created_at': time.time(),
-                               'stdout_path': str(self.base / 'results' / f'{rid}.out'),
-                               'stderr_path': str(self.base / 'results' / f'{rid}.err')}
-                        data['runs'][rid] = run
-                    target = run['id']
-                    run['waiters'] += 1
-                    run['latest_requested_at'] = time.time()
-                else:
-                    run = data['runs'].get(target)
-                    if run is None:
-                        raise RuntimeError('requested result expired; rerun the check')
-                if run['state'] == 'done':
-                    completed = dict(run)
-                elif run['state'] == 'pending':
-                    key_fd = try_lock(self.base / 'keys' / key)
-                    slot_fd = self.capacity(cap) if key_fd is not None else None
-                    if slot_fd is not None and self.legacy_running(data):
-                        os.close(slot_fd)
-                        slot_fd = None
-                    if slot_fd is not None:
-                        # fork under the state lock: publication and handoff are one
-                        # serialized operation. Child closes the inherited state FD
-                        # without unlocking the parent's shared open description.
-                        run.update(state='running', started_at=time.time())
-                        try:
-                            pid = os.fork()
-                        except BaseException:
-                            os.close(slot_fd)
-                            os.close(key_fd)
-                            raise
-                        if pid == 0:
-                            self.supervise(run, binary, args, env, cwd, rss_gb, key_fd, slot_fd)
-                            os._exit(70)
-                        run['supervisor_pid'] = pid
-                        os.close(slot_fd)
-                    if key_fd is not None:
-                        os.close(key_fd)
-            if completed is not None:
-                return self.replay(completed, stdout, stderr)
-            # Reap only children of this client; cancelled clients leave a detached
-            # supervisor whose output is on disk, not attached to their terminal.
-            try:
-                while os.waitpid(-1, os.WNOHANG)[0]:
+            while True:
+                completed = None
+                # A caller signal waits until the state write is published, so a
+                # fork and its publication are never split; it lands right after.
+                signal.pthread_sigmask(signal.SIG_BLOCK, (*CALLER_SIGNALS, signal.SIGINT))
+                try:
+                    with self.state() as (data, state_fd):
+                        cap = self.cap()
+                        self.recover(data)
+                        if target is None:
+                            run = next((r for r in data['runs'].values()
+                                        if r['key'] == key and r['state'] == 'pending'
+                                        and isinstance(r.get('waiters'), list)), None)
+                            if run is None:
+                                rid = uuid.uuid4().hex
+                                run = {'id': rid, 'key': key, 'state': 'pending', 'waiters': [],
+                                       'created_at': time.time(),
+                                       'stdout_path': str(self.base / 'results' / f'{rid}.out'),
+                                       'stderr_path': str(self.base / 'results' / f'{rid}.err')}
+                                data['runs'][rid] = run
+                            target = run['id']
+                            run['waiters'].append(me)
+                            run['latest_requested_at'] = time.time()
+                        else:
+                            run = data['runs'].get(target)
+                            if run is None:
+                                raise RuntimeError('requested result expired; rerun the check')
+                        if run['state'] == 'done':
+                            completed = dict(run)
+                        elif run['state'] == 'pending':
+                            key_fd = try_lock(self.base / 'keys' / key)
+                            slot_fd = self.capacity(cap) if key_fd is not None else None
+                            if slot_fd is not None and self.legacy_running(data):
+                                os.close(slot_fd)
+                                slot_fd = None
+                            if slot_fd is not None:
+                                # fork under the state lock: publication and handoff are one
+                                # serialized operation. Child closes the inherited state FD
+                                # without unlocking the parent's shared open description.
+                                run.update(state='running', started_at=time.time())
+                                try:
+                                    pid = os.fork()
+                                except BaseException:
+                                    os.close(slot_fd)
+                                    os.close(key_fd)
+                                    raise
+                                if pid == 0:
+                                    try:
+                                        self.supervise(run, binary, args, env, cwd, rss_gb, key_fd, slot_fd)
+                                    finally:
+                                        os._exit(70)
+                                run['supervisor_pid'] = pid
+                                os.close(slot_fd)
+                            if key_fd is not None:
+                                os.close(key_fd)
+                finally:
+                    signal.pthread_sigmask(signal.SIG_UNBLOCK, (*CALLER_SIGNALS, signal.SIGINT))
+                if completed is not None:
+                    return self.replay(completed, stdout, stderr)
+                # Reap only children of this client; cancelled clients leave a detached
+                # supervisor whose output is on disk, not attached to their terminal.
+                try:
+                    while os.waitpid(-1, os.WNOHANG)[0]:
+                        pass
+                except ChildProcessError:
                     pass
-            except ChildProcessError:
-                pass
-            time.sleep(POLL_SECONDS)
+                time.sleep(POLL_SECONDS)
+        finally:
+            if target is not None:
+                self.leave(target, me)
 
     def supervise(self, run, binary, args, env, cwd, rss_gb, key_fd, slot_fd):
         os.setsid()
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # The caller's exit handlers and blocked mask are not the supervisor's.
+        for sig in CALLER_SIGNALS:
+            signal.signal(sig, signal.SIG_DFL)
+        signal.pthread_sigmask(signal.SIG_SETMASK, ())
         # Close caller pipes, state lock, test harness pipes, etc. Only these
         # locks survive, and they will also be inherited by the compiler.
         fd_dir = '/dev/fd' if Path('/dev/fd').exists() else '/proc/self/fd'
@@ -468,6 +479,8 @@ class Queue:
                 with self.state() as (data, _):
                     data['runs'][run['id']].update(guard_pid=child.pid, process_group=child.pid)
                 peak = 0
+                next_waiter_check = 0.0
+                orphaned_since = None
                 while child.poll() is None:
                     rows = process_snapshot()
                     descendants = {child.pid}
@@ -475,14 +488,31 @@ class Queue:
                         before = len(descendants)
                         descendants.update(row['pid'] for row in rows if row['ppid'] in descendants)
                         if len(descendants) == before: break
-                    rss = sum(row['rss'] for row in rows
-                              if row['pid'] in descendants or row['pgid'] == child.pid)
-                    peak = max(peak, rss)
-                    if rss > rss_gb * 1048576:
-                        error = f'KILLED: compiler exceeded its {rss_gb} GB RSS ceiling'
+                    # Real memory (macOS physical footprint), never bare RSS.
+                    memory = sum(process_memory_bytes(row) for row in rows
+                                 if row['pid'] in descendants or row['pgid'] == child.pid)
+                    peak = max(peak, memory)
+                    if memory > rss_gb * 1024 ** 3:
+                        error = (f'KILLED: compiler exceeded its {rss_gb} GB memory ceiling '
+                                 f'({memory / 1024 ** 3:.1f} GB physical footprint)')
                         kill_compiler_group(child.pid)
                         status = 137
                         break
+                    now = time.monotonic()
+                    if now >= next_waiter_check:
+                        next_waiter_check = now + WAITER_CHECK_SECONDS
+                        with self.state() as (data, _):
+                            alive = prune_waiters(data['runs'][run['id']])
+                        if alive:
+                            orphaned_since = None
+                        elif orphaned_since is None:
+                            orphaned_since = now
+                        if orphaned_since is not None and now - orphaned_since >= ABANDON_GRACE_SECONDS:
+                            error = ('KILLED: abandoned: every caller exited before the check finished; '
+                                     'the compiler was stopped to free the queue')
+                            kill_compiler_group(child.pid)
+                            status = 70
+                            break
                     if out.tell() + err.tell() > MAX_LOG_BYTES:
                         error = 'KILLED: compiler output exceeded 128 MiB; result is incomplete'
                         kill_compiler_group(child.pid)
@@ -498,7 +528,7 @@ class Queue:
                 if error is None:
                     status = code if code >= 0 else 128 - code
                 if env.get('MATRX_TSC_REPORT_PEAK'):
-                    err.write(f'[tsc-capped] peak RSS {peak / 1048576:.2f} GB (cap {rss_gb} GB)\n'.encode())
+                    err.write(f'[tsc-capped] peak memory {peak / 1024 ** 3:.2f} GB (cap {rss_gb} GB)\n'.encode())
         except BaseException as failure:
             error = f'check execution failed: {failure}'
             if child is not None and child.poll() is None:

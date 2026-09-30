@@ -14,11 +14,21 @@
 #   tsc6 — TypeScript 6 (JavaScript)  → capped by --max-old-space-size
 #   tsc  — TypeScript 7 (native Go)   → ignores NODE_OPTIONS; GOMEMLIMIT only
 #                                        makes its GC try harder, never stops it
-# The queue runner enforces an RSS watchdog for both compilers.
+# The queue runner (scripts/tsc-queue.py) enforces a memory watchdog for both
+# compilers. It measures REAL memory: on macOS the physical footprint of every
+# process in the compiler's tree (Activity Monitor's "Memory"), because RSS
+# excludes compressed pages and badly under-reports — a Next.js process showed
+# ~3 GB RSS while its footprint was 44 GB. Elsewhere it falls back to RSS.
+#
+# A check runs only while a caller still wants it: every caller is recorded by
+# pid + start time; if all of them die, a pending check never starts and a
+# running one is killed after ~10 s, loudly, freeing the slot for everyone.
 #
 # Usage:  bash scripts/tsc-capped.sh <tsc6|tsc> [compiler args...]
-# Knob:   MATRX_TSC_MAX_RSS_GB (default 20 — measured 2026-09-24: a clean
-#         full run peaks at 12.8 GB (tsc6) and 13.4 GB (native tsc))
+# Knob:   MATRX_TSC_MAX_RSS_GB — historical name, now means REAL memory
+#         (physical footprint). Default 24 — measured 2026-09-24: a clean full
+#         run peaks at 12.8 GB (tsc6) and 13.4 GB (native tsc) RSS; the
+#         footprint runs higher.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
