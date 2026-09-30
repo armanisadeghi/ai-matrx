@@ -1,32 +1,24 @@
 /**
- * Use existing offers the canonical association set, not a hand-flagged few
- * (Arman, 2026-09-30: "You are showing 6 resources when we have dozens").
- * Resources = the registry's resources a Source can read; All adds every other
- * reference-pickable kind. Red on the old code: it offered only the six
- * `source_input_pickable` kinds.
+ * Use existing offers exactly the kinds in the Resources grid's "Sources" and
+ * "Sources & Outputs" roles — never Utilities, Outputs or Workspaces
+ * (Arman, 2026-09-30: "We want sources… Just a list of the things that are in
+ * either sources or sources and outputs").
  */
-import { offeredKinds } from "./UseExisting";
-import { curatedTokens, listableTokens } from "@/features/scopes/registry/entityRegistry";
-
-jest.mock("@ai-matrx/associations/react", () => ({ CONTENT_ROLES: [] }));
+import { offeredKinds, SOURCE_ROLES } from "./UseExisting";
+import { curatedTokens, listableTokens, tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 
 describe("Use existing kinds", () => {
-  it("offers every readable resource kind by default", () => {
+  it("offers every readable kind whose role is Sources or Sources & Outputs, and nothing else", () => {
+    const offered = offeredKinds();
     const pickable = new Set<string>(listableTokens());
-    const expected = (curatedTokens() as string[]).filter((t) => pickable.has(t));
-    expect(offeredKinds("resources")).toEqual(expected);
-    expect(offeredKinds("resources").length).toBeGreaterThan(6);
-    for (const t of ["file", "note", "transcript", "rulebook", "processed_document"]) {
-      expect(offeredKinds("resources")).toContain(t);
+    const expected = (curatedTokens() as string[]).filter(
+      (t) => pickable.has(t) && (SOURCE_ROLES as readonly string[]).includes(tryGetEntityInfo(t)?.contentRole ?? ""),
+    );
+    expect(offered).toEqual(expected);
+    expect(offered.length).toBeGreaterThan(6);
+    for (const t of offered) {
+      expect(["source", "hybrid"]).toContain(tryGetEntityInfo(t)?.contentRole);
     }
-  });
-
-  it("All adds every other pickable kind after the resources, never a duplicate", () => {
-    const all = offeredKinds("all");
-    const resources = offeredKinds("resources");
-    expect(all.slice(0, resources.length)).toEqual(resources);
-    expect(new Set(all).size).toBe(all.length);
-    expect(new Set(all)).toEqual(new Set<string>([...resources, ...listableTokens()]));
-    expect(all.length).toBeGreaterThan(resources.length);
+    for (const t of ["file", "note"]) expect(offered).toContain(t);
   });
 });

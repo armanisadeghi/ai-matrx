@@ -2,12 +2,11 @@
 
 /**
  * "Use existing" — what the person already has, by kind. The kinds are THE
- * canonical association set, laid out the way the scope/project Resources grid
- * (`@ai-matrx/associations/react` `AssociationCardGrid`) lays them out: the
- * registry's resources (`curatedTokens()` — every kind with a content role),
- * grouped by `CONTENT_ROLES` with the same accent dots; "All" widens to every
- * reference-pickable kind (`listableTokens()`), the role-less ones last.
- * Only kinds a Source can read (reference-pickable) are offered.
+ * canonical association set: exactly the kinds whose content role is "Sources"
+ * or "Sources & Outputs" in the scope/project Resources grid
+ * (`@ai-matrx/associations/react` `CONTENT_ROLES` ids `source` + `hybrid`),
+ * reference-pickable, as ONE flat list — no group titles, no Utilities,
+ * Outputs or Workspaces (Arman, 2026-09-30).
  *
  * Counts: `useKindCounts(scope, { tokens })` — one round trip for every kind
  * shown (an empty kind is absent, an uncountable one shows a dash). Lists:
@@ -26,8 +25,7 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
-import { Badge, Input, SegmentedControl } from "@ai-matrx/design-system";
-import { CONTENT_ROLES } from "@ai-matrx/associations/react";
+import { Badge, Input } from "@ai-matrx/design-system";
 import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
@@ -56,43 +54,20 @@ function kindWords(token: string) {
   return { plural: info?.labelPlural ?? token, Icon: info?.Icon ?? null };
 }
 
-/** "resources" = the registry's resources (content role); "all" = every pickable kind. */
-export type ExistingBreadth = "resources" | "all";
+/** The content roles a Source can come from: "Sources" and "Sources & Outputs". */
+export const SOURCE_ROLES = ["source", "hybrid"] as const;
 
 /**
- * The kinds offered, in the grid's order: resources first by content role,
- * then (for "all") the role-less pickable kinds. Only kinds a Source can read
- * — reference-pickable — are offered; the registry decides, never a list here.
+ * The kinds offered: every reference-pickable registry resource whose content
+ * role is a Source role, in the registry's order. The registry decides, never
+ * a hand-written list here.
  */
-export function offeredKinds(breadth: ExistingBreadth): string[] {
-  const pickable = listableTokens() as string[];
-  const pickableSet = new Set(pickable);
-  const resources = (curatedTokens() as string[]).filter((t) => pickableSet.has(t));
-  if (breadth === "resources") return resources;
-  const resourceSet = new Set(resources);
-  return [...resources, ...pickable.filter((t) => !resourceSet.has(t))];
-}
-
-/** The kinds grouped the way the Resources grid groups them; role-less kinds last. */
-function groupByRole(tokens: string[]): { id: string; title: string; dot: string | null; tokens: string[] }[] {
-  // The grid's roles and colors; a Source input leads with what feeds knowledge in.
-  const lead = ["source", "hybrid"];
-  const roles = [
-    ...CONTENT_ROLES.filter((r) => lead.includes(r.id)).sort((a, b) => lead.indexOf(a.id) - lead.indexOf(b.id)),
-    ...CONTENT_ROLES.filter((r) => !lead.includes(r.id)),
-  ];
-  const resources = new Set(offeredKinds("resources"));
-  const groups = roles.map((role) => ({
-    id: role.id as string,
-    title: role.title,
-    dot: role.accentBar as string | null,
-    // Only the registry's resources carry a real content role (a role-less kind reads as a
-    // default role through `getEntityInfo`), so only they are grouped by it.
-    tokens: tokens.filter((t) => resources.has(t) && tryGetEntityInfo(t)?.contentRole === role.id),
-  }));
-  const grouped = new Set(groups.flatMap((g) => g.tokens));
-  groups.push({ id: "other", title: "Other", dot: null, tokens: tokens.filter((t) => !grouped.has(t)) });
-  return groups.filter((g) => g.tokens.length > 0);
+export function offeredKinds(): string[] {
+  const pickable = new Set(listableTokens() as string[]);
+  const roles = new Set<string>(SOURCE_ROLES);
+  return (curatedTokens() as string[]).filter(
+    (t) => pickable.has(t) && roles.has(tryGetEntityInfo(t)?.contentRole ?? ""),
+  );
 }
 
 function shortDate(iso: string | null): string {
@@ -104,8 +79,7 @@ function shortDate(iso: string | null): string {
 }
 
 export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingProps) {
-  const [breadth, setBreadth] = useState<ExistingBreadth>("resources");
-  const offered = offeredKinds(breadth);
+  const offered = offeredKinds();
   const counts = useKindCounts(scope, { tokens: offered });
   const [open, setOpen] = useState<string | null>(null);
   const [openQuery, setOpenQuery] = useState("");
@@ -161,79 +135,58 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   }
 
   // Nothing of any kind at all: the row is absent (Add new is the way in).
-  if (!counts.loading && kinds.length === 0 && breadth === "all") return null;
+  if (!counts.loading && kinds.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-xs font-medium text-muted-foreground">Use existing</h3>
-        <SegmentedControl
-          value={breadth}
-          onValueChange={(v) => {
-            setBreadth(v === "all" ? "all" : "resources");
-            setOpen(null);
-          }}
-          data={[
-            { value: "resources", label: "Resources" },
-            { value: "all", label: "All" },
-          ]}
-          size="sm"
-          className="shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
-        />
-      </div>
+      <h3 className="text-xs font-medium text-muted-foreground">Use existing</h3>
       {counts.loading ? (
         <TileSkeleton />
       ) : (
-        groupByRole(kinds).map((group) => (
-          <section key={group.id} aria-label={group.title} className="flex flex-col gap-1.5">
-            <h4 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              {group.dot ? <span className={cn("h-2 w-2 rounded-full", group.dot)} aria-hidden /> : null}
-              {group.title}
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {group.tokens.map((token) => {
-                const { plural, Icon } = kindWords(token);
-                const n = counts.counts.get(token);
-                const selected = open === token;
-                return (
-                  <button
-                    key={token}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => {
-                      setOpen(selected ? null : token);
-                      setOpenQuery("");
-                    }}
-                    className={cn(
-                      "flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-left transition-colors",
-                      selected
-                        ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                        : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
-                    )}
-                  >
-                    {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
-                    <span className="text-sm text-foreground">{plural}</span>
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                      {n === null || n === undefined ? "—" : n.toLocaleString()}
-                    </span>
-                  </button>
-                );
-              })}
+        <>
+          <div className="flex flex-wrap gap-2">
+            {kinds.map((token) => {
+              const { plural, Icon } = kindWords(token);
+              const n = counts.counts.get(token);
+              const selected = open === token;
+              return (
+                <button
+                  key={token}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    setOpen(selected ? null : token);
+                    setOpenQuery("");
+                  }}
+                  className={cn(
+                    "flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-left transition-colors",
+                    selected
+                      ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                      : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
+                  )}
+                >
+                  {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+                  <span className="text-sm text-foreground">{plural}</span>
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {n === null || n === undefined ? "—" : n.toLocaleString()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {open ? (
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
+              <Input
+                value={openQuery}
+                onChange={(e) => setOpenQuery(e.target.value)}
+                placeholder={`Search ${kindWords(open).plural.toLowerCase()}`}
+                aria-label={`Search ${kindWords(open).plural.toLowerCase()}`}
+                className="text-base sm:text-sm"
+              />
+              <KindList token={open} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
             </div>
-            {open && group.tokens.includes(open) ? (
-              <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
-                <Input
-                  value={openQuery}
-                  onChange={(e) => setOpenQuery(e.target.value)}
-                  placeholder={`Search ${kindWords(open).plural.toLowerCase()}`}
-                  aria-label={`Search ${kindWords(open).plural.toLowerCase()}`}
-                  className="text-base sm:text-sm"
-                />
-                <KindList token={open} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
-              </div>
-            ) : null}
-          </section>
-        ))
+          ) : null}
+        </>
       )}
     </div>
   );
