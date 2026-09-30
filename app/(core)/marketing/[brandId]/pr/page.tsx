@@ -20,6 +20,7 @@ import { Suspense } from "react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandScopedPressRoom } from "@/features/marketing/pr/BrandScopedPressRoom";
+import { PressRoomDoors } from "@/features/marketing/pr/PressRoomDoors";
 
 export const metadata: Metadata = {
   title: "Press Room",
@@ -27,7 +28,12 @@ export const metadata: Metadata = {
     "What is newsworthy about this business, the proof each story still needs, the journalists asking for it right now, and the coverage it produced.",
 };
 
-export default function BrandPressRoomPage() {
+export default async function BrandPressRoomPage({
+  params,
+}: {
+  params: Promise<{ brandId: string }>;
+}) {
+  const { brandId } = await params;
   return (
     <>
       <PageHeader>
@@ -38,6 +44,7 @@ export default function BrandPressRoomPage() {
           <span className="hidden truncate text-xs text-muted-foreground sm:inline">
             Find the story · prove it · pitch it · prove it landed
           </span>
+          <PressRoomDoors brandId={brandId} />
         </div>
       </PageHeader>
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">

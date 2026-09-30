@@ -360,9 +360,9 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
 
   if (section === "planning" && segments[3] === "calendar") {
     return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Calendar",
+      titlePrefix: "PR Calendar",
       description:
-        "One publishing timeline across content, social, email, and paid.",
+        "The sourced moments worth pitching over the next six months, with pitch windows for every kind of outlet.",
       letter: "Cy",
     });
   }

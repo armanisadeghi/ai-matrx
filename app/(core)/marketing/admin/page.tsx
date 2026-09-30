@@ -995,11 +995,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/marketing/[brandId]/planning/calendar",
-      label: "Calendar",
+      label: "PR calendar",
       description:
-        "RESERVED — renders <MarketingComingSoon comingSoonId=\"marketing.calendar\">; the URL is permanent.",
+        "The brand PR calendar: seo.pr_moment + the stored pr_calendar_plan on a month grid, refreshed by POST /pr-calendar/brands/{id}/run. The wider cross-channel timeline is still the marketing.calendar promise, shown on the page.",
       filePath: "app/(core)/marketing/[brandId]/planning/calendar/page.tsx",
-      status: "Coming soon",
+      status: "Live",
     },
     {
       url: "/marketing/[brandId]/inbox",
@@ -1235,11 +1235,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/marketing/calendar",
-      label: "Legacy calendar",
+      label: "PR calendar door",
       description:
-        "308s to the client roster; the Calendar is reserved under brand Planning.",
+        "Lands on the brand PR calendar (/marketing/<brand>/planning/calendar): straight there with one client, a client chooser with several.",
       filePath: "app/(core)/marketing/calendar/page.tsx",
-      status: "Deprecated",
+      status: "Live",
     },
     {
       url: "/marketing/audience",

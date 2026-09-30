@@ -157,9 +157,11 @@ export function OutreachFrontDoor({
 
   const doors: MarketingDoor[] = [
     {
-      label: "Campaigns & sequences",
+      // A PR person calls this board their media lists; a link builder calls it campaigns.
+      // Both words are on the door so neither has to guess (acceptance 2026-09-29).
+      label: "Media lists & campaigns",
       href: "/crm/outreach-lists",
-      description: `Every outreach campaign: who is enrolled, which step they are on, and what the sequence sends next.${crossClient}`,
+      description: `Every media list and outreach campaign: the journalists and contacts on it, which step each is on, and what the sequence sends next.${crossClient}`,
       Icon: Send,
       count: loading ? null : summary.campaigns,
       countLabel: summary?.campaigns === 1 ? "campaign" : "campaigns",

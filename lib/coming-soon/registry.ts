@@ -177,7 +177,9 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     promise:
       "See and drag every planned publish across content, social, email, and paid on one timeline, with per-brand and per-site filters.",
     stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/calendar route"],
+    // The route now renders the brand PR calendar (sourced PR moments); content, social,
+    // email and paid publishes on the same timeline are what is still promised.
+    surfaces: ["/marketing hub card", "/marketing/[brand]/planning/calendar — below the PR calendar"],
   },
   "marketing.audience": {
     id: "marketing.audience",

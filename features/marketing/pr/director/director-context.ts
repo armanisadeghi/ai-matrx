@@ -19,6 +19,11 @@ import { createClient } from "@/utils/supabase/client";
 export const PR_DIRECTOR_MANDATE_KEY = dbAuthoredMandateKey("seo.press_strategist");
 
 export const PR_BRAND_CONTEXT_KEY = "pr_brand_context";
+
+/** The Press Room URL parameter that holds the Director's conversation across a reload. */
+export const DIRECTOR_CONVERSATION_PARAM = "director";
+/** The Press Room URL parameter another surface uses to hand the Director a question to send once. */
+export const DIRECTOR_ASK_PARAM = "ask";
 export const PR_BRAND_CONTEXT_LABEL = "This brand's PR context";
 
 export interface PrBrandContextValue {

@@ -30,6 +30,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
 import {
+  DIRECTOR_ASK_PARAM,
+  DIRECTOR_CONVERSATION_PARAM,
   PR_BRAND_CONTEXT_KEY,
   PR_BRAND_CONTEXT_LABEL,
   PR_DIRECTOR_MANDATE_KEY,
@@ -67,14 +69,25 @@ export const PR_STARTING_POINTS: ReadonlyArray<{
 
 type BindState = "idle" | "binding" | "bound" | { refused: string };
 
-/** The URL parameter that holds the Director's conversation across a reload. */
-export const DIRECTOR_CONVERSATION_PARAM = "director";
+
 
 function readHeldDirectorConversation(): string | null {
   if (typeof window === "undefined") return null;
   return new URL(window.location.href).searchParams.get(
     DIRECTOR_CONVERSATION_PARAM,
   );
+}
+
+/** The `?ask=` a door handed over, removed from the URL as it is read. */
+function takeAskFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  const url = new URL(window.location.href);
+  const ask = url.searchParams.get(DIRECTOR_ASK_PARAM)?.trim() || null;
+  if (ask) {
+    url.searchParams.delete(DIRECTOR_ASK_PARAM);
+    window.history.replaceState(window.history.state, "", url.toString());
+  }
+  return ask;
 }
 
 function holdDirectorConversation(conversationId: string): void {
@@ -103,6 +116,7 @@ export function PrDirectorPanel({
   const surfaceKey = `pr-director:${brandId}`;
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [launchError, setLaunchError] = useState<string | null>(null);
+  const [pendingAsk, setPendingAsk] = useState<string | null>(null);
   const openedFor = useRef<string | null>(null);
 
   // OPEN: the conversation this page was already holding (a reload mid-answer carries it in the URL, the
@@ -112,7 +126,12 @@ export function PrDirectorPanel({
     if (openedFor.current === surfaceKey) return;
     openedFor.current = surfaceKey;
     let cancelled = false;
-    const held = readHeldDirectorConversation();
+    // A door elsewhere (the PR calendar's "Draft angles") hands a question over as `?ask=`:
+    // it opens a fresh conversation and is sent once, then leaves the URL so a reload never
+    // sends it twice.
+    const ask = takeAskFromUrl();
+    if (ask) setPendingAsk(ask);
+    const held = ask ? null : readHeldDirectorConversation();
     const opening = held
       ? dispatch(
           resumeConversation({
@@ -164,6 +183,14 @@ export function PrDirectorPanel({
       }),
     );
   }, [conversationId, brandId, dispatch]);
+
+  // The handed-over question, sent after the brand pointer above is in place.
+  useEffect(() => {
+    if (!conversationId || !pendingAsk) return;
+    dispatch(setUserInputText({ conversationId, text: pendingAsk }));
+    void dispatch(smartExecute({ conversationId }));
+    setPendingAsk(null);
+  }, [conversationId, pendingAsk, dispatch]);
 
   // THE EDGE, once a turn has finished and the conversation has messages (the row exists then; before
   // it, assoc_add is a guaranteed refusal). Retried briefly; a refusal is said, never swallowed. Keyed on

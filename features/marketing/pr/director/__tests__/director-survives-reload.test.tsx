@@ -94,6 +94,8 @@ jest.mock(
 );
 jest.mock("../director-context", () => ({
   PR_BRAND_CONTEXT_KEY: "pr_brand_context",
+  DIRECTOR_CONVERSATION_PARAM: "director",
+  DIRECTOR_ASK_PARAM: "ask",
   PR_BRAND_CONTEXT_LABEL: "ctx",
   PR_DIRECTOR_MANDATE_KEY: "seo.press_strategist",
   bindConversationToBrand: async () => null,
@@ -157,4 +159,20 @@ test("once a turn is sent, the conversation id is written to the URL so a reload
 test("an untouched Director does not pin an empty conversation into the URL", async () => {
   await mount();
   expect(new URL(window.location.href).searchParams.get("director")).toBeNull();
+});
+
+test("a question handed over as ?ask= is sent once in a fresh conversation and leaves the URL", async () => {
+  window.history.replaceState(null, "", "/marketing/brand-1/pr?director=old-conv&ask=Draft%20angles%20for%20X");
+  dispatch.mockClear();
+  await mount();
+  expect(launchMandate).toHaveBeenCalledTimes(1);
+  expect(resumeCalls).toEqual([]);
+  const types = dispatch.mock.calls.map((c) => (c[0] as { type?: string }).type);
+  expect(types).toContain("input");
+  expect(types.filter((t) => t === "exec")).toHaveLength(1);
+  const input = dispatch.mock.calls.find((c) => (c[0] as { type?: string }).type === "input")?.[0] as {
+    p: { text: string };
+  };
+  expect(input.p.text).toBe("Draft angles for X");
+  expect(new URL(window.location.href).searchParams.get("ask")).toBeNull();
 });

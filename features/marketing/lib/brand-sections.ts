@@ -160,6 +160,19 @@ export const MARKETING_BRAND_SECTIONS = [
     subPath: "outreach",
   },
   {
+    // The PR calendar lives on the reserved Planning calendar route; a PR person
+    // looks for it beside the Press Room and Outreach, so it is listed here.
+    slug: "planning",
+    name: "PR Calendar",
+    titlePrefix: "PR Calendar",
+    description:
+      "The sourced moments worth pitching over the next six months, with pitch windows for every kind of outlet.",
+    letter: "Cy",
+    iconName: "CalendarDays",
+    group: "Marketing",
+    subPath: "calendar",
+  },
+  {
     slug: "ads",
     name: "Advertising",
     titlePrefix: "Advertising",
@@ -288,6 +301,8 @@ export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
   subRoute: string;
 }[] = [
   { comingSoonId: "marketing.audience", subRoute: "identity/audience" },
+  // The route renders the PR calendar today; the cross-channel timeline it promises is
+  // still unbuilt and is announced on that page (features/marketing/pr/calendar).
   { comingSoonId: "marketing.calendar", subRoute: "planning/calendar" },
   { comingSoonId: "marketing.content-studio", subRoute: "content/studio" },
   // The ad CENTER (campaigns, creative, budgets across providers) is still a
