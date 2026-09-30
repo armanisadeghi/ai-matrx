@@ -31,9 +31,7 @@ const EDU_BASE = "/education/flashcards";
 
 export function MatchSurface({ setId }: { setId: string }) {
   const router = useRouter();
-  // A study session is filed under one organization. With none chosen, the
-  // notice shows in place and nothing is loaded or written until one is picked
-  // — never the blocking "Which workspace?" prompt on arrival.
+  // The session files under the deck's own organization (see the hook).
   const game = useMatchGame({
     setId,
     withSession: true,

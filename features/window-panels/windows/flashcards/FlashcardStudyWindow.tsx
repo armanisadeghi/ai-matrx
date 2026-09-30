@@ -50,9 +50,7 @@ export function FlashcardStudyWindow({
   setId,
   title,
 }: FlashcardStudyWindowProps) {
-  // A study session is filed under one organization. With none chosen, the
-  // window shows the organization notice in place and nothing is loaded or
-  // written until one is picked — never the blocking workspace prompt.
+  // The session files under the deck's own organization (see the hook).
   const study = useFlashcardStudy({
     setId,
     withSession: true,
