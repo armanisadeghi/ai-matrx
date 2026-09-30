@@ -279,7 +279,9 @@ export function scanSource(file, source) {
       const isTextEl = /^(p|span|div|small|li|dd|td|label|CardDescription|FormDescription|DialogDescription|SheetDescription|AlertDescription|DrawerDescription)$/.test(tag);
       if (isTextEl) {
         const t = directText(node);
-        const consequence = /^(Dialog|AlertDialog|Alert|Sheet|Drawer)Description$/.test(tag) || insideConsequenceHost(node);
+        const role = attrsOf(node).find((x) => attrName(x) === "role");
+        const consequence = /^(Dialog|AlertDialog|Alert|Sheet|Drawer)Description$/.test(tag) || insideConsequenceHost(node)
+          || /text-destructive|text-amber|text-warning/.test(cls) || (role && /alert|status/.test(attrTexts(role).join(" ")));
         const secondary = /Description$/.test(tag) || /text-muted-foreground/.test(cls) || /text-(xs|\[1[01]px\])/.test(cls);
         where = `<${tag}>`;
         if (t) checkText(node.openingElement, t, consequence ? "consequence" : secondary ? "secondary" : "body");
