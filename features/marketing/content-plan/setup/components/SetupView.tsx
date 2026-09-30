@@ -62,7 +62,6 @@ import {
   createPlanNode,
   listKeywordLabels,
   listPlanEntities,
-  listSiteKeywordValues,
 } from "../../data/service";
 import { usePlanWorkspaceParams } from "../../hooks/usePlanWorkspaceParams";
 import { useContentPlanSites } from "../../components/ContentPlanHeader";

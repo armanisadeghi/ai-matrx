@@ -405,24 +405,57 @@ export interface SiteKeywordValueRow {
   priority_score: number | null;
 }
 
-/** Per-site keyword value rows for a set of keywords (or all for the site). */
+/**
+ * Per-site keyword value rows for NAMED keywords. The id list is required:
+ * a site's whole library is ~10,000 rows (All Green, after COLLAPSE-4), and a
+ * whole-site read here used to stop at a silent `.limit(2000)` — a keyword
+ * past row 2,000 read as untracked and a count read as 2,000. Want a number?
+ * Use `countSiteKeywordValues`.
+ */
 export async function listSiteKeywordValues(
   siteId: string,
-  keywordIds?: string[],
+  keywordIds: string[],
   signal?: AbortSignal,
 ): Promise<SiteKeywordValueRow[]> {
-  let query = (await seoDb())
-    .from("site_keyword_value")
-    .select("keyword_id, workflow_status, content_role, priority_score")
-    .eq("site_id", siteId)
-    .is("deleted_at", null);
-  if (keywordIds && keywordIds.length > 0) {
-    query = query.in("keyword_id", keywordIds);
+  const ids = Array.from(new Set(keywordIds));
+  if (ids.length === 0) return [];
+  const db = await seoDb();
+  const abortSignal = signal ?? new AbortController().signal;
+  const rows: SiteKeywordValueRow[] = [];
+  // 150 ids per request keeps the URL short; one site × one keyword is one
+  // row (unique key), so no chunk can reach PostgREST's 1,000-row cap.
+  for (let i = 0; i < ids.length; i += 150) {
+    const response = await db
+      .from("site_keyword_value")
+      .select("keyword_id, workflow_status, content_role, priority_score")
+      .eq("site_id", siteId)
+      .is("deleted_at", null)
+      .in("keyword_id", ids.slice(i, i + 150))
+      .abortSignal(abortSignal);
+    rows.push(...assertData(response.data, response.error));
   }
-  const response = await query
-    .limit(2000)
+  return rows;
+}
+
+/**
+ * How many keywords this site tracks — an exact server-side count
+ * (`head: true`), never the length of a capped list read.
+ */
+export async function countSiteKeywordValues(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<number> {
+  const response = await (await seoDb())
+    .from("site_keyword_value")
+    .select("id", { count: "exact", head: true })
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error);
+  if (response.error) throw response.error;
+  if (response.count === null) {
+    throw new Error("seo.site_keyword_value count came back empty — refusing to report 0 keywords");
+  }
+  return response.count;
 }
 
 export interface KeywordLabelRow {

@@ -75,8 +75,8 @@ export const planKeys = {
   // invalidation-prefixes of larger ones.
   keywordLabels: (ids: string[]) =>
     ["content-plan", "keyword-labels", ids.join(",")] as const,
-  siteKeywordValues: (siteId: string) =>
-    ["content-plan", "site-keyword-values", siteId] as const,
+  siteKeywordValues: (siteId: string, ids: string[]) =>
+    ["content-plan", "site-keyword-values", siteId, ids.join(",")] as const,
   topics: (search: string) => ["content-plan", "topics", search] as const,
   siteStats: () => ["content-plan", "site-stats"] as const,
   nodeSteps: (siteId: string) =>
@@ -206,12 +206,15 @@ export function useKeywordLabels(ids: string[]) {
   });
 }
 
-export function useSiteKeywordValues(siteId: string | null) {
+/** This site's value rows for the NAMED keywords — never the whole library
+ * (a whole-site read was capped at 2,000 and hid every keyword past it). */
+export function useSiteKeywordValues(siteId: string | null, keywordIds: string[]) {
+  const sorted = [...new Set(keywordIds)].sort();
   return useQuery({
-    queryKey: planKeys.siteKeywordValues(siteId ?? "none"),
+    queryKey: planKeys.siteKeywordValues(siteId ?? "none", sorted),
     queryFn: ({ signal }) =>
-      listSiteKeywordValues(siteId as string, undefined, signal),
-    enabled: Boolean(siteId),
+      listSiteKeywordValues(siteId as string, sorted, signal),
+    enabled: Boolean(siteId) && sorted.length > 0,
     staleTime: 60 * 1000,
   });
 }

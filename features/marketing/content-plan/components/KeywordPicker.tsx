@@ -37,7 +37,7 @@ export function KeywordPicker({
   showDetails?: boolean;
 }) {
   const selected = useKeywordLabels(value ? [value] : []);
-  const siteValues = useSiteKeywordValues(value ? siteId : null);
+  const siteValues = useSiteKeywordValues(value ? siteId : null, value ? [value] : []);
   const selectedPhrase = value
     ? (selected.data?.find((row) => row.id === value)?.phrase ?? "")
     : "";

@@ -25,7 +25,7 @@ import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { Assist } from "@/features/assists/types";
 import { assistPriority } from "@/features/assists/types";
-import { listSiteKeywordValues } from "./data/service";
+import { countSiteKeywordValues } from "./data/service";
 import { planForRoute, type SitePlanIndex } from "./page-seo-plan";
 import type { CmsPageMapEntry } from "./setup/bridge";
 import type { PlanNodeRow } from "./types";
@@ -118,7 +118,7 @@ export async function produceKeywordAssists(args: {
   // still noticed next session.
   let librarySize: number;
   try {
-    librarySize = (await listSiteKeywordValues(siteId)).length;
+    librarySize = await countSiteKeywordValues(siteId);
   } catch {
     return false;
   }

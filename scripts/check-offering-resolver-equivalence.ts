@@ -47,6 +47,8 @@
  *                                     and the untouched resolver must produce
  *                                     none.
  *   --strict                          exit 1 on any unexplained row.
+ *   --per-site                        one statement per site (automatic on
+ *                                     --target production: the live ceiling).
  *   --sites <uuid,uuid,...>           also compare these sites (added to the
  *                                     valued ones) — for a move that touches
  *                                     sites with no worth rows (COLLAPSE-4).
@@ -124,13 +126,23 @@ const EXTRA_SITES_SQL =
     ? `union select unnest(array[${EXTRA_SITES.map((s) => `'${s}'`).join(",")}]::uuid[])`
     : "";
 
-const SNAPSHOT_SQL = (table: string) => `
-  create temp table ${table} on commit drop as
-  with sites as (
+const SITES_SQL = `
     select site_id from seo.site_topic_value where deleted_at is null
     union
     select site_id from seo.site_offering_value where deleted_at is null
-    ${EXTRA_SITES_SQL}
+    ${EXTRA_SITES_SQL}`;
+
+/**
+ * `--per-site` (always on for `--target production`): one statement per site, so
+ * each fits the live 30 s statement ceiling — the whole corpus in one statement
+ * takes about a minute (All Green alone ~20 s). Same rows, same hashes.
+ */
+const PER_SITE = flag("--per-site");
+
+const SNAPSHOT_SQL = (table: string, onlySite?: string, insert = false) => `
+  ${insert ? `insert into ${table}` : `create temp table ${table} on commit drop as`}
+  with sites as (
+    ${onlySite ? `select '${onlySite}'::uuid as site_id` : SITES_SQL}
   ),
   answers as (
     select s.site_id, m.*
@@ -183,6 +195,26 @@ type Row = {
   base_amount: string | null;
   base_root: string | null;
 };
+
+async function takeSnapshot(client: Client, table: string) {
+  if (!PER_SITE && RUN_TARGET !== "production") {
+    await client.query(SNAPSHOT_SQL(table));
+    return;
+  }
+  const { rows } = await client.query<{ site_id: string }>(
+    `select s.site_id::text as site_id from (${SITES_SQL}) s order by 1`,
+  );
+  if (rows.length === 0) {
+    await client.query(SNAPSHOT_SQL(table));
+    return;
+  }
+  for (const [i, r] of rows.entries()) {
+    if (!/^[0-9a-f-]{36}$/i.test(r.site_id)) throw new Error(`not a site id: ${r.site_id}`);
+    const t0 = Date.now();
+    await client.query(SNAPSHOT_SQL(table, r.site_id, i > 0));
+    console.log(`${C.d}  ${table} ${r.site_id} ${Date.now() - t0} ms${C.x}`);
+  }
+}
 
 async function readTable(client: Client, table: string): Promise<Row[]> {
   const { rows } = await client.query<Row>(
@@ -356,7 +388,7 @@ async function dryRun(file: string) {
   const client = await connect();
   try {
     await begin(client);
-    await client.query(SNAPSHOT_SQL("_eq_before"));
+    await takeSnapshot(client, "_eq_before");
     const before = await readTable(client, "_eq_before");
     const t0 = Date.now();
     await readerSeat(client, false);
@@ -364,7 +396,7 @@ async function dryRun(file: string) {
     await client.query(sql);
     console.log(`${C.d}ran ${file} in ${Math.round((Date.now() - t0) / 1000)}s (rolled back below)${C.x}`);
     await readerSeat(client, true);
-    await client.query(SNAPSHOT_SQL("_eq_after"));
+    await takeSnapshot(client, "_eq_after");
     const after = await readTable(client, "_eq_after");
     const v = await diff(client, before, after);
     report(`DRY RUN ${file}`, v);
@@ -379,7 +411,7 @@ async function snapshot(out: string) {
   const client = await connect();
   try {
     await begin(client);
-    await client.query(SNAPSHOT_SQL("_eq_snap"));
+    await takeSnapshot(client, "_eq_snap");
     const rows = await readTable(client, "_eq_snap");
     writeFileSync(out, JSON.stringify({ taken_at: new Date().toISOString(), rows }));
     console.log(`snapshot: ${rows.length} rows over ${new Set(rows.map((r) => r.site_id)).size} sites -> ${out}`);
@@ -395,7 +427,7 @@ async function compareLive(file: string) {
   const client = await connect();
   try {
     await begin(client);
-    await client.query(SNAPSHOT_SQL("_eq_now"));
+    await takeSnapshot(client, "_eq_now");
     const after = await readTable(client, "_eq_now");
     const v = await diff(client, before, after);
     report(`COMPARE live vs ${file}`, v);
@@ -418,9 +450,9 @@ async function selfTest() {
   let ok = true;
   try {
     await begin(client);
-    await client.query(SNAPSHOT_SQL("_st_a"));
+    await takeSnapshot(client, "_st_a");
     const a = await readTable(client, "_st_a");
-    await client.query(SNAPSHOT_SQL("_st_c"));
+    await takeSnapshot(client, "_st_c");
     const c = await readTable(client, "_st_c");
     const green = await diff(client, a, c);
     report("SELF-TEST GREEN (untouched resolver)", green);
@@ -435,7 +467,7 @@ async function selfTest() {
       ok = false;
     } else {
       await client.query(broken);
-      await client.query(SNAPSHOT_SQL("_st_b"));
+      await takeSnapshot(client, "_st_b");
       const b = await readTable(client, "_st_b");
       const red = await diff(client, a, b);
       report("SELF-TEST RED (base points forced to zero)", red);
