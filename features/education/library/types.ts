@@ -12,8 +12,12 @@ export type EducationLibraryRow =
 export type EducationLibraryKind =
   "fc_set" | "assessment" | "study_media" | "note";
 
+// The shell adds All and My team around these (`withStandardLanes`), so this surface offers
+// All | Mine | My team | My Orgs | Shared | Public — the standard ladder. `edu_library_list_scoped`
+// answers every lane and `edu_library_scope_counts` counts every lane.
 export const EDUCATION_LIBRARY_SCOPES: ListScopeKind[] = [
   "mine",
+  "orgs",
   "shared",
   "public",
 ];
