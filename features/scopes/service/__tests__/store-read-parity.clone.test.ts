@@ -68,10 +68,13 @@ jest.mock("@/utils/auth/getUserId", () => ({
 }));
 jest.mock("@/utils/supabase/adminLane", () => ({ browserAdminLaneOpen: () => false, isAdminLanePath: () => false }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { scopesService } = require("@/features/scopes/service/scopesService");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { __setScopesReadFromStoreForTests } = require("@/features/scopes/service/scopesReadKnob");
+// Loaded only when the clone is reachable: the modules read `supabase.auth` at load.
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { scopesService } = READY ? require("@/features/scopes/service/scopesService") : { scopesService: null };
+const { __setScopesReadFromStoreForTests } = READY
+  ? require("@/features/scopes/service/scopesReadKnob")
+  : { __setScopesReadFromStoreForTests: () => undefined };
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 // Keys the store answers from its own clock, by ruling — compared, reported apart, never a defect.
 const CLOCK_KEYS = new Set(["created_at", "updated_at", "fetched_at", "status_updated_at", "last_fed_at"]);

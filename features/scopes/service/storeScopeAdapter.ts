@@ -357,15 +357,31 @@ export function contextValueFromStore(row: StoreValueRow): ContextItemValue & { 
   const vt = valueTypeOfField(row.field ?? {}, row.field?.carried);
   const v = row.value;
   const labels = row.labels ?? {};
-  if (vt === "reference" || vt === "document") {
+  // AN ITEM THE STORE LANDED AS TEXT HOLDS THE OLD CELL'S TEXT VERBATIM (lane SCOPES-READ-SWITCH-VALIDATE,
+  // 2026-09-30). `custom._ctx_store_item` lands a value the store could not type (a reference fence
+  // naming a table or a person the store has no Record for, a free-text "date" such as "2023") as a
+  // text Field and records the old word in `carried`. The word decides nothing about WHERE the value
+  // goes: it was the old `value_text`, so it is `value_text` again. Before this line a carried
+  // reference fell into the reference branch below, found no uuid in a fence string, and the cell
+  // came back EMPTY — the class that dropped values on the store path.
+  if (row.field?.carried?.as_text && typeof v === "string") {
+    cell.value_text = v;
+  } else if (vt === "reference" || vt === "document") {
     const list = Array.isArray(v) ? v : v == null ? [] : [v];
-    const refs: Array<{ id: string; type: string }> = [];
+    const refs: Array<{ id: string; type: string; label?: string }> = [];
     for (const el of list) {
       if (typeof el === "string" && UUID.test(el)) {
         refs.push({ id: el, type: row.field?.relation_target === FILE_KERNEL_ID ? "file" : "scope" });
       } else if (el && typeof el === "object" && typeof (el as { id?: unknown }).id === "string") {
         const token = String((el as { token?: unknown }).token ?? "");
-        refs.push({ id: (el as { id: string }).id, type: token === "dataset" ? "table" : token || "scope" });
+        // A reference to a row outside the scope system (a workbook, a note, a site, a brand) carries
+        // its own label in the store, as the old fence did; keep it (the door's labels name scopes only).
+        const own = (el as { label?: unknown }).label;
+        refs.push({
+          id: (el as { id: string }).id,
+          type: token === "dataset" ? "table" : token || "scope",
+          ...(typeof own === "string" && own ? { label: own } : {}),
+        });
       }
     }
     if (refs.length > 0) {
@@ -376,6 +392,7 @@ export function contextValueFromStore(row: StoreValueRow): ContextItemValue & { 
         refs.map((r) => {
           const item: { id: string; label?: string; type?: string } = { id: r.id };
           if (labels[r.id]) item.label = labels[r.id];
+          else if (r.label) item.label = r.label;
           if (kinds.length > 1) item.type = r.type;
           return item;
         }),
