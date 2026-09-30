@@ -345,7 +345,7 @@ let root: Root;
 
 async function mount(
   query = "",
-  org?: { filter: string; onChoose?: (next: string) => void },
+  org?: { filter: string; onChoose?: (next: string | null) => void },
 ) {
   PARAMS = new URLSearchParams(query);
   container = document.createElement("div");
@@ -362,10 +362,6 @@ async function mount(
         {...(org
           ? {
               organizationFilter: org.filter,
-              organizationChoices: [
-                { id: HARBOR, name: "Harbor Dental Group" },
-                { id: RINCON, name: "Rincon Plumbing Co" },
-              ],
               onChooseOrganization: org.onChoose ?? (() => undefined),
             }
           : {})}
