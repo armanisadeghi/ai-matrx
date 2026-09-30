@@ -9,7 +9,7 @@ import { ExternalLink } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Cost } from "@/components/cost/Cost";
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
 
 export function Chip({ className, children }: { className?: string; children: ReactNode }) {
   return (
@@ -64,7 +64,7 @@ export function MetricsLine({ metrics }: { metrics: Record<string, unknown> | nu
       <span title="Tokens in / out">
         {tokensIn == null && tokensOut == null
           ? "— tokens"
-          : `${(tokensIn ?? 0).toLocaleString()} in · ${(tokensOut ?? 0).toLocaleString()} out`}
+          : `${formatCount(tokensIn)} in · ${formatCount(tokensOut)} out`}
       </span>
     </div>
   );
