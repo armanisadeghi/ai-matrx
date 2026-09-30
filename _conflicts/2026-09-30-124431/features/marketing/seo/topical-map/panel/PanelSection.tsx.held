@@ -1,3 +1,53 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/marketing/seo/topical-map/panel/PanelSection.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/marketing/seo/topical-map/panel/PanelSection.tsx
+  Both grew from the same COMMON version: commit 90bd4e99fd, 2026-09-30 12:36.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-09-30 12:41  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-09-30 12:44  035d0c9ad1  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-09-30 12:37  bfea7ecdf7  "wip(topical-map): bound association-panel reads and page through results"
+  LOCAL's latest change is 4m AFTER GITHUB's latest change.
+
+SIZE: common version 52 lines, LOCAL 112 lines, GITHUB 109 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 35 lines and removed 0 lines.
+  GITHUB added 32 lines and removed 0 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 31 of the 32 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | * nothing when neither is known, because absent is not zero.
+  GITHUB has 31 of the 35 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | * nothing when neither is known, because absent is not zero. Pass a total
+      | * ONLY when the tree counts exactly the rows the section lists: the tree's
+      | * `pages` counts `covers` edges alone, while the pages section lists every
+      | * page edge, so the pages section passes none (2,159 vs 3,779 on All Green).
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show ba0e5cf6f227:'features/marketing/seo/topical-map/panel/PanelSection.tsx') <(git show 035d0c9ad14d:'features/marketing/seo/topical-map/panel/PanelSection.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 035d0c9ad14d:'features/marketing/seo/topical-map/panel/PanelSection.tsx'
+  GITHUB: git show ba0e5cf6f227:'features/marketing/seo/topical-map/panel/PanelSection.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
 "use client";
 
 /**
@@ -59,7 +109,10 @@ export function PanelEmptyLine({ children }: { children: ReactNode }) {
 /**
  * The count a paged section prints: every row when it has them all, else the
  * tree's own total for that kind (the same number the tree row shows) — and
- * nothing when neither is known, because absent is not zero.
+ * nothing when neither is known, because absent is not zero. Pass a total
+ * ONLY when the tree counts exactly the rows the section lists: the tree's
+ * `pages` counts `covers` edges alone, while the pages section lists every
+ * page edge, so the pages section passes none (2,159 vs 3,779 on All Green).
  */
 export function pagedCount(loaded: number, paging: KindPaging, total: number | undefined): number | undefined {
   return paging.hasMore ? total : loaded;
