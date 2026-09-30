@@ -19,7 +19,7 @@ overrides:
 
 packageExtensionsChecksum: sha256-T3SlODvR2l3ZQB9X/2sfjh7P7FBgK5QAoPJv/yjPEU4=
 
-pnpmfileChecksum: sha256-ItfXkCmquUAsIQv6qbxZ7P/5YYPYMkXnHWkE5XCMGsE=
+pnpmfileChecksum: sha256-LXsAGaTbQYPwIaH9Eri/UxhbnIk+A63YSu7mkxo/N5w=
 
 patchedDependencies:
   lossless-json@4.3.1:
