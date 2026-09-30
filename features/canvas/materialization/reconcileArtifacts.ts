@@ -134,10 +134,14 @@ export async function reconcileSourceBlocks(
         content: item.content as CxContentBlock[],
         persistRewrite: item.persistRewrite,
       });
-      if (res.rewrittenContent) {
+      // An unpersisted rewrite (artifacts persisted, source write failed) is
+      // still what the screen should show — every id in it exists — and the
+      // next reconcile retries the source write. The error below names it.
+      const mirror = res.rewrittenContent ?? res.unpersistedRewrite;
+      if (mirror) {
         results.push({
           source: item.source,
-          rewrittenContent: res.rewrittenContent,
+          rewrittenContent: mirror,
         });
       }
       if (res.errors.length > 0) {

@@ -90,6 +90,15 @@ export interface MaterializeBlocksResult {
   materializedCount: number;
   /** The rewritten content to mirror into the caller's store, or null when unchanged/aborted. */
   rewrittenContent: CxContentBlock[] | null;
+  /**
+   * Set ONLY when every artifact persisted but `persistRewrite` failed: the
+   * id-bearing content the source record SHOULD hold. Every `<artifact id>`
+   * in it names a canvas row that exists, so a caller may render it now (the
+   * screen then matches what the reconcile-on-load pass writes next time)
+   * instead of leaving the raw block on screen until a reload. The source
+   * record itself still holds the raw content — `errors` says so.
+   */
+  unpersistedRewrite?: CxContentBlock[];
   errors: string[];
 }
 
@@ -298,6 +307,7 @@ export async function materializeBlocks(
     return {
       materializedCount: idByIndex.size,
       rewrittenContent: null,
+      unpersistedRewrite: rewritten,
       errors: [
         ...errors,
         `source rewrite failed: ${res.error ?? "unknown error"}`,

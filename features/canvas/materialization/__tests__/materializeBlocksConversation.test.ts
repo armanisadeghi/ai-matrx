@@ -70,6 +70,39 @@ describe("materializeBlocks conversation identity", () => {
     expect(persistRewrite).toHaveBeenCalledTimes(1);
   });
 
+  it("hands back the id-bearing rewrite when only the source write fails", async () => {
+    const canvasId = "00000000-0000-4000-8000-000000000031";
+    upsertForSource.mockResolvedValue({
+      id: canvasId,
+      version: 1,
+      conversation_id: "00000000-0000-4000-8000-000000000032",
+    });
+    upsertDiscoveryIndex.mockResolvedValue({ id: "x" });
+    const persistRewrite = jest.fn().mockResolvedValue({
+      ok: false,
+      error: "canceling statement due to statement timeout",
+    });
+
+    const result = await materializeBlocks({
+      source: {
+        system: "cx_message",
+        id: "00000000-0000-4000-8000-000000000033",
+        conversationId: "00000000-0000-4000-8000-000000000032",
+      },
+      content: [
+        {
+          type: "text",
+          text: "```mermaid\nflowchart TD\n  A --> B\n```",
+        } as CxContentBlock,
+      ],
+      persistRewrite,
+    });
+
+    expect(result.rewrittenContent).toBeNull();
+    expect(result.errors.join(" ")).toContain("source rewrite failed");
+    expect(JSON.stringify(result.unpersistedRewrite)).toContain(canvasId);
+  });
+
   it("rebuilds a dangling UUID ref from its durable wire body", async () => {
     const missingCanvasId = "00000000-0000-4000-8000-000000000021";
     const replacementCanvasId = "00000000-0000-4000-8000-000000000022";

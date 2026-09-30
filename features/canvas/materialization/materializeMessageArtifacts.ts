@@ -41,6 +41,8 @@ export interface MaterializeResult {
   materializedCount: number;
   /** The rewritten content to mirror into Redux, or null when unchanged/aborted. */
   rewrittenContent: CxContentBlock[] | null;
+  /** See MaterializeBlocksResult.unpersistedRewrite. */
+  unpersistedRewrite?: CxContentBlock[];
   errors: string[];
 }
 
@@ -58,6 +60,29 @@ const TOOL_GRAPH_GUARD = "tool_call_graph_change_forbidden";
 const graphGuardRejectedMessageIds = new Set<string>();
 
 /**
+ * SQLSTATEs the database raises only AFTER rolling the whole statement back,
+ * and whose cause is a moment, not the content: 57014 statement timeout,
+ * 55P03 lock not available, 40001 serialization failure, 40P01 deadlock.
+ * A retry of these can never double-apply (the failed call wrote nothing).
+ *
+ * Why 57014 is transient here (measured 2026-09-30): chat.message carries two
+ * GIN indexes over the whole content (cx_message_content_trgm_idx, 666 MB, on
+ * content::text; cx_message_search_tsv_idx). With fastupdate on, every
+ * content write appends to a 4 MB pending list and the ONE writer whose
+ * insert overflows it merges the whole list into the index inside its own
+ * statement. On the nightly clone, 15 consecutive rewrites of ~100 KB
+ * messages took 16–61 ms each except one at 1,767 ms (the merge); on live
+ * under load that merge passed the 8 s `authenticated` statement_timeout
+ * (message 2abb1798…, 09:14:30Z). The merge is paid once, by one writer, so
+ * the next attempt lands in tens of milliseconds. Network errors carry no
+ * SQLSTATE and are NOT retried — their outcome is unknown.
+ */
+const TRANSIENT_SQLSTATES = new Set(["57014", "55P03", "40001", "40P01"]);
+const REWRITE_RETRY_DELAYS_MS = [750, 2000];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
  * The chat rewrite writer, exported so reconcile delegation reuses the exact
  * same RPC call per message.
  */
@@ -69,10 +94,28 @@ export function cxMessageContentRewriter(messageId: string): PersistRewrite {
         error: `${TOOL_GRAPH_GUARD}: rewrite for ${messageId} already rejected by the DB tool-graph guard this session — not retrying`,
       };
     }
-    const { error } = await supabase.rpc("cx_message_set_content", {
+    let attempt = 0;
+    let { error } = await supabase.rpc("cx_message_set_content", {
       p_message_id: messageId,
       p_new_content: rewritten,
     });
+    while (
+      error &&
+      TRANSIENT_SQLSTATES.has(error.code ?? "") &&
+      attempt < REWRITE_RETRY_DELAYS_MS.length
+    ) {
+      console.warn(
+        `[materialize] cx_message_set_content for ${messageId} failed with ${error.code} (${error.message}); ` +
+          `the statement was rolled back, retrying in ${REWRITE_RETRY_DELAYS_MS[attempt]} ms ` +
+          `(attempt ${attempt + 2} of ${REWRITE_RETRY_DELAYS_MS.length + 1}).`,
+      );
+      await sleep(REWRITE_RETRY_DELAYS_MS[attempt]);
+      attempt++;
+      ({ error } = await supabase.rpc("cx_message_set_content", {
+        p_message_id: messageId,
+        p_new_content: rewritten,
+      }));
+    }
     if (!error) return { ok: true };
     if (error.message?.includes(TOOL_GRAPH_GUARD)) {
       graphGuardRejectedMessageIds.add(messageId);

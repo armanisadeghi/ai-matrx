@@ -3734,16 +3734,29 @@ export async function processStream({
               // renders the `<artifact id>` form, so the in-session record must
               // hold it too or the finished answer shows a table the reload
               // shows as an artifact (verify-RC-B3 F2).
-              if (res.rewrittenContent) {
+              //
+              // When every artifact persisted but the message rewrite still
+              // failed (after the rewriter's transient retries), render the
+              // id-bearing form anyway: each `<artifact id>` names a canvas
+              // row that exists, so its controls ("Open in Flashcards") work
+              // now, and it is exactly what the reconcile-on-load pass writes
+              // to the row next time. The error below says the row is behind.
+              const mirror = res.rewrittenContent ?? res.unpersistedRewrite;
+              if (mirror) {
                 dispatch(
                   updateMessageRecord({
                     conversationId,
                     messageId: target.messageId,
-                    patch: { content: res.rewrittenContent },
+                    patch: { content: mirror },
                   }),
                 );
               }
-              if (res.errors.length > 0) {
+              if (res.unpersistedRewrite) {
+                console.error(
+                  `[stream:${requestId.slice(0, 8)}] message ${target.messageId} is showing its artifacts, but the stored message still holds the raw blocks — ` +
+                    `the next load of this conversation rewrites it (reconcile-on-load). Cause: ${res.errors.join("; ")}`,
+                );
+              } else if (res.errors.length > 0) {
                 console.error(
                   `[stream:${requestId.slice(0, 8)}] artifact materialization issues for ${target.messageId}:`,
                   res.errors,
