@@ -168,6 +168,14 @@ describe("FLASHCARDS_CANONICAL_ADAPTER.onMaterialize (chat materialization)", ()
     jest
       .spyOn(fcService, "findSurfaceSavedSetForConversation")
       .mockResolvedValue({ data: surfaceSet, error: null });
+    // The surface saved the SAME cards (both writers persist one envelope).
+    jest.spyOn(fcService, "getSetWithCards").mockResolvedValue({
+      data: {
+        set: surfaceSet,
+        cards: [{ front: "Q", back: "A" }],
+      } as unknown as SetWithCards,
+      error: null,
+    });
     const createSetWithCards = jest.spyOn(fcService, "createSetWithCards");
 
     const link = await FLASHCARDS_CANONICAL_ADAPTER.onMaterialize?.({
@@ -185,6 +193,57 @@ describe("FLASHCARDS_CANONICAL_ADAPTER.onMaterialize (chat materialization)", ()
 
     expect(link).toEqual({ externalSystem: "fc_set", externalId: "set-surface" });
     expect(createSetWithCards).not.toHaveBeenCalled();
+  });
+
+  it("gives a LATER, different set in the surface's conversation its own deck (2026-09-30: mitosis linked to the WWI surface deck)", async () => {
+    (supabase.schema as jest.Mock).mockImplementation(
+      tablesReturning({ fc_set: [], canvas_items: [] }),
+    );
+    jest
+      .spyOn(fcService, "findSurfaceSavedSetForConversation")
+      .mockResolvedValue({ data: surfaceSet, error: null });
+    jest.spyOn(fcService, "getSetWithCards").mockResolvedValue({
+      data: {
+        set: surfaceSet,
+        cards: [
+          { front: "What does M-A-I-N stand for?", back: "Militarism…" },
+          { front: "What was the Triple Entente?", back: "France, Russia, UK" },
+        ],
+      } as unknown as SetWithCards,
+      error: null,
+    });
+    const created = {
+      id: "set-mitosis",
+      name: "Phases of Mitosis",
+      organization_id: "org-1",
+      metadata: {},
+    } as unknown as FcSetRow;
+    const createSetWithCards = jest
+      .spyOn(fcService, "createSetWithCards")
+      .mockResolvedValue({
+        data: { set: created, cards: [] } as unknown as SetWithCards,
+        error: null,
+      });
+
+    const link = await FLASHCARDS_CANONICAL_ADAPTER.onMaterialize?.({
+      artifactId: "art-mitosis",
+      canvasType: "flashcards",
+      title: "Phases of Mitosis",
+      rawContent: "",
+      structured: {
+        __kind: "flashcard_set",
+        cards: [
+          { __kind: "flashcard", front: "What are the phases of mitosis?", back: "PMAT" },
+          { __kind: "flashcard", front: "When do chromatids align?", back: "Metaphase" },
+        ],
+      },
+      source: { system: "cx_message", id: "msg-3" },
+      conversationId: CID,
+      artifactIndex: 1,
+    } as never);
+
+    expect(link).toEqual({ externalSystem: "fc_set", externalId: "set-mitosis" });
+    expect(createSetWithCards).toHaveBeenCalledTimes(1);
   });
 });
 
