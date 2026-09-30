@@ -8,8 +8,8 @@
  * to see $." Every AI/run cost therefore renders through ONE primitive:
  * `<Cost usd={…}/>` / `<CostBadge/>` / `useCostDisplay().format` in
  * `components/cost/`, built on `formatCost` in `@ai-matrx/kit/format`
- * (20,000 points = $1, the same rate `aidream/services/billing/ai_points.py`
- * banks). A member sees points; only a system admin who flipped the switch in
+ * at the rate of the `billing.points_per_usd` knob, the same rate
+ * `aidream/services/billing/ai_points.py` banks). A member sees points; only a system admin who flipped the switch in
  * the header menu's Admin group sees dollars.
  *
  * WHAT THIS FLAGS, per file (comments excluded):
@@ -27,6 +27,13 @@
  *      (`components/cost/costUnit.ts`) or take the unit from the hook;
  *   R6 `formatCost(…)` imported from `@ai-matrx/kit/format` and called with
  *      no `unit` — kit's default is points, so the switch never reaches it.
+ *
+ * AND THE RATE (Arman, 2026-09-30: the points-per-dollar rate is ONE setting,
+ * the `billing.points_per_usd` knob). Kit's `formatCost` / `usdToPoints` /
+ * `pointsToUsd` take `{ rate }` from the caller; the host reads it through
+ * `currentPointsRate()` / `useCostDisplay().rate` (`components/cost/pointsRate.ts`):
+ *   R7 a kit points call whose `rate` is a number literal — a second copy of
+ *      the setting that an organization's rate (or the platform's) never reaches.
  *
  * NOT FLAGGED: `components/cost/**` (the primitive), tests, scripts, and the
  * DOMAIN_MONEY files below — real money that is not what the platform charged
@@ -138,6 +145,36 @@ function isUiFile(file: string): boolean {
   return /^(app|features|components|lib|hooks|providers|utils)\//.test(file);
 }
 
+const KIT_POINTS_CALLS = ["formatCost", "usdToPoints", "pointsToUsd"] as const;
+
+/** R7 — lines where a kit points call hard-codes its rate. Pure. */
+export function literalRateSites(source: string): number[] {
+  const hits = new Set<number>();
+  const kitImport = source.match(/import\s*\{([^}]*)\}\s*from\s*["']@ai-matrx\/kit\/format["']/);
+  if (!kitImport) return [];
+  const locals: string[] = [];
+  for (const spec of kitImport[1].split(",")) {
+    const m = spec.trim().match(/^(\w+)(?:\s+as\s+(\w+))?$/);
+    if (m && (KIT_POINTS_CALLS as readonly string[]).includes(m[1])) locals.push(m[2] ?? m[1]);
+  }
+  for (const name of locals) {
+    const re = new RegExp(`(?<![\\w.])${name}\\s*\\(`, "g");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(source))) {
+      let depth = 0;
+      let j = m.index + m[0].length - 1;
+      for (; j < source.length; j++) {
+        const ch = source[j];
+        if (ch === "(") depth++;
+        else if (ch === ")" && --depth === 0) break;
+      }
+      const args = source.slice(m.index + m[0].length, j);
+      if (/\brate\s*:\s*[-+]?[\d.]/.test(args)) hits.add(source.slice(0, m.index).split("\n").length);
+    }
+  }
+  return [...hits].sort((a, b) => a - b);
+}
+
 /** R5/R6 — lines where a cost ignores the admin's dollars switch. Pure. */
 export function switchIgnoredSites(source: string): number[] {
   const hits = new Set<number>();
@@ -170,7 +207,12 @@ export function switchIgnoredSites(source: string): number[] {
 
 type Counts = Record<string, number>;
 
-function scanTree(): { counts: Counts; staleDomain: string[]; switchIgnored: string[] } {
+function scanTree(): {
+  counts: Counts;
+  staleDomain: string[];
+  switchIgnored: string[];
+  literalRates: string[];
+} {
   const listed = execFileSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard", "--", "*.ts", "*.tsx"],
@@ -181,12 +223,14 @@ function scanTree(): { counts: Counts; staleDomain: string[]; switchIgnored: str
   const counts: Counts = {};
   const staleDomain: string[] = [];
   const switchIgnored: string[] = [];
+  const literalRates: string[] = [];
   for (const file of listed) {
     if (!isUiFile(file)) continue;
     const abs = join(ROOT, file);
     if (!existsSync(abs)) continue;
     const source = readFileSync(abs, "utf8");
     for (const line of switchIgnoredSites(source)) switchIgnored.push(`${file}:${line}`);
+    for (const line of literalRateSites(source)) literalRates.push(`${file}:${line}`);
     const n = countCostSites(source);
     if (file in DOMAIN_MONEY) {
       if (n === 0) staleDomain.push(file);
@@ -197,7 +241,7 @@ function scanTree(): { counts: Counts; staleDomain: string[]; switchIgnored: str
   for (const file of Object.keys(DOMAIN_MONEY)) {
     if (!existsSync(join(ROOT, file)) && !staleDomain.includes(file)) staleDomain.push(file);
   }
-  return { counts, staleDomain: staleDomain.sort(), switchIgnored };
+  return { counts, staleDomain: staleDomain.sort(), switchIgnored, literalRates };
 }
 
 export interface Verdict {
@@ -270,6 +314,20 @@ function selfTest(): number {
     if (!ok) failed++;
     console.log(`${ok ? "PASS" : "FAIL"}  ${c.name}: got ${got}, want ${c.want}`);
   }
+  const KIT_POINTS = `import { formatCost, usdToPoints as toPts } from "@ai-matrx/kit/format";\n`;
+  const rateCases: { name: string; source: string; want: number }[] = [
+    { name: "R7 literal rate on formatCost", source: `${KIT_POINTS}formatCost(x, { unit, rate: 20000 })`, want: 1 },
+    { name: "R7 literal rate through an alias", source: `${KIT_POINTS}toPts(x, {\n  rate: 20_000,\n})`, want: 1 },
+    { name: "R7 rate from the knob", source: `${KIT_POINTS}formatCost(x, { unit, rate: currentPointsRate() })`, want: 0 },
+    { name: "R7 rate from the hook", source: `${KIT_POINTS}toPts(x, { rate })`, want: 0 },
+    { name: "R7 a file that does not use kit", source: `formatCost(x, { rate: 5 })`, want: 0 },
+  ];
+  for (const c of rateCases) {
+    const got = literalRateSites(c.source).length;
+    const ok = got === c.want;
+    if (!ok) failed++;
+    console.log(`${ok ? "PASS" : "FAIL"}  ${c.name}: got ${got}, want ${c.want}`);
+  }
   console.log(failed === 0 ? "self-test: all rules fire" : `self-test: ${failed} failed`);
   return failed === 0 ? 0 : 1;
 }
@@ -278,7 +336,7 @@ function main(): number {
   const args = new Set(process.argv.slice(2));
   if (args.has("--self-test")) return selfTest();
 
-  const { counts: current, staleDomain, switchIgnored } = scanTree();
+  const { counts: current, staleDomain, switchIgnored, literalRates } = scanTree();
   const baseline = readBaseline();
   if (args.has("--write")) {
     if (!baseline) {
@@ -308,6 +366,13 @@ function main(): number {
       `FAIL: a cost ignores the system-admin "Show costs in dollars" switch (always points). Take the unit from useCostDisplay() in render, or default it to currentCostUnit() (components/cost/costUnit.ts) for copy text, toasts and payloads:`,
     );
     for (const site of switchIgnored) console.log(`  SWITCH  ${site}`);
+    code = 1;
+  }
+  if (literalRates.length > 0) {
+    console.log(
+      "FAIL: a points conversion hard-codes its rate. The rate is ONE setting, the billing.points_per_usd knob: pass currentPointsRate() or useCostDisplay().rate (components/cost/pointsRate.ts):",
+    );
+    for (const site of literalRates) console.log(`  RATE  ${site}`);
     code = 1;
   }
   if (verdict.newSites.length > 0) {
