@@ -33,7 +33,6 @@ import {
   type DriveBrowsePage,
   type DriveFileMetadata,
 } from "@/features/marketing/google/service";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -47,6 +46,9 @@ import {
   openFreshGoogleDriveFile,
   openGoogleDriveBlankTab,
 } from "./drive-browser";
+
+const NO_ORGANIZATION_FOR_CONNECTION =
+  "This Google account is your own (not filed under an organization) and the Drive service still needs an organization for the request. Choose one from the organization picker in the header and try again.";
 
 const FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
 
@@ -68,7 +70,10 @@ function ownerLabel(
 }
 
 export function GoogleDriveLibrary() {
-  const { organizationId, organizationState } = useOrganizationRequired();
+  // The header's selected organization is only a FALLBACK for a personal (org-less)
+  // connection — the server route still names an organization. A connection filed
+  // under an organization always uses its OWN. Nothing gates the list on a selection.
+  const { organizationId: selectedOrganizationId } = useOrganizationRequired();
   const inventory = useGoogleConnectionInventory();
   const capabilities = useGoogleCapabilities();
   const [connectionId, setConnectionId] = useState("");
@@ -87,6 +92,11 @@ export function GoogleDriveLibrary() {
     "drive-browse",
     connectionId,
   );
+  const selectedConnection = connections.find(
+    (connection) => connection.id === connectionId,
+  );
+  const organizationId =
+    selectedConnection?.organization_id ?? selectedOrganizationId ?? null;
   const driveBrowse = capabilities.data?.find(
     (capability) => capability.key === "drive_browse",
   );
@@ -98,7 +108,11 @@ export function GoogleDriveLibrary() {
       criteria?: DriveBrowseCriteria;
     } = {},
   ) {
-    if (!organizationId || !connectionId) return;
+    if (!connectionId) return;
+    if (!organizationId) {
+      setError(NO_ORGANIZATION_FOR_CONNECTION);
+      return;
+    }
     const nextCriteria = next.criteria ?? criteria;
     setLoading(true);
     setError(null);
@@ -130,7 +144,11 @@ export function GoogleDriveLibrary() {
   }
 
   async function checkAccess(fileId: string) {
-    if (!organizationId || !connectionId) return;
+    if (!connectionId) return;
+    if (!organizationId) {
+      setError(NO_ORGANIZATION_FOR_CONNECTION);
+      return;
+    }
     setCheckingFileId(fileId);
     setError(null);
     setAccess(null);
@@ -150,7 +168,11 @@ export function GoogleDriveLibrary() {
   }
 
   async function openInGoogle(fileId: string) {
-    if (!organizationId || !connectionId) return;
+    if (!connectionId) return;
+    if (!organizationId) {
+      setError(NO_ORGANIZATION_FOR_CONNECTION);
+      return;
+    }
     const tab = openGoogleDriveBlankTab((url, target) =>
       window.open(url, target),
     );
@@ -188,10 +210,6 @@ export function GoogleDriveLibrary() {
     void load({
       criteria: { search: search.trim(), folderId: null, folderName: null },
     });
-  }
-
-  if (organizationState !== "ready") {
-    return <OrganizationContextNotice state={organizationState} what="Google Drive review" />;
   }
 
   return (
