@@ -145,6 +145,14 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         // The header organization is neither a gate nor a dependency: a switch never re-reads.
     }, [dispatch, libraryId]);
 
+    const unmountedRef = useRef(false);
+    useEffect(() => {
+        unmountedRef.current = false;
+        return () => {
+            unmountedRef.current = true;
+        };
+    }, []);
+
     const sync = useLibrarySync(libraryId, () => {
         void refreshMetrics();
         setListGeneration((n) => n + 1);
@@ -275,7 +283,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     useEffect(() => {
         if (live?.library?.sync_status !== "syncing") return;
         if (sync.sync.phase !== "idle") return;
-        let cancelled = false;
         const intervalId = window.setInterval(() => {
             void (async () => {
                 // D5: this used to swallow every failure with a comment
@@ -289,7 +296,13 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 // held — which, for a Library never read successfully before
                 // this poll started, is nothing at all.
                 const row = await loadLibraryRow();
-                if (cancelled || row === null) return;
+                // 🚨 NOT `cancelled`: `loadLibraryRow` dispatches the new row,
+                // and a row that left "syncing" re-runs THIS effect — its
+                // cleanup sets `cancelled` before this line, so the refresh
+                // that a finished sync exists to trigger never ran and the
+                // counts stayed stale until a reload. Only a real unmount
+                // stops the completion refresh.
+                if (unmountedRef.current || row === null) return;
                 if (row.sync_status !== "syncing") {
                     void refreshMetrics();
                     setListGeneration((n) => n + 1);
@@ -297,7 +310,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             })();
         }, 5000);
         return () => {
-            cancelled = true;
             window.clearInterval(intervalId);
         };
     }, [
