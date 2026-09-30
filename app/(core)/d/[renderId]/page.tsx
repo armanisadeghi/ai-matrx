@@ -41,8 +41,6 @@ import HeaderStructured from "@/features/shell/components/header/variants/varian
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -66,7 +64,6 @@ export default function RenderedDocumentRoute({
     params: Promise<{ renderId: string }>;
 }) {
     const { renderId } = use(params);
-    const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
     const [document, setDocument] = useState<RenderedDocument | null>(null);
     // Set when the read failed: its raw error, or `error: null` for a zero-row
@@ -85,11 +82,12 @@ export default function RenderedDocumentRoute({
         setDocument(null);
         setRefusal(null);
         void (async () => {
-            // p_organization_id is accepted and ignored by the door: the document is found by
-            // its id, and its own organization is the one checked.
+            // p_organization_id is accepted and IGNORED by the door (verified live in
+            // custom.doc_render_read 2026-09-30): the document is found by its id and its own
+            // organization is the one checked — so the active organization is never sent.
             const { data, error } = await recordsDataSource(createClient()).rpc(
                 "doc_render_read",
-                { p_organization_id: selectedOrganizationId, p_render_id: renderId },
+                { p_organization_id: null, p_render_id: renderId },
                 { schema: "custom" },
             );
             if (stopped) return;
@@ -107,8 +105,7 @@ export default function RenderedDocumentRoute({
         return () => {
             stopped = true;
         };
-        // The selected organization is deliberately NOT a dependency: switching it must never
-        // re-decide whether this document opens.
+        // The record's own organization decides; nothing else is a dependency.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [renderId]);
 

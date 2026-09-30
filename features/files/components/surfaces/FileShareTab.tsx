@@ -42,7 +42,7 @@ import {
   selectFileById,
 } from "@/features/files/redux/selectors";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { ShareLinkDialogBody } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { PermissionsDialogBody } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
@@ -57,7 +57,11 @@ export interface FileShareTabProps {
 export function FileShareTab({ fileId, className }: FileShareTabProps) {
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const currentUserId = useAppSelector(selectUserId);
-  const organizationName = useAppSelector(selectOrganizationName);
+  // The FILE's own organization (the record's, never the active one).
+  const { organizations: memberOrgs } = useUserOrganizations("all");
+  const organizationName = file?.organizationId
+    ? (memberOrgs.find((o) => o.id === file.organizationId)?.name ?? null)
+    : null;
   const activeShareLinks = useAppSelector((s) =>
     selectActiveShareLinksForResource(s, fileId),
   );
@@ -227,7 +231,7 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
         {/* ─── Organization ────────────────────────────────────────── */}
         <Section title="Organization">
           <Row
-            label="Active org"
+            label="Lives in"
             value={
               organizationName ? (
                 <span className="inline-flex items-center gap-1.5">
@@ -236,8 +240,7 @@ export function FileShareTab({ fileId, className }: FileShareTabProps) {
                 </span>
               ) : (
                 <span className="text-muted-foreground">
-                  {/* read-gate-exempt: the active organization from the session context, not a list read */}
-                  No active organization
+                  {file?.organizationId ? "An organization you are not a member of" : "No organization"}
                 </span>
               )
             }
