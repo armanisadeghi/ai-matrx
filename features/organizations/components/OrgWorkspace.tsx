@@ -191,7 +191,7 @@ export function OrgWorkspace() {
     // Projects + Tasks are first-class containers with their own canonical
     // top-level homes; the org is a filtered view (?org=slug), not a parent.
     if (entry.key === "project") {
-      router.push(`/projects?org=${slug}`);
+      router.push(`/projects?org_filter=${slug}`);
       return;
     }
     if (entry.key === "task") {

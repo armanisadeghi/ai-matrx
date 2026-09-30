@@ -7,5 +7,5 @@ export default async function OrgProjectsRedirect({
   params: Promise<{ orgId: string }>;
 }) {
   const { orgId } = await params;
-  redirect(`/projects?org=${orgId}`);
+  redirect(`/projects?org_filter=${orgId}`);
 }

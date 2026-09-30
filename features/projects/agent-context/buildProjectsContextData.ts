@@ -116,6 +116,10 @@ export interface BuildProjectsListContextDataArgs {
   view: "cards" | "table";
   organizationFilterId?: string | null;
   organizationFilterName?: string | null;
+  /** The person's ACTIVE organization (where an agent run happens) — never the
+   *  page filter. The filter travels only under `project_list_filters`. */
+  activeOrganizationId?: string | null;
+  activeOrganizationName?: string | null;
   scopeFilterId?: string | null;
   selectionText?: string;
 }
@@ -128,6 +132,8 @@ export function buildProjectsListContextData({
   view,
   organizationFilterId = null,
   organizationFilterName = null,
+  activeOrganizationId = null,
+  activeOrganizationName = null,
   scopeFilterId = null,
   selectionText = "",
 }: BuildProjectsListContextDataArgs): Record<string, unknown> {
@@ -176,8 +182,8 @@ export function buildProjectsListContextData({
       filters: projectListFilters,
       ...(projectsReadAvailable ? { project_count: projects.length } : {}),
     },
-    active_organization_id: organizationFilterId || undefined,
-    active_organization_name: organizationFilterName || undefined,
+    active_organization_id: activeOrganizationId || undefined,
+    active_organization_name: activeOrganizationName || undefined,
     ...(projectsReadAvailable
       ? {
           selected_project_ids: [],

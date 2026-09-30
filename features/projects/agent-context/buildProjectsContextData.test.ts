@@ -23,12 +23,15 @@ describe("Projects list surface context", () => {
         view: "table",
         organizationFilterId: "org-1",
         organizationFilterName: "AI Matrx",
+        activeOrganizationId: "org-active",
+        activeOrganizationName: "Home Org",
         scopeFilterId: "scope-1",
       }),
     ).toMatchObject({
       content: "Surface campaign: Certify ordinary product surfaces",
-      active_organization_id: "org-1",
-      active_organization_name: "AI Matrx",
+      // The active org is where an agent runs; the page filter is NOT it.
+      active_organization_id: "org-active",
+      active_organization_name: "Home Org",
       selected_project_ids: [],
       project_count: 1,
       project_search_query: "surface",

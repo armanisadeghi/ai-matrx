@@ -11,7 +11,6 @@ import {
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { FolderKanban } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
@@ -41,17 +40,19 @@ export function ProjectsWorkspace() {
   // project hierarchy (the rows). Either failing is said, never read as
   // "choose an organization" or "no projects".
   const { flatProjects, isLoading: projectsLoading, isError: projectsFailed, error: projectsError } = useNavTree();
-  const orgTree = useScopeTree();
 
+  // Every project the person can reach, across all organizations. The picker is
+  // an optional filter that starts at "All organizations".
   const activeProjects = selection.organizationId
     ? flatProjects.filter((p) => p.org_id === selection.organizationId)
-    : [];
+    : flatProjects;
 
   return (
     <div className="flex flex-col min-h-0 h-full bg-card">
       <div className="px-2 py-2 border-b shrink-0 bg-muted/10">
         <EngagementPicker
           rungs={["organization"]}
+          emptyLabel="All organizations"
           value={selection}
           onChange={setSelection}
         />
@@ -70,40 +71,24 @@ export function ProjectsWorkspace() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
-        {orgTree.status === "error" && !selection.organizationId ? (
+        {projectsFailed && activeProjects.length === 0 ? (
           <ReadFailure
-            error={orgTree.error ?? true}
-            what="your organizations"
-            onRetry={() => void orgTree.refresh()}
+            error={projectsError ?? true}
+            what="your projects"
+            onRetry={() => void dispatch(invalidateAndRefetchFullContext())}
           />
-        ) : selection.organizationId ? (
-          projectsFailed && activeProjects.length === 0 ? (
-            <ReadFailure
-              error={projectsError ?? true}
-              what="this organization's projects"
-              onRetry={() => void dispatch(invalidateAndRefetchFullContext())}
-            />
-          ) : projectsLoading && activeProjects.length === 0 ? (
-            <div className="flex h-32 items-center justify-center text-xs text-muted-foreground" role="status" aria-busy="true">
-              Loading projects…
-            </div>
-          ) : activeProjects.length > 0 ? (
-            activeProjects.map((project) => (
-              <CompactProjectItem key={project.id} project={project} />
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center h-32 text-center text-muted-foreground px-4">
-              <FolderKanban className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm font-medium">No projects found</p>
-              <p className="text-xs mt-1">
-                Create one using the dropdown above.
-              </p>
-            </div>
-          )
+        ) : projectsLoading && activeProjects.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground" role="status" aria-busy="true">
+            Loading projects…
+          </div>
+        ) : activeProjects.length > 0 ? (
+          activeProjects.map((project) => (
+            <CompactProjectItem key={project.id} project={project} />
+          ))
         ) : (
           <div className="flex flex-col items-center justify-center h-32 text-center text-muted-foreground px-4">
             <FolderKanban className="h-8 w-8 mb-2 opacity-50" />
-            <p className="text-sm">Select an organization to view projects</p>
+            <p className="text-sm font-medium">No projects found</p>
           </div>
         )}
       </div>

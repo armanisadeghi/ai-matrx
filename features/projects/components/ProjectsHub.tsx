@@ -6,7 +6,7 @@
  *  - Cards: large cards with a live task preview + open/done counts (default).
  *  - Table: full-width, sortable, searchable rows for fast scanning on desktop.
  *
- * Reads ?org=<slug|id> / ?scope=<id> to filter (org/scope are filtered views, not
+ * Reads ?org_filter=<slug|id> / ?scope=<id> to filter (org/scope are filtered views, not
  * parents). Self-fetches ctx_projects (RLS-filtered) + one batched task query for
  * all projects' counts/preview (no per-card round-trips).
  */
@@ -18,6 +18,10 @@ import { avatarPaletteIndex } from "@ai-matrx/kit/format";
 import { readAllRows } from "@ai-matrx/data/db";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import {
   FolderKanban,
   Plus,
@@ -369,11 +373,11 @@ export function ProjectsHub({
     };
   }, [projects]);
 
-  // ?org=slug|id → org id
+  // ?org_filter=slug|id → org id (NEVER ?org= — that key switches the active org)
   const [resolvedOrgFilter, setResolvedOrgFilter] = React.useState<{
     param: string;
     id: string | null;
-    /** The ?org= read FAILED: the list below is NOT filtered to it (RC-B12 r13). */
+    /** The ?org_filter= read FAILED: the list below is NOT filtered to it (RC-B12 r13). */
     error?: unknown;
   } | null>(null);
   const [orgFilterAttempt, setOrgFilterAttempt] = React.useState(0);
@@ -505,26 +509,21 @@ export function ProjectsHub({
   }
 
   const isFiltered = Boolean(orgParam || scopeParam);
-  // Strips ?org= / ?scope= by navigating to the bare list — the single,
+  // Strips ?org_filter= / ?scope= by navigating to the bare list — the single,
   // discoverable escape hatch out of every filtered view.
   const clearFilter = () => router.push("/projects");
+  // The visible organization filter: "All organizations" (no param) or one org,
+  // in the URL as ?org_filter= — it never touches the active organization.
+  const handleOrgFilterChange = (id: string | null) => {
+    const qs = new URLSearchParams();
+    if (id) qs.set("org_filter", id);
+    if (scopeParam) qs.set("scope", scopeParam);
+    const tail = qs.toString();
+    router.replace(tail ? `/projects?${tail}` : "/projects");
+  };
   const filterOrgName = orgFilterId
     ? (orgMap.get(orgFilterId)?.name ?? "this organization")
     : null;
-  const teamGroups = new Map<string, ProjectWithRole[]>();
-  for (const project of filtered) {
-    const key = project.organizationId ?? "unassigned";
-    const group = teamGroups.get(key) ?? [];
-    group.push(project);
-    teamGroups.set(key, group);
-  }
-  const groupedTeams = [...teamGroups.entries()].sort(([a], [b]) => {
-    const aName =
-      a === "unassigned" ? "Other projects" : (orgMap.get(a)?.name ?? a);
-    const bName =
-      b === "unassigned" ? "Other projects" : (orgMap.get(b)?.name ?? b);
-    return aName.localeCompare(bName);
-  });
   const workspaceNavigationItems = WORKSPACE_DESTINATIONS.map((item) => {
     if (item.href === "/projects") {
       return {
@@ -555,6 +554,8 @@ export function ProjectsHub({
     doneTaskCount: statsReadFailed ? undefined : stats.get(project.id)?.done,
   }));
 
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+
   const buildListContextData = () =>
     buildProjectsListContextData({
       projects: listProjects,
@@ -563,6 +564,10 @@ export function ProjectsHub({
       view,
       organizationFilterId: orgFilterId,
       organizationFilterName: filterOrgName,
+      activeOrganizationId,
+      activeOrganizationName: activeOrganizationId
+        ? (orgMap.get(activeOrganizationId)?.name ?? null)
+        : null,
       scopeFilterId: scopeParam,
       selectionText: window.getSelection?.()?.toString() ?? "",
     });
@@ -685,6 +690,11 @@ export function ProjectsHub({
                     ? "Loading projects…"
                     : `${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`}
               </span>
+              <EntityOrgFilter
+                orgId={orgFilterId}
+                onChange={handleOrgFilterChange}
+                counts={EMPTY_SCOPE_COUNTS}
+              />
               <div
                 className="relative min-w-0 flex-1 sm:flex-none"
                 data-surface-value="project_search_query"
@@ -867,7 +877,7 @@ export function ProjectsHub({
                 orgMap={orgMap}
                 statsReadFailed={statsReadFailed}
               />
-            ) : isFiltered || query ? (
+            ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filtered.map((p) => (
                   <ProjectHubCard
@@ -880,73 +890,11 @@ export function ProjectsHub({
                   />
                 ))}
               </div>
-            ) : (
-              <>
-                {groupedTeams.map(([organizationId, organizationProjects]) => (
-                  <Section
-                    key={organizationId}
-                    title={
-                      organizationId === "unassigned"
-                        ? "Other projects"
-                        : (orgMap.get(organizationId)?.name ??
-                          "Shared projects")
-                    }
-                    count={organizationProjects.length}
-                    accent={organizationAccent(
-                      organizationId === "unassigned" ? null : organizationId,
-                    )}
-                  >
-                    {organizationProjects.map((p) => (
-                      <ProjectHubCard
-                        key={p.id}
-                        project={p}
-                        stat={stats.get(p.id)}
-                        orgMap={orgMap}
-                        statsReadFailed={statsReadFailed}
-                        accent={organizationAccent(
-                          organizationId === "unassigned"
-                            ? null
-                            : organizationId,
-                        )}
-                      />
-                    ))}
-                  </Section>
-                ))}
-              </>
             )}
           </div>
         </div>
       </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
-  );
-}
-
-function Section({
-  title,
-  count,
-  accent,
-  children,
-}: {
-  title: string;
-  count: number;
-  accent?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span
-          className={cn("h-2.5 w-2.5 rounded-full", accent ?? "bg-primary")}
-        />
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          {title}
-        </h2>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {count}
-        </span>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{children}</div>
-    </section>
   );
 }
 
