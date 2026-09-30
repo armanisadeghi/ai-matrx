@@ -91,11 +91,11 @@ function StepHeading({
 }
 
 export function CertifyPrinterWizard({
-  organizationId,
+  organizationId: activeOrganizationId,
   userId,
   existingId,
 }: {
-  /** EXPLICIT active-org id — the write refuses without it. */
+  /** EXPLICIT active-org id for a NEW certification; a re-check uses the certification's own org. */
   organizationId: string | null;
   userId: string | null;
   existingId?: string;
@@ -113,6 +113,9 @@ export function CertifyPrinterWizard({
   const [verdict, setVerdict] = useState<CertificationStatus | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(Boolean(existingId));
   const [previousStatus, setPreviousStatus] = useState<string | null>(null);
+  const [existingOrgId, setExistingOrgId] = useState<string | null>(null);
+  // Re-check writes into the certification's own org; new work into the active org.
+  const organizationId = existingId ? existingOrgId : activeOrganizationId;
 
   // Re-check lane: prefill from the stored row, then walk the same steps.
   useEffect(() => {
@@ -127,6 +130,7 @@ export function CertifyPrinterWizard({
         setConnectionNote(row.connectionNote ?? "");
         setTemplateId(row.templateId);
         setPreviousStatus(row.status);
+        setExistingOrgId(row.organizationId);
       } catch (err) {
         console.error("[certified-printers] load for re-check failed", err);
         toast.error("Could not load that certification.");

@@ -158,12 +158,15 @@ const codeColumns: MatrxColumnDef<LabelCodeTableRow>[] = [
 
 export function LabelBatchDetail({
   batchId,
-  organizationId,
+  organizationId: activeOrganizationId,
 }: {
   batchId: string;
+  /** The ACTIVE org — only a placeholder until the batch loads; the record's own org wins. */
   organizationId: string | null;
 }) {
   const [batch, setBatch] = useState<LabelBatch | null>(null);
+  // A record page resolves its org FROM THE RECORD, never the active org.
+  const organizationId = batch?.organizationId ?? activeOrganizationId;
   const [codes, setCodes] = useState<LabelCodeTableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<unknown>(null);

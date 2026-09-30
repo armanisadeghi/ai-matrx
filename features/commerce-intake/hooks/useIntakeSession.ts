@@ -690,12 +690,25 @@ export function useIntakeSession(
       let resolution: ScanResolution = { type: "unknown" };
       if (organizationId) {
         try {
-          resolution = await resolveScannedValue(organizationId, trimmed);
+          // Lookup spans every organization the person can see — the active
+          // org only decides where NEW work is saved, never what a scan finds.
+          resolution = await resolveScannedValue(null, trimmed);
         } catch (err) {
           // Lookup failure degrades to legacy behavior — safe, because the
           // DB's unique index still refuses a duplicate identifier write.
           console.error("[commerce-intake] scan lookup failed", err);
         }
+      }
+      if (
+        resolution.type === "pooled" &&
+        organizationId &&
+        resolution.code.organizationId !== organizationId
+      ) {
+        // A pooled code can only be claimed inside its own organization.
+        toast.error(
+          "That label belongs to another of your organizations — switch to it to use this label.",
+        );
+        return "assigned";
       }
 
       if (resolution.type === "void") {

@@ -393,14 +393,17 @@ export async function mintLabelCodes(
  * a typed serial or a legacy QR string reverse-resolves the same way.
  */
 export async function findAssetIdByIdentifier(
-  organizationId: string,
+  organizationId: string | null,
   value: string,
 ): Promise<string | null> {
-  const { data, error } = await createClient()
+  // `null` = every organization the person can see (RLS decides) — a scan is a
+  // lookup, never narrowed by the active org.
+  let q = createClient()
     .schema("commerce")
     .from("asset_identifier")
-    .select("intake_asset_id, identifier_kind")
-    .eq("organization_id", organizationId)
+    .select("intake_asset_id, identifier_kind");
+  if (organizationId) q = q.eq("organization_id", organizationId);
+  const { data, error } = await q
     .eq("value", value)
     .is("replaced_at", null)
     .limit(1)
@@ -411,14 +414,14 @@ export async function findAssetIdByIdentifier(
 
 /** The pooled code row carrying this exact value, if any. */
 export async function findLabelCode(
-  organizationId: string,
+  organizationId: string | null,
   value: string,
 ): Promise<LabelCode | null> {
-  const { data, error } = await labelsDb()
-    .from("label_code")
-    .select(CODE_COLUMNS)
-    .eq("organization_id", organizationId)
+  let q = labelsDb().from("label_code").select(CODE_COLUMNS);
+  if (organizationId) q = q.eq("organization_id", organizationId);
+  const { data, error } = await q
     .eq("value", value)
+    .limit(1)
     .maybeSingle();
   if (error) throw error;
   return data ? toCode(data as CodeRow) : null;
@@ -430,7 +433,8 @@ export async function findLabelCode(
  * code is in use, whatever its pool row says), then the pool row, then unknown.
  */
 export async function resolveScannedValue(
-  organizationId: string,
+  /** `null` searches every organization the person can see. */
+  organizationId: string | null,
   value: string,
 ): Promise<ScanResolution> {
   const [assetId, code] = await Promise.all([
