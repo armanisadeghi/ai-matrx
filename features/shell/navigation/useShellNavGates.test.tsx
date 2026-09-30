@@ -29,6 +29,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
 
 import appContextReducer, { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import scopesReducer, { scopesActions } from "@/features/scopes/redux/scopesSlice";
+import type { OrgNode } from "@/features/scopes/types";
 import { DATA_NAV_CHILDREN_FOR_TEST, gatesToEntry } from "./useShellNavGates.fixture";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -46,7 +48,20 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 function makeStore() {
-    return configureStore({ reducer: { appContext: appContextReducer } });
+    return configureStore({
+        reducer: { appContext: appContextReducer, scopesTree: scopesReducer },
+        middleware: (getDefault) => getDefault({ serializableCheck: false, immutableCheck: false }),
+    });
+}
+
+/** The person's memberships arriving (the scope tree finishing its fetch). */
+function memberOf(store: ReturnType<typeof makeStore>, ...ids: string[]) {
+    store.dispatch(
+        scopesActions.treeFetchFulfilled({
+            organizations: ids.map((id) => ({ id, name: id, abbreviation: "", slug: id }) as unknown as OrgNode),
+            fetched_at: new Date().toISOString(),
+        }),
+    );
 }
 
 let host: HTMLDivElement;
@@ -89,16 +104,16 @@ describe("the Records entry in the sidebar", () => {
         expect(host.textContent).toContain("Workbooks");
     });
 
-    it("APPEARS when the organization arrives after mount — the defect, exactly", async () => {
+    it("APPEARS when the memberships arrive after mount — the defect, exactly", async () => {
         const store = makeStore();
         mount(store, gatesToEntry());
         await settle();
         expect(recordsEntry()).toBeNull();
 
-        // Organization bootstrap finishes, which in a real browser is always
-        // AFTER the sidebar has mounted. The old hook never looked again.
+        // Bootstrap finishes AFTER the sidebar has mounted, always. The old hook
+        // never looked again.
         await act(async () => {
-            store.dispatch(setOrganization({ id: ORG_ON, name: "Duck Co" }));
+            memberOf(store, ORG_ON);
         });
         await settle();
 
@@ -107,17 +122,28 @@ describe("the Records entry in the sidebar", () => {
         expect(rpc).toHaveBeenCalledWith("unified_data_store_on", { p_organization_id: ORG_ON });
     });
 
-    it("is ABSENT for an organization whose store is off, and comes back on a switch", async () => {
+    it("is ABSENT when no organization the person belongs to has the store on", async () => {
         const store = makeStore();
         mount(store, gatesToEntry());
         await act(async () => {
-            store.dispatch(setOrganization({ id: ORG_OFF, name: "Other Co" }));
+            memberOf(store, ORG_OFF);
         });
         await settle();
         expect(recordsEntry()).toBeNull();
+    });
 
-        // Switching organizations re-asks. A cached "off" from the last one
-        // would leave a member of an organization that IS on with no entry.
+    it("the ACTIVE organization decides nothing: any member organization with the store on opens the door", async () => {
+        const store = makeStore();
+        mount(store, gatesToEntry());
+        await act(async () => {
+            memberOf(store, ORG_OFF, ORG_ON);
+            // The header has the OFF organization selected. The person still sees Records.
+            store.dispatch(setOrganization({ id: ORG_OFF, name: "Other Co" }));
+        });
+        await settle();
+        expect(recordsEntry()).not.toBeNull();
+
+        // Switching the active organization changes nothing about what is shown.
         await act(async () => {
             store.dispatch(setOrganization({ id: ORG_ON, name: "Duck Co" }));
         });

@@ -32,26 +32,44 @@
 // asked again for the organization actually on screen. There is no snapshot and
 // no mount effect left to be early.
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ShellNavGates } from "@/features/shell/constants/nav-data";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
 export function useShellNavGates(): ShellNavGates {
-  // THE ORGANIZATION ON SCREEN, subscribed — never a one-shot read. A member of
-  // an organization whose record store is on sees Records; everybody else does
-  // not, and there is no per-person rung on it any more (lane NAV-FIX).
-  const organizationId = useAppSelector(selectOrganizationId);
+  // A DOOR IS OPEN IF ANY OF THE PERSON'S ORGANIZATIONS HAS IT (active-org law,
+  // rule 1: the active organization never decides what a person sees). The
+  // record-store switch is one organization's decision, so the Records entry
+  // shows when ANY organization the person belongs to has it on — never only
+  // the one selected in the header. Answers are shared per organization
+  // (`UNIFIED_DATA_CAMPAIGN.enabled` caches on/off), so this is one cheap ask
+  // per membership. Subscribed, never a one-shot read.
+  const memberships = useAppSelector(selectOrganizationsList);
+  const idsKey = memberships.map((o) => o.id).join(",");
+  const [on, setOn] = useState(false);
 
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
-  });
+  useEffect(() => {
+    if (idsKey === "") {
+      setOn(false);
+      return undefined;
+    }
+    let cancelled = false;
+    void Promise.all(
+      idsKey
+        .split(",")
+        .map((id) => UNIFIED_DATA_CAMPAIGN.enabled(id).catch(() => false)),
+    ).then((answers) => {
+      if (!cancelled) setOn(answers.some(Boolean));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
 
   return useMemo<ShellNavGates>(
-    () => ({ "unified-data-campaign": campaign.on === true }),
-    [campaign.on],
+    () => ({ "unified-data-campaign": on }),
+    [on],
   );
 }
