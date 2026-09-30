@@ -42,9 +42,9 @@ import { MandateCoverageNotice, useCoverageList } from "./useCoverageList";
 import type { MandateHomeOrganization } from "./service";
 
 export function MandatesBrowsePage() {
-  // The door's system gate is `public.is_platform_admin()`, which is TRUE for
-  // any Matrx admin level — so the tab is offered on exactly that bar, never a
-  // stricter one the database would then contradict.
+  // The System lane is open to everyone signed in (AO-340): the door's System home returns the
+  // platform mandates the caller already reads through All, row security staying the ceiling.
+  // `isPlatformAdmin` only decides the `admin` key of the service key below.
   const isPlatformAdmin = useAppSelector(selectAdminLevel) !== null;
   const {
     organizations: memberships,
@@ -57,9 +57,7 @@ export function MandatesBrowsePage() {
     name: org.name,
   }));
 
-  const scopes: ListScopeKind[] = isPlatformAdmin
-    ? [...MANDATE_LIST_SCOPES, "system"]
-    : MANDATE_LIST_SCOPES;
+  const scopes: ListScopeKind[] = [...MANDATE_LIST_SCOPES, "system"];
   const pageOrgFilter = usePageOrgFilter();
 
   const { view, service } = useCoverageList({
@@ -69,7 +67,7 @@ export function MandatesBrowsePage() {
       organizations,
       organizationsLoading,
       organizationsError,
-      canListSystemHome: isPlatformAdmin,
+      canListSystemHome: true,
     },
   });
 
