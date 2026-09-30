@@ -405,6 +405,9 @@ export interface DescendIndex {
   byKey: Map<string, DescendInput>;
   /** tool_result inputs keyed by their chat.tool_call row id. */
   toolByRowId: Map<string, DescendInput>;
+  /** The server's answer tool calls by call id — the recorded outcome when the
+   * turn bundle carries no tool row (a stopped call has no message link). */
+  answerToolByCallId: Map<string, DescendAnswerPart>;
 }
 
 export function indexDescendInputs(out: DescendOut | null): DescendIndex {
@@ -416,7 +419,11 @@ export function indexDescendInputs(out: DescendOut | null): DescendIndex {
       toolByRowId.set(input.producer.id, input);
     }
   }
-  return { byKey, toolByRowId };
+  const answerToolByCallId = new Map<string, DescendAnswerPart>();
+  for (const part of out?.answer?.parts ?? []) {
+    if (part.kind === "tool_call" && part.call_id) answerToolByCallId.set(part.call_id, part);
+  }
+  return { byKey, toolByRowId, answerToolByCallId };
 }
 
 // ── assistant part cards ────────────────────────────────────────────────────
@@ -482,7 +489,15 @@ function AssistantPartCard({
     case "tool": {
       const row = part.row;
       // A call candidate containment stopped never ran — never "failed".
-      const stopped = isStoppedToolRow(row);
+      const answerPart = descendIndex.answerToolByCallId.get(part.callId);
+      const stopped = isStoppedToolRow(row) || answerPart?.outcome === "stopped";
+      const answerArgs = answerPart?.arguments;
+      const args: Record<string, unknown> | null =
+        part.args ??
+        (row?.arguments as Record<string, unknown> | null) ??
+        (answerArgs && typeof answerArgs === "object" && !Array.isArray(answerArgs)
+          ? (answerArgs as Record<string, unknown>)
+          : null);
       const failed =
         !stopped && row ? row.is_error === true || row.success === false : false;
       const wrongInput = row ? (descendIndex.toolByRowId.get(row.id) ?? null) : null;
@@ -493,9 +508,10 @@ function AssistantPartCard({
           id={id}
           icon={<Wrench className="h-3.5 w-3.5" aria-hidden />}
           title={`Tool — ${part.name}`}
+          defaultExpanded={stopped}
           chips={
             <>
-              {row && (
+              {(row || stopped) && (
                 <span
                   className={cn(
                     "rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
@@ -528,16 +544,10 @@ function AssistantPartCard({
           <div className="space-y-2">
             <div>
               <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                What the agent asked for
+                {stopped ? "Proposed arguments" : "What the agent asked for"}
               </div>
-              {part.args || (row && row.arguments) ? (
-                <KeyValueTable
-                  record={
-                    (part.args ??
-                      (row?.arguments as Record<string, unknown> | null)) ||
-                    {}
-                  }
-                />
+              {args ? (
+                <KeyValueTable record={args} />
               ) : (
                 <div className="text-xs text-muted-foreground">No arguments.</div>
               )}
@@ -1234,7 +1244,6 @@ export function AnswerSection({
       <SectionHeading
         icon={<Brain className="h-3.5 w-3.5" aria-hidden />}
         title="What the agent answered"
-        meta={answer.finish_reason ? `finished: ${answer.finish_reason}` : undefined}
       />
       {parts.map((part, i) => {
         const id = `${unitKey}:answer:${i}`;

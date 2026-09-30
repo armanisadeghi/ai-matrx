@@ -39,7 +39,8 @@ jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
-import { GroupedInputsView } from "../components/TurnDiagnosis";
+import { GroupedInputsView, TurnDiagnosisView } from "../components/TurnDiagnosis";
+import type { ConversationTurn } from "../turns";
 import type { DescendOut } from "../types";
 
 let container: HTMLDivElement;
@@ -112,5 +113,42 @@ describe("the walk window shows the answer beside the inputs", () => {
     const line = container.querySelector('[data-walk-transcript="none"]');
     expect(line?.textContent).toBe("This run kept no chat and no recorded call.");
     expect(text()).not.toContain("No recorded inputs for this unit");
+  });
+
+  it("D15 in the turn view: the stopped call the turn bundle carries no row for still reads as stopped", () => {
+    const out = recorded.candidate_stopped as unknown as DescendOut;
+    const stop = out.answer?.parts?.find((p) => p.kind === "tool_call");
+    expect(stop?.call_id).toBeTruthy();
+    // The turn as `turns.ts` folds candidate conversation 3cb55bfb: the tool
+    // part joins no observability row (the stopped row has no message link).
+    const turn: ConversationTurn = {
+      index: 1,
+      userMessageId: "b7178671-bf12-4298-b579-23db668a00b5",
+      userText: "Page Title: Atacama Desert",
+      userRaw: null,
+      contextItems: [],
+      attachments: [],
+      toolsOnCall: [],
+      collabNotes: [],
+      assistantMessageIds: ["4c7c5341-d597-472a-90b7-e512fe09a2f0"],
+      rootAssistantMessageId: "4c7c5341-d597-472a-90b7-e512fe09a2f0",
+      parts: [{ kind: "tool", seq: 0, callId: stop!.call_id!, name: "note", args: null, row: null }],
+      hasError: false,
+    };
+    render(
+      <TurnDiagnosisView
+        turn={turn}
+        out={out}
+        raw={false}
+        expand={{ baseline: "default", overrides: {} }}
+        onToggle={() => {}}
+        flags={{ flagged: {}, toggle: () => {} }}
+        onTrace={() => {}}
+      />,
+    );
+    expect(text()).toContain("Stopped before it ran");
+    expect(text()).toContain("Proposed arguments");
+    expect(text()).toContain("V1CAND-1790806846");
+    expect(text()).not.toContain("No recorded result.");
   });
 });
