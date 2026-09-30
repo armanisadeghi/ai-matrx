@@ -1,22 +1,21 @@
 /**
- * features/knowledge/hub/legacyRoutes.ts — where a retired Knowledge page's
- * address lands in the hub, filters intact (KNOWLEDGE-HUB §6, H6a; Linear:
- * nothing a retired page did is lost, and an old link keeps its filters).
+ * features/knowledge/hub/legacyRoutes.ts — builders for hub addresses that carry
+ * an old page's filters over (KNOWLEDGE-HUB §6). NO page is retired into the hub
+ * (Arman, 2026-09-29): every page below is live at its own address; these helpers
+ * only build the `/knowledge/hub?…` link for the hub's twin view of it.
  *
- *   /knowledge/library  (and /rag/library)   → the Sources kind view
+ *   /knowledge/library  (and /rag/library)   → Sources page; hub twin = the Sources kind view
  *       ?show=saved → + state kept · ?show=all → every capture
  *       ?q= / ?search= → the search words
  *
- * NOT retired: /knowledge/search is the Search Lab — a kept user page by Arman's
- * ruling (2026-09-29: "the single most useful user UI for testing RAG"). It
- * renders live for every signed-in user; /rag/search reaches it through the
- * `/rag/:path*` config redirect with its query string intact. The admin lab
- * (SEARCH_LAB_ADMIN_PATH) is the same component on the admin lane (ACL bypass).
- *   /knowledge/visualization (and /rag/visualization) → /knowledge/flow (the animation)
+ * /knowledge/search is the Search Lab — a kept user page by Arman's ruling
+ * (2026-09-29: "the single most useful user UI for testing RAG"). `/rag/*` is live.
+ * The admin lab (SEARCH_LAB_ADMIN_PATH) is the same component on the admin lane.
+ * Only `/knowledge/visualization` (and `/rag/visualization`) still redirects, to
+ * `/knowledge/flow` (the animation).
  *
- * H6b — the list pages whose job is now a hub container group
- * (`view=group:<token>`, containerGroups/groupFilters.ts). Each one's RECORD
- * page stays and is what a group row opens:
+ * H6b — the list pages whose job the hub also does as a container group
+ * (`view=group:<token>`, containerGroups/groupFilters.ts):
  *   /knowledge/data-stores (no store_id / new) → group:data_store
  *       ?q= → g.q   (…?store_id=<id> is the store's record page; ?new=1 its create form)
  *   /knowledge/library-catalog (no id / store_id) → group:library_catalog
@@ -28,15 +27,13 @@
  *       ?from=rulebook&rulebook_id= → g.from + g.rulebook_id
  *       (/libraries/<id> is the library's record page)
  *
- * H6d — the Transcripts list (every processing page stays its record page):
- *   /transcripts → view=transcripts (the Transcripts preset)
+ * H6d — the Transcripts list (`/transcripts`, live) → view=transcripts (the preset):
  *       ?q= → q · ?scope=mine → by=me · ?scope=orgs:<org> → orgs=<org>
  *       ?scope=shared|public → g.scope · ?sort=title → sort=title (else recent)
  *       ?filters={kind,status,folder_name,visibility,tags: {values:[…]}} → g.kind,
  *       g.status, g.folder, g.visibility, g.tag
  *
- * Pure: the route files call these and `redirect()`; the tests call them too.
- * `/rag/*` itself is a config redirect to `/knowledge/*` (next.config.js).
+ * Pure: the tests and the hub call these.
  */
 
 import { DEFAULT_HUB_STATE, hubHref, type HubGroupToken, type HubState } from "@/features/knowledge/hub/hubState";
@@ -136,10 +133,10 @@ export function librariesToHubHref(params: LegacySearchParams): string {
   });
 }
 
-/** Where "Sources" lives now — every Source, in the hub. The link every retired "/knowledge/library" pointer uses. */
+/** The hub's Sources view — every Source, in the hub. (The Sources page itself is live at /knowledge/library.) */
 export const HUB_SOURCES_HREF = libraryToHubHref({});
 
-/** The hub's container groups — the links every retired list pointer uses. */
+/** The hub's container groups. */
 export const HUB_DATA_STORES_HREF = groupHref("data_store", {});
 export const HUB_LIBRARIES_HREF = groupHref("media_source_library", {});
 export const HUB_LIBRARY_CATALOG_HREF = groupHref("library_catalog", {});
@@ -229,5 +226,5 @@ export function hubToTranscriptsHref(state: Pick<HubState, "query" | "group">): 
   return out ? `${OLD_TRANSCRIPTS_PATH}?${out}` : OLD_TRANSCRIPTS_PATH;
 }
 
-/** Where the Transcripts list lives now — the link every retired "/transcripts" pointer uses. */
+/** The hub's Transcripts view. (The list itself is live at /transcripts.) */
 export const HUB_TRANSCRIPTS_HREF = transcriptsToHubHref({});
