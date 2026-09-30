@@ -89,6 +89,19 @@ const FILTER_PARAM: Record<string, string> = {
   manager_name: "manager",
 };
 
+/**
+ * Department, location, job title and manager are ids INSIDE one employer. Across several
+ * employers they mean nothing, so under All organizations their controls are absent and a
+ * link that still carries one is PARKED: left in the URL for when one employer is chosen,
+ * never sent, never counted as applied, never worded as applied.
+ */
+const PER_EMPLOYER_COLUMNS: readonly string[] = [
+  "department",
+  "location",
+  "job_title",
+  "manager_name",
+];
+
 const DEFAULT_PAGE_SIZE = 25;
 
 const DEFAULT_SORT: SortState = { id: "display_name", direction: "asc" };
@@ -153,6 +166,8 @@ export type HrDirectoryUrlState = {
   describeFilters: (labels: HrFilterLabelLookup) => string[];
   clearAll: () => void;
   activeFilterCount: number;
+  /** Per-employer filters the URL carries that are parked because several employers are read. */
+  parkedFilters: string[];
 };
 
 /**
@@ -180,14 +195,20 @@ export type HrFilterLabelLookup = (
  */
 export function useHrDirectoryUrlState(
   defaultStatuses?: readonly HrDirectoryStatus[],
+  perEmployerFilters = true,
 ): HrDirectoryUrlState {
   const params = useUrlSearchParams();
 
   // What the URL says. This is what goes on the WIRE.
   const wireFilters: ColumnFiltersState = {};
+  const parkedFilters: string[] = [];
   for (const [columnId, param] of Object.entries(FILTER_PARAM)) {
     const values = parseCsv(params.get(param));
     if (values.length === 0) continue;
+    if (!perEmployerFilters && PER_EMPLOYER_COLUMNS.includes(columnId)) {
+      parkedFilters.push(columnId);
+      continue;
+    }
     wireFilters[columnId] = { kind: "select", value: values[0], values };
   }
 
@@ -267,6 +288,8 @@ export function useHrDirectoryUrlState(
           : null;
 
       for (const [columnId, param] of Object.entries(FILTER_PARAM)) {
+        // Parked per-employer filters stay in the link untouched.
+        if (!perEmployerFilters && PER_EMPLOYER_COLUMNS.includes(columnId)) continue;
         const value = next.columnFilters[columnId];
         if (!value || value.kind !== "select") {
           // Clearing the STATUS filter is the header's "All", and All means all
@@ -291,7 +314,7 @@ export function useHrDirectoryUrlState(
       const textOnly = next.search !== state.search && next.page === state.page;
       write(patch, textOnly ? "replace" : "push");
     },
-    [defaultStatuses, state.page, state.search, write],
+    [defaultStatuses, perEmployerFilters, state.page, state.search, write],
   );
 
   const myTeam = params.get("my_team") === "1";
@@ -367,6 +390,7 @@ export function useHrDirectoryUrlState(
     describeFilters,
     clearAll,
     activeFilterCount,
+    parkedFilters,
   };
 }
 

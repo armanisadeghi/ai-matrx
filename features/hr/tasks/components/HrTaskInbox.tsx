@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AlertTriangle, CheckCheck, History, Hourglass, TimerReset } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
     HrEmployerSubstitutionNotice,
 } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { HrOrgFilter } from "@/features/hr/shared/hrScope";
 import { useHrRescueRefusal } from "@/features/hr/shared/HrStates";
 import { isScope } from "@/features/hr/tasks/envelope";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
@@ -113,13 +114,13 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
       this page were spelled by hand and dropped it; `setScope` below was the one that did not,
       and only because it rebuilds the WHOLE query string rather than composing a new one.
     */
-    const { orgRef } = useHrContext();
+    const { orgRef, scope: hrScope } = useHrContext();
     // 🚨 `/hr/tasks` has no `HrShell` and does not run `HrPageState`, so it owes
     // the deep-link refusal itself — see `useHrRescueRefusal`. Null in every
     // ordinary case; a hook, so it is called unconditionally.
     const rescueRefusal = useHrRescueRefusal();
 
-    const { inbox, refusal, error, loading, reload, setPage, resetPages } = useHrInbox(scope, flowKey);
+    const { inbox, refusal, error, loading, reload, setPage, resetPages } = useHrInbox(scope, flowKey, hrScope.orgFilter);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [rejectOpen, setRejectOpen] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -130,6 +131,10 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     const [bulkRefusal, setBulkRefusal] = useState<HrRefusal | null>(null);
     const [failure, setFailure] = useState<{ id: string; failureClass: string } | null>(null);
     const [pending, startTransition] = useTransition();
+    // A ticked row the filter has just hidden must not stay in a bulk decision.
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [hrScope.orgFilter]);
 
     function changePage(section: HrInboxSection, offset: number) {
         setSelectedIds([]);
@@ -260,6 +265,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                         </Link>
                     </Button>
                 ) : null}
+                <HrOrgFilter />
                 {inbox ? (
                     <span className="ml-auto text-xs text-muted-foreground">
                         as of {new Date(inbox.as_of).toLocaleTimeString()}

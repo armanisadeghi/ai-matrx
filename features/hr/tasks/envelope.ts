@@ -239,6 +239,7 @@ function parseRow(rpc: string, source: Obj): HrInboxRow {
         timeout_at: optStr(source, "timeout_at") ?? null,
         sensitivity_tier: str(rpc, source, "sensitivity_tier"),
         deep_link: str(rpc, source, "deep_link"),
+        organization_id: optStr(source, "organization_id") ?? null,
 
         // merged in from hr._wf_display (VERIFIED ALIGNED: title, flow_label, step_label,
         // subject_label, sensitivity_tier, target_token, target_id, allow_bulk_decide,

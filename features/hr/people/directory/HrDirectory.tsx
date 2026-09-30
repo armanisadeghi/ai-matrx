@@ -193,14 +193,8 @@ export function HrDirectory() {
     null,
   );
 
-  const url = useHrDirectoryUrlState(vocabulary?.default);
+  const url = useHrDirectoryUrlState(vocabulary?.default, !spansEmployers);
   const { facets, degraded } = useHrDirectoryFacets(facetOrganizationId);
-  const perEmployerFilterInUrl = [
-    "department",
-    "location",
-    "job_title",
-    "manager_name",
-  ].some((columnId) => url.state.columnFilters[columnId] !== undefined);
   const directory = useHrDirectory({
     employers: rowEmployers,
     queryState: url.queryState,
@@ -348,9 +342,9 @@ export function HrDirectory() {
 
         <HrUnavailableNotice unavailable={page?.unavailable ?? []} />
 
-        {spansEmployers && perEmployerFilterInUrl ? (
+        {url.parkedFilters.length > 0 ? (
           <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            Pick one organization to use these filters.
+            The department, location, job title and manager filters in this link apply to one organization — pick one.
           </p>
         ) : null}
 

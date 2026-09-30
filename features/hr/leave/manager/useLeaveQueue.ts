@@ -91,14 +91,18 @@ function dedupeBySteps(rows: HrInboxRow[]): HrInboxRow[] {
 }
 
 /** The leave projection is complete by contract, so follow both independently paged inbox arms. */
-async function fetchCompleteLeaveInbox(scope: HrInboxScope, flowKey: string) {
+async function fetchCompleteLeaveInbox(
+  scope: HrInboxScope,
+  flowKey: string,
+  organizationId: string | null,
+) {
   let offsets = {} as { needs_my_decision?: number; scope_rows?: number };
   const mine: HrInboxRow[] = [];
   const others: HrInboxRow[] = [];
   let meta: HrInbox | null = null;
   const seen = new Set<string>();
   for (let guard = 0; guard < 1000; guard += 1) {
-    const envelope = await fetchHrInbox(scope, { flowKey, pageOffsets: offsets });
+    const envelope = await fetchHrInbox(scope, { flowKey, organizationId, pageOffsets: offsets });
     if (isRefusal(envelope)) return envelope;
     const inbox = envelope.data;
     meta ??= inbox;
@@ -121,7 +125,7 @@ async function fetchCompleteLeaveInbox(scope: HrInboxScope, flowKey: string) {
   throw new Error("The HR inbox pagination exceeded its safety bound.");
 }
 
-export function useLeaveQueue(scope: HrInboxScope) {
+export function useLeaveQueue(scope: HrInboxScope, organizationId: string | null = null) {
   const [state, setState] = useState<LeaveQueueState>(INITIAL);
 
   const load = useCallback(
@@ -130,7 +134,7 @@ export function useLeaveQueue(scope: HrInboxScope) {
 
       try {
         const envelopes = await Promise.all(
-          LEAVE_FLOW_KEYS.map((flowKey) => fetchCompleteLeaveInbox(scope, flowKey)),
+          LEAVE_FLOW_KEYS.map((flowKey) => fetchCompleteLeaveInbox(scope, flowKey, organizationId)),
         );
 
         // A refusal on the FIRST call is the scope refusing (`no_queue_authority`) and is the
@@ -204,7 +208,7 @@ export function useLeaveQueue(scope: HrInboxScope) {
         });
       }
     },
-    [scope],
+    [scope, organizationId],
   );
 
   useEffect(() => {

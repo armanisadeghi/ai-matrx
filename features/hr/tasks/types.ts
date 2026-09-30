@@ -58,6 +58,8 @@ export type HrInboxRow = {
     timeout_at: string | null;
     sensitivity_tier: HrSensitivityTier;
     deep_link: string;
+    /** The employer this row belongs to (`hr.workflow_instance.organization_id`) — the org is a column and a filter, never a group. */
+    organization_id?: string | null;
 
     title?: string | null;
     flow_label?: string | null;

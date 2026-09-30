@@ -21,6 +21,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import { HrEmployerLabel, useHrEmployerNames } from "@/features/hr/shared/hrScope";
 
 /**
  * One actionable HR item, rendered once. Every row's title is a DOOR to the
@@ -56,6 +57,7 @@ export function HrTaskTable({
     /** Right-clicked row — STATE (not a ref) so the menu reads the row that
      *  was actually clicked. */
     const [contextRow, setContextRow] = useState<HrInboxRow | null>(null);
+    const { spansEmployers, nameOf } = useHrEmployerNames();
 
     function menuRowFor(row: HrInboxRow): HrTaskStepMenuRow {
         return {
@@ -127,6 +129,25 @@ export function HrTaskTable({
                 </div>
             ),
         },
+        ...(spansEmployers
+            ? [
+                  {
+                      id: "employer",
+                      accessorFn: (row: HrInboxRow) => nameOf(row.organization_id) ?? "",
+                      header: "Organization",
+                      // Narrowing by organization is the page's own visible filter, not a column menu.
+                      filter: false as const,
+                      cell: (row: HrInboxRow) => {
+                          const name = nameOf(row.organization_id);
+                          return name ? (
+                              <HrEmployerLabel name={name} />
+                          ) : (
+                              <span className="text-muted-foreground">—</span>
+                          );
+                      },
+                  } satisfies MatrxColumnDef<HrInboxRow>,
+              ]
+            : []),
         {
             id: "flow",
             accessorFn: (row) => row.flow_label ?? row.flow_key,

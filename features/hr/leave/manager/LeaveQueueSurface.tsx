@@ -32,7 +32,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -62,6 +62,7 @@ import { toast } from "@/lib/toast";
 
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { HrEmployerLabel, HrOrgFilter, useHrEmployerNames } from "@/features/hr/shared/hrScope";
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
 import { bulkDecide } from "@/features/hr/tasks/service";
 import { relativeDue } from "@/features/hr/tasks/urgency";
@@ -123,10 +124,10 @@ function hoursLabel(value: number | null | undefined): string {
 }
 
 export function LeaveQueueSurface() {
-  const { active, orgRef } = useHrContext();
+  const { orgRef, scope: hrScope } = useHrContext();
+  const { spansEmployers, nameOf } = useHrEmployerNames();
   const router = useRouter();
   const params = useSearchParams();
-  const organizationId = active?.organization_id ?? null;
 
   const scopeParam = params?.get("scope") ?? null;
   // A query string is user input, so it is VALIDATED rather than asserted.
@@ -141,9 +142,13 @@ export function LeaveQueueSurface() {
    */
   const requestParam = params?.get("request") ?? null;
 
-  const queue = useLeaveQueue(scope);
+  const queue = useLeaveQueue(scope, hrScope.orgFilter);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // A ticked row the filter has just hidden must not stay in a bulk decision.
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [hrScope.orgFilter]);
   const [decision, setDecision] = useState<{
     row: LeaveQueueRow;
     intent: "approve" | "reject" | "return";
@@ -190,9 +195,8 @@ export function LeaveQueueSurface() {
         icon: Undo2,
         onSelect: () => setDecision({ row, intent: "return" }),
       },
-      // Reassigning lists one employer's people. The inbox rows carry no employer, so the verb
-      // exists only once a single employer is resolved (the filter names one) — absent, never dead.
-      ...(organizationId
+      // Reassigning lists one employer's people: the row's own employer.
+      ...(row.organization_id
         ? [
             {
               kind: "item" as const,
@@ -287,6 +291,25 @@ export function LeaveQueueSurface() {
         </div>
       ),
     },
+    ...(spansEmployers
+      ? [
+          {
+            id: "employer",
+            accessorFn: (row: LeaveQueueRow) => nameOf(row.organization_id) ?? "",
+            header: "Organization",
+            // Narrowing by organization is the page's own visible filter, not a column menu.
+            filter: false as const,
+            cell: (row: LeaveQueueRow) => {
+              const name = nameOf(row.organization_id);
+              return name ? (
+                <HrEmployerLabel name={name} />
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              );
+            },
+          } satisfies MatrxColumnDef<LeaveQueueRow>,
+        ]
+      : []),
     {
       id: "type",
       accessorFn: (row) => row.request?.policyName ?? "",
@@ -461,6 +484,8 @@ export function LeaveQueueSurface() {
                 {scopeMeta.sentence}
               </span>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+            <HrOrgFilter />
             <Button
               type="button"
               size="sm"
@@ -471,6 +496,7 @@ export function LeaveQueueSurface() {
               <RefreshCw className="mr-2 h-3.5 w-3.5" />
               Refresh
             </Button>
+            </div>
           </div>
 
           {queue.refusal ? (
@@ -632,7 +658,7 @@ export function LeaveQueueSurface() {
                       <Undo2 className="mr-2 h-4 w-4" />
                       Send back for changes
                     </DropdownMenuItem>
-                    {organizationId ? (
+                    {row.organization_id ? (
                       <DropdownMenuItem onSelect={() => setReassign(row)}>
                         <UserCog className="mr-2 h-4 w-4" />
                         Reassign
@@ -709,7 +735,7 @@ export function LeaveQueueSurface() {
 
       <LeaveReassignDialog
         row={reassign}
-        organizationId={organizationId}
+        organizationId={reassign?.organization_id ?? null}
         onClose={() => setReassign(null)}
         onDecided={() => void queue.reload(true)}
       />

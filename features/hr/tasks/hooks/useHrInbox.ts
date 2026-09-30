@@ -18,9 +18,9 @@ type State = {
 const INITIAL: State = { inbox: null, refusal: null, error: null, loading: true };
 const EMPTY_PAGE_OFFSETS: HrInboxPageOffsets = Object.freeze({});
 
-export function useHrInbox(scope: HrInboxScope, flowKey: string | null) {
+export function useHrInbox(scope: HrInboxScope, flowKey: string | null, organizationId: string | null = null) {
     const [state, setState] = useState<State>(INITIAL);
-    const contextKey = `${scope}\0${flowKey ?? ""}`;
+    const contextKey = `${scope}\0${flowKey ?? ""}\0${organizationId ?? ""}`;
     const [pages, setPages] = useState<{ contextKey: string; offsets: HrInboxPageOffsets }>({
         contextKey,
         offsets: {},
@@ -34,7 +34,7 @@ export function useHrInbox(scope: HrInboxScope, flowKey: string | null) {
             const version = ++requestVersion.current;
             if (!quiet) setState((s) => ({ ...s, loading: true }));
             try {
-                const envelope = await fetchHrInbox(scope, { flowKey, pageOffsets });
+                const envelope = await fetchHrInbox(scope, { flowKey, organizationId, pageOffsets });
                 if (version !== requestVersion.current) return;
                 if (isRefusal(envelope)) {
                     setState({ inbox: null, refusal: envelope, error: null, loading: false });
@@ -51,7 +51,7 @@ export function useHrInbox(scope: HrInboxScope, flowKey: string | null) {
                 });
             }
         },
-        [scope, flowKey, pageOffsets],
+        [scope, flowKey, organizationId, pageOffsets],
     );
 
     useEffect(() => {

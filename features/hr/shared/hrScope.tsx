@@ -164,6 +164,24 @@ export function HrOrgFilter({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Whether a list spans several employers (so it owes an Organization column), and the name of
+ * the employer an `organization_id` belongs to. Reads the page's resolved scope only.
+ */
+export function useHrEmployerNames(): {
+  spansEmployers: boolean;
+  nameOf: (organizationId: string | null | undefined) => string | null;
+} {
+  const { scope } = useHrContext();
+  return {
+    spansEmployers: scope.employers.length > 1,
+    nameOf: (organizationId) =>
+      organizationId
+        ? (scope.employers.find((e) => e.organization_id === organizationId)?.name ?? null)
+        : null,
+  };
+}
+
 /** The employer on a row, as a small neutral label — for cards and table cells alike. */
 export function HrEmployerLabel({
   name,
