@@ -72396,6 +72396,273 @@ export type Database = {
           },
         ]
       }
+      candidate: {
+        Row: {
+          baseline_holder_id: string | null
+          baseline_holder_type: string | null
+          baseline_holder_version_id: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id: string | null
+          id: string
+          mandate_id: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          promotion_ref: Json | null
+          recommendation: string | null
+          recommendation_reason: string | null
+          rung: string
+          rung_principal_id: string | null
+          runs_claimed: number
+          runs_wanted: number
+          set_by: string
+          skips: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          baseline_holder_id?: string | null
+          baseline_holder_type?: string | null
+          baseline_holder_version_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id?: string | null
+          id?: string
+          mandate_id: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          promotion_ref?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          rung: string
+          rung_principal_id?: string | null
+          runs_claimed?: number
+          runs_wanted: number
+          set_by: string
+          skips?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          baseline_holder_id?: string | null
+          baseline_holder_type?: string | null
+          baseline_holder_version_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          holder_id?: string
+          holder_type?: string
+          holder_version_id?: string | null
+          id?: string
+          mandate_id?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          promotion_ref?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          rung?: string
+          rung_principal_id?: string | null
+          runs_claimed?: number
+          runs_wanted?: number
+          set_by?: string
+          skips?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "candidate_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      candidate_run: {
+        Row: {
+          attempts: number
+          candidate_conversation_id: string | null
+          candidate_error: Json | null
+          candidate_execution_id: string | null
+          candidate_id: string
+          candidate_input_digest: Json | null
+          candidate_metrics: Json | null
+          candidate_output: Json | null
+          candidate_request_id: string | null
+          candidate_resolved_holder_id: string | null
+          candidate_resolved_version_id: string | null
+          candidate_wf_run_id: string | null
+          created_at: string
+          created_by: string | null
+          door: string
+          door_args: Json
+          human_agreement: string | null
+          id: string
+          input_differences: Json | null
+          judge: Json | null
+          judge_verdict_id: string | null
+          lease_expires_at: string | null
+          live_conversation_id: string | null
+          live_error: Json | null
+          live_execution_id: string | null
+          live_input_digest: Json | null
+          live_metrics: Json | null
+          live_organization_id: string | null
+          live_output: Json | null
+          live_request_id: string
+          live_tool_results: Json | null
+          live_user_id: string | null
+          live_wf_run_id: string | null
+          metadata: Json
+          notified_at: string | null
+          organization_id: string
+          status: string
+          stop_match: string | null
+          stopped_at: Json | null
+          tool_dispositions: Json
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          version: number
+        }
+        Insert: {
+          attempts?: number
+          candidate_conversation_id?: string | null
+          candidate_error?: Json | null
+          candidate_execution_id?: string | null
+          candidate_id: string
+          candidate_input_digest?: Json | null
+          candidate_metrics?: Json | null
+          candidate_output?: Json | null
+          candidate_request_id?: string | null
+          candidate_resolved_holder_id?: string | null
+          candidate_resolved_version_id?: string | null
+          candidate_wf_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          door: string
+          door_args: Json
+          human_agreement?: string | null
+          id?: string
+          input_differences?: Json | null
+          judge?: Json | null
+          judge_verdict_id?: string | null
+          lease_expires_at?: string | null
+          live_conversation_id?: string | null
+          live_error?: Json | null
+          live_execution_id?: string | null
+          live_input_digest?: Json | null
+          live_metrics?: Json | null
+          live_organization_id?: string | null
+          live_output?: Json | null
+          live_request_id: string
+          live_tool_results?: Json | null
+          live_user_id?: string | null
+          live_wf_run_id?: string | null
+          metadata?: Json
+          notified_at?: string | null
+          organization_id: string
+          status?: string
+          stop_match?: string | null
+          stopped_at?: Json | null
+          tool_dispositions?: Json
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Update: {
+          attempts?: number
+          candidate_conversation_id?: string | null
+          candidate_error?: Json | null
+          candidate_execution_id?: string | null
+          candidate_id?: string
+          candidate_input_digest?: Json | null
+          candidate_metrics?: Json | null
+          candidate_output?: Json | null
+          candidate_request_id?: string | null
+          candidate_resolved_holder_id?: string | null
+          candidate_resolved_version_id?: string | null
+          candidate_wf_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          door?: string
+          door_args?: Json
+          human_agreement?: string | null
+          id?: string
+          input_differences?: Json | null
+          judge?: Json | null
+          judge_verdict_id?: string | null
+          lease_expires_at?: string | null
+          live_conversation_id?: string | null
+          live_error?: Json | null
+          live_execution_id?: string | null
+          live_input_digest?: Json | null
+          live_metrics?: Json | null
+          live_organization_id?: string | null
+          live_output?: Json | null
+          live_request_id?: string
+          live_tool_results?: Json | null
+          live_user_id?: string | null
+          live_wf_run_id?: string | null
+          metadata?: Json
+          notified_at?: string | null
+          organization_id?: string
+          status?: string
+          stop_match?: string | null
+          stopped_at?: Json | null
+          tool_dispositions?: Json
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_run_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       definition: {
         Row: {
           accepts_user_input: boolean
