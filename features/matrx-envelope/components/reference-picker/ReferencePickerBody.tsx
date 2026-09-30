@@ -186,8 +186,27 @@ function actionOptionsFor(noun: NounDirectives | null): ActionOption[] {
   return options;
 }
 
-/** The type's catalog row — schemas, title column — from the cached catalog. */
-function useDirectiveNoun(token: string): {
+/** What each action is called — derived from the class, so it is never wrong while loading. */
+const ACTION_LABEL: Partial<Record<DirectiveClass, string>> = {
+  reference: "Link to it",
+  create: "Create one",
+  update: "Update it",
+  delete: "Delete it",
+};
+
+/**
+ * The type's catalog row — schemas, title column — from the cached catalog.
+ * `enabled: false` fetches nothing (the action list loads only when opened).
+ *
+ * The effect depends on exactly (enabled, baseUrl, token): its own loading
+ * state is NOT a dependency, because an effect that re-runs on its own
+ * setState cancels the request it just started and spins forever — the
+ * defect this hook replaced (live 2026-09-30: "Loading actions…" never ended).
+ */
+function useDirectiveNoun(
+  token: string,
+  enabled = true,
+): {
   noun: NounDirectives | null;
   loading: boolean;
   error: string | null;
@@ -197,9 +216,13 @@ function useDirectiveNoun(token: string): {
     noun: NounDirectives | null;
     loading: boolean;
     error: string | null;
-  }>({ noun: null, loading: true, error: null });
+  }>({ noun: null, loading: enabled, error: null });
 
   useEffect(() => {
+    if (!enabled) {
+      setState({ noun: null, loading: false, error: null });
+      return;
+    }
     if (!baseUrl) {
       setState({
         noun: null,
@@ -228,7 +251,7 @@ function useDirectiveNoun(token: string): {
     return () => {
       cancelled = true;
     };
-  }, [baseUrl, token]);
+  }, [enabled, baseUrl, token]);
 
   return state;
 }
@@ -801,43 +824,24 @@ function ActionRow({
   directiveClass: DirectiveClass;
   onChange: (c: DirectiveClass) => void;
 }) {
-  const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const [expanded, setExpanded] = useState(false);
-  const [options, setOptions] = useState<ActionOption[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Loads only once the list is opened — or already open on a non-link action.
+  const {
+    noun,
+    loading,
+    error: loadError,
+  } = useDirectiveNoun(token, expanded || directiveClass !== "reference");
+  const options: ActionOption[] | null = loading
+    ? null
+    : loadError
+      ? [LINK_ACTION]
+      : actionOptionsFor(noun);
+  const error = loadError ? `${loadError} Only linking is available.` : null;
 
-  useEffect(() => {
-    if (!expanded || options || loading) return;
-    if (!baseUrl) {
-      setError("No server configured — only linking is available.");
-      setOptions([LINK_ACTION]);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    loadCatalog(baseUrl)
-      .then((catalog) => {
-        if (cancelled) return;
-        setOptions(actionOptionsFor(findNoun(catalog, token)));
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(
-          `Couldn't load the other actions (${err instanceof Error ? err.message : "unknown error"}) — only linking is available.`,
-        );
-        setOptions([LINK_ACTION]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [expanded, options, loading, baseUrl, token]);
-
-  const current =
-    options?.find((o) => o.directiveClass === directiveClass) ?? LINK_ACTION;
+  const current: ActionOption = {
+    directiveClass,
+    label: ACTION_LABEL[directiveClass] ?? LINK_ACTION.label,
+  };
 
   return (
     <div className="rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs">
