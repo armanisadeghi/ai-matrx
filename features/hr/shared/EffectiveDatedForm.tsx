@@ -210,6 +210,7 @@ export function useHrFutureDatedLimit(): FutureLimit {
     let cancelled = false;
 
     void (async () => {
+      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       const result = await fetchHrKnobs({ organizationId });
       if (cancelled) return;
 

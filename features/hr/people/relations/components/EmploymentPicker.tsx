@@ -88,6 +88,7 @@ export function EmploymentPicker({
     let cancelled = false;
     setLoading(true);
     const timer = setTimeout(async () => {
+      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       const result = await fetchHrDirectory({
         organizationId,
         filter: { search: trimmed },

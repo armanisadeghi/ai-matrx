@@ -1321,6 +1321,7 @@ function PartyPicker({
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
+          // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
           const rows = await searchPartiesByName({
             orgId: organizationId,
             search: term,

@@ -60,6 +60,7 @@ export function useExportHistory(
     const startTimer = window.setTimeout(() => {
       setIsLoading(true);
       setFailure(null);
+      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       listPayrollExports({ organizationId, payPeriodId, limit, mockCase })
         .then((next) => {
           if (cancelled) return;

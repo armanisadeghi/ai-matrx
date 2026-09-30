@@ -333,6 +333,7 @@ export function LeaveCalendarSurface() {
     async (signal: AbortSignal) => {
       if (!organizationId) return;
       setLoading(true);
+      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       const result = await fetchLeaveCalendar(
         { organizationId, from: grid.from, to: grid.to },
         { signal },

@@ -123,6 +123,7 @@ export function LawPortalSurface() {
   const load = useCallback(async () => {
     if (!organizationId) return;
     setLoading(true);
+    // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
     const result = await fetchHrLawPortal(organizationId);
     if (result.ok) {
       setPortal(result.data);

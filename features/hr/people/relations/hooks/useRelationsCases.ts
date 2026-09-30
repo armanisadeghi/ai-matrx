@@ -59,6 +59,7 @@ export function useHrRelationsCases(
     setIsLoading(true);
 
     (async () => {
+      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       const result = await fetchHrRelationsCases(
         organizationId,
         JSON.parse(filterKey) as HrRelationsFilter,
@@ -241,8 +242,10 @@ export function useHrRelationsCase(args: {
         // denial into their audit trail.
         const [parties, notes] = await Promise.all([
           kind === "incident"
+            // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
             ? fetchHrIncidentParties(organizationId, caseId)
             : Promise.resolve(null),
+          // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
           fetchHrCaseRestrictedNotes(organizationId, kind, caseId),
         ]);
         if (cancelled) return;
