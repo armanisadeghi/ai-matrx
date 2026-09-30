@@ -5272,6 +5272,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           effective_from: string
           expires_at: string | null
           granted_by: string | null
@@ -5291,6 +5292,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
@@ -5310,6 +5312,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
@@ -5475,6 +5478,7 @@ export type Database = {
           creator_user_id: string
           currency: string
           custom_fields: Json
+          deleted_at: string | null
           id: string
           metadata: Json
           organization_id: string
@@ -5499,6 +5503,7 @@ export type Database = {
           creator_user_id: string
           currency?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           organization_id: string
@@ -5523,6 +5528,7 @@ export type Database = {
           creator_user_id?: string
           currency?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           organization_id?: string
@@ -5546,6 +5552,8 @@ export type Database = {
           custom_fields: Json
           default_currency: string | null
           details_submitted: boolean
+          id: string
+          metadata: Json
           onboarded_at: string | null
           organization_id: string
           payouts_enabled: boolean
@@ -5559,6 +5567,8 @@ export type Database = {
           custom_fields?: Json
           default_currency?: string | null
           details_submitted?: boolean
+          id?: string
+          metadata?: Json
           onboarded_at?: string | null
           organization_id: string
           payouts_enabled?: boolean
@@ -5572,6 +5582,8 @@ export type Database = {
           custom_fields?: Json
           default_currency?: string | null
           details_submitted?: boolean
+          id?: string
+          metadata?: Json
           onboarded_at?: string | null
           organization_id?: string
           payouts_enabled?: boolean
@@ -5584,18 +5596,24 @@ export type Database = {
         Row: {
           created_at: string
           custom_fields: Json
+          id: string
+          metadata: Json
           organization_id: string
           stripe_customer_id: string
         }
         Insert: {
           created_at?: string
           custom_fields?: Json
+          id?: string
+          metadata?: Json
           organization_id: string
           stripe_customer_id: string
         }
         Update: {
           created_at?: string
           custom_fields?: Json
+          id?: string
+          metadata?: Json
           organization_id?: string
           stripe_customer_id?: string
         }
@@ -5606,6 +5624,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           effective_from: string
           expires_at: string | null
           granted_by: string | null
@@ -5624,6 +5643,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
@@ -5642,6 +5662,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           effective_from?: string
           expires_at?: string | null
           granted_by?: string | null
@@ -5677,7 +5698,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_default: boolean
-          is_public: boolean
+          listed_on_pricing: boolean
           metadata: Json
           min_seats: number | null
           monthly_cents: number | null
@@ -5707,7 +5728,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_default?: boolean
-          is_public?: boolean
+          listed_on_pricing?: boolean
           metadata?: Json
           min_seats?: number | null
           monthly_cents?: number | null
@@ -5737,7 +5758,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_default?: boolean
-          is_public?: boolean
+          listed_on_pricing?: boolean
           metadata?: Json
           min_seats?: number | null
           monthly_cents?: number | null
@@ -6246,45 +6267,48 @@ export type Database = {
           capability: string
           check_id: string | null
           created_at: string
-          created_by: string | null
+          created_by: string
           custom_fields: Json
+          deleted_at: string | null
           id: string
           metadata: Json
           organization_id: string
           quantity: number
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
           capability: string
           check_id?: string | null
           created_at?: string
-          created_by?: string | null
+          created_by: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           organization_id: string
           quantity?: number
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
           capability?: string
           check_id?: string | null
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           organization_id?: string
           quantity?: number
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: []
@@ -6387,6 +6411,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           effective_from: string
           expires_at: string | null
           granted_by: string | null
@@ -36458,7 +36483,7 @@ export type Database = {
           p_include_finished?: boolean
           p_limit?: number
           p_offset?: number
-          p_organization_id: string
+          p_organization_id?: string
         }
         Returns: {
           assigned_by: string
