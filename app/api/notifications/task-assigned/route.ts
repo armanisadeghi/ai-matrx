@@ -113,8 +113,9 @@ export async function POST(request: Request) {
       typeof configValues.assignment_dm_outbox_activated_at === "string"
         ? Date.parse(configValues.assignment_dm_outbox_activated_at)
         : NaN;
-    const dmOutboxOwnsAssignment = Number.isFinite(dmOutboxCutoverAt) &&
+    const dmOutboxEligibleForAssignment = Number.isFinite(dmOutboxCutoverAt) &&
       Date.parse(taskRow.updated_at) >= dmOutboxCutoverAt;
+    let durableDmExists = false;
     let outboxOwnsEmail = false;
     let assignmentNoticeExists = true;
     if (outboxActive) {
@@ -141,7 +142,26 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, msg: "Could not verify assignment DM" }, { status: 503 });
       }
       assignmentNoticeExists = Boolean(inAppNotice) || Date.parse(taskRow.updated_at) < cutoverAt;
+      // The cutover marker is an intention, not delivery proof. A transition
+      // is owned by the durable path only after its own dedupe row exists.
+      // This preserves the browser fallback if activation ran ahead of the
+      // trigger body, while the row prevents a second DM after the repair.
+      if (dmOutboxEligibleForAssignment && assignmentNoticeExists) {
+        const { data: durableDm, error: durableDmError } = await admin
+          .schema("communication").from("notification")
+          .select("id")
+          .eq("organization_id", taskRow.organization_id)
+          .eq("recipient_user_id", assigneeId)
+          .eq("dedupe_key", `task.assigned:${taskId}:${taskVersion}:dm`)
+          .maybeSingle();
+        if (durableDmError) {
+          console.error("[task-assigned] durable DM read failed:", durableDmError);
+          return NextResponse.json({ success: false, msg: "Could not verify assignment DM" }, { status: 503 });
+        }
+        durableDmExists = Boolean(durableDm);
+      }
     }
+    const dmOutboxOwnsAssignment = dmOutboxEligibleForAssignment && durableDmExists;
 
     // Get assigner's name
     const { data: assignerProfile } = await supabase
