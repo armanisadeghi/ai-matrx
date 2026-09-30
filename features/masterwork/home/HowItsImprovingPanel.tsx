@@ -1,12 +1,5 @@
 "use client";
 
-// 🚨 DO NOT DELETE. UNFINISHED WORK AWAITING ARMAN'S RULING — see the full
-// note at the top of ./MasterworkHomePage.tsx. This directory was deleted on
-// 2026-09-10 for being unreferenced and restored the same day: THE
-// UNFINISHED-WORK ALARM's ban means only Arman may name it dead, and he never
-// has. It is unrouted because Arman himself routed /masterwork to
-// /masterwork/all in commit 00602a2916 — an agent may not reverse that either.
-//
 // features/masterwork/home/HowItsImprovingPanel.tsx
 //
 // "How it's improving" — the Expert-facing view of the review loop behind
@@ -28,6 +21,8 @@ import {
   type ImprovementRow,
 } from "./service";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import LoadingSpinner from "@/components/ui/loading-spinner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * AN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`. The body it replaces
@@ -44,26 +39,33 @@ function whenDate(iso: string): string {
 
 export function HowItsImprovingPanel() {
   const [rows, setRows] = useState<ImprovementRow[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetchImprovementRows()
       .then((r) => {
-        if (!cancelled) setRows(r);
+        if (cancelled) return;
+        setRows(r.rows);
+        setReviewsError(r.reviewsError);
       })
       .catch((err: unknown) => {
         console.error("[masterwork-home] improvement panel read failed", err);
-        if (!cancelled) setFailed(true);
+        if (!cancelled)
+          setFailed(
+            err instanceof Error
+              ? err.message
+              : "Could not load how Masterwork is improving.",
+          );
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (failed) return null; // Enrichment — never blanks the page; the error screamed.
-  if (rows === null) return null; // Renders when it truly has data.
-
+  // Loading and failed states render the panel's frame with the truth, never
+  // a silent gap: a missing panel reads as "there is nothing to show".
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-1.5">
@@ -72,6 +74,18 @@ export function HowItsImprovingPanel() {
           How it&apos;s improving
         </h2>
       </div>
+      {failed !== null ? (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-sm text-destructive">
+            Couldn&apos;t load this panel: {failed}{" "}
+            <ErrorAlchemyMenu error={failed} />
+          </p>
+        </div>
+      ) : rows === null ? (
+        <div className="flex items-center justify-center rounded-lg border border-border bg-card p-6">
+          <LoadingSpinner />
+        </div>
+      ) : (
       <div className="rounded-lg border border-border bg-card p-4">
         <p className="text-sm text-muted-foreground">
           Five specialists do the work behind Masterwork — and each one is
@@ -79,6 +93,13 @@ export function HowItsImprovingPanel() {
           and when a review finds a better way, the specialist is revised. Your
           feedback in the Studio feeds those reviews.
         </p>
+        {reviewsError !== null ? (
+          <p className="mt-2 text-xs text-destructive">
+            Review history couldn&apos;t be loaded, so review counts are
+            missing below: {reviewsError}{" "}
+            <ErrorAlchemyMenu error={reviewsError} />
+          </p>
+        ) : null}
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => (
             <div
@@ -120,16 +141,21 @@ export function HowItsImprovingPanel() {
               ) : null}
               {row.agentVersion !== null && row.updatedAt !== null ? (
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Revised {row.agentVersion}{" "}
-                  {row.agentVersion === 1 ? "time" : "times"} — last{" "}
-                  {whenDate(row.updatedAt)}
-                  {row.lastChangeBySystem ? ", from a review" : ""}
+                  {/* version 1 is the original — revisions are the versions after it */}
+                  {row.agentVersion > 1
+                    ? `Revised ${row.agentVersion - 1} ${
+                        row.agentVersion - 1 === 1 ? "time" : "times"
+                      } — last ${whenDate(row.updatedAt)}${
+                        row.lastChangeBySystem ? ", from a review" : ""
+                      }`
+                    : "Not revised yet"}
                 </p>
               ) : null}
             </div>
           ))}
         </div>
       </div>
+      )}
     </section>
   );
 }

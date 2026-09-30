@@ -1364,6 +1364,16 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   map, which still described the deleted home as the live authed landing, now describes the
   redirect.
 
+- 2026-09-30 — **`/masterwork` renders the home dashboard for signed-in Experts** (Arman
+  2026-09-30: "signed-in Experts land on the Masterwork home dashboard; approved"); guests keep
+  the marketing page and `/masterwork/all` is linked from the page header. The restored page was
+  brought up to date: Masterworks and recent runs are read across every readable Rulebook (they
+  were bounded to the first twelve Rulebooks' ids, so the count and the run list silently omitted
+  the rest), each panel shows its loading, empty and failed state instead of vanishing, the
+  Hindsight panel says when its review counts could not be read and counts revisions as
+  versions after the first, and the shared Audition-score read takes the NEWEST 200 runs (it
+  took the oldest 200, freezing the trend).
+
 - 2026-09-17 — Cold walk 7's fix round, four Masterwork halves, each closed at the layer that
   owns it. **The Approach card**: `inert` meant "cannot be the lane Start begins with" and was
   read as "has nowhere to go", so the Vision Interview and the Oracle tap — built lanes whose

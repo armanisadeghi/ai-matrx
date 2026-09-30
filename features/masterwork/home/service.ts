@@ -1,12 +1,5 @@
 // features/masterwork/home/service.ts
 //
-// 🚨 DO NOT DELETE. UNFINISHED WORK AWAITING ARMAN'S RULING — see the full
-// note at the top of ./MasterworkHomePage.tsx. This directory was deleted on
-// 2026-09-10 for being unreferenced and restored the same day: THE
-// UNFINISHED-WORK ALARM's ban means only Arman may name it dead, and he never
-// has. It is unrouted because Arman himself routed /masterwork to
-// /masterwork/all in commit 00602a2916 — an agent may not reverse that either.
-//
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { fetchMandatePins } from "@/features/mandates/service";
@@ -15,7 +8,6 @@ import {
   MASTERWORK_SELECT_COLUMNS,
   parseMasterworkRow,
   type MasterworkDefinitionRow,
-  type MasterworkListOptions,
 } from "../service";
 import type {
   Masterwork,
@@ -35,6 +27,7 @@ import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
  */
 
 const RULEBOOK_LIMIT = 12;
+const MASTERWORK_LIMIT = 12;
 const RUN_LIMIT = 8;
 
 export interface HomeRulebook {
@@ -72,7 +65,11 @@ export interface MasterworkHomeData {
   rulebooks: HomeRulebook[];
   /** Total count of the viewer's Rulebooks (the list above is bounded). */
   rulebookTotal: number;
+  /** The most recently updated Masterworks — active and archived halves, each bounded. */
   masterworks: HomeMasterwork[];
+  /** True totals behind the bounded grid (every readable Masterwork, not only the shown Rulebooks'). */
+  masterworkActiveTotal: number;
+  masterworkArchivedTotal: number;
   recentRuns: HomeRun[];
 }
 
@@ -120,18 +117,44 @@ export async function fetchMasterworkHome(
     };
   });
 
-  const rulebookIds = rulebooks.map((r) => r.id);
-  const nameById = new Map(rulebooks.map((r) => [r.id, r.name]));
-  const [masterworks, runs] = await Promise.all([
+  // Masterworks and runs are read ACROSS every Rulebook the viewer can read,
+  // not only the bounded twelve above — reading them through the shown
+  // Rulebooks' ids made "Your Masterworks (n)" and "Recent work" silently
+  // omit everything built from the 13th Rulebook on.
+  const [masterworkHalves, runs] = await Promise.all([
     // The home grid carries the reveal control, so it reads BOTH halves.
-    fetchMasterworksFor(rulebookIds, nameById, { includeArchived: true }),
-    fetchRecentRuns(rulebookIds, nameById),
+    fetchRecentMasterworks(),
+    fetchRecentRuns(),
   ]);
+  const masterworks = [...masterworkHalves.active, ...masterworkHalves.archived];
+
+  const nameById = new Map(rulebooks.map((r) => [r.id, r.name]));
+  const referencedIds = new Set<string>();
+  for (const m of masterworks)
+    if (m.built_from_rulebook) referencedIds.add(m.built_from_rulebook);
+  for (const r of runs) referencedIds.add(r.rulebook_id);
+  const missingNames = [...referencedIds].filter((id) => !nameById.has(id));
+  if (missingNames.length > 0) {
+    const { data: named, error: nameError } = await supabase
+      .schema("platform")
+      .from("rulebook")
+      .select("id,name")
+      .in("id", missingNames);
+    if (nameError) throw new Error(`${nameError.message} (${nameError.code})`);
+    for (const row of named ?? []) nameById.set(row.id, row.name);
+  }
 
   // Attach the quality trend from audited runs (quality_score is stamped by
-  // the Audition judge on platform.masterwork_run).
+  // the Audition judge on platform.masterwork_run, per Rulebook).
   const scoresByRulebook = new Map<string, number[]>();
-  const scored = await listAuditionScores(rulebookIds);
+  const masterworkRulebookIds = [
+    ...new Set(
+      masterworks
+        .map((m) => m.built_from_rulebook)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ];
+  const scored = await listAuditionScores(masterworkRulebookIds);
   for (const s of scored) {
     const list = scoresByRulebook.get(s.rulebookId) ?? [];
     list.push(s.qualityScore);
@@ -143,6 +166,9 @@ export async function fetchMasterworkHome(
       : [];
     return {
       ...m,
+      rulebookName: m.built_from_rulebook
+        ? (nameById.get(m.built_from_rulebook) ?? null)
+        : null,
       qualityLatest: scores.length > 0 ? scores[scores.length - 1] : null,
       qualityPrevious: scores.length > 1 ? scores[scores.length - 2] : null,
     };
@@ -152,57 +178,60 @@ export async function fetchMasterworkHome(
     rulebooks,
     rulebookTotal: count ?? rulebooks.length,
     masterworks: withQuality,
-    recentRuns: runs,
+    masterworkActiveTotal: masterworkHalves.activeTotal,
+    masterworkArchivedTotal: masterworkHalves.archivedTotal,
+    recentRuns: runs.map((r) => ({
+      ...r,
+      rulebookName: nameById.get(r.rulebook_id) ?? null,
+    })),
   };
 }
 
 /**
  * THE ARCHIVED-ITEMS LAW (`common-docs/policies/archived-items.md`, Arman
- * 2026-09-09). `includeArchived` defaults to FALSE here too; the home page is
- * one of the surfaces that OWNS a reveal control, so it asks for `true` and
- * splits with `splitMasterworksByArchive` — its grid and every count on it are
- * the live half, and the archived half is one click below the grid. Each row
+ * 2026-09-09). The home page OWNS a reveal control, so it reads both halves —
+ * each bounded, each with its true total — and its grid and every count on it
+ * are the live half; the archived half is one click below the grid. Each row
  * carries `is_archived` (from `MASTERWORK_SELECT_COLUMNS`), so a revealed card
- * says what it is.
+ * says what it is. A Masterwork is a workflow.definition row whose metadata
+ * names the Rulebook it was built from.
  */
-async function fetchMasterworksFor(
-  rulebookIds: string[],
-  nameById: Map<string, string>,
-  { includeArchived = false }: MasterworkListOptions = {},
-): Promise<(Masterwork & { rulebookName: string | null })[]> {
-  if (rulebookIds.length === 0) return [];
-  let query = supabase
-    .schema("workflow")
-    .from("definition")
-    .select(MASTERWORK_SELECT_COLUMNS)
-    .in("metadata->>built_from_rulebook", rulebookIds)
-    .is("deleted_at", null);
-  if (!includeArchived) query = query.eq("is_archived", false);
-  const { data, error } = await query.order("updated_at", {
-    ascending: false,
-  });
-  if (error) throw new Error(`${error.message} (${error.code})`);
-  return (data ?? []).map((row) => {
-    const m = parseMasterworkRow(row as MasterworkDefinitionRow);
-    return {
-      ...m,
-      rulebookName: m.built_from_rulebook
-        ? (nameById.get(m.built_from_rulebook) ?? null)
-        : null,
-    };
-  });
+async function fetchRecentMasterworks(): Promise<{
+  active: Masterwork[];
+  archived: Masterwork[];
+  activeTotal: number;
+  archivedTotal: number;
+}> {
+  const half = async (archived: boolean) => {
+    const { data, error, count } = await supabase
+      .schema("workflow")
+      .from("definition")
+      .select(MASTERWORK_SELECT_COLUMNS, { count: "exact" })
+      .not("metadata->>built_from_rulebook", "is", null)
+      .is("deleted_at", null)
+      .eq("is_archived", archived)
+      .order("updated_at", { ascending: false })
+      .limit(MASTERWORK_LIMIT);
+    if (error) throw new Error(`${error.message} (${error.code})`);
+    const rows = (data ?? []).map((row) =>
+      parseMasterworkRow(row as MasterworkDefinitionRow),
+    );
+    return { rows, total: count ?? rows.length };
+  };
+  const [active, archived] = await Promise.all([half(false), half(true)]);
+  return {
+    active: active.rows,
+    archived: archived.rows,
+    activeTotal: active.total,
+    archivedTotal: archived.total,
+  };
 }
 
-async function fetchRecentRuns(
-  rulebookIds: string[],
-  nameById: Map<string, string>,
-): Promise<HomeRun[]> {
-  if (rulebookIds.length === 0) return [];
+async function fetchRecentRuns(): Promise<HomeRun[]> {
   const { data, error } = await supabase
     .schema("platform")
     .from("masterwork_run")
     .select("id,operation,status,label,created_at,rulebook_id,quality_score")
-    .in("rulebook_id", rulebookIds)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(RUN_LIMIT);
@@ -214,7 +243,7 @@ async function fetchRecentRuns(
     label: row.label,
     created_at: row.created_at,
     rulebook_id: row.rulebook_id,
-    rulebookName: nameById.get(row.rulebook_id) ?? null,
+    rulebookName: null,
     quality_score: row.quality_score,
   }));
 }
@@ -315,8 +344,14 @@ interface ImprovementSummaryRow {
  * been revised, and when. Agents the viewer cannot read render with the job
  * only — never invented detail.
  */
-export async function fetchImprovementRows(): Promise<ImprovementRow[]> {
-  const [pins, summaries] = await Promise.all([
+export interface ImprovementPanelData {
+  rows: ImprovementRow[];
+  /** Set when the review aggregates could not be read — the rows then carry no review counts. */
+  reviewsError: string | null;
+}
+
+export async function fetchImprovementRows(): Promise<ImprovementPanelData> {
+  const [pins, { summaries, error: reviewsError }] = await Promise.all([
     fetchMandatePins(MASTERWORK_MANDATE_KEYS),
     fetchImprovementSummaries(),
   ]);
@@ -351,7 +386,7 @@ export async function fetchImprovementRows(): Promise<ImprovementRow[]> {
     }
   }
 
-  return MASTERWORK_MANDATE_KEYS.map((key) => {
+  const rows = MASTERWORK_MANDATE_KEYS.map((key): ImprovementRow => {
     const copy = MANDATE_EXPERT_COPY[key];
     const pin = pins[key];
     const agent = pin ? byAgentId.get(pin.agentId) : undefined;
@@ -377,16 +412,19 @@ export async function fetchImprovementRows(): Promise<ImprovementRow[]> {
       leverCounts: summary?.lever_counts ?? {},
     };
   });
+  return { rows, reviewsError };
 }
 
 /**
  * The de-identified Hindsight aggregates behind the panel — the ONE sanctioned
  * read of review activity for the five Masterwork jobs. A failed read returns
- * an empty map (the panel still renders its honest floor) but screams first.
+ * an empty map AND the error, so the panel still renders its floor (mandates +
+ * revisions) while saying plainly that the review counts are missing.
  */
-async function fetchImprovementSummaries(): Promise<
-  Map<string, ImprovementSummaryRow>
-> {
+async function fetchImprovementSummaries(): Promise<{
+  summaries: Map<string, ImprovementSummaryRow>;
+  error: string | null;
+}> {
   const { data, error } = await supabase.rpc("masterwork_improvement_summary", {
     p_mandate_keys: [...MASTERWORK_MANDATE_KEYS],
   });
@@ -397,7 +435,7 @@ async function fetchImprovementSummaries(): Promise<
       "[masterwork-home] masterwork_improvement_summary RPC failed",
       error,
     );
-    return new Map();
+    return { summaries: new Map(), error: `${error.message} (${error.code})` };
   }
   const out = new Map<string, ImprovementSummaryRow>();
   for (const row of (data ?? []) as ImprovementSummaryRow[]) {
@@ -406,5 +444,5 @@ async function fetchImprovementSummaries(): Promise<
       lever_counts: row.lever_counts ?? {},
     });
   }
-  return out;
+  return { summaries: out, error: null };
 }
