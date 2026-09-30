@@ -534,10 +534,6 @@
         {
           "file": "scripts/gate-corpus/restore-graph.ts",
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/action-requests/components/ActionRequestAnswerForm.tsx",
-          "why": "IS the money capability (a spend-approval amount) and cannot collapse honestly yet: its `money` prints 2 places at a dollar or more and UP TO 4 below a dollar with trailing zeros trimmed (\"$0.29\", \"$0.018\"). formatUsd's `adaptive` voice FIXES the places (\"$0.2900\", \"$0.0180\") and `digits: 2` rounds $0.0035 to \"$0.00\". Blocked on a kit voice: a trimmed-precision money style (minimum 2 places, trailing zeros dropped, sub-cent digits kept). Same gap as features/admin/dated-changes/describe.ts."
         }
       ]
     },

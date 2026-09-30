@@ -74,7 +74,6 @@ export const DOMAIN_MONEY: Record<string, string> = {
   "features/print/order/OrderFlow.tsx": "a print order's price",
   "components/mardown-display/blocks/print-kinds/print-kind-blocks.tsx": "a print quote's price",
   "components/mardown-display/blocks/commerce-kinds/commerce-kind-blocks.tsx": "a product's price",
-  "components/rich-editor/core/commands.ts": "a LaTeX `$…$` math delimiter, not money",
   "features/crm/deals/types.ts": "a sales deal's value",
   "features/hr/me/MyPaySurface.tsx": "a worker's pay",
   "features/legal/wc/pd-ratings/components/workspace/RatingBreakdownTable.tsx": "a workers'-comp award amount",
@@ -92,6 +91,8 @@ export const DOMAIN_MONEY: Record<string, string> = {
   "features/ai-models/components/ModelPricingEditor.tsx": "the provider's USD price list an admin edits",
   "features/ai-models/components/ProviderPriceCell.tsx": "the provider's USD price list an admin syncs",
   "features/ai-models/utils/providerSyncPricing.ts": "the provider's USD price list an admin syncs",
+  "features/admin/dated-changes/describe.ts": "the provider's per-million-token USD price schedule, shown only in the admin attention queue",
+  "features/action-requests/components/spendAmount.ts": "the approve-spend amount box's dollar text, reached ONLY when the viewer's unit is usd (a system admin's switch); members type points",
   "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx": "the provider's per-million-token USD price list, shown to an admin debugging a tool-test sample's cost estimate",
 };
 

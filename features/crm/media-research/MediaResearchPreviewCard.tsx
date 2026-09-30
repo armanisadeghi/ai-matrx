@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
 import type { AdvisoryOffer, PitchAdvisory } from "@/features/crm/pitch-advisories/service";
 import type { MediaResearchPreview } from "./service";
-import { formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 export interface MediaResearchPreviewCardProps {
   preview: MediaResearchPreview;
@@ -36,6 +37,9 @@ export function MediaResearchPreviewCard({
   onOffer,
 }: MediaResearchPreviewCardProps) {
   const advisories: PitchAdvisory[] = preview.advisories ?? [];
+  // Everyone sees points; a system admin who flipped the switch sees dollars.
+  const { format: formatCost } = useCostDisplay();
+  const maxCost = formatCost(preview.cost.max_cost_usd);
   return (
     <section
       aria-label="Research preview"
@@ -53,7 +57,7 @@ export function MediaResearchPreviewCard({
         />
         <Stat
           label="Maximum cost"
-          value={formatUsd(preview.cost.max_cost_usd)}
+          value={maxCost}
           testId="media-research-max-cost"
         />
       </div>
@@ -106,7 +110,7 @@ export function MediaResearchPreviewCard({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
-          Nothing is spent until you press Run it. Up to {formatUsd(preview.cost.max_cost_usd)}.
+          Nothing is spent until you press Run it. Up to {maxCost}.
         </p>
         <Button
           type="button"

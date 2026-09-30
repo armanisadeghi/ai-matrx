@@ -31,6 +31,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import {
+  MAX_APPROVAL_USD,
+  centsUp,
+  initialAmountText,
+  parseApprovalUsd,
+} from "./spendAmount";
 import type {
   ActionRequestRefusal,
   ApproveSpendRender,
@@ -647,15 +654,18 @@ function ApproveSpend({
 }: FormProps<ApproveSpendRender> & {
   frame: (body: React.ReactNode, title?: string) => React.ReactNode;
 }) {
+  // THE AMOUNT IS IN THE VIEWER'S UNIT: points for everyone, dollars only for
+  // a system admin who flipped "Show costs in dollars" (Arman, 2026-09-27).
+  const { unit, format: money } = useCostDisplay();
   // THE SUGGESTION NEVER STARTS BELOW THE ESTIMATE. The server rounds its
-  // suggestion to cents, so a $0.004 estimate would arrive as "$0.00" — an
+  // suggestion to cents, so a $0.004 estimate would arrive as zero — an
   // amount that buys nothing. Round the estimate UP to the cent instead.
   const suggested = Math.max(render.amount_usd, centsUp(render.estimate_usd));
-  const [text, setText] = useState(() => suggested.toFixed(2));
+  const [text, setText] = useState(() => initialAmountText(suggested, unit));
   const [problem, setProblem] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
-  const amount = parseAmount(text);
+  const amount = parseApprovalUsd(text, unit);
   const cap = render.guardrail_cap_usd ?? null;
   const yes = render.choices.find((choice) => choice.value === "yes");
   const no = render.choices.find((choice) => choice.value === "no");
@@ -677,7 +687,7 @@ function ApproveSpend({
 
   const approve = () => {
     if (amount === null || amount <= 0) {
-      setProblem(`Enter an amount above $0.00 (up to ${money(MAX_APPROVAL_USD)}), or choose "${no?.label ?? "Don't spend"}".`);
+      setProblem(`Enter an amount above ${money(0)} (up to ${money(MAX_APPROVAL_USD)}), or choose "${no?.label ?? "Don't spend"}".`);
       input.current?.focus();
       return;
     }
@@ -685,10 +695,11 @@ function ApproveSpend({
     void onSubmit({ result: { approved: true, approved_amount_usd: amount } });
   };
 
+  // Composed here, never the server's sentence, so it speaks the viewer's unit.
   const title =
-    amount !== null && amount > 0 && amount !== render.amount_usd
+    amount !== null && amount > 0
       ? `Approve up to ${money(amount)}?`
-      : render.title;
+      : `Approve up to ${money(render.amount_usd)}?`;
 
   return frame(
     <div className="flex flex-col gap-4">
@@ -723,13 +734,19 @@ function ApproveSpend({
           Amount you approve
         </label>
         <div className="relative">
-          <span className="pointer-events-none absolute inset-y-0 left-0 flex w-8 items-center justify-center text-muted-foreground">
-            $
-          </span>
+          {unit === "usd" ? (
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex w-8 items-center justify-center text-muted-foreground">
+              $
+            </span>
+          ) : (
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+              points
+            </span>
+          )}
           <Input
             ref={input}
             id={`${idPrefix}-amount`}
-            className="pl-8 text-base tabular-nums"
+            className={cn("text-base tabular-nums", unit === "usd" ? "pl-8" : "pr-16")}
             type="text"
             inputMode="decimal"
             autoComplete="off"
@@ -778,33 +795,6 @@ function ApproveSpend({
     </div>,
     title,
   );
-}
-
-/** aidream's own ceiling on one approval (`ApproveSpendResult.approved_amount_usd`). */
-const MAX_APPROVAL_USD = 100_000;
-
-/** A typed dollar amount, or null when it is not one. Up to two decimals; "$",
- *  spaces and thousands commas are forgiven. */
-function parseAmount(text: string): number | null {
-  const cleaned = text.replace(/[\s$,]/g, "");
-  if (!/^\d+(\.\d{0,2})?$|^\.\d{1,2}$/.test(cleaned)) return null;
-  const value = Number(cleaned);
-  return Number.isFinite(value) && value <= MAX_APPROVAL_USD ? value : null;
-}
-
-function centsUp(usd: number): number {
-  return Math.ceil(Math.round(usd * 1_000_000) / 10_000) / 100;
-}
-
-/** Dollars, to the cent — and, under a dollar, to as many as four places, so a
- *  $0.018 estimate reads as itself and a $0.0035 run never reads as "$0.00". */
-function money(usd: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: usd > 0 && usd < 1 ? 4 : 2,
-  }).format(usd);
 }
 
 function timeFormat(timezone: string | null | undefined): Intl.DateTimeFormat {
