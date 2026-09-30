@@ -65,4 +65,11 @@ describe("trash", () => {
     expect(archive).toHaveBeenCalledWith("processed_document", "d1", '"Solicitation"');
     expect(out.sentence).toMatch(/^Moved 2 items to Trash/);
   });
+  it("a database timeout is said in plain words, never as the raw statement error", async () => {
+    const archive = jest.fn().mockRejectedValue(new Error("canceling statement due to statement timeout"));
+    const out = await trashItems([note], archive);
+    expect(out.ok).toBe(0);
+    expect(out.sentence).toMatch(/took too long/);
+    expect(out.sentence).not.toMatch(/statement timeout/);
+  });
 });

@@ -59,6 +59,14 @@ export interface ActionOutcome {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** The server's words, except a timeout, which says what a person can do about it. */
+export function plainFailure(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  return /statement timeout|canceling statement|timed out/i.test(raw)
+    ? "the server took too long, so nothing was changed. Try again in a moment."
+    : raw;
+}
+
 function failureTail(failed: ActionOutcome["failed"]): string {
   if (!failed.length) return "";
   const first = failed[0];
@@ -138,7 +146,7 @@ export async function trashItems(
       ok += 1;
       moved.push(t);
     } catch (err) {
-      failed.push({ target: t, message: err instanceof Error ? err.message : String(err) });
+      failed.push({ target: t, message: plainFailure(err) });
     }
   }
   const sentence = ok
