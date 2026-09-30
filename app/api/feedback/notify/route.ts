@@ -13,6 +13,7 @@ import { createAdminClient } from '@/utils/supabase/adminClient';
 import { createClient } from '@/utils/supabase/server';
 import { sendEmail, emailTemplates } from '@/lib/email/client';
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
 /**
  * Check if user has feedback email notifications enabled
@@ -58,8 +59,7 @@ export async function POST(request: NextRequest) {
         const { feedback_id } = body as { feedback_id?: unknown };
 
         if (
-            typeof feedback_id !== 'string' ||
-            !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(feedback_id)
+            !isRfc4122Uuid(feedback_id)
         ) {
             return NextResponse.json(
                 { success: false, error: 'A valid feedback_id is required' },

@@ -23,6 +23,7 @@
  * `/s/{token}` and the clean byte endpoint is Python's `/share/{token}`.
  */
 
+import { fileUrls as packageFileUrls, shareUrl as packageShareUrl } from "@ai-matrx/data/files";
 import { resolveFilesBaseUrl } from "@/lib/python-client";
 import { shareLinkUrl } from "@/utils/permissions/shareLinks";
 
@@ -68,8 +69,8 @@ export function shareUrls(
   opts?: { appOrigin?: string },
 ): ShareUrls {
   const t = encodeURIComponent(token);
-  const backend = pythonBaseUrl();
-  const base = `${backend}/share/${t}`;
+  // The URL grammar is @ai-matrx/data/files'; the host only binds the base.
+  const base = packageShareUrl(pythonBaseUrl(), token);
   return {
     public: base,
     attachment: `${base}/download?inline=false`,
@@ -132,13 +133,8 @@ export interface FileUrls {
  * `FileRecord.url`, keeping cache keys identical either way.
  */
 export function fileUrls(fileId: string): FileUrls {
-  const id = encodeURIComponent(fileId);
-  const backend = pythonBaseUrl();
-  const base = `${backend}/files/${id}/download`;
-  return {
-    download: base,
-    inline: `${base}?inline=1`,
-  };
+  // The URL grammar is @ai-matrx/data/files'; the host only binds the base.
+  return packageFileUrls(pythonBaseUrl(), fileId);
 }
 
 const AUTHENTICATED_FILE_BYTES_RE =

@@ -42,6 +42,16 @@ describe("meeting invitation text", () => {
     expect(text).not.toContain("recurring");
   });
 
+  it("states an exact length in both tiers, singular where it is one", () => {
+    const length = (minutes: number) =>
+      invitationText({ ...scheduled, scheduledDurationMinutes: minutes }, link, options);
+    expect(length(90)).toContain("PDT (1 hour 30 minutes)");
+    expect(length(60)).toContain("PDT (1 hour)");
+    expect(length(61)).toContain("PDT (1 hour 1 minute)");
+    expect(length(1)).toContain("PDT (1 minute)");
+    expect(length(0)).not.toContain("PDT (");
+  });
+
   it("says a recurring meeting reuses the same link", () => {
     const text = invitationText(
       { ...scheduled, kind: "recurring" },

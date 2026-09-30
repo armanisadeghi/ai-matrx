@@ -13,6 +13,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
 export type TrashItem =
   Database["public"]["Functions"]["trash_list"]["Returns"][number];
@@ -48,9 +49,6 @@ export type VaultRecoveryPreview =
       prior_was_disabled: boolean | null;
       reason: VaultRecoveryUnsupportedReason;
     };
-
-const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const vaultOwnedTokens = new Set([
   "credential_item",
@@ -264,7 +262,7 @@ export function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
       (nativePasskeys === 1 && fieldsCount < 1) ||
       typeof priorWasDisabled !== "boolean" ||
       typeof deletionId !== "string" ||
-      !UUID.test(deletionId) ||
+      !isRfc4122Uuid(deletionId) ||
       reason !== null
     ) {
       throw new Error(
@@ -283,7 +281,7 @@ export function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
   }
   if (
     (deletionId !== null &&
-      (typeof deletionId !== "string" || !UUID.test(deletionId))) ||
+      (typeof deletionId !== "string" || !isRfc4122Uuid(deletionId))) ||
     (priorWasDisabled !== null && typeof priorWasDisabled !== "boolean") ||
     fieldsCount !== null ||
     attachmentsCount !== null ||

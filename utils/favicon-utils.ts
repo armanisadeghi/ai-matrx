@@ -8,6 +8,7 @@ import {
 } from "@/constants/favicon-route-data";
 import { Metadata } from "next";
 import { ARCHIVO_GLYPHS } from "@/utils/favicon-archivo-glyphs";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
 /** Narrowed non-array/non-string/non-URL branch of `Metadata["icons"]`. */
 type MetadataIcons = Exclude<
@@ -65,9 +66,6 @@ const AUTO_ROUTE_COLORS = [
   "#713f12",
 ] as const;
 
-const UUID_SEGMENT =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 /** Derives the compact, readable badge used by an unregistered route. */
 export function deriveRouteFaviconLetter(pathname: string): string {
   const segments = pathname
@@ -78,7 +76,7 @@ export function deriveRouteFaviconLetter(pathname: string): string {
     .filter(
       (segment) =>
         !/^\[.*\]$/.test(segment) &&
-        !UUID_SEGMENT.test(segment) &&
+        !isRfc4122Uuid(segment) &&
         !/^\d+$/.test(segment),
     );
   const segment = segments.at(-1) ?? "Matrx";
