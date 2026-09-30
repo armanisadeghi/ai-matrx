@@ -441,12 +441,12 @@ describe("the data home · default is everything", () => {
 });
 
 describe("the data home · the shell's lanes, each the store's fact", () => {
-  it("offers All · Mine · My team · My Orgs · Shared · Public · System — the shell's tab bar", async () => {
+  it("offers All · Mine · My team · My Orgs · Shared · Public — the shell's tab bar; System is absent (no one can reach platform tables here)", async () => {
     await mount();
     const lanes = [...container.querySelectorAll('[role="tablist"] [role="tab"]')].map((b) =>
       (b.textContent ?? "").replace(/\d+$/, "").trim(),
     );
-    expect(lanes).toEqual(["All", "Mine", "My team", "My Orgs", "Shared", "Public", "System"]);
+    expect(lanes).toEqual(["All", "Mine", "My team", "My Orgs", "Shared", "Public"]);
   });
 
   it.each([
