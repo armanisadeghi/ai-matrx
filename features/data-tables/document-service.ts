@@ -15,6 +15,7 @@
  * Mirrors `workbook-service.ts`. If you're changing the shape of one, change
  * the other at the same time — see `features/data-tables/FEATURE.md`.
  */
+import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
@@ -99,15 +100,30 @@ export async function createDocument(
 export async function listAccessibleDocuments(): Promise<
   ServiceResult<DocumentRow[]>
 > {
-  // RLS handles owner / published-to-the-web / shared access.
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_documents")
-    .select("*")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: (data ?? []) as DocumentRow[] };
+  // RLS handles owner / published-to-the-web / shared access. The library and
+  // the pickers treat this list as COMPLETE ("you have no such document"), so
+  // it pages past PostgREST's silent 1000-row cap (D190).
+  try {
+    const rows = await readAllRows<DocumentRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("workbench")
+          .from("udt_documents")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to)
+          .returns<DocumentRow[]>(),
+      { label: "workbench.udt_documents accessible documents" },
+    );
+    return { success: true, data: rows };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 export async function getDocument(

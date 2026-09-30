@@ -57,7 +57,6 @@ import { MeetingDetail } from "@/features/meet/components/manage/MeetingDetail";
 import { useRunsList } from "@/features/workflow-runtime/discovery/useRunsList";
 import { useWorkflowFacts } from "@/features/workflow-runtime/discovery/useWorkflowFacts";
 import { RunStatusChip } from "@/features/workflow-runtime/run-status";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   fetchRunDefinitionId,
   fetchWorkflowDefinition,
@@ -578,17 +577,10 @@ function MeetingBody({ source, title, onSource }: ItemBodyProps) {
 const runHref = (id: string) => `/workflows/runs/${encodeURIComponent(id)}`;
 
 function WorkflowRunPicker({ onPick, onCancel }: PickerProps) {
-  const { rows, loading, error, organizationState, refresh } = useRunsList();
+  // Runs are listed by access in every organization (useRunsList), so the
+  // picker never waits on a selected organization.
+  const { rows, loading, error, refresh } = useRunsList();
   const facts = useWorkflowFacts(rows.map((r) => r.definitionId));
-  if (organizationState !== "ready") {
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        what="Runs"
-        description="Runs are listed per organization, and none is selected for this session. Pick one and your runs load here."
-      />
-    );
-  }
   const nameOf = (definitionId: string | null) => (definitionId ? facts.get(definitionId)?.name : undefined) ?? null;
   return (
     <RecordList
