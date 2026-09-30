@@ -80,6 +80,11 @@ const MUTATING = new Set([
   'un', 'link', 'ln', 'unlink', 'import', 'dedupe', 'prune', 'rebuild', 'rb',
   'patch', 'patch-commit', 'patch-remove', 'fetch', 'deploy',
 ]);
+const OPTIONS_WITH_VALUE = new Set([
+  '--filter', '-F', '--dir', '-C', '--workspace-dir', '--config',
+  '--global-dir', '--bin-dir', '--modules-dir', '--store-dir',
+  '--virtual-store-dir', '--config-dir',
+]);
 
 function say(line) {
   process.stderr.write(`[install-gate] ${line}\n`);
@@ -87,8 +92,10 @@ function say(line) {
 
 function argvWords() {
   // pnpm may hand the pnpmfile a single joined argument or separate ones;
-  // measured both. Flatten, then split, so either shape parses.
-  return process.argv.slice(2).join(' ').trim().split(/\s+/).filter(Boolean);
+  // measured both. Preserve separate argv tokens so an option value containing
+  // spaces cannot be mistaken for a command; split only the joined form.
+  const values = process.argv.slice(2).filter(Boolean);
+  return values.length === 1 ? values[0].trim().split(/\s+/).filter(Boolean) : values;
 }
 
 function mutatingCommand() {
@@ -100,7 +107,19 @@ function mutatingCommand() {
   if (words.some((w) => w === '--lockfile-only' || w === '--resolution-only' || w === '-h' || w === '--help')) {
     return null;
   }
-  const command = words.find((w) => !w.startsWith('-'));
+  let command = null;
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index];
+    if (word === '--') return null;
+    if (OPTIONS_WITH_VALUE.has(word) || (word.startsWith('--config.') && !word.includes('='))) {
+      index += 1;
+      continue;
+    }
+    if (word.startsWith('--filter=') || word.startsWith('--dir=') || word.startsWith('--workspace-dir=') || word.startsWith('--config=') || word.startsWith('--config.') || /^-[FC].+/.test(word)) continue;
+    if (word.startsWith('-')) continue;
+    command = word;
+    break;
+  }
   if (!command || !MUTATING.has(command)) return null;
   return words.join(' ');
 }
@@ -340,7 +359,8 @@ function serialiseInstall(command) {
   process.on('exit', releaseLock);
   for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
     process.on(signal, () => {
-      releaseLock();
+      // The .pnpmfile restoration handler is registered before this gate. Let
+      // normal exit invoke it while this lock is still held, then release.
       process.exit(1);
     });
   }

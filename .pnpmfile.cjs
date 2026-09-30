@@ -7,6 +7,9 @@
 // loaded while pnpm assembles the install context — before the first symlink
 // moves — for every install-family command. Evidence and measurements:
 // scripts/agent-harness/install-gate.cjs.
+// This must register before install-gate: its exit callback repairs .bin while
+// the gate's lock is still owned, before the gate releases it.
+require('./scripts/agent-harness/restore-typecheck-entrypoints.cjs').register();
 require('./scripts/agent-harness/install-gate.cjs').run();
 
 module.exports = { hooks: {} };

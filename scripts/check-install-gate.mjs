@@ -112,6 +112,23 @@ const holder = spawn("sleep", ["120"], { stdio: "ignore", detached: true });
 // ---------------------------------------------------------------------------
 console.log("\ninstall gate — forcing self-test\n");
 
+function parsedCommand(args) {
+  const program = `
+    process.argv = ['node', 'pnpm', ...${JSON.stringify(args)}];
+    process.stdout.write(require(${JSON.stringify(GATE_SRC)}).mutatingCommand() || 'null');
+  `;
+  return execFileSync(process.execPath, ['-e', program], { encoding: 'utf8' });
+}
+
+check("mutating command parsing skips pnpm global option values without mistaking run or exec operands for installs", () => {
+  assert.equal(parsedCommand(['--filter', 'app', 'install']), '--filter app install');
+  assert.equal(parsedCommand(['--dir', '/tmp/fixture with spaces', 'install']), '--dir /tmp/fixture with spaces install');
+  assert.equal(parsedCommand(['-C', '/tmp/fixture', 'install']), '-C /tmp/fixture install');
+  assert.equal(parsedCommand(['--config.foo=bar', 'install']), '--config.foo=bar install');
+  assert.equal(parsedCommand(['run', 'install']), 'null');
+  assert.equal(parsedCommand(['exec', 'echo', 'install']), 'null');
+});
+
 check("FAILING BASELINE: a root preinstall refusal still leaves node_modules linked", () => {
   const { dir, stateDir } = makeFixture({ mode: "preinstall" });
   try {

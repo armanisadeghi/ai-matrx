@@ -8,12 +8,26 @@ import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdirSync, writeFileSync, renameSync, rmSync } from 'node:fs';
 
-export function install(root) {
+export function install(root, { platform = process.platform } = {}) {
+  // The queue is a POSIX bash/fcntl implementation. Do not replace a Windows
+  // package-manager launcher with a wrapper that cannot execute there.
+  if (platform === 'win32') {
+    console.warn('[tsc-capped] Skipped compiler entrypoint routing on Windows: the shared queue is POSIX-only.');
+    return;
+  }
   const require = createRequire(join(root, 'package.json'));
   const binDir = join(root, 'node_modules/.bin');
   mkdirSync(binDir, { recursive: true });
   for (const [compiler, packageName] of [['tsc6', 'typescript'], ['tsc', '@typescript/native']]) {
-    const manifest = require(packageName + '/package.json');
+    let manifest;
+    try {
+      manifest = require(packageName + '/package.json');
+    } catch (error) {
+      if (error?.code === 'MODULE_NOT_FOUND') {
+        throw new Error(`[tsc-capped] Cannot restore ${compiler}: required compiler package ${JSON.stringify(packageName)} is missing. Restore dependencies before retrying.`, { cause: error });
+      }
+      throw error;
+    }
     if (!manifest.bin?.[compiler]) throw new Error(`${packageName} no longer provides ${compiler}`);
     const target = join(binDir, compiler);
     const temporary = `${target}.queue-${process.pid}`;
