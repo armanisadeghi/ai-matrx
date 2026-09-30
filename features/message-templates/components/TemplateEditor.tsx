@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useToast } from "@/components/ui/use-toast";
+import { describeWriteFailure } from "@/lib/errors/writeFailure";
 import {
   MessageTemplateEditorSource,
   CreateMessageTemplateInput,
@@ -245,9 +246,14 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
       // nothing was written and nothing is said.
       if (isOrganizationSelectionCancelled(err)) return;
       console.error("Error saving template:", err);
+      // The refusal is already a sentence ("Nothing was saved: … your access
+      // does not allow saving it.") — say it, never a bare "Failed".
+      const words = describeWriteFailure(err, {
+        action: mode === "create" ? "create this template" : "save this template",
+      });
       toast({
-        title: "Error",
-        description: "Failed to save template",
+        title: words.title,
+        description: words.description,
         variant: "destructive",
       });
     } finally {

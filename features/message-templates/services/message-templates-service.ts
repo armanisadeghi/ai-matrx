@@ -212,15 +212,23 @@ export async function updateTemplate(
   }
   if (input.tags !== undefined) updateData.tags = input.tags;
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("message_template")
-    .update(updateData)
-    .eq("id", input.id)
-    .select()
-    .single();
-
-  return assertData(data, error, "save this template");
+  // Zero rows (refused, or archived meanwhile) is said in words; `.single()`
+  // used to turn it into a generic "could not save" with no reason.
+  const { row, error } = await tryWriteOne(
+    supabase
+      .schema("agent")
+      .from("message_template")
+      .update(updateData)
+      .eq("id", input.id)
+      .select(),
+    { action: "save", noun: "template" },
+  );
+  if (error) {
+    throw error instanceof WriteDidNotLandError
+      ? error
+      : operationFailed("save this template", error);
+  }
+  return row;
 }
 
 /**

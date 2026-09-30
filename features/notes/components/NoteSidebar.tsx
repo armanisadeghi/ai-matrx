@@ -842,6 +842,17 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     [handleNewNote, handleFolderRename, handleFolderDeleteAll, groupedNotes, draftControl.pending],
   );
 
+  // The sidebar groups folders by an internal key (`folder:<org>:<id>`); the
+  // person renames the folder by its NAME — never shown the key.
+  const renameFolderDisplayName = renameFolderTarget
+    ? (groupedNotes.get(renameFolderTarget) ?? []).find((note) => note.folder_name)
+        ?.folder_name ??
+      folderReferences.find(
+        (ref) => `folder:${ref.organizationId}:${ref.id}` === renameFolderTarget,
+      )?.name ??
+      renameFolderTarget
+    : "";
+
   const handleRenameConfirm = useCallback(
     async (newName: string) => {
       if (!renameFolderTarget) return;
@@ -855,7 +866,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         await renameFolder({
           id: representative.folder_id,
           organizationId: requireOrganizationContext(representative.organization_id),
-          name: renameFolderTarget,
+          name: renameFolderDisplayName,
         }, newName);
         // Re-fetch notes list to reflect renamed folder_name
         dispatch(fetchNotesList());
@@ -865,7 +876,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         toast.error(words.title, { description: words.description });
       }
     },
-    [dispatch, renameFolderTarget, groupedNotes],
+    [dispatch, renameFolderTarget, renameFolderDisplayName, groupedNotes],
   );
 
   // ── Create folder handler ──────────────────────────────────────────
@@ -1797,7 +1808,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             if (!open) setRenameFolderTarget(null);
           }}
           onConfirm={handleRenameConfirm}
-          currentName={renameFolderTarget}
+          currentName={renameFolderDisplayName}
           existingFolders={allFolders}
         />
       )}

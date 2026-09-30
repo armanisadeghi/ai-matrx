@@ -45,7 +45,7 @@ import { toast } from "@/lib/toast";
 import {
   getProjectTasks,
   createTask,
-  updateTask,
+  updateTaskResult,
   type UpdateTaskInput,
 } from "@/features/tasks/services/taskService";
 import type { DatabaseTask } from "@/features/tasks/types/database";
@@ -171,11 +171,11 @@ export function ProjectTaskList({
     setTasks((cur) =>
       cur.map((x) => (x.id === task.id ? { ...x, ...patch } : x)),
     );
-    const res = await updateTask(task.id, patch);
+    const res = await updateTaskResult(task.id, patch);
     setBusyId(null);
-    if (!res) {
+    if (!res.task) {
       setTasks((cur) => cur.map((x) => (x.id === task.id ? prev : x)));
-      toast.error("Couldn't update the task.");
+      toast.error(res.error ?? "Couldn't update the task.");
     }
   }
 

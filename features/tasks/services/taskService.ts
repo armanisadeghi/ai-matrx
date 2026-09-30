@@ -539,12 +539,21 @@ export async function getTaskById(
 }
 
 /**
- * Update a task
+ * Update a task. Returns null on any failure; use `updateTaskResult` when the
+ * screen must say WHY (a refusal is a sentence, never a generic failure).
  */
 export async function updateTask(
   taskId: string,
   updates: UpdateTaskInput,
 ): Promise<DatabaseTask | null> {
+  return (await updateTaskResult(taskId, updates)).task;
+}
+
+/** `updateTask` that keeps the person-facing reason when nothing was saved. */
+export async function updateTaskResult(
+  taskId: string,
+  updates: UpdateTaskInput,
+): Promise<{ task: DatabaseTask | null; error: string | null }> {
   try {
     // If assignee is changing, get the current task first for comparison
     let previousAssigneeId: string | null = null;
@@ -577,16 +586,20 @@ export async function updateTask(
       payload.completed_at = null;
     }
 
-    const { data, error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update(payload)
-      .eq("id", taskId)
-      .select()
-      .single();
+    // Zero rows (RLS refused, or the task is gone) is said in words — a
+    // `.single()` here used to turn it into PGRST116 and a generic toast.
+    const { row: data, error } = await tryWriteOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update(payload)
+        .eq("id", taskId)
+        .select(),
+      { action: "update", noun: "task" },
+    );
 
-    if (error) {
-      console.error("Error updating task:", error.message);
-      return null;
+    if (error || !data) {
+      console.error("Error updating task:", error?.message);
+      return { task: null, error: error?.message ?? "The task was not saved." };
     }
 
     // Send assignment notification if assignee changed to someone new
@@ -601,10 +614,13 @@ export async function updateTask(
       });
     }
 
-    return data;
+    return { task: data, error: null };
   } catch (error) {
     console.error("Exception updating task:", error);
-    return null;
+    return {
+      task: null,
+      error: error instanceof Error ? error.message : "The task was not saved.",
+    };
   }
 }
 
