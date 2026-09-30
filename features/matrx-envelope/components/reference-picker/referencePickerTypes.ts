@@ -46,6 +46,39 @@ export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> = 
 };
 
 /**
+ * Classes whose items are a WRITE PAYLOAD (the record's fields), not an
+ * identity. Their items go on the wire verbatim.
+ */
+const PAYLOAD_CLASSES: ReadonlySet<DirectiveClass> = new Set<DirectiveClass>([
+  "create",
+  "update",
+  "action",
+]);
+
+/**
+ * The items exactly as they go on the wire.
+ *
+ * An IDENTITY item (link, delete) carries a `label` only as a display hint for
+ * the picker; it is removed so the fence stays pure identity — the chip
+ * resolves the live name itself, and a delete item's schema forbids extra
+ * keys. A PAYLOAD item (create, update) is never touched: its `label` may be a
+ * real column (a note's title column IS `label`), and dropping it would insert
+ * a button that silently creates an untitled note.
+ */
+export function wireItems<T extends object>(
+  directiveClass: DirectiveClass,
+  items: readonly T[],
+): Record<string, unknown>[] {
+  if (PAYLOAD_CLASSES.has(directiveClass)) {
+    return items.map((item) => ({ ...(item as Record<string, unknown>) }));
+  }
+  return items.map((item) => {
+    const { label: _label, ...rest } = item as Record<string, unknown>;
+    return rest;
+  });
+}
+
+/**
  * Types whose "+ New" inline create is offered (picker-custom-entry law):
  * plain title-column rows the generic entity-row service can create.
  */

@@ -54,10 +54,39 @@ export function identityFieldPickerInfo(
     return infoForTable(noun.table);
   }
 
-  const tokenCandidate = fieldKey.endsWith("_id") ? fieldKey.slice(0, -3) : "";
-  if (isEntityTypeToken(tokenCandidate)) {
-    return listable(getEntityInfo(tokenCandidate));
-  }
+  return tokenFromIdKey(fieldKey);
+}
 
+/**
+ * `<token>_id` → that token, and `parent_<token>_id` → that token (a task's
+ * `parent_task_id` is a task). Anything else is ambiguous and returns null.
+ */
+function tokenFromIdKey(fieldKey: string): EntityInfo | null {
+  if (!fieldKey.endsWith("_id")) return null;
+  const stem = fieldKey.slice(0, -3);
+  for (const candidate of [stem, stem.replace(/^parent_/, "")]) {
+    if (isEntityTypeToken(candidate)) return listable(getEntityInfo(candidate));
+  }
   return null;
+}
+
+/**
+ * The record collection behind an id field of a WRITE payload (create /
+ * update / delete item), so the form offers a search instead of an id box.
+ * `id` itself is the noun's own record. Same rules as identity fields — an
+ * ambiguous key returns null and stays a plain text field, never a search over
+ * a plausible-looking but wrong table.
+ */
+export function payloadFieldEntityInfo(
+  fieldKey: string,
+  nounToken: string | null,
+): EntityInfo | null {
+  if (fieldKey === "id") {
+    return nounToken && isEntityTypeToken(nounToken)
+      ? listable(getEntityInfo(nounToken))
+      : null;
+  }
+  const knownToken = FIELD_TOKEN[fieldKey];
+  if (knownToken) return listable(getEntityInfo(knownToken));
+  return tokenFromIdKey(fieldKey);
 }
