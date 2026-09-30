@@ -21,8 +21,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
@@ -100,7 +98,6 @@ export function RecordChangeApprovalCard({
   // is active. A reopened chat with no organization picked used to say "No
   // organization is picked yet" instead of offering the decision (lane
   // AGENT-WRITE-APPROVAL, 2026-09-26).
-  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
   const tableIdForOrganization = waitTableId(wait);
   const object = useObjectOrganization(
     cardDataSource(),
@@ -110,9 +107,7 @@ export function RecordChangeApprovalCard({
     objectOrganizationId ??
     (object.state === "found"
       ? object.organizationId
-      : object.state === "stand-in"
-        ? activeOrganizationId
-        : null);
+      : null);
   const organizationKnown =
     Boolean(objectOrganizationId) || object.state !== "resolving";
   const campaign = useUnifiedDataCampaign({
@@ -195,6 +190,16 @@ export function RecordChangeApprovalCard({
     }),
   };
 
+  // The where-id-opens door is absent: the approval's own organization cannot be read, and
+  // the ACTIVE organization is never a substitute (it may not be the record's). Say so.
+  if (!objectOrganizationId && object.state === "stand-in") {
+    return (
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {wait.notDone} The record store could not say which organization this change belongs to,
+        so no decision is offered here. Reload once the store is updated.
+      </p>
+    );
+  }
   if (!organizationKnown || campaign.on === null) return null;
   if (!campaign.on) {
     return (

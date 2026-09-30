@@ -40,7 +40,7 @@ import { standingFromDecidedOnce, standingSentence } from "./approvalDecision";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
-import { resolveObjectOrganization, standInOrganizationId } from "@/features/unified-data/objectOrganization";
+import { resolveObjectOrganization } from "@/features/unified-data/objectOrganization";
 import {
   UNIFIED_DATA_CAMPAIGN,
   UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
@@ -92,7 +92,14 @@ async function reachOrRefusal(objectId: string): Promise<
   if (own.state === "unavailable") {
     return { refused: `Could not ask the record store where this change lives, so nothing was done. ${own.why}` };
   }
-  const organizationId = own.state === "found" ? own.organizationId : standInOrganizationId();
+  if (own.state === "stand-in") {
+    return {
+      refused:
+        "The record store could not say which organization this change belongs to, so nothing was done. " +
+        "The active organization is never used in its place.",
+    };
+  }
+  const organizationId = own.organizationId;
   if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
     return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
   }
