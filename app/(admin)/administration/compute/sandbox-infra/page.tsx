@@ -486,13 +486,13 @@ export default function SandboxInfraPage() {
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
                                 <MemoryStick className="w-3 h-3" /> Memory pressure
                             </span>
-                            : 80%+ on a tier means it&apos;s near capacity for new sandboxes. Each sandbox uses ~4 GB by default.
+                            : 80%+ means near capacity; each sandbox uses ~4 GB.
                         </p>
                         <p>
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
                                 <Cpu className="w-3 h-3" /> Load
                             </span>
-                            : 1m / 5m / 15m averages from <code className="font-mono">/proc/loadavg</code>. Sustained &gt;CPU-count = overloaded.
+                            : 1m / 5m / 15m averages; above CPU count means overloaded.
                         </p>
                         {/* Usually an orchestrator restart lost track; reconcile via the orchestrator store's reconcile(). */}
                         <p>

@@ -263,10 +263,7 @@ export default function AdminEventsPage() {
       getScope={getSurfaceScope}
     >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <div className="flex items-center gap-2">
-        {/* Source: platform.activity_log. */}
-        <Activity className="size-5 text-primary" />
-      </div>
+      {/* Source: platform.activity_log. */}
 
       {/* One failure, one message: the table below shows this read's failure
           (read=…) — as ReadFailure with no rows, or a stale notice over rows. */}
