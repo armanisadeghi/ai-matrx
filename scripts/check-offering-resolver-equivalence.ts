@@ -47,6 +47,9 @@
  *                                     and the untouched resolver must produce
  *                                     none.
  *   --strict                          exit 1 on any unexplained row.
+ *   --sites <uuid,uuid,...>           also compare these sites (added to the
+ *                                     valued ones) — for a move that touches
+ *                                     sites with no worth rows (COLLAPSE-4).
  *
  * MEASURED 2026-09-14 (steps 6a and 6b): 4 sites, 40,574 keywords; 6a 40,513
  * identical + 61 tenancy + 0 unexplained; 6b 40,574 identical. Self-test RED
@@ -102,12 +105,32 @@ async function connect(): Promise<Client> {
  * hash every comparison runs on; the rest is the readable summary a
  * difference is explained with.
  */
+/**
+ * `--sites <uuid,uuid,...>` ADDS sites to the compared set (never removes the
+ * valued ones). COLLAPSE-4 moves keyword homes on sites that carry no worth
+ * rows (All Green among them), and "identical on every valued site" says
+ * nothing about those, so the move is proven over every site it touches.
+ */
+const EXTRA_SITES = (valueOf("--sites") ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+if (EXTRA_SITES.some((s) => !/^[0-9a-f-]{36}$/i.test(s))) {
+  console.error(`${C.r}--sites takes comma-separated site uuids${C.x}`);
+  process.exit(2);
+}
+const EXTRA_SITES_SQL =
+  EXTRA_SITES.length > 0
+    ? `union select unnest(array[${EXTRA_SITES.map((s) => `'${s}'`).join(",")}]::uuid[])`
+    : "";
+
 const SNAPSHOT_SQL = (table: string) => `
   create temp table ${table} on commit drop as
   with sites as (
     select site_id from seo.site_topic_value where deleted_at is null
     union
     select site_id from seo.site_offering_value where deleted_at is null
+    ${EXTRA_SITES_SQL}
   ),
   answers as (
     select s.site_id, m.*
@@ -296,6 +319,36 @@ function unmeasured(v: Verdict) {
 async function begin(client: Client) {
   await client.query("begin");
   await client.query(`set local statement_timeout = '${ceilingFor(RUN_TARGET, 1_200_000)}'`);
+  await readerSeat(client, true);
+}
+
+/**
+ * THE READER'S SEAT. `seo.keyword_value_map` opens with
+ * `seo.gsc_assert_site_access`, which answers 42501 to a connection with no
+ * identity — so since that guard landed this harness crashed on its first
+ * site and measured nothing. The whole-corpus read is a platform-admin read:
+ * the test admin (`admin@admin.com`, never a real person) in the admin lane,
+ * transaction-local. It is switched OFF while a migration under test runs, so
+ * the file's own writes carry the identity a real apply would (none), not the
+ * reader's.
+ */
+async function readerSeat(client: Client, on: boolean) {
+  if (!on) {
+    await client.query(
+      `select set_config('matrx.admin_lane', '', true), set_config('request.jwt.claims', '', true)`,
+    );
+    return;
+  }
+  const { rows } = await client.query<{ ok: boolean }>(
+    `select set_config('matrx.admin_lane', 'on', true) is not null
+        and set_config('request.jwt.claims',
+              json_build_object('sub', (select id from auth.users where email = 'admin@admin.com'),
+                                'role', 'authenticated')::text, true) is not null
+        and public.is_platform_admin() as ok`,
+  );
+  if (!rows[0]?.ok) {
+    throw new Error("reader seat: admin@admin.com is not a platform admin in the admin lane on this database");
+  }
 }
 
 async function dryRun(file: string) {
@@ -306,8 +359,11 @@ async function dryRun(file: string) {
     await client.query(SNAPSHOT_SQL("_eq_before"));
     const before = await readTable(client, "_eq_before");
     const t0 = Date.now();
+    await readerSeat(client, false);
+    client.on("notice", (n) => console.log(`${C.d}NOTICE ${n.message}${C.x}`));
     await client.query(sql);
     console.log(`${C.d}ran ${file} in ${Math.round((Date.now() - t0) / 1000)}s (rolled back below)${C.x}`);
+    await readerSeat(client, true);
     await client.query(SNAPSHOT_SQL("_eq_after"));
     const after = await readTable(client, "_eq_after");
     const v = await diff(client, before, after);
