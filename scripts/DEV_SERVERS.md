@@ -103,12 +103,26 @@ checkout still exists; if the checkout was removed, terminate the exact PID
 recorded in the machine-wide lease, confirm it exited, then let
 `preview:status` clear the stale metadata. Do not kill by port or process name.
 
-The launcher continuously measures the whole preview process group. Its **192
-GB RSS watchdog is a runaway guard, not a budget**: the measured normal peak is
-138.3 GB on this 256 GB host. The monitor runs in its own detached OS session;
+The launcher continuously measures the whole preview process group in **real
+memory** — the sum of each process's macOS `phys_footprint`, which includes the
+compressed memory `ps` RSS leaves out (a next-server showing ~3 GB RSS was
+really 44–50 GB). Its **128 GB hard cap is a runaway guard, not a budget**.
+Next dev keeps every compiled route in memory, so an abandoned preview grows
+forever; the monitor therefore also **recycles** it. "Used" means the server
+logged an HTTP request (` GET /route 200 in 82ms`), stamped in the state dir's
+`*.used` file. Nothing requested for 30 min → stopped; ≥ 40 GB and idle 5 min →
+recycled. A new `pnpm preview:start` **replaces** a managed preview (any
+checkout's) idle ≥ 5 min, or one that stopped answering, instead of refusing;
+a preview that served a request in the last 2 min is never killed, and a busy
+healthy one is reused exactly as before. These stops are worded as normal
+recycles, never as crashes, and `preview:status` shows real memory and "last
+used N min ago" for each server. Knobs: `MATRX_PREVIEW_IDLE_STOP_MIN`,
+`MATRX_PREVIEW_RECYCLE_GB`, `MATRX_PREVIEW_RECYCLE_IDLE_MIN`,
+`MATRX_PREVIEW_BUSY_GUARD_MIN`; forcing tests: `pnpm test:preview-recycle`.
+The monitor runs in its own detached OS session;
 `nohup` is insufficient because agent shell cleanup reaps ordinary child
 process groups. It also stops startup after five minutes without
-log progress. Neither limit automatically restarts the server. A watchdog stop
+log progress. No limit automatically restarts the server. A watchdog stop
 is written into the dev log and printed prominently by both the next
 `preview:status` and `preview:start`. Advanced local use can override the
 defaults with `MATRX_PREVIEW_MAX_RSS_GB` and `MATRX_PREVIEW_NO_PROGRESS_SEC`.
@@ -180,7 +194,7 @@ can share a process group with its agent; killing that group can kill the agent.
 | Untracked orphan | uptime ≥ 90 min | `MATRX_DEV_MAX_UNTRACKED_AGE_MIN` |
 
 `dev:reap` governs unmanaged servers; the shared managed preview has its own
-192 GB watchdog and is never reaped by this 16 GB cleanup threshold. No
+128 GB real-memory watchdog plus idle recycling, and is never reaped by this 16 GB cleanup threshold. No
 `--max-old-space-size` flag solves native allocation; RSS is the correct guard.
 
 ## Machine setup
