@@ -39,6 +39,7 @@ import {
   projectRefOf,
   readQuarantineFacts,
 } from "./migration-target";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export type CheckTarget = "clone" | "production";
 export const CHECK_TARGETS: readonly CheckTarget[] = ["clone", "production"] as const;
@@ -69,7 +70,7 @@ export function parseCheckTarget(
     throw new CheckTargetRefusal(
       `--target ${value || "(nothing)"} is not a check target. Valid: --target clone (the nightly ` +
         "dev clone, the default for heavy checks) | --target production (live, every statement " +
-        `capped at ${GATE_DB_LIMITS.liveStatementTimeoutMs / 1000} s).`,
+        `capped at ${formatDurationMs(GATE_DB_LIMITS.liveStatementTimeoutMs, { style: "compact" })}).`,
       "check-target-unknown",
     );
   }
@@ -83,12 +84,12 @@ export function parsePromoted(promoted: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** "13h old", "2d 4h old", or the honest "promotion time unknown". */
+/** "13h 12m old", "2d 4h old", or the honest "promotion time unknown". */
 export function cloneAge(promoted: string, now: Date = new Date()): string {
   const d = parsePromoted(promoted);
   if (!d) return "promotion time unknown (CLONE-REF carries no `promoted`)";
-  const hours = Math.max(0, Math.floor((now.getTime() - d.getTime()) / 3_600_000));
-  return hours >= 24 ? `${Math.floor(hours / 24)}d ${hours % 24}h old` : `${hours}h old`;
+  const age = Math.max(0, now.getTime() - d.getTime());
+  return `${formatDurationMs(age, { style: "coarse", round: "down" })} old`;
 }
 
 /**
@@ -146,7 +147,7 @@ export function targetBanner(
   return (
     `[TARGET] ${gate}: LIVE production ${where.liveRef || "(ref unknown)"}` +
     `${where.explicit ? " (--target production)" : " (this check's default)"} — every statement ` +
-    `capped at ${GATE_DB_LIMITS.liveStatementTimeoutMs / 1000} s.`
+    `capped at ${formatDurationMs(GATE_DB_LIMITS.liveStatementTimeoutMs, { style: "compact" })}.`
   );
 }
 

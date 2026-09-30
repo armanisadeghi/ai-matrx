@@ -43,6 +43,7 @@ import {
   readCorpusSource,
   type CorpusSourceName,
 } from "./lib/rich-content-corpus";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 type SourceModule = typeof import("@ai-matrx/content-ir/source");
 
@@ -195,7 +196,7 @@ async function main(): Promise<number> {
   for (const stats of Object.values(report)) {
     for (const failure of stats.failures) byReason.set(failure.reason, (byReason.get(failure.reason) ?? 0) + 1);
   }
-  console.log(`\nTOTAL rows ${totals.rows}, identical ${totals.identical}, failing ${totals.rows - totals.identical}  (${Math.round((Date.now() - started) / 1000)}s)`);
+  console.log(`\nTOTAL rows ${totals.rows}, identical ${totals.identical}, failing ${totals.rows - totals.identical}  (${formatDurationMs(Date.now() - started, { style: "compact" })})`);
   for (const [reason, count] of [...byReason].sort((a, b) => b[1] - a[1])) console.log(`  ${reason}: ${count}`);
   for (const [source, stats] of Object.entries(report)) {
     for (const failure of stats.failures.slice(0, 200)) console.log(`  FAIL ${source} ${failure.id} ${failure.reason}`);

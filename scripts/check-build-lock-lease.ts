@@ -38,6 +38,7 @@ import {
   listBuildLocks,
   type LockQuery,
 } from "./lib/build-lock";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ESC = String.fromCharCode(27);
@@ -168,7 +169,7 @@ async function main(): Promise<number> {
     const leaseMs = new Date(t7.expiresAt!).getTime() - Date.now();
     must(
       leaseMs > 13 * 60_000 && leaseMs <= 15.5 * 60_000,
-      `GREEN-7 a take sets a bounded lease ~15 minutes out (${Math.round(leaseMs / 1000)}s)`,
+      `GREEN-7 a take sets a bounded lease ~15 minutes out (${formatDurationMs(leaseMs, { style: "compact" })})`,
     );
 
     console.log(`\n${OK}${C.bold}the build_lock lease is proven RED then GREEN on ${where}.${C.reset}`);

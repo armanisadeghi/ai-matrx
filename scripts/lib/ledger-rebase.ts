@@ -59,6 +59,7 @@ import { dirname, resolve } from "node:path";
 
 import type { Delta } from "./db-objects-diff-core";
 import { inventoryObjects, parseIdentity, type InventoryQuery } from "./db-objects-inventory";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** The name the ratchet block records, and the lane this primitive belongs to. */
 export const LEDGER_REBASE_LANE = "LEDGER-REBASE";
@@ -489,14 +490,14 @@ export function proofRefusal(proof: RebaseProof | null, want: ProofExpectation):
   }
   const measured = Date.parse(proof.measured_at);
   if (!Number.isFinite(measured)) return `the proof's measured_at (${String(proof.measured_at)}) is not a time.`;
-  const ageHours = (want.now.getTime() - measured) / 3_600_000;
-  if (ageHours > REBASE_PROOF_MAX_AGE_HOURS) {
+  const ageMs = want.now.getTime() - measured;
+  if (ageMs > REBASE_PROOF_MAX_AGE_HOURS * 3_600_000) {
     return (
-      `the proof is STALE: taken ${ageHours.toFixed(1)} h ago (${proof.measured_at}), and a proof is ` +
+      `the proof is STALE: taken ${formatRelativeTime(measured, { now: want.now.getTime(), style: "long" })} (${proof.measured_at}), and a proof is ` +
       `believed for ${REBASE_PROOF_MAX_AGE_HOURS} h — production has moved since. Re-run it on the clone.`
     );
   }
-  if (ageHours < -0.1) return `the proof's measured_at (${proof.measured_at}) is in the future.`;
+  if (ageMs < -360_000) return `the proof's measured_at (${proof.measured_at}) is in the future.`;
   return null;
 }
 

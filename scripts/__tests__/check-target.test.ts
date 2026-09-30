@@ -91,7 +91,7 @@ describe("the CLONE-REF pointer", () => {
     expect(parsePromoted("2026-09-26T12:50:59Z")?.toISOString()).toBe("2026-09-26T12:50:59.000Z");
     expect(parsePromoted("yesterday-ish")).toBeNull();
     expect(cloneAge("2026-09-26T12:50:59Z", now)).toBe("1d 18h old");
-    expect(cloneAge("2026-09-28T01:00:00Z", now)).toBe("5h old");
+    expect(cloneAge("2026-09-28T01:00:00Z", now)).toBe("5h 53m old");
   });
 });
 
@@ -161,7 +161,7 @@ describe("the [TARGET] line", () => {
   it("names live and its ceiling", () => {
     const line = targetBanner("check:x", "production", { liveRef: PROD, explicit: true });
     expect(line).toContain(`LIVE production ${PROD} (--target production)`);
-    expect(line).toContain("capped at 30 s");
+    expect(line).toContain("capped at 30s");
   });
 });
 

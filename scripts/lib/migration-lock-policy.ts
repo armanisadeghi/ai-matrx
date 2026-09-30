@@ -19,6 +19,8 @@
  * Twin: aidream/db/migration_lock_policy.py — same ceiling, same attempts, same parse.
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 export const LOCK_TIMEOUT_CEILING_MS = 3_000;
 export const LOCK_RETRY_ATTEMPTS = 10;
 export const LOCK_RETRY_BASE_SECONDS = 0.5;
@@ -230,7 +232,7 @@ export function timeoutOverrideFindings(
           text,
           why:
             "resets lock_timeout to the role default, which this runner does not bound; delete it — " +
-            `the runner already sets ${LOCK_TIMEOUT_CEILING_MS / 1000}s or less and retries`,
+            `the runner already sets ${formatDurationMs(LOCK_TIMEOUT_CEILING_MS, { style: "compact" })} or less and retries`,
         });
       else if (ms === 0)
         found.push({

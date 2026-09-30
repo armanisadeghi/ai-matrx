@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatDurationSeconds } from "@ai-matrx/kit/format";
 import { tryGateLock } from "./gate-db";
 export type CensusRow = Record<string, unknown>;
 
@@ -75,7 +75,7 @@ export async function lockHolder(
 
 export function describeHolder(h: LockHolder | null): string {
   if (!h) return "a run that had already let go by the time it was asked who it was";
-  return `backend pid ${h.pid} (${h.application_name || "no application_name"}), holding it for ${formatDurationMs(h.held_s * 1000, { style: "compact" })}`;
+  return `backend pid ${h.pid} (${h.application_name || "no application_name"}), holding it for ${formatDurationSeconds(h.held_s, { style: "compact" })}`;
 }
 
 export interface SingleFlightOptions {

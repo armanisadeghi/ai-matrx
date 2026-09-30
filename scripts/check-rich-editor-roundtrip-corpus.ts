@@ -75,6 +75,7 @@ import { rewriteTableSource, splitRowSegments, TableWriteRefused } from "../comp
 import { parseMarkdownTable } from "../components/mardown-display/blocks/table/parseMarkdownTable";
 import { oracleTableGrid } from "./lib/gfm-table-oracle";
 import { findTableEnd, tableStartsAt } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const args = process.argv.slice(2);
 const argValue = (flag: string): string | undefined => {
@@ -610,7 +611,7 @@ async function main(): Promise<number> {
     }
   }
   console.log(
-    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}, move-checked ${totals.moved}, table-cell edits ${totals.cells}, answer-table cell edits ${totals.answerCells}  (${Math.round((Date.now() - started) / 1000)}s)`,
+    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}, move-checked ${totals.moved}, table-cell edits ${totals.cells}, answer-table cell edits ${totals.answerCells}  (${formatDurationMs(Date.now() - started, { style: "compact" })})`,
   );
   for (const [reason, count] of [...byReason].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${reason}: ${count}`);
