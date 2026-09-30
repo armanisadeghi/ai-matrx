@@ -306,7 +306,7 @@ describe("Export writes the list's CSV for hub rows", () => {
     expect(lines[0]).toContain("Transcript");
     expect(lines[0]).toContain("Board call");
     expect(lines[0]).toContain("Interviews");
-    expect(lines[0]).toContain("https://app.test/transcripts/processor?focus=t1");
+    expect(lines[0]).toContain("https://app.test/knowledge/transcripts/t1");
     expect(lines[0]).toContain("Acme");
     expect(lines[0]).toContain("me@example.com");
     expect(lines[1]).toContain("Cleanup");
