@@ -508,10 +508,10 @@ describe("VaultItemDetail protected-action lifecycle", () => {
     });
     const transferAction = Array.from(
       document.querySelectorAll<HTMLElement>("[role=menuitem]"),
-    ).find((entry) => entry.textContent?.includes("Move scope"));
+    ).find((entry) => entry.textContent?.includes("Move to"));
     expect(transferAction).toBeDefined();
     await act(async () => transferAction?.click());
-    expect(host.textContent).toContain("Move ownership without copying values");
+    expect(host.textContent).toContain("without copying values");
 
     await act(async () => {
       root.render(
@@ -527,7 +527,7 @@ describe("VaultItemDetail protected-action lifecycle", () => {
     });
 
     expect(host.textContent).not.toContain(
-      "Move ownership without copying values",
+      "without copying values",
     );
     expect(transfer).not.toHaveBeenCalled();
     expect(fork).not.toHaveBeenCalled();
