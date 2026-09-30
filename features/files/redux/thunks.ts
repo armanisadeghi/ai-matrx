@@ -1908,7 +1908,9 @@ export const saveFileNewVersion = createAsyncThunk<
       // reads the new version.
       invalidateBlobCache(fileId);
       invalidateOfficeExtraction(fileId);
-      await dispatch(loadFileVersions({ fileId }))
+      // Refresh the history without holding the save on it — the save has
+      // landed, and "Saving…" must not wait on a list read.
+      void dispatch(loadFileVersions({ fileId }))
         .unwrap()
         .catch((err: unknown) => {
           // The save landed; only the history refresh failed. Say so.
