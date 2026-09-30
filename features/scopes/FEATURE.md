@@ -402,6 +402,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-30 — `EntityScopeTagger` `variant="dropdown"` is one self-labelled select per type (icon + value, "No class" for none; type name is the aria-label) with no header — "CLASSES / Class / None" stacked three labels over one choice (copy law R9, V4-F).
 
 - 2026-09-29 — **Resource inventory primitives** (A5-P, one source input). `useKindCounts` / `useKindItems`
   + `service/kindInventory.ts`; `reference_search_candidates` gained `p_order` ('recent'), `p_offset`,

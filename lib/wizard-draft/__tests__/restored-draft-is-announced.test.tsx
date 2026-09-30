@@ -232,7 +232,7 @@ it("says on screen that it put the abandoned goal back", async () => {
   expect(goalField().value).toBe(GOAL);
   // ...and the page SAYS SO, in words a non-technical Expert reads once.
   const text = container.textContent ?? "";
-  expect(text).toContain("Restored from last time");
+  expect(text).toContain("Restored");
   expect(container.querySelector('[role="status"]')?.getAttribute("aria-label")).toBe(
     "We put back what you started writing from last time",
   );
@@ -256,7 +256,7 @@ it("'Start fresh' empties the field and the draft does not come back", async () 
   // The words are gone from the field — a notice that leaves the old sentence
   // in place is not a remedy — and the notice itself is gone with them.
   expect(goalField().value).toBe("");
-  expect(container.textContent ?? "").not.toContain("Restored from last time");
+  expect(container.textContent ?? "").not.toContain("Restored");
   // And the saved draft is gone, so nothing puts it back on the next visit.
   const after = store.getState() as { wizardDraft: WizardDraftState };
   expect(after.wizardDraft.drafts["masterwork-new"]).toBeUndefined();

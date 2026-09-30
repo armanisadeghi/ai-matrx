@@ -77,6 +77,7 @@ Inside the chat engine (`components/mardown-display/**`), import `RichContentInl
 
 ## Change log
 
+- 2026-09-30 — V4-F copy: the remote-image placeholder's trust button reads "Always show" (the host is already on the line; it rides the tooltip) — "Always show from thumb.wikimedia.org" made every line wrap.
 - 2026-09-25 — RC-B2 fixes: nested-render identity guard + tag-fragment text, same-name section balance, nested stream holdback; heading anchors off in previews; one plain-text title projection (paste titles, note auto-labels, task seeds, observation labels, podcast/document names) + display projection of stored titles.
 - 2026-09-25 — `variant="reading"`; static inline leaf; remaining public text converted (sign document, booking intro, education hero/section strings, class descriptions, resource descriptions).
 - 2026-09-25 — server level (RC-B2b): `RichContentServer`, shared presets / element maps / splitter core, parity guard, learn + creator pages converted; shared nested-fence vectors with aidream.

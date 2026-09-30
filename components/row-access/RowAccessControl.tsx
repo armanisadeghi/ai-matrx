@@ -150,7 +150,7 @@ export function RowAccessControl({
           <div className="min-w-0">
             <div className="text-sm">{PUBLISHED_TO_WEB_LABEL}</div>
             <p className="text-xs text-muted-foreground">
-              Anyone, signed in or not, can open it at its address
+              Open to anyone, no sign-in
             </p>
           </div>
         </DropdownMenuCheckboxItem>

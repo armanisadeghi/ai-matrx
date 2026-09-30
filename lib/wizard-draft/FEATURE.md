@@ -42,7 +42,7 @@ mess.
 | `useWizardDraft(wizardId, { restore })` | Holds one form's answers in the shared `wizardDraftSlice`, adds a `status` of `"loading" \| "found" \| "absent"` (it waits for `useSyncHydrated()`), and reports any saved value the `restore` mapper refused in `rejectedKeys` — loudly, never a silent drop. |
 | `resolveWizardStep({...})` | The step decision: `"loading"` (wait), `"step"` (render it), `"lost"` (say so). A silent demotion to step 1 is deliberately not one of the outcomes. |
 | `<WizardAnswersLost onStartOver />` | What `"lost"` looks like: plain words, one reason, one way forward. |
-| `<WizardDraftRestored onStartFresh onDismiss />` | The one notice that goes with `applyOnce`: "Restored from last time" (the sentence naming what came back is its accessible name, not a visible line — copy law, 2026-09-30). Plus the two controls that make it true — "Start fresh" (the caller empties its fields in the same click) and dismiss. |
+| `<WizardDraftRestored onStartFresh onDismiss />` | The one notice that goes with `applyOnce`: "Restored" (the sentence naming what came back is its accessible name, not a visible line — copy law, 2026-09-30). Plus the two controls that make it true — "Start fresh" (the caller empties its fields in the same click) and dismiss. |
 
 Persistence itself is NOT here — it is `lib/redux/slices/wizardDraftSlice.ts`
 (the generic slice, warm-cache preset, 7-day TTL, per-identity). Never fork a
@@ -88,6 +88,9 @@ const resolution = resolveWizardStep<1 | 2>({
 
 ## Change Log
 
+- `2026-09-30` — Copy law R9 (unified-source-input V4-F): the notice reads
+  "Restored" + "Start fresh"; the longer "We put back <what>…"
+  sentence moved to the status's accessible name. Every consumer inherits it.
 - `2026-09-17` — A RESTORED DRAFT IS ANNOUNCED (cold walk 6). `applyOnce`,
   `didRestore`, `acknowledge` and `discard` added to `useWizardDraft`, plus
   `<WizardDraftRestored>`. Adopted by every consumer: the Masterwork guided
@@ -100,6 +103,3 @@ const resolution = resolveWizardStep<1 | 2>({
   "Start fresh" remedy, and a census so the next wizard cannot repeat it.
 
 - `2026-09-12` — Created (W43). Adopted by `features/masterwork/intake/NewRulebookFlow.tsx`.
-- `2026-09-30` — Copy law R9 (unified-source-input V4-F): the notice reads
-  "Restored from last time" + "Start fresh"; the longer "We put back <what>…"
-  sentence moved to the status's accessible name. Every consumer inherits it.
