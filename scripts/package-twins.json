@@ -20,7 +20,7 @@
       "why": "The official SheetJS xlsx 0.20.3 distribution, vendored by 87f7dc3eea because that release is not on npm (see the record for source, integrity hash and removal rule). Its minified bundles are third-party internals we never edit and cannot collapse onto @ai-matrx/kit; our own xlsx wrappers live outside this directory and are scanned."
     }
   ],
-  "$catalogFloor": 179,
+  "$catalogFloor": 189,
   "twins": [
     {
       "name": "isUuidShape",
@@ -204,6 +204,18 @@
       "name": "isRfc4122Uuid",
       "package": "@ai-matrx/kit/uuid",
       "why": "The STRICT RFC-4122 predicate (version 1-5, variant 8/9/a/b) \u2014 the right question for a validation door on a public route, and it REJECTS what isUuidShape accepts (the nil UUID, v6/v7/v8). Eight host copies collapsed 2026-09-07: six invite/notify API doors plus the two voice readiness doors that had been ALLOWLISTED here because the package shipped only the lax predicate. Never swap one predicate for the other to make a test pass.",
+      "allow": []
+    },
+    {
+      "name": "isRfc9562Uuid",
+      "package": "@ai-matrx/kit/uuid",
+      "why": "The STRICT modern UUID predicate: version 1\u20138 + variant 8/9/a/b, the current RFC 9562 set (kit, 2026-09-30). The UUID collapse census found 8 sites (6 matrx-frontend, 2 matrx-extend) hand-writing `[1-8]` regexes because isRfc4122Uuid (1\u20135) rejects v6/v7/v8 and isUuidShape accepts nil and any version. A local body under this name is a re-grown copy.",
+      "allow": []
+    },
+    {
+      "name": "isLowercaseUuidShape",
+      "package": "@ai-matrx/kit/uuid",
+      "why": "UUID shape, LOWER-case only (kit, 2026-09-30): the canonical spelling a wire protocol compares by string equality. matrx-extend's local-browser protocol held three copies of the regex inside zod schemas; both peers (matrx-local, aidream) reject any other spelling. A local body under this name is a re-grown copy.",
       "allow": []
     },
     {

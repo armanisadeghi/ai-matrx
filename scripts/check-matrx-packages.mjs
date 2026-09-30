@@ -48,6 +48,22 @@
 //   --self-test   prove the classifier, the lockfile parsers, the graph audit and
 //                 the whole run can go red — a stale transitive, a duplicated
 //                 version, a pin, and a 404 tarball inside the window (runs in CI).
+//   --duplicates  OFFLINE, DETERMINISTIC: fail ONLY on check 3 (two versions of one
+//                 package anywhere in the graph). No registry call, so it never goes
+//                 red because a sibling published five minutes ago — which is what
+//                 makes it fit to run on EVERY install (a consumer's postinstall).
+//                 🚨 WHY IT EXISTS (2026-09-30): matrx-frontend adopted
+//                 @ai-matrx/detail 0.1.3, whose own `latest` specs resolved
+//                 associations 0.13.26 / design-system 0.49.50 beside the app's
+//                 0.13.25 / 0.49.48. Two copies = two React contexts, and every
+//                 detail window and page crashed with "no <AssociationsProvider>".
+//                 The full check DID report DUPLICATE — but the full check is red
+//                 every half hour on STALE (the fleet publishes constantly), ran
+//                 only as a CI signal and an advisory release gate, and nobody ran
+//                 it on the adopting commit. A duplicate buried in ten STALE lines
+//                 on a check that is always red is not a guard.
+//   --root <dir>  audit that project root instead of this script's repo (used to
+//                 prove the guard red/green on a historical lockfile).
 
 import { execFileSync } from 'node:child_process';
 import {
@@ -542,6 +558,46 @@ function upstreamPinnersOf(graph, name, version) {
 
 // ── The audit ────────────────────────────────────────────────────────────────
 
+/** Check 3 for ONE package, as one pure function shared by the full audit and `--duplicates`. */
+function duplicateFinding(graph, name, updateCommand) {
+    const versions = [...(graph.installed.get(name)?.keys() ?? [])].sort(compareVersions);
+    if (versions.length <= 1) return null;
+    const detail = versions
+        .map((version) => `${version} ← ${ownersOf(graph, name, version).join(', ')}`)
+        .join(' | ');
+    return (
+        `DUPLICATE: ${name} is installed at ${versions.length} versions in one graph — ${detail}. ` +
+        `ONE SYSTEM, ONE VERSION: exactly one copy of every @ai-matrx package — two copies are two React ` +
+        `contexts, and a Provider the app mounts is invisible to the copy a package reads. ` +
+        `REMEDY: ${updateCommand}. If a version is held by a sibling package's own pinned dependency, ` +
+        `that package must be republished so its sibling spec resolves forward; a consumer repo cannot fix it.`
+    );
+}
+
+/**
+ * Pure, OFFLINE: every DUPLICATE in the graph, nothing else. No registry, so the
+ * answer depends only on the lockfile and node_modules — deterministic enough to
+ * run on every install.
+ */
+export function findDuplicates(graph, { updateCommand = updateCommandFor({ pnpm: true }) } = {}) {
+    return [...graph.installed.keys()]
+        .sort()
+        .map((name) => duplicateFinding(graph, name, updateCommand))
+        .filter(Boolean);
+}
+
+export function runDuplicatesCheck({ graph, updateCommand, log = console.log, error = console.error } = {}) {
+    const findings = findDuplicates(graph, { updateCommand });
+    if (findings.length === 0) {
+        log(`✓ ONE SYSTEM, ONE VERSION: ${graph.installed.size} @ai-matrx packages, one installed version each.`);
+        return 0;
+    }
+    error('\n@ai-matrx DUPLICATE install — two copies of a package means two React contexts:');
+    for (const finding of findings) error(`  - ${finding}`);
+    error(`\nFix it now: ${updateCommand}, commit package.json + the lockfile. Never pin.`);
+    return 1;
+}
+
 /**
  * Pure. Given a collected graph and a registry snapshot, produce every verdict.
  * The self-test drives THIS function with fixture lockfile TEXT, so the parsers
@@ -597,17 +653,8 @@ export async function auditGraph({
         }
 
         // (b) UNIQUENESS.
-        if (versions.length > 1) {
-            const detail = versions
-                .map((version) => `${version} ← ${ownersOf(graph, name, version).join(', ')}`)
-                .join(' | ');
-            failures.push(
-                `DUPLICATE: ${name} is installed at ${versions.length} versions in one graph — ${detail}. ` +
-                    `ONE SYSTEM, ONE VERSION: exactly one copy of every @ai-matrx package. ` +
-                    `REMEDY: ${updateCommand}. If a version is held by a sibling package's own pinned dependency, ` +
-                    `that package must be republished so its sibling spec resolves forward; a consumer repo cannot fix it.`,
-            );
-        }
+        const duplicate = duplicateFinding(graph, name, updateCommand);
+        if (duplicate) failures.push(duplicate);
 
         // (a) CURRENCY — for every version present, not just the declared one.
         for (const version of versions) {
@@ -1015,6 +1062,20 @@ async function selfTest() {
     if (!duplicates[0]?.includes('tap-target')) {
         problems.push('(b) duplicate finding does not name the package that holds the old copy');
     }
+    // --duplicates reaches the same verdict OFFLINE, and only that verdict.
+    expect('(b) --duplicates finds it offline', findDuplicates(parsePnpmLock(PNPM_FIXTURE_DUPLICATE)).length, 1);
+    expect(
+        '(b) --duplicates exits 1 on a duplicate',
+        runDuplicatesCheck({ graph: parsePnpmLock(PNPM_FIXTURE_DUPLICATE), log: silence, error: silence }),
+        1,
+    );
+    expect(
+        '(b) --duplicates exits 0 on a clean graph',
+        runDuplicatesCheck({ graph: parsePnpmLock(PNPM_FIXTURE_CLEAN), log: silence, error: silence }),
+        0,
+    );
+    // …and a graph the full check fails for OTHER reasons (a pin) is green here.
+    expect('(b) --duplicates judges uniqueness only', findDuplicates(parsePnpmLock(PNPM_FIXTURE_PIN)).length, 0);
 
     // ── (c) PIN — a caret in a pnpm importer ────────────────────────────────
     const pinned = await auditGraph({
@@ -1119,13 +1180,20 @@ async function selfTest() {
 
 // ── Entry point ──────────────────────────────────────────────────────────────
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const rootFlag = process.argv.indexOf('--root');
+const projectRoot =
+    rootFlag !== -1 && process.argv[rootFlag + 1]
+        ? resolve(process.argv[rootFlag + 1])
+        : resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 // Entry point ONLY. Importing this module (the self-test harness, a repo's own
 // tests, another script reusing the parsers) must never walk a graph or exit.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     if (process.argv.includes('--self-test')) {
         await selfTest();
+    } else if (process.argv.includes('--duplicates')) {
+        const pnpm = existsSync(resolve(projectRoot, 'pnpm-lock.yaml'));
+        process.exit(runDuplicatesCheck({ graph: collectGraph(projectRoot), updateCommand: updateCommandFor({ pnpm }) }));
     } else {
         const pnpm = existsSync(resolve(projectRoot, 'pnpm-lock.yaml'));
         const exitCode = await runCheck({
