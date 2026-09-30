@@ -206,14 +206,23 @@ create temp table oracle_asks on commit drop as
     join iam.organizations o on o.id = t.org and o.archived_at is null
     join custom.record r on r.organization_id = t.org and r.table_id = t.id and r.deleted_at is null
    group by m.user_id;
-create temp table oracle on commit drop as
+-- Each person's two answers are worked out ONCE (materialized: a scalar subquery pulled into the
+-- outer query would be asked again at every reference).
+create temp table oracle_answers on commit drop as
   select a.person, cardinality(a.ids) as asked,
-         (select count(*) from unnest(sa.seen) x where not coalesce((l.lv -> x::text ->> 's')::boolean, false)) as extra,
-         (select count(*) from jsonb_each(l.lv) e where (e.value ->> 's')::boolean and not (e.key::uuid = any (sa.seen))) as missing,
-         (select count(*) from jsonb_each(l.lv) e where (e.value ->> 's')::boolean) as seen
-    from oracle_asks a
-    cross join lateral (select custom.levels_of(a.person, a.ids) as lv) l
-    cross join lateral (select custom.seen_among(a.person, a.ids) as seen) sa;
+         custom.levels_of(a.person, a.ids) as lv, custom.seen_among(a.person, a.ids) as seen
+    from oracle_asks a;
+create temp table oracle on commit drop as
+  with ls as materialized (
+    select o.person, e.key::uuid as id from oracle_answers o, jsonb_each(o.lv) e where (e.value ->> 's')::boolean),
+  ss as materialized (select o.person, x as id from oracle_answers o, unnest(o.seen) x)
+  select o.person, o.asked,
+         (select count(*) from ss where ss.person = o.person
+             and not exists (select 1 from ls where ls.person = ss.person and ls.id = ss.id)) as extra,
+         (select count(*) from ls where ls.person = o.person
+             and not exists (select 1 from ss where ss.person = ls.person and ss.id = ls.id)) as missing,
+         (select count(*) from ls where ls.person = o.person) as seen
+    from oracle_answers o;
 insert into verdict
 select 'B', coalesce(sum(extra + missing), 0) = 0,
        format('%s people, %s (person, scope) pairs asked, %s seen by levels_of, %s differ',
