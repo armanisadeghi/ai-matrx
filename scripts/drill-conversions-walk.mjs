@@ -14,7 +14,7 @@
 //     the LIVE preview: until the definitions are on production the mounts say the door's refusal
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { signIn, until, sleep } from "./lib/seat-browser.mjs";
+import { signIn, until, sleep, setOrganization } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://drillconv-clone.localhost:3002";
 const LABEL = process.env.LABEL ?? "clone";
@@ -81,6 +81,8 @@ async function walkMount({ name, path, mount, expectDrillKey }) {
   await gotoResuming(`${ORIGIN}${path}`);
   await page.waitForSelector(mount, { timeout: 180000 }).catch(() => friction(`${name}: the mount ${mount} never drew`));
   const r = await settledOrSaid(`${name} first screen`);
+  // names are read after the numbers: wait (bounded) until no group still says it is reading
+  await until(`${name} names`, async () => !(await page.locator("[data-matrx-drill-into]").allTextContents()).some((t) => t.includes("Reading the name")), 30000);
   const labels = (await page.locator("[data-matrx-drill-into]").allTextContents()).map((t) => t.trim()).slice(0, 12);
   const body = (await page.locator("[data-drill-explorer]").first().textContent().catch(() => ""))?.replace(/\s+/g, " ").slice(0, 600);
   step(`${name}: first screen`, { outcome: r.v ?? r, ms: r.ms, total: await total(), groups: await groups(), labels, body });
@@ -126,6 +128,16 @@ try {
   else {
     await page.click("[data-runs-analyze-link]");
     await page.waitForURL(/runs\/analyze/, { timeout: 120000 }).catch(() => friction("Analyze did not open /workflows/runs/analyze"));
+  }
+  // The mine lane asks in the organization the person works in (its calendar); with none chosen the
+  // page holds with the picker (the platform never picks one). Pick it the way a person does.
+  await sleep(1500);
+  const held = (await page.getByText("An organization is needed for run analysis").count()) > 0;
+  step("Analyze with no organization chosen", { held });
+  if (held) {
+    await shot("workflow-runs-mine-00-held");
+    await setOrganization(page, process.env.WALK_ORG ?? "AI Matrx");
+    step("chose an organization", { org: process.env.WALK_ORG ?? "AI Matrx" });
   }
   await walkMount({ name: "workflow-runs-mine", path: "/workflows/runs/analyze", mount: '[data-workflow-runs-explorer="mine"]', expectDrillKey: "workflow" });
 

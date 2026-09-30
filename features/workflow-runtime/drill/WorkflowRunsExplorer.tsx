@@ -61,13 +61,16 @@ function wordsOf(map: Record<string, string>, empty: string): (value: string) =>
   return (value) => (value ? map[value] ?? "Another value" : empty);
 }
 
-/** A workflow's name, read as the person (a workflow she cannot open reads in words, never an id). */
+/**
+ * A workflow's name, read as the person. Every id asked comes back with words — its name, or "A
+ * workflow you cannot open" — so `missingLabel` is only ever the reading beat, never a verdict.
+ */
 const workflowNames: DrillNameResolver = {
   emptyLabel: "No workflow",
-  missingLabel: "A workflow you cannot open",
+  missingLabel: "Reading the name…",
   resolve: async (ids) => {
     try {
-      const names: Record<string, string> = {};
+      const names: Record<string, string> = Object.fromEntries(ids.map((id) => [id, "A workflow you cannot open"]));
       // bounded: the door shows at most one page of groups; read them 100 at a time
       for (let i = 0; i < ids.length; i += 100) {
         const facts = await fetchWorkflowFacts(ids.slice(i, i + 100));
@@ -83,18 +86,19 @@ const workflowNames: DrillNameResolver = {
 /** The organizations a member belongs to, read as her through their own row security. */
 const memberOrganizationNames: DrillNameResolver = {
   emptyLabel: "No organization",
-  missingLabel: "An organization you are not in",
+  missingLabel: "Reading the name…",
   resolve: async (ids) => {
     const { data, error } = await supabase.schema("iam").from("organizations").select("id,name").in("id", ids.slice(0, 1000));
     if (error) return { ok: false, message: `The organizations' names could not be read (${error.message}).` };
-    return { ok: true, names: Object.fromEntries((data ?? []).map((o) => [o.id, o.name ?? "An organization with no name"])) };
+    const found = new Map((data ?? []).map((o) => [o.id, o.name ?? "An organization with no name"]));
+    return { ok: true, names: Object.fromEntries(ids.map((id) => [id, found.get(id) ?? "An organization you are not in"])) };
   },
 };
 
 /** In the mine lane every run is the person's own. */
 const yourself: DrillNameResolver = {
   emptyLabel: "No person",
-  missingLabel: "You",
+  missingLabel: "Reading the name…",
   resolve: async (ids) => ({ ok: true, names: Object.fromEntries(ids.map((id) => [id, "You"])) }),
 };
 

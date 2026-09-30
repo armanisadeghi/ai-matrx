@@ -55,7 +55,13 @@ system's `MatrxDrillAnswerTable`, which this screen also renders.
 - `types.ts` — the ONE place the contract additions (`views`, `findings`, `records`, `having`,
   `as_of`, `stale_after_knob`) are typed and read defensively until `@ai-matrx/records` publishes them.
 
-Mounts: `features/admin/usage-drill/UsageExplorer.tsx` (`/administration/usage`).
+Mounts: `features/admin/usage-drill/UsageExplorer.tsx` (`/administration/usage`),
+`features/administration/kg-cost/components/KgCostExplorer.tsx` (`/administration/knowledge/kg-cost/explore`,
+definition `kg_cost`, platform lane), `features/workflow-runtime/drill/WorkflowRunsExplorer.tsx`
+(`/administration/automation/workflow-runs` platform lane; `/workflows/runs/analyze` mine lane; definition
+`workflow_runs`). What those mounts found the explorer still lacks (describe's choice labels and the door's
+relation `labels` unread, units beyond usd/tokens, records of an invoker definition) is listed in
+PROGRESS-DRILL-CONVERSIONS "Adoptions the explorer owes".
 
 ---
 

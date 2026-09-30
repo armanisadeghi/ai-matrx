@@ -23,7 +23,9 @@ export const KG_COST_SOURCE: DrillSource = { kind: "entity", token: "kg_cost" };
 /** The first screen: the old section's table — the last 30 days by source kind, costliest first. */
 export const KG_COST_FIRST_QUESTION: MatrxDrillQuestion = {
   by: ["source_kind"],
-  show: ["runs", "cost", "median_cost", "embedding_saved"],
+  // the old table's money columns; "What a successful run costs" (a built-in view) holds p50 / max /
+  // cost per character, which the old section counted over successful runs only
+  show: ["runs", "cost", "embedding_cost", "extraction_cost", "enrichment_cost"],
   where: [],
   sort: { key: "cost", direction: "desc" },
   window: "30d",
