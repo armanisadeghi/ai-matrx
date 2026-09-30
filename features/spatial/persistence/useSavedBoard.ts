@@ -87,6 +87,7 @@ type Phase =
 
 export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   const userId = useAppSelector(selectUserId);
+  // org-filter: default-for-new the organization a NEW home board is filed in; never picks which board opens
   const selectedOrgId = useAppSelector(selectOrganizationId);
   const [attempt, setAttempt] = useState(0);
   const [phase, setPhase] = useState<Phase | null>(null);
@@ -95,9 +96,9 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const targetId = "home" in target ? null : target.boardId;
-  // The home board is per organization, so switching organization opens that
-  // organization's home board. A board by id does not depend on the selection.
-  const key = `${userId ?? ""}|${targetId ?? `home:${selectedOrgId ?? ""}`}|${attempt}`;
+  // The home board is the person's own, in any organization: switching the active organization
+  // never swaps it (the active org only says where a NEW home board is filed).
+  const key = `${userId ?? ""}|${targetId ?? "home"}|${attempt}`;
 
   // The guard for the next write, outside React state: every save reads and
   // advances it, and a rename / open stamp moves the version too.
@@ -133,7 +134,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     return () => {
       alive = false;
     };
-  }, [key, userId, targetId, selectedOrgId]);
+  }, [key, userId, targetId]); // selectedOrgId: read at load only, as the write target for a new home board
 
   const readyBoardId = phase?.key === key && phase.status === "ready" ? phase.board.id : null;
 

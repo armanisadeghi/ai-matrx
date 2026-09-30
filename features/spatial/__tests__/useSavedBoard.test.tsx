@@ -7,9 +7,10 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const activeOrg = { id: "org-1" };
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) =>
-    selector({ appContext: { organization_id: "org-1" }, userAuth: { id: "user-1" } }),
+    selector({ appContext: { organization_id: activeOrg.id }, userAuth: { id: "user-1" } }),
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: (s: { userAuth: { id: string } }) => s.userAuth.id,
@@ -75,7 +76,11 @@ function mount() {
     root = createRoot(document.createElement("div"));
     root.render(<Probe />);
   });
-  return { result, unmount: () => act(() => root.unmount()) };
+  return {
+    result,
+    unmount: () => act(() => root.unmount()),
+    rerender: () => act(() => root.render(<Probe />)),
+  };
 }
 
 async function settle() {
@@ -104,6 +109,20 @@ it("loads the home board in the selected organization and stamps it opened once"
   expect(getHomeBoard).toHaveBeenCalledWith("org-1");
   expect(ready(result.current).board).toMatchObject({ id: "board-1", isHome: true, title: "My board" });
   expect(touchOpened).toHaveBeenCalledTimes(1);
+});
+
+it("switching the active organization never swaps the home board (it only says where a new one is filed)", async () => {
+  activeOrg.id = "org-1";
+  const { result, unmount, rerender } = mount();
+  await settle();
+  expect(getHomeBoard).toHaveBeenCalledTimes(1);
+  activeOrg.id = "org-2";
+  rerender();
+  await settle();
+  expect(getHomeBoard).toHaveBeenCalledTimes(1);
+  expect(ready(result.current).board.id).toBe("board-1");
+  unmount();
+  activeOrg.id = "org-1";
 });
 
 it("debounces saves to one guarded write of the latest document, based on the opened version", async () => {

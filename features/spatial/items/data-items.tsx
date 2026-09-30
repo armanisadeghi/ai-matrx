@@ -14,9 +14,10 @@
  * - **Record.** The body is records-ui's `Peek` under the same mount and gates, with the
  *   `matrx-user/data-tables` surface scoped to that one row (`RecordStoreRecordSurface`).
  *
- * Picking a table is the package's own `TablesHome` (its lists, New table and Start from an
- * example); "New table" on the board is the same package's making controls (`makingOnly`), whose
- * create answers the new table's id.
+ * Picking a table lists every table the person can see across ALL her organizations (the data
+ * home's own list, with the shell's organization filter defaulting to All organizations — never
+ * the active organization); "New table" on the board is the package's making controls
+ * (`makingOnly`, filed in the active organization), whose create answers the new table's id.
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -34,12 +35,16 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
+import { countsByOrganization, inOrganization, useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { CustomDataRecordsScope } from "@/features/agents/components/variables-management/custom-data/CustomDataRecordsScope";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { NO_ADDRESS, UnifiedTableBody, useUnifiedTable } from "@/features/unified-data/table-page/UnifiedTable";
 import { RecordStoreRecordSurface } from "@/features/unified-data/grid-agent-context/RecordStoreRecordSurface";
 import { DATA_TABLES_SURFACE } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 
+import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
 import type { NodeSource } from "../board/document";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 import { titleToAdopt } from "./feature-items.logic";
@@ -56,12 +61,15 @@ function tableIdOf(source: NodeSource): string | null {
 }
 
 /**
- * The record store for the organization the person works in — the scope a LIST of tables has
- * (the same one `/data-v2`'s landing reads). A table or record once picked reads as its OWN
- * organization (`useUnifiedTable`); this is only for choosing and making.
+ * The record store for the organization the person works in — ONLY for MAKING a table (a write:
+ * a new table is filed in the active organization). Never for choosing one: the list of tables a
+ * person can pick is every table across all her organizations (`TablesAcrossOrganizations`), and
+ * a table or record once picked reads as its OWN organization (`useUnifiedTable`). Law:
+ * common-docs/policies/active-org-is-never-a-list-filter.md.
  */
 function WorkingOrganizationRecords({ children }: { children: ReactNode }) {
   const userId = useAppSelector(selectUserId);
+  // org-filter: write-target a new table is filed in the organization the person works in
   const active = useOrganizationRequired();
   const campaign = useUnifiedDataCampaign({
     organizationId: active.organizationId,
@@ -92,19 +100,60 @@ function WorkingOrganizationRecords({ children }: { children: ReactNode }) {
 
 // ─── Table ───────────────────────────────────────────────────────────────────
 
+/**
+ * Every table the person can see, across ALL her organizations — the data home's own list
+ * (`useTablesEverywhere`), one flat list with each row naming its organization, and the shell's
+ * organization filter (All organizations on every open, never remembered, never the active org).
+ */
+function TablesAcrossOrganizations({
+  onChoose,
+  onCancel,
+}: {
+  onChoose: (row: DataHomeTableRow) => void;
+  onCancel: () => void;
+}) {
+  const tables = useTablesEverywhere();
+  const [orgFilter, setOrgFilter] = useState<string | null>(null);
+  const rows = inOrganization(tables.rows, orgFilter).filter((t) => !t.kept_by_the_app);
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-end">
+        <EntityOrgFilter
+          orgId={orgFilter}
+          onChange={setOrgFilter}
+          counts={{ byKind: {}, narrow: { all: countsByOrganization(tables.rows) } }}
+          countsLoading={tables.loading}
+        />
+      </div>
+      <RecordList
+        rows={rows}
+        read={readOf(
+          { loading: tables.loading, error: tables.error },
+          { what: "your tables", onRetry: tables.reload },
+        )}
+        rowKey={(t) => t.table_id}
+        rowText={(t) => `${t.table_name} ${t.organization_name}`}
+        onChoose={onChoose}
+        onCancel={onCancel}
+        emptyState={<>No tables yet. Make one with New table.</>}
+        renderRow={(t) => (
+          <>
+            <span className="min-w-0 flex-1 truncate">{t.table_name}</span>
+            <span className="shrink-0 truncate text-xs text-muted-foreground">{t.organization_name}</span>
+          </>
+        )}
+      />
+    </div>
+  );
+}
+
 function TablePicker({ onPick, onCancel }: PickerProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="max-h-[min(560px,70dvh)] overflow-y-auto">
-        <WorkingOrganizationRecords>
-          <TablesHome onOpenTable={(tableId: string) => onPick([{ title: "Table", source: tableSource(tableId) }])} />
-        </WorkingOrganizationRecords>
-      </div>
-      <div className="flex justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
+    <div className="max-h-[min(560px,70dvh)] overflow-y-auto">
+      <TablesAcrossOrganizations
+        onCancel={onCancel}
+        onChoose={(t) => onPick([{ title: t.table_name, source: tableSource(t.table_id) }])}
+      />
     </div>
   );
 }
@@ -187,28 +236,25 @@ function RecordChoices({
 }
 
 function RecordPicker({ onPick, onCancel }: PickerProps) {
-  const [tableId, setTableId] = useState<string | null>(null);
+  const [table, setTable] = useState<{ id: string; organizationId: string } | null>(null);
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">
-        {tableId ? "Choose the record." : "Choose the table the record is in."}
+        {table ? "Choose the record." : "Choose the table the record is in."}
       </p>
       <div className="max-h-[min(560px,70dvh)] overflow-y-auto">
-        <WorkingOrganizationRecords>
-          {tableId ? (
-            <RecordChoices tableId={tableId} onPick={onPick} onBack={() => setTableId(null)} />
-          ) : (
-            <TablesHome onOpenTable={(id: string) => setTableId(id)} />
-          )}
-        </WorkingOrganizationRecords>
+        {table ? (
+          // The record store, bound to the organization the TABLE lives in — never the active one.
+          <CustomDataRecordsScope tableId={table.id} organizationId={table.organizationId}>
+            <RecordChoices tableId={table.id} onPick={onPick} onBack={() => setTable(null)} />
+          </CustomDataRecordsScope>
+        ) : (
+          <TablesAcrossOrganizations
+            onCancel={onCancel}
+            onChoose={(t) => setTable({ id: t.table_id, organizationId: t.organization_id })}
+          />
+        )}
       </div>
-      {tableId ? null : (
-        <div className="flex justify-end">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

@@ -314,28 +314,27 @@ export async function listBoards(): Promise<BoardListRow[]> {
   }));
 }
 
-// One home creation per organization at a time: a double-mounted effect or two
+// One home lookup/creation per person at a time: a double-mounted effect or two
 // callers racing must not make two home boards.
 const homeInFlight = new Map<string, Promise<LoadedBoard>>();
 
 /**
- * Your HOME board in an organization: `settings.home === true`, made by you,
- * not deleted. Created ("My board") when there is none. `organizationId`
- * null → the organization gate asks the person, and this continues with
- * their answer (or rejects with `OrganizationSelectionCancelled`).
+ * Your HOME board: `settings.home === true`, made by you, not deleted — in ANY of your
+ * organizations (the active organization never decides which board you open; law:
+ * common-docs/policies/active-org-is-never-a-list-filter.md). The oldest one wins. When there is
+ * none, "My board" is created in `organizationId` — the organization new work is filed in
+ * (a write target); null → the organization gate asks the person, and this continues with their
+ * answer (or rejects with `OrganizationSelectionCancelled`).
  */
 export async function getHomeBoard(organizationId: string | null): Promise<LoadedBoard> {
-  const orgId = await resolveOrganization(organizationId);
   const userId = requireUserId();
-  const key = `${userId}:${orgId}`;
-  const existing = homeInFlight.get(key);
+  const existing = homeInFlight.get(userId);
   if (existing) return existing;
   const work = (async () => {
     const { data, error } = await db
       .from(TABLE)
       .select(BOARD_COLUMNS)
       .eq("created_by", userId)
-      .eq("organization_id", orgId)
       .is("deleted_at", null)
       .contains("settings", { home: true })
       .order("created_at", { ascending: true })
@@ -343,9 +342,10 @@ export async function getHomeBoard(organizationId: string | null): Promise<Loade
     if (error) throw readFailed("your board", error);
     const found = data?.[0];
     if (found) return toLoadedBoard(found);
+    const orgId = await resolveOrganization(organizationId);
     return insertBoard({ organizationId: orgId, userId, title: HOME_BOARD_TITLE, settings: { home: true } });
-  })().finally(() => homeInFlight.delete(key));
-  homeInFlight.set(key, work);
+  })().finally(() => homeInFlight.delete(userId));
+  homeInFlight.set(userId, work);
   return work;
 }
 
