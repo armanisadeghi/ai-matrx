@@ -8,9 +8,10 @@
 // (`platform.ai_usage_names`) did not name.
 
 /** Words for an id the names door did not name (it answers every id once its v2 is applied). */
-export const UNNAMED: Record<"person" | "organization" | "agent" | "session", string> = {
+export const UNNAMED: Record<"person" | "organization" | "agent" | "session" | "request", string> = {
   person: "A person whose name could not be read",
   organization: "An organization whose name could not be read",
   agent: "An agent whose name could not be read",
   session: "A sign-in session whose sign-in could not be read",
+  request: "A request whose details could not be read",
 };

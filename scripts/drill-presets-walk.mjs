@@ -53,7 +53,7 @@ try {
   for (const [path, key] of plan) {
     await page.goto(`${ORIGIN}${path}?view=builtin:${key}&w=30d`, { waitUntil: "domcontentloaded", timeout: 240000 });
     const outcome = await answered();
-    await sleep(800);
+    await sleep(5000); // names arrive after the answer
     const address = decodeURIComponent(page.url().replace(ORIGIN, ""));
     const labels = (await groups().allTextContents()).map((t) => t.replace(/\s+/g, " ").trim()).slice(0, 25);
     const codes = labels.filter((l) => CODE.test(l) && !MODEL_NAME.test(l));

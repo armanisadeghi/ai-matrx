@@ -95,3 +95,18 @@ describe("links into AI usage", () => {
     expect(b.searchParams.get("view")).toBe("builtin:spend_by_person");
   });
 });
+
+describe("names and numbers keep their shape", () => {
+  it("a dot inside a number stays; a dot between words splits them", () => {
+    expect(plainWords("Gemini 2.5 Pro TTS")).toBe("Gemini 2.5 Pro TTS");
+    expect(plainWords("runtime.work_item")).toBe("Runtime work item");
+  });
+  it("an id a resolver names reads 'Reading the name…' until the name arrives, never 'Unnamed'", () => {
+    const session = drillDimensionLabelFor(
+      { key: "session", label: "Sign-in session", from: "session_id", kind: "choice" } as never,
+      { names: undefined, resolver: { emptyLabel: "No session", missingLabel: "Reading the name…", resolve: async () => ({ ok: true, names: {} }) } as never },
+    )!;
+    expect(session("5d0b07f8-54b5-499b-86a8-557c46ea8a59")).toBe("Reading the name…");
+    expect(session("")).toBe("No session");
+  });
+});

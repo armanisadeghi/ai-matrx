@@ -32,7 +32,9 @@ const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
  * person ("agent_service:<uuid>" → "Agent service"); a code that is nothing but an id reads "Unnamed".
  */
 export function plainWords(value: string): string {
-  const part = (p: string) => p.replace(UUID, " ").replace(/[_\-./]+/g, " ").replace(/\s+/g, " ").trim();
+  // a dot splits words ("seo.topic_assigner"), never a number ("Gemini 2.5 Pro")
+  const part = (p: string) =>
+    p.replace(UUID, " ").replace(/(?<=[A-Za-z])\.(?=[A-Za-z])/g, " ").replace(/[_\-/]+/g, " ").replace(/\s+/g, " ").trim();
   const parts = value.split(":").map(part).filter(Boolean);
   if (parts.length === 0) return value.trim() ? "Unnamed" : value;
   const joined = parts.join(" · ");
@@ -67,6 +69,8 @@ export function drillDimensionLabelFor(
     const said = names?.[value] ?? choices.get(value);
     if (said) return said;
     if (hostWords) return hostWords(value);
+    // an id a host resolver names (a sign-in session is a choice of ids): its name is on the way
+    if (resolver && dim.kind !== "relation") return resolver.missingLabel ?? "Reading the name…";
     // a text value is a name (a model's own name), never a code: it reads as written
     if (dim.kind === "text") return new RegExp(`^${UUID.source}$`, "i").test(value) ? plainWords(value) : value;
     if (dim.kind === "relation") {

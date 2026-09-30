@@ -25,9 +25,12 @@ export const USAGE_SOURCE: DrillSource = { kind: "entity", token: "ai_usage" };
  * The Dimensions whose values are ids the names door reads. `session` is a sign-in session id (the
  * JWT's session_id on usage executions and model calls): it reads "email · signed in <when>", the
  * words the Spend page gave it (VERIFY-DRILL-WAVE2 W2-4; the door's `session` part is
- * migrations/campaign/drilladopt_a_sign_in_session_reads_as_who_and_when.sql).
+ * migrations/campaign/drilladopt_a_sign_in_session_reads_as_who_and_when.sql). `request` (the Spend
+ * page's most expensive requests, on ai_usage_executions) reads "<conversation> · <when> UTC" once the
+ * door's `request` part is applied (PROGRESS-DRILL-PRESETS-RETIRE, owner apply); until then every
+ * request says it could not be read, never its id.
  */
-export const NAMED_DIMENSIONS = ["organization", "person", "agent", "session"] as const;
+export const NAMED_DIMENSIONS = ["organization", "person", "agent", "session", "request"] as const;
 const STALE_AFTER_MS = 10 * 60_000;
 /** The recount door refuses more than this many days at a time. */
 const RECOUNT_MAX_DAYS = 100;
@@ -46,12 +49,13 @@ function stringMap(value: unknown): Record<string, string> {
 /** The names door, for one Dimension's ids. */
 export function usageNameResolver(organizationId: string, dimension: (typeof NAMED_DIMENSIONS)[number]): DrillNameResolver {
   return {
-    emptyLabel: dimension === "person" ? "No person" : dimension === "agent" ? "No agent" : dimension === "session" ? "No session" : "No organization",
+    emptyLabel:
+      dimension === "person" ? "No person" : dimension === "agent" ? "No agent" : dimension === "session" ? "No session" : dimension === "request" ? "No request" : "No organization",
     missingLabel: "Reading the name…",
     resolve: async (ids) => {
       const { data, error } = await supabase
         .schema("platform")
-        .rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: { organization: [], person: [], agent: [], session: [], [dimension]: ids } });
+        .rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: { organization: [], person: [], agent: [], session: [], request: [], [dimension]: ids } });
       if (error) return { ok: false, message: `The names behind these groups could not be read (${error.message}), so they show as ids.` };
       // Every id asked comes back with words: its name, or — when the door could not name it — a
       // sentence, never the id (VERIFIER-32 F5).
