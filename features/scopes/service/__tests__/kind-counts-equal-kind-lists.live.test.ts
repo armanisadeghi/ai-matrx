@@ -95,7 +95,7 @@ describeLive("a kind's count is the length of its list", () => {
     if (error) throw new Error(error.message);
     const rows = data as { token: string; n: number | null }[];
     expect(rows.map((r) => r.token).sort()).toEqual(
-      ["dataset", "file", "note", "transcript", "udt_document", "workbook"],
+      ["dataset", "file", "note", "processed_document", "transcript", "udt_document", "workbook"],
     );
     for (const row of rows) {
       expect({ token: row.token, listed: (await everyId(row.token, { p_mine: true })).length }).toEqual({
