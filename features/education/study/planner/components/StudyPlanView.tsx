@@ -221,7 +221,8 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     }
   };
 
-  // DESTRUCTIVE: `regeneratePlan` DELETES every day and every block on the plan
+  // DESTRUCTIVE: `regeneratePlan` archives every day and every block on the plan
+  // (a platform trigger turns the delete into deleted_at; not listed in Trash)
   // before writing the new schedule, so the blocks the user has already ticked
   // off go with them. Say that before the click, not after.
   const handleReplan = async () => {
@@ -229,7 +230,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     const ok = await confirm({
       title: "Re-plan around your latest performance?",
       description:
-        "Every day and every study block in your current plan is deleted and replaced by a newly generated schedule. The progress tracked on those blocks — everything you have marked done or skipped — is deleted with them and cannot be restored. Your cards, sessions, and review history are untouched; only the schedule is rewritten.",
+        "Every day and every study block in your current plan is replaced by a newly generated schedule. The progress tracked on those blocks — everything you have marked done or skipped — goes with them: the old schedule is archived, not destroyed, but it does not appear in Trash and cannot be brought back from this screen. Your cards, sessions, and review history are untouched; only the schedule is rewritten.",
       confirmLabel: "Delete and re-plan",
       variant: "destructive",
     });
@@ -270,7 +271,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     const ok = await confirm({
       title: "Build a recovery plan?",
       description:
-        "Every day and every study block in your current plan is deleted and replaced by a gentler catch-up schedule. The progress tracked on those blocks — everything you have marked done or skipped — is deleted with them and cannot be restored. Your cards, sessions, and review history are untouched; only the schedule is rewritten.",
+        "Every day and every study block in your current plan is replaced by a gentler catch-up schedule. The progress tracked on those blocks — everything you have marked done or skipped — goes with them: the old schedule is archived, not destroyed, but it does not appear in Trash and cannot be brought back from this screen. Your cards, sessions, and review history are untouched; only the schedule is rewritten.",
       confirmLabel: "Delete and rebuild",
       variant: "destructive",
     });
