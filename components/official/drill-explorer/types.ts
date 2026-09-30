@@ -163,6 +163,11 @@ export interface DrillNameResolver {
   resolve: (ids: string[]) => Promise<{ ok: true; names: Record<string, string> } | { ok: false; message: string }>;
   /** How the empty group reads ("No person"). Default the explorer's empty label. */
   emptyLabel?: string;
+  /**
+   * How an id reads while its name is being read, or when the resolver did not name it ("A person
+   * whose name could not be read"). Never the id itself: keys never reach a person (VERIFIER-32 F5).
+   */
+  missingLabel?: string;
 }
 
 /**
@@ -218,6 +223,23 @@ export interface DrillExplorerProps {
   rowNoun?: string | undefined;
   /** Grains the door's periods may not be cut into here (the usage rollup's `hour`). */
   hideGrains?: readonly string[] | undefined;
+  /**
+   * PLAIN WORDS for code-valued Dimensions (an origin's `child_agent` → "An agent it started"), per
+   * Dimension key. A Dimension with neither a resolver nor words shows its values as the definition
+   * says them — so every code-valued Dimension of a definition belongs here (VERIFIER-32 F5).
+   */
+  words?: Record<string, (value: string) => string> | undefined;
+  /**
+   * The Measure a row COUNTS (the usage rollup's rows are hourly totals; what a person counts is
+   * requests). Given, every answer also asks it, a group's summary reads "N <rowNoun>s" of THAT
+   * Measure, and "See these <rowNoun>s" names the same thing (VERIFIER-32 F3).
+   */
+  countMeasure?: string | undefined;
+  /**
+   * A definition counted in whole hours (a rollup): the window starts on the hour, so the page equals
+   * its oracle over the same stated window, and the header says where it starts (VERIFIER-32 F1).
+   */
+  windowAlign?: "hour" | undefined;
   /** More controls for the header row (an "Old usage page" link). */
   headerExtras?: ReactNode;
   /** A data attribute on the root, so a host's walk can find its mount. */

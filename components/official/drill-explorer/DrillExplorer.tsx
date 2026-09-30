@@ -23,7 +23,7 @@
 
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { formatCount } from "@ai-matrx/kit/format";
+import { POINTS_PER_USD, formatCount } from "@ai-matrx/kit/format";
 import {
   MatrxDrillAnswerTable,
   MatrxDrillGroupByMenu,
@@ -52,7 +52,8 @@ import { DrillFindings } from "./DrillFindings";
 import { DrillRecords } from "./DrillRecords";
 import { DrillSavedViews } from "./DrillSavedViews";
 import { drillSavedViewSurface } from "./savedViews";
-import { useDrillExplorer } from "./useDrillExplorer";
+import { explorerWindowRange, useDrillExplorer } from "./useDrillExplorer";
+import { apportionAnswers } from "./apportion";
 import { drillExplorerAutoGrain, withAutoGrain } from "./grain";
 import {
   builtInViewsOf,
@@ -120,6 +121,9 @@ export function DrillExplorer({
   hideGrains = [],
   headerExtras,
   dataAttributes,
+  words,
+  countMeasure,
+  windowAlign,
 }: DrillExplorerProps) {
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
@@ -129,8 +133,8 @@ export function DrillExplorer({
   const { question: asked, setQuestion } = useDrillUrlState({ fallback: firstQuestion ?? definitionDefault ?? EMPTY_QUESTION });
 
   // The hook asks exactly what the table draws: the address question with the auto grain applied.
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version });
-  const { def, answers, whole, names, says, error, asOf, client } = drill;
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign });
+  const { def, answers: rawAnswers, whole, names, says, error, asOf, client } = drill;
   if (!firstQuestion && def && !definitionDefault) setDefinitionDefault(explorerQuestionOf(def.default));
 
   const autoGrain = drillExplorerAutoGrain(asked.window ?? null);
@@ -145,10 +149,16 @@ export function DrillExplorer({
     const dim: MatrxDrillDimension = { key: d.key, label: d.label, kind: d.kind };
     if (d.cardinality) dim.cardinality = d.cardinality;
     if (d.grains) dim.grains = d.grains.filter((g): g is NonNullable<MatrxDrillDimension["grains"]>[number] => g !== "hour" && !hideGrains.includes(g));
+    // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as its name (or the resolver's words
+    // while it is read), a code as the host's plain words — never the id or the code itself.
     const resolver = resolvers?.[d.key];
+    const said = words?.[d.key];
     if (resolver) {
       const map = names[d.key] ?? {};
-      dim.labelFor = (value) => (value === null || value === "" ? (resolver.emptyLabel ?? "None") : map[value] ?? `${value.slice(0, 8)}…`);
+      dim.labelFor = (value) =>
+        value === null || value === "" ? (resolver.emptyLabel ?? "None") : map[value] ?? (said ? said(value) : (resolver.missingLabel ?? "Reading the name…"));
+    } else if (said) {
+      dim.labelFor = (value) => (value === null || value === "" ? said("") : said(value));
     }
     return dim;
   });
@@ -168,8 +178,17 @@ export function DrillExplorer({
     return m?.format ? m.format(v) : formatCount(v);
   };
 
+  // ROWS ADD UP TO THE TOTAL SHOWN (VERIFIER-32 F6): money is rounded once, at the total, and every
+  // level splits its parent's rounded amount by largest remainder.
+  const answers = (def?.measures ?? [])
+    .filter((m) => m.unit === "usd" && question.show.includes(m.key))
+    .reduce(
+      (held, m) =>
+        apportionAnswers(held, question, m.key, (usd) => (unit === "usd" ? usd * 100 : usd * POINTS_PER_USD), (u) => (unit === "usd" ? u / 100 : u / POINTS_PER_USD)),
+      rawAnswers,
+    );
   const total = answers["∅"]?.[0] ?? null;
-  const range = drillWindowRange(question.window ?? null);
+  const range = explorerWindowRange(question.window ?? null, windowAlign);
   const paths = (def?.paths ?? []).map((p) => p.levels);
   const builtIn = builtInViewsOf(def);
   const findings = findingsOf(def);
@@ -197,6 +216,11 @@ export function DrillExplorer({
           </span>
           <span className="text-xs text-muted-foreground">
             {drillWindowLabel(question.window ?? null)}
+            {windowAlign === "hour" && range ? (
+              <span data-drill-explorer-window-start title="Counted in whole hours: the window starts on the hour">
+                {` · from ${new Date(range.from).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`}
+              </span>
+            ) : null}
             {(headline?.also ?? []).map((key) => {
               const v = total?.measures[key];
               if (v === null || v === undefined) return null;
@@ -239,7 +263,7 @@ export function DrillExplorer({
               ))}
             </div>
           ) : null}
-          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} builtIn={builtIn} question={asked} onOpen={setQuestion} /> : null}
+          {def ? <DrillSavedViews surfaceKey={drillSavedViewSurface(def.key)} homeOrganizationId={lane === "platform" ? organizationId : null} builtIn={builtIn} question={asked} onOpen={setQuestion} /> : null}
           {headerExtras}
         </div>
       </div>
@@ -315,6 +339,9 @@ export function DrillExplorer({
                 </span>
               ) : null}
             </p>
+            {/* THE PHONE (VERIFIER-32 F4): the group's words give way to the numbers — its label is
+                capped and its count line hidden under 640 px, so the money column is on screen. */}
+            <div className="max-sm:[&_[data-matrx-drill-answer]_td>div]:max-w-[42vw] max-sm:[&_[data-matrx-drill-answer]_td>div]:overflow-hidden max-sm:[&_[data-matrx-drill-answer]_td>div>span.whitespace-nowrap]:hidden">
             <MatrxDrillAnswerTable
               dimensions={dimensions}
               measures={measures}
@@ -326,6 +353,7 @@ export function DrillExplorer({
               rowNoun={rowNoun}
               emptyLabel={emptyLabel}
             />
+            </div>
           </>
         )}
       </div>

@@ -49,7 +49,10 @@ type RawRow = DrillAnswer["rows"][number];
 const NO_ANSWERS: MatrxDrillAnswers = {};
 
 /** One door row as the answer table reads it (a prior-only group keeps its values). */
-export function drillRowOf(r: Pick<RawRow, "groups" | "measures" | "row_count"> & Partial<Pick<RawRow, "prior_groups" | "prior_measures" | "distinct_groups">>): MatrxDrillAnswerRow {
+export function drillRowOf(
+  r: Pick<RawRow, "groups" | "measures" | "row_count"> & Partial<Pick<RawRow, "prior_groups" | "prior_measures" | "distinct_groups">>,
+  countMeasure?: string,
+): MatrxDrillAnswerRow {
   const groups: Record<string, string | null> = {};
   // A group that only the PRIOR window had (a compare) arrives with groups null and its values in
   // prior_groups; reading groups alone turned every such group into the same empty key.
@@ -62,20 +65,37 @@ export function drillRowOf(r: Pick<RawRow, "groups" | "measures" | "row_count"> 
   return {
     groups,
     measures: num(r.measures),
-    row_count: Number(r.row_count ?? 0),
+    // What a row COUNTS: the host's count Measure when it names one (hourly totals are not what a
+    // person counts), else the rows the door counted.
+    row_count: countMeasure && r.measures?.[countMeasure] != null ? Number(r.measures[countMeasure]) : Number(r.row_count ?? 0),
     ...(r.prior_measures ? { prior_measures: num(r.prior_measures) } : {}),
     ...(r.distinct_groups !== undefined ? { distinct_groups: r.distinct_groups } : {}),
   };
 }
 
 /** The window of an address question in the door's words (and the comparison with it). */
-export function doorWindow(question: MatrxDrillQuestion): Pick<DrillQuestion, "window" | "compare"> {
-  const range = drillWindowRange(question.window ?? null);
+export function doorWindow(question: MatrxDrillQuestion, align?: "hour"): Pick<DrillQuestion, "window" | "compare"> {
+  const range = explorerWindowRange(question.window ?? null, align);
   if (!range) return {};
   return {
     window: { key: "at", from: range.from, to: range.to },
     ...(question.compare ? { compare: { against: question.compare, from: range.from, to: range.to } } : {}),
   };
+}
+
+/**
+ * The half-open moments a window covers. `align: "hour"` starts it on the hour (UTC) — a rollup
+ * counts whole hours, so a window starting mid-hour would silently drop that hour's first minutes
+ * while the Spend Explorer counted them (VERIFIER-32 F1). The end stays "now": the rollup's open hour
+ * holds everything counted so far.
+ */
+export function explorerWindowRange(window: string | null | undefined, align?: "hour", now: Date = new Date()): { from: string; to: string } | null {
+  const range = drillWindowRange(window, now);
+  if (!range || align !== "hour") return range;
+  const from = new Date(range.from);
+  if (Number.isNaN(from.getTime())) return range;
+  from.setUTCMinutes(0, 0, 0);
+  return { from: from.toISOString(), to: range.to };
 }
 
 export interface DrillExplorerData {
@@ -101,8 +121,10 @@ export function useDrillExplorer(args: {
   names?: Record<string, DrillNameResolver> | undefined;
   /** Changes when the host knows the data changed (a recount); every answer is asked again. */
   version?: number | undefined;
+  countMeasure?: string | undefined;
+  windowAlign?: "hour" | undefined;
 }): DrillExplorerData {
-  const { source, lane, organizationId, userId, question, names: resolvers, version = 0 } = args;
+  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign } = args;
   const client = organizationId ? drillClientFor(organizationId, userId) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
@@ -133,9 +155,11 @@ export function useDrillExplorer(args: {
 
   // THE ANSWERS — every request the table needs, plus the whole (no trail) for coverage.
   useEffect(() => {
-    if (!client || !def || question.by.length === 0) return;
+    // Asked with no grouping too: the header's total and the trail's names are the same question.
+    if (!client || !def) return;
     const asked = withAutoGrain(def, JSON.parse(askKey) as MatrxDrillQuestion);
-    const windowPart = doorWindow(asked);
+    const windowPart = doorWindow(asked, windowAlign);
+    const doorShow = countMeasure && !asked.show.includes(countMeasure) ? [...asked.show, countMeasure] : asked.show;
     const where = doorWhere(asked);
     const sortKey = asked.sort && asked.show.includes(asked.sort.key) ? asked.sort.key : asked.show[0];
     const requests = drillRequests(asked);
@@ -148,7 +172,7 @@ export function useDrillExplorer(args: {
         source: src,
         question: {
           by,
-          show: asked.show,
+          show: doorShow,
           where: w,
           lane,
           ...windowPart,
@@ -182,13 +206,13 @@ export function useDrillExplorer(args: {
         counted = counted ?? asOfAnswer(answer);
         for (const s of answer.says) if (!sentences.includes(s)) sentences.push(s);
         if (r.key === "__whole__") {
-          wholeRow = answer.total ? drillRowOf(answer.total) : null;
+          wholeRow = answer.total ? drillRowOf(answer.total, countMeasure) : null;
           continue;
         }
         const kind = r.by.length === 0 ? "total" : "group";
         out[r.key] = answer.rows
           .filter((row) => row.kind === kind && (kind === "group" || !row.groups || Object.keys(row.groups).length === 0))
-          .map(drillRowOf);
+          .map((row) => drillRowOf(row, countMeasure));
         for (const row of answer.rows) for (const [dim, value] of Object.entries(row.groups ?? {})) note(dim, value);
       }
       for (const w of asked.where) note(w.dim, w.value);
@@ -213,7 +237,7 @@ export function useDrillExplorer(args: {
     };
     // `resolvers` is read through `resolverKeys` (a host passes a fresh object each render).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, def, askKey, version, lane, sourceKey, resolverKeys, question.by.length]);
+  }, [client, def, askKey, version, lane, sourceKey, resolverKeys, countMeasure, windowAlign]);
 
   const current = answered.key === `${askKey}#${version}`;
   return { def, answers: current ? answered.answers : NO_ANSWERS, whole: current ? answered.whole : null, names, says, error, asOf, client };

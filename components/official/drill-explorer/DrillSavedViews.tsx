@@ -56,7 +56,14 @@ export function DrillSavedViews({
   builtIn,
   question,
   onOpen,
+  homeOrganizationId,
 }: {
+  /**
+   * Where the person's views live when the explorer names a home (the platform lane: the platform
+   * organization — the admin seat never reads or writes through whichever tenant is active).
+   * Absent: the organization the person is working in.
+   */
+  homeOrganizationId?: string | null | undefined;
   surfaceKey: string;
   /** The definition's own views, listed first and read-only. */
   builtIn: readonly DrillBuiltInView[];
@@ -65,7 +72,9 @@ export function DrillSavedViews({
 }) {
   // A Saved view is the person's own, kept in the organization they are working in (a saved view
   // row needs one); the answer itself is counted in the explorer's lane whatever it is.
-  const { organizationId, organizationState } = useOrganizationRequired();
+  const active = useOrganizationRequired();
+  const organizationId = homeOrganizationId ?? active.organizationId;
+  const organizationState = homeOrganizationId ? "ready" : active.organizationState;
   const [views, setViews] = useState<PersonalView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** The question being named: the current one, or a built-in view's ("Save a copy"). */
@@ -74,11 +83,10 @@ export function DrillSavedViews({
 
   useEffect(() => {
     let cancelled = false;
-    void supabase
-      .schema("platform")
-      .from("saved_view")
-      .select("id, name, definition")
-      .eq("surface_key", surfaceKey)
+    let read = supabase.schema("platform").from("saved_view").select("id, name, definition").eq("surface_key", surfaceKey);
+    // A named home reads only the views kept there.
+    if (homeOrganizationId) read = read.eq("organization_id", homeOrganizationId);
+    void read
       .is("deleted_at", null)
       .order("last_used_at", { ascending: false, nullsFirst: false })
       .limit(50)
@@ -100,7 +108,7 @@ export function DrillSavedViews({
     return () => {
       cancelled = true;
     };
-  }, [surfaceKey, version]);
+  }, [surfaceKey, homeOrganizationId, version]);
 
   const save = async (name: string) => {
     if (!organizationId || !naming) return;
