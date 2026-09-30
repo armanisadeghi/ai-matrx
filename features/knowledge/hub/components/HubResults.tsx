@@ -254,6 +254,8 @@ function VirtualList({
   more,
   initialScrollTop,
   onScrollTop,
+  initialAnchor,
+  onAnchor,
 }: {
   hits: KnowledgeHit[];
   handlers: ResultHandlers;
@@ -263,6 +265,9 @@ function VirtualList({
   /** Where the list was when the person left it (Back restores it). */
   initialScrollTop?: number;
   onScrollTop?: (top: number) => void;
+  /** The row that was at the top when the person left, and how far into it (restored exactly). */
+  initialAnchor?: { key: string; delta: number };
+  onAnchor?: (anchor: { key: string; delta: number }) => void;
 }) {
   const hideKind = oneKind(hits);
   const ref = useRef<HTMLDivElement>(null);
@@ -292,15 +297,27 @@ function VirtualList({
   const listHeight = sizes.reduce((acc, n, i) => ((starts[i] = acc), acc + n), 0);
   const endRow = more && (more.has || more.loading || more.error) ? END_H : 0;
   // Back to the list: the scroll position comes back once the rows it pointed at are drawn.
+  // Anchored on the row that was at the top (rows grow as their content arrives, so a pixel
+  // offset drifts); re-applied while rows settle, until the person scrolls themselves.
   const restored = useRef(false);
+  const settleUntil = useRef(0);
+  const personScrolled = useRef(false);
   useEffect(() => {
     const el = ref.current;
-    if (!el || restored.current || !initialScrollTop) return;
-    if (listHeight + endRow < initialScrollTop + el.clientHeight && more?.has) return;
+    if (!el || personScrolled.current) return;
+    const anchorAt = initialAnchor
+      ? items.findIndex((it) => it.kind === "row" && hitKey(it.item) === initialAnchor.key)
+      : -1;
+    const target = anchorAt >= 0 ? starts[anchorAt] + (initialAnchor?.delta ?? 0) : initialScrollTop;
+    if (!target) return;
+    if (restored.current && Date.now() > settleUntil.current) return;
+    if (anchorAt < 0 && listHeight + endRow < target + el.clientHeight && more?.has) return;
+    if (!restored.current) settleUntil.current = Date.now() + 2500;
     restored.current = true;
-    el.scrollTop = initialScrollTop;
+    if (Math.abs(el.scrollTop - target) > 1) el.scrollTop = target;
     setOffset(el.scrollTop);
-  }, [listHeight, endRow, initialScrollTop, more?.has]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listHeight, endRow, initialScrollTop, initialAnchor?.key, more?.has]);
   // Near the end: read the next page (once per page — `loading` holds it).
   useEffect(() => {
     if (!more?.has || more.loading || more.error) return;
@@ -329,9 +346,20 @@ function VirtualList({
       // -mx-2 + the row's px-2: the tile sits on the pane's own 16px edge, in line with the
       // search box and facets, while the hover fill still reaches past it (Linear).
       className="relative -mx-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+      onWheel={() => (personScrolled.current = true)}
+      onTouchMove={() => (personScrolled.current = true)}
+      onKeyDown={() => (personScrolled.current = true)}
       onScroll={(e) => {
-        setOffset(e.currentTarget.scrollTop);
-        onScrollTop?.(e.currentTarget.scrollTop);
+        const top = e.currentTarget.scrollTop;
+        setOffset(top);
+        onScrollTop?.(top);
+        if (onAnchor) {
+          let i = 0;
+          while (i < items.length - 1 && starts[i] + sizes[i] <= top) i++;
+          while (i < items.length - 1 && items[i].kind !== "row") i++;
+          const it = items[i];
+          if (it && it.kind === "row") onAnchor({ key: hitKey(it.item), delta: top - starts[i] });
+        }
       }}
       role="listbox"
       aria-label="Results"
@@ -784,7 +812,8 @@ function GalleryLayout({ hits, handlers, more }: { hits: KnowledgeHit[]; handler
       aria-label="Results"
       onScroll={(e) => nearEnd(e.currentTarget, more)}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {/* items-start: a card is as tall as what it shows — a card without a poster never stretches to its row. */}
+      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {hits.map((h) => (
           <ResultCard key={hitKey(h)} hit={h} handlers={handlers} tall hideKind={hideKind} />
         ))}
@@ -869,7 +898,12 @@ export function BrowseResults({
   /** What was typed: marked in titles and passages. */
   highlight?: string;
   /** Back to the list: its scroll position, and where to keep it as it changes. */
-  restore?: { scrollTop?: number; onScrollTop: (top: number) => void };
+  restore?: {
+    scrollTop?: number;
+    onScrollTop: (top: number) => void;
+    anchor?: { key: string; delta: number };
+    onAnchor?: (anchor: { key: string; delta: number }) => void;
+  };
 }) {
   const searching = Boolean(highlight.trim());
   const h = searching ? { ...handlers, highlight } : handlers;
@@ -973,6 +1007,8 @@ export function BrowseResults({
             more={moreState}
             initialScrollTop={restore?.scrollTop}
             onScrollTop={restore?.onScrollTop}
+            initialAnchor={restore?.anchor}
+            onAnchor={restore?.onAnchor}
           />
         )}
         </div>

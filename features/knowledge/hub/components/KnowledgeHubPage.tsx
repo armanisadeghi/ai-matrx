@@ -1901,10 +1901,29 @@ export function KnowledgeHubPage({
           </Button>
           {layoutSwitch}
         </div>
-        {!trashView && (transcriptsView || resultCount) ? (
+        {!trashView && (transcriptsView || resultCount || organizationReachOf(state.query) === "active") ? (
           <>
             {/* Row break on a wide pane: facets and the count start their own line. */}
             <div className="order-2 hidden h-0 basis-full @lg:block" aria-hidden />
+            {/* The reach, when narrowed, is a filter like any other: it says which organization and
+                carries its own × (the header's organization is where "Only" points). */}
+            {organizationReachOf(state.query) === "active" ? (
+              <div className="order-2 inline-flex h-8 shrink-0 items-center rounded-md border border-primary/30 bg-primary/10 text-xs">
+                <span className="px-2.5">
+                  <span className="text-muted-foreground">Only </span>
+                  <span className="font-medium">{activeOrgName ?? "my current organization"}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => write({ query: normalizeQuery({ ...state.query, organizations: undefined }) })}
+                  className="inline-flex h-full items-center rounded-r-md border-l border-primary/20 px-1.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
+                  aria-label="Search every organization I belong to"
+                  title="Every organization I belong to"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : null}
             {transcriptsView ? (
               <div className="order-2 min-w-0 basis-full @lg:basis-0 @lg:flex-1">
               <TranscriptFacetBar
@@ -2042,7 +2061,12 @@ export function KnowledgeHubPage({
             onRetry={triageView ? triage.refresh : serverTranscripts ? () => transcriptList.retry() : results.retry}
             stage={stageColumn}
             groupByDate={dateOrdered}
-            restore={{ scrollTop: listRestore.saved?.scrollTop, onScrollTop: (top) => listRestore.save({ scrollTop: top }) }}
+            restore={{
+              scrollTop: listRestore.saved?.scrollTop,
+              onScrollTop: (top) => listRestore.save({ scrollTop: top }),
+              anchor: listRestore.saved?.anchor,
+              onAnchor: (anchor) => listRestore.save({ anchor }),
+            }}
             emptyExtra={
               state.view.kind === "everything" && !sample ? (
                 <HubGettingStarted />

@@ -428,11 +428,10 @@ export function ResultCard({
       className={cn(
         "group relative flex min-w-0 cursor-default flex-col gap-1.5 overflow-hidden rounded-lg border border-border bg-card text-sm shadow-sm",
         isFocused ? "ring-2 ring-ring" : "hover:border-foreground/20",
-        tall && "min-h-36",
       )}
       {...clickHandlers(hit, handlers)}
     >
-      {tall && content?.thumbnailUrl ? (
+      {content?.thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- remote YouTube CDN poster, no loader configured for i.ytimg.com
         <img src={content.thumbnailUrl} alt="" loading="lazy" className="aspect-video w-full bg-muted object-cover" />
       ) : null}

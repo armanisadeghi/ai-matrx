@@ -14,6 +14,8 @@ import type { HubState } from "@/features/knowledge/hub/hubState";
 export interface SavedListPlace {
   depth?: number;
   scrollTop?: number;
+  /** The row at the top of the list and how far into it — exact even when row heights changed. */
+  anchor?: { key: string; delta: number };
   focusedKey?: string | null;
 }
 
