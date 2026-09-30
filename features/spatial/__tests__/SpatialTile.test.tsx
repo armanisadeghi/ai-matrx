@@ -76,6 +76,13 @@ function must<E extends Element>(el: E | null): E {
   return el;
 }
 
+/** A store whose viewport shows the tile, so it renders at a reading tier. */
+function onScreenStore(cam: { x: number; y: number; z: number }): SpatialStore {
+  const store = new SpatialStore(cam);
+  store.setSize({ w: 4000, h: 4000 });
+  return store;
+}
+
 function ResizeHarness({ store, onResize }: { store: SpatialStore; onResize: jest.Mock }) {
   return (
     <SpatialStoreContext.Provider value={store}>
@@ -114,9 +121,10 @@ describe("SpatialTile frame gestures", () => {
   });
 
   it("has eight resize handles, and a left-edge drag moves the origin (scale-compensated)", () => {
-    const store = new SpatialStore({ x: 0, y: 0, z: 0.5 });
+    const store = onScreenStore({ x: 0, y: 0, z: 0.5 });
     const onResize = jest.fn();
     act(() => root.render(<ResizeHarness store={store} onResize={onResize} />));
+    act(() => store.recomputeCoarse());
     const handles = container.querySelectorAll("[data-spatial-resize]");
     expect(handles).toHaveLength(8);
     const west = must(container.querySelector<HTMLElement>("[data-spatial-resize='w']"));
@@ -131,7 +139,7 @@ describe("SpatialTile frame gestures", () => {
   });
 
   it("double-click on the header flies to the tile and makes it live", () => {
-    const store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
     const fit = jest.spyOn(store, "fitItem");
     act(() => root.render(<ResizeHarness store={store} onResize={jest.fn()} />));
     const header = must(container.querySelector<HTMLElement>("[data-spatial-card] > div"));
@@ -149,9 +157,10 @@ describe("SpatialTile frame gestures", () => {
   });
 
   it("double-click in the body of an interacting tile stays native (no fly)", () => {
-    const store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
     const fit = jest.spyOn(store, "fitItem");
     act(() => root.render(<ResizeHarness store={store} onResize={jest.fn()} />));
+    act(() => store.recomputeCoarse());
     act(() => store.setEditing("tile"));
     const body = must(container.querySelector<HTMLElement>("[data-body]"));
     act(() => {
@@ -163,7 +172,7 @@ describe("SpatialTile frame gestures", () => {
   });
 
   it("double-click in the body of an idle tile flies and starts interacting", () => {
-    const store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
     const fit = jest.spyOn(store, "fitItem");
     act(() => root.render(<ResizeHarness store={store} onResize={jest.fn()} />));
     const body = must(container.querySelector<HTMLElement>("[data-body]"));
@@ -173,5 +182,51 @@ describe("SpatialTile frame gestures", () => {
     });
     expect(fit).toHaveBeenCalledWith("tile");
     expect(store.getEditing()).toBe("tile");
+  });
+});
+
+describe("SpatialTile frame edge", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    for (const name of ["setPointerCapture", "releasePointerCapture"]) {
+      Object.defineProperty(HTMLElement.prototype, name, { configurable: true, value: jest.fn() });
+    }
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it("a double-click on the frame edge (a resize handle) flies like the header", () => {
+    // At far zoom the edge handles cover most of a tiny header; the edge is
+    // the tile's frame, so it must fly too.
+    const store = onScreenStore({ x: 0, y: 0, z: 1 });
+    const fit = jest.spyOn(store, "fitItem");
+    act(() => root.render(<ResizeHarness store={store} onResize={jest.fn()} />));
+    act(() => store.recomputeCoarse());
+    const north = must(container.querySelector<HTMLElement>("[data-spatial-resize='n']"));
+    act(() => {
+      north.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 5, clientY: 5 }));
+      north.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, clientX: 5, clientY: 5 }));
+      north.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    });
+    expect(fit).toHaveBeenCalledWith("tile");
+    expect(store.getSelected()).toBe("tile");
+  });
+
+  it("at overview zoom an unselected tile shows no handles (a drag moves it), the selected one does", () => {
+    const store = onScreenStore({ x: 0, y: 0, z: 0.1 });
+    act(() => root.render(<ResizeHarness store={store} onResize={jest.fn()} />));
+    act(() => store.recomputeCoarse());
+    expect(container.querySelectorAll("[data-spatial-resize]")).toHaveLength(0);
+    act(() => store.select("tile"));
+    expect(container.querySelectorAll("[data-spatial-resize]")).toHaveLength(8);
   });
 });
