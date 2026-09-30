@@ -106,7 +106,7 @@ hardware with a production build before tuning further.
   steps back one state; the header always drags. While a tile is interacting only Esc reaches the
   board's keys.
 - **Frame gestures every item type inherits (`engine/tile-gestures.ts`, drawn by `SpatialTile`; a host
-  opts in by passing `onResize`):**
+  must pass `onResize`):**
   - *Resize:* four edge + four corner handles, a 12px SCREEN hit area at any zoom (world size
     `px / --spatial-z`), mostly outside the edge so it never covers a scrollbar; min 160×96; Shift keeps
     the aspect ratio (corner: the axis that moved most leads; edge: the other axis scales about its
@@ -114,8 +114,16 @@ hardware with a production build before tuning further.
     `body`, so an iframe or editor in the tile can never steal the drag, even while interacting.
     `useBoard.resizeTile` coalesces a resize into ONE undo step, like a move; `/board` persists it
     through the board document. At the overview tier (a tile a few px on screen) only the SELECTED
-    tile shows handles, so a drag there moves instead of resizes (Figma). Wired on `/board` only (the demo, meeting and workflow boards pass
-    `onMove` but not yet `onResize`; War Room refuses resize by design).
+    tile shows handles, so a drag there moves instead of resizes (Figma). `onResize` is a REQUIRED prop, so no board can
+    forget it: every `useBoard` host passes `board.resizeTile` (/board, the demo, the meeting board,
+    the workflow run board); War Room passes `null` with its reason (its parts are sized by the
+    thread layout, which stores positions only). `__tests__/resize-wiring.test.ts` walks every
+    `<SpatialTile>` in `features/` and fails on a movable tile with no resize decision.
+  - *Press (`pressAction`), the pointer twin of `routeWheel`:* a control gets its own press; the
+    header always drags; a mouse/pen press on the body of a tile you are not working in selects and
+    drags it; a FINGER on a tile's body only selects it and stays native, so the content scrolls
+    (the body is `touch-action: pan-x pan-y` under the board's `touch-action: none`). A finger on
+    empty space pans the board.
   - *Double-click (`doubleClickAction`):* on the header / chrome (the frame edge — a resize handle —
     counts as chrome) → fly to the tile and make it live
     (select + `fitItem`, the state `board_focus` "fly" produces); on the body of a tile you are NOT
@@ -135,8 +143,12 @@ hardware with a production build before tuning further.
   (`fixed inset-0 h-dvh`, z-50) — never sized from the tile, the camera or the board pane, so nothing
   the content does can move the way out. The exit bar (Close, ←/→ in reading order) is a fixed row
   above the content with a 44px button on phones. **Escape always exits**, even from inside a
-  composer or editor (a capture-phase listener runs before the content); only an open menu, popover
-  or listbox (`aMenuOrPopoverIsOpen`) keeps the key. Leaving returns to the exact camera.
+  composer or editor, through the shared full-screen layer stack (`pushFullScreenLayer` in
+  `features/shell/canvas-chrome/open-layer.ts`, also used by the chat workspace's full screen):
+  capture phase, before the content; an open menu, popover or listbox keeps the key; ONE Escape
+  leaves only the top layer (the most recently opened — a tile's full screen over the workspace's
+  full screen closes first). While any layer is open `<html data-full-screen-layer>` moves top
+  toasts below the exit bar (`app/globals.css`, FULL-SCREEN TOAST CLEARANCE). Leaving returns to the exact camera.
 - **Throws (`engine/throw.ts`):** a header drag released at ≥ 1.1 px/ms after ≥ 70px travel, on a
   dominant axis. Defaults (`DEFAULT_THROW_ACTIONS`, a knob): → park on the shelf · ↑ save to Notes
   and close · ↓ delete from the board after a consequence-naming confirm · ← unassigned. The action
@@ -274,6 +286,12 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-30 — The gaps, closed as one class: `onResize` is required on `SpatialTile` and wired on
+  every `useBoard` host (War Room opts out explicitly), guarded by `resize-wiring.test.ts`; a finger
+  on a tile body scrolls its content instead of dragging the tile or panning the board
+  (`pressAction`); full screen joined a shared layer stack so one Escape closes only the top layer,
+  and top toasts drop below the exit bar.
 
 - 2026-09-30 — Documents on the Board (`udt_document`): the tile renders `DocumentRecord`, the one
   component `/documents/[id]` now renders too, with the `matrx-user/documents` surface — which gained the
