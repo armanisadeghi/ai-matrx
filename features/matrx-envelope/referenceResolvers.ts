@@ -46,6 +46,7 @@ import {
   readRowsById,
   readTableDetails,
 } from "@/features/data-tables/service";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * IS THIS TABLE IN THE RECORD STORE? (lane INTEG-CLIENTS, CUTOVER-PLAN F10.) A moved table
@@ -226,11 +227,11 @@ async function resolveCell(
     if (!cells) return undefined;
     const raw = cells[column];
     const couldBeRelation =
-      typeof raw === "string" ? UUID_TEXT.test(raw.trim()) : Array.isArray(raw);
+      typeof raw === "string" ? isUuidShape(raw.trim()) : Array.isArray(raw);
     if (!couldBeRelation) return stringify(raw);
     // The words door names the RECORDS a relation cell points at, by their ids.
     const ids = (Array.isArray(raw) ? raw : [raw])
-      .filter((v): v is string => typeof v === "string" && UUID_TEXT.test(v.trim()))
+      .filter((v): v is string => typeof v === "string" && isUuidShape(v.trim()))
       .map((v) => v.trim());
     const words = await readRelationWords({ tableId: tableId!, fieldName: column, rowIds: ids });
     return ids.map((id) => words.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
@@ -255,7 +256,7 @@ async function resolveCell(
   // Is this column a relation? The format lives on the field row, so it is one
   // read, and only for a cell that could be one (a uuid, or a list of them).
   const couldBeRelation =
-    typeof raw === "string" ? UUID_TEXT.test(raw.trim()) : Array.isArray(raw);
+    typeof raw === "string" ? isUuidShape(raw.trim()) : Array.isArray(raw);
   if (!couldBeRelation || !row.table_id || !row.organization_id) return stringify(raw);
 
   const { data: field } = await supabase
@@ -271,7 +272,7 @@ async function resolveCell(
   if (format?.id !== "relation") return stringify(raw);
 
   const ids = (Array.isArray(raw) ? raw : [raw])
-    .filter((v): v is string => typeof v === "string" && UUID_TEXT.test(v.trim()))
+    .filter((v): v is string => typeof v === "string" && isUuidShape(v.trim()))
     .map((v) => v.trim());
   const { data: words } = await supabase
     .schema("workbench")
@@ -290,7 +291,6 @@ async function resolveCell(
   return ids.map((id) => byId.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
 }
 
-const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The name of a table (the `table` / `dataset` reference), from whichever store holds it.
@@ -1022,7 +1022,7 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
     openItemType: noun as KnownItemType,
     openId: (ref) => ref.id,
     resolveValue: async (supabase, ref) => {
-      if (!ref.id || !UUID_LIKE_RE.test(ref.id)) return stringify(ref.label);
+      if (!ref.id || !isUuidShape(ref.id)) return stringify(ref.label);
       try {
         const from =
           schema === "public" ? supabase.from(table) : supabase.schema(schema).from(table);
@@ -1036,8 +1036,6 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
   };
 }
 
-const UUID_LIKE_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Resolve a reference `type` to its resolver, or `undefined` (graceful chip).
 

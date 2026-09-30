@@ -27,9 +27,8 @@ import { ArrowLeft, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolveAccessGateSlug } from "@/features/access-gate/service/accessDeniedContext";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface OrganizationAccessGateProps {
   /** The raw `[orgId]` route param — uuid or slug. */
@@ -53,7 +52,7 @@ export function OrganizationAccessGate({
   fallbackLabel = "Your organizations",
 }: OrganizationAccessGateProps) {
   const directId =
-    organizationId ?? (UUID_RE.test(orgSlugOrId) ? orgSlugOrId : null);
+    organizationId ?? (isUuidShape(orgSlugOrId) ? orgSlugOrId : null);
 
   // Slug case: ask the platform. `null` = still asking (or nothing to ask),
   // and the answer is keyed to the param so a navigation can't apply a stale

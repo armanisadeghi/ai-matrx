@@ -111,9 +111,8 @@ import {
   createProjectsExtraSections,
   PROJECTS_CONTEXT_MENU_PROPS,
 } from "@/features/projects/agent-context/buildProjectsContextData";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROJECT_ROW_DOM_ATTR = "data-project-row-id";
 
 /**
@@ -383,7 +382,7 @@ export function ProjectsHub({
   const [orgFilterAttempt, setOrgFilterAttempt] = React.useState(0);
   React.useEffect(() => {
     let cancelled = false;
-    if (!orgParam || UUID_RE.test(orgParam)) return undefined;
+    if (!orgParam || isUuidShape(orgParam)) return undefined;
     getOrganizationBySlugOrId(orgParam).then(
       (o) => {
         if (!cancelled) {
@@ -405,7 +404,7 @@ export function ProjectsHub({
     orgParam && resolvedOrgFilter?.param === orgParam ? resolvedOrgFilter.error : undefined;
   const orgFilterId = !orgParam
     ? null
-    : UUID_RE.test(orgParam)
+    : isUuidShape(orgParam)
       ? orgParam
       : resolvedOrgFilter?.param === orgParam
         ? resolvedOrgFilter.id

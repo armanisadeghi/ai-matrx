@@ -32,6 +32,7 @@ import type {
 } from "../planner/types";
 import { fail } from "./serviceError";
 import { writeOneRow } from "@/utils/supabase/writeOne";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const EDU = () => supabase.schema("education");
 
@@ -49,13 +50,12 @@ const EDU = () => supabase.schema("education");
 // since the planner moved onto mandates; the column is a uuid, so writing the
 // key there failed every AI plan save and re-plan with 22P02. A uuid still goes
 // to the column; a mandate key is kept in `config.generatorMandate`.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function generatorFields(draft: PlanDraft): {
   generator_agent_id: string | null;
   config: Record<string, unknown>;
 } {
   const generator = draft.generatorAgentId ?? null;
-  const isUuid = generator !== null && UUID_RE.test(generator);
+  const isUuid = generator !== null && isUuidShape(generator);
   return {
     generator_agent_id: isUuid ? generator : null,
     config: {

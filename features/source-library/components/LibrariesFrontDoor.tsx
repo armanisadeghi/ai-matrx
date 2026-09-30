@@ -19,9 +19,8 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { createLibraryListConfig } from "../browse/listConfig";
 import { CatalogPasteBox } from "./CatalogPasteBox";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * THE HANDOFF DOES NOT DROP THE CONTEXT. Masterwork's Sources panel and the
@@ -40,7 +39,7 @@ function RulebookHandoffNotice() {
 
     const rulebookId = params.get("rulebook_id");
     const backHref =
-        rulebookId && UUID_RE.test(rulebookId)
+        rulebookId && isUuidShape(rulebookId)
             ? `/masterwork/${rulebookId}/sources`
             : null;
 

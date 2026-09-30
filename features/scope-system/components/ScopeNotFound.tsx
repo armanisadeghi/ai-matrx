@@ -9,9 +9,8 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTreeError, selectTreeStatus } from "@/features/scopes/redux/selectors/tree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface ScopeNotFoundProps {
   /** Canonical entity token of the record the route segment addresses. */
@@ -66,7 +65,7 @@ export function ScopeNotFound({
       </div>
     );
   }
-  if (UUID_RE.test(param)) {
+  if (isUuidShape(param)) {
     return (
       <AccessGate
         token={token}

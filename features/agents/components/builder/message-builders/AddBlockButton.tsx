@@ -80,6 +80,7 @@ import {
   type ReferenceRole,
 } from "@ai-matrx/agents";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -95,8 +96,6 @@ export type BlockType =
   | "decision_questions"
   | "speech_script";
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface FieldConfig {
   key: string;
@@ -403,7 +402,7 @@ export function BlockEditor({
         // A library selection and a variable both belong in the canonical
         // file_id slot. Preserve external URL support without asking for MIME;
         // the server detects it from the resolved resource.
-        if (value.includes("{{") || UUID_PATTERN.test(value)) {
+        if (value.includes("{{") || isUuidShape(value)) {
           block.file_id = value;
         } else {
           block.url = value;

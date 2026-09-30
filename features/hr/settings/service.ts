@@ -26,6 +26,7 @@ import type {
   HrCustomFieldTarget,
   HrEmployerProfileRead,
 } from "./types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const PG_INSUFFICIENT_PRIVILEGE = "42501";
 
@@ -409,10 +410,6 @@ export async function fetchHrKnobMetadata(): Promise<HrResult<HrKnobMetadata[]>>
  */
 export const HR_CUSTOM_FIELD_TOKEN_LIKE = "hr\\_%";
 
-/** `platform.custom_field_target.organization_id` goes into a PostgREST `or=` string, so it is checked first. */
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * Read the custom-field registry for this org's HR tokens.
  *
@@ -435,7 +432,8 @@ export async function fetchHrCustomFieldRegistry(args: {
     labels: Record<string, string>;
   }>
 > {
-  if (!UUID_RE.test(args.organizationId)) {
+  // The organization id goes into a PostgREST `or=` string, so it is checked first.
+  if (!isUuidShape(args.organizationId)) {
     return failed(
       `This employer could not be identified, so the custom-field registry was not read.`,
       "hr_custom_fields_bad_org_id",

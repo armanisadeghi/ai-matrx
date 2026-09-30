@@ -16,15 +16,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveShareToken } from "@/utils/permissions/shareLinks";
 import type { SharedCanvasItem } from "@/types/canvas-social";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function resolveSharedCanvas(
   tokenOrId: string,
   client: SupabaseClient,
 ): Promise<SharedCanvasItem | null> {
-  if (UUID_RE.test(tokenOrId)) {
+  if (isUuidShape(tokenOrId)) {
     const { data } = await client
       .schema("canvas")
       .from("shared_canvas_items")

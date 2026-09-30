@@ -18,8 +18,8 @@ import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
 import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { isJobOutputKind, runOutputKindFromModalities } from "@/lib/api/run-wait";
 import type { RequestGenerationJob } from "@/features/agents/types/request.types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The model this conversation's next run uses: a run-time model override
  *  wins, else the agent's own model. Null when neither is known. */
@@ -31,7 +31,7 @@ export function selectRunModelId(
     | Record<string, unknown>
     | undefined;
   const override = settings?.model;
-  if (typeof override === "string" && UUID.test(override)) return override;
+  if (typeof override === "string" && isUuidShape(override)) return override;
   const instance = state.conversations.byConversationId[conversationId];
   const sourceId = instance?.initialAgentVersionId ?? instance?.agentId;
   if (!sourceId) return null;

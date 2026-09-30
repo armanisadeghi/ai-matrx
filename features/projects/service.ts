@@ -47,6 +47,7 @@ import {
   generateProjectSlug,
 } from "./types";
 import { emailErrorMessage } from "@/lib/email/error-message";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Resolve the organization this write acts in: the caller's explicit id, else
@@ -258,9 +259,6 @@ export async function getProject(projectId: string): Promise<Project | null> {
 // URL params may carry either a slug or a project UUID — newly-created projects
 // always get a slug, but older projects (and any built without one) fall back
 // to the UUID in `${project.slug ?? project.id}` route construction.
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function getProjectBySlug(
   slugOrId: string,
   organizationId: string,
@@ -272,7 +270,7 @@ export async function getProjectBySlug(
       .is("deleted_at", null)
       .eq("organization_id", organizationId);
 
-    const query = UUID_PATTERN.test(slugOrId)
+    const query = isUuidShape(slugOrId)
       ? base.eq("id", slugOrId)
       : base.eq("slug", slugOrId);
 

@@ -47,9 +47,8 @@ import { AccessDeniedView } from "@/features/access-gate/components/AccessDenied
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolveAccessGateSlug } from "@/features/access-gate/service/accessDeniedContext";
 import type { AccessDeniedContext } from "@/features/access-gate/types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The context an ABSOLUTE refusal renders through.
@@ -172,7 +171,7 @@ function HrEmployerStandingDenied({
   fallbackLabel: string;
   footer?: ReactNode;
 }) {
-  const directId = UUID_RE.test(employerRef) ? employerRef : null;
+  const directId = isUuidShape(employerRef) ? employerRef : null;
 
   const [slugResolved, setSlugResolved] = useState<{
     slug: string;

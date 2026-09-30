@@ -44,6 +44,7 @@ import {
   type CurrentAssessment,
 } from "./assessmentAgentWrites";
 import { distinctTopic, type AssessmentListItem } from "./assessmentList";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 type Controller = EntityListSurfaceController<AssessmentListItem>;
 
@@ -256,7 +257,6 @@ export function buildPracticeTestWriteHandlers(
   };
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const sameName = (a: string, b: string) =>
   displayTitle(a).trim().toLowerCase() === displayTitle(b).trim().toLowerCase();
 
@@ -265,7 +265,7 @@ async function resolveDeck(where: string, ref: string): Promise<{ id: string; na
   const res = await fcService.listSets();
   if (res.error) throw new Error(`${where}: the person's decks could not be read (${res.error}).`);
   const decks = res.data ?? [];
-  const hit = UUID.test(ref) ? decks.find((d) => d.id === ref) : decks.filter((d) => sameName(d.name, ref));
+  const hit = isUuidShape(ref) ? decks.find((d) => d.id === ref) : decks.filter((d) => sameName(d.name, ref));
   const found = Array.isArray(hit) ? hit : hit ? [hit] : [];
   if (found.length === 0)
     throw new Error(`${where}.deck "${ref}" is not a flashcard deck the person can see. Use its id or exact name.`);
@@ -279,13 +279,13 @@ async function resolveDocument(where: string, ref: string): Promise<{ id: string
   const { data, error } = await supabase.rpc("rag_library_list", {
     p_limit: 50,
     p_offset: 0,
-    p_search: UUID.test(ref) ? undefined : ref,
+    p_search: isUuidShape(ref) ? undefined : ref,
     p_status_filter: "ready",
     p_source_kind: undefined,
   });
   if (error) throw new Error(`${where}: the person's documents could not be read (${error.message}).`);
   const docs = ((data as { documents?: { id: string; name: string }[] } | null)?.documents ?? []);
-  const found = UUID.test(ref) ? docs.filter((d) => d.id === ref) : docs.filter((d) => sameName(d.name, ref));
+  const found = isUuidShape(ref) ? docs.filter((d) => d.id === ref) : docs.filter((d) => sameName(d.name, ref));
   if (found.length === 0)
     throw new Error(`${where}.document "${ref}" is not a processed document in the person's Knowledge library. Use its id or exact name.`);
   if (found.length > 1)

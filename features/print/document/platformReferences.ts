@@ -12,8 +12,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { CslItem } from "@ai-matrx/print/document";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function dateParts(value: unknown): CslItem["issued"] {
   if (typeof value !== "string" && typeof value !== "number") return undefined;
@@ -42,7 +42,7 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.trim
 
 export async function resolvePlatformReferences(keys: string[]): Promise<CslItem[]> {
   const ids = (prefix: string) =>
-    keys.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)).filter((id) => UUID.test(id));
+    keys.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)).filter((id) => isUuidShape(id));
   const researchIds = ids("research:");
   const fileIds = ids("file:");
   const out: CslItem[] = [];

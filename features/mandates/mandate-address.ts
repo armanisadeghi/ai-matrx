@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * WHAT IS AT THIS ADDRESS — the mandate half of the wrong-address class.
  *
@@ -36,15 +38,13 @@
 export const MANDATE_KEY_PATTERN =
   /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/;
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type MandateAddressKind = "key" | "id" | "not-an-address";
 
 /** What a URL segment could possibly be. Pure — no DB read involved. */
 export function readMandateAddress(segment: string): MandateAddressKind {
   const value = segment.trim();
-  if (UUID_PATTERN.test(value)) return "id";
+  if (isUuidShape(value)) return "id";
   if (MANDATE_KEY_PATTERN.test(value)) return "key";
   return "not-an-address";
 }

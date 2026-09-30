@@ -4,9 +4,8 @@
 
 import { parsePasted } from "./agent-import-parse";
 import type { ImportFixAction } from "./agent-import-validation";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function parseImportObject(raw: string): Record<string, unknown> | null {
   const result = parsePasted(raw);
@@ -41,7 +40,7 @@ export function readValidModelIdFromPaste(raw: string): string | null {
   const id = readModelIdFromObject(obj);
   if (typeof id !== "string") return null;
   const trimmed = id.trim();
-  return UUID_RE.test(trimmed) ? trimmed : null;
+  return isUuidShape(trimmed) ? trimmed : null;
 }
 
 function prefersSnakeCase(
@@ -157,7 +156,7 @@ export function patchStripUnresolvedTools(
   if (!Array.isArray(tools)) return;
 
   obj.tools = tools.filter((t) => {
-    if (typeof t === "string" && UUID_RE.test(t)) return true;
+    if (typeof t === "string" && isUuidShape(t)) return true;
     if (typeof t === "string") return toolIndex.has(t.toLowerCase());
     if (t && typeof t === "object" && "name" in t) {
       return toolIndex.has(String((t as { name: unknown }).name).toLowerCase());

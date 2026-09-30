@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * features/pdf/utils/source.ts
  *
@@ -39,8 +41,6 @@ export interface PdfSourceInputs {
   sourceId?: string | null;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Source wire for a known cld_files row id. */
 export function buildPdfSourceFromFileId(
@@ -71,7 +71,7 @@ export function parsePdfSourceInput(value: string): PdfSourceWire | null {
   if (t.startsWith("http://") || t.startsWith("https://")) {
     return { media: { url: t } };
   }
-  if (UUID_RE.test(t)) {
+  if (isUuidShape(t)) {
     return buildPdfSourceFromFileId(t);
   }
   return null;

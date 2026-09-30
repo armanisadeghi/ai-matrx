@@ -16,11 +16,10 @@ import { useSyncExternalStore } from "react";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { toast } from "@/lib/toast";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const MESSAGE_PIN_ENTITY_TYPE = "message";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 let pinned = new Set<string>();
 let pending = new Set<string>();
@@ -80,7 +79,7 @@ export function isMessagePinned(messageId: string): boolean {
 
 /** Load pin state for these messages (skips ids already loaded). */
 export async function hydratePinnedMessages(messageIds: string[]): Promise<void> {
-  const ids = messageIds.filter((id) => UUID_RE.test(id) && !hydrated.has(id));
+  const ids = messageIds.filter((id) => isUuidShape(id) && !hydrated.has(id));
   if (ids.length === 0) return;
   for (const id of ids) hydrated.add(id);
   const res = (await favoritesService.getBulk(MESSAGE_PIN_ENTITY_TYPE, ids)) as RpcResult<{
@@ -105,7 +104,7 @@ export async function hydratePinnedMessages(messageIds: string[]): Promise<void>
 
 /** Pin ↔ unpin. Resolves to the resulting pinned state. */
 export async function togglePinnedMessage(messageId: string): Promise<boolean> {
-  if (!UUID_RE.test(messageId)) {
+  if (!isUuidShape(messageId)) {
     toast.error("This message isn't saved yet", {
       description: "Pin it once the reply finishes saving.",
     });

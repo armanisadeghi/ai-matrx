@@ -22,6 +22,7 @@ import {
 } from "@/lib/media/our-file-sources";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
 import { findTableStart } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const hasMarkdownTable = (value: string): boolean => findTableStart(value.split("\n")) !== -1;
 
@@ -193,11 +194,10 @@ export function looksLikeImageUrl(value: string): boolean {
     return IMAGE_EXT_RE.test(trimmed);
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A whole-string RFC-4122 UUID (rendered compactly with hover-to-copy). */
 export function looksLikeUuid(s: string): boolean {
-    return UUID_RE.test(s);
+    return isUuidShape(s);
 }
 
 /**

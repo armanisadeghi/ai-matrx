@@ -64,6 +64,7 @@ import {
 } from "./reachability";
 import { partyContactPointsQuery } from "./service";
 import type { ContactPoint } from "./types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** Keys the extras read merges into the row; never rendered as themselves. */
 export const PARTY_CONTACT_POINTS_KEY = "__contactPoints";
@@ -84,7 +85,7 @@ function text(row: DetailRow, key: string): string | null {
 function isUuid(value: unknown): value is string {
   return (
     typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim())
+    isUuidShape(value.trim())
   );
 }
 

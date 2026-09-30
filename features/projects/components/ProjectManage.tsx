@@ -48,9 +48,8 @@ import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function ProjectManage() {
   const params = useParams();
@@ -72,7 +71,7 @@ export function ProjectManage() {
       setProjectReadError(null);
       let resolved: Project | null = null;
       try {
-        if (UUID_RE.test(projectParam)) {
+        if (isUuidShape(projectParam)) {
           resolved = await getProject(projectParam);
         } else {
           const { data, error: slugError } = await workspaceDb(supabase)

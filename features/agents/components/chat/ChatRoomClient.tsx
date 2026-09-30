@@ -67,6 +67,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 interface ChatRoomClientProps {
   agentId: string;
@@ -845,8 +846,6 @@ export function ChatRoomClient({
   );
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Consumes `?attachDoc=<documentId>` on a fresh chat route: links the shared
@@ -881,7 +880,7 @@ function AttachDocDeepLink({
   useEffect(() => {
     if (!docId || !conversationId || !ready || !conversationRegistered) return;
     if (attachedDocRef.current === docId) return;
-    if (!UUID_RE.test(docId)) return;
+    if (!isUuidShape(docId)) return;
     attachedDocRef.current = docId;
     void dispatch(
       linkConversationDocumentThunk({

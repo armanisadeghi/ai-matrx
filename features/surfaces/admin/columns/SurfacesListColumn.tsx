@@ -24,6 +24,7 @@ import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.ser
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 function splitSurfaceName(fullName: string): { client: string; local: string } {
   const idx = fullName.indexOf("/");
@@ -97,7 +98,7 @@ function parseUrlQuery(raw: string): UrlMatch | null {
 }
 
 function looksLikeUuid(segment: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+  return isUuidShape(
     segment,
   );
 }

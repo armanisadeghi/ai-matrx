@@ -10,6 +10,7 @@
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { isCoverageDepth, type CoverageDepth } from "@/features/education/convert/coverage";
 import { ProblemList } from "@/features/surfaces/runtime/collection-write-targets";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type AgentInputMode = "paste" | "link" | "files";
 
@@ -36,7 +37,6 @@ const KNOWN_KEYS = new Set([
   "focus",
 ]);
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const MAX_KIT_COUNT = 150;
 
 function fail(message: string): never {
@@ -109,7 +109,7 @@ export function parseKitRequestDraftValue(
   problems.check(() => {
     const fileId = stringField(obj, "file_id");
     if (fileId === undefined) return;
-    if (!UUID_RE.test(fileId.trim())) fail(`file_id "${fileId}" is not a file id.`);
+    if (!isUuidShape(fileId.trim())) fail(`file_id "${fileId}" is not a file id.`);
     out.fileId = fileId.trim();
   });
 

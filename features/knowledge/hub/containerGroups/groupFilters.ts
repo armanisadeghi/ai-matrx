@@ -21,6 +21,7 @@
  */
 
 import type { HubGroupToken } from "@/features/knowledge/hub/hubState";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const HUB_GROUP_LABEL: Record<HubGroupToken, string> = {
   data_store: "Data stores",
@@ -159,7 +160,7 @@ export function laneCountRequests(group: Record<string, string>): { lane: Librar
 export function rulebookHandoff(group: Record<string, string>): { backHref: string | null } | null {
   if (group.from !== "rulebook") return null;
   const id = group.rulebook_id ?? "";
-  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const uuid = isUuidShape(id);
   return { backHref: uuid ? `/masterwork/${id}/sources` : null };
 }
 

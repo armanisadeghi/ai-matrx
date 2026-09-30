@@ -25,6 +25,7 @@
 // `?scope=<word>` is what the person chose, and choosing is a navigation, so Back undoes it.
 
 import type { VisibilityLane } from "@ai-matrx/records-ui";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 // THE SHELL'S LANES (Arman, 2026-09-30, common-docs/policies/active-org-is-never-a-list-filter.md):
 // All | Mine | My team | My Orgs | Shared | Public | System — the same words, in the same order, as
@@ -174,7 +175,6 @@ export type DataHomeOrganization = string;
 /** The address word of the organization filter. */
 export const ORG_FILTER_PARAM = "org_filter";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Which organization the home shows: the address, or All organizations. `memberIds` null = the
@@ -185,7 +185,7 @@ export function resolveDataHomeOrganization(
   fromAddress: string | null | undefined,
   memberIds: readonly string[] | null,
 ): DataHomeOrganization {
-  if (typeof fromAddress === "string" && UUID.test(fromAddress) && (memberIds === null || memberIds.includes(fromAddress))) {
+  if (typeof fromAddress === "string" && isUuidShape(fromAddress) && (memberIds === null || memberIds.includes(fromAddress))) {
     return fromAddress;
   }
   return ALL_ORGANIZATIONS;

@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * Run history filters — the ONE shape, and its URL codec.
  *
@@ -80,7 +82,6 @@ const P = {
 
 export const RUN_HISTORY_PARAM_KEYS: readonly string[] = Object.values(P);
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 function isRunKind(v: string | null): v is RunKind {
@@ -102,7 +103,7 @@ export function parseRunHistoryFilters(
   const to = params.get(P.to);
   return {
     kind: isRunKind(kind) ? kind : null,
-    taskId: task && UUID.test(task) ? task.toLowerCase() : null,
+    taskId: task && isUuidShape(task) ? task.toLowerCase() : null,
     operation: params.get(P.op) || null,
     statuses: (params.get(P.status) ?? "")
       .split(",")
@@ -119,7 +120,7 @@ export function parseSelectedRun(params: ReadableParams): SelectedRunRef | null 
   const raw = params.get(P.run);
   if (!raw) return null;
   const [kind, id] = raw.split(":");
-  if (!isRunKind(kind ?? null) || !id || !UUID.test(id)) return null;
+  if (!isRunKind(kind ?? null) || !id || !isUuidShape(id)) return null;
   return { kind: kind as RunKind, id: id.toLowerCase() };
 }
 

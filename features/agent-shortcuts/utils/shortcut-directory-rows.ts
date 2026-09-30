@@ -3,6 +3,7 @@ import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcut
 import type { AdminNonGlobalShortcutRow } from "@/features/agents/redux/agent-shortcuts/thunks";
 import type { UserShortcutItem } from "@/features/agents/redux/agent-shortcuts/types";
 import { isValidShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type ShortcutDirectoryMode = "admin" | "user";
 
@@ -27,11 +28,9 @@ export interface ShortcutDirectoryRow {
   ownerDisplay: string | null;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isShortcutUuid(value: string): boolean {
-  return UUID_RE.test(value.trim());
+  return isUuidShape(value.trim());
 }
 
 function parseEnabledFeatures(raw: unknown): string[] {
