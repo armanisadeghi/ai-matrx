@@ -8,10 +8,18 @@
 // user override is org-qualified (the same person may run two organizations
 // with different policies), so the tab is scoped to one organization at a time.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -20,7 +28,18 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function PersonalConfigTab() {
   const userId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectOrganizationId);
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const memberships = useAppSelector(selectOrganizationsList);
+  // A personal override is org-qualified BY MEANING, so this tab's subject is one
+  // organization at a time — chosen HERE, on the page, from every organization the
+  // person belongs to. It only OPENS on the active one; changing it never touches
+  // the header's active organization, and the header never moves it (active-org
+  // law: the two org concepts never sync).
+  const [chosenOrganizationId, setChosenOrganizationId] = useState<
+    string | null
+  >(null);
+  const organizationId =
+    chosenOrganizationId ?? activeOrganizationId ?? memberships[0]?.id ?? null;
 
   const { knobs, isLoading, error, refresh } = useScopedKnobs({
     organizationId,
@@ -49,10 +68,33 @@ export default function PersonalConfigTab() {
         title="Personal configuration"
         description="Settings your organization has opened to per-person override. Your value beats the organization's; clearing it inherits theirs."
       >
+        {memberships.length > 1 && organizationId && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Organization</span>
+            <Select
+              value={organizationId}
+              onValueChange={setChosenOrganizationId}
+            >
+              <SelectTrigger
+                className="h-8 w-64"
+                aria-label="Organization whose personal configuration to show"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {memberships.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {!organizationId && (
-          <SettingsCallout tone="info" title="Choose an organization first">
-            Personal configuration applies to the organization selected in the
-            app header. Choose one there, then return to set an override.
+          <SettingsCallout tone="info" title="You have no organization yet">
+            Personal configuration is set per organization. Join or create one,
+            then return to set an override.
           </SettingsCallout>
         )}
         {organizationId && error && (
