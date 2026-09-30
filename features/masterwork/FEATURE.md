@@ -152,21 +152,20 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     a record must never do that. Guarded by
     `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
 
-20. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
-    the body-of-work lane turned 20 published pieces into 416 per-piece drafts plus 4 synthesized
-    cross-piece rules, this page counted all 420 as "Waiting on you", and the Expert pressed
-    Approve-all — the failure the review lane exists to prevent. `ruleState()` returns
-    `"evidence"` for those rules (precedence retired > rejected > evidence > draft > approved), so
-    every surface that asks "is this waiting on her?" gets NO for free: `computeKpis`, the review
-    wizard, Approve-all, the journey. They are **not rows in the rule list** — they are reached
-    behind the synthesized rule that cites their piece, through `RuleEvidenceDisclosure` ("proven
-    by N pieces — see them") with a one-click **Make it a rule** that calls `promoteEvidenceRule`
-    (raises standing only — the rule stays a draft awaiting Approve, and not one word changes). A
-    search still reaches them, so nothing the Rulebook holds is unreachable. Never re-derive any
-    of this: `isEvidenceRule` / `evidenceFor` / `evidenceSupport` in `types.ts` are the ONE set,
-    mirroring `distill.is_evidence_rule` on the server. Cross-repo SoR:
-    `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
-    Guard: `__tests__/evidence-standing.test.ts`.
+20. 🚨 **A PER-PIECE RULE IS AN ORDINARY RULE WITH A RECURRENCE BADGE — NEVER A HIDDEN "EVIDENCE" STANDING.** On
+    2026-09-12 the body-of-work lane turned 20 pieces into 416 per-piece drafts and the Expert
+    pressed Approve-all; a `standing: "evidence"` that hid those rules was shipped as the fix and
+    deleted the same day (frontend `e10ac4f0b2`, aidream `11858b255`, migration `0658`) because
+    frequency must never decide what a rule is. Live now: every per-piece rule is a normal draft —
+    counted in `computeKpis`, in the review queue and wizard. `RuleRecurrenceBadge.tsx` shows
+    "seen in N pieces" when `source_ref.evidence_pieces` reaches the org knob
+    `recurrence_badge_pieces` — a badge, never a gate. There is no no-selection Approve-all; bulk
+    approve (`BulkApproveDialog.tsx`) acts on an explicit selection and stamps `reviewed: sampled`
+    so the record never claims individual review. Promotion to a rule is the Expert's act. Never
+    reintroduce `standing`, `isEvidenceRule`, `RuleEvidenceDisclosure` or `promoteEvidenceRule`.
+    Cross-repo SoR:
+    `../../../common-docs/systems/masterwork/distillation-contract.md` § Per-piece rules.
+    Guard: `__tests__/bulk-approve-cannot-lie.test.tsx`.
 
 ## Files
 
