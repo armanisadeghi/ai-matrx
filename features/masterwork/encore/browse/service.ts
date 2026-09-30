@@ -131,17 +131,21 @@ function inScope(
   row: EncoreListRow,
   scope: EntityListQuery["scope"],
   reach: readonly TeamReachPair[],
+  /** The page's organization filter (null = All organizations) — narrows every lane. */
+  orgId: string | null,
 ): boolean {
+  if (orgId && row.organization_id !== orgId) return false;
+  // ALL = Mine ∪ My team ∪ My Orgs (Encore has no Shared lane).
+  if (scope.kind === "all") return row.scope === "mine" || row.scope === "orgs";
   if (scope.kind !== "team") return row.scope === scope.kind;
   if (row.scope !== "mine" && row.scope !== "orgs") return false;
-  if (scope.organizationId && row.organization_id !== scope.organizationId) return false;
   return reach.some(
     (p) => p.organizationId === row.organization_id && p.userId === row.created_by,
   );
 }
 
-async function reachFor(scope: EntityListQuery["scope"]): Promise<TeamReachPair[]> {
-  return scope.kind === "team" ? fetchMyTeamReach(scope.organizationId) : [];
+async function reachFor(query: EntityListQuery): Promise<TeamReachPair[]> {
+  return query.scope.kind === "team" ? fetchMyTeamReach(query.orgId) : [];
 }
 
 function rowsForQuery(
@@ -150,7 +154,7 @@ function rowsForQuery(
   reach: readonly TeamReachPair[],
 ): EncoreListRow[] {
   return rows.filter(
-    (row) => inScope(row, query.scope, reach) && matches(row, query),
+    (row) => inScope(row, query.scope, reach, query.orgId) && matches(row, query),
   );
 }
 
@@ -158,7 +162,7 @@ export async function fetchEncorePage(
   query: EntityListQuery,
   sort: EntityListSort,
 ): Promise<EntityListPage<EncoreListRow>> {
-  const [all, reach] = await Promise.all([loadRows(), reachFor(query.scope)]);
+  const [all, reach] = await Promise.all([loadRows(), reachFor(query)]);
   const rows = rowsForQuery(all, query, reach).sort((left, right) =>
     compareRows(left, right, sort),
   );
@@ -171,10 +175,10 @@ export async function fetchEncoreCounts(
 ): Promise<EntityScopeCounts> {
   const [rows, reach] = await Promise.all([loadRows(), fetchMyTeamReach(null)]);
   const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  for (const kind of ["mine", "team", "orgs", "public"] as const) {
+  for (const kind of ["all", "mine", "team", "orgs", "public"] as const) {
     const scope = makeScope(kind);
     counts.byKind[kind] = rows.filter(
-      (row) => inScope(row, scope, reach) && matches(row, query),
+      (row) => inScope(row, scope, reach, query.orgId) && matches(row, query),
     ).length;
   }
   return counts;

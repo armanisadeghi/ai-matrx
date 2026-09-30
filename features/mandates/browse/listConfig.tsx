@@ -90,7 +90,6 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   // caller with no active organization and therefore no org rung.
   service: mandateListService({
     kind: "homes",
-    activeOrganizationId: null,
     organizations: [],
     canListSystemHome: false,
   }),

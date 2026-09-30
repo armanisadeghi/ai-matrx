@@ -132,15 +132,30 @@ function baseCount() {
  * caller first.
  */
 function applyScope<Q extends RulebookFilterable>(
-  q: Q,
+  base: Q,
   scope: EntityListQuery["scope"],
+  /** The page's ORGANIZATION FILTER (null = All organizations) — it narrows every lane. */
+  orgId: string | null,
   userId: string,
-  blendedOrgIds: string[],
+  myOrgIds: string[],
   sharedIds: string[],
-  teamReach: TeamReachPair[] = [],
+  allTeamReach: TeamReachPair[] = [],
   shownTo: ShownToContext = {},
 ): Q | null {
+  const q = orgId ? (base.eq("organization_id", orgId) as Q) : base;
+  const blendedOrgIds = orgId ? myOrgIds.filter((id) => id === orgId) : myOrgIds;
+  const teamReach = orgId
+    ? allTeamReach.filter((p) => p.organizationId === orgId)
+    : allTeamReach;
   if (scope.kind === "public") return q.eq("published_to_web", true);
+  // ALL = Mine ∪ My team ∪ My Orgs ∪ Shared, one row each: what I made, what my
+  // organizations show me (each row by ITS organization's Shown-to), what was shared with me.
+  if (scope.kind === "all") {
+    const arms = [`created_by.eq.${userId}`];
+    if (blendedOrgIds.length > 0) arms.push(shownToBlendedFilter(shownTo, blendedOrgIds, userId));
+    if (sharedIds.length > 0) arms.push(`id.in.(${sharedIds.join(",")})`);
+    return q.or(arms.join(",")) as Q;
+  }
   // MY TEAM: what I and the people I share a team with made, per organization.
   // It is My Orgs narrowed to teammates, so a teammate's row shows only where
   // its "Shown to" lets it (access ladder T-11) — same rule as My Orgs.
@@ -165,14 +180,11 @@ function applyScope<Q extends RulebookFilterable>(
   // unreachable.
   if (scope.kind === "orgs") {
     const notMine = q.neq("created_by", userId) as Q;
-    if (scope.organizationId === null) {
-      if (blendedOrgIds.length === 0) return null;
-      // Access ladder T-11: each row shows only where its "Shown to" lets it.
-      return notMine
-        .in("organization_id", blendedOrgIds)
-        .or(shownToBlendedFilter(shownTo, blendedOrgIds, userId));
-    }
-    return applyListScope(notMine, scope, { userId, shownTo });
+    if (blendedOrgIds.length === 0) return null;
+    // Access ladder T-11: each row shows only where its "Shown to" lets it.
+    return notMine
+      .in("organization_id", blendedOrgIds)
+      .or(shownToBlendedFilter(shownTo, blendedOrgIds, userId));
   }
   return applyListScope(q, scope, { userId });
 }
@@ -317,15 +329,16 @@ export async function fetchRulebookPage(
     myOrgs(),
     mySharedRulebookIds(),
     query.scope.kind === "team"
-      ? fetchMyTeamReach(query.scope.organizationId)
+      ? fetchMyTeamReach(query.orgId)
       : Promise.resolve([]),
-    query.scope.kind === "orgs" || query.scope.kind === "team"
+    query.scope.kind === "orgs" || query.scope.kind === "team" || query.scope.kind === "all"
       ? fetchShownToContext("rulebook")
       : Promise.resolve({}),
   ]);
   let q = applyScope(
     basePage(),
     query.scope,
+    query.orgId,
     userId,
     blendedOrgIds,
     sharedIds,
@@ -361,7 +374,7 @@ export async function fetchRulebookCounts(
     narrow: {},
   };
 
-  const [{ ids, names }, sharedIds, teamReach, shownTo] = await Promise.all([
+  const [{ ids }, sharedIds, teamReach, shownTo] = await Promise.all([
     myOrgs(),
     mySharedRulebookIds(),
     fetchMyTeamReach(null),
@@ -371,40 +384,28 @@ export async function fetchRulebookCounts(
   const countFor = async (
     scope: EntityListQuery["scope"],
   ): Promise<number> => {
-    const reach =
-      scope.kind === "team" && scope.organizationId
-        ? teamReach.filter((p) => p.organizationId === scope.organizationId)
-        : teamReach;
-    let q = applyScope(baseCount(), scope, userId, ids, sharedIds, reach, shownTo);
+    // The organization filter narrows every lane's count, as it narrows the list.
+    let q = applyScope(baseCount(), scope, query.orgId, userId, ids, sharedIds, teamReach, shownTo);
     if (q === null) return 0;
     q = applyFilters(q, query);
     const { count, error } = await q;
     if (error) throw new Error(`${error.message} (${error.code})`);
     return count ?? 0;
   };
-  const [mine, team, orgsBlended, shared, pub] = await Promise.all([
+  const [all, mine, team, orgsBlended, shared, pub] = await Promise.all([
+    countFor({ kind: "all" }),
     countFor({ kind: "mine" }),
-    countFor({ kind: "team", organizationId: null }),
-    countFor({ kind: "orgs", organizationId: null }),
+    countFor({ kind: "team" }),
+    countFor({ kind: "orgs" }),
     countFor({ kind: "shared" }),
     countFor({ kind: "public" }),
   ]);
+  counts.byKind.all = all;
   counts.byKind.mine = mine;
   counts.byKind.team = team;
   counts.byKind.orgs = orgsBlended;
   counts.byKind.shared = shared;
   counts.byKind.public = pub;
-
-  if (ids.length > 1) {
-    const perOrg = await Promise.all(
-      ids.map(async (orgId) => ({
-        id: orgId,
-        label: names.get(orgId) ?? "Organization",
-        count: await countFor({ kind: "orgs", organizationId: orgId }),
-      })),
-    );
-    counts.narrow.orgs = perOrg.filter((o) => o.count > 0);
-  }
   return counts;
 }
 

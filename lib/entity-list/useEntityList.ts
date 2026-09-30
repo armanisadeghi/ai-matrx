@@ -35,7 +35,7 @@ import {
   readQueryFromParams,
 } from "./urlQuery";
 import { makeScope, scopeKey, type ListScope } from "@/lib/list-scope/types";
-import { defaultListScopeFor } from "@/lib/list-scope";
+import { DEFAULT_LIST_KNOB_KEY, defaultListScopeFor } from "@/lib/list-scope";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -225,16 +225,18 @@ export function useEntityList<TRow>({
   // below — see THE LATE-KNOB PROBLEM. On any failure `resolveListScope` has
   // already announced itself and answered `mine`, the narrower screen.
   const [registryScope, setRegistryScope] = useState<ListScope | null>(null);
+  // A list with no registered type reads the `default` row of the same knob
+  // family — the default lane is configuration, never a literal in this file.
+  const landingToken = registryToken ?? DEFAULT_LIST_KNOB_KEY;
   useEffect(() => {
-    if (!registryToken) return;
     let live = true;
-    void defaultListScopeFor(registryToken).then((s) => {
+    void defaultListScopeFor(landingToken).then((s) => {
       if (live) setRegistryScope(s);
     });
     return () => {
       live = false;
     };
-  }, [registryToken]);
+  }, [landingToken]);
   // THE ARCHIVED-ITEMS LAW's knob (../common-docs/policies/archived-items.md
   // §6): the platform default hides archived rows, and a user may flip their
   // own starting point in Settings → Lists. It seeds the DEFAULT only — the

@@ -77,14 +77,14 @@ describe("choosing an organization narrows p_home — never the loaded rows", ()
   const ORG = "0cc9f39e-1111-2222-3333-444455556666";
 
   it("turns a narrowed orgs scope into the door's own org selector", () => {
-    expect(homeParam(homeForScope({ kind: "orgs", organizationId: ORG }))).toBe(
+    expect(homeParam(homeForScope({ kind: "orgs" }, ORG))).toBe(
       `org:${ORG}`,
     );
   });
 
   it("keeps the blended state blended, and the system home its own", () => {
     expect(
-      homeParam(homeForScope({ kind: "orgs", organizationId: null })),
+      homeParam(homeForScope({ kind: "orgs" }, null)),
     ).toBe("all");
     expect(homeParam(homeForScope({ kind: "system" }))).toBe("system");
   });

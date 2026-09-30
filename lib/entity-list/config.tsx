@@ -414,13 +414,6 @@ export interface EntityListConfig<TRow> {
    */
   scopeSections?: EntityScopeFacetSection[];
 
-  /**
-   * The ORGANIZATION FILTER (right end of the lane row; `?org_filter=`). On by default
-   * for every personal-seat list; `false` only for a list whose records carry no
-   * organization at all. Never an admin page's (it has no personal lanes).
-   */
-  orgFilter?: boolean;
-
   /** `__none__` display labels per column id, for table filter options. */
   noneLabels?: Record<string, string>;
 

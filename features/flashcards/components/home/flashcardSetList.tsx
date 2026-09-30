@@ -33,7 +33,7 @@ import {
   type EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
-import { scopeOrgId, withTeamScope } from "@/lib/list-scope/types";
+import { withStandardLanes } from "@/lib/list-scope/types";
 import { visibilityWords } from "@/lib/record-words";
 import { PlayTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
 import { Archive } from "lucide-react";
@@ -96,10 +96,11 @@ export function visibilityLabel(value: string): string {
 function toDeckQuery(query: EntityListQuery): DeckListQuery {
   const scope = query.scope;
   return {
-    lane: (withTeamScope(FLASHCARD_SET_SCOPES).includes(scope.kind)
+    lane: (withStandardLanes(FLASHCARD_SET_SCOPES).includes(scope.kind)
       ? scope.kind
-      : "mine") as DeckLane,
-    orgId: scopeOrgId(scope),
+      : "all") as DeckLane,
+    // The page's organization filter (`?org_filter=`), never the active organization.
+    orgId: query.orgId,
     search: query.search.trim(),
     filters: query.filters,
     archived: query.archived,
@@ -122,7 +123,7 @@ export const flashcardSetListService: EntityListConfig<FlashcardSetListRow>["ser
       };
     },
     async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
-      const { lane: _lane, orgId: _org, ...rest } = toDeckQuery(query);
+      const { lane: _lane, ...rest } = toDeckQuery(query);
       const byKind = await fetchDeckLaneCounts(rest);
       return { byKind, narrow: {} };
     },

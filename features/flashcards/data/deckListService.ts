@@ -15,7 +15,7 @@ import type { Json } from "@/types/database.types";
 
 const EDU = () => supabase.schema("education");
 
-export type DeckLane = "mine" | "team" | "orgs" | "shared" | "public";
+export type DeckLane = "all" | "mine" | "team" | "orgs" | "shared" | "public";
 export type DeckArchive = "active" | "archived" | "all";
 
 /** One row of the library as the list RPC returns it. */
@@ -79,15 +79,17 @@ export async function fetchDeckPage(
 }
 
 export async function fetchDeckLaneCounts(
-  query: Omit<DeckListQuery, "lane" | "orgId">,
+  query: Omit<DeckListQuery, "lane">,
 ): Promise<Record<DeckLane, number>> {
   const { data, error } = await EDU().rpc("fc_set_list_counts", {
+    // The organization filter narrows every lane's count, as it narrows the list.
+    p_org_id: query.orgId ?? undefined,
     p_search: query.search,
     p_filters: query.filters as Json,
     p_archived: query.archived,
   });
   if (error) fail("counted", error);
-  const out: Record<DeckLane, number> = { mine: 0, team: 0, orgs: 0, shared: 0, public: 0 };
+  const out: Record<DeckLane, number> = { all: 0, mine: 0, team: 0, orgs: 0, shared: 0, public: 0 };
   for (const row of (data ?? []) as { scope: string; total: number }[]) {
     if (row.scope in out) out[row.scope as DeckLane] = Number(row.total);
   }

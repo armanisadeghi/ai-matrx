@@ -40,19 +40,26 @@ export const ALL_ORGANIZATIONS_LABEL = "All organizations";
 /** Past this many organizations the menu offers a name search. */
 const SEARCH_AT = 8;
 
-interface Props {
+export interface EntityOrgFilterProps {
   /** The filter: null = All organizations. */
   orgId: string | null;
   onChange: (orgId: string | null) => void;
-  counts: EntityScopeCounts;
+  /** Optional: a `*_scope_counts` result; its `all` narrow rows put a count beside each organization. */
+  counts?: EntityScopeCounts;
   countsLoading?: boolean;
+  className?: string;
 }
 
-export function EntityOrgFilter({ orgId, onChange, counts, countsLoading }: Props) {
+/**
+ * Standalone by design: a value/onChange pair and nothing else required, so a
+ * page outside the shell renders the same control (URL state:
+ * `useOrgFilterParam` in ../orgFilterUrl.ts).
+ */
+export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, className }: EntityOrgFilterProps) {
   const { organizations, loading } = useUserOrganizations();
   const [needle, setNeedle] = useState("");
   const perOrg = new Map(
-    (counts.narrow.all ?? []).map((o) => [o.id, o.count] as const),
+    (counts?.narrow.all ?? []).map((o) => [o.id, o.count] as const),
   );
   const choices = [...organizations]
     .map((o) => ({ id: o.id, name: o.name || "Unnamed organization" }))
@@ -86,6 +93,7 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading }: Prop
             orgId
               ? "border-primary/40 bg-primary/10 text-foreground"
               : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+            className,
           )}
         >
           <Building2 className="h-3.5 w-3.5 shrink-0" />

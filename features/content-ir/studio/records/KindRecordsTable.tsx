@@ -51,6 +51,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
@@ -145,6 +146,8 @@ export default function KindRecordsTable({
 
   const [fields] = useState<SchemaField[]>(() => schemaFields(emittedJsonSchema));
   const [scope, setScope] = useState<ListScope>(() => makeScope("orgs"));
+  /** The organization filter (null = All organizations) — never the active organization. */
+  const [orgFilter, setOrgFilter] = useState<string | null>(null);
   /** True once the landing rule has run or the person picked a scope. */
   const scopeSettled = useRef(false);
   const [search, setSearch] = useState("");
@@ -202,6 +205,7 @@ export default function KindRecordsTable({
   const readerKey = JSON.stringify({
     kindDefinitionId,
     scope,
+    orgFilter,
     search,
     confirmation,
     writer,
@@ -227,7 +231,7 @@ export default function KindRecordsTable({
         ? ({ kind: "mine" } as const)
         : ({
             kind: "orgs" as const,
-            organizationId: scope.kind === "orgs" ? scope.organizationId : null,
+            organizationId: orgFilter,
           } as const);
 
     async function run() {
@@ -289,13 +293,7 @@ export default function KindRecordsTable({
       orgs: scopeCounts?.orgs ?? 0,
       mine: scopeCounts?.mine ?? 0,
     },
-    narrow: {
-      orgs: (scopeCounts?.perOrg ?? []).map((o) => ({
-        id: o.id,
-        label: o.label,
-        count: o.count,
-      })),
-    },
+    narrow: {},
   };
 
   const columns = buildRecordColumns({
@@ -529,6 +527,8 @@ export default function KindRecordsTable({
         <EntityScopeTabs
           scope={scope}
           scopes={[...RECORD_SCOPES]}
+          // This reader serves exactly these two lanes; it has no All / My team.
+          exact
           counts={counts}
           onChange={(next) => {
             // A scope the person picked is theirs — the landing rule must
@@ -539,6 +539,16 @@ export default function KindRecordsTable({
             setSelectedIds([]);
           }}
         />
+        {scope.kind === "orgs" ? (
+          <EntityOrgFilter
+            orgId={orgFilter}
+            onChange={(next) => {
+              setOrgFilter(next);
+              setPage(1);
+              setSelectedIds([]);
+            }}
+          />
+        ) : null}
         <ArchiveFilter
           value={archiveFilter}
           onValueChange={(value) => {

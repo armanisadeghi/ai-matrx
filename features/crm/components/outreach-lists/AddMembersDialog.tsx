@@ -98,10 +98,9 @@ export function AddMembersDialog({
       return selectedView ? queryFromDefinition(selectedView.definition) : null;
     }
     return {
-      scope:
-        source === "mine"
-          ? { kind: "mine" }
-          : { kind: "orgs", organizationId: list.organization_id },
+      scope: source === "mine" ? { kind: "mine" } : { kind: "orgs" },
+      // The outreach list's OWN organization (the record's, never the active one).
+      orgId: source === "mine" ? null : list.organization_id,
       search,
       kind,
       filters: {},
