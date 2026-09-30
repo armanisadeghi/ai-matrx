@@ -292,6 +292,9 @@ export function useSeoSpendSummary(orgFilter: string | null) {
               path: SPEND_SUMMARY_PATH,
               method: "GET",
               queryParams: { organization_id: organizationId },
+              // The call RUNS in the organization it asks about (the wire header and the query
+              // must agree) — not in whichever organization happens to be active.
+              scopeOverrides: { organization_id: organizationId },
             }),
           );
           if (response.error) throw new Error(response.error.message);
