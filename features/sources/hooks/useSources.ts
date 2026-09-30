@@ -39,7 +39,7 @@ import {
 /** `organizationId` is the page's org FILTER (null = All organizations), never the active org. */
 export type SourcesScope = {
   kind: "mine" | "orgs";
-  organizationId: string | null;
+  organizationId?: string | null;
 };
 
 export interface UseSourcesResult {
