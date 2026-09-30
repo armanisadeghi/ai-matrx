@@ -48,10 +48,12 @@ function makeLoader(
     const baseDb = supabase as unknown as SupabaseClient;
     const db = detailSource.schemaName ? baseDb.schema(detailSource.schemaName) : baseDb;
     const table: string = detailSource.table;
-    const selectAll: string = "*";
+    // A table with a server-only column names its readable columns; `*` there
+    // is refused for the whole table ("permission denied for table …").
+    const columns: string = detailSource.columns ?? "*";
     const { data, error } = await db
       .from(table)
-      .select(selectAll)
+      .select(columns)
       .eq("id", id)
       .abortSignal(signal)
       .maybeSingle();

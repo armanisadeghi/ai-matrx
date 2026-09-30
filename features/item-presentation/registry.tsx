@@ -47,6 +47,7 @@ import { CALENDAR_EVENT_ITEM_TYPE } from "@/features/google-workspace/calendar/i
 import { WEB_SITE_ITEM_TYPE } from "@/features/marketing/site-item-type";
 import { WEB_YOUTUBE_VIDEO_ITEM_TYPE } from "@/features/marketing/youtube/itemType";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
 import { refinePartyDetail } from "@/features/crm/party-detail";
 import { refineResearchTemplateDetail } from "@/features/research/admin/template-detail";
 import { partyKindWord } from "@/features/crm/party-words";
@@ -114,7 +115,7 @@ export interface ItemTypeConfig {
    */
   refineDetail?: (base: DetailRecordType) => DetailRecordType;
   detailSource?: {
-    /** Table to `select('*')` from, keyed by `id`. */
+    /** Table to read (`columns`, else `*`) from, keyed by `id`. */
     table: string;
     /**
      * Non-`public` Postgres schema `table` lives in, if any. Reached via
@@ -124,6 +125,16 @@ export interface ItemTypeConfig {
     schemaName?: string;
     /** Column to use as the window title (falls back to the seed name). */
     titleField?: string;
+    /**
+     * 🚨 THE COLUMNS A PERSON MAY READ, when the table has a server-only column.
+     * Omitted ⇒ `*`. A table whose grant REVOKEs one column from `authenticated`
+     * (e.g. `files.files.storage_uri`) has no table-level SELECT, so `select('*')`
+     * fails with "permission denied for table <name>" for EVERY row, even though
+     * RLS would return it. Such a table names its canonical client column list
+     * here — the same list every other reader of that table uses — never `*`.
+     * Guard: `__tests__/a-detail-read-never-asks-for-a-server-only-column.test.ts`.
+     */
+    columns?: string;
   };
 }
 
@@ -217,6 +228,8 @@ const FILE_DETAIL_SOURCE: NonNullable<ItemTypeConfig["detailSource"]> = {
   table: "files",
   schemaName: "files",
   titleField: "file_name",
+  // `files.files.storage_uri` is server-only; `*` is refused for the whole table.
+  columns: FILES_TABLE_COLUMNS,
 };
 
 const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
