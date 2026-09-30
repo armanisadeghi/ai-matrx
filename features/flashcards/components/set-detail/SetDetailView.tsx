@@ -43,6 +43,7 @@ import {
   Images,
   Loader2,
   Ellipsis,
+  MessagesSquare,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MergeCardsDialog } from "./MergeCardsDialog";
@@ -61,6 +62,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAccess } from "@/utils/permissions/access";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { fcService } from "../../data/fcService";
@@ -1028,6 +1030,7 @@ export function SetDetailView({
                     Edit
                   </Button>
                 )}
+                {(access.isOwner || access.level === "admin") && <ShareButton resourceType="fc_set" resourceId={setId} resourceName={data.set.name} organizationId={data.set.organization_id} showStatus={false} size="sm" />}
                 {viewOnly && (
                   <DuplicateToEditButton
                     resourceType="fc_set"
@@ -1313,6 +1316,7 @@ export function SetDetailView({
                 to be a dead end at whatever size the generator chose. */}
             <div className="mt-3 space-y-2">
               <MadeFromSource entityType="fc_set" entityId={setId} />
+              <MadeInChatLink metadata={data.set.metadata} />
               {/* Phone only: on desktop it sits in the action row. */}
               <div className="md:hidden">
               <AddMoreCardsButton
@@ -1894,5 +1898,31 @@ export function SetDetailView({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The way back to the chat a deck was born in. Chat-emitted flashcard sets are
+ * saved here by the canvas flashcards adapter (`generation: chat_render_block`)
+ * and stamped with their conversation; the chat block links forward with
+ * "Open in Flashcards", this links back.
+ */
+function MadeInChatLink({ metadata }: { metadata: unknown }) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const meta = metadata as Record<string, unknown>;
+  const conversationId = meta.conversation_id;
+  if (meta.generation !== "chat_render_block") return null;
+  if (typeof conversationId !== "string" || !conversationId) return null;
+  return (
+    <Link
+      href={`/chat/${conversationId}`}
+      data-tap-target
+      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted"
+    >
+      <MessagesSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      Made in chat — open the conversation
+    </Link>
   );
 }

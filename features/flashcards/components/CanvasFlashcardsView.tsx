@@ -29,7 +29,10 @@ import {
   ChevronRight,
   CheckCircle2,
   Info,
+  Library,
 } from "lucide-react";
+import Link from "next/link";
+import { flashcardSetHref } from "../routes";
 import { Button } from "@/components/ui/button";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -273,6 +276,17 @@ export function CanvasFlashcardsView({
             </>
           )}
         </div>
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+        >
+          <Link href={flashcardSetHref({ id: linkedSetId })}>
+            <Library className="h-3.5 w-3.5" />
+            Open in Flashcards
+          </Link>
+        </Button>
       </div>
 
       {progress.total > 0 && (

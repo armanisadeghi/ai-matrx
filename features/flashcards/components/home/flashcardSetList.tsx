@@ -47,13 +47,19 @@ import {
   type DeckListRow,
 } from "../../data/deckListService";
 
-export const FLASHCARD_SETS_BASE = "/education/flashcards";
-export const FAST_FIRE_BASE = "/education/fastfire";
+import {
+  FAST_FIRE_BASE,
+  FLASHCARD_SETS_BASE,
+  flashcardSetHref,
+  flashcardStudyHref,
+} from "../../routes";
 
-export const flashcardSetHref = (row: { id: string }) =>
-  `${FLASHCARD_SETS_BASE}/${row.id}`;
-export const flashcardStudyHref = (row: { id: string }) =>
-  `${FLASHCARD_SETS_BASE}/${row.id}/study`;
+export {
+  FAST_FIRE_BASE,
+  FLASHCARD_SETS_BASE,
+  flashcardSetHref,
+  flashcardStudyHref,
+};
 export const flashcardFastFireHref = (row: { id: string }) =>
   `${FAST_FIRE_BASE}?set=${row.id}`;
 

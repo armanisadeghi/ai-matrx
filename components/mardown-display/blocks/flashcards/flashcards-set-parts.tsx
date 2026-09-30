@@ -9,7 +9,9 @@ import {
   Printer,
   Smartphone,
   ArrowUpRight,
+  Library,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { WrenchTapButton } from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/styles/themes/utils";
@@ -23,6 +25,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { usePrintOptions } from "@ai-matrx/print/react";
+import { useLinkedFlashcardSet } from "@/features/flashcards/data/useLinkedFlashcardSet";
 
 export type LayoutMode = "grid" | "list";
 
@@ -60,6 +63,8 @@ export function useFlashcardsSet({
     busy: openingCanvas,
     lastResult,
   } = useOpenArtifactInCanvas();
+  // The canonical deck this chat set was saved as (null until linked).
+  const { href: deckHref } = useLinkedFlashcardSet(artifactId);
 
   const { flashcards, isComplete } = useMemo(
     () =>
@@ -118,6 +123,7 @@ export function useFlashcardsSet({
     handleOpenInCanvas,
     openingCanvas,
     lastResult,
+    deckHref,
     rawPayload,
     content,
     serverData,
@@ -251,6 +257,8 @@ export interface FlashcardsSetControlsProps {
   onPrint: () => void;
   onOpenCanvas: () => void;
   openingCanvas?: boolean;
+  /** The saved deck in Flashcards; the button is absent until the set is linked. */
+  deckHref?: string | null;
   onFullscreen?: () => void;
   onOpenInWindow?: (e?: React.MouseEvent) => void;
   isAdmin?: boolean;
@@ -268,6 +276,7 @@ export function FlashcardsSetControls({
   onPrint,
   onOpenCanvas,
   openingCanvas = false,
+  deckHref,
   onFullscreen,
   onOpenInWindow,
   isAdmin = false,
@@ -295,6 +304,19 @@ export function FlashcardsSetControls({
             <Printer className="h-3 w-3" />
             Print
           </Button>
+          {deckHref && (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+            >
+              <Link href={deckHref} onClick={(e) => e.stopPropagation()}>
+                <Library className="h-3 w-3" />
+                Open in Flashcards
+              </Link>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -344,6 +366,23 @@ export function FlashcardsSetControls({
       >
         <Printer className={iconClass} />
       </Button>
+      {deckHref && (
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className={cn(btnClass, "text-muted-foreground hover:text-foreground")}
+          title="Open in Flashcards"
+        >
+          <Link
+            href={deckHref}
+            aria-label="Open in Flashcards"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Library className={iconClass} />
+          </Link>
+        </Button>
+      )}
       {showDevWindow && isAdmin && onOpenInWindow && (
         <div
           onClick={(e) => e.stopPropagation()}
