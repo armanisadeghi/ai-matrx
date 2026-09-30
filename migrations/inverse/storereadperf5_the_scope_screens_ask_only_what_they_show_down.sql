@@ -892,10 +892,7 @@ begin
         select custom.levels_of(v_me, (select array_agg(refs.id) from refs)) as l where exists (select 1 from refs)
       ),
       names as materialized (
-        select x.id, x.data ->> 'name' as name,
-               -- A File RECORD (the kernel File Table) names its file in data.file_id; the old fence
-               -- named the file, so the answer carries it beside the name (lane SCOPES-READ-SWITCH-VALIDATE).
-               case when x.table_id = '11111111-0000-4000-8000-000000000006'::uuid then x.data ->> 'file_id' end as file_id
+        select x.id, x.data ->> 'name' as name
           from custom.record x, lv
          where x.organization_id = v_grp.org and x.id in (select refs.id from refs)
            and (lv.l -> x.id::text ->> 'l') is not null
@@ -916,11 +913,7 @@ begin
                'labels', (select jsonb_object_agg(n.id, n.name) from names n
                            where v.fdoc ->> 'type' = 'relation'
                              and (n.id::text = v.value #>> '{}'
-                                  or (jsonb_typeof(v.value) = 'array' and v.value ? n.id::text))),
-               'files', (select jsonb_object_agg(n.id, n.file_id) from names n
-                          where n.file_id is not null and v.fdoc ->> 'type' = 'relation'
-                            and (n.id::text = v.value #>> '{}'
-                                 or (jsonb_typeof(v.value) = 'array' and v.value ? n.id::text)))))
+                                  or (jsonb_typeof(v.value) = 'array' and v.value ? n.id::text)))))
         from v), '[]'::jsonb);
   end loop;
   return v_out;

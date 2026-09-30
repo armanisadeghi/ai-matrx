@@ -69,8 +69,9 @@ create temp table ctx_pages on commit drop as
             from ctx_tables c join custom.record r on r.organization_id = c.org and r.table_id = c.id and r.deleted_at is null) z
    group by 1, 2;
 create temp table ans (phase text, seat text, door text, k text, payload text) on commit drop;
+create temp table files_seen (phase text, seat text, files jsonb) on commit drop;
 grant select on seats, all_orgs, ctx_tables, seat_ctx, ctx_pages to authenticated;
-grant all on ans to authenticated;
+grant all on ans, files_seen to authenticated;
 
 -- FIXTURES (rolled back). (1) A live Table test@test.com's Table list shows in an organization where
 -- admin@admin.com is her teammate becomes shown_to = my_team, created by admin@admin.com: the list reads
@@ -153,7 +154,16 @@ begin
           v := custom.context_values(ids)::text;
         exception when others then v := 'ERR ' || sqlstate || ' ' || sqlerrm;
         end;
-        insert into ans values (p_phase, s.email, 'context_values', o.id::text || '#' || i, v);
+        -- THE ONE DELIBERATE DIFFERENCE: the file carries the unapplied draft
+        -- scopesreadswitch_a_file_reference_reads_back_as_its_file.sql's `files` answer (a File
+        -- record's file id beside each File reference). It is compared apart ('files' below);
+        -- everything else of every value must be byte-equal.
+        insert into ans values (p_phase, s.email, 'context_values', o.id::text || '#' || i,
+          case when v like 'ERR%' then v
+               else (select coalesce(jsonb_agg(e - 'files'), '[]'::jsonb)::text from jsonb_array_elements(v::jsonb) e) end);
+        insert into files_seen
+          select p_phase, s.email, e -> 'files' from jsonb_array_elements(case when v like 'ERR%' then '[]' else v end::jsonb) e
+           where e ? 'files' and jsonb_typeof(e -> 'files') = 'object';
       end loop;
     end loop;
     select array_agg(m.organization_id) into o_ids from iam.organization_member m
@@ -213,6 +223,12 @@ select 'A', count(*) filter (where o.payload is distinct from n.payload) = 0,
               coalesce(string_agg(distinct o.seat || '/' || o.door, ', ') filter (where o.payload is distinct from n.payload), '-'))
   from ans o join ans n on n.seat = o.seat and n.door = o.door and n.k is not distinct from o.k
                        and o.phase = 'old' and n.phase = 'new';
+
+insert into verdict
+select 'A.files', true,
+       format('deliberate: %s File references read back as their file (the draft''s `files` answer) on the new side, %s on the old',
+              count(*) filter (where phase = 'new'), count(*) filter (where phase = 'old'))
+  from files_seen;
 
 -- B: seen_among against levels_of's "s": both seats over every scope of every live organization, and
 -- every other member of an organization that keeps a scope type over the scopes of the organizations
