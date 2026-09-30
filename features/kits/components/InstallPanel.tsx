@@ -188,7 +188,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
           <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="truncate font-medium">{orgName}</span>
-            {!busy && (
+            {!busy && !api.organizationPinned && (
               <OrganizationPickerPopover
                 trigger={
                   <button type="button" className="ml-1 text-xs font-medium text-primary hover:underline">

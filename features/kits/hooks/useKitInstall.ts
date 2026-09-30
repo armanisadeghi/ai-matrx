@@ -40,14 +40,22 @@ function newRunId(): string {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function useKitInstall(manifest: KitManifest) {
+/**
+ * `targetOrganizationId`: the organization the person picked on the page (the
+ * organization filter, or the organization of the install they came to manage).
+ * It wins over the active organization; without it a NEW install targets the
+ * active organization through the organization gate, as before.
+ */
+export function useKitInstall(manifest: KitManifest, targetOrganizationId?: string | null) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const org = useOrganizationRequired();
-  const organizationId = org.organizationState === "ready" ? org.organizationId : null;
+  const pinnedOrganizationId = targetOrganizationId || null;
+  const organizationState = pinnedOrganizationId ? "ready" : org.organizationState;
+  const organizationId = pinnedOrganizationId ?? (org.organizationState === "ready" ? org.organizationId : null);
   const store = useUnifiedDataCampaign({
     organizationId,
-    organizationState: org.organizationState,
+    organizationState,
     storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
   });
 
@@ -171,7 +179,8 @@ export function useKitInstall(manifest: KitManifest) {
 
   return {
     organizationId,
-    organizationState: org.organizationState,
+    organizationPinned: pinnedOrganizationId !== null,
+    organizationState,
     store,
     install,
     steps,

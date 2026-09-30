@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
+  Building2,
   Eye,
   Loader2,
   Play,
@@ -23,8 +24,9 @@ import { useRecords } from "@ai-matrx/records/react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
@@ -32,8 +34,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { KIT_ROUTES, KIT_WORD } from "../constants";
-import { useKitInstall } from "../hooks/useKitInstall";
-import { resolveBinding } from "../installer";
+import { useKitInstalls } from "../hooks/useKitInstalls";
+import { resolveBinding, stepsFromInstall } from "../installer";
 import { previewBinding, type PreviewAnswer } from "../preview";
 import type { KitAgent, KitEntry, KitInstallRecord, KitManifest } from "../types";
 import { InstallStepper } from "./InstallPanel";
@@ -62,7 +64,7 @@ function Panel({ icon, title, children, aside }: { icon: React.ReactNode; title:
  * the page so the "What the agent sees" preview re-reads too — no polling.
  */
 function TableChangeWatcher({ tableId, onChange }: { tableId: string; onChange: (tableId: string) => void }) {
-  const live = useRecords(tableId, { pageSize: 50 }); // org-filter: write-target the kit is installed into, and this page shows it in, the organization it was installed in
+  const live = useRecords(tableId, { pageSize: 50 });
   const rows = live.data?.rows;
   const seen = useRef<typeof rows>(undefined);
   useEffect(() => {
@@ -279,14 +281,26 @@ function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
 
 export function KitInstalled({ kit }: { kit: KitEntry }) {
   const m = kit.manifest;
-  const api = useKitInstall(m);
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const [dataSource] = useState(() => recordsDataSource(createClient()));
   const [tableVersions, setTableVersions] = useState<Record<string, number>>({});
   const bumpTable = (tableId: string) => setTableVersions((v) => ({ ...v, [tableId]: (v[tableId] ?? 0) + 1 }));
-  const install = api.install;
-  const orgId = api.organizationId;
+
+  // THE LIST: installs across ALL the person's organizations (or the one the page's
+  // organization filter names, default All). The active organization is never read here.
+  const [orgFilter, setOrgFilter] = useOrgFilterParam();
+  const { organizations, loading: orgsLoading } = useUserOrganizations();
+  const searchIds = orgsLoading ? null : orgFilter ? [orgFilter] : organizations.map((o) => o.id);
+  const found = useKitInstalls(m.key, searchIds);
+  const [pickedOrg, setPickedOrg] = useState<string | null>(null);
+  const selected = found.installs.find((i) => i.organizationId === pickedOrg) ?? found.installs[0] ?? null;
+  const install = selected?.install ?? null;
+  // What an install shows and does is in ITS OWN organization.
+  const orgId = selected?.organizationId ?? null;
+  const orgNameOf = (id: string) => organizations.find((o) => o.id === id)?.name ?? "Organization";
+  const detailHref = (organizationId: string | null) =>
+    `${KIT_ROUTES.detail(m.key)}${organizationId ? `?org_filter=${encodeURIComponent(organizationId)}` : ""}`;
 
   const header = (
     <PageHeader>
@@ -295,40 +309,45 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
   );
 
   let body: React.ReactNode;
-  if (api.organizationState !== "ready" || !orgId) {
-    body = <OrganizationContextNotice state={api.organizationState} what={`Your installed ${KIT_WORD.oneLower}`} />;
-  } else if (api.store.state !== "on") {
-    body = <UnifiedDataSwitchNotice gate={api.store} what="Data records" />;
-  } else if (api.phase === "loading") {
+  if (found.loading) {
     body = (
       <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-busy="true">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Reading what this {KIT_WORD.oneLower} installed here…
+        Reading where this {KIT_WORD.oneLower} is installed…
       </div>
     );
-  } else if (api.readError) {
+  } else if (!selected && found.failures.length > 0) {
     body = (
       <ErrorNotice
         className="max-w-xl"
         title="We could not read the install record."
-        error={api.readError}
-        onRetry={api.retryRead}
+        error={found.failures.map((f) => `${orgNameOf(f.organizationId)}: ${f.message}`).join(" · ")}
+        onRetry={found.retry}
         retryLabel="Check again"
       />
     );
-  } else if (!install || install.status !== "installed") {
+  } else if (!selected || !install) {
     body = (
       <div className="max-w-xl rounded-xl border border-border bg-card p-5">
         <p className="text-sm font-medium text-foreground">
-          {install ? `This ${KIT_WORD.oneLower} is only partly installed here.` : `This ${KIT_WORD.oneLower} is not installed in this organization yet.`}
+          {orgFilter ? `This ${KIT_WORD.oneLower} is not installed in ${orgNameOf(orgFilter)}.` : `This ${KIT_WORD.oneLower} is not installed yet.`}
         </p>
-        {install && (
-          <div className="mt-3">
-            <InstallStepper steps={api.steps} />
-          </div>
-        )}
         <Button asChild size="sm" className="mt-4">
-          <Link href={KIT_ROUTES.detail(m.key)}>{install ? "Finish the install" : `Install ${m.name}`}</Link>
+          <Link href={detailHref(orgFilter)}>{`Install ${m.name}`}</Link>
+        </Button>
+      </div>
+    );
+  } else if (install.status !== "installed") {
+    body = (
+      <div className="max-w-xl rounded-xl border border-border bg-card p-5">
+        <p className="text-sm font-medium text-foreground">
+          {`This ${KIT_WORD.oneLower} is only partly installed in ${orgNameOf(selected.organizationId)}.`}
+        </p>
+        <div className="mt-3">
+          <InstallStepper steps={stepsFromInstall(m, install)} />
+        </div>
+        <Button asChild size="sm" className="mt-4">
+          <Link href={detailHref(selected.organizationId)}>Finish the install</Link>
         </Button>
       </div>
     );
@@ -372,13 +391,14 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0 space-y-6">
-            <RecordsMount // org-filter: write-target the kit is installed into, and this page shows it in, the organization it was installed in
+            <RecordsMount
+              key={orgId}
               letTheStoreDecideRights
               config={{
                 dataSource,
                 actor: personActor(userId),
-                organizationId: orgId,
-                realtime: createRecordsRealtimePort(orgId),
+                organizationId: selected.organizationId,
+                realtime: createRecordsRealtimePort(selected.organizationId),
               }}
               host={{ Link, density: "condensed", notify: RECORDS_NOTIFY }}
             >
@@ -440,7 +460,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                         {a.bindings.map((b) => (
                           <BindingPreviewCard
                             key={`${a.key}:${b.variable}`}
-                            organizationId={orgId}
+                            organizationId={selected.organizationId}
                             agent={a}
                             variable={b.variable}
                             install={install}
@@ -474,7 +494,39 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                 How this {KIT_WORD.oneLower} works
               </Link>
             </div>
+            <EntityOrgFilter className="ml-auto" orgId={orgFilter} onChange={setOrgFilter} />
           </div>
+          {found.installs.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              {found.installs.map((i) => (
+                <button
+                  key={i.organizationId}
+                  type="button"
+                  aria-pressed={i.organizationId === selected?.organizationId}
+                  onClick={() => setPickedOrg(i.organizationId)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/40 aria-pressed:border-primary aria-pressed:bg-primary/10"
+                >
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  {orgNameOf(i.organizationId)}
+                  {i.install.status !== "installed" && <span className="text-muted-foreground">partial</span>}
+                </button>
+              ))}
+              {selected && (
+                <Link href={detailHref(selected.organizationId)} className="ml-auto text-xs font-medium text-primary hover:underline">
+                  Update or remove
+                </Link>
+              )}
+            </div>
+          )}
+          {found.failures.length > 0 && selected && (
+            <p className="mb-4 flex items-center gap-1.5 text-xs text-warning">
+              <AlertTriangle className="h-3 w-3" />
+              {`${found.failures.length} ${found.failures.length === 1 ? "organization" : "organizations"} could not be read.`}
+              <button type="button" onClick={found.retry} className="font-medium text-primary hover:underline">
+                Check again
+              </button>
+            </p>
+          )}
           {body}
         </div>
       </div>

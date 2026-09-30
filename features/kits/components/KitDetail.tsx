@@ -11,6 +11,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { KIT_ROUTES, KIT_WORD } from "../constants";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { useKitInstall } from "../hooks/useKitInstall";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -125,7 +126,8 @@ export function KitDetail({
   refNames: Record<string, string>;
 }) {
   const m = kit.manifest;
-  const api = useKitInstall(m);
+  // The organization filter (?org_filter=) names where a new install goes; none = the active organization.
+  const api = useKitInstall(m, useOrgFilterParam()[0]);
   const installed = api.install?.status === "installed";
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
