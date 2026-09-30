@@ -306,7 +306,7 @@ export function DrillExplorer({
                 answers,
                 whole,
                 headlineKey,
-                moneyUnit: unit === "usd" ? "dollars" : "credits",
+                moneyUnit: unit === "usd" ? "dollars" : "points",
                 range,
                 asOf: countedThrough,
                 says,

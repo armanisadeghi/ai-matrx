@@ -65,7 +65,7 @@ export interface DrillExplainInput {
   /** The headline Measure's key. */
   headlineKey: string | null;
   /** How money is shown right now: "credits" or "dollars". */
-  moneyUnit: "credits" | "dollars";
+  moneyUnit: "points" | "credits" | "dollars";
   /** The window as moments (null = all time). */
   range: { from: string; to: string } | null;
   /** The door's "counted through", or the host's own. */
