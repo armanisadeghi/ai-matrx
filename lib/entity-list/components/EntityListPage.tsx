@@ -183,7 +183,9 @@ export function EntityListPage<TRow>({
   scopeTabs = true,
 }: EntityListPageProps<TRow>) {
   // "All" and "My team" join every list that offers them here, once — never per page.
-  const visibleScopes = withStandardLanes(scopes ?? config.scopes);
+  const visibleScopes = withStandardLanes(scopes ?? config.scopes, {
+    teamLane: config.teamLane,
+  });
   // THE ORGANIZATION FILTER shows on personal-seat lists only: an admin page
   // never acts as the viewer, so it never offers the viewer's organizations.
   // Whether it is offered at all is the Feature Knob `lists.org_filter/<token>`
@@ -886,6 +888,7 @@ export function EntityListPage<TRow>({
             <EntityScopeTabs
               scope={list.query.scope}
               scopes={visibleScopes}
+              teamLane={config.teamLane}
               counts={list.counts}
               // 🚨 A FAILED COUNT IS NOT ZERO. When the counts read fails the
               // controller holds EMPTY_SCOPE_COUNTS, and a settled empty count

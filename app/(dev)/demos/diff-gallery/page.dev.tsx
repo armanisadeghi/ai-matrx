@@ -27,7 +27,6 @@ import { DiffBlock } from "@/components/mardown-display/blocks/diff/DiffBlock";
 // Structured entity shell (object-shaped)
 import { NoteDiffViewer } from "@/features/notes/components/diff/NoteDiffViewer";
 // Legacy utils — rendered faithfully below
-import { generateUnifiedDiff } from "@/features/code-editor/utils/generateDiff";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -80,35 +79,6 @@ const SCENARIOS: Scenario[] = [
 ];
 
 // ── Faithful legacy renderers (so the visual comparison is honest) ───────────
-
-/** Legacy A1 — generateUnifiedDiff: whole-line red/green, line-level only. */
-function LegacyUnifiedDiff({ a, b }: { a: string; b: string }) {
-  const { lines } = generateUnifiedDiff(a, b);
-  return (
-    <div className="h-full overflow-auto font-mono text-xs leading-relaxed">
-      {lines.map((l, i) => (
-        <div
-          key={i}
-          className={cn(
-            "flex",
-            l.type === "added" && "bg-green-100 dark:bg-green-900/40",
-            l.type === "removed" && "bg-red-100 dark:bg-red-900/40",
-          )}
-        >
-          <span className="w-8 shrink-0 select-none pr-2 text-right text-muted-foreground/50">
-            {l.lineNumber ?? ""}
-          </span>
-          <span className="w-4 shrink-0 select-none text-center">
-            {l.type === "added" ? "+" : l.type === "removed" ? "-" : ""}
-          </span>
-          <span className="flex-1 whitespace-pre-wrap break-words">
-            {l.content || " "}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /** Legacy A3 — analyzeDiff segments: run-level spans, removals struck through. */
 function LegacyAnalyzeDiff({ a, b }: { a: string; b: string }) {
@@ -491,29 +461,13 @@ export default function DiffGalleryPage() {
           </Card>
 
           <Card
-            title="Legacy A1 — generateUnifiedDiff"
-            tone="legacy"
-            verdict="Hand-rolled LCS, whole-line red/green, NO word-level, no view options. What the canonical engine replaced. (Still used by a few code-editor consumers.)"
-            chip={
-              <LegacyDiffChip
-                label="legacy LCS"
-                reason="Hand-rolled LCS util; still imported by TabDiffView / ContextAware editors / useAICodeEditor, so it can't be deleted until those migrate"
-              />
-            }
-          >
-            <div className="h-full p-2">
-              <LegacyUnifiedDiff a={original} b={modified} />
-            </div>
-          </Card>
-
-          <Card
             title="Legacy A3 — diffAnalysis segments"
             tone="legacy"
             verdict="Run-level segment spans, removals struck through, no word-level. Was the note-conflict diff before the canonical swap."
             chip={
               <LegacyDiffChip
                 label="legacy segments"
-                reason="Note-diff util kept only as the summary/stats source; its segment renderer was replaced by the canonical DiffViewer in NoteConflictWindow"
+                reason="The note conflict summary (analyzeDiff) now reads @ai-matrx/diff analyzeTextChange; these run-level segments are shown for comparison only — NoteConflictWindow renders the canonical DiffViewer"
               />
             }
           >

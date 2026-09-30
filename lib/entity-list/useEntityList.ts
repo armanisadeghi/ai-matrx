@@ -284,13 +284,23 @@ export function useEntityList<TRow>({
   // UNTOUCHED scope axis takes the default whenever it arrives; the moment the
   // user clicks a scope tab, their choice owns the axis for the session.
   const scopeTouched = useRef(false);
-  const storedQuery: EntityListQuery = urlState
+  const unclampedQuery: EntityListQuery = urlState
     ? rawQuery
     : {
         ...rawQuery,
         ...(archivedTouched.current ? {} : { archived: defaultQuery.archived }),
         ...(scopeTouched.current ? {} : { scope: defaultQuery.scope }),
       };
+  // A surface that declared it has no team lane (`teamLane: false`) must not serve a stale
+  // `?scope=team` link as the All list under a false name: the lane is absent, so the link
+  // lands on the default lane.
+  const storedQuery: EntityListQuery =
+    unclampedQuery.scope.kind === "team" &&
+    supportedScopes &&
+    supportedScopes.length > 0 &&
+    !supportedScopes.includes("team")
+      ? { ...unclampedQuery, scope: defaultQuery.scope }
+      : unclampedQuery;
   // `searchSpansDefaultFilters` (see the arg's doc): a search typed over the
   // UNTOUCHED default bag runs over the whole corpus. Untouched means the
   // filter bag is still the very `defaultFilters` object — a URL that carries

@@ -207,6 +207,12 @@ export interface EntityListConfig<TRow> {
    * `scopes` prop, which wins over this.
    */
   scopes: ListScopeKind[];
+  /**
+   * DECLARED FACT: `false` when this surface's records have no team concept (a mandate is homed
+   * to an organization, never a team), so the shell's automatic My team lane is absent rather
+   * than a tab that can only ever say 0. Omitted = the shell adds My team beside My Orgs.
+   */
+  teamLane?: false;
   service: EntityListService<TRow>;
   /**
    * A string identifying what THIS service instance was built from. Changes

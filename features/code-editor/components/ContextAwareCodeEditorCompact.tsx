@@ -56,7 +56,7 @@ import {
   validateEdits,
 } from "@/features/code-editor/utils/parseCodeEdits";
 import { applyCodeEdits } from "@/features/code-editor/utils/applyCodeEdits";
-import { getDiffStats } from "@/features/code-editor/utils/generateDiff";
+import { computeLineChanges } from "@ai-matrx/diff/text";
 import { DYNAMIC_CONTEXT_VARIABLE } from "@/features/code-editor/utils/ContextVersionManager";
 
 export interface ContextAwareCodeEditorCompactProps {
@@ -264,7 +264,7 @@ export function ContextAwareCodeEditorCompact({
       }
 
       const newCode = result_apply.code || "";
-      const diffStats = getDiffStats(currentCodeRef.current, newCode);
+      const diffStats = computeLineChanges(currentCodeRef.current, newCode);
       const editsCount = parsed.edits.length;
 
       const titleNode = (

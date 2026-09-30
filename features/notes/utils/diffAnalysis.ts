@@ -1,13 +1,13 @@
 // features/notes/utils/diffAnalysis.ts
-// Pure diff analysis utility for comparing two text versions.
-// No external dependencies — uses line-based LCS algorithm.
+// The notes conflict reading of two versions of a note: the local copy against
+// the remote one. The line alignment, counts, whitespace flags and content-loss
+// detection are `@ai-matrx/diff`'s `analyzeTextChange`; this file binds the
+// notes cap and names the two sides (local = original, remote = modified) and
+// writes the one-line summary the conflict window and version history show.
 
-// ── Types ────────────────────────────────────────────────────────────────────
+import { analyzeTextChange, type TextChangeSegment } from "@ai-matrx/diff/text";
 
-export interface DiffSegment {
-  type: "added" | "removed" | "unchanged";
-  content: string;
-}
+export type DiffSegment = TextChangeSegment;
 
 export interface DiffAnalysis {
   /** Any difference at all between local and remote */
@@ -32,160 +32,15 @@ export interface DiffAnalysis {
   summary: string;
 }
 
-// ── Normalization helpers ────────────────────────────────────────────────────
-
-function normalizeWhitespace(s: string): string {
-  return s.replace(/\s+/g, " ").trim();
-}
-
-function removeEmptyLines(s: string): string {
-  return s
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .join("\n");
-}
-
-// ── LCS-based line diff ─────────────────────────────────────────────────────
-
-function lcsMatrix(a: string[], b: string[]): number[][] {
-  const m = a.length;
-  const n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    new Array(n + 1).fill(0),
-  );
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-  return dp;
-}
-
-// LCS is O(m·n) in time AND memory. Unbounded, a large pasted document
-// (thousands of lines on both sides) allocates a multi-million-cell matrix —
-// enough to hang the main thread for seconds or OOM the tab (2026-07 /notes
-// freeze class: a single conflict on a big paste "nearly crashed" the tab).
-// Guard: trim the common prefix/suffix first (typical edits touch one
-// region, collapsing the matrix to the changed window), then hard-cap the
-// remaining product and fall back to a coarse removed/added pair.
-const LCS_MAX_CELLS = 250_000;
-
-function buildDiffSegments(local: string[], remote: string[]): DiffSegment[] {
-  const segments: DiffSegment[] = [];
-
-  // Trim common prefix/suffix — O(n), shrinks the LCS window dramatically.
-  let prefix = 0;
-  const maxPrefix = Math.min(local.length, remote.length);
-  while (prefix < maxPrefix && local[prefix] === remote[prefix]) prefix++;
-  let suffix = 0;
-  const maxSuffix = maxPrefix - prefix;
-  while (
-    suffix < maxSuffix &&
-    local[local.length - 1 - suffix] === remote[remote.length - 1 - suffix]
-  ) {
-    suffix++;
-  }
-
-  const localMid = local.slice(prefix, local.length - suffix);
-  const remoteMid = remote.slice(prefix, remote.length - suffix);
-
-  if (prefix > 0) {
-    segments.push({
-      type: "unchanged",
-      content: local.slice(0, prefix).join("\n"),
-    });
-  }
-
-  if (localMid.length * remoteMid.length > LCS_MAX_CELLS) {
-    // Too large for exact LCS — coarse fallback: one removed + one added
-    // block. Counts and data-loss flags stay correct; only intra-region
-    // line alignment is lost.
-    if (localMid.length > 0) {
-      segments.push({ type: "removed", content: localMid.join("\n") });
-    }
-    if (remoteMid.length > 0) {
-      segments.push({ type: "added", content: remoteMid.join("\n") });
-    }
-  } else if (localMid.length > 0 || remoteMid.length > 0) {
-    for (const seg of lcsSegments(localMid, remoteMid)) {
-      const last = segments[segments.length - 1];
-      if (last && last.type === seg.type) {
-        last.content += "\n" + seg.content;
-      } else {
-        segments.push(seg);
-      }
-    }
-  }
-
-  if (suffix > 0) {
-    const tail = local.slice(local.length - suffix).join("\n");
-    const last = segments[segments.length - 1];
-    if (last && last.type === "unchanged") {
-      last.content += "\n" + tail;
-    } else {
-      segments.push({ type: "unchanged", content: tail });
-    }
-  }
-
-  return segments;
-}
-
-function lcsSegments(local: string[], remote: string[]): DiffSegment[] {
-  const dp = lcsMatrix(local, remote);
-  const segments: DiffSegment[] = [];
-  let i = local.length;
-  let j = remote.length;
-
-  // Backtrack through LCS matrix
-  const ops: Array<{ type: "unchanged" | "removed" | "added"; line: string }> =
-    [];
-
-  while (i > 0 && j > 0) {
-    if (local[i - 1] === remote[j - 1]) {
-      ops.push({ type: "unchanged", line: local[i - 1] });
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      ops.push({ type: "removed", line: local[i - 1] });
-      i--;
-    } else {
-      ops.push({ type: "added", line: remote[j - 1] });
-      j--;
-    }
-  }
-  while (i > 0) {
-    ops.push({ type: "removed", line: local[i - 1] });
-    i--;
-  }
-  while (j > 0) {
-    ops.push({ type: "added", line: remote[j - 1] });
-    j--;
-  }
-
-  ops.reverse();
-
-  // Merge consecutive same-type ops into segments
-  for (const op of ops) {
-    const last = segments[segments.length - 1];
-    if (last && last.type === op.type) {
-      last.content += "\n" + op.line;
-    } else {
-      segments.push({ type: op.type, content: op.line });
-    }
-  }
-
-  return segments;
-}
-
-// ── Main analysis function ──────────────────────────────────────────────────
+// analyzeDiff runs during render (memoized per conflict), so the notes cap is
+// far below the package default: above 250,000 LCS cells in the changed middle
+// the middle is read as one removed and one added block (2026-07 /notes freeze
+// class — a conflict on a big paste nearly crashed the tab).
+const NOTES_LCS_MAX_CELLS = 250_000;
 
 export function analyzeDiff(local: string, remote: string): DiffAnalysis {
-  // Quick equality check
-  if (local === remote) {
+  const a = analyzeTextChange(local, remote, { maxLcsCells: NOTES_LCS_MAX_CELLS });
+  if (!a.hasChanges) {
     return {
       hasChanges: false,
       hasChangesExcludingWhitespace: false,
@@ -195,63 +50,33 @@ export function analyzeDiff(local: string, remote: string): DiffAnalysis {
       linesChanged: 0,
       remoteHasContentLocalDoesNot: false,
       localHasContentRemoteDoesNot: false,
-      segments: [{ type: "unchanged", content: local }],
+      segments: a.segments,
       summary: "No differences",
     };
   }
 
-  // Cascading checks
-  const hasChanges = true;
-  const hasChangesExcludingWhitespace =
-    normalizeWhitespace(local) !== normalizeWhitespace(remote);
-  const hasChangesExcludingEmptyLines =
-    removeEmptyLines(local) !== removeEmptyLines(remote);
-  const hasChangesExcludingTrim = local.trim() !== remote.trim();
+  const remoteHasContentLocalDoesNot = a.modifiedHasContentOriginalLacks;
+  const localHasContentRemoteDoesNot = a.originalHasContentModifiedLacks;
+  const { linesChanged, charsChanged } = a;
 
-  // Line-based diff
-  const localLines = local.split("\n");
-  const remoteLines = remote.split("\n");
-  const segments = buildDiffSegments(localLines, remoteLines);
-
-  // Count changed lines, and the characters inside the changed lines. The
-  // character count comes from the SAME segments the user sees: a positional
-  // compare (the old method) reported every character after a deleted line as
-  // "different", so removing one 90-character line read as "6428 chars
-  // different" — a number that contradicted the "2 lines changed" beside it.
-  let addedLines = 0;
-  let removedLines = 0;
-  let charsChanged = 0;
-  for (const seg of segments) {
-    const lineCount = seg.content.split("\n").length;
-    if (seg.type === "added") addedLines += lineCount;
-    if (seg.type === "removed") removedLines += lineCount;
-    if (seg.type === "added" || seg.type === "removed") charsChanged += seg.content.length;
-  }
-  const linesChanged = addedLines + removedLines;
-
-  // Data loss indicators
-  const remoteHasContentLocalDoesNot = addedLines > 0;
-  const localHasContentRemoteDoesNot = removedLines > 0;
-
-  // Summary
   const parts: string[] = [];
   if (linesChanged > 0) parts.push(`${linesChanged} line${linesChanged !== 1 ? "s" : ""} changed`);
   if (charsChanged > 0) parts.push(`${charsChanged} char${charsChanged !== 1 ? "s" : ""} different`);
   if (remoteHasContentLocalDoesNot) parts.push("remote has content you're missing");
   if (localHasContentRemoteDoesNot) parts.push("you have content remote doesn't");
-  if (!hasChangesExcludingWhitespace) parts.push("only whitespace differences");
+  if (!a.hasChangesExcludingWhitespace) parts.push("only whitespace differences");
   const summary = parts.join(" · ") || "Minor differences";
 
   return {
-    hasChanges,
-    hasChangesExcludingWhitespace,
-    hasChangesExcludingEmptyLines,
-    hasChangesExcludingTrim,
+    hasChanges: true,
+    hasChangesExcludingWhitespace: a.hasChangesExcludingWhitespace,
+    hasChangesExcludingEmptyLines: a.hasChangesExcludingEmptyLines,
+    hasChangesExcludingTrim: a.hasChangesExcludingTrim,
     charsChanged,
     linesChanged,
     remoteHasContentLocalDoesNot,
     localHasContentRemoteDoesNot,
-    segments,
+    segments: a.segments,
     summary,
   };
 }

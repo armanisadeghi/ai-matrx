@@ -88,6 +88,8 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   // the platform's own corpus for an admin — a module constant cannot read who
   // is looking, so that subset is passed by the page.
   scopes: MANDATE_LIST_SCOPES,
+  // A mandate is homed to an organization (or the platform), never a team.
+  teamLane: false,
   // Every host passes its own `service` (which home, whose ladder). This
   // default is the honest fallback: the blended corpus, resolved for the
   // caller with no active organization and therefore no org rung.
