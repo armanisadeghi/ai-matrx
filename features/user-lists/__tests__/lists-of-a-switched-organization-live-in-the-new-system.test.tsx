@@ -109,7 +109,15 @@ jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () 
 jest.mock("@/features/data-tables/data-source/where-a-table-is-born", () => ({ whereANewTableIsBorn: jest.fn() }));
 const RECORDS_CLIENT = { listArchived: jest.fn(), recordRestore: jest.fn() };
 jest.mock("@ai-matrx/records/react", () => ({ useRecordsClient: () => RECORDS_CLIENT }));
-jest.mock("@/features/unified-data/hub/OrganizationScope", () => ({ OrganizationScopeStrip: () => null }));
+jest.mock("@/lib/entity-list/components/EntityOrgFilter", () => ({ EntityOrgFilter: () => null }));
+jest.mock("@/lib/entity-list/orgFilterUrl", () => ({ useOrgFilterParam: () => [null, jest.fn()] }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn(async () => "active-org") }));
+jest.mock("@ai-matrx/records-ui", () => ({
+  ArchivedDisclosure: () => null,
+  RecordsMount: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  personActor: () => ({}),
+}));
+jest.mock("@/features/unified-data/recordsNotify", () => ({ RECORDS_NOTIFY: {} }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ tableKernelId: async () => ({ ok: true, data: "kernel" }) }));
 
 let container: HTMLDivElement;
@@ -152,7 +160,6 @@ test("B. the Picklists page lists a list in the new system at /lists/<id> and re
   await act(async () => {
     root.render(
       <PicklistsIndex
-        organizationId="11f4e747-c13a-49c7-81a3-66e6391f8a9b"
         organizationName="Harbor Dental Group"
         userId={ME}
         dataSource={{} as never}
@@ -167,6 +174,39 @@ test("B. the Picklists page lists a list in the new system at /lists/<id> and re
   expect(olderReads.filter((t) => t.startsWith("workbench."))).toEqual([]);
   // The header's selected organization never narrows the list: it opens on every organization.
   expect(indexReads).toEqual(["pick_list_index_everywhere"]);
+});
+
+test("D. a NEW picklist carries the active organization (ensureOrgId), the list read never does", async () => {
+  const created: Array<Record<string, unknown>> = [];
+  (client.rpc as jest.Mock).mockImplementation(async (fn: string, args: Record<string, unknown>) => {
+    if (fn === "create_user_list") {
+      created.push(args);
+      return { data: { list_id: STORE_LIST }, error: null };
+    }
+    if (fn === "get_user_lists_summary") return { data: summary, error: null };
+    throw new Error(`unexpected rpc ${fn}`);
+  });
+  const { PicklistsIndex } = await import("../components/PicklistsIndex");
+  await act(async () => {
+    root.render(<PicklistsIndex organizationName="Harbor Dental Group" userId={ME} dataSource={{} as never} />);
+  });
+  await settle();
+  const press = async (label: string) => {
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.includes(label));
+    if (!button) throw new Error(`no ${label} button`);
+    await act(async () => button.click());
+  };
+  await press("New picklist");
+  const input = container.querySelector<HTMLInputElement>('input[aria-label="Picklist name"]')!;
+  await act(async () => {
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    set.call(input, "Recall reasons");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await press("Create");
+  await settle();
+  expect(created).toHaveLength(1);
+  expect(created[0].p_organization_id).toBe("active-org");
 });
 
 test("C. the older list editor, handed a list that lives in the new system, links to it instead", async () => {

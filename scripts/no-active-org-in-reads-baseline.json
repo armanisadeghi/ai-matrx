@@ -21,11 +21,6 @@
       "owner": "documents",
       "note": "selectOrganizationId → ensureOrganizationContext → createDocument; reload takes no org"
     },
-    "app/(core)/lists/v3/page.tsx": {
-      "class": "silent-filter",
-      "owner": "data",
-      "note": "useOrganizationRequired → RecordsMount/PicklistsIndex organizationId; only a name label, no org control"
-    },
     "app/(core)/workbooks/page.tsx": {
       "class": "write-target",
       "owner": "workbooks",
@@ -236,11 +231,6 @@
       "owner": "masterwork",
       "note": "useOrganizationRequired only gates canLoad and notice"
     },
-    "features/matrx-envelope/referenceResolvers.ts": {
-      "class": "not-a-list",
-      "owner": "matrx-envelope",
-      "note": "getActiveOrgId → locateTable for a single table id"
-    },
     "features/notes/components/NoteSidebar.tsx": {
       "class": "write-target",
       "owner": "notes",
@@ -256,11 +246,6 @@
       "owner": "print",
       "note": "organizationId only a refetch dependency of the Lulu catalog fetch"
     },
-    "features/product-capture/components/ItemsSheet.tsx": {
-      "class": "not-a-list",
-      "owner": "product-capture",
-      "note": "useOrganizationRequired gives notice state only; listRecentItems uses the organizationId prop from the session hook"
-    },
     "features/product-capture/hooks/useProductCaptureSession.ts": {
       "class": "write-target",
       "owner": "product-capture",
@@ -275,11 +260,6 @@
       "class": "not-a-list",
       "owner": "scheduling",
       "note": "org only a retry fallback address for the organization-free duplicates check"
-    },
-    "features/scope-system/components/ContextItemPicker.tsx": {
-      "class": "labelled-active-default",
-      "owner": "scope-system",
-      "note": "activeOrgId default for scope-type list; an organization selector on the picker changes it"
     },
     "features/scopes/components/active-context/ActiveContextLayersPanel.tsx": {
       "class": "not-a-list",

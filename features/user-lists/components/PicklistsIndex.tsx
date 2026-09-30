@@ -2,9 +2,11 @@
 
 // features/user-lists/components/PicklistsIndex.tsx — THE PICKLISTS PAGE (lane HANDOVER, 2026-09-27).
 //
-// Every picklist of the organization the person is working in, read through THE LIST INDEX
-// (`pick-list-index.ts`, one store door), with New picklist first, a filter, the way to every
-// organization's lists, and the archive under the list. A row opens the list at its one address,
+// Every picklist the person can open, across ALL their organizations, read through THE LIST INDEX
+// (`pick-list-index.ts`, one store door), with New picklist first, a search box, the organization
+// filter (All organizations by default, `?org_filter=`), and the archive under the list when one
+// organization is filtered. The active organization never narrows the list — it is only where a
+// NEW picklist is saved (active-org-is-never-a-list-filter law). A row opens the list at its one address,
 // `/lists/<id>`, which decides where the list lives and edits it there. This page edits nothing
 // itself and reads nothing from the older tables.
 //
@@ -15,14 +17,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ListChecks } from "lucide-react";
-import { ArchivedDisclosure } from "@ai-matrx/records-ui";
+import { ArchivedDisclosure, RecordsMount, personActor } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource, RecordsError } from "@ai-matrx/records";
 import { BasicInput, Button, Skeleton } from "@ai-matrx/design-system";
 
 import { supabase } from "@/utils/supabase/client";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { OrganizationScopeStrip } from "@/features/unified-data/hub/OrganizationScope";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";
 import { tableKernelId } from "@/features/unified-data/hub/doors";
 import { createList } from "../service";
@@ -43,85 +49,41 @@ function when(at: string | null): string | null {
 }
 
 export interface PicklistsIndexProps {
-  organizationId: string;
+  /** The ACTIVE organization's name — only for the "Made in …" hint beside New picklist. */
   organizationName: string | null;
   userId: string;
-  /** The page's one data seam (the same one its RecordsMount is bound to). */
+  /** The page's one data seam (the archive's records client binds to it). */
   dataSource: RecordsDataSource;
 }
 
-export function PicklistsIndex({ organizationId, organizationName, userId, dataSource }: PicklistsIndexProps) {
+export function PicklistsIndex({ organizationName, userId, dataSource }: PicklistsIndexProps) {
   const router = useRouter();
-  const client = useRecordsClient();
-  // Default: EVERY organization the person can reach. One organization is a filter they choose on
-  // the strip below, never the header's selected organization (access-belongs-to-the-person).
-  const [everywhere, setEverywhere] = useState(true);
+  // The organization FILTER: a visible control, URL-backed, All organizations by default. It is
+  // never the active organization (that one is only where a new picklist is saved).
+  const [orgFilter, setOrgFilter] = useOrgFilterParam();
   const [state, setState] = useState<IndexState>({ phase: "reading" });
   const [filter, setFilter] = useState("");
   const [reread, setReread] = useState(0);
 
-  // ── the index, then the archive (names from the store's own archive door, narrowed to the
-  //    ids the index says are archived picklists). One read per scope change, never per render. ──
-  const [archived, setArchived] = useState<ArchivedTable[] | null>(null);
-  const [archiveTrouble, setArchiveTrouble] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
     setState({ phase: "reading" });
     void (async () => {
-      const answered = await readPickListIndex(supabase, everywhere ? { everywhere: true } : { organizationId });
+      const answered = await readPickListIndex(
+        supabase,
+        orgFilter ? { organizationId: orgFilter } : { everywhere: true },
+      );
       if (!alive) return;
       if (!answered.ok) {
         setState({ phase: "failed", why: answered.why });
         return;
       }
       setState({ phase: "read", lists: answered.lists, archivedIds: answered.archivedIds });
-      if (everywhere) return;
-      if (answered.archivedIds.length === 0) {
-        setArchived([]);
-        setArchiveTrouble(null);
-        return;
-      }
-      const kernel = await tableKernelId(dataSource);
-      if (!alive) return;
-      if (!kernel.ok) {
-        setArchiveTrouble(kernel.error.message);
-        return;
-      }
-      const wanted = new Set(answered.archivedIds);
-      const rows: ArchivedTable[] = [];
-      for (let page = 0; page < 50; page += 1) {
-        const got = await client.listArchived({ table_id: kernel.data, lane: "org", limit: 100, offset: page * 100 });
-        if (!alive) return;
-        if (!got.ok) {
-          setArchiveTrouble(got.error.message);
-          return;
-        }
-        for (const row of got.data.rows) {
-          if (!wanted.has(row.id)) continue;
-          rows.push({
-            id: row.id,
-            name: (row.document as { name?: string } | null)?.name?.trim() || "Untitled list",
-            archivedAt: row.archivedAt,
-            archivedByName: row.archivedByName,
-          });
-        }
-        if (got.data.total !== null) break;
-      }
-      setArchiveTrouble(null);
-      setArchived(rows);
     })();
     return () => {
       alive = false;
     };
-    // client and dataSource are the page's one seam, stable for the page's life.
-  }, [client, dataSource, organizationId, everywhere, reread]);
-
-  const bringBack = async (listId: string): Promise<RecordsError | null> => {
-    const answered = await client.recordRestore({ record_id: listId });
-    if (!answered.ok) return answered.error;
-    setReread((n) => n + 1);
-    return null;
-  };
+  }, [orgFilter, reread]);
 
   // ── New picklist ──────────────────────────────────────────────────────
   const [creating, setCreating] = useState(false);
@@ -134,16 +96,21 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
     setBusy(true);
     setCreateError(null);
     try {
+      // A NEW picklist is saved in the active organization (held and asked when none is set).
       const made = (await createList({
         p_list_name: trimmed,
         p_user_id: userId,
-        p_organization_id: organizationId,
+        p_organization_id: await ensureOrgId(null),
         p_items: [],
       })) as { list_id?: string; id?: string } | null;
       const id = made?.list_id ?? made?.id;
       if (!id) throw new Error("The list was made but its address did not come back — it is on this page after a refresh.");
       router.push(listAddress(id));
     } catch (e) {
+      if (isOrganizationSelectionCancelled(e)) {
+        setBusy(false);
+        return;
+      }
       setCreateError(e instanceof Error ? e.message : String(e));
       setBusy(false);
     }
@@ -159,21 +126,16 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
 
   return (
     <div className="space-y-4" data-picklists-index>
-      <OrganizationScopeStrip
-        organizationName={organizationName}
-        showingAll={everywhere}
-        onShowAll={() => setEverywhere(true)}
-        onShowOne={() => setEverywhere(false)}
-        trailing={
-          <BasicInput
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Find a picklist"
-            aria-label="Find a picklist"
-            className="h-7 w-56 max-w-full text-base sm:text-xs"
-          />
-        }
-      />
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <BasicInput
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Find a picklist"
+          aria-label="Find a picklist"
+          className="h-7 w-56 max-w-full text-base sm:text-xs"
+        />
+        <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
+      </div>
 
       {/* MAKING ONE, FIRST (the data home's own rule): one create control, above the list. */}
       <div className="flex flex-wrap items-center gap-2">
@@ -203,7 +165,7 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
               <Button size="sm" onClick={() => setCreating(true)}>
                 New picklist
               </Button>
-              {everywhere && organizationName ? (
+              {organizationName ? (
                 <span className="text-xs text-muted-foreground">Made in {organizationName}</span>
               ) : null}
             </>
@@ -236,9 +198,9 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
           <p className="p-3 text-xs text-muted-foreground">
             {filter.trim()
               ? `No picklist matches "${filter.trim()}".`
-              : everywhere
-                ? "You have no picklists in any organization yet."
-                : "No picklists here yet. Press New picklist above."}
+              : orgFilter
+                ? "No picklists in this organization yet. Press New picklist above."
+                : "You have no picklists in any organization yet."}
           </p>
         ) : (
           <ul>
@@ -259,7 +221,7 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
                     <span className="min-w-0 max-w-full truncate text-xs text-muted-foreground">{list.description}</span>
                   ) : null}
                   <span className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-                    {everywhere && list.organizationName ? <span className="truncate">{list.organizationName}</span> : null}
+                    {list.organizationName ? <span className="truncate">{list.organizationName}</span> : null}
                     {when(list.updatedAt) ? <span>{when(list.updatedAt)}</span> : null}
                   </span>
                 </div>
@@ -269,14 +231,101 @@ export function PicklistsIndex({ organizationId, organizationName, userId, dataS
         )}
       </section>
 
-      {everywhere ? null : (
-        <section className="rounded-lg border border-border bg-card p-3" data-picklists-archive>
-          {/* read-gate-exempt: count stays absent (ArchivedDisclosure then draws no number) until the archive read succeeds, and while it is in trouble */}
-          <ArchivedDisclosure noun="picklists" count={archiveTrouble ? undefined : archived?.length}>
-            <ArchivedTablesList tables={archived} readTrouble={archiveTrouble} note={null} onBringBack={bringBack} />
-          </ArchivedDisclosure>
-        </section>
-      )}
+      {/* The archive is one organization's (the store's archive door is bound to an
+          organization), so it appears when the organization filter names one. */}
+      {orgFilter && state.phase === "read" ? (
+        <RecordsMount
+          key={orgFilter}
+          letTheStoreDecideRights
+          config={{ dataSource, actor: personActor(userId), organizationId: orgFilter }}
+          host={{ Link, density: "condensed", notify: RECORDS_NOTIFY }}
+        >
+          <PicklistsArchive
+            dataSource={dataSource}
+            archivedIds={state.archivedIds}
+            reread={reread}
+            onRestored={() => setReread((n) => n + 1)}
+          />
+        </RecordsMount>
+      ) : null}
     </div>
+  );
+}
+
+/** The archive under the list: names from the store's own archive door, narrowed to the ids the
+ *  index says are archived picklists of the filtered organization. */
+function PicklistsArchive({
+  dataSource,
+  archivedIds,
+  reread,
+  onRestored,
+}: {
+  dataSource: RecordsDataSource;
+  archivedIds: string[];
+  reread: number;
+  onRestored: () => void;
+}) {
+  const client = useRecordsClient();
+  const [archived, setArchived] = useState<ArchivedTable[] | null>(null);
+  const [archiveTrouble, setArchiveTrouble] = useState<string | null>(null);
+  const idsKey = archivedIds.join(",");
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      if (archivedIds.length === 0) {
+        setArchived([]);
+        setArchiveTrouble(null);
+        return;
+      }
+      const kernel = await tableKernelId(dataSource);
+      if (!alive) return;
+      if (!kernel.ok) {
+        setArchiveTrouble(kernel.error.message);
+        return;
+      }
+      const wanted = new Set(archivedIds);
+      const rows: ArchivedTable[] = [];
+      for (let page = 0; page < 50; page += 1) {
+        const got = await client.listArchived({ table_id: kernel.data, lane: "org", limit: 100, offset: page * 100 });
+        if (!alive) return;
+        if (!got.ok) {
+          setArchiveTrouble(got.error.message);
+          return;
+        }
+        for (const row of got.data.rows) {
+          if (!wanted.has(row.id)) continue;
+          rows.push({
+            id: row.id,
+            name: (row.document as { name?: string } | null)?.name?.trim() || "Untitled list",
+            archivedAt: row.archivedAt,
+            archivedByName: row.archivedByName,
+          });
+        }
+        if (got.data.total !== null) break;
+      }
+      setArchiveTrouble(null);
+      setArchived(rows);
+    })();
+    return () => {
+      alive = false;
+    };
+    // client and dataSource are the page's one seam, stable for the page's life.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, dataSource, idsKey, reread]);
+
+  const bringBack = async (listId: string): Promise<RecordsError | null> => {
+    const answered = await client.recordRestore({ record_id: listId });
+    if (!answered.ok) return answered.error;
+    onRestored();
+    return null;
+  };
+
+  return (
+    <section className="rounded-lg border border-border bg-card p-3" data-picklists-archive>
+      {/* read-gate-exempt: count stays absent (ArchivedDisclosure then draws no number) until the archive read succeeds, and while it is in trouble */}
+      <ArchivedDisclosure noun="picklists" count={archiveTrouble ? undefined : archived?.length}>
+        <ArchivedTablesList tables={archived} readTrouble={archiveTrouble} note={null} onBringBack={bringBack} />
+      </ArchivedDisclosure>
+    </section>
   );
 }
