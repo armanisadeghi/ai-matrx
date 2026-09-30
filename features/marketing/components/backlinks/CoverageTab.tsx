@@ -50,7 +50,10 @@ import {
   useCoverageTrackers,
 } from "@/features/marketing/data/coverage-hooks";
 import { COVERAGE_WINDOW_DAYS } from "@/features/marketing/data/coverage-queries";
-import type { CoverageMentionRow } from "@/features/marketing/data/coverage-types";
+import {
+  isNotAboutYou,
+  type CoverageMentionRow,
+} from "@/features/marketing/data/coverage-types";
 import {
   clearTableUrlParams,
   useMarketingTableState,
@@ -442,7 +445,14 @@ export function CoverageTab({ siteId }: { siteId: string }) {
             label={row.sentiment}
           />
         ) : (
-          <span className="text-xs text-muted-foreground">Not read yet</span>
+          <span className="text-xs text-muted-foreground">
+            {/* A page that is not about you was read — it just has no tone toward you. */}
+            {isNotAboutYou(row)
+              ? "Not about you"
+              : row.analyzed_at
+                ? "Not measured"
+                : "Not read yet"}
+          </span>
         ),
     },
     {
