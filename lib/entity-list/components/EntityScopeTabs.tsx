@@ -137,6 +137,11 @@ const SCOPE_META: Record<
   },
 };
 
+/** A lane's tab label ("Mine", "My Orgs", …) — the words the tab bar shows. */
+export function scopeKindLabel(kind: ListScopeKind): string {
+  return SCOPE_META[kind]?.label ?? kind;
+}
+
 function CountPill({ n, active }: { n: number | null; active: boolean }) {
   // Absent, never dishonest: no pill at all until the number is real.
   if (n === null) return null;

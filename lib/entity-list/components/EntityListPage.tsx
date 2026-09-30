@@ -37,6 +37,7 @@ import { useListSearchParams } from "../useListSearchParams";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
 import {
+  makeScope,
   withTeamScope,
   type ListScope,
   type ListScopeKind,
@@ -53,7 +54,7 @@ import {
 import { entityListRowHref } from "../doors";
 import { countActiveFilters } from "../types";
 import { EditRowRegistry } from "../editRowRegistry";
-import { EntityScopeTabs } from "./EntityScopeTabs";
+import { EntityScopeTabs, scopeKindLabel } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
 import {
@@ -488,6 +489,56 @@ export function EntityListPage<TRow>({
       clearSearchAndFilters
     );
 
+  // 🚨 A MISS IN THIS LANE IS NOT A MISS EVERYWHERE (2026-09-29, measured on
+  // /education/flashcards as admin@admin.com). The deck list opens on My Orgs
+  // (the registry's view for fc_set), and My Orgs is by definition OTHER
+  // people's records — so two decks the person had just made, searched by
+  // their exact name, answered "No decks match … check a different scope"
+  // while the Mine tab counted both. The lane counts are the list under the
+  // same search and filters (the count IS the list — check:list-counts), so the
+  // shell knows exactly which lanes hold matches: it names them and each gets a
+  // one-click door that keeps the search. Every list on this shell inherits it.
+  const currentKind = list.query.scope.kind;
+  const otherLaneHits =
+    list.countsLoading || list.countsError
+      ? []
+      : visibleScopes
+          .filter((kind) => kind !== currentKind)
+          .map((kind) => ({ kind, count: list.counts.byKind[kind] ?? 0 }))
+          .filter((hit) => hit.count > 0);
+  const hitsSentence = otherLaneHits
+    .map((hit) => `${hit.count} in ${scopeKindLabel(hit.kind)}`)
+    .join(", ")
+    .replace(/, ([^,]*)$/, " and $1");
+  const otherLaneEmptyState =
+    otherLaneHits.length > 0 && !teamScope
+      ? {
+          title: isNarrowed
+            ? `No ${plural} match in ${scopeKindLabel(currentKind)}`
+            : `No ${plural} in ${scopeKindLabel(currentKind)}`,
+          description: isNarrowed
+            ? `Nothing in ${scopeKindLabel(currentKind)} matched your search and filters — but ${hitsSentence} did.`
+            : `${scopeKindLabel(currentKind)} is empty, but there ${otherLaneHits.length === 1 && otherLaneHits[0].count === 1 ? "is" : "are"} ${hitsSentence}.`,
+          action: (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {otherLaneHits.slice(0, 3).map((hit) => (
+                <Button
+                  key={hit.kind}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => list.setScope(makeScope(hit.kind))}
+                >
+                  {hit.count === 1
+                    ? `Show the ${singular} in ${scopeKindLabel(hit.kind)}`
+                    : `Show the ${hit.count} ${plural} in ${scopeKindLabel(hit.kind)}`}
+                </Button>
+              ))}
+              {isNarrowed ? clearSearchAndFilters : configuredEmptyAction}
+            </div>
+          ),
+        }
+      : null;
+
   const allArchivedEmptyState =
     archivedCount > 0
       ? {
@@ -511,6 +562,7 @@ export function EntityListPage<TRow>({
   const resolvedEmptyState =
     failureEmptyState ??
     allArchivedEmptyState ??
+    otherLaneEmptyState ??
     // Nothing may be asserted about "none" until the archived count answers.
     // These two branches are short-lived and rare (only an empty live half
     // reaches them at all), and each is strictly more honest than guessing.
