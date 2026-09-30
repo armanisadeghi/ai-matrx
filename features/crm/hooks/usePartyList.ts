@@ -11,6 +11,7 @@
 // overwrite a newer one.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import { fetchPartyPage, fetchPartyScopeCounts } from "../service";
@@ -49,7 +50,17 @@ export interface UsePartyListResult {
 }
 
 export function usePartyList(opts: PartySortOpts): UsePartyListResult {
-  const [query, setQueryState] = useState<PartyListQuery>(DEFAULT_PARTY_QUERY);
+  // The organization filter is URL state (`?org_filter=`, absent = All
+  // organizations) — never local state, never the active organization. The
+  // rest of the query stays local and always starts clean.
+  const [orgFilter, setOrgFilter] = useOrgFilterParam();
+  const setOrgFilterRef = useRef(setOrgFilter);
+  setOrgFilterRef.current = setOrgFilter;
+  const [localQuery, setQueryState] = useState<PartyListQuery>(DEFAULT_PARTY_QUERY);
+  const query = useMemo<PartyListQuery>(
+    () => ({ ...localQuery, orgId: orgFilter }),
+    [localQuery, orgFilter],
+  );
   const [rows, setRows] = useState<PartyListRow[]>([]);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
@@ -118,9 +129,11 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
   }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation]);  
 
   const setQuery = useCallback((patch: Partial<PartyListQuery>) => {
+    const { orgId, ...rest } = patch;
+    if ("orgId" in patch) setOrgFilterRef.current(orgId ?? null);
     setQueryState((prev) => ({
       ...prev,
-      ...patch,
+      ...rest,
       // Any narrowing change resets paging; an explicit page wins.
       page: patch.page ?? 1,
     }));

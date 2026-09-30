@@ -15,6 +15,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
+import { orgFilterPatch, readOrgFilter } from "@/lib/entity-list/orgFilterUrl";
 import { VaultWorkspace } from "./VaultWorkspace";
 
 export function VaultPage({ itemId = null }: { itemId?: string | null }) {
@@ -22,9 +23,20 @@ export function VaultPage({ itemId = null }: { itemId?: string | null }) {
 
   const onSelect = useCallback(
     (id: string | null) => {
-      router.push(id ? `/vault/${encodeURIComponent(id)}` : "/vault", {
-        scroll: false,
-      });
+      // The organization filter (`?org_filter=`) is URL state, not selection: carry it across so
+      // opening a credential and coming back keeps the person's narrowing.
+      const orgFilter = readOrgFilter(
+        new URLSearchParams(window.location.search),
+      );
+      const query = orgFilter
+        ? `?${new URLSearchParams(
+            Object.entries(orgFilterPatch(orgFilter)) as [string, string][],
+          ).toString()}`
+        : "";
+      router.push(
+        `${id ? `/vault/${encodeURIComponent(id)}` : "/vault"}${query}`,
+        { scroll: false },
+      );
     },
     [router],
   );

@@ -95,6 +95,7 @@ import { VaultLoginExportDialog } from "./VaultLoginExportDialog";
 import { VaultBackupDialog } from "./VaultBackupDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
@@ -167,8 +168,18 @@ export function VaultWorkspace({
     routeWorkspaceState?.scope ?? localUncontrolledScope;
   const setUncontrolledScope =
     routeWorkspaceState?.setScope ?? setLocalUncontrolledScope;
-  const requestedUserScope =
-    parseVaultScopeKey(controlledScope) ?? uncontrolledScope;
+  // ONE PRIMITIVE, TWO HOSTS. On a page (no `scope` prop) the organization filter is the shell's
+  // URL state (`?org_filter=`, absent = All organizations — survives reload, Back undoes it). A
+  // host that holds its own scope string (the Vault window panel) passes `scope`, and its own
+  // state stays authoritative. Either way the filter is never the active organization.
+  const [urlOrgFilter, setUrlOrgFilter] = useOrgFilterParam();
+  const pageHosted = controlledScope === undefined;
+  const parsedControlledScope = parseVaultScopeKey(controlledScope);
+  const baseUserScope: VaultScope = parsedControlledScope ?? uncontrolledScope;
+  const requestedUserScope: VaultScope =
+    pageHosted && baseUserScope.kind === "organization"
+      ? { kind: "organization", organizationId: urlOrgFilter }
+      : baseUserScope;
   const userScope: VaultScope =
     requestedUserScope.kind !== "organization" ||
     requestedUserScope.organizationId === null ||
@@ -178,7 +189,18 @@ export function VaultWorkspace({
       ? requestedUserScope
       : { kind: "mine" };
   const setUserScope = (next: VaultScope) => {
-    setUncontrolledScope(next);
+    if (pageHosted) {
+      // The tab lives in route state; the organization filter lives in the URL.
+      setUncontrolledScope(
+        next.kind === "organization"
+          ? { kind: "organization", organizationId: null }
+          : next,
+      );
+      const nextFilter = next.kind === "organization" ? next.organizationId : null;
+      if (nextFilter !== urlOrgFilter) setUrlOrgFilter(nextFilter);
+    } else {
+      setUncontrolledScope(next);
+    }
     onScopeChange?.(vaultScopeKey(next));
   };
   const scope: VaultScope =
