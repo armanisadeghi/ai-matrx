@@ -34,6 +34,27 @@ export function strings(value: unknown): string[] {
     : [];
 }
 
+/** A kind marker identifies a record; every other own key is readable content. */
+export function hasContentFields(value: Record<string, unknown>): boolean {
+  return Object.keys(value).length - (Object.hasOwn(value, "__kind") ? 1 : 0) > 0;
+}
+
+export interface FailedStage {
+  stage: string;
+  reason: string;
+}
+
+/**
+ * Failure detail is display-derived, never a rewritten copy of the source
+ * kind. Future stage names and deliberately empty details remain visible.
+ */
+export function readFailedStages(value: unknown): FailedStage[] {
+  if (!isRecord(value)) return [];
+  return Object.entries(value).flatMap(([stage, reason]) =>
+    stage === "__kind" || typeof reason !== "string" ? [] : [{ stage, reason }],
+  );
+}
+
 export function counts(value: unknown): Record<string, number> {
   if (!isRecord(value)) return {};
   const out: Record<string, number> = {};
@@ -357,7 +378,7 @@ export function reportIsReadable(report: Record<string, unknown> | null): boolea
   const md = str(report.rendered_markdown).trim();
   const sections = isRecord(report.sections) ? report.sections : {};
   const listed = ["pitch_ready", "big_stories", "watch"].some(
-    (section) => records(sections[section]).some((entry) => Object.keys(entry).length > 1),
+    (section) => records(sections[section]).some(hasContentFields),
   );
   return md.length > 0 || listed;
 }

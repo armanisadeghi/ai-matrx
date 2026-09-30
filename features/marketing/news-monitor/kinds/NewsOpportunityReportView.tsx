@@ -13,12 +13,12 @@
 
 import MarkdownStream from "@/components/MarkdownStream";
 
-import { humanize, isRecord, num, records, str, strings } from "../run-document";
+import { hasContentFields, humanize, isRecord, num, records, str, strings } from "../run-document";
 import { KindCard, Pill } from "./shared";
 
 function sectionCount(value: unknown): number {
   // A section entry with only a marker is a placeholder, not a story.
-  return records(value).filter((entry) => Object.keys(entry).length > 1).length;
+  return records(value).filter(hasContentFields).length;
 }
 
 export function NewsOpportunityReportView({ value }: { value: Record<string, unknown> }) {
