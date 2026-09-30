@@ -39,7 +39,7 @@ export type HubView =
    */
   | { kind: "group"; token: HubGroupToken }
   /**
-   * A platform preset by its key (`/knowledge?view=transcripts`) — the address
+   * A platform preset by its key (`/knowledge/hub?view=transcripts`) — the address
    * a retired list page redirects to (H6d). Its query is the installed preset
    * row's definition; its extra facets (a retired list's own filters) live in
    * `group` as `g.*`, like a container group's.
@@ -410,7 +410,7 @@ export interface ReadonlyURLSearchParamsLike {
 
 export function hubHref(s: HubState): string {
   const qs = hubStateToParams(s).toString();
-  return qs ? `/knowledge?${qs}` : "/knowledge";
+  return qs ? `/knowledge/hub?${qs}` : "/knowledge";
 }
 
 // ─── Organization reach ─────────────────────────────────────────────────────

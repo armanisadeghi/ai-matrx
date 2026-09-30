@@ -61,7 +61,7 @@ import {
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
 import { AGENT_ICON_NAME, INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 import { USER_LAUNCHPAD_PATH } from "@/features/launchpad/constants";
-import { HUB_DATA_STORES_HREF, HUB_LIBRARIES_HREF, HUB_SOURCES_HREF, SEARCH_LAB_PATH } from "@/features/knowledge/hub/legacyRoutes";
+import { SEARCH_LAB_PATH } from "@/features/knowledge/hub/legacyRoutes";
 
 export type { ShellNavPanelActionId };
 export { NAV_WINDOW_PANEL_ICON };
@@ -920,19 +920,25 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Data Stores",
-        href: HUB_DATA_STORES_HREF,
+        href: "/knowledge/data-stores",
         iconName: "Database",
+        group: "Knowledge",
+      },
+      {
+        label: "Knowledge hub",
+        href: "/knowledge/hub",
+        iconName: "Search",
         group: "Knowledge",
       },
       {
         label: "Search Lab",
         href: SEARCH_LAB_PATH,
-        iconName: "Search",
+        iconName: "FlaskConical",
         group: "Knowledge",
       },
       {
         label: "Sources",
-        href: HUB_SOURCES_HREF,
+        href: "/knowledge/library",
         iconName: "FileText",
         group: "Knowledge",
       },
@@ -1677,7 +1683,7 @@ export const primaryNavItems: ShellNavItem[] = [
     // Media Source Catalog — paste a channel, get every video catalogued in
     // seconds, then transcribe and act on a selection (features/source-library).
     label: "Libraries",
-    href: HUB_LIBRARIES_HREF,
+    href: "/libraries",
     iconName: "Video",
     section: "primary",
     profileMenu: true,

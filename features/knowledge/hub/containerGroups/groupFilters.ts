@@ -1,6 +1,6 @@
 /**
  * features/knowledge/hub/containerGroups/groupFilters.ts — the pure half of
- * the hub's container groups (`/knowledge?view=group:<token>`, KNOWLEDGE-HUB
+ * the hub's container groups (`/knowledge/hub?view=group:<token>`, KNOWLEDGE-HUB
  * §6, H6b): what each group's `g.*` filters mean, where each row's record page
  * is, and the words-and-chips narrowing the retired list pages did.
  *

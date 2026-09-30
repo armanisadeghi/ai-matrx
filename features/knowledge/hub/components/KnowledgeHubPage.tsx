@@ -549,7 +549,7 @@ export function KnowledgeHubPage({
   const noLibraries = expanded.status === "empty" && librariesRead.status === "ready";
   const expanding = expanded.status === "pending" && !librariesFailed;
 
-  // A view LINK (`/knowledge?view=saved:<id>` with no filters — what a shared
+  // A view LINK (`/knowledge/hub?view=saved:<id>` with no filters — what a shared
   // view's address is) opens the view: once its definition has loaded, its
   // query and layout land in the URL. Once per view per visit, so clearing a
   // view's filters on purpose is never undone. (Felt in the H5 walk: a
@@ -838,7 +838,7 @@ export function KnowledgeHubPage({
 
   const transcriptAgentInput = (rows: TranscriptListRow[]) => ({
     kind: rows.length === 1 ? TRANSCRIPT_COPY_ROW_KIND : TRANSCRIPT_COPY_LIST_KIND,
-    location: "/knowledge?view=transcripts",
+    location: "/knowledge/hub?view=transcripts",
     description:
       rows.length === 1
         ? "One transcript item from the Knowledge hub — a transcript, studio session, cleanup session or transcript Source. Metadata only; no transcript body."
@@ -850,7 +850,7 @@ export function KnowledgeHubPage({
 
   const onTranscriptAction = (hit: KnowledgeHit, action: TranscriptMenuAction) => {
     const fact = factFor(hit);
-    const href = fact ? transcriptLink(fact) : (openFullHref(hit) ?? `/knowledge?peek=${hit.entity}:${hit.id}`);
+    const href = fact ? transcriptLink(fact) : (openFullHref(hit) ?? `/knowledge/hub?peek=${hit.entity}:${hit.id}`);
     switch (action) {
       case "rename":
         if (sample) return toast.info(SAMPLE_WRITE_REFUSAL);
@@ -940,7 +940,7 @@ export function KnowledgeHubPage({
             id: "copy-link",
             label: "Copy link",
             icon: Link2,
-            onSelect: () => void copyText(absolute(open ?? `/knowledge?peek=${hit.entity}:${encodeURIComponent(hit.id)}`), "Link copied"),
+            onSelect: () => void copyText(absolute(open ?? `/knowledge/hub?peek=${hit.entity}:${encodeURIComponent(hit.id)}`), "Link copied"),
           },
           // An unsorted recording is not a record of its own (the list offered no reference either).
           ...(transcript && !ref("copy-reference") ? [] : [{
@@ -1063,7 +1063,7 @@ export function KnowledgeHubPage({
         human: transcriptCopyHuman(fact, transcriptKindLabel(fact)),
         agent: transcriptCopyAgent(fact, transcriptLink(fact)),
         kind: TRANSCRIPT_COPY_ROW_KIND,
-        location: "/knowledge?view=transcripts",
+        location: "/knowledge/hub?view=transcripts",
         description:
           "One transcript item from the Knowledge hub — a transcript, studio session, cleanup session or transcript Source. Metadata only; no transcript body.",
         attributes: { rows: 1, body_included: false },

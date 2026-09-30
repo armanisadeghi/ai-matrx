@@ -186,7 +186,7 @@ function transcriptFacetsFromFilters(raw: string | undefined): Record<string, st
   return out;
 }
 
-/** `/transcripts?…` → `/knowledge?view=transcripts&…`, its search, scope, sort and filters kept. */
+/** `/transcripts?…` → `/knowledge/hub?view=transcripts&…`, its search, scope, sort and filters kept. */
 export function transcriptsToHubHref(params: LegacySearchParams): string {
   const text = first(params, "q") ?? first(params, "search");
   const [scopeKind, scopeOrg] = (first(params, "scope") ?? "").split(":", 2);

@@ -12,7 +12,7 @@ export function TranscriptRecordPage({ transcriptId }: { transcriptId: string })
       <RouteHeader
         left={
           <Link
-            href="/knowledge?view=transcripts"
+            href="/knowledge/hub?view=transcripts"
             className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" /> Transcripts

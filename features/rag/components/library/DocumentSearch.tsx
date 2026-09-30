@@ -66,7 +66,7 @@ export function DocumentSearchBar({
   // Pre-fill the full AI search with whatever the user typed here, so the jump
   // is one click and zero retyping.
   const fullSearchHref = query.trim()
-    ? `/knowledge?q=${encodeURIComponent(query.trim())}`
+    ? `/knowledge/hub?q=${encodeURIComponent(query.trim())}`
     : "/knowledge";
 
   const resultLabel = (() => {
