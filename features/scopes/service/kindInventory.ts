@@ -60,12 +60,15 @@ function failure(what: string, error: { message?: string; code?: string } | null
 }
 
 /**
- * Per-kind counts in one round trip. `tokens` omitted = every kind the Source input offers.
- * A kind the database could not count comes back as `null` (show a dash, never a fake 0).
+ * How many kinds one count call carries. Every kind is its own count query inside the one
+ * function, and the function runs under the signed-in role's statement timeout, so a long list
+ * (every pickable kind — "All" in Use existing) is split into calls of this size, run in parallel.
  */
-export async function fetchKindCounts(
+const COUNT_CHUNK = 8;
+
+async function countChunk(
   scope: KindScope,
-  tokens?: readonly string[],
+  tokens: readonly string[] | undefined,
 ): Promise<Map<string, number | null>> {
   const { data, error } = await supabase.rpc("entity_kind_counts", {
     ...scopeArgs(scope),
@@ -78,6 +81,34 @@ export async function fetchKindCounts(
     const n = row.n as number | null;
     out.set(row.token, n === null || n === undefined ? null : Number(n));
   }
+  return out;
+}
+
+/**
+ * Per-kind counts. `tokens` omitted = every kind the Source input offers (one call).
+ * A kind the database could not count comes back as `null` (show a dash, never a fake 0).
+ * A long list is counted in parallel chunks; a chunk that fails leaves its kinds `null`
+ * (and says so in the console) — only when every chunk fails does the read fail.
+ */
+export async function fetchKindCounts(
+  scope: KindScope,
+  tokens?: readonly string[],
+): Promise<Map<string, number | null>> {
+  if (!tokens || tokens.length <= COUNT_CHUNK) return countChunk(scope, tokens);
+  const chunks: string[][] = [];
+  for (let i = 0; i < tokens.length; i += COUNT_CHUNK) chunks.push(tokens.slice(i, i + COUNT_CHUNK));
+  const settled = await Promise.allSettled(chunks.map((c) => countChunk(scope, c)));
+  const failed = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+  if (failed.length === settled.length) throw failed[0]!.reason;
+  const out = new Map<string, number | null>();
+  settled.forEach((r, i) => {
+    if (r.status === "fulfilled") {
+      for (const [token, n] of r.value) out.set(token, n);
+      return;
+    }
+    console.error(`[kindInventory] could not count ${chunks[i]!.join(", ")}:`, r.reason);
+    for (const token of chunks[i]!) out.set(token, null);
+  });
   return out;
 }
 

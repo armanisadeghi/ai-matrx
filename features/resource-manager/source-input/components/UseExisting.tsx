@@ -81,11 +81,14 @@ function groupByRole(tokens: string[]): { id: string; title: string; dot: string
     ...CONTENT_ROLES.filter((r) => lead.includes(r.id)).sort((a, b) => lead.indexOf(a.id) - lead.indexOf(b.id)),
     ...CONTENT_ROLES.filter((r) => !lead.includes(r.id)),
   ];
+  const resources = new Set(offeredKinds("resources"));
   const groups = roles.map((role) => ({
     id: role.id as string,
     title: role.title,
     dot: role.accentBar as string | null,
-    tokens: tokens.filter((t) => tryGetEntityInfo(t)?.contentRole === role.id),
+    // Only the registry's resources carry a real content role (a role-less kind reads as a
+    // default role through `getEntityInfo`), so only they are grouped by it.
+    tokens: tokens.filter((t) => resources.has(t) && tryGetEntityInfo(t)?.contentRole === role.id),
   }));
   const grouped = new Set(groups.flatMap((g) => g.tokens));
   groups.push({ id: "other", title: "Other", dot: null, tokens: tokens.filter((t) => !grouped.has(t)) });
