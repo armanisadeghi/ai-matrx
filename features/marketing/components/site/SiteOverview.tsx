@@ -75,6 +75,7 @@ import {
   initializeSite,
   initializeStepFromEvent,
 } from "@/features/marketing/crawler/direct-client";
+import { isInitializationSession } from "@/features/marketing/crawler/site-commands";
 import {
   applyInitializeStepEvent,
   emptyInitializeSteps,
@@ -97,6 +98,7 @@ import {
 } from "@/features/marketing/lib/site-status";
 import { useSiteConnectionStatuses } from "@/features/marketing/tracking/hooks";
 import type {
+  CrawlSession,
   MarketingSite,
   SiteOverviewMetrics,
 } from "@/features/marketing/types";
@@ -154,10 +156,13 @@ export function SiteOverview() {
   const stepEventsSeenRef = useRef(false);
   const [showProgress, setShowProgress] = useState(false);
   const [identityEditing, setIdentityEditing] = useState(false);
-  // A start that found an initialization already live follows that run.
+  // A start that found an initialization already live — or an overview that
+  // mounted while one runs (a remount, another tab) — follows that run.
   const [followingSessionId, setFollowingSessionId] = useState<string | null>(
     null,
   );
+  // The session this instance's own stream runs; never "adopted" as a stranger.
+  const ownSessionIdRef = useRef<string | null>(null);
 
   const runInitialize = useCallback(async () => {
     setInitPhase("connecting");
@@ -168,7 +173,10 @@ export function SiteOverview() {
     setShowProgress(true);
     try {
       await initializeSite(site.id, {
-        onConnected: () => setInitPhase("running"),
+        onConnected: ({ sessionId }) => {
+          ownSessionIdRef.current = sessionId;
+          setInitPhase("running");
+        },
         onEvent: (_event, crawlEvent) => {
           const stepEvent = initializeStepFromEvent(crawlEvent);
           if (!stepEvent) return;
@@ -243,8 +251,22 @@ export function SiteOverview() {
           queryKey: marketingKeys.activeSessions(site.id),
           exact: true,
         });
-        setInitPhase("running");
-        setFollowingSessionId(error.activeSessionId);
+        const live =
+          error.activeSessionId ??
+          queryClient
+            .getQueryData<CrawlSession[]>(marketingKeys.activeSessions(site.id))
+            ?.find(isInitializationSession)?.id ??
+          null;
+        if (live) {
+          setInitPhase("running");
+          setFollowingSessionId(live);
+        } else {
+          // The run that held the lane already finished: its results are in.
+          setInitPhase("idle");
+          void queryClient.invalidateQueries({
+            queryKey: marketingKeys.site(site.id),
+          });
+        }
         return;
       }
       const message = extractErrorMessage(error);
@@ -272,15 +294,34 @@ export function SiteOverview() {
     void runInitialize();
   }, [runInitialize, site.id, site.initialized_at]);
 
+  // An initialization this instance did not start (remounted mid-run, a second
+  // tab, the 409 path) is adopted, so the overview never sits idle beside it.
+  const strangerInitId =
+    crawlActivity.activeSessions.find(
+      (session) =>
+        isInitializationSession(session) &&
+        session.id !== ownSessionIdRef.current,
+    )?.id ?? null;
+  useEffect(() => {
+    if (initPhase !== "idle" || followingSessionId || !strangerInitId) return;
+    setInitPhase("running");
+    setFollowingSessionId(strangerInitId);
+  }, [followingSessionId, initPhase, strangerInitId]);
+
   // Following a run started elsewhere: when it leaves the live set, read the
-  // site row it wrote and settle.
+  // site row it wrote and settle. An unreadable live set proves nothing.
   const followedStillActive = followingSessionId
     ? crawlActivity.activeSessions.some(
         (session) => session.id === followingSessionId,
       )
     : false;
   useEffect(() => {
-    if (!followingSessionId || followedStillActive || crawlActivity.isLoading)
+    if (
+      !followingSessionId ||
+      followedStillActive ||
+      crawlActivity.isLoading ||
+      crawlActivity.error
+    )
       return;
     setFollowingSessionId(null);
     setInitPhase("idle");
@@ -289,6 +330,7 @@ export function SiteOverview() {
       queryKey: marketingKeys.site(site.id),
     });
   }, [
+    crawlActivity.error,
     crawlActivity.isLoading,
     followedStillActive,
     followingSessionId,

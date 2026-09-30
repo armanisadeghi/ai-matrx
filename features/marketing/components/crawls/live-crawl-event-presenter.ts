@@ -259,7 +259,7 @@ export function presentLiveCrawlEvent(
         tone: event.will_retry === true ? "warning" : "destructive",
       };
     case "crawl_progress": {
-      const fetched = numberValue(event, "pages_fetched");
+      const fetched = liveFetchedCount(event as unknown as Json);
       const queued = numberValue(event, "queue_depth");
       const failed = numberValue(event, "pages_failed");
       return {
@@ -330,7 +330,7 @@ export function presentLiveCrawlEvent(
             : "Crawl completed";
       return {
         label,
-        message: `${numberValue(event, "pages_fetched")} fetched · ${numberValue(event, "pages_failed")} failed · ${numberValue(event, "issues_count")} issues`,
+        message: `${liveFetchedCount(event as unknown as Json)} fetched · ${numberValue(event, "pages_failed")} failed · ${numberValue(event, "issues_count")} issues`,
         tone: status === "failed" ? "destructive" : "default",
       };
     }

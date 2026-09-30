@@ -97,6 +97,12 @@ export function siteCommandModeFromSession(
     : null;
 }
 
+/** True for a site initialization run (either the full pass or the homepage-only bootstrap). */
+export function isInitializationSession(session: CrawlSession): boolean {
+  const mode = scopeMode(session);
+  return mode === "initialization" || mode === "homepage";
+}
+
 /** True for the site-wide crawl the crawl workspace owns. */
 export function isCrawlShapedSession(session: CrawlSession): boolean {
   const mode = scopeMode(session);
