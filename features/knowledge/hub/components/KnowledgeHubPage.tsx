@@ -1040,6 +1040,8 @@ export function KnowledgeHubPage({
     rowMenu: rowMenuNode,
     hideKindWord: transcriptsView,
     rowTags,
+    // The Stage column's cell, in the list layout's fact line (a Source only; a Sample has none).
+    rowStage: (h) => (stageColumn && stageSourceId(h) ? stageColumn.cell(h) : null),
     rowFacts: (h) =>
       isTranscriptHit(h) ? transcriptRowFacts(factFor(h), transcriptFacts.contentFor(h)) : [],
     rowContent: (h) => {
@@ -1733,7 +1735,7 @@ export function KnowledgeHubPage({
       {(Object.keys(LAYOUT_ICON) as HubLayout[]).map((l) => {
         const Icon = LAYOUT_ICON[l];
         return (
-          <ToggleGroupItem key={l} value={l} aria-label={LAYOUT_LABEL[l]} title={LAYOUT_LABEL[l]} className="h-8 w-8 p-0">
+          <ToggleGroupItem key={l} value={l} aria-label={LAYOUT_LABEL[l]} title={LAYOUT_LABEL[l]} className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary">
             <Icon className="h-4 w-4" />
           </ToggleGroupItem>
         );
@@ -1985,7 +1987,7 @@ export function KnowledgeHubPage({
               key={st}
               type="button"
               onClick={() => toggleStage(st)}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 hover:bg-accent"
+              className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`Remove the ${HUB_STAGE_LABEL[st]} filter`}
             >
               {HUB_STAGE_LABEL[st]} <X className="h-3 w-3" />
@@ -2093,7 +2095,7 @@ export function KnowledgeHubPage({
           />
         )}
       </div>
-      <p className="hidden shrink-0 text-[11px] text-muted-foreground lg:block">
+      <p className="hidden shrink-0 text-[11px] text-muted-foreground lg:block [&_kbd]:rounded [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-muted [&_kbd]:px-1 [&_kbd]:font-sans [&_kbd]:text-foreground/80">
         <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>↵</kbd> peek · <kbd>⌘↵</kbd> open · <kbd>x</kbd> select · <kbd>s</kbd> keep · <kbd>e</kbd> archive · <kbd>t</kbd> tag ·{" "}
         <kbd>m</kbd> file · <kbd>f</kbd> filter ·{" "}
         <kbd>/</kbd> search · <kbd>Esc</kbd> close ·{" "}
@@ -2321,7 +2323,10 @@ export function KnowledgeHubPage({
       <SurfaceRuntimeProvider surfaceName={HUB_LIBRARY_SURFACE} getScope={getScope} getWriteHandlers={getWriteHandlers} isEditable={false}>
         {header}
         <div className="h-full overflow-hidden pt-[var(--shell-header-h)]" data-testid="knowledge-hub-mobile">
-          {askNode ? askNode : peekNode ? peekNode : mobilePane === "sidebar" ? sidebarNode : main}
+          {/* The content surface: a white card rising out of the tinted canvas (Linear, Notion). */}
+          <div className="h-full overflow-hidden rounded-t-xl border border-b-0 border-border bg-card">
+            {askNode ? askNode : peekNode ? peekNode : mobilePane === "sidebar" ? sidebarNode : main}
+          </div>
         </div>
         {dialogs}
       </SurfaceRuntimeProvider>
@@ -2350,17 +2355,22 @@ export function KnowledgeHubPage({
             minSize="12%"
             maxSize="30%"
           >
-            <div className="h-full overflow-hidden border-r border-border pt-[var(--shell-header-h)]">{sidebarNode}</div>
+            {/* The sidebar is the tinted canvas itself; the content beside it is the card. */}
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">{sidebarNode}</div>
           </RegisteredPanel>
           <Handle hideWhenCollapsed={["sidebar"]} />
           <Panel id="main" minSize="30%">
-            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">{main}</div>
+            <div className="h-full overflow-hidden pb-2 pr-2 pt-[var(--shell-header-h)]">
+              <div className="h-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">{main}</div>
+            </div>
           </Panel>
           {peekNode ? (
             <>
               <Handle />
               <Panel id="peek" defaultSize="32%" minSize="22%" maxSize="55%">
-                <div className="h-full overflow-hidden border-l border-border bg-card pt-[var(--shell-header-h)]">{peekNode}</div>
+                <div className="h-full overflow-hidden pb-2 pr-2 pt-[var(--shell-header-h)]">
+                  <div className="h-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">{peekNode}</div>
+                </div>
               </Panel>
             </>
           ) : null}

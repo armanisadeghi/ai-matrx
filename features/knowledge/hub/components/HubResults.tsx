@@ -420,16 +420,17 @@ function SectionHeader({ label, pinned = false }: { label: string; pinned?: bool
   return (
     <div
       className={cn(
-        "flex h-8 items-end gap-2 px-2 pb-1.5 text-xs font-medium text-muted-foreground",
-        // The page's own surface, opaque, so rows pass cleanly beneath it; a hairline says it is pinned.
-        pinned && "bg-textured border-b border-border/50",
+        // Notion's group label over Linear's hairline: small, set in capitals, one step quieter than a
+        // title and a clear step louder than a fact — a visible label, never a second heading.
+        "flex h-8 items-end gap-2 border-b border-border/70 px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground",
+        // Pinned over the rows: the card's own opaque surface, so rows pass cleanly beneath it.
+        pinned && "bg-card",
       )}
     >
-      <span className="text-foreground/80">{label}</span>
+      <span>{label}</span>
     </div>
   );
 }
-
 /**
  * The Stage column's two faces: the words it sorts and filters by, and the
  * cell (with its Re-index / Retry remedy). Only Sources have a stage.
@@ -459,9 +460,11 @@ export function hubTableColumns(
     {
       id: "title",
       header: "Name",
-      // The name takes the room; the rest are narrow facts.
-      width: "40%",
-      minWidth: 280,
+      // Pixel widths, never a percentage: the table is `w-max`, so "40%" resolved against its own
+      // content and pushed Kind, Stage and When off the right edge at 1360px. Name + Kind + Stage +
+      // When come to ~640px and all fit beside the selection and actions columns.
+      width: 300,
+      minWidth: 200,
       accessorFn: (h) => h.title,
       sortValue: (h) => h.title.toLowerCase(),
       cell: (h) =>
@@ -478,30 +481,20 @@ export function hubTableColumns(
           {
             id: "kind",
             header: "Kind",
-            width: 140,
-            minWidth: 130,
+            width: 130,
+            minWidth: 110,
             cell: (h: KnowledgeHit) => <span className="whitespace-nowrap">{kindLabel(h)}</span>,
             accessorFn: (h: KnowledgeHit) => kindLabel(h),
             filter: "select" as const,
           },
         ]),
-    ...(any((h) => Boolean(h.captured_by?.name))
-      ? [
-          {
-            id: "captured_by",
-            header: "Captured by",
-            minWidth: 200,
-            cell: (h: KnowledgeHit) => <span className="block truncate">{capturedByLabel(h)}</span>,
-            accessorFn: (h: KnowledgeHit) => capturedByLabel(h),
-            filter: "select" as const,
-          },
-        ]
-      : []),
     ...(stage && any((h) => h.entity === "processed_document")
       ? [
           {
             id: "stage",
             header: "Stage",
+            width: 150,
+            minWidth: 120,
             accessorFn: (h: KnowledgeHit) => stage.label(h),
             sortValue: (h: KnowledgeHit) => {
               const i = STAGE_SORT_ORDER.indexOf(stage.label(h));
@@ -515,20 +508,37 @@ export function hubTableColumns(
     {
       id: "updated",
       header: "When",
+      width: 100,
+      minWidth: 88,
       accessorFn: when,
       sortValue: (h) => (when(h) ? Date.parse(when(h)) : 0),
       defaultSortDirection: "desc",
       cell: (h) => (when(h) ? formatRelativeTime(when(h)) : "—"),
       filter: "date",
     },
+    ...(any((h) => Boolean(h.captured_by?.name))
+      ? [
+          {
+            id: "captured_by",
+            header: "Captured by",
+            width: 150,
+            minWidth: 120,
+            cell: (h: KnowledgeHit) => <span className="block truncate">{capturedByLabel(h)}</span>,
+            accessorFn: (h: KnowledgeHit) => capturedByLabel(h),
+            filter: "select" as const,
+          },
+        ]
+      : []),
     ...(any((h) => Boolean(h.origin))
-      ? [{ id: "origin", header: "Origin", accessorFn: (h: KnowledgeHit) => originLabel(h.origin), filter: "select" as const }]
+      ? [{ id: "origin", header: "Origin", width: 110, minWidth: 90, accessorFn: (h: KnowledgeHit) => originLabel(h.origin), filter: "select" as const }]
       : []),
     ...(any((h) => Boolean(h.filed_under?.length))
       ? [
           {
             id: "filed",
             header: "Filed under",
+            width: 180,
+            minWidth: 120,
             accessorFn: (h: KnowledgeHit) => (h.filed_under ?? []).map((f) => f.name ?? "").filter(Boolean).join(", "),
             filter: "text" as const,
           },

@@ -36,6 +36,8 @@ import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
+import { HUB_HUE_TONE, type HubKindTone } from "@/features/knowledge/hub/hubPresentation";
+import { LibraryLabelChip } from "@/features/rag/components/library-catalog/LibraryLabelChip";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
@@ -137,6 +139,8 @@ function RowLink({
   description,
   descriptionIsError = false,
   trailing,
+  badges,
+  tone = HUB_HUE_TONE.slate,
 }: {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -147,10 +151,16 @@ function RowLink({
   /** The description is the record's failure sentence (a failed sync): it carries the Alchemy Menu. */
   descriptionIsError?: boolean;
   trailing?: React.ReactNode;
+  /** Chips under the meta line (a catalog row's trust labels). */
+  badges?: React.ReactNode;
+  /** The kind's colour: the tile behind the glyph. */
+  tone?: HubKindTone;
 }) {
   return (
-    <div className="group flex min-w-0 items-start gap-2.5 rounded-md px-2 py-2 text-sm hover:bg-accent/60" role="listitem">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+    <div className="group flex min-w-0 items-start gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted" role="listitem">
+      <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", tone.tile)}>
+        <Icon className={cn("h-[18px] w-[18px]", tone.icon)} />
+      </span>
       <Link href={href} className="min-w-0 flex-1 outline-none focus-visible:ring-1 focus-visible:ring-ring">
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium text-foreground">{title}</span>
@@ -162,9 +172,10 @@ function RowLink({
             <ErrorAlchemyMenu error={description} size="xs" />
           </div>
         ) : description ? (
-          <div className="line-clamp-1 text-xs text-muted-foreground">{description}</div>
+          <div className="line-clamp-1 text-[13px] text-foreground/70">{description}</div>
         ) : null}
-        <div className="truncate text-[11px] text-muted-foreground/90">{meta}</div>
+        <div className="truncate text-xs text-muted-foreground">{meta}</div>
+        {badges ? <div className="mt-1 flex flex-wrap items-center gap-1.5">{badges}</div> : null}
       </Link>
       {trailing ? <div className="flex shrink-0 items-center gap-1">{trailing}</div> : null}
     </div>
@@ -179,7 +190,10 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       aria-pressed={active}
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
-        active ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted",
+        "outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        active
+          ? "border-primary/40 bg-primary/10 font-medium text-primary"
+          : "border-border bg-card text-foreground/80 shadow-sm hover:border-foreground/30 hover:bg-muted hover:text-foreground",
       )}
     >
       {children}
@@ -231,6 +245,7 @@ function DataStoresGroup({ group }: { group: Group }) {
             key={s.id}
             href={dataStoreRecordHref(s.id)}
             icon={Database}
+            tone={HUB_HUE_TONE.violet}
             title={s.name}
             count={plural(s.memberCount, "document")}
             description={s.description}
@@ -397,6 +412,7 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
             key={r.id}
             href={libraryRecordHref(r.id)}
             icon={Library}
+            tone={HUB_HUE_TONE.sky}
             title={r.name}
             count={r.item_count == null ? null : plural(r.item_count, "Source")}
             description={r.sync_status === "failed" ? r.sync_error : r.description}
@@ -457,6 +473,12 @@ const CATALOG_ICON: Record<LibraryEntityType, React.ComponentType<{ className?: 
   data_store: Library,
   seo_starter_pack: Boxes,
   rulebook: ScrollText,
+};
+
+const CATALOG_TONE: Record<LibraryEntityType, HubKindTone> = {
+  data_store: HUB_HUE_TONE.violet,
+  seo_starter_pack: HUB_HUE_TONE.amber,
+  rulebook: HUB_HUE_TONE.emerald,
 };
 
 function entitlementWords(it: { subscribed: boolean; entitledVia: string | null; entitledIndustryName: string | null }): string | null {
@@ -540,6 +562,17 @@ function CatalogGroup({ group, set }: { group: Group; set: (k: string, v: string
             key={`${it.entityType}:${it.id}`}
             href={catalogRecordHref(it.id, it.entityType)}
             icon={CATALOG_ICON[it.entityType] ?? Database}
+            tone={CATALOG_TONE[it.entityType] ?? HUB_HUE_TONE.slate}
+            // The two trust axes the catalog always carried: where the source came from, and what we did to it.
+            badges={
+              <LibraryLabelChip
+                sourceAuthority={it.sourceAuthority}
+                sourceAuthorityLabel={it.sourceAuthorityLabel}
+                assuranceLevel={it.assuranceLevel}
+                assuranceLevelLabel={it.assuranceLevelLabel}
+                assuranceLevelBlurb={it.assuranceLevelBlurb}
+              />
+            }
             title={it.name}
             count={`${it.itemCount.toLocaleString()} ${itemNoun(it.entityType, it.itemCount)}`}
             description={it.description}

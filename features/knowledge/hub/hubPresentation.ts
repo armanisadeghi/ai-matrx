@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { getContentRoleMeta, tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { RELATIVE_DATE_LABEL } from "@/features/knowledge/api/knowledgeQueryText";
 
@@ -192,4 +192,67 @@ export function cleanSnippet(value: string | null | undefined): string {
     .replace(/(?:^|\s)(?:speaker[ _]?\d+|unknown|SPEAKER_\d+)\s*:\s*/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// ─── Kind colour ────────────────────────────────────────────────────────────
+
+/**
+ * A kind's colour: the tile behind its glyph and the glyph's own tint. One
+ * source per kind, never a second palette — a file wears the Files system's own
+ * type colour (PDF red, sheet green…), a transcript and a YouTube capture their
+ * own, and everything else the registry's content-role accent (source / output /
+ * workspace / utility) that the resource surfaces already use. Tint only: the
+ * surfaces around a tile stay semantic tokens.
+ */
+export interface HubKindTone {
+  /** The tile's fill (a wash of the hue, readable on a white card and on the dark one). */
+  tile: string;
+  /** The glyph's colour, light and dark. */
+  icon: string;
+}
+
+// Full class strings, so Tailwind sees every one (a class built from a hue name is never generated).
+export const HUB_HUE_TONE: Record<string, HubKindTone> = {
+  amber: { tile: "bg-amber-500/15", icon: "text-amber-600 dark:text-amber-400" },
+  blue: { tile: "bg-blue-500/15", icon: "text-blue-600 dark:text-blue-400" },
+  cyan: { tile: "bg-cyan-500/15", icon: "text-cyan-600 dark:text-cyan-400" },
+  emerald: { tile: "bg-emerald-500/15", icon: "text-emerald-600 dark:text-emerald-400" },
+  fuchsia: { tile: "bg-fuchsia-500/15", icon: "text-fuchsia-600 dark:text-fuchsia-400" },
+  indigo: { tile: "bg-indigo-500/15", icon: "text-indigo-600 dark:text-indigo-400" },
+  orange: { tile: "bg-orange-500/15", icon: "text-orange-600 dark:text-orange-400" },
+  pink: { tile: "bg-pink-500/15", icon: "text-pink-600 dark:text-pink-400" },
+  purple: { tile: "bg-purple-500/15", icon: "text-purple-600 dark:text-purple-400" },
+  red: { tile: "bg-red-500/15", icon: "text-red-600 dark:text-red-400" },
+  rose: { tile: "bg-rose-500/15", icon: "text-rose-600 dark:text-rose-400" },
+  sky: { tile: "bg-sky-500/15", icon: "text-sky-600 dark:text-sky-400" },
+  slate: { tile: "bg-slate-500/15", icon: "text-slate-600 dark:text-slate-400" },
+  teal: { tile: "bg-teal-500/15", icon: "text-teal-600 dark:text-teal-400" },
+  violet: { tile: "bg-violet-500/15", icon: "text-violet-600 dark:text-violet-400" },
+  yellow: { tile: "bg-yellow-500/15", icon: "text-yellow-600 dark:text-yellow-400" },
+};
+
+const NEUTRAL_TONE: HubKindTone = { tile: "bg-muted", icon: "text-muted-foreground" };
+
+function toneForHue(text: string | undefined): HubKindTone | null {
+  const hue = text?.match(/text-([a-z]+)-\d{3}/)?.[1];
+  return hue ? (HUB_HUE_TONE[hue] ?? null) : null;
+}
+
+export function hitTone(
+  hit: Pick<KnowledgeHit, "entity" | "source_kind" | "title" | "origin">,
+): HubKindTone {
+  if (hit.source_kind === "transcript" || hit.entity === "transcript")
+    return hit.origin === "youtube" ? HUB_HUE_TONE.red : HUB_HUE_TONE.rose;
+  if (hit.source_kind === "youtube_video") return HUB_HUE_TONE.red;
+  if (hit.entity === "file" || hit.source_kind === "cld_file") {
+    const fromFile = toneForHue(hitIcon(hit).className);
+    if (fromFile) return fromFile;
+    return HUB_HUE_TONE.slate;
+  }
+  if (hit.source_kind === "web_page" || hit.source_kind === "scrape_parsed_page") return HUB_HUE_TONE.sky;
+  if (hit.entity === "segment") return HUB_HUE_TONE.sky;
+  const role = tryGetEntityInfo(hit.entity)?.contentRole;
+  if (!role) return NEUTRAL_TONE;
+  const meta = getContentRoleMeta(role as Parameters<typeof getContentRoleMeta>[0]);
+  return { tile: meta.accentBg, icon: meta.accentText };
 }

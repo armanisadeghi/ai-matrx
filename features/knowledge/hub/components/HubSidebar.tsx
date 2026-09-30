@@ -80,8 +80,12 @@ interface HubSidebarProps {
   tagsGroup?: React.ReactNode;
 }
 
+// The sidebar sits on the page's tinted canvas, so the neutral `accent` wash (2% off the canvas) is
+// invisible: hover is a wash of the foreground, the current place is the primary tint with a full-
+// strength label and glyph (Linear's sidebar; Notion's page tree), and focus is a real ring.
 const ROW =
-  "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground/90 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground/85 transition-colors hover:bg-foreground/[0.07] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const ROW_ACTIVE = "bg-primary/10 font-medium text-foreground hover:bg-primary/15";
 
 function Row({
   active,
@@ -101,14 +105,14 @@ function Row({
   return (
     <button
       type="button"
-      className={cn(ROW, indent && "pl-7", active && "bg-accent font-medium text-foreground")}
+      className={cn(ROW, indent && "pl-7", active && ROW_ACTIVE)}
       aria-current={active ? "page" : undefined}
       onClick={onClick}
     >
-      {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+      {Icon ? <Icon className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} /> : null}
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {typeof count === "number" || typeof count === "string" ? (
-        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
+        <span className={cn("shrink-0 text-xs tabular-nums", active ? "text-foreground/70" : "text-muted-foreground")}>{count}</span>
       ) : null}
     </button>
   );
@@ -116,7 +120,7 @@ function Row({
 
 function GroupHeading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-2 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="px-2 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
     </div>
   );
@@ -182,8 +186,8 @@ function SavedViewRow({
   return (
     <div
       className={cn(
-        "group flex min-w-0 items-center rounded-md hover:bg-accent",
-        active && "bg-accent",
+        "group flex min-w-0 items-center rounded-md transition-colors hover:bg-foreground/[0.07]",
+        active && "bg-primary/10 hover:bg-primary/15",
       )}
       data-saved-view={v.id}
     >
@@ -195,9 +199,9 @@ function SavedViewRow({
         title={v.builtIn ? `${v.name} — built-in view, installed for everyone the next time a platform admin opens the hub` : v.name}
       >
         {v.pinned ? (
-          <Pin className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Pin className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
         ) : (
-          <Bookmark className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Bookmark className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
         )}
         <span className="min-w-0 flex-1 truncate">{label}</span>
         {shared && !v.preset ? (
@@ -216,7 +220,7 @@ function SavedViewRow({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-60 hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+              className="mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-60 hover:bg-card hover:text-foreground hover:shadow-sm focus-visible:opacity-100 group-hover:opacity-100"
               aria-label={`Actions for ${v.name}`}
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
@@ -443,7 +447,7 @@ export function HubSidebar({
             {onSaveView ? (
               <button
                 type="button"
-                className="mt-3 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                className="mt-3 flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.07] hover:text-foreground"
                 aria-label="Save view (⌥V)"
                 title="Save view (⌥V)"
                 onClick={onSaveView}
@@ -500,12 +504,12 @@ export function HubSidebar({
         <GroupHeading>Shared libraries</GroupHeading>
         <button
           type="button"
-          className={cn(ROW, sameView(view, CATALOG_GROUP) && "bg-accent font-medium")}
+          className={cn(ROW, sameView(view, CATALOG_GROUP) && ROW_ACTIVE)}
           aria-current={sameView(view, CATALOG_GROUP) ? "page" : undefined}
           onClick={() => onSelect(CATALOG_GROUP)}
           title="Browse, subscribe to and unsubscribe from shared knowledge libraries"
         >
-          <Library className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Library className={cn("h-4 w-4 shrink-0", sameView(view, CATALOG_GROUP) ? "text-primary" : "text-muted-foreground")} />
           <span className="min-w-0 flex-1 truncate text-left">Library catalog</span>
         </button>
       </div>

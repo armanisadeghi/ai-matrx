@@ -17,6 +17,8 @@ import {
   cleanSnippet,
   hitIcon,
   hitKey,
+  hitTone,
+  HUB_HUE_TONE,
   plainText,
   kindLabel,
   originLabel,
@@ -69,6 +71,11 @@ export interface ResultHandlers {
   onFilterTag?: (name: string) => void;
   /** A row's own "…" menu (transcript rows carry the Transcripts list's menu, H6d). */
   rowMenu?: (hit: KnowledgeHit) => React.ReactNode;
+  /**
+   * A Source's Stage as the row says it ("Searchable", "Index stale" + Re-index…), or null when the
+   * row has none (only Sources have a stage). The list layout's answer to the table's Stage column.
+   */
+  rowStage?: (hit: KnowledgeHit) => React.ReactNode | null;
   /** Kind-specific facts for a row's meta line ("12 min", "2,340 words", "Draft"). */
   rowFacts?: (hit: KnowledgeHit) => string[];
   /** What is inside the row's record: its opening words and a poster frame (Granola / Otter rows). */
@@ -223,11 +230,16 @@ function clickHandlers(hit: KnowledgeHit, h: ResultHandlers) {
   };
 }
 
+/** A transcript row that carries its own glyph (a recording, a YouTube capture) wears the transcript hues. */
+function rowTone(hit: KnowledgeHit, content?: RowContent) {
+  return content?.icon ? (content.group === "YouTube" ? HUB_HUE_TONE.red : HUB_HUE_TONE.rose) : hitTone(hit);
+}
+
 /** The list row's kind tile: a video's poster frame when it has one, else the kind icon. */
 function KindTile({ hit, content }: { hit: KnowledgeHit; content?: RowContent }) {
   const base = hitIcon(hit);
   const Icon = content?.icon ?? base.Icon;
-  const tint = content?.icon ? undefined : base.className;
+  const tone = rowTone(hit, content);
   const thumbnailUrl = content?.thumbnailUrl;
   const [broken, setBroken] = useState(false);
   if (thumbnailUrl && !broken)
@@ -242,8 +254,9 @@ function KindTile({ hit, content }: { hit: KnowledgeHit; content?: RowContent })
       />
     );
   return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
-      <Icon className={cn("h-4 w-4", tint)} />
+    // The kind's own colour (hubPresentation.hitTone): a wash of the hue behind a full-strength glyph.
+    <div className={cn("flex h-9 w-9 items-center justify-center rounded-md", tone.tile)}>
+      <Icon className={cn("h-[18px] w-[18px]", tone.icon)} />
     </div>
   );
 }
@@ -295,6 +308,7 @@ export function ResultRow({
     }),
   ];
   const menu = handlers.rowMenu?.(hit);
+  const stageNode = handlers.rowStage?.(hit) ?? null;
   // A tag that repeats a fact already on the line (#Veritasium beside "Veritasium") is noise.
   const said = new Set(parts.map((p) => p.toLowerCase()));
   const own = handlers.rowTags?.(hit);
@@ -307,8 +321,15 @@ export function ResultRow({
       style={style}
       className={cn(
         "group flex min-w-0 cursor-default items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors",
-        isFocused ? "bg-accent" : isSelected ? "bg-primary/5" : "hover:bg-muted/70",
-        isPeek && "ring-1 ring-inset ring-primary/40",
+        // Linear: resting is flat, hover is a visible wash, the current row is the primary tint with
+        // an edge bar, a ticked row a lighter tint of the same; the open row keeps an outline.
+        isFocused
+          ? "bg-primary/[0.12] shadow-[inset_3px_0_0_hsl(var(--primary))]"
+          : isSelected
+            ? "bg-primary/[0.06]"
+            : "hover:bg-muted",
+        isPeek && "ring-1 ring-inset ring-primary/50",
+        "outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
       {...clickHandlers(hit, handlers)}
     >
@@ -360,13 +381,18 @@ export function ResultRow({
           ) : null}
         </div>
         {snippet ? (
-          <p className={cn("text-[13px] leading-5 text-muted-foreground", compact ? "line-clamp-2" : "truncate")}>
+          <p className={cn("text-[13px] leading-5 text-foreground/70", compact ? "line-clamp-2" : "truncate")}>
             <Highlight text={snippet} query={handlers.highlight} />
           </p>
         ) : null}
-        {parts.length || tags.length || (handlers.highlight && (hit as KnowledgeHit & { matched?: boolean }).matched) ? (
-          <div className="flex min-w-0 items-center gap-2 text-xs leading-4 text-muted-foreground/80">
+        {parts.length || tags.length || stageNode || (handlers.highlight && (hit as KnowledgeHit & { matched?: boolean }).matched) ? (
+          <div className="flex min-w-0 items-center gap-2 text-xs leading-4 text-muted-foreground">
             <span className="min-w-0 truncate">{parts.join(" · ")}</span>
+            {stageNode ? (
+              <span className="shrink-0 rounded-full border border-border bg-muted px-2" data-testid="row-stage">
+                {stageNode}
+              </span>
+            ) : null}
             <TagChips tags={tags} onFilter={handlers.onFilterTag} className="shrink-0 flex-nowrap" />
             {handlers.highlight && (hit as KnowledgeHit & { matched?: boolean }).matched ? (
               <WhyMatchedPopover hit={hit} text={handlers.highlight} />
@@ -418,6 +444,7 @@ export function ResultCard({
   const key = hitKey(hit);
   const base = hitIcon(hit);
   const content = handlers.rowContent?.(hit);
+  const tone = rowTone(hit, content);
   const Icon = content?.icon ?? base.Icon;
   const isSelected = handlers.selected.has(key);
   const isFocused = handlers.focusedKey === key;
@@ -431,7 +458,7 @@ export function ResultCard({
       data-hit-key={key}
       className={cn(
         "group relative flex min-w-0 cursor-default flex-col gap-1.5 overflow-hidden rounded-lg border border-border bg-card text-sm shadow-sm",
-        isFocused ? "ring-2 ring-ring" : "hover:border-foreground/20",
+        isFocused ? "ring-2 ring-primary" : "hover:border-foreground/30 hover:shadow-md",
       )}
       {...clickHandlers(hit, handlers)}
     >
@@ -441,8 +468,10 @@ export function ResultCard({
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3 pt-2.5">
         <div className="flex items-center gap-2">
-          <Icon className={cn("h-4 w-4 shrink-0 text-muted-foreground", !content?.icon && base.className)} />
-          {hideKind ? null : <span className="truncate text-xs text-muted-foreground">{kindLabel(hit)}</span>}
+          <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-md", tone.tile)}>
+            <Icon className={cn("h-3.5 w-3.5", tone.icon)} />
+          </span>
+          {hideKind ? null : <span className="truncate text-xs font-medium text-muted-foreground">{kindLabel(hit)}</span>}
           <div className="ml-auto opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 has-[[data-state=open]]:opacity-100">
             {handlers.rowMenu?.(hit)}
           </div>
@@ -459,7 +488,7 @@ export function ResultCard({
         </div>
         <HitTitle hit={hit} handlers={handlers} className="line-clamp-2 font-medium text-foreground" />
         {snippet ? (
-          <div className={cn("text-xs text-muted-foreground", tall ? "line-clamp-3" : "line-clamp-2")}>
+          <div className={cn("text-xs text-foreground/70", tall ? "line-clamp-3" : "line-clamp-2")}>
             <Highlight text={snippet} query={handlers.highlight} />
           </div>
         ) : null}

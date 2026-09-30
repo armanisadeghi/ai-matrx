@@ -75,7 +75,11 @@ export function TranscriptFacetBar({
             key={f}
             className={cn(
               "inline-flex h-8 shrink-0 items-center rounded-md border",
-              summary ? "border-primary/30 bg-primary/10 text-foreground" : "border-border bg-card/60 text-muted-foreground",
+              // Resting: a white pill with a real border; hover darkens the border and washes the fill;
+              // chosen: the primary tint with its value in full strength and its own ×.
+              summary
+                ? "border-primary/40 bg-primary/10 text-foreground"
+                : "border-border bg-card text-foreground/80 shadow-sm transition-colors hover:border-foreground/30",
             )}
           >
             <DropdownMenu>
@@ -83,14 +87,14 @@ export function TranscriptFacetBar({
                 <button
                   type="button"
                   className={cn(
-                    "inline-flex h-full items-center gap-1 rounded-md px-2.5 hover:text-foreground",
+                    "inline-flex h-full items-center gap-1 rounded-md px-2.5 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
                     !summary && "hover:bg-muted",
                   )}
                   aria-label={summary ? `${label}: ${summary}. Change` : `Filter by ${label}`}
                 >
-                  <span className={summary ? "text-muted-foreground" : undefined}>{label}</span>
-                  {summary ? <span className="max-w-40 truncate font-medium">{summary}</span> : null}
-                  <ChevronDown className="h-3 w-3 opacity-60" />
+                  <span className={summary ? "text-foreground/70" : "font-medium"}>{label}</span>
+                  {summary ? <span className="max-w-40 truncate font-semibold text-primary">{summary}</span> : null}
+                  <ChevronDown className="h-3 w-3 opacity-70" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="max-h-80 w-56 overflow-y-auto">
