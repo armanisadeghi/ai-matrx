@@ -283,6 +283,31 @@ export function scanSource(
       ) {
         continue;
       }
+      // ANY FILE, the mirror image: a statement that DROPS one of the retired RPCs
+      // is the deletion itself (access ladder T-3), the remedy this rule asks for —
+      // not a call and not a re-creation. It cannot be superseded either (naming the
+      // function in a later file would trip this same rule), so it is never flagged.
+      if (
+        rule.id === 7 &&
+        /^\s*drop\s+function\s+(?:if\s+exists\s+)?(?:[\w]+\.)?(?:ensure_personal_organization|current_personal_org_id)\s*\(/i.test(
+          lines[i],
+        )
+      ) {
+        continue;
+      }
+      // LEDGERED HISTORY ONLY, the mirror image: a file that DROPPED one of the
+      // retired RPCs is the deletion itself (access ladder T-3), not a call and not
+      // a re-creation. A drop has no later migration that can "supersede" it (naming
+      // the function there would trip this same rule), so it is history.
+      if (
+        options.ledgered === true &&
+        rule.id === 7 &&
+        /^\s*drop\s+function\s+(?:if\s+exists\s+)?(?:[\w]+\.)?(?:ensure_personal_organization|current_personal_org_id)\s*\(/i.test(
+          lines[i],
+        )
+      ) {
+        continue;
+      }
       found.push({
         file: rel,
         line: i + 1,
@@ -803,6 +828,8 @@ end $$;`,
 returns uuid language sql as $$
   select iam.personal_org_id((select auth.uid()));
 $$;`,
+  // The deletion of the retired RPC itself, in an UNLEDGERED file (a drop is neither a call nor a re-creation).
+  "__self_test_ok_drop_retired_rpc__.sql": `drop function public.current_personal_org_id();`,
 };
 
 /**

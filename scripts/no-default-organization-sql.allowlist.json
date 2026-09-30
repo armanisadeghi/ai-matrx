@@ -246,5 +246,11 @@
       7
     ],
     "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it — which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/campaign/handover_a_refusal_never_prints_an_id_or_a_clock_d.sql": {
+    "rules": [
+      6
+    ],
+    "reason": "Frozen applied history: this refusal-words sweep re-emitted the body of iam._default_organization_is_a_membership(), the trigger that constrains the stated display preference (a CENSUS_PRIMITIVE in check-no-default-organization-sql.ts). That function is live and legitimately names default_organization_id to police it, so no later migration can supersede it with a body free of the shape (supersession clause 3 would correctly refuse). Nothing else in the file reads a default organization. Added 2026-09-30 by the default-org lane."
   }
 }
