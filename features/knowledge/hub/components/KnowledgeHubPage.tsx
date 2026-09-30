@@ -1870,13 +1870,14 @@ export function KnowledgeHubPage({
             </Button>
           ) : null}
           {transcriptsView ? (
-            // Side by side (Arman, 2026-09-29): the old list stays live until he has compared
-            // the two; this opens it on the same search, scope and filters.
+            // The Transcripts module is its own home (Arman, 2026-09-29): this view is
+            // transcripts as knowledge; managing them happens at /transcripts. Same
+            // search, scope and filters carried across.
             <Button asChild size="sm" variant="ghost" className="h-8 gap-1 px-2.5">
-              <Link href={hubToTranscriptsHref(state)} title="Open the old Transcripts page on the same search and filters">
+              <Link href={hubToTranscriptsHref(state)} title="Manage transcripts, recordings and meetings in the Transcripts module, on the same search and filters">
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden @3xl:inline">Back to the old page</span>
-                <span className="@3xl:hidden">Old page</span>
+                <span className="hidden @3xl:inline">Open in Transcripts</span>
+                <span className="@3xl:hidden">Transcripts</span>
               </Link>
             </Button>
           ) : null}
