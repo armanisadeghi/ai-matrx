@@ -255,6 +255,11 @@ export function GitHubConnectionCard({
                   {installations.length === 1 ? "account" : "accounts"} ·{" "}
                   {syncedLabel(github.inventory.lastSyncedAt)}
                 </p>
+              ) : connection ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your saved GitHub connection needs attention. Reconnect to
+                  restore access, or disconnect to remove it from AI Matrx.
+                </p>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Connect once to choose repositories and make them available to
@@ -289,17 +294,6 @@ export function GitHubConnectionCard({
                   />
                   Refresh
                 </Button>
-                {!compact && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-11 sm:h-8"
-                    onClick={() => void handleDisconnect()}
-                    disabled={github.busy}
-                  >
-                    <Unplug className="h-3.5 w-3.5" /> Disconnect
-                  </Button>
-                )}
               </>
             ) : (
               <Button
@@ -308,7 +302,18 @@ export function GitHubConnectionCard({
                 onClick={() => void github.connect()}
                 disabled={github.loading || github.busy}
               >
-                <GitBranch className="h-3.5 w-3.5" /> Connect GitHub
+                <GitBranch className="h-3.5 w-3.5" /> {connection ? "Reconnect GitHub" : "Connect GitHub"}
+              </Button>
+            )}
+            {connection && !compact && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-11 sm:h-8"
+                onClick={() => void handleDisconnect()}
+                disabled={github.loading || github.busy}
+              >
+                <Unplug className="h-3.5 w-3.5" /> Disconnect
               </Button>
             )}
           </div>

@@ -108,6 +108,19 @@ describe("GitHubConnectionCard mobile layout", () => {
     }
   });
 
+  it("lets a saved failed GitHub connection reconnect or disconnect", async () => {
+    const state = mockUseGitHubConnection();
+    state.inventory.connection.status = "needs_attention";
+    await act(async () => root.render(<GitHubConnectionCard />));
+    const buttons = Array.from(container.querySelectorAll("button"));
+    expect(buttons.some((button) => button.textContent?.includes("Reconnect GitHub"))).toBe(true);
+    const remove = buttons.find((button) => button.textContent?.includes("Disconnect"));
+    expect(remove).toBeDefined();
+    mockConfirm.mockResolvedValue(true);
+    await act(async () => remove?.click());
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
   it("names the access loss before disconnecting", async () => {
     const disconnectButton = Array.from(
       container.querySelectorAll("button"),

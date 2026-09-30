@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchCatalog,
+  fetchAvailability,
   connectServer,
   connectServerWithCredentials,
   disconnectServer,
@@ -13,6 +14,8 @@ import {
   selectMcpCatalogStatus,
   selectMcpCatalogError,
   selectMcpConnectingServerId,
+  selectMcpAvailabilityForOrganization,
+  selectMcpAvailabilityStatusForOrganization,
 } from "@/features/agents/redux/mcp/mcp.slice";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
@@ -79,6 +82,7 @@ import {
   catalogActionPresentation,
   catalogConnectionPresentation,
   catalogDirectoryAvailability,
+  catalogHealthWarning,
 } from "./integration-catalog-state";
 import {
   buildManualMcpCredentials,
@@ -232,13 +236,21 @@ export function IntegrationsWorkspace({
   const status = useAppSelector(selectMcpCatalogStatus);
   const error = useAppSelector(selectMcpCatalogError);
   const connectingId = useAppSelector(selectMcpConnectingServerId);
+  const availability = useAppSelector((state) =>
+    selectMcpAvailabilityForOrganization(state, organizationId),
+  );
+  const availabilityStatus = useAppSelector((state) =>
+    selectMcpAvailabilityStatusForOrganization(state, organizationId),
+  );
   const github = useGitHubConnection();
   const googleInventory = useGoogleConnectionInventory();
   const githubStatus = github.loading
     ? undefined
     : (github.inventory.connection?.status ?? null);
   const catalogPresentation = (entry: McpCatalogEntry) =>
-    catalogConnectionPresentation(entry, githubStatus, github.loading);
+    catalogConnectionPresentation(
+      entry, githubStatus, github.loading, availability[entry.slug],
+    );
   const [filters, setFilters] = useState<DirectoryFilters>(
     DEFAULT_DIRECTORY_FILTERS,
   );
@@ -280,6 +292,11 @@ export function IntegrationsWorkspace({
     if (status === "idle") void dispatch(fetchCatalog());
   }, [dispatch, status]);
   useEffect(() => {
+    if (organizationId && availabilityStatus === "idle") {
+      void dispatch(fetchAvailability({ organizationId }));
+    }
+  }, [dispatch, organizationId, availabilityStatus]);
+  useEffect(() => {
     if (!userId) return;
     const controller = new AbortController();
     void Promise.allSettled([
@@ -307,8 +324,12 @@ export function IntegrationsWorkspace({
     return () => controller.abort();
   }, [userId, refreshVersion]);
 
-  const refresh = () => {
+  const refreshMcpConnections = () => {
     void dispatch(fetchCatalog());
+    if (organizationId) void dispatch(fetchAvailability({ organizationId }));
+  };
+  const refresh = () => {
+    refreshMcpConnections();
     void github.reload();
     void googleInventory.refetch();
     setRefreshVersion((value) => value + 1);
@@ -520,6 +541,7 @@ export function IntegrationsWorkspace({
     github.loading ||
     googleInventory.isLoading;
   const readFailures = [
+    catalogHealthWarning(availabilityStatus),
     error ? { label: "Agent tools", message: error } : null,
     github.readError ? { label: "GitHub", message: github.readError } : null,
     googleInventory.isError
@@ -603,7 +625,7 @@ export function IntegrationsWorkspace({
       title: entry.name,
     };
     if (outcome.ok) {
-      dispatch(fetchCatalog());
+      refreshMcpConnections();
       recordToast.success(ref, `Connected to ${entry.name}`);
     } else if (!outcome.cancelled) {
       recordToast.error(ref, `Could not connect to ${entry.name}`, {
@@ -612,8 +634,8 @@ export function IntegrationsWorkspace({
     }
   };
 
-  const handleBearerConnect = (serverId: string, token: string) => {
-    dispatch(
+  const handleBearerConnect = async (serverId: string, token: string) => {
+    const result = await dispatch(
       connectServerWithCredentials({
         serverId,
         authMethod: "bearer",
@@ -621,6 +643,7 @@ export function IntegrationsWorkspace({
         transport: "http",
       }),
     );
+    if (connectServerWithCredentials.fulfilled.match(result)) refreshMcpConnections();
   };
 
   const handleManualConnect = async (
@@ -642,6 +665,7 @@ export function IntegrationsWorkspace({
         endpointOverride: credentials.endpointOverride,
       }),
     ).unwrap();
+    refreshMcpConnections();
   };
 
   /**
@@ -659,6 +683,7 @@ export function IntegrationsWorkspace({
           transport: entry.transport,
         }),
       ).unwrap();
+      refreshMcpConnections();
       toast.success(`Connected to ${entry.name}`);
     } catch (error) {
       toast.error(`Could not connect to ${entry.name}`, {
@@ -679,6 +704,7 @@ export function IntegrationsWorkspace({
 
     try {
       await dispatch(disconnectServer(entry.serverId)).unwrap();
+      refreshMcpConnections();
       toast.success(`Disconnected ${entry.name}`);
     } catch (error) {
       toast.error(`Could not disconnect ${entry.name}`, {

@@ -4,6 +4,7 @@ import {
   catalogConnectionPresentation,
   catalogDirectoryAvailability,
   catalogMatchesViewFilter,
+  catalogHealthWarning,
 } from "./integration-catalog-state";
 
 const githubEntry = {
@@ -36,6 +37,34 @@ const githubEntry = {
 } satisfies McpCatalogEntry;
 
 describe("catalogConnectionPresentation", () => {
+  it("warns when server health cannot be checked, without warning on successful checks", () => {
+    expect(catalogHealthWarning("failed")).toEqual({
+      label: "Connection health",
+      message: "Could not verify connection health. The displayed states may be out of date. Refresh integrations to retry.",
+    });
+    expect(catalogHealthWarning("succeeded")).toBeNull();
+    expect(catalogHealthWarning("loading")).toBeNull();
+  });
+  it("keeps a renewable Notion connection usable when its access token expired", () => {
+    const presentation = catalogConnectionPresentation(
+      { ...githubEntry, slug: "notion", tokenExpiresAt: "2026-09-29T00:00:00.000Z" },
+      null,
+      false,
+      { slug: "notion", state: "connected", reason: null, tool_count: 12, attachable: [] },
+    );
+    expect(presentation).toEqual({ state: "connected", connected: true, reason: null });
+  });
+
+  it("shows the server's renewal failure even while the catalog token looks valid", () => {
+    const presentation = catalogConnectionPresentation(
+      { ...githubEntry, slug: "linear", tokenExpiresAt: "2099-01-01T00:00:00.000Z" },
+      null,
+      false,
+      { slug: "linear", state: "needs_reauth", reason: "Authorization was revoked. Reconnect Linear.", tool_count: 0, attachable: [] },
+    );
+    expect(presentation).toEqual({ state: "needs_reauth", connected: false, reason: "Authorization was revoked. Reconnect Linear." });
+  });
+
   it("does not let a connected GitHub MCP row override suspended canonical access", () => {
     const presentation = catalogConnectionPresentation(
       githubEntry,

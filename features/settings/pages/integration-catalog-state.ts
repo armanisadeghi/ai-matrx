@@ -2,6 +2,7 @@ import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import {
   deriveMcpConnectionState,
   type FirstPartyStatus,
+  type McpAvailability,
 } from "@/features/connectors/connection-state";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 
@@ -31,6 +32,15 @@ export type CatalogViewFilter =
   | "connected"
   | "available"
   | "coming_soon";
+
+export function catalogHealthWarning(status: string) {
+  return status === "failed"
+    ? {
+        label: "Connection health",
+        message: "Could not verify connection health. The displayed states may be out of date. Refresh integrations to retry.",
+      }
+    : null;
+}
 
 /**
  * The catalog RPC's `connection_ready` is the provider-registration contract:
@@ -108,6 +118,7 @@ export function catalogConnectionPresentation(
   entry: McpCatalogEntry,
   firstPartyStatus: FirstPartyStatus,
   firstPartyLoading: boolean,
+  availability?: McpAvailability | null,
 ): CatalogConnectionPresentation {
   const hasFirstPartyPath = mcpConnectionRouteFor(entry) === "github";
   if (hasFirstPartyPath && firstPartyLoading) {
@@ -115,6 +126,7 @@ export function catalogConnectionPresentation(
   }
 
   const truth = deriveMcpConnectionState(entry, {
+    availability,
     hasFirstPartyPath,
     firstPartyStatus: hasFirstPartyPath ? firstPartyStatus : undefined,
   });
