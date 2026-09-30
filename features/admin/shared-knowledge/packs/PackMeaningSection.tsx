@@ -234,16 +234,15 @@ function MeaningEditor({
       </div>
       <p className="text-[11px] text-muted-foreground">
         {d.dimension_scope === "platform"
-          ? "A registry dimension is governed — a pack may score one of its values, never invent one. An unknown value is reported at adoption, not created."
-          : "The site's own dimension is created on adoption under its standard key (qualifiers, geo), so every adopter gets their own copy."}
+          ? "Registry values only: score one, never invent one"
+          : "Created per adopter on adoption"}
       </p>
 
       <div className="rounded-md border border-border bg-card p-2">
         <p className="mb-1.5 text-[11px] font-medium text-foreground">
           Phrases that spot it{" "}
           <span className="font-normal text-muted-foreground">
-            — leave empty when the classifier already detects this fact and the pack only says
-            what it is worth.
+            — leave empty if the classifier already detects it
           </span>
         </p>
         {d.matchers.length > 0 ? (
@@ -323,7 +322,7 @@ function MeaningEditor({
       <ProTextarea
         value={d.notes}
         onChange={(e) => setD({ ...d, notes: e.target.value })}
-        placeholder="Why — the evidence or the expert ruling (this is what the business reads)"
+        placeholder="The evidence or expert ruling the business reads"
         className="min-h-14 text-sm"
       />
       {!amountOk ? (
@@ -338,12 +337,11 @@ function MeaningEditor({
           the converter obeys, so this editor is the remaining door: the
           question is asked, and the author answers it. */}
       {d.worth_effect === "scale" && !isRelativeQualifier(d.value, d.label) ? (
-        <p className="text-[11px] leading-4 text-warning">
-          A factor only scales what a keyword already earned, so it does nothing
-          at all to a keyword nothing else has valued — and a brand-new site has
-          nothing else. If “{d.label || "this answer"}” describes what a keyword{" "}
-          <em>is</em> rather than being a relative qualifier like free, cheap or
-          DIY, make it <strong>± points</strong> instead.
+        <p
+          className="text-[11px] leading-4 text-warning"
+          title="A factor only scales worth a keyword already earned, so on a new site it does nothing."
+        >
+          A × factor adds nothing on its own — use ± points
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
@@ -390,11 +388,13 @@ export function PackMeaningSection({
   return (
     <div className="matrx-touch-targets space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
+        <p
+          className="text-xs text-muted-foreground"
+          title="Points add to the 100 baseline; keep a × factor for relative words like “free”."
+        >
           {detail.meaning.length} answers ·{" "}
           <span className="text-emerald-600 dark:text-emerald-400">{promoters} promote</span> ·{" "}
-          <span className="text-red-600 dark:text-red-400">{demoters} demote</span>. Points add to
-          the 100 baseline; keep a × factor for relative words like &ldquo;free&rdquo;.
+          <span className="text-red-600 dark:text-red-400">{demoters} demote</span>
         </p>
         {canAuthor ? (
           <Button

@@ -389,12 +389,12 @@ export function PackDetail({
         open={ratifyOpen}
         onOpenChange={(o) => !o && setRatifyOpen(false)}
         title={`Ratify “${pack.name}”?`}
-        description="You are signing off these defaults as a domain expert. Ratified packs can be published to an industry or to everyone; every later edit bumps the version and adopted sites see what changed."
+        description="Ratified packs can be published to an industry or everyone. Later edits bump the version, and adopters see what changed."
         content={
           <ProTextarea
             value={ratifyNotes}
             onChange={(e) => setRatifyNotes(e.target.value)}
-            placeholder="Ratification notes (what you checked, what you changed, what stays open)…"
+            placeholder="What you checked, changed, and left open"
             className="min-h-24 text-sm"
           />
         }
@@ -412,7 +412,7 @@ export function PackDetail({
         open={retireOpen}
         onOpenChange={(o) => !o && setRetireOpen(false)}
         title={`Retire “${pack.name}”?`}
-        description="Its industry and global audiences are withdrawn immediately; organizations that already adopted it keep every row (those are theirs). Pilot grants stay so the record of who used it survives."
+        description="Industry and global audiences are withdrawn now. Adopters keep their rows; pilot grants stay as the usage record."
         variant="destructive"
         confirmLabel="Retire"
         busy={status.isPending}

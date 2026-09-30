@@ -102,11 +102,7 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
         />
         Curators of “{industry.name}”
       </div>
-      <p className="text-xs text-muted-foreground">
-        Outside experts who may author and propose starter packs for this
-        industry. They never ratify or publish — that stays with platform
-        admins.
-      </p>
+      {/* Curators author and propose packs; only platform admins ratify or publish. */}
       <div className="flex gap-2">
         <UserSearchField
           value={email}

@@ -222,7 +222,7 @@ function TopicEditor({
           </Select>
         </label>
       </div>
-      <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="The expert's own words — why this topic is worth this much to this industry" className="min-h-14 text-sm" />
+      <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="Why this topic is worth this much to the industry" className="min-h-14 text-sm" />
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
           Cancel
@@ -255,8 +255,11 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
   return (
     <div className="matrx-touch-targets space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
-          {detail.topics.length} topics valued. Children inherit a parent&apos;s worth; value as high in the tree as it is true.
+        <p
+          className="text-xs text-muted-foreground"
+          title="Children inherit a parent's worth; value each topic as high in the tree as it holds true."
+        >
+          {detail.topics.length} topics valued
         </p>
         {canAuthor ? (
           <Button size="sm" variant="outline" className="h-7" onClick={() => setAdding(true)} disabled={adding}>

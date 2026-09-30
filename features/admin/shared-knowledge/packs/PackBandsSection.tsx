@@ -206,7 +206,7 @@ function AreaEditor({
         )}
         <Input value={d.sort} onChange={(e) => setD({ ...d, sort: e.target.value })} placeholder="sort" inputMode="numeric" className="h-8 text-sm tabular-nums" />
       </div>
-      <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="What this archetype stands for — the adopter fills in their own places" className="min-h-12 text-sm" />
+      <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="What this archetype stands for" className="min-h-12 text-sm" />
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
           Cancel
@@ -318,7 +318,8 @@ export function PackBandsSection({ detail, onChanged }: { detail: AdminPackDetai
             <h3 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <MapPinned className="size-3.5 text-muted-foreground" aria-hidden /> Geo-area archetypes
             </h3>
-            <p className="text-[11px] text-muted-foreground">Placeholders like “Primary service radius” — never a specific city. Adopters fill in their places; the adopt step demands them.</p>
+            {/* Adopters fill in their own places; the adopt step asks for them (skippable — skipped areas are flagged places_pending). */}
+            <p className="text-[11px] text-muted-foreground">Placeholders like “Primary service radius”, never a city</p>
           </div>
           {canAuthor ? (
             <Button size="sm" variant="outline" className="h-7" onClick={() => setAdding("geo_area")} disabled={adding === "geo_area"}>

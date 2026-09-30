@@ -31,15 +31,13 @@ export function PackGuidelinesSection({ detail, onChanged }: { detail: AdminPack
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">
-        Who the real buyer is, which signals mean consumer vs enterprise, what looks valuable but is not, what is always high value — with clearly marked blanks for what only the business can answer. Every classifier and valuation agent is handed this text for a site in the industry.
-      </p>
+      {/* Every classifier and valuation agent is handed this text for a site in the industry. */}
       <ProTextarea
         value={text}
         disabled={!canAuthor}
         onChange={(e) => setText(e.target.value)}
         className="min-h-[28rem] text-sm leading-relaxed"
-        placeholder="Who buys. What a consumer query looks like. What an enterprise query looks like. [BLANK: the business's service area]. …"
+        placeholder="Who buys… [BLANK: the business's service area]"
       />
       <div className="flex items-center justify-between">
         <span className="text-[11px] tabular-nums text-muted-foreground">{words} words</span>

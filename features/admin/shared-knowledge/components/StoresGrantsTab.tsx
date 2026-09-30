@@ -96,7 +96,7 @@ export function StoresGrantsTab({
         </div>
         {directory.stores.length === 0 ? (
           <div className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-            No `kind=&#39;library&#39;` stores exist yet.
+            No library stores yet.
           </div>
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">

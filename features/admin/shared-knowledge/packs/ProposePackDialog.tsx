@@ -166,7 +166,7 @@ export function ProposePackDialog({
             <AGENT_ICON className="size-4 text-primary" /> Propose a starter pack from sample sites
           </DialogTitle>
           <DialogDescription>
-            Real Search Console demand from a few sites in one industry, the controlled vocabularies, and the expert&apos;s rulings go in; a draft pack comes out. No sample company, city or brand ever lands in the pack.
+            Sample-site demand, vocabularies and your rulings become a draft pack. No sample company, city or brand lands in it.
           </DialogDescription>
         </DialogHeader>
 
@@ -250,7 +250,7 @@ export function ProposePackDialog({
 
         <label className="space-y-1">
           <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Expert rulings (verbatim — they override the agent completely)</span>
-          <ProTextarea value={rulings} onChange={(e) => setRulings(e.target.value)} placeholder="CRT and TV are consumer signals; enterprise is where the money is. The word free massively reduces value…" className="min-h-20 text-sm" disabled={busy} />
+          <ProTextarea value={rulings} onChange={(e) => setRulings(e.target.value)} placeholder="CRT and TV are consumer signals. “Free” cuts value." className="min-h-20 text-sm" disabled={busy} />
         </label>
 
         {stage !== "idle" ? (

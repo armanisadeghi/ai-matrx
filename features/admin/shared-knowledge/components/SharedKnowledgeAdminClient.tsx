@@ -58,15 +58,9 @@ export function SharedKnowledgeAdminClient({
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden px-4 pt-3">
       <div className="mb-2 flex items-center gap-2">
         <Library className="h-5 w-5 text-primary" />
-        <div>
-          <h1 className="text-base font-semibold leading-tight text-foreground">
-            Shared Knowledge
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Industry taxonomy, library stores, starter packs, grant issuance,
-            and access provenance
-          </p>
-        </div>
+        <h1 className="text-base font-semibold leading-tight text-foreground">
+          Shared Knowledge
+        </h1>
       </div>
 
       <Tabs

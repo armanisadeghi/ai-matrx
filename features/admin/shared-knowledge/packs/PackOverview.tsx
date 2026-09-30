@@ -186,7 +186,7 @@ export function PackOverview({
             value={form.industry}
             disabled={!canAuthor}
             onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
-            placeholder="IT asset disposition, electronics recycling, certified data destruction"
+            placeholder="IT asset disposition, electronics recycling"
           />
         </Field>
         <Field label="Summary">
@@ -227,7 +227,7 @@ export function PackOverview({
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Read-only: {pack.status === "ratified" || pack.status === "retired" ? "ratified and retired packs are edited by platform admins" : "you are not a curator of this pack's industry"}.
+            Read-only: {pack.status === "ratified" || pack.status === "retired" ? "ratified and retired packs are admin-only" : "you are not a curator of this pack's industry"}.
           </p>
         )}
       </section>
