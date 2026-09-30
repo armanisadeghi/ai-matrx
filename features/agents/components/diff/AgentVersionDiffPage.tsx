@@ -42,6 +42,7 @@ import { toast } from "@/lib/toast-service";
 import { AgentDiffViewer, buildAgentAdapterRegistry } from "./AgentDiffViewer";
 import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
 import { VersionIdBadge } from "./VersionIdBadge";
+import { promoteFailureMessage } from "./promote-failure-message";
 import { compareAgentDefinitions } from "./compare-agent-definitions";
 import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
 import { DefaultFieldAdapter } from "@ai-matrx/diff/react";
@@ -228,8 +229,8 @@ export function AgentVersionDiffPage({
       } else {
         toast.error(result.error ?? "Failed to promote version");
       }
-    } catch {
-      toast.error("Failed to promote version");
+    } catch (err) {
+      toast.error(promoteFailureMessage(err));
     } finally {
       setPromoting(false);
       setShowPromoteDialog(false);
