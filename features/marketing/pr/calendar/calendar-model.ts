@@ -214,7 +214,10 @@ export function draftAnglesAsk(moment: PlannedMoment, row: PrMomentRow | undefin
   const parts = [
     `Draft story angles for the calendar moment "${title}" (${moment.startsOn || row?.starts_on || "date on the calendar"}).`,
   ];
-  if (moment.angleSeed) parts.push(`The planner's seed: ${moment.angleSeed}`);
+  if (moment.angleSeed) {
+    const seed = moment.angleSeed.trim();
+    parts.push(`The planner's seed: ${/[.!?]$/.test(seed) ? seed : `${seed}.`}`);
+  }
   if (moment.proofNeeded.length) parts.push(`Proof it still needs: ${moment.proofNeeded.join("; ")}.`);
   return parts.join(" ");
 }

@@ -83,18 +83,26 @@ function takeAskFromUrl(): string | null {
   if (typeof window === "undefined") return null;
   const url = new URL(window.location.href);
   const ask = url.searchParams.get(DIRECTOR_ASK_PARAM)?.trim() || null;
-  if (ask) {
-    url.searchParams.delete(DIRECTOR_ASK_PARAM);
-    window.history.replaceState(window.history.state, "", url.toString());
-  }
-  return ask;
+  if (!ask) return null;
+  url.searchParams.delete(DIRECTOR_ASK_PARAM);
+  window.history.replaceState(window.history.state, "", url.toString());
+  // A door never sends `ask` WITH a held conversation. Both at once means the ask was already
+  // sent into that conversation and a stale URL snapshot (the workspace rewriting its own
+  // params) carried it back — reopen the conversation, never send it twice.
+  return url.searchParams.get(DIRECTOR_CONVERSATION_PARAM) ? null : ask;
 }
 
 function holdDirectorConversation(conversationId: string): void {
   const url = new URL(window.location.href);
-  if (url.searchParams.get(DIRECTOR_CONVERSATION_PARAM) === conversationId)
+  if (
+    url.searchParams.get(DIRECTOR_CONVERSATION_PARAM) === conversationId &&
+    !url.searchParams.has(DIRECTOR_ASK_PARAM)
+  ) {
     return;
+  }
   url.searchParams.set(DIRECTOR_CONVERSATION_PARAM, conversationId);
+  // A sent ask must not ride along into the held URL.
+  url.searchParams.delete(DIRECTOR_ASK_PARAM);
   window.history.replaceState(window.history.state, "", url.toString());
 }
 

@@ -162,7 +162,7 @@ test("an untouched Director does not pin an empty conversation into the URL", as
 });
 
 test("a question handed over as ?ask= is sent once in a fresh conversation and leaves the URL", async () => {
-  window.history.replaceState(null, "", "/marketing/brand-1/pr?director=old-conv&ask=Draft%20angles%20for%20X");
+  window.history.replaceState(null, "", "/marketing/brand-1/pr?ask=Draft%20angles%20for%20X");
   dispatch.mockClear();
   await mount();
   expect(launchMandate).toHaveBeenCalledTimes(1);
@@ -174,5 +174,16 @@ test("a question handed over as ?ask= is sent once in a fresh conversation and l
     p: { text: string };
   };
   expect(input.p.text).toBe("Draft angles for X");
+  expect(new URL(window.location.href).searchParams.get("ask")).toBeNull();
+});
+
+test("a reload whose URL still carries an already-sent ?ask= beside ?director= reopens, never re-sends", async () => {
+  window.history.replaceState(null, "", "/marketing/brand-1/pr?ask=Draft%20angles&director=live-conv");
+  dispatch.mockClear();
+  await mount();
+  expect(launchMandate).not.toHaveBeenCalled();
+  expect(resumeCalls).toEqual([expect.objectContaining({ conversationId: "live-conv" })]);
+  const types = dispatch.mock.calls.map((c) => (c[0] as { type?: string }).type);
+  expect(types).not.toContain("exec");
   expect(new URL(window.location.href).searchParams.get("ask")).toBeNull();
 });

@@ -110,7 +110,7 @@ test("Draft angles hands the Director the moment, its seed and the proof it need
   const plan = readCalendarPlan(metadata)!;
   expect(draftAnglesAsk(plan.moments[0], row)).toBe(
     'Draft story angles for the calendar moment "International E-Waste Day" (2026-10-14). ' +
-      "The planner's seed: Device refresh cycles and critical minerals Proof it still needs: first-party tonnage metrics.",
+      "The planner's seed: Device refresh cycles and critical minerals. Proof it still needs: first-party tonnage metrics.",
   );
 });
 
