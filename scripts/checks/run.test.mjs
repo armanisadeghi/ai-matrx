@@ -33,14 +33,15 @@ function declareRows(rows, dir, classOf = () => undefined) {
   return path;
 }
 
-function runWithManifest(rows, extraArgs = []) {
+function runWithManifest(rows, extraArgs = [], { env, classOf } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "release-checks-"));
   const manifest = join(dir, "rows.txt");
   const json = join(dir, "findings.jsonl");
   writeFileSync(manifest, rows.join("\n") + "\n");
-  const classes = extraArgs.includes("--classes") ? [] : ["--classes", declareRows(rows, dir)];
+  const classes = extraArgs.includes("--classes") ? [] : ["--classes", declareRows(rows, dir, classOf)];
   const out = execFileSync("node", [RUNNER, "--manifest", manifest, "--json", json, "--timeout", "2", ...classes, ...extraArgs], {
     encoding: "utf8",
+    ...(env ? { env } : {}),
   });
   const lines = readFileSync(json, "utf8").trim().split("\n").map((l) => JSON.parse(l));
   return { out, header: lines[0], findings: lines.slice(1) };
@@ -156,7 +157,7 @@ test("a passing self-test that quotes the failure token is not a finding", () =>
   const row = { label: "Unbounded reads self-test" };
   const passed = [
     "[self-test] PASS  two hops in ONE file: no finding, and an UNMEASURED line naming the second hop",
-    "[self-test] PASS — the rule REPORTS AS UNMEASURED the two hops it cannot follow",
+    "[self-test] PASS ï¿½ the rule REPORTS AS UNMEASURED the two hops it cannot follow",
   ].join("\n");
   assert.equal(judge(row, 0, passed), null);
   const real = judge(row, 0, "[UNMEASURED] 84 complete-list decision(s) this sweep could NOT judge\n");
@@ -434,4 +435,60 @@ test("--repo-only runs ONLY rows declared repo-only â€” never clone-db, live-db 
   assert.deepEqual(header.ran, ["repo-gate"]);
   assert.deepEqual([...header.skipped_not_repo_only].sort(), ["clone-gate", "live-gate", "mystery-gate"]);
   assert.match(out, /skipped 3 row\(s\) not declared repo-only/);
+});
+
+// -- The database-reading leg: --db-only --target clone (checks-run-in-the-app P3) --------------
+// Every row reads ONLY the nightly copy. A row that reaches for production - by host (net, dns,
+// fetch) or by user on the SHARED pooler host (pg) - is refused BY NAME before a byte leaves,
+// even when it swallows the error. No network: the allowed row dials a closed local port.
+const COPY_REF = "abcdefghijklmnopqrst";
+const COPY_ENV = {
+  ...process.env,
+  MATRX_CHECK_DB_TARGET: "clone",
+  MATRX_CLONE_REF_NAME: COPY_REF,
+  MATRX_CLONE_EXPECT_USER: `postgres.${COPY_REF}`,
+  MATRX_CLONE_PROMOTED_AT: "2026-09-29T08:54:32Z",
+  SUPABASE_MATRIX_USER: `postgres.${COPY_REF}`,
+};
+const PG = (user, host) =>
+  `node -e "const {Client}=require('pg'); new Client({host:'${host}',port:1,user:'${user}',password:'x',database:'postgres',connectionTimeoutMillis:1500}).connect().then(()=>process.exit(0),(e)=>{console.log('pg said: '+e.message);process.exit(1)})"`;
+
+test("--db-only --target clone refuses every road to production by name and records the copy", () => {
+  const attempts = {
+    "Pg as the production user": PG("postgres.brsgrqvjdzwihsvnfqkf", "127.0.0.1"),
+    "Fetch the production API": `node -e "fetch('https://db.matrxserver.com/rest/v1/').then(()=>process.exit(0),()=>process.exit(0))"`,
+    "Dns production host": `node -e "require('dns').lookup('db.brsgrqvjdzwihsvnfqkf.supabase.co',()=>{})"`,
+    "Swallowed refusal": `node -e "try{require('net').connect(443,'server.app.matrxserver.com')}catch{};console.log('fine')"`,
+  };
+  const rows = [
+    ...Object.entries(attempts).map(([k, v]) => `${k}|${v}`),
+    `Pg as the copy user|${PG(`postgres.${COPY_REF}`, "127.0.0.1")}`,
+    "Repo only row|echo repo",
+  ];
+  const { out, header, findings } = runWithManifest(rows, ["--db-only", "--target", "clone"], {
+    env: COPY_ENV,
+    classOf: (id) => (id === "repo-only-row" ? "repo-only" : "live-db"),
+  });
+  assert.match(out, /database target = the nightly copy abcdefghijklmnopqrst/);
+  assert.deepEqual(header.db_target, { kind: "clone", ref: COPY_REF, promoted_at: "2026-09-29T08:54:32Z" });
+  assert.ok(!header.ran.includes("repo-only-row"), "--db-only must leave repo-only rows out");
+  for (const label of Object.keys(attempts)) {
+    const id = slug(label);
+    const f = findings.find((x) => x.check === id);
+    assert.ok(f, `${id}: production was reached (no refusal finding)`);
+    assert.equal(f.level, "error", JSON.stringify(f));
+    assert.match(f.title, new RegExp(`^\\[clone-target\\] REFUSED check ${id}: `));
+  }
+  const allowed = findings.find((x) => x.check === "pg-as-the-copy-user");
+  assert.ok(allowed, "the copy-user row should fail on the closed port, not pass");
+  assert.doesNotMatch(allowed.title, /\[clone-target\]/);
+});
+
+test("--target clone without a prepared copy environment refuses to run", () => {
+  const env = { ...process.env };
+  delete env.MATRX_CHECK_DB_TARGET;
+  assert.throws(
+    () => runWithManifest(["Anything|true"], ["--target", "clone"], { env }),
+    (error) => /--target clone REFUSED/.test(String(error.stderr)) && error.status === 2,
+  );
 });

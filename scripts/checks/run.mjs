@@ -346,14 +346,19 @@ function writeLog(id, text) {
 // A self-test plants its own violations; only a check's REAL run is asked for items.
 export const wantsItems = (cmd) => !/self-test/.test(cmd);
 
-function runCommand(cmd, timeoutSeconds) {
+// A row of a clone-only run (`--target clone`) that reached for production: the guard
+// (scripts/checks/clone-target-guard.cjs, or aidream's clone_target.py) prints this line first.
+export const CLONE_REFUSED_MARKER = "[clone-target] REFUSED";
+export const CLONE_GUARD = join(REPO_ROOT, "scripts", "checks", "clone-target-guard.cjs");
+
+function runCommand(cmd, timeoutSeconds, checkId = "") {
   return new Promise((resolveRun) => {
     const started = Date.now();
     let child;
     try {
       child = spawn("bash", ["-c", cmd], {
         cwd: REPO_ROOT,
-        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI ?? "", [ITEMS_ENV]: wantsItems(cmd) ? "1" : "0" },
+        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI ?? "", [ITEMS_ENV]: wantsItems(cmd) ? "1" : "0", MATRX_CHECK_ID: checkId },
         stdio: ["ignore", "pipe", "pipe"],
         detached: true,
       });
@@ -392,7 +397,7 @@ function runCommand(cmd, timeoutSeconds) {
 async function runRow(row, timeoutOverride, scans, metrics) {
   const timeout = timeoutOverride || row.timeoutSeconds;
   const startedAt = new Date().toISOString();
-  const { code, output, ms } = await runCommand(row.cmd, timeout);
+  const { code, output, ms } = await runCommand(row.cmd, timeout, row.id);
   // The run's own measurement, recorded per run by the checks store (P2-STORAGE-VERIFY V4). Peak
   // RSS is not measured: node's child_process does not expose a child's rusage.
   if (metrics) metrics[row.id] = { started_at: startedAt, duration_ms: ms, exit: code, timed_out: code === null && output.endsWith(`timed out after ${timeout}s`) };
@@ -410,6 +415,11 @@ async function runRow(row, timeoutOverride, scans, metrics) {
         detail,
       },
     ];
+  }
+  // Refused, never measured: an ERROR whatever the row's exit code (it may have swallowed it).
+  const refused = plain(output).split("\n").find((l) => l.startsWith(CLONE_REFUSED_MARKER));
+  if (refused) {
+    return [{ check: row.id, category: row.category, level: ERROR, title: oneLine(refused), count: 1, remedy: row.cmd, detail }];
   }
   const { items, errors, complete } = parseItems(output);
   // The end-of-scan marker (ITEM-PROTOCOL): only a run that scanned everything may let an absent
@@ -569,6 +579,26 @@ export function renderTable(findings) {
   return [line(header), ...rows.map(line)].join("\n");
 }
 
+/** The copy this run reads, or a thrown refusal naming what is missing. Installs the guard. */
+export function cloneTarget(env = process.env) {
+  const ref = env.MATRX_CLONE_REF_NAME || "";
+  const user = env.MATRX_CLONE_EXPECT_USER || "";
+  const promoted = env.MATRX_CLONE_PROMOTED_AT || "";
+  const problems = [];
+  if (env.MATRX_CHECK_DB_TARGET !== "clone") problems.push("MATRX_CHECK_DB_TARGET is not clone");
+  if (!/^[a-z0-9]{20}$/.test(ref) || ref === "brsgrqvjdzwihsvnfqkf") problems.push(`MATRX_CLONE_REF_NAME ${JSON.stringify(ref)} is not a copy`);
+  if (user !== `postgres.${ref}`) problems.push("MATRX_CLONE_EXPECT_USER does not name the copy");
+  if (env.SUPABASE_MATRIX_USER !== user) problems.push("SUPABASE_MATRIX_USER is not the copy's user");
+  if (Number.isNaN(Date.parse(promoted))) problems.push("MATRX_CLONE_PROMOTED_AT is not a date");
+  if (problems.length) {
+    throw new Error(`--target clone REFUSED: ${problems.join("; ")}. Prepare the environment with aidream \`uv run python -m scripts.checks.clone_target --shell\` (or --github-env in CI).`);
+  }
+  const preload = `--require ${CLONE_GUARD}`;
+  if (!(env.NODE_OPTIONS || "").includes(CLONE_GUARD)) env.NODE_OPTIONS = `${env.NODE_OPTIONS ? `${env.NODE_OPTIONS} ` : ""}${preload}`;
+  process.stdout.write(`checks: database target = the nightly copy ${ref} (promoted ${promoted})\n`);
+  return { kind: "clone", ref, promoted_at: promoted };
+}
+
 function parseArgs(argv) {
   const args = { lanes: [], only: [], json: null, workers: DEFAULT_WORKERS, dbWorkers: DEFAULT_DB_WORKERS, timeout: null, list: false, manifest: null, extras: true, skipLiveDb: false, repoOnly: false, classes: null };
   for (let i = 0; i < argv.length; i += 1) {
@@ -586,6 +616,8 @@ function parseArgs(argv) {
       case "--no-extras": args.extras = false; break;
       case "--skip-live-db": args.skipLiveDb = true; break;
       case "--repo-only": args.repoOnly = true; break; // the public CI leg: no database, no secrets
+      case "--db-only": args.dbOnly = true; break; // the database-reading leg (runs from aidream's private CI)
+      case "--target": args.target = next(); if (args.target !== "clone") throw new Error(`--target takes only "clone", not ${args.target}`); break;
       case "--classes": args.classes = resolve(next()); break; // test seam: row classes from a file
       case "--all": case "--changed-since": if (a === "--changed-since") next(); break; // accepted: every row runs every release
       case "-h": case "--help":
@@ -617,6 +649,19 @@ export async function main(argv = process.argv.slice(2)) {
   }
   // --repo-only: the GitHub Actions leg (the repository is public — PLAN.md decision 4). ONLY rows
   // DECLARED repo-only run; clone-db, live-db and undeclared rows are left out and named.
+  // --db-only: ONLY rows that read a database (declared live-db or clone-db, and unclassified —
+  // the safe side). Never run from this public repository's Actions: aidream's private
+  // clone-db-checks.yml runs it with --target clone.
+  if (args.dbOnly) {
+    if (args.repoOnly || args.skipLiveDb) throw new Error("--db-only selects nothing together with --repo-only / --skip-live-db");
+    rows = rows.filter((r) => r.dbClass !== REPO_ONLY);
+    process.stdout.write(`checks: --db-only — ${rows.length} database-reading row(s) selected\n`);
+  }
+  // --target clone: every row's database is the nightly copy. The environment is prepared and
+  // proven by aidream `scripts/checks/clone_target.py` (copy ref + system_identifier + quarantine);
+  // here it is re-read and the guard is preloaded into every row.
+  let dbTarget = null;
+  if (args.target === "clone") dbTarget = cloneTarget();
   let notRepoOnly = [];
   if (args.repoOnly) {
     notRepoOnly = rows.filter((r) => r.dbClass !== REPO_ONLY);
@@ -654,6 +699,7 @@ export async function main(argv = process.argv.slice(2)) {
     const header = { ran: rows.map((r) => r.id), git_sha: sha, started_at: runStartedAt, checks: metrics };
     if (skipped.length) header.skipped_live_db = skipped.map((r) => r.id);
     if (notRepoOnly.length) header.skipped_not_repo_only = notRepoOnly.map((r) => r.id);
+    if (dbTarget) header.db_target = dbTarget;
     const tally = itemTally(findings);
     if (Object.keys(tally).length) header.items = tally;
     if (Object.keys(scans).length) header.scan_complete = scans;
