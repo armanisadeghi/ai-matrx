@@ -988,7 +988,7 @@ export function CatalogEntryEditor({
         title={
           row ? `Archive ${row.app}/${row.kind}/${row.key}?` : "Archive entry?"
         }
-        description="It turns off and leaves every client on their next refresh. Saving the same app/kind/key brings it back."
+        description="It turns off and disappears from every client on its next refresh. Saving the same app/kind/key restores it."
         contentClassName="sm:max-w-3xl"
         content={
           row ? (

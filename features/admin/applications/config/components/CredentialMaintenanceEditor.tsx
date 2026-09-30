@@ -116,8 +116,8 @@ export function CredentialMaintenanceEditor({
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Lifecycle dates only; never paste private keys or secrets. Rotate
-            with the provider first, then record the dates.
+            Lifecycle details only; never paste private keys or secrets.
+            Rotate with the provider first, then record the dates.
           </p>
         </div>
       </div>
@@ -174,7 +174,7 @@ export function CredentialMaintenanceEditor({
                   </Badge>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Updates the draft only; Save shows the diff first.
+                  Record rotation updates the draft; Save shows the diff.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
