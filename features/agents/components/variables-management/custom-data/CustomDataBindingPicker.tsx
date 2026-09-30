@@ -51,7 +51,6 @@ import {
 } from "@/components/ui/creatable-picker";
 import type { CustomDataBinding } from "@/features/agents/types/agent-definition.types";
 import {
-  DEFAULT_ROW_LIMIT,
   MISSING_CHOICES,
   SHAPE_CHOICES,
   defaultTemplate,
@@ -78,10 +77,13 @@ import {
   type DataHomeScope,
 } from "@/features/unified-data/hub/dataHomeScope";
 import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
-import { CustomDataRecordsScope } from "./CustomDataRecordsScope";
+import {
+  CustomDataRecordsScope,
+  useCustomDataOrganizationId,
+} from "./CustomDataRecordsScope";
+import { useBindingKnobs } from "./useBindingKnobs";
 
 /** How many records the record picker lists. Search narrows within them. */
-const RECORD_PICKER_PAGE = 200;
 
 interface CustomDataBindingPickerProps {
   binding: CustomDataBinding;
@@ -127,8 +129,9 @@ export function CustomDataBindingPicker({
       table_id: id,
       missing: binding.missing,
       override_policy: binding.override_policy,
-      ...(shape === "collection"
-        ? { limit: binding.limit ?? DEFAULT_ROW_LIMIT }
+      // The row limit is filled in by the details panel once its knob answers.
+      ...(shape === "collection" && binding.limit !== undefined
+        ? { limit: binding.limit }
         : {}),
     });
   };
@@ -246,9 +249,8 @@ export function CustomDataBindingPicker({
         )}
         {filteredOut && (
           <p className="text-[11px] text-muted-foreground">
-            The bound table ({chosenRow?.table_name}, in{" "}
-            {chosenRow?.organization_name}) is outside the lane or
-            organization chosen above.{" "}
+            {chosenRow?.table_name ?? "The bound table"} is hidden by these
+            filters{" "}
             <button
               type="button"
               className="underline underline-offset-2"
@@ -263,9 +265,7 @@ export function CustomDataBindingPicker({
         )}
         {storedTableMissing && (
           <p className="text-[11px] text-warning">
-            The table this variable is bound to is not one you can open — it was
-            removed, or it is no longer shared with you. Pick a table here to
-            rebind it. The binding is unchanged until you do.
+            Bound table unavailable — pick one to rebind
           </p>
         )}
       </div>
@@ -283,7 +283,7 @@ export function CustomDataBindingPicker({
                     Reading the table…
                   </span>
                 ) : held.state === "not-given" ? (
-                  "This table does not open for you, so its records and fields cannot be listed."
+                  "You can't open this table's records"
                 ) : (
                   <>
                     Where this table lives could not be read: {held.why}{" "}
@@ -343,9 +343,12 @@ function BoundTableDetails({
   const needsRecord = shape !== "collection";
   // Grows by a page at a time ("Load more") so EVERY record is reachable; the
   // picker's type-ahead then narrows what has been read.
-  const [recordLimit, setRecordLimit] = useState(RECORD_PICKER_PAGE);
-  const records = useRecords(needsRecord ? tableId : null, {
-    pageSize: recordLimit,
+  const knobs = useBindingKnobs(useCustomDataOrganizationId());
+  const recordPage = knobs.recordPickerPage;
+  const defaultRowLimit = knobs.defaultRowLimit;
+  const [loadedPages, setLoadedPages] = useState(1);
+  const records = useRecords(needsRecord && recordPage ? tableId : null, {
+    pageSize: (recordPage ?? 0) * loadedPages,
   });
   const templateRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingCaretRef = useRef<number | null>(null);
@@ -357,6 +360,7 @@ function BoundTableDetails({
   // template yet, start from the table's own title column + its next field.
   useEffect(() => {
     if (readonly || !tableId || shape === "value") return;
+    if (shape === "collection" && defaultRowLimit === null) return;
     if (binding.transform || fields.loading || !fields.data) return;
     if (fields.data.length === 0) return;
     onChange({
@@ -366,11 +370,11 @@ function BoundTableDetails({
         template: defaultTemplate(tableRow ?? null, fields.data),
         join: "\n",
         ...(shape === "collection"
-          ? { max: binding.limit ?? DEFAULT_ROW_LIMIT }
+          ? { max: binding.limit ?? defaultRowLimit ?? undefined }
           : {}),
       },
       ...(shape === "collection" && binding.limit === undefined
-        ? { limit: DEFAULT_ROW_LIMIT }
+        ? { limit: defaultRowLimit ?? undefined }
         : {}),
     });
   }, [
@@ -382,6 +386,7 @@ function BoundTableDetails({
     fields.data,
     tableRow,
     onChange,
+    defaultRowLimit,
   ]);
 
   const selectShape = (next: CustomDataShape) => {
@@ -399,7 +404,10 @@ function BoundTableDetails({
     }
     if (next === "value" && binding.field_key)
       base.field_key = binding.field_key;
-    if (next === "collection") base.limit = binding.limit ?? DEFAULT_ROW_LIMIT;
+    if (next === "collection") {
+      const limit = binding.limit ?? defaultRowLimit;
+      if (limit !== null) base.limit = limit;
+    }
     // Keep the author's template when moving between table and record reads;
     // a single value needs none.
     if (next !== "value" && binding.transform) {
@@ -409,7 +417,9 @@ function BoundTableDetails({
         template,
         ...(join !== undefined ? { join } : {}),
         ...(next === "collection"
-          ? { max: base.limit ?? DEFAULT_ROW_LIMIT }
+          ? base.limit !== undefined
+            ? { max: base.limit }
+            : {}
           : {}),
       };
     }
@@ -542,10 +552,9 @@ function BoundTableDetails({
               recordsCapped
                 ? [
                     {
-                      label: `Load ${Math.min(RECORD_PICKER_PAGE, (recordTotal ?? 0) - recordOptions.length)} more records`,
+                      label: `Load ${Math.min(recordPage ?? 0, (recordTotal ?? 0) - recordOptions.length)} more records`,
                       note: `Showing ${recordOptions.length} of ${recordTotal}.`,
-                      onSelect: () =>
-                        setRecordLimit((n) => n + RECORD_PICKER_PAGE),
+                      onSelect: () => setLoadedPages((n) => n + 1),
                     },
                   ]
                 : undefined
@@ -556,8 +565,7 @@ function BoundTableDetails({
           />
           {recordsCapped && !records.error && (
             <p className="text-[11px] text-muted-foreground">
-              Showing {recordOptions.length} of {recordTotal} records —
-              &ldquo;Load more&rdquo; in the list reaches the rest.
+              Showing {recordOptions.length} of {recordTotal} records
             </p>
           )}
           {records.error && (
@@ -611,6 +619,12 @@ function BoundTableDetails({
         />
       )}
 
+      {knobs.error && (
+        <p className="text-[11px] text-destructive">
+          {knobs.error} <ErrorAlchemyMenu error={knobs.error} />
+        </p>
+      )}
+
       {/* ── Limit ─────────────────────────────────────────────────── */}
       {shape === "collection" && (
         <div className="space-y-1.5">
@@ -621,13 +635,13 @@ function BoundTableDetails({
             type="number"
             min={1}
             inputMode="numeric"
-            value={String(binding.limit ?? DEFAULT_ROW_LIMIT)}
+            value={String(binding.limit ?? defaultRowLimit ?? "")}
             onChange={(e) => setLimit(e.target.value)}
             disabled={readonly}
             className="text-base"
           />
           <p className="text-[11px] text-muted-foreground">
-            When the table has more, the agent is told the list was cut short.
+            Extra rows are cut; the agent is told
           </p>
         </div>
       )}

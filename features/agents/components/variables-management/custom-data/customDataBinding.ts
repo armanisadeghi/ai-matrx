@@ -54,8 +54,8 @@ export const MISSING_CHOICES: {
   { value: "block", label: "Stop the run", hint: "nothing runs without it" },
 ];
 
-/** Default row cap for a whole-table read. A starting value, editable per binding. */
-export const DEFAULT_ROW_LIMIT = 40;
+// The default row cap for a whole-table read is the feature knob
+// `agents.variable_binding.default_row_limit` (see useBindingKnobs.ts).
 
 /** One insertable placeholder for the row template. */
 export interface TemplatePlaceholder {

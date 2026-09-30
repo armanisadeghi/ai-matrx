@@ -18,6 +18,7 @@ import { isCompleteBinding } from "./customDataBinding";
 import { useCustomDataOrganizationId } from "./CustomDataRecordsScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { InfoHint } from "@/components/official/InfoHint";
 
 /** Quiet time before the preview re-asks the server after an edit. */
 const PREVIEW_DEBOUNCE_MS = 500;
@@ -114,7 +115,7 @@ export function CustomDataBindingPreview({
       {"status" in state ? (
         state.status === "incomplete" ? (
           <p className="text-[11px] text-muted-foreground">
-            Finish choosing above and the preview appears here.
+            Finish the choices above
           </p>
         ) : (
           <p className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -123,25 +124,28 @@ export function CustomDataBindingPreview({
           </p>
         )
       ) : state.state === "unavailable" ? (
-        <p className="text-[11px] text-muted-foreground">
-          Preview available once the server update is live. Your binding is
-          saved and will be read at run time.
+        // The preview route is live; a 404/405 now means a real fault.
+        <p className="text-[11px] text-destructive">
+          Preview failed (not found){" "}
+          <ErrorAlchemyMenu error="Binding preview returned 404" />
         </p>
       ) : state.state === "error" ? (
-        <p className="text-[11px] text-destructive">{state.message} <ErrorAlchemyMenu error={state.message} /></p>
+        <p className="text-[11px] text-destructive">
+          {state.message} <ErrorAlchemyMenu error={state.message} />
+        </p>
       ) : (
         <>
           {state.outcome === "absent" && (
-            <p className="text-[11px] text-warning">
-              No data right now
-              {asClause(state.absentReason ? ` — ${state.absentReason}` : "")}. This is
-              what the agent is told instead:
+            <p className="inline-flex items-center gap-1 text-[11px] text-warning">
+              No data — the agent is told:
+              {state.absentReason && (
+                <InfoHint text={asClause(state.absentReason)} label="Why" />
+              )}
             </p>
           )}
           {state.outcome === "blocks_run" && (
             <p className="text-[11px] text-warning">
-              No data right now, and this variable is set to stop the run — the
-              agent would not start:
+              No data — the run would stop
             </p>
           )}
           <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[11px] text-foreground">
@@ -165,7 +169,7 @@ export function CustomDataBindingPreview({
           )}
           {state.withheld.length > 0 && (
             <p className="text-[11px] text-muted-foreground">
-              Hidden from you, so not shown: {state.withheld.join(", ")}
+              Hidden from you: {state.withheld.join(", ")}
             </p>
           )}
           {state.notes.map((note) => (
