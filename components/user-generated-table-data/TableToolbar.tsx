@@ -15,7 +15,7 @@ import TableConfigModal from "./TableConfigModal";
 import TableReferenceOverlay from "./TableReferenceOverlay";
 import RowOrderingModal from "./RowOrderingModal";
 import PasteRowsDialog from "./PasteRowsDialog";
-import { Input } from "@ai-matrx/design-system";
+import { SheetSearchBox } from "@/features/data-tables/components/SheetSearchBox";
 import { Button } from "@/components/ui/button";
 import {
   BottomSheet,
@@ -24,8 +24,6 @@ import {
 } from "@ai-matrx/design-system";
 import {
   Link,
-  Search,
-  X,
   Pencil,
   Trash,
   Settings,
@@ -381,41 +379,15 @@ export default function TableToolbar({
           )}
         </div>
 
-        <div className="flex w-full items-center gap-1.5 md:min-w-[14rem] md:flex-1 md:max-w-sm md:gap-2">
-          <form onSubmit={handleSearch} className="flex flex-1 gap-1">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search rows"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                data-surface-value="search_term"
-                // The clear button's room is kept only while there is something to clear: at 390 an
-                // always-reserved 40px cut "Search rows" to "Search row" (DATA-V2-BASICS-2).
-                className={`h-11 w-full pl-8 text-base md:h-7 md:pl-7 md:text-sm ${searchTerm ? "pr-10 md:pr-7" : "pr-2 md:pr-2"}`}
-                style={{ fontSize: "16px" }}
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  className="absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground md:right-1 md:h-7 md:w-7"
-                  aria-label="Clear table search"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-            <Button
-              size="sm"
-              type="submit"
-              className="hidden h-7 w-7 flex-shrink-0 p-0 md:inline-flex"
-              title="Search"
-            >
-              <Search className="h-3.5 w-3.5" />
-            </Button>
-          </form>
+        <div className="relative flex w-full items-center gap-1.5 md:min-w-[14rem] md:flex-1 md:max-w-sm md:gap-2">
+          {/* READABLE AT ANY WIDTH (B2-33 / B3-26b): a search button that opens the field across this
+              row when "Search rows" would not fit beside the chips. */}
+          <SheetSearchBox
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
+            onSubmit={handleSearch}
+            onClear={clearSearch}
+          />
 
           {moreActions ? <div className="flex shrink-0 md:hidden">{moreActions}</div> : null}
           {/* Mobile-only: one tap target opens the full action drawer,
@@ -640,6 +612,11 @@ export default function TableToolbar({
           <PasteRowsDialog
             tableId={tableId}
             fields={fields}
+            // The column that names each row — a paste's name column goes there (B3-08).
+            rowLabelFieldName={(() => {
+              const label = effectiveRowLabel((tableInfo as { metadata?: unknown } | null)?.metadata, fields);
+              return label?.kind === "field" ? label.field : null;
+            })()}
             isOpen={showPasteRowsDialog}
             onClose={() => setShowPasteRowsDialog(false)}
             // A paste can add words to a column's choices (its one question, answered Add): the columns

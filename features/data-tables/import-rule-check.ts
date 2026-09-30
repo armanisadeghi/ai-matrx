@@ -192,6 +192,7 @@ export function checkImportAgainstColumnRules(args: {
         fieldDisplayName: field.display_name,
         reason: firstReason,
         rules,
+        format,
         remedy: IMPORT_REMEDY,
       }),
       failingRowCount,

@@ -52,8 +52,10 @@ import type { UserList } from "@/features/user-lists/types";
 import { cn } from "@/utils/cn";
 
 import {
+  CHOICE_COLOR_LABELS,
   CHOICE_COLOR_NAMES,
   choiceColorClass,
+  choiceColorLabel,
   inlineChoices,
 } from "./choices";
 import type { FieldChoice, FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
@@ -448,12 +450,12 @@ export function ChoiceOptionsEditor({
                       )}
                       aria-label="Option color"
                     >
-                      <SelectValue />
+                      <SelectValue>{choiceColorLabel(choice.color)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {CHOICE_COLOR_NAMES.map((name) => (
                         <SelectItem key={name} value={name} className="text-xs">
-                          {name}
+                          {CHOICE_COLOR_LABELS[name]}
                         </SelectItem>
                       ))}
                     </SelectContent>

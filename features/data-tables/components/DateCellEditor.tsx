@@ -92,7 +92,8 @@ export function toStored(date: Date, kind: DateCellKind): string {
   );
 }
 
-function toText(date: Date | null, kind: DateCellKind): string {
+/** How a date reads to a person — the words the cell's own text field shows. */
+export function toText(date: Date | null, kind: DateCellKind): string {
   if (!date) return "";
   return formatDate(date, kind === "date" ? DATE_TEXT : DATETIME_TEXT);
 }

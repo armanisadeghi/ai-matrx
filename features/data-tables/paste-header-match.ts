@@ -65,3 +65,62 @@ export function matchPasteHeaders<F extends PasteMatchField>(headers: readonly s
   });
   return out;
 }
+
+/**
+ * THE PASTED COLUMN THAT NAMES EACH RECORD GOES TO THE TABLE'S NAME COLUMN (BREAKER-3 B3-08).
+ *
+ * A paste headed `Patient, Referring Doctor, …` into a table whose name column is "Title" skipped
+ * Patient and left Title "will be empty": every pasted record landed with no name. The records-ui
+ * ImportWizard's "What each record is called" rule, mirrored (FIX-11B F2, VERIFIER-30 #2):
+ *   1. only when no header already landed on the name column, and only among headers nothing
+ *      else matched (never a header a column of its own name claimed, never an ambiguous one);
+ *   2. a header that says it is the name — Title, Name, Patient, Customer, … — wins;
+ *   3. else the worded column whose values differ most (a name is words and tells rows apart; a
+ *      column of floors "1", "1", "Lower" names nothing), the first such column breaking ties;
+ *   4. else nothing is guessed — a column of numbers is not a name.
+ * The guess is shown on the confirm screen and the person can change it (`choosePasteColumn`).
+ */
+const SAYS_IT_IS_THE_NAME =
+  /^(title|name|record|customer|client|company|job|item|subject|label|description|room|patient|product|task|project)\b|(\bname|\btitle)$/i;
+
+export function fillNameColumn<F extends PasteMatchField>(
+  matches: readonly PasteHeaderMatch<F>[],
+  nameField: F | null | undefined,
+  rows: ReadonlyArray<Record<string, unknown>> = [],
+): PasteHeaderMatch<F>[] {
+  const out = [...matches];
+  if (!nameField || out.some((m) => m.matchedField?.field_name === nameField.field_name)) return out;
+  const open = out.map((m, i) => ({ m, i })).filter(({ m }) => !m.matchedField && !m.why);
+  const said = open.find(({ m }) => SAYS_IT_IS_THE_NAME.test(m.pasteHeader.trim()));
+  let pick = said?.i ?? -1;
+  if (pick < 0) {
+    let best = 0;
+    for (const { m, i } of open) {
+      const values = rows.map((r) => String(r[m.pasteHeader] ?? "").trim()).filter(Boolean);
+      const worded = values.filter((v) => !/^[\d\s.,:$%-]+$/.test(v));
+      const score = new Set(worded.map((v) => v.toLowerCase())).size;
+      if (score > best) {
+        best = score;
+        pick = i;
+      }
+    }
+  }
+  if (pick >= 0) out[pick] = { pasteHeader: out[pick]!.pasteHeader, matchedField: nameField };
+  return out;
+}
+
+/**
+ * The person's own choice for one pasted column: a table column, or `null` for Skip. A table
+ * column is never filled from two pasted columns, so choosing it here takes it from any other.
+ */
+export function choosePasteColumn<F extends PasteMatchField>(
+  matches: readonly PasteHeaderMatch<F>[],
+  pasteHeader: string,
+  field: F | null,
+): PasteHeaderMatch<F>[] {
+  return matches.map((m) => {
+    if (m.pasteHeader === pasteHeader) return { pasteHeader, matchedField: field };
+    if (field && m.matchedField?.field_name === field.field_name) return { pasteHeader: m.pasteHeader, matchedField: null };
+    return m;
+  });
+}

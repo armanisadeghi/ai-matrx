@@ -288,7 +288,8 @@ export function useDataTableWriteHandlers(
             .map((r) => r.data?.[fieldName]),
         });
         if (!verdict.ok) {
-          const all = describeValidationRules(rules);
+          // An agent writes the value, so it reads the exact expression (B3-04).
+          const all = describeValidationRules(rules, null, { audience: "agent" });
           throw new Error(
             `cell_value.value ${JSON.stringify(raw)} is refused by column "${fieldName}": ${verdict.reason}. This column's rules are: ${all.join("; ")}. Send a value that satisfies them, or tell the user the rule needs changing — an agent does not relax a column's validation to get a write through.`,
           );

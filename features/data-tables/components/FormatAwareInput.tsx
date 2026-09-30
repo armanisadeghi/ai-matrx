@@ -17,6 +17,7 @@ import { Input } from "@ai-matrx/design-system";
 
 import { ChoiceInput } from "./ChoiceInput";
 import { RatingInput } from "./RatingInput";
+import { DateFieldInput } from "./DateFieldInput";
 
 import { parseFieldInput } from "@ai-matrx/design-system/field-formats";
 import { getFieldFormat } from "@ai-matrx/design-system/field-formats";
@@ -42,6 +43,12 @@ const OWNED_EDITORS = new Set([
  * Does this format supply its own input? Callers branch on this instead of
  * rendering the component and checking for null — a component that returns
  * null is still a rendered element, so it cannot be tested by calling it.
+ *
+ * 🚨 A `true` here is a PROMISE that `FormatAwareInput` draws a control for this
+ * format over every storage type: the caller skips its own input on the strength
+ * of it. Breaking that promise is how a Date column got a label and no input
+ * (BREAKER-3 B3-03); `the-row-form-draws-a-control-for-every-column-kind.test.tsx`
+ * holds every format in the registry to it.
  */
 export function formatHasOwnInput(
   format: FieldFormatConfig | null | undefined,
@@ -173,15 +180,16 @@ export function FormatAwareInput({
 
     case "date":
     case "datetime":
-      // A DATE LOOK ON A COLUMN THAT KEEPS WORDS STILL PICKS A DATE (B2-26): the form's own date input is
-      // drawn by what the column stores, so a Date look over Text got a plain text box.
-      if (dataType === "date" || dataType === "datetime") return null;
+      // ONE DATE CONTROL, WHATEVER THE COLUMN STORES (BREAKER-3 B3-03): this used to return null for a
+      // column that STORES a date, while `formatHasOwnInput` told the form this format owned its input —
+      // so the form skipped its own date input too and drew a label with nothing under it. A Date look
+      // over a Text column (B2-26) gets the same control.
       return (
-        <Input
+        <DateFieldInput
           id={id}
-          type={def.editor === "date" ? "date" : "datetime-local"}
-          value={text}
-          onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+          kind={def.editor === "date" ? "date" : "datetime"}
+          value={value}
+          onChange={(next) => onChange(next)}
         />
       );
 

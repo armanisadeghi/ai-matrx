@@ -42,6 +42,8 @@
 import type { RecordsError } from "@ai-matrx/records";
 import { hintIsMachineIdentity } from "@ai-matrx/records-ui";
 
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
+
 import { describeValidationRules, type ValidationRules } from "./validation";
 
 /**
@@ -102,6 +104,8 @@ export function columnRuleRefusal(args: {
   fieldDisplayName: string;
   reason: string;
   rules?: ValidationRules | null;
+  /** The column's display format — gives a shape rule its words ("A phone number"), B3-04. */
+  format?: FieldFormatConfig | null;
   /**
    * What to do now, when the default is not true of this surface. The default
    * names the two doors an open editor has; the CSV import wizard has neither —
@@ -127,7 +131,7 @@ export function columnRuleRefusal(args: {
       // IS the door — the column's rule is what refused the value.
       hint: args.remedy?.trim() || REMEDY,
     } as RecordsError,
-    rules: args.rules ? describeValidationRules(args.rules) : [],
+    rules: args.rules ? describeValidationRules(args.rules, args.format) : [],
     reasonWasReshaped,
   };
 }

@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sortWordsFor } from "@/features/data-tables/sort-words";
 
 import { getColumnFacets } from "@/features/data-tables/service";
 import {
@@ -66,6 +67,8 @@ interface ColumnHeaderMenuProps {
   fieldName: string;
   displayName: string;
   dataType: string;
+  /** The column's display format id — the sort buttons say words that fit it (B2-28). */
+  formatId?: string | null;
   /** True when this column is the active sort column. */
   isSorted: boolean;
   sortDirection: "asc" | "desc";
@@ -147,6 +150,7 @@ const ColumnHeaderMenu = ({
   fieldName,
   displayName,
   dataType,
+  formatId,
   isSorted,
   sortDirection,
   filter,
@@ -168,6 +172,7 @@ const ColumnHeaderMenu = ({
   openRequest = 0,
 }: ColumnHeaderMenuProps) => {
   const hasFilter = isActiveFilter(filter);
+  const sortWords = sortWordsFor({ dataType, formatId });
   const [open, setOpen] = useState(false);
   // The rows this open menu reads: handed, or read once each time it opens (`readLocalRows`).
   const [openedRows, setOpenedRows] = useState<readonly { data?: Record<string, unknown> | null }[] | null>(null);
@@ -380,7 +385,7 @@ const ColumnHeaderMenu = ({
             onClick={onSortAsc}
           >
             <ArrowUp className="h-3.5 w-3.5" />
-            Sort ascending
+            Sort {sortWords.asc}
           </Button>
           <Button
             variant={isSorted && sortDirection === "desc" ? "secondary" : "ghost"}
@@ -389,7 +394,7 @@ const ColumnHeaderMenu = ({
             onClick={onSortDesc}
           >
             <ArrowDown className="h-3.5 w-3.5" />
-            Sort descending
+            Sort {sortWords.desc}
           </Button>
           {isSorted && (
             <Button

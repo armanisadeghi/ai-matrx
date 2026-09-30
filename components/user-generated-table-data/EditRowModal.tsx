@@ -16,21 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
 import {
-  CalendarIcon,
   Zap,
   ClipboardCopy,
   Download,
@@ -54,6 +46,7 @@ import {
 import { columnRuleRefusal, type ColumnRuleRefusal } from "@/features/data-tables/validation-refusal";
 import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { DateFieldInput } from "@/features/data-tables/components/DateFieldInput";
 import { columnKindWord } from "@/features/data-tables/column-kind-word";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -204,6 +197,7 @@ export default function EditRowModal({
           fieldDisplayName: field.display_name,
           reason: verdict.reason,
           rules: parseValidationRules(field.validation_rules),
+          format: resolveFieldFormat(field.data_type, field.metadata),
         });
       }
     }
@@ -328,35 +322,15 @@ export default function EditRowModal({
         );
 
       case "date":
+      case "datetime":
+        // The Sheet cell's own date editor — one date control everywhere (BREAKER-3 B3-03).
         return (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              >
-                {value ? (
-                  format(new Date(value), "PPP")
-                ) : (
-                  <span>Pick a date</span>
-                )}
-                <CalendarIcon className="ml-auto h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={value ? new Date(value) : undefined}
-                onSelect={(date) =>
-                  handleValueChange(
-                    field.field_name,
-                    date ? format(date, "yyyy-MM-dd") : null,
-                  )
-                }
-                autoFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <DateFieldInput
+            id={field.field_name}
+            kind={field.data_type === "date" ? "date" : "datetime"}
+            value={value}
+            onChange={(next) => handleValueChange(field.field_name, next)}
+          />
         );
 
       case "number":
@@ -376,18 +350,6 @@ export default function EditRowModal({
               handleValueChange(field.field_name, val);
             }}
             step={field.data_type === "integer" ? 1 : 0.01}
-          />
-        );
-
-      case "datetime":
-        return (
-          <Input
-            id={field.field_name}
-            type="datetime-local"
-            value={value || ""}
-            onChange={(e) =>
-              handleValueChange(field.field_name, e.target.value)
-            }
           />
         );
 
@@ -606,10 +568,12 @@ export default function EditRowModal({
                   ) : (
                     describeValidationRules(
                       parseValidationRules(field.validation_rules),
+                      resolveFieldFormat(field.data_type, field.metadata),
                     ).length > 0 && (
                       <p className="text-[11px] text-muted-foreground">
                         {describeValidationRules(
                           parseValidationRules(field.validation_rules),
+                          resolveFieldFormat(field.data_type, field.metadata),
                         ).join(" • ")}
                       </p>
                     )

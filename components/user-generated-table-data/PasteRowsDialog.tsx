@@ -14,7 +14,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { matchPasteHeaders } from "@/features/data-tables/paste-header-match";
+import {
+  choosePasteColumn,
+  fillNameColumn,
+  matchPasteHeaders,
+} from "@/features/data-tables/paste-header-match";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { addChoicesToColumn, bulkWrite } from "@/features/data-tables/service";
 import { answerNewWords, planPaste, type PastePlan } from "@/features/data-tables/paste-plan";
 import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
@@ -48,12 +59,20 @@ interface PasteRowsField {
 interface PasteRowsDialogProps {
   tableId: string;
   fields: PasteRowsField[];
+  /**
+   * The column that names each row (`row-label.ts` `effectiveRowLabel`). When no pasted header
+   * matches it, the pasted column that names the record is sent there (BREAKER-3 B3-08).
+   */
+  rowLabelFieldName?: string | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 type ParsedRow = Record<string, unknown>;
+
+/** Radix's Select has no empty value, so "Skip" is a named choice with a token of its own. */
+const SKIP = "__skip__";
 
 // Map of incoming paste-header → matched dataset field (or null when skipped).
 // Built once at parse time so stage 2 can render preview + column mapping AND
@@ -68,6 +87,7 @@ interface PasteColumnMapping {
 export default function PasteRowsDialog({
   tableId,
   fields,
+  rowLabelFieldName,
   isOpen,
   onClose,
   onSuccess,
@@ -129,7 +149,14 @@ export default function PasteRowsDialog({
 
         // A header means the column of that NAME (lane DATA-V2-BASICS; BREAKER-1 F10): matching by
         // the internal key alone put a pasted "Discount Percent" into a column renamed "Fee Percent".
-        const mappings: PasteColumnMapping[] = matchPasteHeaders(headers, fields);
+        // …and the pasted column that names each record goes to the name column when no header is
+        // called that (BREAKER-3 B3-08): a paste headed "Patient" used to land every row nameless.
+        const nameField = fields.find((f) => f.field_name === rowLabelFieldName) ?? null;
+        const mappings: PasteColumnMapping[] = fillNameColumn(
+          matchPasteHeaders(headers, fields),
+          nameField,
+          rows,
+        );
 
         setParsedRows(rows);
         setColumnMappings(mappings);
@@ -142,7 +169,7 @@ export default function PasteRowsDialog({
     });
   };
 
-  // Dataset columns that won't be filled by any paste column — surfaced in
+  // Table columns that won't be filled by any paste column — surfaced in
   // stage 2 so the user can see what's going to be blank.
   const unmatchedDatasetFields = fields.filter(
     (f) =>
@@ -189,6 +216,13 @@ export default function PasteRowsDialog({
   const importableRowCount =
     uncheckedColumns.length > 0 ? 0 : ruleCheck.passingRowCount;
   const importIsBlocked = activeColumns.length === 0 || importableRowCount === 0;
+
+  /** The person's own choice for one pasted column: a table column, or Skip (B3-08). */
+  const chooseColumn = (pasteHeader: string, fieldName: string) => {
+    const field = fields.find((f) => f.field_name === fieldName) ?? null;
+    setColumnMappings((prev) => choosePasteColumn(prev, pasteHeader, field));
+    if (field) restoreColumn(field.field_name);
+  };
 
   const dropColumn = (fieldName: string) =>
     setDroppedFields((prev) =>
@@ -321,53 +355,69 @@ export default function PasteRowsDialog({
               {/* Column mapping summary */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Column mapping</Label>
+                  <Label>Where each pasted column goes</Label>
                   <span className="text-xs text-muted-foreground">
-                    {matchedCount} of {columnMappings.length} paste columns
-                    matched
+                    {matchedCount} of {columnMappings.length} pasted columns go
+                    into this table
                   </span>
                 </div>
                 <div className="border border-border rounded-lg p-3 space-y-1 max-h-[180px] overflow-y-auto bg-card">
                   {columnMappings.map((m) => (
                     <div
                       key={m.pasteHeader}
-                      className="flex items-center gap-2 text-sm"
+                      data-matrx-paste-column={m.pasteHeader}
+                      className="flex flex-wrap items-center gap-2 text-sm"
                     >
                       <span className="font-medium truncate min-w-[160px]">
                         {m.pasteHeader}
                       </span>
                       <span className="text-muted-foreground">→</span>
-                      {m.matchedField ? (
-                        droppedFields.includes(m.matchedField.field_name) ? (
-                          <span className="flex items-center gap-2 truncate">
-                            <span className="truncate line-through text-muted-foreground">
-                              {m.matchedField.display_name}
-                            </span>
-                            <button
-                              type="button"
-                              data-matrx-import-restore-column={
-                                m.matchedField.field_name
-                              }
-                              className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted"
-                              onClick={() =>
-                                restoreColumn(
-                                  (m.matchedField as PasteRowsField).field_name,
-                                )
-                              }
-                            >
-                              Put it back
-                            </button>
-                          </span>
-                        ) : (
-                          <span className="truncate">
-                            {m.matchedField.display_name}
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground italic">
-                          {m.why ? `(skipped — ${m.why})` : "(skipped — no matching column)"}
+                      {/* THE PERSON CHOOSES WHERE EACH PASTED COLUMN GOES (B3-08), Skip included. */}
+                      <Select
+                        value={m.matchedField?.field_name ?? SKIP}
+                        onValueChange={(next) => chooseColumn(m.pasteHeader, next)}
+                      >
+                        <SelectTrigger
+                          className={`h-7 w-48 text-xs ${
+                            m.matchedField &&
+                            droppedFields.includes(m.matchedField.field_name)
+                              ? "line-through text-muted-foreground"
+                              : ""
+                          }`}
+                          aria-label={`Where ${m.pasteHeader} goes`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={SKIP} className="text-xs">
+                            Skip
+                          </SelectItem>
+                          {fields.map((f) => (
+                            <SelectItem key={f.field_name} value={f.field_name} className="text-xs">
+                              {f.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {m.matchedField && droppedFields.includes(m.matchedField.field_name) ? (
+                        <button
+                          type="button"
+                          data-matrx-import-restore-column={m.matchedField.field_name}
+                          className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted"
+                          onClick={() =>
+                            restoreColumn((m.matchedField as PasteRowsField).field_name)
+                          }
+                        >
+                          Put it back
+                        </button>
+                      ) : m.matchedField?.field_name === rowLabelFieldName && m.matchedField &&
+                        m.matchedField.display_name.trim().toLowerCase() !== m.pasteHeader.trim().toLowerCase() ? (
+                        <span className="text-xs text-muted-foreground">
+                          names each row
                         </span>
-                      )}
+                      ) : !m.matchedField && m.why ? (
+                        <span className="text-xs text-muted-foreground italic">{m.why}</span>
+                      ) : null}
                     </div>
                   ))}
                   {unmatchedDatasetFields.map((f) => (
@@ -380,7 +430,7 @@ export default function PasteRowsDialog({
                       </span>
                       <span>—</span>
                       <span className="italic">
-                        (unmatched dataset column — will be empty)
+                        no pasted column goes here, so it is left empty
                       </span>
                     </div>
                   ))}

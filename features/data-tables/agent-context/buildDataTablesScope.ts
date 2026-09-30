@@ -150,6 +150,9 @@ export function buildDataTablesScope(
     // a refusal it could have avoided is a wasted turn for the user.
     const validation = describeValidationRules(
       parseValidationRules(f.validationRules),
+      null,
+      // The agent writes values, so it reads a shape rule's exact expression (B3-04).
+      { audience: "agent" },
     );
     return {
       name: f.field_name,

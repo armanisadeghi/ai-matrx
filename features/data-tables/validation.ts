@@ -197,8 +197,27 @@ export function serializeValidationRules(
   return out;
 }
 
+/**
+ * A PATTERN IS SAID IN WORDS, NEVER AS THE EXPRESSION (BREAKER-3 B3-04). The store keeps a shape rule
+ * on a phone, email or link column; the row form printed it as "Matches ^(?=(?:[^0-9]*[0-9]){7,22}…".
+ * A person reads the column's own words for a pattern — the author's example (`patternHint`), else
+ * the format's words below — and, when there are none, nothing. Only an AGENT reads the expression.
+ */
+const PATTERN_WORDS_BY_FORMAT: Readonly<Record<string, { rule: string; refusal: string }>> = {
+  phone: { rule: "A phone number", refusal: "Must be a phone number" },
+  email: { rule: "An email address", refusal: "Must be an email address" },
+  url: { rule: "A web address", refusal: "Must be a web address" },
+};
+
+/** Who reads the description: a person (the default) or an agent, the one reader of an expression. */
+export type RuleAudience = "person" | "agent";
+
 /** Plain-English list of what a column requires — for tooltips and for agents. */
-export function describeValidationRules(rules: ValidationRules): string[] {
+export function describeValidationRules(
+  rules: ValidationRules,
+  format?: FieldFormatConfig | null,
+  opts?: { audience?: RuleAudience },
+): string[] {
   const out: string[] = [];
   if (rules.min !== undefined && rules.max !== undefined) {
     out.push(`Between ${rules.min} and ${rules.max}`);
@@ -215,7 +234,10 @@ export function describeValidationRules(rules: ValidationRules): string[] {
     out.push(`At most ${rules.maxLength} characters`);
   }
   if (rules.pattern) {
-    out.push(rules.patternHint ? `Pattern ${rules.patternHint}` : `Matches ${rules.pattern}`);
+    const words = format ? PATTERN_WORDS_BY_FORMAT[format.id]?.rule : undefined;
+    if (rules.patternHint) out.push(`Pattern ${rules.patternHint}`);
+    else if (opts?.audience === "agent") out.push(`Matches the regular expression ${rules.pattern}`);
+    else if (words) out.push(words);
   }
   if (rules.allowedValues?.length) {
     out.push(`One of: ${rules.allowedValues.join(", ")}`);
@@ -321,9 +343,12 @@ export function validateCellValue(args: ValidateCellArgs): ValidationResult {
     if (re && !re.test(text)) {
       return {
         ok: false,
+        // Words only (B3-04): the author's example, else the format's words, else a plain sentence —
+        // never the expression itself.
         reason: rules.patternHint
           ? `Must match the pattern ${rules.patternHint}`
-          : `Must match the pattern ${rules.pattern}`,
+          : (format ? PATTERN_WORDS_BY_FORMAT[format.id]?.refusal : undefined) ??
+            "Is not in the shape this column asks for",
       };
     }
   }

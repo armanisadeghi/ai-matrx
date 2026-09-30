@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { SavedViewBar } from "@/features/data-tables/saved-views/SavedViewBar";
 import type { useSavedViews } from "@/features/data-tables/saved-views/useSavedViews";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import { TableLayoutMenu } from "@/features/data-tables/components/TableLayoutMenu";
 import { TableCopyControls } from "@/features/data-tables/components/TableCopyControls";
 import { OpenSurfaceMenuButton } from "@/features/context-menu-v3/components/OpenSurfaceMenuButton";
@@ -46,6 +47,8 @@ export interface SheetField {
   display_name: string;
   data_type: string;
   field_order: number;
+  /** The column's display format lives here (`metadata.format`) — its sort words read it (B2-28). */
+  metadata?: unknown;
 }
 /** What `SheetHeaderCell` hands the column menu the Sheet gives it. */
 export interface SheetColumnMenuProps {
@@ -53,6 +56,8 @@ export interface SheetColumnMenuProps {
   fieldName: string;
   displayName: string;
   dataType: string;
+  /** The column's display format id, so the sort items say words that fit it (B2-28). */
+  formatId?: string | null;
   isSorted: boolean;
   sortDirection: "asc" | "desc";
   filter: ColumnFilter | undefined;
@@ -630,6 +635,7 @@ export const SheetHeaderCell = memo(function SheetHeaderCell(p: SheetHeaderCellP
           fieldName={name}
           displayName={field.display_name}
           dataType={field.data_type}
+          formatId={resolveFieldFormat(field.data_type, field.metadata as never)?.id ?? null}
           isSorted={p.sortDirection !== null}
           sortDirection={p.sortDirection ?? "asc"}
           filter={p.filter}

@@ -6,7 +6,7 @@
  * canvas table artifact, the resource picker). The grid mounts ONE
  * `NonEditableContextMenu` around its scroll container and resolves the
  * clicked cell / row / column on open (`resolveGridMenuTarget`), so the same
- * menu says "Cut cell" on a value and "Sort A→Z" on a header.
+ * menu says "Cut cell" on a value and "Sort A to Z" on a header.
  *
  * WHY THE CORE `Copy` VERB IS NOT DUPLICATED HERE — EXCEPT FOR A RANGE. The
  * menu's own Copy row acts on the scope's `content`, which the grid sets to
@@ -76,6 +76,8 @@ import {
   STYLE_COLOR_LABELS,
   type StyleColor,
 } from "@ai-matrx/design-system/data-table/table-style";
+
+import { sortWordsFor } from "./sort-words";
 
 // ─── DOM anchors ────────────────────────────────────────────────────────────
 //
@@ -465,6 +467,9 @@ export function buildGridColumnMenuSection(opts: {
     displayName: string;
     /** Direction the grid is sorted by THIS column, or null. */
     sortedBy: "asc" | "desc" | null;
+    /** What the column stores and its display format — the sort items' words fit them (B2-28). */
+    dataType?: string | null;
+    formatId?: string | null;
     /** The manual highlight the whole column carries, if any. */
     highlight?: StyleColor | null;
     /** True for a choice / multi-choice / boolean column — one that can drive color-by. */
@@ -511,6 +516,7 @@ export function buildGridColumnMenuSection(opts: {
   const name = column?.fieldName ?? null;
   const noColumn = !column ? needs("a column") : undefined;
   const writeGate = noColumn ?? viewOnlyGate(readOnly, opts.readOnlyReason);
+  const sortWords = sortWordsFor({ dataType: column?.dataType, formatId: column?.formatId });
 
   // Ordered the way a header click is used: name it, arrange it, add beside
   // it, color it, and the destructive row last (Airtable's field menu order).
@@ -545,14 +551,14 @@ export function buildGridColumnMenuSection(opts: {
     {
       kind: "item",
       id: "grid-col-sort-asc",
-      label: "Sort A→Z",
+      label: `Sort ${sortWords.asc}`,
       icon: ArrowUpAZ,
       onSelect: () => name && on.sortAsc(name),
     },
     {
       kind: "item",
       id: "grid-col-sort-desc",
-      label: "Sort Z→A",
+      label: `Sort ${sortWords.desc}`,
       icon: ArrowDownAZ,
       onSelect: () => name && on.sortDesc(name),
     },

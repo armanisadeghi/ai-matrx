@@ -207,10 +207,13 @@ describe("validateCellValue — pattern", () => {
     });
   });
 
-  it("falls back to the regex itself when the author wrote no hint", () => {
+  // BREAKER-3 B3-04: this used to fall back to printing the regex itself ("Must match the pattern
+  // ^a+$"), which is how a phone column's 150-character expression reached a person. With no words
+  // for the pattern the refusal says so in words; `a-pattern-is-never-read-to-a-person.test.ts`.
+  it("says it in words, never the regex, when the author wrote no hint", () => {
     expect(ok({ pattern: "^a+$" }, "b")).toEqual({
       ok: false,
-      reason: "Must match the pattern ^a+$",
+      reason: "Is not in the shape this column asks for",
     });
   });
 
