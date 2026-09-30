@@ -21,6 +21,10 @@
 //   5. Interruption is synchronous: stop sources → send response.cancel in the
 //      same speech_started handler microtask.
 
+import {
+  ensureOrganizationContext,
+  OrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
@@ -937,6 +941,32 @@ export function useXaiVoiceSession(
             code: "agent-unresolved",
             message:
               "This voice agent's instructions could not be loaded, so the session was not started. Reload the page; if it persists, check the Mandate's pinned agent.",
+          },
+        }),
+      );
+      return;
+    }
+
+    // EVERY SERVER CALL CARRIES AN ORGANIZATION (active-org law, rule 4). The
+    // tool envelope below stamps the active organization on each server tool
+    // the model calls; with none selected those writes would go out unscoped.
+    // Hold the session start and ask the person instead — cancelling means
+    // nothing was started.
+    // (Only awaited when none is selected — the common path stays synchronous
+    // so the AudioContext invariants below keep their user-gesture window.)
+    try {
+      if (!selectActiveOrganizationId(store.getState() as RootState)) {
+        await ensureOrganizationContext();
+      }
+    } catch (error) {
+      if (error instanceof OrganizationSelectionCancelled) return;
+      dispatch(
+        setError({
+          instanceId,
+          error: {
+            code: "organization-required",
+            message:
+              "Choose the organization you are working in, then start the voice session again — its tools save into that organization.",
           },
         }),
       );
