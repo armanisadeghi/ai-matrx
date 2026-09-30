@@ -35,8 +35,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import {
+  selectAllScopeTypesFlat,
+  selectOrganizationsList,
+} from "@/features/scopes/redux/selectors/tree";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import {
   listScopeTypeItems,
   listSystemContextItems,
@@ -70,10 +73,6 @@ import {
   type AgentEditAccess,
 } from "@/features/agents/utils/agent-edit-access";
 import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
-import {
-  selectScopeTypesByOrg,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/scopes/redux/selectors/admin";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ScopeBatchImportBodyProps {
@@ -109,10 +108,11 @@ export function ScopeBatchImportBody({
 }: ScopeBatchImportBodyProps) {
   const dispatch = useAppDispatch();
 
-  const activeOrgId = useAppSelector(selectActiveOrganizationId);
   const orgs = useAppSelector(selectOrganizationsList);
-  const [orgIdChoice, setOrgIdChoice] = useState("");
-  const orgId = orgIdChoice || activeOrgId || "";
+  // THE ORGANIZATION FILTER on the scope-type list: All organizations (null) on every open —
+  // never seeded from the active organization (law: active-org-is-never-a-list-filter).
+  const [orgFilter, setOrgFilter] = useState<string | null>(null);
+  const orgNameOf = (id: string) => orgs.find((o) => o.id === id)?.name ?? null;
 
   // Which source supplies the items to batch from. System items are platform
   // truths (no org, no scope type); Scope items belong to a scope type.
@@ -122,10 +122,15 @@ export function ScopeBatchImportBody({
   // The cache key the item selectors use — System items live under a sentinel.
   const itemsKey = isSystem ? SYSTEM_ITEMS_KEY : scopeTypeId;
 
-  const typesLoaded = useAppSelector((s) =>
-    orgId ? selectScopeTypesLoadedForOrg(s, orgId) : false,
+  const everyScopeType = useAppSelector(selectAllScopeTypesFlat);
+  const scopeTypes = useMemo(
+    () =>
+      orgFilter
+        ? everyScopeType.filter((t) => t.organization_id === orgFilter)
+        : everyScopeType,
+    [everyScopeType, orgFilter],
   );
-  const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, orgId));
+  const severalOrgs = new Set(everyScopeType.map((t) => t.organization_id)).size > 1;
   const itemsLoaded = useAppSelector((s) =>
     itemsKey ? selectItemsLoadedForType(s, itemsKey) : false,
   );
@@ -135,8 +140,8 @@ export function ScopeBatchImportBody({
   );
 
   useEffect(() => {
-    if (!isSystem && orgId && !typesLoaded) dispatch(ensureScopeTree());
-  }, [isSystem, orgId, typesLoaded, dispatch]);
+    if (!isSystem) dispatch(ensureScopeTree());
+  }, [isSystem, dispatch]);
 
   useEffect(() => {
     if (isSystem) {
@@ -408,27 +413,18 @@ export function ScopeBatchImportBody({
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Organization</Label>
-          <Select
-            value={orgId}
-            onValueChange={(v) => {
-              setOrgIdChoice(v);
-              setScopeTypeId("");
-            }}
-            disabled={isSystem}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={isSystem ? "—" : "Choose an organization…"}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {orgs.map((o) => (
-                <SelectItem key={o.id} value={o.id}>
-                  {o.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isSystem ? (
+            <div className="flex h-9 items-center text-sm text-muted-foreground">—</div>
+          ) : (
+            <EntityOrgFilter
+              orgId={orgFilter}
+              onChange={(next) => {
+                setOrgFilter(next);
+                setScopeTypeId("");
+              }}
+              counts={{ byKind: {}, narrow: { all: [] } }}
+            />
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -436,16 +432,12 @@ export function ScopeBatchImportBody({
           <Select
             value={scopeTypeId}
             onValueChange={setScopeTypeId}
-            disabled={isSystem || !orgId}
+            disabled={isSystem}
           >
             <SelectTrigger>
               <SelectValue
                 placeholder={
-                  isSystem
-                    ? "—"
-                    : !orgId
-                      ? "Pick an organization first"
-                      : "Choose a scope type…"
+                  isSystem ? "—" : "Choose a scope type…"
                 }
               />
             </SelectTrigger>
@@ -453,6 +445,9 @@ export function ScopeBatchImportBody({
               {scopeTypes.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.label_singular}
+                  {severalOrgs && !orgFilter && orgNameOf(t.organization_id)
+                    ? ` · ${orgNameOf(t.organization_id)}`
+                    : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -462,7 +457,7 @@ export function ScopeBatchImportBody({
 
       {!isSystem && !scopeTypeId ? (
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground text-center">
-          Pick an organization and scope type to see its context items.
+          Pick a scope type to see its context items.
         </div>
       ) : itemsError && items.length === 0 ? (
         <ReadFailure

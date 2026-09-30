@@ -163,12 +163,12 @@ function uniqueToolIds(ids: readonly string[], label: string): string[] {
 export function assertOwnedLiveAgentToolAssignment(
   row: AgentToolAssignmentRow,
   userId: string,
-  organizationId: string,
 ): void {
-  if (row.created_by !== userId || row.organization_id !== organizationId) {
-    throw new AgentToolAssignmentError(
-      "Only the agent owner can change its tools in the selected organization.",
-    );
+  // The agent's OWN organization decides nothing here: an owner can change the tools of their
+  // agent wherever it lives, whichever organization is active (law: the active organization is
+  // never a filter — common-docs/policies/active-org-is-never-a-list-filter.md).
+  if (row.created_by !== userId) {
+    throw new AgentToolAssignmentError("Only the agent owner can change its tools.");
   }
   if (row.is_archived) {
     throw new AgentToolAssignmentError(
@@ -818,13 +818,6 @@ export const applyOwnedAgentToolDelta = createAsyncThunk<
       throw new AgentToolAssignmentError(
         "Sign in again before changing this agent's tools.",
       );
-    const organizationId = selectOrganizationId(getState());
-    if (!organizationId) {
-      throw new AgentToolAssignmentError(
-        "Choose an organization before changing this agent's tools.",
-      );
-    }
-
     const add = uniqueToolIds(addToolIds, "Added");
     const remove = uniqueToolIds(removeToolIds, "Removed");
     const overlap = add.find((id) => remove.includes(id));
@@ -849,7 +842,7 @@ export const applyOwnedAgentToolDelta = createAsyncThunk<
         "This agent is unavailable. Refresh the page and try again.",
       );
     }
-    assertOwnedLiveAgentToolAssignment(base, userId, organizationId);
+    assertOwnedLiveAgentToolAssignment(base, userId);
 
     // Only additions need to be active today. Removal must also be able to
     // clean up a historical inactive reference already on the agent.
@@ -918,7 +911,7 @@ export const applyOwnedAgentToolDelta = createAsyncThunk<
           })
           .eq("id", agentId)
           .eq("created_by", userId)
-          .eq("organization_id", organizationId)
+          .eq("organization_id", writeBase.organization_id) // the record's own organization
           .eq("version", expectedVersion)
           .is("deleted_at", null)
           .eq("is_archived", false)
@@ -1466,6 +1459,7 @@ export const duplicateAgent = createAsyncThunk<
   // A personal copy lives in the organization the caller named, else the one the
   // person is working in — the database never picks one (it refuses a copy with
   // none). A system copy is placed in the platform org by the database itself.
+  // org-filter: write-target a copy is filed in the organization the person works in
   const organizationId = asSystem
     ? undefined
     : await ensureOrgId(explicitOrganizationId ?? selectOrganizationId(getState()));
@@ -1501,6 +1495,7 @@ export const duplicateAgentVersion = createAsyncThunk<
   async ({ versionId, asSystem, organizationId: explicitOrganizationId }, { dispatch, getState }) => {
     // Same rule as duplicateAgent: the organization the caller named, else the
     // one the person is working in.
+    // org-filter: write-target a copy is filed in the organization the person works in
     const organizationId = asSystem
       ? undefined
       : await ensureOrgId(explicitOrganizationId ?? selectOrganizationId(getState()));

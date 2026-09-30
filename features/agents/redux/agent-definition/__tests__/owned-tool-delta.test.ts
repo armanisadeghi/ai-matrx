@@ -109,6 +109,19 @@ describe("applyOwnedAgentToolDelta", () => {
       s.getState().agentDefinition.agents[base.id]._dirtyFields.description,
     ).toBe(true);
   });
+  it("lets an owner change the tools of an agent in ANOTHER organization than the active one", async () => {
+    // Law: the active organization never decides access to a record — the agent's own org does.
+    const elsewhere = { ...base, organization_id: "org-2" };
+    const update = db([ok(elsewhere)], ok([{ id: "new" }]), [
+      ok({ ...elsewhere, version: 8, tools: ["kept", "new"] }),
+    ]);
+    await expect(
+      store()
+        .dispatch(applyOwnedAgentToolDelta({ agentId: base.id, addToolIds: ["new"], removeToolIds: ["old"] }))
+        .unwrap(),
+    ).resolves.toMatchObject({ version: 8 });
+    expect(update).toHaveBeenCalled();
+  });
   it.each([
     [ok([]), [ok(base)], /unavailable or inactive/],
     [
@@ -118,16 +131,11 @@ describe("applyOwnedAgentToolDelta", () => {
     ],
     [
       ok([{ id: "new" }]),
-      [ok({ ...base, organization_id: "other" })],
-      /Only the agent owner/,
-    ],
-    [
-      ok([{ id: "new" }]),
       [ok({ ...base, is_archived: true })],
       /Restore this archived/,
     ],
   ])(
-    "refuses invalid, foreign, wrong-org, or archived rows before update",
+    "refuses invalid, foreign, or archived rows before update",
     async (tools, reads, message) => {
       const update = db(reads as never, tools);
       await expect(
