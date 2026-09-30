@@ -33,7 +33,8 @@ import {
   type ExportColumn,
   type ExportRow,
 } from "./export";
-import { pushToDataset, pushToWorkbook } from "./export-targets";
+import { datasetGrid, pushToWorkbook } from "./export-targets";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import {
   OpenDestinationDialog,
   type WindowOverlayDescriptor,
@@ -61,6 +62,7 @@ export function CatalogRowActions({
   rowCount: number;
 }) {
   const [busy, setBusy] = useState(false);
+  const openSaveToTable = useOpenSaveToTable();
   const [created, setCreated] = useState<CreatedState | null>(null);
 
   const ensureView = async (): Promise<LoadedView | null> => {
@@ -114,33 +116,25 @@ export function CatalogRowActions({
           : undefined;
       const view = await ensureView();
       if (!view) return;
-      const res =
-        target === "workbook"
-          ? await pushToWorkbook(
-              view.name,
-              view.columns,
-              view.rows,
-              organizationId,
-            )
-          : await pushToDataset(view.name, view.columns, view.rows);
+      // A data table is the ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE).
+      if (target === "dataset") {
+        openSaveToTable?.({ grid: datasetGrid(view.columns, view.rows), title: view.name });
+        return;
+      }
+      const res = await pushToWorkbook(view.name, view.columns, view.rows, organizationId);
       if (!res.ok || !res.href) {
         toast.error(
-          target === "workbook"
-            ? "Could not create workbook"
-            : "Could not create data table",
+          "Could not create workbook",
           { description: res.error },
         );
         return;
       }
       setCreated({
         title:
-          target === "workbook" ? "Workbook created" : "Data table created",
+          "Workbook created",
         resourceName: view.name,
         route: res.href,
-        windowOverlay:
-          target === "dataset" && res.id
-            ? { overlayId: "quickDataWindow", data: { selectedTable: res.id } }
-            : undefined,
+        windowOverlay: undefined,
         note: res.error,
       });
     } catch (error) {

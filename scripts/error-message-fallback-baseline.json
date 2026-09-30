@@ -94,7 +94,6 @@
   "app/(dev)/demos/tests/sms/components/WebhookLogs.tsx": 1,
   "app/(dev)/demos/tests/utility-function-tests/create-table-templates/page.dev.tsx": 2,
   "app/(portal)/portal/c/[slug]/r/[recordId]/actions.ts": 1,
-  "app/(public)/free/zip-code-heatmap/components/SaveToTableModal.tsx": 1,
   "app/(public)/free/zip-code-heatmap/components/TableDataSource.tsx": 1,
   "app/(transitional)/local/page.tsx": 1,
   "app/api/acquisition/first-touch/route.ts": 1,

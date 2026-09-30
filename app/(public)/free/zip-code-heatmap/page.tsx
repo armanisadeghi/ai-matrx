@@ -12,7 +12,7 @@ import ColorLegend from "./components/ColorLegend";
 import ColorScaleSelector from "./components/ColorScaleSelector";
 import ViewModeSelector from "./components/ViewModeSelector";
 import TableDataSource from "./components/TableDataSource";
-import SaveToTableModal from "./components/SaveToTableModal";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import SaveHeatmapModal from "./components/SaveHeatmapModal";
 import type { ColorScaleOptions } from "./components/ColorScaleSelector";
 import type { ViewMode } from "./components/ViewModeSelector";
@@ -36,7 +36,16 @@ export default function ZipCodeHeatmapPage() {
         colorScheme: "yellowRed",
     });
     const [dataSource, setDataSource] = useState<'upload' | 'table'>('upload');
-    const [showSaveToTable, setShowSaveToTable] = useState(false);
+    // THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE, VERIFIER-30 #5): the heatmap's rows go
+    // to the same screen as every other table-shaped value — a new table, or rows added to one.
+    const openSaveToTable = useOpenSaveToTable();
+    const saveZipsToTable = () =>
+        openSaveToTable?.({
+            grid: { headers: ["Zip Code", "Count"], rows: zipData.map((z) => [z.zipCode, String(z.count)]) },
+            title: "Zip code counts",
+            onSaved: () =>
+                toast.success("Data saved to table successfully!", { description: "You can open it from Data." }),
+        });
     const [showSaveHeatmap, setShowSaveHeatmap] = useState(false);
 
     // Process data based on view mode
@@ -69,11 +78,6 @@ export default function ZipCodeHeatmapPage() {
         setZipData(data);
     };
 
-    const handleTableSaveSuccess = (tableId: string) => {
-        toast.success('Data saved to table successfully!', {
-            description: 'You can access it from the /data route.',
-        });
-    };
 
     const handleShareSaveSuccess = () => {
         // Toast is handled in the modal
@@ -202,15 +206,17 @@ export default function ZipCodeHeatmapPage() {
                                                     </CardDescription>
                                                 </CardHeader>
                                                 <CardContent className="space-y-2">
+                                                    {openSaveToTable ? (
                                                     <Button
                                                         variant="outline"
                                                         className="w-full justify-start"
                                                         size="sm"
-                                                        onClick={() => setShowSaveToTable(true)}
+                                                        onClick={saveZipsToTable}
                                                     >
                                                         <Database className="w-4 h-4 mr-2" />
                                                         Save to Table
                                                     </Button>
+                                                    ) : null}
                                                     <Button
                                                         variant="outline"
                                                         className="w-full justify-start"
@@ -355,12 +361,6 @@ export default function ZipCodeHeatmapPage() {
             </div>
 
             {/* Modals */}
-            <SaveToTableModal
-                isOpen={showSaveToTable}
-                onClose={() => setShowSaveToTable(false)}
-                data={zipData}
-                onSuccess={handleTableSaveSuccess}
-            />
             <SaveHeatmapModal
                 isOpen={showSaveHeatmap}
                 onClose={() => setShowSaveHeatmap(false)}

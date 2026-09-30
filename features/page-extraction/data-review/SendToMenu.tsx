@@ -34,7 +34,8 @@ import {
 import { SendTapButton } from "@ai-matrx/tap-target/buttons";
 
 import type { ExportColumn, ExportRow } from "./export";
-import { pushToDataset, pushToWorkbook } from "./export-targets";
+import { datasetGrid, pushToWorkbook } from "./export-targets";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import {
   OpenDestinationDialog,
   type WindowOverlayDescriptor,
@@ -67,22 +68,24 @@ export function SendToMenu({
   const [pushing, setPushing] = useState<Target | null>(null);
   const [created, setCreated] = useState<CreatedState | null>(null);
   const empty = rows.length === 0 || columns.length === 0;
+  const openSaveToTable = useOpenSaveToTable();
 
   const push = async (target: Target) => {
+    // A data table is the ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE): a new table, or these
+    // rows added to one the person has — never a create path of this menu's own.
+    if (target === "dataset") {
+      openSaveToTable?.({ grid: datasetGrid(columns, rows), title: name });
+      return;
+    }
     setPushing(target);
     try {
       const organizationId =
         target === "workbook" ? await ensureOrganizationContext() : undefined;
-      const res =
-        target === "workbook"
-          ? await pushToWorkbook(name, columns, rows, organizationId)
-          : await pushToDataset(name, columns, rows);
+      const res = await pushToWorkbook(name, columns, rows, organizationId);
 
       if (!res.ok || !res.href) {
         toast.error(
-          target === "workbook"
-            ? "Could not create workbook"
-            : "Could not create data table",
+          "Could not create workbook",
           { description: res.error },
         );
         return;
@@ -90,13 +93,10 @@ export function SendToMenu({
 
       setCreated({
         title:
-          target === "workbook" ? "Workbook created" : "Data table created",
+          "Workbook created",
         resourceName: name,
         route: res.href,
-        windowOverlay:
-          target === "dataset" && res.id
-            ? { overlayId: "quickDataWindow", data: { selectedTable: res.id } }
-            : undefined,
+        windowOverlay: undefined,
         note: res.error,
       });
     } catch (error) {

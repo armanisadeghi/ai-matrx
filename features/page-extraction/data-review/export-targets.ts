@@ -25,13 +25,7 @@ import {
   saveSnapshot,
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure } from "@/features/data-tables/types";
-import type { FieldDefinition } from "@/utils/user-table-utls/table-utils";
-// The seam's one birth and row write (lane INTEG-CLIENTS): the record store for an
-// organization whose tables moved, the older store otherwise.
-import { addTableRow as addRow, createTable } from "@/features/data-tables/service";
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { cellToString, type ExportColumn, type ExportRow } from "./export";
-import type { ColumnType } from "@/features/page-extraction/types";
 
 export interface PushResult {
   ok: boolean;
@@ -137,77 +131,17 @@ export async function pushToWorkbook(
   }
 }
 
-// ─── Typed dataset target ───────────────────────────────────────────────────
-
-const COLUMN_TYPE_TO_DATASET: Record<ColumnType, FieldDefinition["data_type"]> =
-  {
-    string: "string",
-    number: "number",
-    integer: "integer",
-    boolean: "boolean",
-  };
+// ─── The data-table target: the ONE "Save to a table" ───────────────────────
 
 /**
- * Create a typed user dataset from an extraction view and copy every row in.
- * `createTable` sanitizes field names server-side; we sanitize identically here
- * so each row's keys line up with the columns that were created.
+ * An extraction view as the rows the one "Save to a table" screen takes (SAVE-AS-TABLE-EVERYWHERE,
+ * VERIFIER-30 #5). This used to create the table itself (`createTable` + a row loop) — a second save
+ * path beside the overlay. The column types it carried (text, number, integer, yes/no) are exactly
+ * what the screen proposes from the values, and the person can change any of them there.
  */
-export async function pushToDataset(
-  name: string,
-  columns: Array<ExportColumn & { type?: ColumnType }>,
-  rows: ExportRow[],
-): Promise<PushResult> {
-  try {
-    const fields: FieldDefinition[] = columns.map((c, i) => ({
-      field_name: c.key,
-      display_name: c.label,
-      data_type: COLUMN_TYPE_TO_DATASET[c.type ?? "string"] ?? "string",
-      field_order: i,
-      is_required: false,
-    }));
-
-    const created = await createTable({
-      tableName: name,
-      description: "Created from a PDF extraction dataset",
-      fields,
-    });
-    if (!created.success || !created.tableId) {
-      return { ok: false, error: created.error ?? "Could not create dataset" };
-    }
-
-    // Map original column keys → the sanitized field names the table now uses.
-    const keyToField = new Map<string, string>();
-    for (const c of columns) keyToField.set(c.key, sanitizeFieldName(c.key));
-
-    // Insert rows with a small concurrency pool so a large dataset doesn't fan
-    // out hundreds of simultaneous requests. Failures are collected, not fatal.
-    let failures = 0;
-    const POOL = 6;
-    for (let i = 0; i < rows.length; i += POOL) {
-      const batch = rows.slice(i, i + POOL);
-      const results = await Promise.all(
-        batch.map((r) => {
-          const data: Record<string, unknown> = {};
-          for (const c of columns) {
-            const v = r[c.key];
-            if (v !== undefined) data[keyToField.get(c.key) ?? c.key] = v;
-          }
-          return addRow({ tableId: created.tableId!, data });
-        }),
-      );
-      failures += results.filter((res) => !res.success).length;
-    }
-
-    if (failures > 0) {
-      return {
-        ok: true,
-        id: created.tableId,
-        href: `/data/${created.tableId}`,
-        error: `${failures} of ${rows.length} rows failed to copy.`,
-      };
-    }
-    return { ok: true, id: created.tableId, href: `/data/${created.tableId}` };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
-  }
+export function datasetGrid(columns: ExportColumn[], rows: ExportRow[]): { headers: string[]; rows: string[][] } {
+  return {
+    headers: columns.map((c) => c.label),
+    rows: rows.map((r) => columns.map((c) => cellToString(r[c.key]))),
+  };
 }
