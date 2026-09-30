@@ -42,6 +42,11 @@ Of ~16 sub-pickers:
 
 ## Change Log
 
+- 2026-09-29 — **Two additive extensions for the Source input (A3-F).** `InlineUploadArea` takes an optional
+  `accept` (passed to the chooser; a dropped file outside it is refused out loud, never uploaded).
+  `WebpageResourcePickerCore`'s `onSelect` gets a second argument `{ processedDocumentId }` — the Source the
+  scraper landed (null when none landed or the person edited/cut the text), so a host never scrapes twice.
+  Existing hosts are unchanged (both optional / ignorable).
 - 2026-09-29 — **Notes opens without downloading every note** (Arman: "it took a long time … fetch the
   last 10 most active plus some counts"). `NotesResourcePicker` opens on the N most recently changed
   notes (knob `resource_picker.notes_recent_count`, default 10) and folders with counts from
