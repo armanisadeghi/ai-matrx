@@ -457,6 +457,12 @@ export function KnowledgeHubPage({
   const [helpOpen, setHelpOpen] = useState(false);
   /** Bumped after a tag/file write: the peek remounts and re-reads where the item is filed. */
   const [filedVersion, setFiledVersion] = useState(0);
+  /** Triage states set in this visit, by record — the lists catch up on their next read. */
+  const [triageOverride, setTriageOverride] = useState<Map<string, TriageState>>(new Map());
+  const triageOf = (h: KnowledgeHit): TriageState | null => {
+    const t = actionTarget(h);
+    return triageOverride.get(`${t.entity}:${t.id}`) ?? h.triage_state ?? null;
+  };
 
   const trashView = state.view.kind === "trash";
   // The Transcripts view reads the transcripts list's own server functions: every filter,
@@ -502,7 +508,14 @@ export function KnowledgeHubPage({
   const dateOrdered = !searching && state.query.sort !== "title";
   // Facets filter on the server (useTranscriptList); only Stage narrows loaded Sources here,
   // and it says so ("Of N loaded").
-  const narrowedHits = narrowByStage(baseHits, state.stage, stages.stageFor);
+  // A row archived in this visit leaves every view but Archived (and Trash never lists it).
+  const narrowedHits = narrowByStage(
+    triageOverride.size && state.view.kind !== "archived"
+      ? baseHits.filter((h) => triageOf(h) !== "archived")
+      : baseHits,
+    state.stage,
+    stages.stageFor,
+  );
   // Sample data is a fixture held whole in the page, so its facets narrow it here.
   const facetedHits = sample && transcriptsView ? narrowByTranscriptFacets(narrowedHits, facetSel, factFor) : narrowedHits;
   // The server already orders the Transcripts view (newest first, or by relevance when searching).
@@ -894,13 +907,13 @@ export function KnowledgeHubPage({
         items: [
           { id: "open", label: "Open", icon: ArrowUpRight, href: open, shortcut: "⌘↵" },
           ...(open ? [] : [{ id: "peek", label: "Open", icon: ArrowUpRight, onSelect: () => openPeek(hit), shortcut: "↵" }]),
-          ...(hit.triage_state !== "kept"
+          ...(triageOf(hit) !== "kept"
             ? [{ id: "keep", label: "Keep", icon: Check, onSelect: () => void doTriage([hit], "kept"), shortcut: "S" }]
             : []),
-          ...(hit.triage_state !== "archived"
+          ...(triageOf(hit) !== "archived"
             ? [{ id: "archive", label: "Archive", icon: Archive, onSelect: () => void doTriage([hit], "archived"), shortcut: "E" }]
             : []),
-          ...(hit.triage_state && hit.triage_state !== "inbox"
+          ...(triageOf(hit) && triageOf(hit) !== "inbox"
             ? [{ id: "inbox", label: "Back to Inbox", icon: Inbox, onSelect: () => void doTriage([hit], "inbox"), shortcut: "I" }]
             : []),
           { id: "tag", label: "Tag…", icon: Hash, onSelect: () => setTagFor([hit]), shortcut: "T" },
@@ -1153,6 +1166,15 @@ export function KnowledgeHubPage({
     setBusy(true);
     try {
       const outcome = await triageItems(items, next, triageDoor);
+      // What the person just did holds on screen until the lists re-read: the menu offers the
+      // way back (Back to Inbox after Keep) and an archived row leaves a view without archived items.
+      const done = uniqueTargets(items).filter((t) => !outcome.failed.some((f) => f.target.id === t.id));
+      if (done.length)
+        setTriageOverride((prev) => {
+          const m = new Map(prev);
+          for (const t of done) m.set(`${t.entity}:${t.id}`, next);
+          return m;
+        });
       if (outcome.ok && triageView && triageView !== next) {
         const moved = new Set(
           uniqueTargets(items)
@@ -1175,6 +1197,12 @@ export function KnowledgeHubPage({
               void undoTriage(outcome.undo, setTriageState).then((u) => {
                 if (u.failed.length) toast.error(u.sentence);
                 else toast.success(u.sentence);
+                // Put back: each undone record returns to the state it had.
+                setTriageOverride((prev) => {
+                  const m = new Map(prev);
+                  for (const x of outcome.undo) m.set(`${x.target.entity}:${x.target.id}`, x.prior);
+                  return m;
+                });
                 afterTriageWrite();
               }),
           }
