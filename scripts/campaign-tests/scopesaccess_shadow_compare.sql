@@ -43,6 +43,8 @@
 
 -- REPEATABLE READ: other lanes rehearse on this clone while the compare runs; the world is the one
 -- the transaction's first query saw, for the OLD run and the NEW run alike.
+-- A chunk takes a few minutes; the clone's 10-minute transaction ceiling is lifted for this session only.
+set transaction_timeout = '40min';
 \if :{?read_committed}
 -- (a re-run of probes another lane's concurrent update made unmeasurable under REPEATABLE READ)
 begin isolation level read committed;
@@ -411,6 +413,10 @@ select count(*) as all_probes from l7_probe;
 -- only these probe kinds (comma-separated), plus RED's own
 delete from l7_probe where kind not like 'red:%' and not (kind = any (string_to_array(:'kinds', ',')));
 select count(*) as kind_probes from l7_probe;
+\endif
+\if :{?skip_kinds}
+-- these probe kinds are proved by their own run (comma-separated)
+delete from l7_probe where kind = any (string_to_array(:'skip_kinds', ','));
 \endif
 \if :{?chunks}
 -- ONE CHUNK of the compare (-v chunks=N -v chunk=k): every probe whose id is k modulo N, plus RED's own. Each chunk
