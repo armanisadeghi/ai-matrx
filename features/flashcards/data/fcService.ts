@@ -23,6 +23,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { failureLine, metadataKeyRefusal } from "@/lib/failure/transport";
 import { EDGE_ROLE } from "./types";
 import {
   currentUserIdOrNull,
@@ -69,6 +70,11 @@ function resolveOrgId(explicit?: string): Promise<string> {
 
 function fail<T>(context: string, error: unknown): FcResult<T> {
   console.error(`[fcService] ${context}:`, error);
+  // The metadata gate's refusal is a person-facing sentence with its remedy
+  // (lib/failure/transport.ts) — never the operator paragraph behind a
+  // method name.
+  if (metadataKeyRefusal(error))
+    return { data: null, error: failureLine(error, { action: "saving this deck" }) };
   return { data: null, error: `${context}: ${describeError(error)}` };
 }
 

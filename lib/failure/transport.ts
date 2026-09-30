@@ -145,6 +145,51 @@ export function isDatabaseFailure(error: unknown): boolean {
   return databaseRefusal(error) !== null;
 }
 
+/**
+ * THE METADATA GATE'S REFUSAL (2026-09-29). `platform._metadata_guard` (a
+ * trigger on every table whose `metadata` column is system-owned — 101 tables
+ * on that date) refuses any client write that changes a key not registered in
+ * `platform.metadata_reserved_keys`, with SQLSTATE 42501 and an operator's
+ * paragraph. Passed through word for word, that paragraph reached a toast as
+ * `mergeSetMetadata: matrx_validation_gate: metadata key "source_set" is not
+ * system-owned state on education.fc_set — …` (or, where a caller discarded
+ * the result, reached no one at all): the flashcards lane's deck Sources were
+ * refused and nobody could tell what was lost or what fixes it.
+ *
+ * The refusal is a DECISION, never transient — a retry writes the same key and
+ * is refused the same way. What it says: which value was not saved, that the
+ * rest of the record is untouched (the trigger aborts the whole statement, so
+ * nothing in it landed), and the remedy — a developer registers the key or
+ * moves the value to a real column. Matched anywhere in the message, because
+ * callers prefix their own context (`mergeSetMetadata: …`).
+ */
+const METADATA_GATE =
+  /matrx_validation_gate: metadata key "([^"]+)" is not system-owned state on ([\w.]+)/;
+
+export interface MetadataKeyRefusal {
+  /** The metadata key the gate refused. */
+  key: string;
+  /** `schema.table` the write targeted. */
+  table: string;
+}
+
+/** The metadata gate's refusal, or null when this is some other failure. */
+export function metadataKeyRefusal(error: unknown): MetadataKeyRefusal | null {
+  const match = METADATA_GATE.exec(messageOf(error));
+  return match ? { key: match[1], table: match[2] } : null;
+}
+
+function metadataKeySentence(
+  refusal: MetadataKeyRefusal,
+  action: string,
+): Omit<FailureSentence, "raw"> {
+  return {
+    sentence: `The platform refused to save "${refusal.key}" while ${action}: that detail is not one the ${refusal.table} record is allowed to keep, so this write was not saved — nothing else on the record changed.`,
+    remedy: `Trying again will be refused the same way. This is a platform defect, not something you did — report it; a developer fixes it by registering "${refusal.key}" for ${refusal.table} in platform.metadata_reserved_keys (with its reason) or by moving the value to a real column.`,
+    transient: false,
+  };
+}
+
 /** True when this device says it is offline. Never guessed on the server. */
 function offline(): boolean {
   return typeof navigator !== "undefined" && navigator.onLine === false;
@@ -230,6 +275,11 @@ export function describeFailure(
   const refusal = databaseRefusal(error);
   if (refusal) {
     return { ...databaseSentence(refusal, action, options), raw };
+  }
+
+  const metadataRefusal = metadataKeyRefusal(error);
+  if (metadataRefusal) {
+    return { ...metadataKeySentence(metadataRefusal, action), raw };
   }
 
   if (!isTransportFailure(error)) {

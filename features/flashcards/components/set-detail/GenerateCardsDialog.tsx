@@ -77,12 +77,20 @@ export function GenerateCardsDialog({
           { topic: about, count, difficulty: difficulty ?? "medium" },
           {
             onConversationCreated: (cid) => {
-              void fcService.mergeSetMetadata(setId, (current) => ({
-                ...current,
-                source_system: "cx_conversation",
-                source_id: cid,
-                conversation_id: cid,
-              }));
+              // Never discarded: a refused link is said, with its remedy.
+              void fcService
+                .mergeSetMetadata(setId, (current) => ({
+                  ...current,
+                  source_system: "cx_conversation",
+                  source_id: cid,
+                  conversation_id: cid,
+                }))
+                .then((res) => {
+                  if (res.error)
+                    toast.warning(
+                      `The deck could not record which conversation made these cards. ${res.error}`,
+                    );
+                });
             },
           },
         );
