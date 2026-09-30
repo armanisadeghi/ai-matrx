@@ -65,9 +65,9 @@ export async function fetchSourceManifest(
     { source_set: sourceSet },
     request(options),
   );
-  // The frozen v1 contract type from `@ai-matrx/agents/sources` (the server's
-  // Pydantic twins mirror it); the generated type is the same shape, looser.
-  return data;
+  // Narrowed to the frozen v1 contract type from `@ai-matrx/agents/sources`: the
+  // generated type is the same shape, only looser (Pydantic defaults read as optional).
+  return data as SourceManifest;
 }
 
 export async function resolveSourceSet(
@@ -79,7 +79,7 @@ export async function resolveSourceSet(
     { source_set: sourceSet },
     request(options),
   );
-  return data;
+  return data as ResolvedSourceSet;
 }
 
 /** The ids of `ref`'s parts whose label or text holds every word of `query`. */
