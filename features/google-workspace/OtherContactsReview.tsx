@@ -74,7 +74,7 @@ function importOutcomeSentence(result: ContactImportResultPending): string {
  */
 export function OtherContactsReview() {
   const organization = useOrganizationRequired();
-  const admission = useQuery({
+  const admission = useQuery({ // org-filter: server-call the admission check runs server-side; the organization only gates when it may start
     queryKey: ["google", "other-contacts", "admission"],
     queryFn: ({ signal }) => getOtherContactsAdmission(signal),
     enabled: organization.organizationState === "ready",

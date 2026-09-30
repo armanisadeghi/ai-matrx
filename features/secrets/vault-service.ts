@@ -264,7 +264,7 @@ async function authHeaders(
   // Imports reread request context after final auth await; ordinary transport
   // keeps its existing fail-before-auth behavior.
   const organizationId =
-    initialOrganizationId ?? (await readActiveOrganizationForIdentity());
+    initialOrganizationId ?? (await readActiveOrganizationForIdentity()); // org-filter: server-call freezes the organization the vault request runs in for the identity check
   if (
     expectedActor &&
     (expectedActor.userId !== user.id ||
@@ -296,7 +296,7 @@ export async function getVaultExportActor(): Promise<VaultVerifiedExportActor> {
   if (error || !user || !user.email) throw new Error("Not signed in");
   return {
     userId: user.id,
-    organizationId: await readActiveOrganizationForIdentity(),
+    organizationId: await readActiveOrganizationForIdentity(), // org-filter: server-call the organization the vault request runs in, bound to the signed-in identity
     email: user.email,
   };
 }
@@ -795,7 +795,7 @@ export async function getVaultImportActor(): Promise<VaultExpectedActor> {
     error,
   } = await getClaimsUser(supabase);
   if (error || !user) throw new Error("Not signed in");
-  const organizationId = await readActiveOrganizationForIdentity();
+  const organizationId = await readActiveOrganizationForIdentity(); // org-filter: server-call freezes the organization the vault import request runs in
   return { userId: user.id, organizationId };
 }
 

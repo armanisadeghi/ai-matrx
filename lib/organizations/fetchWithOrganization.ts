@@ -119,7 +119,7 @@ export async function fetchWithOrganization(
   options?: { organizationId?: string | null },
 ): Promise<Response> {
   const selected = options?.organizationId || getActiveOrgId();
-  const response = await fetch(input, withOrganizationHeader(init, selected));
+  const response = await fetch(input, withOrganizationHeader(init, selected)); // org-filter: server-call the organization the request runs in: the record's own when named, else the active one
   const refusal = await readOrganizationRefusal(response);
   if (!refusal) return response;
 

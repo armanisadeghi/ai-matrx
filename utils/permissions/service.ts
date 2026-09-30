@@ -586,7 +586,7 @@ export async function shareWithUser(
       const dmOrganizationId =
         organizationId ??
         // object-org-exempt: a share dialog opened with no object organization (a non-record resource) files its notification where the person works, and never prompts
-        getActiveOrgId();
+        getActiveOrgId(); // org-filter: write-target the share notification is filed where the person works when the object names no organization
       if (!dmOrganizationId) {
         console.warn(
           "[sharing] The in-app message about this share was not sent: the dialog was opened " +

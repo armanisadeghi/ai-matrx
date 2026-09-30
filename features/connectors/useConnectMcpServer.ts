@@ -90,7 +90,7 @@ export function useConnectMcpServer() {
         // connection row means nothing until aidream confirms it can be used.
         dispatch(fetchCatalog());
         if (organizationId) {
-          dispatch(fetchAvailability({ organizationId }));
+          dispatch(fetchAvailability({ organizationId })); // org-filter: server-call re-checks the health of the connection just made in the organization it was connected in
         }
       } catch (cause) {
         toast.error(`Could not connect to ${server.name}`, {

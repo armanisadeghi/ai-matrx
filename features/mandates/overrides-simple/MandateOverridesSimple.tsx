@@ -28,7 +28,7 @@ import { isJsonObject, type JsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { displayResolutionOrgId, usePageOrgFilter } from "@/features/mandates/display-org";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
   fetchAgentExecutionFull,
@@ -199,7 +199,7 @@ function OverridesBody({
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const pageOrgFilter = usePageOrgFilter();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   const { organizations } = useUserOrganizations();
@@ -265,8 +265,16 @@ function OverridesBody({
   // ── Seed: the agent's own settings, plus what higher levels override ──────
   // Same sequence as the existing tab (OneBindingWorkspace "Settings
   // overrides"), so both show the same baseline for the same row.
+  // The person level inherits from the mandate's own home organization (or the
+  // page's org filter) — never from whichever organization is active.
   const inheritanceOrganizationId =
-    rung === "org" ? organizationId : activeOrganizationId;
+    rung === "org"
+      ? organizationId
+      : displayResolutionOrgId({
+          pageOrgFilter,
+          homeOrganizationId: data.mandate.organization_id,
+          memberOrganizationIds: organizations.map((o) => o.id),
+        });
   useEffect(() => {
     if (holder.kind !== "agent" || !agentId) return;
     let cancelled = false;

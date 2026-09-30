@@ -12,7 +12,6 @@ import {
 } from "../redux/skl/selectors";
 import { fetchRenderDefinitions, fetchRenderBlockCategories } from "../redux/skl/thunks";
 import type { SklRenderDefinition, ShortcutCategoryRow } from "../redux/skl/types";
-import { useViewScope } from "./useViewScope";
 
 export interface UseRenderBlocksResult {
   definitions: SklRenderDefinition[];
@@ -26,8 +25,6 @@ export interface UseRenderBlocksResult {
 
 export function useRenderBlocks(): UseRenderBlocksResult {
   const dispatch = useAppDispatch();
-  const { scope, scopeId } = useViewScope();
-
   const definitions = useAppSelector(selectAllRenderDefinitions);
   const byCategoryId = useAppSelector(selectRenderDefinitionsByCategory);
   const categories = useAppSelector(selectAllRenderBlockCategories);
@@ -41,9 +38,9 @@ export function useRenderBlocks(): UseRenderBlocksResult {
   );
 
   useEffect(() => {
-    void dispatch(fetchRenderDefinitions({ scope, scopeId }));
-    void dispatch(fetchRenderBlockCategories({ scope, scopeId }));
-  }, [dispatch, scope, scopeId]);
+    void dispatch(fetchRenderDefinitions());
+    void dispatch(fetchRenderBlockCategories());
+  }, [dispatch]);
 
   const loading = defStatus === "loading" || catStatus === "loading";
 
@@ -56,8 +53,8 @@ export function useRenderBlocks(): UseRenderBlocksResult {
       loading,
       error,
       reload: () => {
-        void dispatch(fetchRenderDefinitions({ scope, scopeId }));
-        void dispatch(fetchRenderBlockCategories({ scope, scopeId }));
+        void dispatch(fetchRenderDefinitions());
+        void dispatch(fetchRenderBlockCategories());
       },
     }),
     [
@@ -68,8 +65,6 @@ export function useRenderBlocks(): UseRenderBlocksResult {
       loading,
       error,
       dispatch,
-      scope,
-      scopeId,
     ],
   );
 }

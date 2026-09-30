@@ -38,7 +38,7 @@ interface ScopedQueryArgs {
  */
 function applyScopeFilter<Q extends { eq: Function; is: Function }>(
   query: Q,
-  _args: ScopedQueryArgs,
+  _args: ScopedQueryArgs | void,
   _userId: string | null,
 ): Q {
   return query;
@@ -98,7 +98,8 @@ async function stampScopeForWrite<T extends ScopeStampInput>(
 
 export const fetchRenderDefinitions = createAsyncThunk(
   "skl/fetchRenderDefinitions",
-  async (args: ScopedQueryArgs, { dispatch }) => {
+  // Reads span everything the person can see; the scope args are accepted and ignored.
+  async (args: ScopedQueryArgs | void, { dispatch }) => {
     dispatch(sklActions.renderDefinitionsLoading());
     try {
       const { data: userData } = await getClaimsUser(supabase);
@@ -215,7 +216,8 @@ export const deleteRenderDefinition = createAsyncThunk(
 
 export const fetchRenderBlockCategories = createAsyncThunk(
   "skl/fetchRenderBlockCategories",
-  async (args: ScopedQueryArgs, { dispatch }) => {
+  // Reads span everything the person can see; the scope args are accepted and ignored.
+  async (args: ScopedQueryArgs | void, { dispatch }) => {
     dispatch(sklActions.renderBlockCategoriesLoading());
     try {
       const { data: userData } = await getClaimsUser(supabase);

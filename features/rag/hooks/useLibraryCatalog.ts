@@ -115,7 +115,7 @@ export function useLibraryCatalog(overrideOrganizationId?: string | null) {
     (async () => {
       try {
         const supabase = createClient();
-        const { data, error: rpcError } = await ragDb(supabase).rpc(
+        const { data, error: rpcError } = await ragDb(supabase).rpc( // org-filter: server-call the organization only decides which subscription state each row reports; every library row is returned
           "fn_list_library_catalog",
           { p_organization_id: organizationId ?? undefined },
         );

@@ -84,7 +84,7 @@ function CanvasOrgDropUp({ onOpenChange }: { onOpenChange?: (open: boolean) => v
 
   // Scratch organizations a test lane made are classified in the data
   // (`is_test_fixture`) — the canonical picker hides them the same way.
-  const listed = organizations.filter((org) => !org.is_test_fixture || org.id === activeOrgId);
+  const listed = organizations.filter((org) => !org.is_test_fixture || org.id === activeOrgId); // org-filter: write-target the organization switcher keeps the current choice listed; it narrows nothing the person browses
   // Only a successful read can say how many it hid.
   const hiddenCount = loadFailed ? 0 : organizations.length - listed.length;
 

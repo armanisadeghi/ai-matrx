@@ -96,7 +96,7 @@ export function useSourceIntake(
             }
           : null;
       },
-      fetchYouTubeTranscript: (url) => fetchYouTubeTranscript(backendApi.post, url),
+      fetchYouTubeTranscript: (url) => fetchYouTubeTranscript(backendApi.post, url), // org-filter: server-call the transcript call runs in the active organization on the server; it is not a list read
       transcribeFile: (input) => transcribeCloudFile(input),
       associate: async (edge) => {
         const { targetType } = edge;

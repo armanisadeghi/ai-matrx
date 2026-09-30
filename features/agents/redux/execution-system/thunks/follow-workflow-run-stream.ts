@@ -263,7 +263,7 @@ export function followWorkflowRunStream(
         const headers: Record<string, string> = { ...wire.headers };
         delete headers["Content-Type"]; // GET has no body
         headers["Accept"] = "application/json";
-        const res = await fetch(`${wire.baseUrl}/runs/${opts.runId}`, {
+        const res = await fetch(`${wire.baseUrl}/runs/${opts.runId}`, { // org-filter: server-call the run's backend headers carry the organization; the read is by run id
           method: "GET",
           headers,
           signal: opts.signal,
@@ -312,7 +312,7 @@ export function followWorkflowRunStream(
         headers["Accept"] = "text/event-stream";
         if (cursor > 0) headers["Last-Event-ID"] = String(cursor);
 
-        const res = await fetch(
+        const res = await fetch( // org-filter: server-call the run's backend headers carry the organization; the read is by run id
           `${wire.baseUrl}/runs/${opts.runId}/events/stream`,
           { method: "GET", headers, signal: controller.signal },
         );

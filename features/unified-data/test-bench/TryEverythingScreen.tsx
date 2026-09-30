@@ -356,7 +356,7 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
     }
 
     return (
-        <RecordsMount
+        <RecordsMount // org-filter: server-call the test bench exercises one organization on purpose; it is not a browse list
             letTheStoreDecideRights
             config={{
                 dataSource: recordsDataSource(createClient()),
@@ -917,7 +917,7 @@ function StatusStrip({
         setWaiting(undefined);
         setWaitingProblem(null);
         void Promise.resolve(
-            recordsDataSource(createClient()).rpc(
+            recordsDataSource(createClient()).rpc( // org-filter: server-call the test bench exercises one organization's work inbox on purpose; it is not a browse list
                 "work_inbox",
                 // A READ: everything waiting on this person across all their organizations
                 // (NULL = all), never the active organization's slice.
@@ -1278,7 +1278,7 @@ function MemberVisibilityControl({
         let cancelled = false;
         setDoor(null);
         setDoorProblem(null);
-        void fetchKnobWriteDoor({ fullKey: MEMBER_VISIBILITY_FULL_KEY, organizationId })
+        void fetchKnobWriteDoor({ fullKey: MEMBER_VISIBILITY_FULL_KEY, organizationId }) // org-filter: server-call the test bench exercises one organization on purpose; it is not a browse list
             .then((answer) => {
                 if (!cancelled) setDoor(answer);
             })
@@ -1394,7 +1394,7 @@ function CrmContactTry({ organizationId }: { organizationId: string }) {
         let cancelled = false;
         setContacts(null);
         setProblem(null);
-        void searchPartiesByName({ orgId: organizationId, search: "" })
+        void searchPartiesByName({ orgId: organizationId, search: "" }) // org-filter: server-call the test bench exercises one organization on purpose; it is not a browse list
             .then((rows) => {
                 if (cancelled) return;
                 const named = rows.map((row) => ({
@@ -1486,7 +1486,7 @@ function AgentTry({ organizationId }: { organizationId: string }) {
         let cancelled = false;
         setAgents(null);
         setProblem(null);
-        void createClient()
+        void createClient() // org-filter: server-call the test bench picks an agent to run in the organization it tests; it is not a browse list
             .schema("agent")
             .from("definition")
             .select("id,name,updated_at")

@@ -206,7 +206,7 @@ export const createTaskThunk = createAsyncThunk<
   const normalizedProjectId =
     projectId && projectId !== "__unassigned__" ? projectId : null;
   const organizationId =
-    input.organizationId ?? state.appContext.organization_id ?? null;
+    input.organizationId ?? state.appContext.organization_id ?? null; // org-filter: write-target a NEW task is saved in the active organization unless the caller names one
 
   dispatch(setIsCreatingTask(true));
   try {

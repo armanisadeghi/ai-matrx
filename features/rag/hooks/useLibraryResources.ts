@@ -193,7 +193,7 @@ export function useLibraryResources(overrideOrganizationId?: string | null) {
     (async () => {
       try {
         const supabase = createClient();
-        const { data, error: rpcError } = await supabase.rpc("library_catalog", {
+        const { data, error: rpcError } = await supabase.rpc("library_catalog", { // org-filter: server-call the organization only decides which entitlement state each row reports; every library row is returned
           p_organization_id: organizationId ?? undefined,
         });
         if (rpcError) throw rpcError;

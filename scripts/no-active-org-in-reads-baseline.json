@@ -21,11 +21,6 @@
       "owner": "workbooks",
       "note": "selectOrganizationId → ensureOrganizationContext for create/import only"
     },
-    "app/(dev)/demos/api-tests/health/HealthTestClient.tsx": {
-      "class": "not-a-list",
-      "owner": "app",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact call // org-filter: server-call <reason>. Lines 145,185; sites: fetch()"
-    },
     "app/(dev)/demos/context-menu/lab/page.dev.tsx": {
       "class": "not-a-list",
       "owner": "dev-demos",
@@ -51,25 +46,10 @@
       "owner": "drill-explorer",
       "note": "active org only used for saveDrillView; saved_view read is not org-filtered unless a homeOrganizationId is named"
     },
-    "features/admin/applications/catalogs/components/CatalogEntryEditor.tsx": {
-      "class": "write-target",
-      "owner": "admin",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 149; sites: FILE"
-    },
-    "features/admin/relationships/components/ExposureAuditClient.tsx": {
-      "class": "silent-filter",
-      "owner": "admin",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 374; sites: queryKey"
-    },
     "features/agent-apps/components/CreateAgentAppFormWrapper.tsx": {
       "class": "write-target",
       "owner": "agent-apps",
       "note": "selectedOrganizationId → POST /api/agent-apps org header for create"
-    },
-    "features/agent-connections/hooks/useRenderBlocks.ts": {
-      "class": "silent-filter",
-      "owner": "agent-connections",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 44,45,59,60; sites: fetchRenderBlockCategories(), fetchRenderDefinitions()"
     },
     "features/agents/components/chat/SandboxPanel.tsx": {
       "class": "write-target",
@@ -91,11 +71,6 @@
       "owner": "agents",
       "note": "orgId → selectScopeTypeLabelMap to label bound variables; display labels, not a list the person browses"
     },
-    "features/agents/hooks/useMcpTools.ts": {
-      "class": "silent-filter",
-      "owner": "agents",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 69,117; sites: fetchAvailability()"
-    },
     "features/agents/redux/agent-definition/thunks.ts": {
       "class": "write-target",
       "owner": "agents",
@@ -116,30 +91,10 @@
       "owner": "agents",
       "note": "getActiveOrgId fallback is org for scratchpad attach edges (write)"
     },
-    "features/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts": {
-      "class": "server-call",
-      "owner": "agents",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact call // org-filter: server-call <reason>. Lines 266,315; sites: fetch()"
-    },
-    "features/agents/runtime-reconnect/reconnect-server-operation.thunk.ts": {
-      "class": "silent-filter",
-      "owner": "agents",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 161,378; sites: fetchOperationsByLink()"
-    },
-    "features/agents/services/mcp.service.ts": {
-      "class": "write-target",
-      "owner": "agents",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 58; sites: FILE"
-    },
     "features/ai-work/compose/components/AiWorkComposer.tsx": {
       "class": "not-a-list",
       "owner": "ai-work",
       "note": "organizationId only a dependency re-running bridge/local capability reads; no list"
-    },
-    "features/approvals/usePendingApprovalCount.ts": {
-      "class": "silent-filter",
-      "owner": "approvals",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 57,61; sites: countPendingProposals(), useQuery()"
     },
     "features/bindings/OneBindingWorkspace.tsx": {
       "class": "default-for-new",
@@ -156,20 +111,10 @@
       "owner": "connected-sources",
       "note": "org only a cache key and hold for needs_organization adapters; browse is an org-free read of own accounts"
     },
-    "features/connectors/import/GoogleContactsImportPanel.tsx": {
-      "class": "silent-filter",
-      "owner": "connectors",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 350; sites: searchGoogleContacts()"
-    },
     "features/connectors/import/GoogleTasksImportPanel.tsx": {
       "class": "not-a-list",
       "owner": "connectors",
       "note": "org is the request address for listGoogleTasks/importGoogleTasks of the person's own account"
-    },
-    "features/connectors/useConnectMcpServer.ts": {
-      "class": "silent-filter",
-      "owner": "connectors",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 93; sites: fetchAvailability()"
     },
     "features/content-ir/studio/components/ShapeInstancesTab.tsx": {
       "class": "not-a-list",
@@ -206,16 +151,6 @@
       "owner": "education",
       "note": "useOrganizationRequired gates and supplies runOrgId for launching a generate run"
     },
-    "features/education/onboard/useIngest.ts": {
-      "class": "silent-filter",
-      "owner": "education",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 539; sites: fetchYouTubeTranscript()"
-    },
-    "features/files/hooks/useShowSystemFiles.ts": {
-      "class": "silent-filter",
-      "owner": "files",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 57; sites: fetchKnobDefinition()"
-    },
     "features/files/hooks/useStorageQuota.ts": {
       "class": "not-a-list",
       "owner": "files",
@@ -225,11 +160,6 @@
       "class": "not-a-list",
       "owner": "google-workspace",
       "note": "org only part of a remount key"
-    },
-    "features/google-workspace/OtherContactsReview.tsx": {
-      "class": "silent-filter",
-      "owner": "google-workspace",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 77; sites: useQuery()"
     },
     "features/hr/compliance/LawPortalSurface.tsx": {
       "class": "silent-filter",
@@ -326,20 +256,10 @@
       "owner": "hr",
       "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 93; sites: useHrTimeQuery()"
     },
-    "features/kits/components/KitInstalled.tsx": {
-      "class": "silent-filter",
-      "owner": "kits",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 65,375; sites: <RecordsMount>, useRecords()"
-    },
     "features/mandates/admin/ImpactBatchPanel.tsx": {
       "class": "admin-platform",
       "owner": "mandates",
       "note": "useOrganizationRequired gates and notices only; admin impact report"
-    },
-    "features/mandates/admin/MandateSourceUsage.tsx": {
-      "class": "write-target",
-      "owner": "mandates",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 166; sites: FILE"
     },
     "features/mandates/admin/TryItNowPanel.tsx": {
       "class": "admin-platform",
@@ -350,11 +270,6 @@
       "class": "not-a-list",
       "owner": "mandates",
       "note": "active org only a readiness gate; fetchMandateCoverageStates takes the passed organizationId"
-    },
-    "features/mandates/overrides-simple/MandateOverridesSimple.tsx": {
-      "class": "silent-filter",
-      "owner": "mandates",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 307; sites: fetchMandateLadder()"
     },
     "features/mandates/peek/MandatePeek.tsx": {
       "class": "not-a-list",
@@ -376,11 +291,6 @@
       "owner": "notes",
       "note": "organizationId → useEffectiveKnob for picker settings"
     },
-    "features/pdf-extractor/studio/PdfStudioShell.tsx": {
-      "class": "silent-filter",
-      "owner": "pdf-extractor",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 251; sites: fetchDocument()"
-    },
     "features/print/order/PrintOrderWorkspace.tsx": {
       "class": "not-a-list",
       "owner": "print",
@@ -391,30 +301,10 @@
       "owner": "product-capture",
       "note": "organizationId → new capture item creation and resume key"
     },
-    "features/rag/hooks/useLibraryCatalog.ts": {
-      "class": "silent-filter",
-      "owner": "rag",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 118; sites: rpc()"
-    },
-    "features/rag/hooks/useLibraryResources.ts": {
-      "class": "silent-filter",
-      "owner": "rag",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 196; sites: rpc()"
-    },
     "features/residential-egress/components/ConnectComputerPage.tsx": {
       "class": "not-a-list",
       "owner": "residential-egress",
       "note": "organizationId → useScopedKnobs download URL knob"
-    },
-    "features/resource-manager/resource-picker/FilesResourcePicker.tsx": {
-      "class": "silent-filter",
-      "owner": "resource-manager",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 469; sites: filter()"
-    },
-    "features/resource-manager/source-input/useSourceIntake.ts": {
-      "class": "silent-filter",
-      "owner": "resource-manager",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 99; sites: fetchYouTubeTranscript()"
     },
     "features/scopes/components/active-context/ActiveContextLayersPanel.tsx": {
       "class": "not-a-list",
@@ -441,11 +331,6 @@
       "owner": "secrets",
       "note": "org/useOrganizationRequired only gates; fetchAuthenticators takes no org"
     },
-    "features/secrets/vault-service.ts": {
-      "class": "write-target",
-      "owner": "secrets",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 267,299,798; sites: FILE"
-    },
     "features/settings/pages/IntegrationsSettingsPage.tsx": {
       "class": "write-target",
       "owner": "settings",
@@ -455,21 +340,6 @@
       "class": "not-a-list",
       "owner": "settings",
       "note": "active org selects which org's knobs/overrides are read; settings pane names the org"
-    },
-    "features/shell/canvas-chrome/CanvasUserRow.tsx": {
-      "class": "silent-filter",
-      "owner": "shell",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 87; sites: filter()"
-    },
-    "features/spatial/items/data-items.tsx": {
-      "class": "silent-filter",
-      "owner": "spatial",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 86; sites: <RecordsMount>"
-    },
-    "features/spatial/persistence/useSavedBoard.ts": {
-      "class": "silent-filter",
-      "owner": "spatial",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 117; sites: loadTarget()"
     },
     "features/structured-lists/StructuredListManagerV1.tsx": {
       "class": "write-target",
@@ -481,30 +351,10 @@
       "owner": "structured-lists",
       "note": "organizationId only for createList p_organization_id; list read on udt_structured_lists has no org filter"
     },
-    "features/surfaces/runtime/surface-writeback.ts": {
-      "class": "write-target",
-      "owner": "surfaces",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 1241; sites: FILE"
-    },
     "features/tasks/components/QuickTasksWorkspace.tsx": {
       "class": "write-target",
       "owner": "tasks",
       "note": "appOrgId fallback only for createTaskThunk destination; list uses its own org filter picker (default All)"
-    },
-    "features/tasks/redux/thunks.ts": {
-      "class": "write-target",
-      "owner": "tasks",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 209; sites: FILE"
-    },
-    "features/tasks/services/projectService.ts": {
-      "class": "write-target",
-      "owner": "tasks",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 44; sites: FILE"
-    },
-    "features/unified-data/test-bench/TryEverythingScreen.tsx": {
-      "class": "silent-filter",
-      "owner": "unified-data",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 359,920,1279,1395,1487; sites: <RecordsMount>, eq(), fetchKnobWriteDoor(), rpc(), searchPartiesByName()"
     },
     "features/window-panels/lite-window/LiteWindowExamples.tsx": {
       "class": "write-target",
@@ -515,16 +365,6 @@
       "class": "write-target",
       "owner": "sandbox",
       "note": "organizationId → createInstance explicit org; list not narrowed by it"
-    },
-    "lib/organizations/fetchWithOrganization.ts": {
-      "class": "server-call",
-      "owner": "lib",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact call // org-filter: server-call <reason>. Lines 122; sites: fetch()"
-    },
-    "utils/permissions/service.ts": {
-      "class": "write-target",
-      "owner": "utils",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 589; sites: FILE"
     }
   }
 }

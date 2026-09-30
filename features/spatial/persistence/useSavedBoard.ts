@@ -114,7 +114,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     if (!userId) return; // auth not hydrated yet: stay "loading"
     let alive = true;
     const loadTargetValue: SavedBoardTarget = targetId ? { boardId: targetId } : { home: true };
-    loadTarget(loadTargetValue, selectedOrgId).then(
+    loadTarget(loadTargetValue, selectedOrgId).then( // org-filter: default-for-new the active organization only files a NEW home board; it never picks which board opens
       (board) => {
         if (!alive) return;
         guard.current = { id: board.id, version: board.version, fingerprint: board.fingerprint };

@@ -158,7 +158,7 @@ export const reconnectServerOperation = createAsyncThunk<
     let settledWhileDisconnected = false;
     try {
       const byLink = await retryReconnect(
-        () => fetchOperationsByLink(backend, conversationId, ctrl.signal),
+        () => fetchOperationsByLink(backend, conversationId, ctrl.signal), // org-filter: server-call the conversation's own organization rides the backend headers; the read is by conversation id
         ctrl.signal,
         stillOwner,
       );
@@ -375,7 +375,7 @@ export const reconnectServerOperation = createAsyncThunk<
         });
 
         const refreshed = await retryReconnect(
-          () => fetchOperationsByLink(backend, conversationId, ctrl.signal),
+          () => fetchOperationsByLink(backend, conversationId, ctrl.signal), // org-filter: server-call the conversation's own organization rides the backend headers; the read is by conversation id
           ctrl.signal,
           stillOwner,
         );

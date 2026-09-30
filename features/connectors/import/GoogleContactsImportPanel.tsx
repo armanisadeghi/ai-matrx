@@ -347,7 +347,7 @@ export function GoogleContactsImportPanel({
       setLoading(true);
       setError(null);
       try {
-        const result = await searchGoogleContacts({
+        const result = await searchGoogleContacts({ // org-filter: server-call the organization is the request address for the person's own Google account; results are not narrowed by it
           organizationId: effectiveOrganizationId,
           query: text,
           googleAccount,

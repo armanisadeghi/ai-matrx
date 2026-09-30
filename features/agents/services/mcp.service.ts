@@ -55,7 +55,7 @@ export async function connectMcpServer(
       p_endpoint_override: params.endpointOverride,
       // A NEW connection is filed in the organization the person is working in —
       // named explicitly, never chosen by the database (the row stays personal).
-      p_organization_id: requireSelectedOrgId(),
+      p_organization_id: requireSelectedOrgId(), // org-filter: write-target a NEW MCP connection is filed in the organization the person works in
     });
 
     if (error) throw new Error(`Failed to connect MCP server: ${error.message}`);

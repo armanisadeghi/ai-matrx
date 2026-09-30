@@ -146,7 +146,7 @@ export function CatalogEntryEditor({
   const { toast } = useToast();
   const accessToken = useAppSelector(selectAccessToken);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
-  const organizationId = useServerOrganizationId();
+  const organizationId = useServerOrganizationId(); // org-filter: server-call the artifact probe is a server call run in the organization; catalog rows are not matched on it
   const isNew = row === null;
   const seed = isNew ? (prefill ?? null) : null;
 
