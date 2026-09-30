@@ -64,7 +64,7 @@ import {
 } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
+import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
@@ -620,7 +620,7 @@ export function OrgWorkspace() {
           ) : (
             <div className="space-y-4">
               {scopeTypes.map((scopeType) => (
-                <OrgHomeScopeSection
+                <OrgScopeTypeSection
                   key={scopeType.id}
                   scopeType={scopeType}
                   orgId={organization.id}
