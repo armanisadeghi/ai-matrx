@@ -78,7 +78,6 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 
 - YouTube and recordings have no landing door of their own; the transcript is read client-side and landed. Tracked in DESIGN.md A3 as fallback rows.
 - Browser uploads go to the standalone files service, which runs NO post-upload processing (aidream's `dispatch_on_upload` is absent there by design, S16) — so the Source input starts the one run itself when the server shows none. Other upload surfaces still rely on the scheduled sweep.
-- `YouTubeResourcePicker` still shows its own "Supported formats" help box (a shared picker; not trimmed here).
 - "Wait for the clean version" is recorded on the draft; the host that runs the request must honour it (USI-5 onward).
 - Pasted text and transcripts land without `clean_content` (the clean stage is skipped for them), so `/sources/manifest` reports them "processing" forever while the stage table says "cleaned". Server-side (source resolution) — the card shows both honestly until it is fixed.
 - Parts are per form: changing the form clears the picked parts and says so.
@@ -86,6 +85,8 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 ---
 
 ## Change log
+
+- 2026-09-29 — V3-C (verify-3 copy + panels; R9): Recording records in place (`AudioResourcePicker`/Voice Pad; transcript lands as text named "Recording <time>"; "Upload a recording" keeps the file path); Image = `InlineUploadArea` with `imageLinks` (upload or an image link, `resource-picker/imageLink.ts`); the card's "Choose parts" is the review's `SourcePartsPicker` (one part picker, "Search parts"); review sizes in characters + pages (`pagesPhrase` in `lib/tokens/estimate.ts`), tokens only in a tooltip; helper lines cut (version, size limit) or 2–3 words (delivery: "Sent in full" / "Read as needed", hidden when there is one choice); phone: version switch → Select, footer one row ("Add more"); no active organization → one "Choose organization" ask in Use existing instead of the same error under every kind; unreadable file → one line with the remedy.
 
 - 2026-09-29 — A3-F follow-ups: `pnpm sync-types` unblocked at its source — the `visibility` drop is T-13's deliberate retirement (aidream `d6c6247cc1`/`1bc217ac08`), recorded in `scripts/typegen-drop-allowlist.json`; `api-types.ts` is now generator output (`check:api-types-fresh` green) and `features/files/media-client/client.ts` speaks `publishedToWeb`. Use existing offers "Saved sources" (`processed_document` flagged pickable; `platform._inventory_filter` narrows it for counts and lists alike — migration `resource_inventory_lists_saved_sources.sql`) and shows the hub's Stage badge per row (`itemStage.ts` + test, red → green).
 

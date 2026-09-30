@@ -42,6 +42,8 @@ Of ~16 sub-pickers:
 
 ## Change Log
 
+- 2026-09-29 — **V3-C copy law (R9) across the family.** Web page: "How it works" box, the helper line and "This may take a few seconds" removed; loading is one line "Reading the page…"; "Add Content" → "Add page". YouTube / Image link / File link: "Supported formats" lists and restating helper lines removed; errors are one short sentence. Menu labels sentence case ("Web page", "Image link", "File link", "Context values"). `InlineUploadArea`: optional `imageLinks` (fetch an image link into the same upload, `imageLink.ts`, test `__tests__/image-link-becomes-a-file.test.ts`), drop line names what it takes, idle errors are now shown (a refused drop was silent).
+
 - 2026-09-29 — **Two additive extensions for the Source input (A3-F).** `InlineUploadArea` takes an optional
   `accept` (passed to the chooser; a dropped file outside it is refused out loud, never uploaded).
   `WebpageResourcePickerCore`'s `onSelect` gets a second argument `{ processedDocumentId }` — the Source the
