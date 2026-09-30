@@ -3,6 +3,8 @@
  * This is not server truth: it only lets the same authenticated actor reconnect
  * or retry the exact immutable operation after a reload.
  */
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+
 export type SandboxOperationKind = "stop" | "delete";
 export type SandboxOperationObservation = "prepared" | "dispatched" | "accepted";
 
@@ -25,14 +27,9 @@ export interface ReceiptStorage {
 }
 
 const PREFIX = "matrx.sandbox-operation.v1:auth:";
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID.test(value);
-}
 
 export function sandboxOperationReceiptKey(actorId: string, receipt: Pick<SandboxOperationReceipt, "row_id" | "operation_id">): string | null {
-  if (!isUuid(actorId) || !isUuid(receipt.row_id) || !isUuid(receipt.operation_id)) return null;
+  if (!isRfc4122Uuid(actorId) || !isRfc4122Uuid(receipt.row_id) || !isRfc4122Uuid(receipt.operation_id)) return null;
   return `${PREFIX}${actorId}:${receipt.row_id}:${receipt.operation_id}`;
 }
 
@@ -42,7 +39,7 @@ export function parseSandboxOperationReceipt(raw: string | null): SandboxOperati
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== "object") return null;
     const receipt = value as Partial<SandboxOperationReceipt>;
-    if (receipt.schema_version !== 1 || !isUuid(receipt.row_id) || !isUuid(receipt.operation_id)) return null;
+    if (receipt.schema_version !== 1 || !isRfc4122Uuid(receipt.row_id) || !isRfc4122Uuid(receipt.operation_id)) return null;
     if (receipt.kind !== "stop" && receipt.kind !== "delete") return null;
     if (receipt.observation !== "prepared" && receipt.observation !== "dispatched" && receipt.observation !== "accepted") return null;
     // Legacy receipts omitted this field, but a present value is security
@@ -74,7 +71,7 @@ export function writeSandboxOperationReceipt(storage: ReceiptStorage, actorId: s
 
 /** Reads only the current actor namespace; no global storage enumeration leaks another actor's receipt. */
 export function readSandboxOperationReceipts(storage: ReceiptStorage, actorId: string): SandboxOperationReceipt[] {
-  if (!isUuid(actorId)) return [];
+  if (!isRfc4122Uuid(actorId)) return [];
   const prefix = `${PREFIX}${actorId}:`;
   const receipts: SandboxOperationReceipt[] = [];
   for (let index = 0; index < storage.length; index += 1) {

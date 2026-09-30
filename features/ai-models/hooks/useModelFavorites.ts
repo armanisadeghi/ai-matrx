@@ -28,6 +28,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectFavoriteModelIds } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { createClient } from "@/utils/supabase/client";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { UserEntityState } from "@/features/scopes/types";
 import {
   favoriteIdsEqual,
@@ -41,14 +42,11 @@ type UesListRow = {
   is_favorite: boolean;
 };
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 async function writeCanonicalFavorite(
   id: string,
   isFavorite: boolean,
 ): Promise<void> {
-  if (!UUID_RE.test(id)) {
+  if (!isUuidShape(id)) {
     console.error("[useModelFavorites] not a model uuid — skip ues_set", {
       id,
     });

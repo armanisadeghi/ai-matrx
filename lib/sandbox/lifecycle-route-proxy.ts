@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { orchestratorJsonHeaders } from "@/lib/sandbox/orchestrator-routing";
 import type { SandboxLifecycleTarget } from "@/lib/sandbox/lifecycle-target";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export type LifecycleKind = "stop" | "delete";
 
 export function validLifecycleRequest(value: unknown): value is { operation_id: string; kind: LifecycleKind; graceful?: boolean } {
-  return !!value && typeof value === "object" && UUID.test((value as { operation_id?: unknown }).operation_id as string) && ((value as { kind?: unknown }).kind === "stop" || (value as { kind?: unknown }).kind === "delete") && ((value as { graceful?: unknown }).graceful === undefined || typeof (value as { graceful?: unknown }).graceful === "boolean");
+  return !!value && typeof value === "object" && isRfc4122Uuid((value as { operation_id?: unknown }).operation_id) && ((value as { kind?: unknown }).kind === "stop" || (value as { kind?: unknown }).kind === "delete") && ((value as { graceful?: unknown }).graceful === undefined || typeof (value as { graceful?: unknown }).graceful === "boolean");
 }
 
 /** Proxies only the bounded receipt projection and rejects an upstream identity mismatch. */

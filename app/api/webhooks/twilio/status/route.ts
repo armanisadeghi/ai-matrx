@@ -9,8 +9,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateTwilioWebhook } from "@/lib/communications/providers/twilio/webhook-validation";
 import {
   matchesDurableTwilioAttempt,
-  UUID_PATTERN,
 } from "@/lib/communications/providers/twilio/status-correlation";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { StatusCallbackPayload } from "@/lib/sms/types";
 import type { TablesUpdate } from "@/types/database.types";
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     if (
       !existingMessage &&
       outboundMessageId &&
-      UUID_PATTERN.test(outboundMessageId)
+      isRfc4122Uuid(outboundMessageId)
     ) {
       const { data: localMessage } = await supabase
         .schema("communication")

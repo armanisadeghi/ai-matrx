@@ -40,4 +40,12 @@ describe("durable authenticated file URL contract", () => {
         "https://files.matrxserver.com/files/3e031c3f-b1e3-425c-ac49-217ad074b1d5/download?inline=1",
     });
   });
+
+  it("percent-encodes the id so a hostile value cannot escape its path segment", () => {
+    expect(fileUrls("a/b?c#d")).toEqual({
+      download: "https://files.matrxserver.com/files/a%2Fb%3Fc%23d/download",
+      inline: "https://files.matrxserver.com/files/a%2Fb%3Fc%23d/download?inline=1",
+    });
+    expect(pythonShareUrl("t/k")).toBe("https://files.matrxserver.com/share/t%2Fk");
+  });
 });
