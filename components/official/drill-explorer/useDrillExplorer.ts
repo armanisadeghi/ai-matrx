@@ -28,6 +28,7 @@ import { supabase } from "@/utils/supabase/client";
 
 import { withAutoGrain } from "./grain";
 import { asOfAnswer, doorWhere, type DrillNameResolver } from "./types";
+import { carriedAsk, type DrillCarried } from "./questionParts";
 
 const clients = new Map<string, RecordsClient>();
 /** One records client per organization and person (the door needs both). */
@@ -90,12 +91,59 @@ export function doorWindow(question: MatrxDrillQuestion, align?: "hour"): Pick<D
  * holds everything counted so far.
  */
 export function explorerWindowRange(window: string | null | undefined, align?: "hour", now: Date = new Date()): { from: string; to: string } | null {
-  const range = drillWindowRange(window, now);
+  const range = momentRange(window) ?? drillWindowRange(window, now);
   if (!range || align !== "hour") return range;
   const from = new Date(range.from);
   if (Number.isNaN(from.getTime())) return range;
   from.setUTCMinutes(0, 0, 0);
   return { from: from.toISOString(), to: range.to };
+}
+
+/**
+ * A window of MOMENTS (`2026-09-28T14:00Z..2026-09-28T18:00Z`, a declared view's sub-day window —
+ * VERIFY-DRILL-WAVE1 F3). The published design system (0.49.37) reads only day ranges and would
+ * turn this into no window at all; read here until the version with moments is installed
+ * (PROGRESS-DRILL-EXPLORER "After publish").
+ */
+const MOMENT = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+\- ]\d{2}:\d{2})?`;
+const MOMENT_RANGE = new RegExp(`^(${MOMENT}|\\d{4}-\\d{2}-\\d{2})\\.\\.(${MOMENT}|\\d{4}-\\d{2}-\\d{2})$`);
+function momentRange(window: string | null | undefined): { from: string; to: string } | null {
+  if (!window || !window.includes("T")) return null;
+  const m = window.match(MOMENT_RANGE);
+  if (!m) return null;
+  const end = (v: string) => v.replace(/(T\d{2}:\d{2}(?::\d{2})?) (\d{2}:\d{2})$/, "$1+$2");
+  return { from: end(m[1]!), to: end(m[2]!) };
+}
+
+/** How a window reads — a window of moments with its clock ("Sep 28, 2026 14:00 – 18:00 UTC"), else the package's words. */
+export function explorerWindowLabel(window: string | null | undefined, packageLabel: (w: string | null | undefined) => string): string {
+  const range = momentRange(window);
+  if (!range) return packageLabel(window);
+  const words = (iso: string) => {
+    const d = new Date(iso);
+    return { day: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }), clock: d.toISOString().slice(11, 16) };
+  };
+  const a = words(range.from);
+  const b = words(range.to);
+  return `${a.day} ${a.clock} – ${a.day === b.day ? b.clock : `${b.day} ${b.clock}`} UTC`;
+}
+
+/**
+ * The sort a request is asked with. The door keeps the top groups BY THIS (the rest fold into
+ * Other), so it ranks as the table sorts — except a grouping that starts with TIME while the person
+ * chose no sort: then no sort is sent, and the door keeps the LATEST periods in calendar order (its
+ * time-first rule), never the costliest ones (VERIFY-DRILL-WAVE1 F2: a pivot across 30 days kept the
+ * 24 costliest days, and read Sep 28, 29, 26, 27…).
+ */
+export function doorSort(
+  by: readonly string[],
+  chosen: MatrxDrillQuestion["sort"] | null,
+  sortKey: string | undefined,
+  timeKeys: ReadonlySet<string>,
+): Pick<DrillQuestion, "sort"> {
+  if (!sortKey) return {};
+  if (!chosen && by.length > 0 && timeKeys.has(parseDimensionRef(by[0]!).key)) return {};
+  return { sort: { key: sortKey, direction: chosen?.direction ?? "desc" } };
 }
 
 export interface DrillExplorerData {
@@ -123,8 +171,10 @@ export function useDrillExplorer(args: {
   version?: number | undefined;
   countMeasure?: string | undefined;
   windowAlign?: "hour" | undefined;
+  /** What the open view asks beyond the address (list/range filters, a group limit, thresholds): asked with every request. */
+  carried?: DrillCarried | null | undefined;
 }): DrillExplorerData {
-  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign } = args;
+  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried } = args;
   const client = organizationId ? drillClientFor(organizationId, userId) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
@@ -150,15 +200,18 @@ export function useDrillExplorer(args: {
     };
   }, [client, sourceKey]);
 
-  const askKey = JSON.stringify({ by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null, sort: question.sort ?? null });
+  const askKey = JSON.stringify({ by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null, sort: question.sort ?? null, carried: carried ?? null });
   const resolverKeys = Object.keys(resolvers ?? {}).sort().join(",");
 
   // THE ANSWERS — every request the table needs, plus the whole (no trail) for coverage.
   useEffect(() => {
     // Asked with no grouping too: the header's total and the trail's names are the same question.
     if (!client || !def) return;
-    const asked = withAutoGrain(def, JSON.parse(askKey) as MatrxDrillQuestion);
+    const parsed = JSON.parse(askKey) as MatrxDrillQuestion & { carried: DrillCarried | null };
+    const door = parsed.carried;
+    const asked = withAutoGrain(def, parsed);
     const windowPart = doorWindow(asked, windowAlign);
+    if (windowPart.window && door?.windowKey) windowPart.window = { ...windowPart.window, key: door.windowKey };
     const doorShow = countMeasure && !asked.show.includes(countMeasure) ? [...asked.show, countMeasure] : asked.show;
     const where = doorWhere(asked);
     const sortKey = asked.sort && asked.show.includes(asked.sort.key) ? asked.sort.key : asked.show[0];
@@ -167,17 +220,20 @@ export function useDrillExplorer(args: {
     const src = JSON.parse(sourceKey) as DrillSource;
     let cancelled = false;
     setError(null);
+    const timeKeys = new Set(def.dimensions.filter((d) => d.kind === "time").map((d) => d.key));
+    const sortFor = (by: string[]) => doorSort(by, asked.sort ?? null, sortKey, timeKeys);
     const ask = (by: string[], w: Record<string, unknown>) =>
       client.drillAsk({
         source: src,
         question: {
           by,
           show: doorShow,
-          where: w,
+          // the open view's own filters (lists, ranges) narrow every number, the trail's crumbs on top
+          where: { ...(door?.where ?? {}), ...w },
           lane,
           ...windowPart,
-          // the door keeps the top groups BY THIS (the rest fold into Other), so it ranks as the table sorts
-          ...(sortKey ? { sort: { key: sortKey, direction: asked.sort?.direction ?? "desc" } } : {}),
+          ...carriedAsk(door),
+          ...sortFor(by),
         },
       });
     void Promise.all([

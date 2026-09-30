@@ -1,4 +1,4 @@
--- chair-step: the inverse of migrations/campaign/drillledger_the_records_behind_a_usage_number_are_the_ledger.sql (lane DRILL-LEDGER-RECORDS) — puts back, exactly as they were, runtime.ai_usage_hourly_refresh (its own CTE body, no watermark) and the seven drill-door bodies it replaced (validator, resolver, compiler, _drill_plan, _drill_run_declared, drill_rows, drill_describe); drops and recreates platform.drill_ask without its as_of column (re-granted to authenticated); drops the three helpers it created (platform.drill_knob, platform._drill_ratio_sql, platform._drill_question_problems), the three drill settings it seeded (only while no person has touched them), the server-only view runtime._ai_usage_calls and the one-row derived table runtime._ai_usage_hourly_watermark with their registry rows. The rollup's rows stay (they are correct). No row of anybody's data is touched.
+-- chair-step: the inverse of migrations/campaign/drillledger_the_records_behind_a_usage_number_are_the_ledger.sql (lane DRILL-LEDGER-RECORDS) — puts back, exactly as they were, runtime.ai_usage_hourly_refresh (its own CTE body, no watermark) and the seven drill-door bodies it replaced (validator, resolver, compiler, _drill_plan, _drill_run_declared, drill_rows, drill_describe); drops and recreates platform.drill_ask without its as_of column (re-granted to authenticated); drops the three helpers it created (platform.drill_knob, platform._drill_ratio_sql, platform._drill_question_problems), the three drill settings it seeded (only while no person has reviewed them and no organization or person override hangs off them — a kept one is said), the server-only view runtime._ai_usage_calls with its registry row (the watermark table is its own file's, dropped by that file's inverse, run after this one). The rollup's rows stay (they are correct). No row of anybody's data is touched.
 -- lane: DRILL-LEDGER-RECORDS
 -- lock: platform
 -- based-on: runtime.ai_usage_hourly_refresh(timestamp with time zone, timestamp with time zone) 587dd03919d7221bf1b7cd41a6f7d48f256e16d5d131cf4ba73ee80b0e202966
@@ -6,7 +6,7 @@
 -- based-on: platform._drill_resolve(uuid, text) 5a9327b2ba6e7011f76429fbe0b7fefb8e9de301ed894e23b20d9eb39385ff02
 -- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) f6ee645888fd482c37020e4266669e3f8adba4cfc9997de40ed5dd919b257899
 -- based-on: platform._drill_plan(uuid, jsonb, jsonb, text) 651664cdd4b9c597b5f2fd7eb5e747bd12af4f4ab0b9c29c5a864c92980be11b
--- based-on: platform._drill_run_declared(uuid, text, jsonb, text) 3d96007cf029a176e564af9b72617f39c89e6cf45a11a7949a4cf428701ba365
+-- based-on: platform._drill_run_declared(uuid, text, jsonb, text) 07ac4b28733f78c4a6abbd53e8d3c0b8541e065a9bc3f7f7d8b15ba9afed8624
 -- based-on: platform.drill_rows(uuid, jsonb, jsonb) ff18fab5ce3c5f83e2821854d3d12799a9019da5994be7989201c75bc0673dae
 -- based-on: platform.drill_describe(uuid, jsonb) c2e182c3fcb092dacb76915c5cf6d36946aef384d118818fe97b9926192bb495
 -- based-on: platform.drill_ask(uuid, jsonb, jsonb) a75549710db822316bd9f0caef3e989528f389b8151f5a150f725bde5d91f02b
@@ -1754,10 +1754,26 @@ grant execute on function platform.drill_ask(uuid, jsonb, jsonb) to authenticate
 drop function if exists platform._drill_question_problems(jsonb, jsonb, text);
 drop function if exists platform._drill_ratio_sql(jsonb, text, text);
 drop function if exists platform.drill_knob(uuid, text);
-delete from platform.feature_knob
- where (feature, key) in (('drill.usage', 'stale_after_minutes'), ('drill.chart', 'top_n'), ('drill.pareto', 'share_pct'))
-   and set_by = 'agent';
+-- The three settings: only the rows this file created, and only while nobody hangs an override off
+-- them — an organization's or a person's override (platform.knob_override, which a delete would
+-- cascade away) is never lost on the way down; a kept row is SAID (VERIFY-DRILL-LEDGER-RECORDS F5).
+do $knobs$
+declare
+  k record;
+  v_n integer;
+begin
+  for k in select * from (values ('drill.usage', 'stale_after_minutes'), ('drill.chart', 'top_n'), ('drill.pareto', 'share_pct')) v(feature, key) loop
+    select count(*) into v_n from platform.knob_override o where o.feature = k.feature and o.key = k.key;
+    if v_n > 0 then
+      raise notice 'drillledger inverse: kept the setting %.% — % organization or person override(s) hang off it.', k.feature, k.key, v_n;
+    elsif exists (select 1 from platform.feature_knob f where f.feature = k.feature and f.key = k.key and f.set_by <> 'agent') then
+      raise notice 'drillledger inverse: kept the setting %.% — a person has reviewed it (set_by is not agent).', k.feature, k.key;
+    else
+      delete from platform.feature_knob f where f.feature = k.feature and f.key = k.key and f.set_by = 'agent';
+    end if;
+  end loop;
+end
+$knobs$;
 
-delete from platform.entity_types where token in ('ai_usage_executions', 'ai_usage_hourly_watermark');
+delete from platform.entity_types where token = 'ai_usage_executions';
 drop view if exists runtime._ai_usage_calls;
-drop table if exists runtime._ai_usage_hourly_watermark;

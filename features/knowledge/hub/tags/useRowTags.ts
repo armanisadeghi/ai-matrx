@@ -13,6 +13,7 @@ import { listTagsForItems } from "./tagApi";
 
 export function useRowTags(hits: KnowledgeHit[], enabled: boolean, version: number) {
   const [tags, setTags] = useState<Map<string, string[]>>(new Map());
+  const [error, setError] = useState<string | null>(null);
   const asked = useRef<{ version: number; keys: Set<string> }>({ version: -1, keys: new Set() });
   const targets = enabled ? hits.map(actionTarget) : [];
   const keys = targets.map((t) => `${t.entity}:${t.id}`);
@@ -32,15 +33,17 @@ export function useRowTags(hits: KnowledgeHit[], enabled: boolean, version: numb
     listTagsForItems(items)
       .then((m) => {
         if (cancelled) return;
+        setError(null);
         setTags((prev) => {
           const next = asked.current.version === version && prev.size ? new Map(prev) : new Map<string, string[]>();
           for (const k of wanted) next.set(k, (m.get(k) ?? []).map((t) => t.name));
           return next;
         });
       })
-      .catch(() => {
-        // A failed read leaves the rows showing the tags their own list carried (never an empty claim).
+      .catch((err: unknown) => {
+        // A failed read leaves the rows showing the tags their own list carried, and says so.
         wanted.forEach((k) => asked.current.keys.delete(k));
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       });
     return () => {
       cancelled = true;
@@ -48,8 +51,9 @@ export function useRowTags(hits: KnowledgeHit[], enabled: boolean, version: numb
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missingKey, version]);
 
-  return (hit: KnowledgeHit): string[] | undefined => {
+  const tagsFor = (hit: KnowledgeHit): string[] | undefined => {
     const t = actionTarget(hit);
     return tags.get(`${t.entity}:${t.id}`);
   };
+  return { tagsFor, error };
 }

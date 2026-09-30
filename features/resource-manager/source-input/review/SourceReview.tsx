@@ -14,17 +14,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plus, RefreshCw } from "lucide-react";
-import type { SourceManifest, SourceRef, SourceSet } from "@ai-matrx/agents/sources";
+import { createSourceRef, type SourceManifest, type SourceRef, type SourceSet } from "@ai-matrx/agents/sources";
 import { Button, ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
-import { formatChars, formatTokens, pagesPhrase } from "@/lib/tokens/estimate";
-import { fetchSourceManifest } from "../sourceSetApi";
-import { deliveryPatch, deliverySwitchedNote, fitDelivery } from "../delivery";
-import { sourceKey } from "../sourceKinds";
+import { estimateTokens, formatChars, formatTokens, pagesPhrase } from "@/lib/tokens/estimate";
+import {
+  deliveryPatch,
+  deliverySwitchedNote,
+  fitDelivery,
+  planSourceReview,
+  sourceKey,
+  type SourcePlan,
+} from "@ai-matrx/agents/sources/runtime";
+import { sourcesClient } from "../sourceSetApi";
 import { reviewDefaultContextTokens } from "./knobs";
-import { planSourceReview, type SourcePlan } from "./plan";
 import { SourceReviewRow } from "./SourceReviewRow";
 import type { SourceReviewOptions } from "./types";
 
@@ -71,9 +76,7 @@ export function SourceReview({
       const fit = fitDelivery(r, options.deliveries);
       if (!fit) return r;
       switched.push(deliverySwitchedNote(fit.to));
-      const next: SourceRef = { ...r, ...fit.patch };
-      if (next.delivery === undefined) delete next.delivery;
-      return next;
+      return createSourceRef(r.resource_type, r.resource_id, { ...r, ...fit.patch });
     });
     return { fitted, switchedNote: switched[0] ?? null, switchedCount: switched.length };
   });
@@ -96,7 +99,8 @@ export function SourceReview({
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    fetchSourceManifest(JSON.parse(manifestBody) as SourceSet, controller.signal)
+    sourcesClient
+      .manifest(JSON.parse(manifestBody) as SourceSet, { signal: controller.signal })
       .then((m) => {
         if (!controller.signal.aborted) setManifest(m);
       })
@@ -129,6 +133,8 @@ export function SourceReview({
           modelWindowTokens: manifest.model_context_tokens,
           fallbackWindowTokens: fallbackWindow,
           targetModelId,
+          // The web app's ONE estimator — the review and the run never disagree.
+          estimateTokens,
         })
       : null;
 
@@ -147,7 +153,9 @@ export function SourceReview({
     if (!plan) return;
     const leftOut = new Set(plan.leftOut.map((e) => keptIndexes[e.index]!));
     setRefs((prev) =>
-      prev.map((r, i) => (leftOut.has(i) ? { ...r, ...deliveryPatch("context") } : r)),
+      prev.map((r, i) =>
+        leftOut.has(i) ? createSourceRef(r.resource_type, r.resource_id, { ...r, ...deliveryPatch("context") }) : r,
+      ),
     );
   };
 
@@ -300,10 +308,11 @@ function BudgetSummary({
       </div>
 
       <p className="truncate text-xs text-muted-foreground">
-        <span title={`${plan.sentChars.toLocaleString()} characters`} data-sent-chars={plan.sentChars}>
-          {formatChars(plan.sentChars)} characters
+        {/* THE one size (the same number the cards and the header show); the budget's exact wire length rides data-sent-chars. */}
+        <span title={`${plan.chars.toLocaleString()} characters`} data-sent-chars={plan.sentChars}>
+          {formatChars(plan.chars)} characters
         </span>
-        {` · ${pagesPhrase(plan.sentChars)}`}
+        {` · ${pagesPhrase(plan.chars)}`}
         {onDemand > 0 ? ` · ${onDemand} looked up when needed` : null}
       </p>
 

@@ -21,6 +21,8 @@ import { readOf } from "@/components/read-state/ReadGate";
 
 import { doorWindow } from "./useDrillExplorer";
 import { asOfPage, doorWhere, type DrillRecordsDeclaration } from "./types";
+import type { DrillCarried } from "./questionParts";
+import { recordsCellName, recordsColumnHeader } from "./recordsColumns";
 
 const PAGE = 100;
 type Row = Record<string, unknown> & { __row: string };
@@ -35,6 +37,7 @@ export function DrillRecords({
   names,
   formatUsd,
   rowNoun,
+  carried,
 }: {
   client: RecordsClient | null;
   source: DrillSource;
@@ -45,6 +48,8 @@ export function DrillRecords({
   names: Record<string, Record<string, string>>;
   formatUsd: (v: number | null) => string;
   rowNoun: string;
+  /** What the open view asks beyond the address (list and range filters): the records are read under it too. */
+  carried?: DrillCarried | null | undefined;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState<number | null>(null);
@@ -54,7 +59,7 @@ export function DrillRecords({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
-  const askKey = JSON.stringify({ where: question.where, window: question.window ?? null, sort: question.sort ?? null });
+  const askKey = JSON.stringify({ where: question.where, window: question.window ?? null, sort: question.sort ?? null, carried: carried?.where ?? null });
   const sourceKey = JSON.stringify(source);
   const columnsKey = records.columns.join(",");
 
@@ -67,7 +72,7 @@ export function DrillRecords({
 
   useEffect(() => {
     if (!client) return;
-    const asked = JSON.parse(askKey) as Pick<MatrxDrillQuestion, "where" | "window" | "sort">;
+    const asked = JSON.parse(askKey) as Pick<MatrxDrillQuestion, "where" | "window" | "sort"> & { carried: Record<string, unknown> | null };
     const win = doorWindow({ by: [], show: [], where: [], window: asked.window ?? null }).window;
     let cancelled = false;
     setLoading(true);
@@ -75,7 +80,7 @@ export function DrillRecords({
     void client
       .drillRows({
         source: JSON.parse(sourceKey) as DrillSource,
-        where: doorWhere({ by: [], show: [], where: asked.where }),
+        where: { ...(asked.carried ?? {}), ...doorWhere({ by: [], show: [], where: asked.where }) },
         ...(win ? { window: win } : {}),
         lane,
         columns: columnsKey.split(","),
@@ -103,16 +108,16 @@ export function DrillRecords({
   }, [client, sourceKey, lane, askKey, columnsKey, offset, rowNoun]);
 
   const usdColumns = new Set(def.measures.filter((m) => m.unit === "usd" && m.of).map((m) => m.of!));
-  const labelFor = (key: string) => def.dimensions.find((d) => d.key === key || d.from === key)?.label ?? key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
   const tableColumns: MatrxColumnDef<Row>[] = columns.map((key) => ({
     id: key,
     accessorKey: key,
-    header: labelFor(key),
+    header: recordsColumnHeader(def, records, key),
     cell: (row) => {
       const v = row[key];
       if (v === null || v === undefined) return <span className="text-muted-foreground">—</span>;
       if (typeof v === "number" && usdColumns.has(key)) return <span className="tabular-nums">{formatUsd(v)}</span>;
-      if (typeof v === "string" && names[key]?.[v]) return <span>{names[key]![v]}</span>;
+      const named = typeof v === "string" ? recordsCellName(def, names, key, v) : null;
+      if (named) return <span>{named}</span>;
       return <span className={typeof v === "number" ? "tabular-nums" : undefined}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</span>;
     },
   }));

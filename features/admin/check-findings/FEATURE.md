@@ -51,8 +51,14 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
   is what lets a platform admin read them. A non-admin reads 0 rows. Clients have SELECT only;
   this feature writes nothing.
 - `check_item.deleted_at` means FIXED — reads filter on `state`, never on `deleted_at`.
-- Reserved keys `__check__`, `__summary__`, `__malformed__` are records about the check itself:
-  they count as "broken", never as open items, and their row action says "fix the check".
+- Reserved keys `__check__` and `__malformed__` are records about the check itself: they count
+  as "broken", never as open items, and their row action says "fix the check". `__summary__` is
+  NOT broken: the check judged and FAILED without an item list (design F9), so the page counts it
+  as "failing without an item list", shows its headline as the finding, and its row action says
+  "fix what it names" (2026-09-30: all 71 "broken" on the first production ingest were
+  `__summary__`). A check that could not judge reaches `__check__` because both runners title it
+  "check <id> could not establish truth: …" (an UNMEASURED headline or an uncaught exception) and
+  the ingest records that run `errored`.
 
 ## Mark OK (plan C1)
 
@@ -114,6 +120,8 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
 ---
 
 ## Change Log
+
+- 2026-09-30 — `__summary__` is no longer "check broken": it is a check that judged and failed without an item list (`unitemizedFailure`, header "N failing without an item list", row action "fix what it names"). "Check broken" now means only `__check__` / `__malformed__` — the check crashed, timed out, did not measure, or printed unreadable items (`model.test.ts`).
 
 - 2026-09-30 — A check's latest run that read the nightly copy (database-reading checks, `check_run.metadata.db_target`) says so in the check header, with the copy's date (`copySourceFromMetadata`, tested in `model.test.ts`). A run skipped because the copy was too old shows `skipped (copy_stale)` with the reason as its headline.
 

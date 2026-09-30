@@ -13,8 +13,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { SourceManifestEntry } from "@ai-matrx/agents/sources";
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import { SourceReviewRow } from "./SourceReviewRow";
-import type { SourcePlanEntry } from "./plan";
-import { fitDelivery } from "../delivery";
+import { fitDelivery, type SourcePlanEntry } from "@ai-matrx/agents/sources/runtime";
 
 const DOC = "11111111-1111-4111-8111-111111111111";
 
@@ -36,6 +35,7 @@ function planEntry(delivery?: "context"): SourcePlanEntry {
     status: delivery ? "on_demand" : "included",
     formLabel: "Clean text",
     formChars: 3_700,
+    chars: 3_700,
     sentChars: delivery ? 0 : 3_700,
     sentTokens: delivery ? 0 : 1_200,
     exact: false,

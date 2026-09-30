@@ -77,6 +77,24 @@ import ValueResultBlock from "@/components/mardown-display/blocks/result-kinds/V
 import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
 import GoogleMarketingResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
 import PlatformRecordBlock from "@/components/mardown-display/blocks/result-kinds/PlatformRecordBlock";
+import {
+  SeoRulingKeywordBlock,
+  SeoRulingExampleBlock,
+  SeoRulingDimensionBlock,
+  SeoRulingMatcherHitBlock,
+  SeoRulingCorrectionBlock,
+  SeoRulingConfirmationBlock,
+  SeoRulingMatcherBlock,
+} from "@/components/mardown-display/blocks/seo-ruling-kinds/SeoRulingItemBlocks";
+import {
+  SeoRulingKeywordSetBlock,
+  SeoRulingExampleSetBlock,
+  SeoRulingDimensionCatalogBlock,
+  SeoRulingMatcherHitSetBlock,
+  SeoRulingCorrectionSetBlock,
+  SeoRulingConfirmationSetBlock,
+  SeoRulingMatcherSetBlock,
+} from "@/components/mardown-display/blocks/seo-ruling-kinds/SeoRulingSetBlocks";
 import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
@@ -292,6 +310,13 @@ export function isBlockLoading(block: {
  *    to the platform's value viewer. Reached ONLY via applyIrKindRoute's
  *    resolver-only path, from that kind's `kind_component` row; never emitted
  *    upstream, so it has no vocabulary row. Shape-classified by construction.
+ *  - `seo_ruling_*` — the fourteen keyword RULING SESSION kinds (seven
+ *    collections + their seven item kinds): what the SEO keyword Ruling Session
+ *    agents are told, built by `features/marketing/seo/value-system/workbench/
+ *    session/trial.ts`. One compact component per kind (blocks/seo-ruling-kinds/),
+ *    each collection delegating its rows to the item kind's component. Reached
+ *    ONLY via applyIrKindRoute's resolver-only path, from each kind's
+ *    `kind_component` row; never emitted upstream. Shape-classified by construction.
  *  - `web_analysis_item` — the ONE renderer for the `web_analysis_item`
  *    kind family (the 83 registered `web_*_v1` site-audit checks, which share
  *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
@@ -557,6 +582,20 @@ export type FeSynthesizedBlockType =
   | "google_workspace_result"
   | "google_marketing_result"
   | "platform_record"
+  | "seo_ruling_keyword"
+  | "seo_ruling_example"
+  | "seo_ruling_dimension"
+  | "seo_ruling_matcher_hit"
+  | "seo_ruling_correction"
+  | "seo_ruling_confirmation"
+  | "seo_ruling_matcher"
+  | "seo_ruling_keyword_set"
+  | "seo_ruling_example_set"
+  | "seo_ruling_dimension_catalog"
+  | "seo_ruling_matcher_hit_set"
+  | "seo_ruling_correction_set"
+  | "seo_ruling_confirmation_set"
+  | "seo_ruling_matcher_set"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -744,6 +783,20 @@ export type ShapeBlockType =
   | "google_workspace_result"
   | "google_marketing_result"
   | "platform_record"
+  | "seo_ruling_keyword"
+  | "seo_ruling_example"
+  | "seo_ruling_dimension"
+  | "seo_ruling_matcher_hit"
+  | "seo_ruling_correction"
+  | "seo_ruling_confirmation"
+  | "seo_ruling_matcher"
+  | "seo_ruling_keyword_set"
+  | "seo_ruling_example_set"
+  | "seo_ruling_dimension_catalog"
+  | "seo_ruling_matcher_hit_set"
+  | "seo_ruling_correction_set"
+  | "seo_ruling_confirmation_set"
+  | "seo_ruling_matcher_set"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -2844,6 +2897,109 @@ const SHAPE_BLOCK_DISPATCH = {
       content={block.content}
       metadata={block.metadata}
       isStreamActive={isStreamActive}
+    />
+  ),
+
+  // The fourteen keyword RULING SESSION routes (kind-route.ts resolver-only
+  // path): the inputs of the SEO keyword Ruling Session agents. Each kind has
+  // its own bundled `kind_component` row whose key IS the slug; the seven
+  // collections render their rows through the item kinds' components.
+  seo_ruling_keyword: ({ block, index }) => (
+    <SeoRulingKeywordBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_example: ({ block, index }) => (
+    <SeoRulingExampleBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_dimension: ({ block, index }) => (
+    <SeoRulingDimensionBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_matcher_hit: ({ block, index }) => (
+    <SeoRulingMatcherHitBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_correction: ({ block, index }) => (
+    <SeoRulingCorrectionBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_confirmation: ({ block, index }) => (
+    <SeoRulingConfirmationBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_matcher: ({ block, index }) => (
+    <SeoRulingMatcherBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_keyword_set: ({ block, index }) => (
+    <SeoRulingKeywordSetBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_example_set: ({ block, index }) => (
+    <SeoRulingExampleSetBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_dimension_catalog: ({ block, index }) => (
+    <SeoRulingDimensionCatalogBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_matcher_hit_set: ({ block, index }) => (
+    <SeoRulingMatcherHitSetBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_correction_set: ({ block, index }) => (
+    <SeoRulingCorrectionSetBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_confirmation_set: ({ block, index }) => (
+    <SeoRulingConfirmationSetBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  seo_ruling_matcher_set: ({ block, index }) => (
+    <SeoRulingMatcherSetBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
     />
   ),
 

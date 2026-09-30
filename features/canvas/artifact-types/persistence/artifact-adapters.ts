@@ -44,6 +44,12 @@ export interface MaterializedArtifactInfo {
   sourceMessageId?: string;
   /** Chat conversation, when known. Null/absent for non-chat sources. */
   conversationId?: string | null;
+  /**
+   * The artifact's position within its source (1-based). One message can
+   * carry several artifacts of the same type, so adapters that create one
+   * domain record per artifact dedupe on (source, artifactIndex).
+   */
+  artifactIndex?: number;
 }
 
 export interface ArtifactPersistenceAdapter<

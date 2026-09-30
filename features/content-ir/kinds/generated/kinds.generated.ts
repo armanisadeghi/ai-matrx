@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 554 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 568 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "66541c8ebe62";
+export const KIND_REGISTRY_FINGERPRINT = "41e82b7df135";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6649,6 +6649,22 @@ export interface SeoRobotsPathCheck {
   explanation: string;
   matched_rule?: string | null;
   matched_rule_line?: number | null;
+}
+
+/**
+ * One allowed value of a dimension. Shape only — it has no meaning outside
+ * the dimension that lists it.
+ *  *
+ *  * Shared by 2 kinds (seo_ruling_dimension, seo_ruling_dimension_catalog).
+ */
+export interface SeoRulingDimensionValue {
+  slug: string;
+  label: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  description?: string | null;
 }
 
 /**
@@ -18908,6 +18924,211 @@ export interface SeoRobotsCheckResult {
 }
 
 /**
+ * A proposal the person ruled right.
+ *  *
+ *  * Kind `seo_ruling_confirmation` (registry v2).
+ */
+export interface SeoRulingConfirmation {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_confirmation";
+  phrase: string;
+  value_slug: string;
+  value_label: string;
+}
+
+/**
+ * Proposals the person ruled right.
+ *  *
+ *  * Kind `seo_ruling_confirmation_set` (registry v2).
+ */
+export interface SeoRulingConfirmationSet {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_confirmation_set";
+  confirmations?: SeoRulingConfirmation[];
+}
+
+/**
+ * A proposal the person ruled wrong, with the value they chose instead.
+ *  *
+ *  * Kind `seo_ruling_correction` (registry v2).
+ */
+export interface SeoRulingCorrection {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_correction";
+  phrase: string;
+  human_reason?: string;
+  proposed_value_slug: string;
+  corrected_value_slug: string;
+  proposed_value_label: string;
+  corrected_value_label: string;
+}
+
+/**
+ * Proposals the person ruled wrong.
+ *  *
+ *  * Kind `seo_ruling_correction_set` (registry v2).
+ */
+export interface SeoRulingCorrectionSet {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_correction_set";
+  corrections?: SeoRulingCorrection[];
+}
+
+/**
+ * A dimension being ruled and the only values allowed for it.
+ *  *
+ *  * Kind `seo_ruling_dimension` (registry v2).
+ */
+export interface SeoRulingDimension {
+  slug: string;
+  label: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_dimension";
+  values?: SeoRulingDimensionValue[];
+  description?: string | null;
+}
+
+/**
+ * The dimension being ruled and the only values allowed.
+ *  *
+ *  * Kind `seo_ruling_dimension_catalog` (registry v2).
+ */
+export interface SeoRulingDimensionCatalog {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_dimension_catalog";
+  dimensions?: SeoRulingDimension[];
+}
+
+/**
+ * One ruling the person already made, with the reason they gave.
+ *  *
+ *  * Kind `seo_ruling_example` (registry v2).
+ */
+export interface SeoRulingExample {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_example";
+  phrase: string;
+  reason?: string;
+  value_slug: string;
+  value_label: string;
+  dimension_slug: string;
+  dimension_label: string;
+}
+
+/**
+ * The rulings the person already made. Empty on the blind check.
+ *  *
+ *  * Kind `seo_ruling_example_set` (registry v2).
+ */
+export interface SeoRulingExampleSet {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_example_set";
+  examples?: SeoRulingExample[];
+}
+
+/**
+ * One keyword the session asks a proposer to stamp a value on.
+ *  *
+ *  * Kind `seo_ruling_keyword` (registry v2).
+ */
+export interface SeoRulingKeyword {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_keyword";
+  clicks?: number;
+  phrase: string;
+  keyword_id: string;
+  impressions?: number;
+}
+
+/**
+ * The keywords to propose a value for.
+ *  *
+ *  * Kind `seo_ruling_keyword_set` (registry v2).
+ */
+export interface SeoRulingKeywordSet {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_keyword_set";
+  keywords?: SeoRulingKeyword[];
+}
+
+/**
+ * A site rule in play behind the proposals being taught from.
+ *  *
+ *  * Kind `seo_ruling_matcher` (registry v2).
+ */
+export interface SeoRulingMatcher {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_matcher";
+  pattern?: string;
+  value_slug: string;
+  matcher_kind: string;
+}
+
+/**
+ * A keyword the site's own rules already explained, and the rule that did.
+ *  *
+ *  * Kind `seo_ruling_matcher_hit` (registry v2).
+ */
+export interface SeoRulingMatcherHit {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_matcher_hit";
+  phrase: string;
+  pattern?: string;
+  value_slug: string;
+  matcher_kind: string;
+}
+
+/**
+ * Keywords the site's own rules already explained. Empty on the blind check.
+ *  *
+ *  * Kind `seo_ruling_matcher_hit_set` (registry v2).
+ */
+export interface SeoRulingMatcherHitSet {
+  hits?: SeoRulingMatcherHit[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_matcher_hit_set";
+}
+
+/**
+ * The site rules behind the proposals being taught from. Empty on the blind check.
+ *  *
+ *  * Kind `seo_ruling_matcher_set` (registry v2).
+ */
+export interface SeoRulingMatcherSet {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_ruling_matcher_set";
+  matchers?: SeoRulingMatcher[];
+}
+
+/**
  * Output of ``seo.search_performance.daily.read``.
  *
  * Mirrors ``SearchPerformanceReadResult`` field-for-field.
@@ -24868,6 +25089,20 @@ export type GeneratedKindSlug =
   | "seo_rank_target_removal"
   | "seo_reputation_analysis"
   | "seo_robots_check_result"
+  | "seo_ruling_confirmation"
+  | "seo_ruling_confirmation_set"
+  | "seo_ruling_correction"
+  | "seo_ruling_correction_set"
+  | "seo_ruling_dimension"
+  | "seo_ruling_dimension_catalog"
+  | "seo_ruling_example"
+  | "seo_ruling_example_set"
+  | "seo_ruling_keyword"
+  | "seo_ruling_keyword_set"
+  | "seo_ruling_matcher"
+  | "seo_ruling_matcher_hit"
+  | "seo_ruling_matcher_hit_set"
+  | "seo_ruling_matcher_set"
   | "seo_search_performance_daily"
   | "seo_serp_prospecting_preview"
   | "seo_serp_prospecting_receipt"
@@ -25425,6 +25660,20 @@ export interface KindPayloadBySlug {
   "seo_rank_target_removal": SeoRankTargetRemoval;
   "seo_reputation_analysis": SeoReputationAnalysis;
   "seo_robots_check_result": SeoRobotsCheckResult;
+  "seo_ruling_confirmation": SeoRulingConfirmation;
+  "seo_ruling_confirmation_set": SeoRulingConfirmationSet;
+  "seo_ruling_correction": SeoRulingCorrection;
+  "seo_ruling_correction_set": SeoRulingCorrectionSet;
+  "seo_ruling_dimension": SeoRulingDimension;
+  "seo_ruling_dimension_catalog": SeoRulingDimensionCatalog;
+  "seo_ruling_example": SeoRulingExample;
+  "seo_ruling_example_set": SeoRulingExampleSet;
+  "seo_ruling_keyword": SeoRulingKeyword;
+  "seo_ruling_keyword_set": SeoRulingKeywordSet;
+  "seo_ruling_matcher": SeoRulingMatcher;
+  "seo_ruling_matcher_hit": SeoRulingMatcherHit;
+  "seo_ruling_matcher_hit_set": SeoRulingMatcherHitSet;
+  "seo_ruling_matcher_set": SeoRulingMatcherSet;
   "seo_search_performance_daily": SeoSearchPerformanceDaily;
   "seo_serp_prospecting_preview": SeoSerpProspectingPreview;
   "seo_serp_prospecting_receipt": SeoSerpProspectingReceipt;
@@ -25986,6 +26235,20 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "seo_rank_target_removal",
   "seo_reputation_analysis",
   "seo_robots_check_result",
+  "seo_ruling_confirmation",
+  "seo_ruling_confirmation_set",
+  "seo_ruling_correction",
+  "seo_ruling_correction_set",
+  "seo_ruling_dimension",
+  "seo_ruling_dimension_catalog",
+  "seo_ruling_example",
+  "seo_ruling_example_set",
+  "seo_ruling_keyword",
+  "seo_ruling_keyword_set",
+  "seo_ruling_matcher",
+  "seo_ruling_matcher_hit",
+  "seo_ruling_matcher_hit_set",
+  "seo_ruling_matcher_set",
   "seo_search_performance_daily",
   "seo_serp_prospecting_preview",
   "seo_serp_prospecting_receipt",

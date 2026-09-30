@@ -85,7 +85,7 @@ export function DrillFindings({
           let answer: FindingAnswer;
           if (!got.ok) answer = { state: "failed", message: got.error.message || "This finding could not be read." };
           else {
-            const groups = got.data!.rows.filter((r) => r.kind === "group").map(drillRowOf);
+            const groups = got.data!.rows.filter((r) => r.kind === "group").map((row) => drillRowOf(row));
             answer = {
               state: "answered",
               rows: groups.slice(0, ROWS_SHOWN).map((r) => ({ groups: r.groups, value: measure ? (r.measures[measure] ?? null) : null, rowCount: r.row_count })),

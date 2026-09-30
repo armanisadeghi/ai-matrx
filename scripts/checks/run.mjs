@@ -349,6 +349,34 @@ export function judge(row, code, output) {
   };
 }
 
+/**
+ * Why a row could not judge what it covers — or null when its verdict is a real verdict.
+ *
+ * A row that says it did not measure (its headline carries UNMEASURED, the platform's word for
+ * "this guard did NOT run and that is not a pass") or that died on an uncaught exception
+ * (node's "Node.js vNN" trailer, Python's Traceback) found nothing about the code: its failure is
+ * about the CHECK. The title then starts "check <id> could not establish truth: " — the same
+ * words aidream's runner uses — and the one ingest records the run `errored`, so the page shows
+ * the check as broken with this reason instead of counting a crash as a finding about the code
+ * (2026-09-30: 71 checks read "check broken" on /administration/reporting/check-findings and the
+ * store could not tell a crash from a failure; COORDINATOR.md § Broken checks).
+ */
+export function couldNotJudge(code, output) {
+  const lines = plain(output).split("\n").map((l) => l.trim()).filter(Boolean);
+  const screams = lines.filter((l) => SCREAM.test(l) && !/\[self-test\]\s+PASS\b/.test(l));
+  if (screams.length && /\bUNMEASURED\b/.test(screams[0])) return screams[0];
+  if (code === 0 || code === null) return null;
+  if (lines.some((l) => /^Node\.js v\d+/.test(l))) {
+    const error = lines.find((l) => /^(?:<ref \*\d+>\s*)?(?:[A-Z]\w*)?Error\b.*\S/.test(l));
+    return `crashed — ${error ?? "an uncaught exception"}`.replace(/^crashed — <ref \*\d+>\s*/, "crashed — ");
+  }
+  if (lines.some((l) => l.startsWith("Traceback (most recent call last):"))) {
+    const last = lines.at(-1) ?? "";
+    if (/^[A-Za-z_][\w.]*(?:Error|Exception|Exit|Interrupt)\b/.test(last)) return `crashed — ${last}`;
+  }
+  return null;
+}
+
 function writeLog(id, text) {
   mkdirSync(LOG_DIR, { recursive: true });
   const path = join(LOG_DIR, `${id}.log`);
@@ -446,6 +474,8 @@ async function runRow(row, timeoutOverride, scans, metrics) {
   // Item lines are machine records, never a headline: judge the rest of the output.
   const judged = items.length || errors.length || complete ? plain(output).split("\n").filter((l) => !isRecord(l)).join("\n") : output;
   const verdict = judge(row, code, judged);
+  const unjudged = verdict && couldNotJudge(code, judged);
+  if (unjudged) verdict.title = oneLine(`check ${row.id} could not establish truth: ${unjudged}`, 240);
   const summary = verdict && {
     check: row.id,
     category: row.category,

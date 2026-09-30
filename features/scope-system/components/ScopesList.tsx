@@ -66,6 +66,7 @@ import {
   selectValuesByScope,
   type ScopeContextRow,
 } from "@/features/scopes/redux/scopeContextView";
+import { ensureContextValuesForScopes } from "@/features/scopes/redux/thunks/ensureContextValues";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
@@ -174,6 +175,9 @@ export function ScopesList({
   }, [dispatch, orgId, resolvedTypeId]);
 
   useEffect(() => {
+    // Every scope's values in ONE read first (STORE-READ-PERF-5), so each scope's view below reads
+    // the values store instead of asking the values door once per scope.
+    if (scopes.length > 0) void dispatch(ensureContextValuesForScopes(scopes.map((scope) => scope.id)));
     for (const scope of scopes) {
       dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
     }

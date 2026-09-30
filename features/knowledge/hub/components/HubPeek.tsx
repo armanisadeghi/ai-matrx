@@ -308,9 +308,13 @@ export function HubPeek({
       </div>
       {embed ? (
         <>
-          <div className="max-h-24 shrink-0 overflow-y-auto border-b border-border px-4 py-2">
-            <Heading>Filed under</Heading>
-            <LiveFiledUnder entity={target.entity} id={target.id} />
+          {/* Above the page: its tags (removable) and where it is filed — the same the light peek shows. */}
+          <div className="max-h-40 shrink-0 space-y-2 overflow-y-auto border-b border-border px-4 py-2">
+            {tagsSection}
+            <div>
+              <Heading>Filed under</Heading>
+              <LiveFiledUnder entity={target.entity} id={target.id} />
+            </div>
           </div>
           <div className="flex shrink-0 gap-1 border-b border-border px-3 py-1" role="tablist" aria-label="Peek view">
             {(["page", "details"] as const).map((t) => (

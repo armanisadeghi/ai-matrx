@@ -76,6 +76,9 @@ export async function inBatches<T>(
   return ok(out);
 }
 
+/** `custom.context_values` answers at most this many scopes a call (its own refusal above it). */
+export const CONTEXT_VALUES_PAGE = 200;
+
 // ─── the reads ──────────────────────────────────────────────────────────────────────────────────
 
 /** The live scope types (each with its live scopes) of these organizations. */
@@ -115,11 +118,11 @@ export async function readContextItems(typeIds: readonly string[]): Promise<Scop
   return ok(res.data.map(contextItemRowFromStore));
 }
 
-/** The current values of scopes by id (at most 200 a call; batched here by 100). */
+/** The current values of scopes by id: the door answers at most 200 a call, so 200 scopes are ONE call. */
 export async function readContextValues(
   scopeIds: readonly string[],
 ): Promise<ScopesRpcResult<Array<ContextItemValue & { scope_id: string }>>> {
-  const res = await inBatches(scopeIds, 100, (batch) =>
+  const res = await inBatches(scopeIds, CONTEXT_VALUES_PAGE, (batch) =>
     callContextDoor<StoreValueRow[]>("context_values", { p_scope_ids: batch }),
   );
   if (!res.ok) return res;

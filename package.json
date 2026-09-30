@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2592",
+  "version": "0.4.2590",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -81,6 +81,8 @@
     "check:org-refusal-honesty:self-test": "tsx scripts/check-org-refusal-honesty.ts --self-test",
     "check:no-default-organization": "tsx scripts/check-no-default-organization.ts",
     "check:object-pages-read-the-objects-organization": "tsx scripts/check-object-pages-read-the-objects-organization.ts",
+    "check:no-silent-org-filter": "tsx scripts/check-no-silent-org-filter.ts",
+    "check:no-silent-org-filter:self-test": "tsx scripts/check-no-silent-org-filter.ts --self-test",
     "check:routes-register-page-capture": "tsx scripts/check-routes-register-page-capture.ts",
     "check:routes-register-page-capture:self-test": "tsx scripts/check-routes-register-page-capture.ts --self-test",
     "check:old-system-unreachable": "tsx scripts/check-old-system-unreachable.ts",

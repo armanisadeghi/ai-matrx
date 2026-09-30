@@ -1,105 +1,16 @@
 /**
- * The one Source input — local types.
+ * The one Source input — the props every host passes to `<SourceInput>`.
  *
- * The wire shapes (`SourceRef`, `SourceSet`, `SourceManifest`, …) are the
- * frozen v1 contract in `@ai-matrx/agents/sources` and are never re-declared
- * here. What lives here is only what the INPUT needs on top of them: a
- * `SourceDraft` (one picked Source while the person is still choosing) and the
- * props every host passes to `<SourceInput>`.
+ * Everything else the input works with — the wire contract (`SourceRef`,
+ * `SourceSet`, …, `@ai-matrx/agents/sources`) and the runtime shapes
+ * (`SourceDraft`, `SourceCardModel`, `SourceKindId`, …,
+ * `@ai-matrx/agents/sources/runtime`) — lives in the package and is never
+ * re-declared here (USI-7, "one core, many screens").
  *
  * Contract of record: common-docs `projects/unified-source-input/DESIGN.md`.
  */
 
-import type {
-  SourceManifestEntry,
-  SourceRef,
-} from "@ai-matrx/agents/sources";
-import type { SourceDelivery } from "./delivery";
-
-/** Every tile a host can allow: the Add new doors, plus "existing" (Use existing + search). */
-export type SourceTileId =
-  | "upload"
-  | "paste"
-  | "web"
-  | "youtube"
-  | "audio"
-  | "image"
-  | "topic"
-  | "existing";
-
-/**
- * What a picked Source is while the person chooses: the tile it came through,
- * or — for something they already had — "files", "notes", "your_sources"
- * (a Source screen) or "records" (any other registry kind).
- */
-export type SourceKindId = SourceTileId | "your_sources" | "files" | "notes" | "records";
-
-/**
- * One picked Source while the person is still choosing. JSON only — it is
- * persisted as a draft so a refresh never loses a pick.
- *
- * `ref` is null only while a NEW Source is still landing (reading a page,
- * transcribing, uploading); it becomes the pointer the moment the door
- * answers. Nothing is ever sent to the server as a blob.
- */
-export interface SourceDraft {
-  kind: SourceKindId;
-  /** What the person sees: a file name, a page title, the first line of a paste. */
-  label: string;
-  ref: SourceRef | null;
-  /** Where it came from, in plain words (a web address, "Pasted text"). */
-  origin?: string;
-  /** The Source screen id when known (a landed Source) — every card opens. */
-  processedDocumentId?: string;
-  /**
-   * How a reused Source was captured (`processed_documents.source_kind`), so
-   * the card and the review say "Transcript" or "Web page" — never "Document".
-   */
-  sourceKind?: string;
-  /** The stored file behind it, when it is one (the form chooser reads its family). */
-  fileId?: string;
-  /** Every stand-in announces itself: a reader fallback, a door notice. */
-  notes?: string[];
-  /** The person asked to wait for the clean version before anything runs. */
-  waitForClean?: boolean;
-  /**
-   * What the person handed over, kept ONLY while the Source is still landing
-   * (or failed) so a reload or a failure never loses it: the pasted text, the
-   * link, or an already-uploaded recording's file. Never file bytes. Cleared
-   * the moment the Source settles.
-   */
-  input?: SourceIntakeInput;
-}
-
-/** The input behind a Source that is still landing — enough to land it again. */
-export interface SourceIntakeInput {
-  /** Pasted text (paste). */
-  text?: string;
-  /** The name the person typed for pasted text. */
-  name?: string;
-  /** A web page or YouTube link (web, youtube). */
-  url?: string;
-  /** A recording that already finished uploading (audio) — transcribe from here. */
-  fileId?: string;
-}
-
-/** One card: the draft, its lifecycle, and what the server measured. */
-export interface SourceCardModel {
-  id: string;
-  draft: SourceDraft;
-  status: "pending" | "resolving" | "ready" | "error";
-  /** A sentence with its remedy — never a code. */
-  error: string | null;
-  /** The server's measurement (sizes, forms, parts, state). Null until read. */
-  manifest: SourceManifestEntry | null;
-}
-
-/** The entity the Sources are being used for — passed to the door as `attach_to`. */
-export interface SourceAttachTo {
-  entityType: string;
-  entityId: string;
-  label?: string;
-}
+import type { SourceAttachTo, SourceDelivery, SourceKindId } from "@ai-matrx/agents/sources/runtime";
 
 export interface SourceInputProps {
   /**

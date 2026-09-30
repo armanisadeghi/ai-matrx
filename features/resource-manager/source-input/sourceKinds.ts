@@ -40,7 +40,7 @@ import {
   SOURCE_KIND_LABEL,
   sourceKindGroup,
 } from "@/features/sources/sourceRows";
-import type { SourceDraft, SourceKindId, SourceTileId } from "./types";
+import type { SourceDraft, SourceKindId, SourceTileId } from "@ai-matrx/agents/sources/runtime";
 
 export type SourceKindControl = "upload" | "paste" | "url" | "youtube" | "audio" | "topic";
 
@@ -100,19 +100,6 @@ export function showsExisting(kinds: readonly SourceKindId[] | undefined): boole
 
 export function sourceKindDef(id: SourceKindId): SourceKindDef | null {
   return SOURCE_KINDS.find((k) => k.id === id) ?? null;
-}
-
-/** The draft kind a picked registry item goes by. */
-export function draftKindForToken(token: string): SourceKindId {
-  if (token === "file") return "files";
-  if (token === "note") return "notes";
-  if (token === "processed_document") return "your_sources";
-  return "records";
-}
-
-/** The key a Source goes by across screens: "<resource_type>:<resource_id>". */
-export function sourceKey(ref: { resource_type: string; resource_id: string }): string {
-  return `${ref.resource_type}:${ref.resource_id}`;
 }
 
 const DRAFT_ICONS: Partial<Record<SourceKindId, ComponentType<{ className?: string }>>> = {

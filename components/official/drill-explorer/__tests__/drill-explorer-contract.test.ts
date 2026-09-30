@@ -61,8 +61,10 @@ describe("the contract additions are optional", () => {
 });
 
 describe("a declared question becomes the address's question", () => {
-  it("carries the grouping, equality crumbs, a preset or day range, the comparison and the sort", () => {
+  it("carries the grouping, equality crumbs, a window (moments kept), the comparison and the sort — and CARRIES what the address cannot say instead of dropping it", () => {
     expect(explorerQuestionOf(DEF.default)).toEqual({ by: ["person"], show: ["cost"], where: [], window: "30d", sort: { key: "cost", direction: "desc" } });
+    // VERIFY-DRILL-WAVE1 F3: this test used to assert the list filter and the ad hoc Measure were
+    // DROPPED (a wider answer with no word). They now ride in `door`: asked, said, and saved.
     expect(
       explorerQuestionOf({
         by: ["model"],
@@ -78,8 +80,9 @@ describe("a declared question becomes the address's question", () => {
         { dim: "provider", value: "anthropic" },
         { dim: "person", value: null },
       ],
-      window: "2026-09-01..2026-09-30",
+      window: "2026-09-01T00:00:00Z..2026-09-30T00:00:00Z",
       compare: "previous_period",
+      door: { where: { origin: ["chat", "api"] }, adHoc: [{ at: 1, measure: { op: "sum", of: "tokens_in" } }] },
     });
   });
 

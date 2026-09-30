@@ -61,15 +61,20 @@ import {
   deliveryPatch,
   sourceDelivery,
   type SourceDelivery,
-} from "../delivery";
-import type { SourcePart } from "../partsSearch";
+} from "@ai-matrx/agents/sources/runtime";
+import type { SourcePart } from "@ai-matrx/agents/sources/runtime";
 import { SourcePartsPicker } from "../review/SourcePartsPicker";
-import { resumableInput, WAITING_FOR_ORGANIZATION } from "../interrupted";
+import {
+  resumableInput,
+  sourceCardChars,
+  sourceCardMeasuredState,
+  WAITING_FOR_ORGANIZATION,
+} from "@ai-matrx/agents/sources/runtime";
 import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
-import type { SourceCardModel } from "../types";
+import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
 import type { UseSourceSetResult } from "../useSourceSet";
 
 export function formatChars(chars: number): string {
@@ -77,23 +82,6 @@ export function formatChars(chars: number): string {
   if (chars >= 10_000) return `${Math.round(chars / 1000)}k characters`;
   if (chars >= 1000) return `${(chars / 1000).toFixed(1)}k characters`;
   return `${chars} characters`;
-}
-
-/** The size that will go in for this card (the chosen form or the picked parts). */
-function cardChars(card: SourceCardModel): number | null {
-  const entry = card.manifest;
-  const ref = card.draft.ref;
-  if (!entry || !ref) return null;
-  if (ref.include_segments?.length && entry.segments?.length) {
-    const picked = new Set(ref.include_segments);
-    return entry.segments.filter((s) => picked.has(s.id)).reduce((n, s) => n + s.chars, 0);
-  }
-  const form = ref.representation ?? entry.default_form;
-  return (
-    entry.forms.find((f) => f.form === form)?.chars ??
-    entry.forms.find((f) => f.form === entry.default_form)?.chars ??
-    null
-  );
 }
 
 const STATE_WORDS: Record<SourceManifestEntry["state"], string> = {
@@ -131,7 +119,10 @@ export function SourceCard({
   const Icon = sourceKindIcon(card.draft);
   const ref = card.draft.ref;
   const entry = card.manifest;
-  const chars = cardChars(card);
+  // THE one size (the runtime's rule — the same number the header and the review show).
+  const chars = sourceCardChars(card);
+  // THE one state: the server's measured word only for a card that landed (a failed card is failed).
+  const measuredState = sourceCardMeasuredState(card);
   const delivery = sourceDelivery(ref);
   const deliveryChoices = deliveryChoicesFor(deliveries);
   const waitingForOrganization = card.status === "error" && card.error === WAITING_FOR_ORGANIZATION;
@@ -179,9 +170,9 @@ export function SourceCard({
               </span>
             ) : null}
             {delivery === "context" ? <span>· {DELIVERY_WORDS.context.summary}</span> : null}
-            {entry ? (
-              <span className={cn(entry.state === "processing" && "text-warning", (entry.state === "failed" || entry.state === "unavailable") && "text-destructive")}>
-                · {STATE_WORDS[entry.state]}
+            {measuredState ? (
+              <span className={cn(measuredState === "processing" && "text-warning", (measuredState === "failed" || measuredState === "unavailable") && "text-destructive")}>
+                · {STATE_WORDS[measuredState]}
               </span>
             ) : null}
             {card.draft.origin && card.draft.origin !== sourceKindNoun(card.draft) ? (

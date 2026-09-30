@@ -1,0 +1,5 @@
+{ "extends": "./tsconfig.typecheck.json", "include": ["**/*.d.ts"], "files": [
+ "features/admin/check-findings/model.ts","features/admin/check-findings/model.test.ts","features/admin/check-findings/CheckFindingsConsole.tsx",
+ "scripts/check-agent-links.ts","scripts/check-agent-submit-content-gates.ts","scripts/check-signout-scope.ts","scripts/check-campaign-entry-points.ts",
+ "scripts/check-table-readers.ts","scripts/check-table-writers.ts","scripts/check-access-guards.ts","scripts/check-parked-route-groups.ts",
+ "scripts/pattern-patrol/p3-hover-detector.ts","scripts/generate-type-drift-hitlists.ts","scripts/check-docs-guards.ts","scripts/check-surface-interactive-roots.ts"] }

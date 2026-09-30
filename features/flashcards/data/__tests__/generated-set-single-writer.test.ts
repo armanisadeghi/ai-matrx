@@ -56,18 +56,25 @@ const surfaceSet = {
   },
 } as unknown as FcSetRow;
 
-/** Chainable PostgREST query mock whose maybeSingle resolves per-call. */
-function queryReturning(rows: Array<unknown | null>) {
-  let call = 0;
-  const chain: Record<string, jest.Mock> = {};
-  for (const m of ["from", "select", "eq", "is", "limit"]) {
-    chain[m] = jest.fn(() => chain);
-  }
-  chain.maybeSingle = jest.fn(async () => ({
-    data: rows[Math.min(call++, rows.length - 1)] ?? null,
-    error: null,
-  }));
-  return chain;
+/**
+ * Chainable PostgREST mock for list reads: awaiting any chain resolves the rows
+ * registered for the table it was built from (`from(table)`).
+ */
+function tablesReturning(rowsByTable: Record<string, unknown[]>) {
+  return jest.fn(() => {
+    let table = "";
+    const chain: Record<string, unknown> = {};
+    for (const m of ["select", "eq", "is", "in", "neq", "order", "limit"]) {
+      chain[m] = jest.fn(() => chain);
+    }
+    chain.from = jest.fn((name: string) => {
+      table = name;
+      return chain;
+    });
+    chain.then = (resolve: (v: unknown) => unknown) =>
+      resolve({ data: rowsByTable[table] ?? [], error: null });
+    return chain;
+  });
 }
 
 afterEach(() => jest.restoreAllMocks());
@@ -155,8 +162,8 @@ describe("FLASHCARDS_CANONICAL_ADAPTER.onMaterialize (chat materialization)", ()
   it("links to the surface-saved set for the conversation instead of creating a twin", async () => {
     // The adapter's two direct source-dedupe queries (by source_id, then the
     // legacy source_message_id fallback) find nothing.
-    (supabase.schema as jest.Mock).mockReturnValue(
-      queryReturning([null, null]),
+    (supabase.schema as jest.Mock).mockImplementation(
+      tablesReturning({ fc_set: [], canvas_items: [] }),
     );
     jest
       .spyOn(fcService, "findSurfaceSavedSetForConversation")
@@ -177,6 +184,120 @@ describe("FLASHCARDS_CANONICAL_ADAPTER.onMaterialize (chat materialization)", ()
     } as never);
 
     expect(link).toEqual({ externalSystem: "fc_set", externalId: "set-surface" });
+    expect(createSetWithCards).not.toHaveBeenCalled();
+  });
+});
+
+describe("FLASHCARDS_CANONICAL_ADAPTER.onMaterialize — several sets in one message", () => {
+  const message = { system: "cx_message", id: "msg-7" } as const;
+  const baseInfo = {
+    canvasType: "flashcards",
+    title: "Polyatomic ions",
+    rawContent: "",
+    structured: {
+      __kind: "flashcard_set",
+      title: "Polyatomic ions",
+      cards: [{ front: "Nitrate", back: "NO3-" }],
+    },
+    source: message,
+    conversationId: null,
+  };
+  const created = {
+    id: "set-new",
+    name: "Polyatomic ions",
+    organization_id: "org-1",
+    metadata: {},
+  } as unknown as FcSetRow;
+
+  function mockCreate() {
+    return jest.spyOn(fcService, "createSetWithCards").mockResolvedValue({
+      data: { set: created, cards: [] } as unknown as SetWithCards,
+      error: null,
+    });
+  }
+
+  it("gives the second set in a message its own deck instead of the first set's", async () => {
+    (supabase.schema as jest.Mock).mockImplementation(
+      tablesReturning({
+        fc_set: [
+          { id: "set-first", metadata: { source_id: "msg-7", source_index: 1 } },
+        ],
+        canvas_items: [],
+      }),
+    );
+    const createSetWithCards = mockCreate();
+
+    const link = await FLASHCARDS_CANONICAL_ADAPTER.onMaterialize?.({
+      ...baseInfo,
+      artifactId: "art-2",
+      artifactIndex: 2,
+    } as never);
+
+    expect(link).toEqual({ externalSystem: "fc_set", externalId: "set-new" });
+    expect(createSetWithCards).toHaveBeenCalledTimes(1);
+    expect(createSetWithCards.mock.calls[0][0].metadata).toMatchObject({
+      source_id: "msg-7",
+      source_index: 2,
+    });
+  });
+
+  it("re-materializing the same artifact reuses its own deck", async () => {
+    (supabase.schema as jest.Mock).mockImplementation(
+      tablesReturning({
+        fc_set: [
+          { id: "set-first", metadata: { source_index: 1 } },
+          { id: "set-second", metadata: { source_index: 2 } },
+        ],
+        canvas_items: [],
+      }),
+    );
+    const createSetWithCards = mockCreate();
+
+    const link = await FLASHCARDS_CANONICAL_ADAPTER.onMaterialize?.({
+      ...baseInfo,
+      artifactId: "art-2",
+      artifactIndex: 2,
+    } as never);
+
+    expect(link).toEqual({ externalSystem: "fc_set", externalId: "set-second" });
+    expect(createSetWithCards).not.toHaveBeenCalled();
+  });
+
+  it("never hands a pre-index deck that another artifact already links to a second artifact", async () => {
+    (supabase.schema as jest.Mock).mockImplementation(
+      tablesReturning({
+        fc_set: [{ id: "set-legacy", metadata: { source_id: "msg-7" } }],
+        canvas_items: [{ id: "art-1", external_id: "set-legacy" }],
+      }),
+    );
+    const createSetWithCards = mockCreate();
+
+    const link = await FLASHCARDS_CANONICAL_ADAPTER.onMaterialize?.({
+      ...baseInfo,
+      artifactId: "art-2",
+      artifactIndex: 2,
+    } as never);
+
+    expect(link).toEqual({ externalSystem: "fc_set", externalId: "set-new" });
+    expect(createSetWithCards).toHaveBeenCalledTimes(1);
+  });
+
+  it("still reuses an unclaimed pre-index deck (reconcile stays idempotent)", async () => {
+    (supabase.schema as jest.Mock).mockImplementation(
+      tablesReturning({
+        fc_set: [{ id: "set-legacy", metadata: { source_id: "msg-7" } }],
+        canvas_items: [],
+      }),
+    );
+    const createSetWithCards = mockCreate();
+
+    const link = await FLASHCARDS_CANONICAL_ADAPTER.onMaterialize?.({
+      ...baseInfo,
+      artifactId: "art-1",
+      artifactIndex: 1,
+    } as never);
+
+    expect(link).toEqual({ externalSystem: "fc_set", externalId: "set-legacy" });
     expect(createSetWithCards).not.toHaveBeenCalled();
   });
 });

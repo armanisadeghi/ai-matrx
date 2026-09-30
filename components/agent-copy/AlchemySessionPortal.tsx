@@ -72,16 +72,43 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
     if (ran.current) return;
     ran.current = true;
     const { intent } = request;
+    const hasWorkspace = () => {
+      const state = getStoreSingleton()?.getState() as { appContext?: { organization_id?: string | null } } | undefined;
+      return Boolean(state?.appContext?.organization_id);
+    };
     if (intent.kind === "prepare") {
-      const variant = intent.variantId ? request.variants?.find((v) => v.id === intent.variantId) : undefined;
-      const open = variant
-        ? controller.current?.prepare(variant.source, { id: variant.id, label: variant.label })
-        : controller.current?.preparePrimary();
-      if (!open) {
-        toast.error("Alchemy could not open", { description: "Reload the page and try again." });
+      const openWorkspace = () => {
+        const variant = intent.variantId ? request.variants?.find((v) => v.id === intent.variantId) : undefined;
+        const open = variant
+          ? controller.current?.prepare(variant.source, { id: variant.id, label: variant.label })
+          : controller.current?.preparePrimary();
+        if (!open) {
+          toast.error("Alchemy could not open", { description: "Reload the page and try again." });
+          return;
+        }
+        void open.catch((error: unknown) => toast.error("Alchemy could not open", { description: errorText(error) }));
+      };
+      if (!intent.forDestination || hasWorkspace()) {
+        openWorkspace();
         return;
       }
-      void open.catch((error: unknown) => toast.error("Alchemy could not open", { description: errorText(error) }));
+      // Pressed to SEND somewhere with no organization chosen: ask through the one write helper,
+      // then wait for the host to re-render with the destinations (the menu remounts on the new
+      // identity) before the workspace opens. Dismiss = the workspace opens without destinations.
+      void (async () => {
+        try {
+          await ensureOrganizationForWrite();
+          for (let i = 0; i < 40 && !(capabilitiesRef.current.actions ?? []).length; i++) {
+            await new Promise((r) => setTimeout(r, 50));
+          }
+          await new Promise((r) => setTimeout(r, 0));
+        } catch (error) {
+          if (!isOrganizationSelectionCancelled(error)) {
+            toast.error("Choosing an organization did not work", { description: errorText(error) });
+          }
+        }
+        openWorkspace();
+      })();
       return;
     }
     const findAction = () => {
@@ -91,10 +118,6 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
         ...(caps.actions ?? []),
       ];
       return actions.find((a) => a.id === intent.actionId);
-    };
-    const hasWorkspace = () => {
-      const state = getStoreSingleton()?.getState() as { appContext?: { organization_id?: string | null } } | undefined;
-      return Boolean(state?.appContext?.organization_id);
     };
     const controllerAbort = new AbortController();
     void (async () => {
@@ -160,6 +183,7 @@ function AlchemySession({ request }: { request: AlchemySessionRequest }) {
       label={request.label}
       {...(request.formatSources ? { formatSources: request.formatSources } : {})}
       {...(request.variants ? { variants: request.variants } : {})}
+      {...(request.envelope ? { envelope: () => request.envelope } : {})}
       {...(localCapabilities ? { capabilities: localCapabilities } : {})}
     />
   );

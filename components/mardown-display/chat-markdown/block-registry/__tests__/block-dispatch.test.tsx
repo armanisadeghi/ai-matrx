@@ -158,6 +158,22 @@ const FE_SYNTHESIZED_TYPES = [
   // each, reached through that kind's kind_component row.
   "google_workspace_result",
   "google_marketing_result",
+  // The fourteen keyword Ruling Session routes: one component per kind,
+  // reached through that kind's kind_component row.
+  "seo_ruling_keyword",
+  "seo_ruling_example",
+  "seo_ruling_dimension",
+  "seo_ruling_matcher_hit",
+  "seo_ruling_correction",
+  "seo_ruling_confirmation",
+  "seo_ruling_matcher",
+  "seo_ruling_keyword_set",
+  "seo_ruling_example_set",
+  "seo_ruling_dimension_catalog",
+  "seo_ruling_matcher_hit_set",
+  "seo_ruling_correction_set",
+  "seo_ruling_confirmation_set",
+  "seo_ruling_matcher_set",
 ];
 
 describe("block-dispatch registry", () => {

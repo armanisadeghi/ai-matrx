@@ -49,17 +49,20 @@ import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   showsExisting,
-  sourceKey,
   sourceKindNoun,
   visibleSourceKinds,
   type SourceKindDef,
 } from "../sourceKinds";
-import { deliverySwitchedNote, fitDelivery } from "../delivery";
 import { useSourceSet } from "../useSourceSet";
 import { useSourceIntake } from "../useSourceIntake";
 import { useSourceRecovery } from "../useSourceRecovery";
-import { fileCardHeldForOrganization } from "../fileSource";
-import type { SourceInputProps, SourceTileId } from "../types";
+import {
+  fileCardHeldForOrganization,
+  sourceKey,
+  type SourceTileId,
+} from "@ai-matrx/agents/sources/runtime";
+import { fileOrganizationId } from "@/features/files/api/fileOrganization";
+import type { SourceInputProps } from "../types";
 import { SourceCard, formatChars } from "./SourceCard";
 import { UseExisting } from "./UseExisting";
 
@@ -87,7 +90,7 @@ export function SourceInput({
   const [webUrlForVideo, setWebUrlForVideo] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState("");
   const [scopeChoice, setScopeChoice] = useState<"mine" | "organization">("mine");
-  const set = useSourceSet(surfaceKey, { defaultForm });
+  const set = useSourceSet(surfaceKey, { defaultForm, deliveries, max });
   const runner = useProcessingRunner();
   const intake = useSourceIntake(set, { attachTo });
   const [threshold, setThreshold] = useState<number | null>(null);
@@ -132,16 +135,7 @@ export function SourceInput({
   // surface, restored from a draft, handed in by a link) is switched back,
   // and its card says so. Never a choice that cannot work.
   const deliveryKey = JSON.stringify([deliveries ?? null, set.sources.map((s) => s.draft.ref?.delivery ?? null)]);
-  const fitDeliveries = useEffectEvent(() => {
-    for (const card of set.sources) {
-      const fit = fitDelivery(card.draft.ref, deliveries);
-      if (!fit) continue;
-      set.updateRef(card.id, fit.patch);
-      const note = deliverySwitchedNote(fit.to);
-      if (!card.draft.notes?.includes(note))
-        set.updateDraft(card.id, { notes: [...(card.draft.notes ?? []), note] });
-    }
-  });
+  const fitDeliveries = useEffectEvent(() => set.fitDeliveries(deliveries));
   useEffect(() => {
     fitDeliveries();
   }, [deliveryKey]);
@@ -213,7 +207,7 @@ export function SourceInput({
 
   const refuseOverMax = (): boolean => {
     // Read the store, not this render: two quick clicks must not both pass.
-    if (max === undefined || set.liveCount() < max) return false;
+    if (max === undefined || set.roomLeft() > 0) return false;
     toast.info(`This takes at most ${max} ${max === 1 ? "source" : "sources"}. Remove one to add another.`);
     return true;
   };
@@ -221,7 +215,7 @@ export function SourceInput({
   /** Keep only as many files as there is room for, and say what was left out. */
   const fitFiles = (files: UploadedFile[]): UploadedFile[] => {
     if (max === undefined) return files;
-    const room = Math.max(0, max - set.liveCount());
+    const room = set.roomLeft();
     if (files.length > room)
       toast.info(
         `This takes at most ${max} ${max === 1 ? "source" : "sources"}, so only ${room} of the ${files.length} files were added.`,
@@ -394,7 +388,7 @@ export function SourceInput({
                   : null
               }
               deliveries={deliveries}
-              heldForOrganization={fileCardHeldForOrganization(card, activeOrgId)}
+              heldForOrganization={fileCardHeldForOrganization(card, activeOrgId, fileOrganizationId)}
               onProcessingSettled={() => void set.manifest()}
               // A retry is a card already in the list — it never counts against `max`.
               onTryAgain={() => void intake.resume(card)}
@@ -511,20 +505,7 @@ function TileArea({
     case "url":
       return (
         <div className="max-h-[70dvh] overflow-y-auto">
-          <WebpageResourcePickerCore
-            onSwitchTo={(type, url) => {
-              if (type === "youtube") onVideoLink(url);
-            }}
-            onSelect={(content, landed) => {
-              if (refuseOverMax()) return;
-              void intake.addScrapedPage({
-                url: content.url ?? "",
-                title: content.title ?? "",
-                text: content.textContent ?? "",
-                processedDocumentId: landed.processedDocumentId,
-              });
-            }}
-          />
+          <WebPageRead set={set} intake={intake} refuseOverMax={refuseOverMax} onVideoLink={onVideoLink} />
         </div>
       );
     case "youtube":
@@ -550,7 +531,7 @@ function TileArea({
               onSelect={(resource) => {
                 if (resource.type !== "text" || refuseOverMax()) return;
                 const at = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-                void intake.addPastedText(resource.data.text, `Recording ${at}`);
+                void intake.addRecordedText(resource.data.text, `Recording ${at}`);
               }}
             />
             <Button
@@ -599,4 +580,69 @@ function TileArea({
         />
       );
   }
+}
+
+/**
+ * The web page door. A read has a card — with its link kept — from the moment
+ * it starts (`intake.beginWebPage`), so a reload mid-read brings it back and
+ * lands it (verify-3 12a/12b: it was lost, link and all). Confirming settles
+ * that card; dropping the preview or a failed read removes it; closing this
+ * panel mid-read lands it through the web door (`intake.resume`).
+ */
+function WebPageRead({
+  set,
+  intake,
+  refuseOverMax,
+  onVideoLink,
+}: {
+  set: ReturnType<typeof useSourceSet>;
+  intake: ReturnType<typeof useSourceIntake>;
+  refuseOverMax: () => boolean;
+  onVideoLink: (url: string) => void;
+}) {
+  const reading = useRef<string | null>(null);
+  const latest = useRef({ set, intake });
+  useEffect(() => {
+    latest.current = { set, intake };
+  });
+  useEffect(
+    () => () => {
+      const id = reading.current;
+      reading.current = null;
+      if (!id) return;
+      const card = latest.current.set.controller.getState().cards.find((c) => c.id === id);
+      if (card && card.status !== "ready") latest.current.intake.resume(card);
+    },
+    [],
+  );
+  return (
+    <WebpageResourcePickerCore
+      onSwitchTo={(type, url) => {
+        if (type === "youtube") onVideoLink(url);
+      }}
+      onReadStart={(url) => {
+        // At the limit nothing is added yet — confirming says so, as before.
+        reading.current = set.roomLeft() > 0 ? intake.beginWebPage(url) : null;
+      }}
+      onReadEnd={() => {
+        const id = reading.current;
+        reading.current = null;
+        if (id) set.remove(id);
+      }}
+      onSelect={(content, landed) => {
+        const pending = reading.current;
+        reading.current = null;
+        if (!pending && refuseOverMax()) return;
+        void intake.addScrapedPage(
+          {
+            url: content.url ?? "",
+            title: content.title ?? "",
+            text: content.textContent ?? "",
+            processedDocumentId: landed.processedDocumentId,
+          },
+          pending,
+        );
+      }}
+    />
+  );
 }

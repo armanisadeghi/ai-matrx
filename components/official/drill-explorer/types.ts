@@ -11,6 +11,8 @@ import type { ReactNode } from "react";
 import type { DrillAnswer, DrillDefinition, DrillQuestion, DrillSource } from "@ai-matrx/records";
 import type { MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
+import { explorerQuestionParts, type ExplorerQuestion } from "./questionParts";
+
 // ── the contract additions (decision 25), read as optional ──────────────────
 
 /** A threshold on a Measure, applied by the door before the group limit (a finding's rule). */
@@ -47,6 +49,8 @@ export interface DrillFinding {
 export interface DrillRecordsDeclaration {
   fact: string;
   columns: string[];
+  /** The words a person reads for a column where its name would mislead ("Request's top model"; decision 14). */
+  labels?: Record<string, string>;
 }
 
 /** What `drill_describe` returns, with the additions. */
@@ -86,7 +90,12 @@ export function findingsOf(def: DrillDefinition | null): DrillFinding[] {
 export function recordsOf(def: DrillDefinition | null): DrillRecordsDeclaration | null {
   const records = def ? (def as DrillDefinitionPlus).records : undefined;
   if (!isRecord(records) || typeof records.fact !== "string" || !Array.isArray(records.columns)) return null;
-  return { fact: records.fact, columns: records.columns.filter((c): c is string => typeof c === "string") };
+  const out: DrillRecordsDeclaration = { fact: records.fact, columns: records.columns.filter((c): c is string => typeof c === "string") };
+  if (isRecord(records.labels)) {
+    const labels = Object.fromEntries(Object.entries(records.labels).filter((e): e is [string, string] => typeof e[1] === "string" && e[1].length > 0));
+    if (Object.keys(labels).length > 0) out.labels = labels;
+  }
+  return out;
 }
 
 export function staleAfterKnobOf(def: DrillDefinition | null): string | null {
@@ -110,42 +119,30 @@ export function asOfPage(page: unknown): string | null {
 
 // ── the door's question ↔ the address's question ────────────────────────────
 
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
-
 /**
  * A declared question (a built-in view, a finding, the definition's default) as the explorer's
- * address question. Only what the address can say is carried: equality crumbs, a preset or a
- * `from..to` day range, the named comparisons. `having` is not an address thing — a finding is
- * answered through the door, and its row drills with ordinary crumbs.
+ * question: the address question, with everything the address cannot say carried beside it in
+ * `door` — sent to the door with every ask and said on screen, never silently dropped
+ * (`questionParts.ts`; VERIFY-DRILL-WAVE1 F3). `doorQuestionOf` is its exact inverse.
  */
-export function explorerQuestionOf(q: DrillQuestion): MatrxDrillQuestion {
-  const where: MatrxDrillQuestion["where"] = [];
-  for (const [dim, value] of Object.entries(q.where ?? {})) {
-    if (value === null || typeof value === "string") where.push({ dim, value });
-    else if (typeof value === "number" || typeof value === "boolean") where.push({ dim, value: String(value) });
-  }
-  let window: string | null = null;
-  if (q.window?.preset) window = q.window.preset;
-  else if (q.window?.from && q.window.to && ISO_DAY.test(q.window.from) && ISO_DAY.test(q.window.to)) {
-    window = `${q.window.from.slice(0, 10)}..${q.window.to.slice(0, 10)}`;
-  }
-  const against = typeof q.compare === "string" ? q.compare : q.compare?.against;
-  const out: MatrxDrillQuestion = {
-    by: [...(q.by ?? [])],
-    show: (q.show ?? []).filter((s): s is string => typeof s === "string"),
-    where,
-  };
-  if (q.across) out.across = q.across;
-  if (window) out.window = window;
-  if (against === "previous_period" || against === "same_period_last_year") out.compare = against;
-  if (q.sort) out.sort = { key: q.sort.key, direction: q.sort.direction ?? "desc" };
-  return out;
+export function explorerQuestionOf(q: DrillQuestionWithHaving): ExplorerQuestion {
+  return explorerQuestionParts(q);
 }
 
-/** The finding's question, asked in the explorer's window unless it names its own. */
-export function findingQuestion(finding: DrillFinding, current: MatrxDrillQuestion): MatrxDrillQuestion {
+/**
+ * The finding's question, asked in the explorer's window unless it names its own. A finding row
+ * drills into ONE group, so the finding's rule (its thresholds and group limit) stays behind: the
+ * group is the crumb. Its other filters come along.
+ */
+export function findingQuestion(finding: DrillFinding, current: MatrxDrillQuestion): ExplorerQuestion {
   const own = explorerQuestionOf(finding.question);
-  return { ...own, window: own.window ?? current.window ?? null };
+  const out: ExplorerQuestion = { ...own, window: own.window ?? current.window ?? null };
+  if (out.door) {
+    const { having: _having, limit: _limit, ...rest } = out.door;
+    if (Object.keys(rest).length > 0) out.door = rest;
+    else delete out.door;
+  }
+  return out;
 }
 
 /** The address's trail in the door's words: each crumb is an equality (`null` = not set; a period by its label). */
@@ -197,8 +194,12 @@ export interface DrillExplorerHeadline {
 /** "See these records" when the definition declares no records: a link to where they live. */
 export interface DrillExplorerRecordsLink {
   href: (question: MatrxDrillQuestion) => string;
-  /** The sentence before the link and the link's words: "The calls behind a number open in the", "Spend Explorer". */
-  lead: string;
+  /**
+   * The sentence before the link and the link's words: "The calls behind a number open in the",
+   * "Spend Explorer". A function when the sentence depends on the question (what the other screen
+   * cannot narrow by is said, never silently dropped — VERIFIER-32 F2).
+   */
+  lead: string | ((question: MatrxDrillQuestion) => string);
   label: string;
 }
 

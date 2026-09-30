@@ -17,8 +17,8 @@ import type { SourceRef } from "@ai-matrx/agents/sources";
 import { Button, Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatChars } from "@/lib/tokens/estimate";
-import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
-import { useSourcePartsSearch } from "../useSourcePartsText";
+import { findParts, isWordQuery, type SourcePart } from "@ai-matrx/agents/sources/runtime";
+import { useSourcePartsSearch } from "../sourceSetApi";
 
 interface SourcePartsPickerProps {
   /** The Source whose parts these are — its text is read for a word search. */

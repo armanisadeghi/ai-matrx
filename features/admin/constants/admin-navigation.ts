@@ -322,6 +322,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Network",
         destinations: [
           destination("/administration/knowledge/kg-cost"),
+          destination("/administration/knowledge/kg-cost/explore"),
           destination("/administration/knowledge/batch"),
           destination("/administration/knowledge/kg-inspector"),
           destination("/administration/knowledge/search-lab"),
@@ -557,6 +558,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/automation/scheduling/scanner-health"),
           destination("/administration/automation/scheduling/templates"),
         ],
+      },
+      {
+        name: "Workflows",
+        iconName: "Workflow",
+        destinations: [destination("/administration/automation/workflow-runs")],
       },
     ],
   },

@@ -47,7 +47,7 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { SourceInput } from "@/features/resource-manager/source-input/components/SourceInput";
 import { useSourceSet } from "@/features/resource-manager/source-input/useSourceSet";
 import { ALL_SOURCE_KIND_IDS } from "@/features/resource-manager/source-input/sourceKinds";
-import type { SourceDraft, SourceKindId } from "@/features/resource-manager/source-input/types";
+import type { SourceDraft, SourceKindId } from "@ai-matrx/agents/sources/runtime";
 import { useFlashcardMandates } from "@/features/flashcards/data/mandate-disclosure";
 import { fcService } from "@/features/flashcards/data/fcService";
 import {

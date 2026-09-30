@@ -63,7 +63,7 @@ function item(check_id: string, item_key: string, state: string, created_at: str
 }
 
 describe("summarizeChecks", () => {
-  it("counts open + claimed items, keeps reserved records out of the counts, and reports them as broken", () => {
+  it("counts open + claimed items, keeps reserved records out of the counts, and reports __check__ as broken", () => {
     const [row] = summarizeChecks(
       [check("a", run())],
       [
@@ -79,8 +79,22 @@ describe("summarizeChecks", () => {
     expect(row.handedOffCount).toBe(1);
     expect(row.acceptedCount).toBe(1);
     expect(row.oldestOpenAt).toBe(Date.parse("2026-09-10T00:00:00Z"));
-    expect(row.brokenReasons).toEqual(["exit 2: module not found", "fail with no new item"]);
+    expect(row.brokenReasons).toEqual(["exit 2: module not found"]);
+    expect(row.unitemizedFailure).toBe("fail with no new item");
     expect(row.overdue).toBe(false);
+  });
+
+  // 2026-09-30: every one of the 71 "check broken" on the first production ingest was a
+  // `__summary__` — a check that judged and failed without an item list — and none a `__check__`.
+  it("a failing check that lists no items is a failure to fix in the code, never a broken check", () => {
+    const [row] = summarizeChecks(
+      [check("a", run({ verdict: "fail" }))],
+      [item("a", "__summary__", "open", "2026-09-29T00:00:00Z", "5 unresolved import(s)")],
+      NOW,
+    );
+    expect(row.brokenReasons).toEqual([]);
+    expect(row.unitemizedFailure).toBe("5 unresolved import(s)");
+    expect(row.openCount).toBe(0);
   });
 
   it("derives overdue as last run + 2 x cadence, and never for a check that never ran", () => {

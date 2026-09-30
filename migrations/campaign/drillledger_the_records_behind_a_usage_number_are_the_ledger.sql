@@ -1,4 +1,4 @@
--- chair-step: lane DRILL-LEDGER-RECORDS (program DRILL-FINISH, decisions 2, 3, 14, 15/26, 16/28, 25) — THE RECORDS BEHIND A USAGE NUMBER ARE THE LEDGER. It CREATES one server-only view runtime._ai_usage_calls (the AI usage ledger one row per execution, registered System machinery as token ai_usage_executions), one server-only one-row table runtime._ai_usage_hourly_watermark (registered System machinery; row security on, last), three drill settings (drill.usage.stale_after_minutes, drill.chart.top_n, drill.pareto.share_pct) and three helper functions (platform.drill_knob — the resolver of every drill setting incl. drill.finding.<definition>.<finding>.<knob> —, platform._drill_ratio_sql, platform._drill_question_problems). It REPLACES runtime.ai_usage_hourly_refresh (it now aggregates the view — one rules source — and writes the watermark) and seven drill-door bodies of lanes DRILL-STANDARD-DOOR / DRILL-USAGE-PAGE: the validator (ratio measures, records, stale line, built-in Saved views and findings), the resolver and the compiler (the records of a declared definer definition, read definer through the SAME filter compiler and the SAME lane rule; having thresholds; ratio measures), _drill_plan and _drill_run_declared (a `rows` kind), drill_rows and drill_describe; it DROPS AND RECREATES platform.drill_ask with one more column (as_of) and re-grants it to authenticated (its client_callable_door row is keyed by its argument types and stays). No row of anybody's data is written; the ledger is read under ACCESS SHARE only.
+-- chair-step: lane DRILL-LEDGER-RECORDS (program DRILL-FINISH, decisions 2, 3, 14, 15/26, 16/28, 25) — THE RECORDS BEHIND A USAGE NUMBER ARE THE LEDGER. It CREATES one server-only view runtime._ai_usage_calls (the AI usage ledger one row per execution, registered System machinery as token ai_usage_executions), (the one-row watermark table runtime._ai_usage_hourly_watermark is its own file, drillledger_the_watermark_table_is_row_secured.sql, applied first), three drill settings (drill.usage.stale_after_minutes, drill.chart.top_n, drill.pareto.share_pct) and three helper functions (platform.drill_knob — the resolver of every drill setting incl. drill.finding.<definition>.<finding>.<knob> —, platform._drill_ratio_sql, platform._drill_question_problems), none executable by a client. The records page carries the number's own sums as counted and says any difference (a cost that landed after the count). It takes no lock on auth, storage or realtime. It REPLACES runtime.ai_usage_hourly_refresh (it now aggregates the view — one rules source — and writes the watermark) and seven drill-door bodies of lanes DRILL-STANDARD-DOOR / DRILL-USAGE-PAGE: the validator (ratio measures, records, stale line, built-in Saved views and findings), the resolver and the compiler (the records of a declared definer definition, read definer through the SAME filter compiler and the SAME lane rule; having thresholds; ratio measures), _drill_plan and _drill_run_declared (a `rows` kind), drill_rows and drill_describe; it DROPS AND RECREATES platform.drill_ask with one more column (as_of) and re-grants it to authenticated (its client_callable_door row is keyed by its argument types and stays). No row of anybody's data is written; the ledger is read under ACCESS SHARE only.
 -- lane: DRILL-LEDGER-RECORDS
 -- lock: platform
 -- based-on: runtime.ai_usage_hourly_refresh(timestamp with time zone, timestamp with time zone) d803afacaa485cc65e5c8045609bf9b791a950f34129c38c5db41150c060e9f3
@@ -28,40 +28,14 @@
 -- migrations/inverse/drillledger_the_records_behind_a_usage_number_are_the_ledger_down.sql.
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
--- 1. HOW FAR THE ROLLUP HAS COUNTED — one row, written only by a rebuild that reaches now.
+-- 1. HOW FAR THE ROLLUP HAS COUNTED — runtime._ai_usage_hourly_watermark is created, registered and
+--    row-secured by its own file, drillledger_the_watermark_table_is_row_secured.sql, applied FIRST
+--    in the 01:00–04:00 PT window (VERIFY-DRILL-LEDGER-RECORDS F2): a new System table must reach
+--    COMMIT with row security on (platform._provision_shape_settled), and switching it on fires the
+--    admin-read policy hook that locks auth/storage/realtime. This file therefore creates no table
+--    and takes no lock on any of them. The door finds the watermark by name at run time; until it
+--    exists an answer's as_of is null and the records are not cut.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
--- The drill door reads this as the answer's `as_of`, and cuts the records at the same instant, so
--- a total and the records behind it are the same moment's (decisions 15 and 26). Found by the
--- door by its name: a definer fact <schema>.<table> is "as of" <schema>.<table>_watermark.covered_to.
-create table runtime._ai_usage_hourly_watermark (
-  singleton    boolean     primary key default true check (singleton),
-  covered_from timestamptz not null,
-  covered_to   timestamptz not null,
-  refreshed_at timestamptz not null default now(),
-  constraint _ai_usage_hourly_watermark_is_a_range check (covered_from < covered_to)
-);
-revoke all on runtime._ai_usage_hourly_watermark from public, anon, authenticated;
-comment on table runtime._ai_usage_hourly_watermark is
-  'DRILL-LEDGER-RECORDS: how far runtime._ai_usage_hourly has counted. One row. covered_to is the instant the last rebuild that reached now cut the ledger at (every execution created before it is in the rollup); covered_from is where that unbroken run of counted hours starts. Written only by runtime.ai_usage_hourly_refresh; read by the drill door as the answer''s as_of and as the cut of the records behind it.';
-
-insert into platform.entity_types (
-  token, schema_name, table_name, label, base_tier, is_versioned, has_soft_delete, is_active,
-  notes, is_listed, is_component, is_module, rls_variant, reference_pickable, audit_class,
-  audit_class_reason, relation_kind, data_class, data_class_reason, default_list_scope,
-  origin, type, type_reason, agent_writable, allow_preview, table_ref
-)
-values (
-  'ai_usage_hourly_watermark', 'runtime', '_ai_usage_hourly_watermark', 'AI usage counted through', 1, false, false, true,
-  'One row: how far the hourly AI usage rollup has counted (the drill answer''s as_of).',
-  false, false, false, 'system', false, 'machinery',
-  'Written only by runtime.ai_usage_hourly_refresh when a rebuild reaches now; never written by a person or a client.',
-  'table', 'organization',
-  'System machinery with no client lane; read only by the drill door''s definer step.',
-  'organization', 'standard', 'system',
-  'Lane DRILL-LEDGER-RECORDS: the freshness watermark of the ai_usage rollup (PROGRESS-DRILL-FINISH decision 26).',
-  false, false, 'runtime._ai_usage_hourly_watermark'::regclass
-)
-on conflict (token) do nothing;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 2. ONE RULES SOURCE — the ledger, one row per execution, by admin_spend_breakdown's rules.
@@ -339,6 +313,7 @@ as $function$
               from jsonb_array_elements(p_measure -> 'num_parts') x),
            platform._drill_agg_sql(p_measure -> 'den_part', p_prefix || (p_measure -> 'den_part' ->> 'col'), null, p_filter));
 $function$;
+revoke all on function platform._drill_ratio_sql(jsonb, text, text) from public, anon, authenticated;
 comment on function platform._drill_ratio_sql(jsonb, text, text) is
   'DRILL-LEDGER-RECORDS: a ratio Measure (op ratio, num: [measure keys], den: measure key) as an aggregate expression — the sum of the numerator parts over the denominator (null when it is zero). Each part is a sum or a count; the compiler names their source columns.';
 
@@ -552,6 +527,7 @@ begin
   return p;
 end
 $function$;
+revoke all on function platform._drill_question_problems(jsonb, jsonb, text) from public, anon, authenticated;
 comment on function platform._drill_question_problems(jsonb, jsonb, text) is
   'DRILL-LEDGER-RECORDS: judges a question against a definition without asking it (keys, dimensions and grains, the pivot, shown measures, filters, window, sort, limit, lane, path, and having thresholds) — the definition''s built-in Saved views, findings and first screen are judged by platform.drill_definition_problems through it. The door still judges every question it is asked.';
 
@@ -2411,6 +2387,13 @@ declare
   v_asof timestamptz;
   v_sums jsonb;
   v_off  integer;
+  v_cnt  jsonb;
+  v_keys jsonb;
+  v_set  jsonb := '{}'::jsonb;
+  v_part text[] := '{}';
+  v_says text;
+  m      jsonb;
+  v_d    numeric;
 begin
   perform custom.assert_client_may_reach(p_organization_id, case when p_kind = 'rows' then 'platform.drill_rows' else 'platform.drill_ask' end);
   if p_kind not in ('ask', 'count', 'rows') then
@@ -2438,13 +2421,43 @@ begin
     if v_off = 0 then
       -- the window's sums over the same filter, once (the first page): what these records add up to
       execute v_plan ->> 'sum_sql' into v_sums using v_plan -> 'params';
+      -- AND THE NUMBER'S OWN SUMS for the same filter, as counted (decision 14 as amended by
+      -- VERIFY-DRILL-LEDGER-RECORDS F1): a cost can land on a counted row after the count, so the
+      -- records (the ledger now) and the number (the count as of as_of) are equal as of the count
+      -- and any difference is SAID, measure by measure, never left for a person to discover.
+      select coalesce(jsonb_agg(x -> 'key'), '[]'::jsonb) into v_keys
+        from jsonb_array_elements(v_def -> 'measures') x
+       where x ->> 'op' in ('sum', 'count') and coalesce((x ->> 'additive')::boolean, true) and v_sums ? (x ->> 'key');
+      if jsonb_array_length(v_keys) > 0 then
+        v_cnt := platform._drill_compile(p_organization_id, v_def,
+                   (coalesce(p_question, '{}'::jsonb) - 'limit' - 'offset' - 'sort' - 'columns' - 'having')
+                   || jsonb_build_object('by', '[]'::jsonb, 'show', v_keys), 'ask');
+        execute format('select x.measures from (%s) x where x.kind = ''total'' limit 1', v_cnt ->> 'sql')
+          into v_cnt using v_cnt -> 'params';
+        for m in select x from jsonb_array_elements(v_def -> 'measures') x where v_keys ? (x ->> 'key') loop
+          v_d := coalesce((v_sums ->> (m ->> 'key'))::numeric, 0) - coalesce((v_cnt ->> (m ->> 'key'))::numeric, 0);
+          continue when v_d = 0;
+          v_set := v_set || jsonb_build_object(m ->> 'key', jsonb_build_object(
+                     'counted', v_cnt -> (m ->> 'key'), 'now', v_sums -> (m ->> 'key'), 'difference', v_d));
+          v_part := v_part || case when m ->> 'unit' = 'usd'
+                                   then '$' || to_char(abs(v_d), 'FM999,999,999,990.00')
+                                   else to_char(abs(v_d), 'FM999,999,999,999,990') || ' ' || lower(coalesce(m ->> 'label', m ->> 'key')) end
+                              || case when v_d > 0 then ' more has landed' else ' has come off' end;
+        end loop;
+        if cardinality(v_part) > 0 then
+          v_says := format('%s since the count at %s UTC. These records show the ledger now; the number shows the count until the next recount.',
+                           array_to_string(v_part, '; '), to_char((v_plan ->> 'as_of')::timestamptz at time zone 'UTC', 'HH24:MI'));
+        end if;
+      end if;
     end if;
     -- (a record's empty value stays null: only the page's own absent keys are left out)
     return jsonb_build_object('total', v_n, 'limit', (v_plan ->> 'limit')::integer, 'offset', v_off, 'rows', v_rows,
                               'columns', v_plan -> 'columns', 'as_of', v_plan -> 'as_of')
       || case when v_off + jsonb_array_length(v_rows) < v_n
               then jsonb_build_object('next_offset', v_off + jsonb_array_length(v_rows)) else '{}'::jsonb end
-      || case when v_sums is not null then jsonb_build_object('measures', v_sums) else '{}'::jsonb end;
+      || case when v_sums is not null then jsonb_build_object('measures', v_sums) else '{}'::jsonb end
+      || case when v_cnt is not null then jsonb_build_object('counted', v_cnt) else '{}'::jsonb end
+      || case when v_set <> '{}'::jsonb then jsonb_build_object('settling', v_set, 'says', v_says) else '{}'::jsonb end;
   end if;
   if p_kind = 'count' then
     v_plan := platform._drill_compile(p_organization_id, v_def, p_question, 'rows');
@@ -2703,8 +2716,3 @@ begin
   return v -> 'def';
 end
 $function$;
-
--- ─────────────────────────────────────────────────────────────────────────────────────────
--- 12. ROW SECURITY ON — last, so the policy hook's auth/storage locks are held for one statement.
--- ─────────────────────────────────────────────────────────────────────────────────────────
-alter table runtime._ai_usage_hourly_watermark enable row level security;

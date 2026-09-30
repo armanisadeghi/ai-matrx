@@ -90,3 +90,23 @@ export function apportionAnswers(
   for (const [key, rows] of Object.entries(answers)) if (!(key in out) && rows) out[key] = [...rows];
   return out;
 }
+
+/**
+ * ONE ROUNDING RULE (VERIFY-DRILL-WAVE1 F5): a row's money Measures rounded to whole display units
+ * exactly as `apportionAnswers` rounds the total — so a number the screen names twice (the header's
+ * total and the coverage line's whole) reads the same both times, never once rounded and once
+ * ceiled by the formatter.
+ */
+export function roundMoneyRow(
+  row: MatrxDrillAnswerRow,
+  keys: readonly string[],
+  toUnits: (stored: number) => number,
+  fromUnits: (units: number) => number,
+): MatrxDrillAnswerRow {
+  const measures = { ...row.measures };
+  for (const key of keys) {
+    const v = measures[key];
+    if (v !== null && v !== undefined) measures[key] = fromUnits(Math.round(toUnits(v)));
+  }
+  return { ...row, measures };
+}

@@ -22,6 +22,15 @@ export function isReservedKey(key: string): boolean {
   return (RESERVED_ITEM_KEYS as readonly string[]).includes(key);
 }
 
+/**
+ * `__summary__` is NOT a broken check (design F9, P2-STORAGE-DESIGN §3): the check ran, judged,
+ * and FAILED, but it names no items one by one (a summary-only check, or a failing verdict with
+ * no new item). The fix is what its headline names — in the code, not in the check. Until
+ * 2026-09-30 this page counted it as "check broken": 71 of 71 "broken" checks on the first
+ * production ingest were `__summary__` failures and not one was a `__check__` record.
+ */
+export const SUMMARY_ITEM_KEY = "__summary__";
+
 export type StateFilter = "open" | "accepted" | "fixed" | "broken" | "retired";
 
 /** One page filter → the store states it covers. `handed_off` is still open work. */
@@ -55,8 +64,12 @@ export interface CheckSummaryRow {
   retiredCount: number;
   /** Oldest `created_at` among open items, epoch ms; null when nothing is open. */
   oldestOpenAt: number | null;
-  /** The `__check__` / `__summary__` / `__malformed__` records currently raised, with their words. */
+  /** The `__check__` / `__malformed__` records currently raised, with their words: the check itself
+   *  could not judge (crashed, timed out, did not measure, printed unreadable items). */
   brokenReasons: string[];
+  /** The headline of an open `__summary__`: the check judged and FAILED without listing items.
+   *  A finding about the code (fix what it names), never a broken check. */
+  unitemizedFailure: string | null;
   /** Last run + 2 × cadence is in the past (design F11: derived at read time, never stored). */
   overdue: boolean;
 }
@@ -81,7 +94,16 @@ export function summarizeChecks(
     let retiredCount = 0;
     let oldestOpenAt: number | null = null;
     const brokenReasons: string[] = [];
+    let unitemizedFailure: string | null = null;
     for (const item of own) {
+      if (item.item_key === SUMMARY_ITEM_KEY) {
+        if (item.state === "open" || item.state === "handed_off") {
+          unitemizedFailure = item.title?.trim() || "the check failed";
+        } else if (item.state === "check_broken") {
+          brokenReasons.push(item.title?.trim() || item.item_key);
+        }
+        continue;
+      }
       if (isReservedKey(item.item_key)) {
         if (item.state === "open" || item.state === "check_broken") {
           brokenReasons.push(item.title?.trim() || item.item_key);
@@ -118,6 +140,7 @@ export function summarizeChecks(
       retiredCount,
       oldestOpenAt,
       brokenReasons,
+      unitemizedFailure,
       overdue,
     };
   });

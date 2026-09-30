@@ -1,12 +1,19 @@
 "use client";
 
 /**
- * "Use existing" — what the person already has, by kind, on the organization
- * resource inventory primitives (R10, lane A5-P): `useKindCounts` for the kind
- * tiles (the registry's `source_input_pickable` kinds; an empty kind is absent,
- * an uncountable one shows a dash) and `useKindItems` for each kind's list
- * (server-searched, recent first, paged by the `resources.inventory/page_size`
- * knob). The scope (Mine / an organization) is a FILTER, never permission.
+ * "Use existing" — what the person already has, by kind. The kinds are THE
+ * canonical association set, laid out the way the scope/project Resources grid
+ * (`@ai-matrx/associations/react` `AssociationCardGrid`) lays them out: the
+ * registry's resources (`curatedTokens()` — every kind with a content role),
+ * grouped by `CONTENT_ROLES` with the same accent dots; "All" widens to every
+ * reference-pickable kind (`listableTokens()`), the role-less ones last.
+ * Only kinds a Source can read (reference-pickable) are offered.
+ *
+ * Counts: `useKindCounts(scope, { tokens })` — one round trip for every kind
+ * shown (an empty kind is absent, an uncountable one shows a dash). Lists:
+ * `useKindItems` (server-searched, recent first, paged by the
+ * `resources.inventory/page_size` knob). The scope (Mine / an organization)
+ * is a FILTER, never permission.
  *
  * Also the answer to the input's one search box: with words typed, every kind
  * that has items shows its first matches, each kind openable for the rest.
@@ -19,11 +26,16 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
-import { Badge, Input } from "@ai-matrx/design-system";
+import { Badge, Input, SegmentedControl } from "@ai-matrx/design-system";
+import { CONTENT_ROLES } from "@ai-matrx/associations/react";
 import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  curatedTokens,
+  listableTokens,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
 import { cn } from "@/utils/cn";
@@ -44,6 +56,42 @@ function kindWords(token: string) {
   return { plural: info?.labelPlural ?? token, Icon: info?.Icon ?? null };
 }
 
+/** "resources" = the registry's resources (content role); "all" = every pickable kind. */
+export type ExistingBreadth = "resources" | "all";
+
+/**
+ * The kinds offered, in the grid's order: resources first by content role,
+ * then (for "all") the role-less pickable kinds. Only kinds a Source can read
+ * — reference-pickable — are offered; the registry decides, never a list here.
+ */
+export function offeredKinds(breadth: ExistingBreadth): string[] {
+  const pickable = listableTokens() as string[];
+  const pickableSet = new Set(pickable);
+  const resources = (curatedTokens() as string[]).filter((t) => pickableSet.has(t));
+  if (breadth === "resources") return resources;
+  const resourceSet = new Set(resources);
+  return [...resources, ...pickable.filter((t) => !resourceSet.has(t))];
+}
+
+/** The kinds grouped the way the Resources grid groups them; role-less kinds last. */
+function groupByRole(tokens: string[]): { id: string; title: string; dot: string | null; tokens: string[] }[] {
+  // The grid's roles and colors; a Source input leads with what feeds knowledge in.
+  const lead = ["source", "hybrid"];
+  const roles = [
+    ...CONTENT_ROLES.filter((r) => lead.includes(r.id)).sort((a, b) => lead.indexOf(a.id) - lead.indexOf(b.id)),
+    ...CONTENT_ROLES.filter((r) => !lead.includes(r.id)),
+  ];
+  const groups = roles.map((role) => ({
+    id: role.id as string,
+    title: role.title,
+    dot: role.accentBar as string | null,
+    tokens: tokens.filter((t) => tryGetEntityInfo(t)?.contentRole === role.id),
+  }));
+  const grouped = new Set(groups.flatMap((g) => g.tokens));
+  groups.push({ id: "other", title: "Other", dot: null, tokens: tokens.filter((t) => !grouped.has(t)) });
+  return groups.filter((g) => g.tokens.length > 0);
+}
+
 function shortDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -53,7 +101,9 @@ function shortDate(iso: string | null): string {
 }
 
 export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingProps) {
-  const counts = useKindCounts(scope);
+  const [breadth, setBreadth] = useState<ExistingBreadth>("resources");
+  const offered = offeredKinds(breadth);
+  const counts = useKindCounts(scope, { tokens: offered });
   const [open, setOpen] = useState<string | null>(null);
   const [openQuery, setOpenQuery] = useState("");
   // Matches per kind under the one search box, keyed by query so an old answer never counts.
@@ -61,7 +111,8 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
     query: "",
     byToken: {},
   });
-  const kinds = counts.tokens.filter((t) => counts.counts.get(t) !== 0);
+  // Offered order (the grid's), minus kinds with nothing in them; an uncountable kind stays.
+  const kinds = offered.filter((t) => counts.counts.has(t) && counts.counts.get(t) !== 0);
   const searching = query.trim().length > 0;
   // A list's page size is a knob that resolves with or without an organization
   // (user override -> platform default), so a read never waits on one.
@@ -77,19 +128,9 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
       </p>
     );
   }
-  if (counts.loading) {
-    return (
-      <div className="flex flex-wrap gap-2" aria-hidden>
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-11 w-28 animate-pulse rounded-lg border border-border bg-muted/40" />
-        ))}
-      </div>
-    );
-  }
-  // Nothing of any offered kind: the row is absent (Add new is the way in).
-  if (kinds.length === 0) return null;
 
   if (searching) {
+    if (counts.loading) return <TileSkeleton />;
     const settled = matchCounts.query === query ? matchCounts.byToken : {};
     const none = kinds.every((t) => settled[t] === 0);
     return (
@@ -116,54 +157,95 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
     );
   }
 
+  // Nothing of any kind at all: the row is absent (Add new is the way in).
+  if (!counts.loading && kinds.length === 0 && breadth === "all") return null;
+
   return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium text-muted-foreground">Use existing</h3>
-      <div className="flex flex-wrap gap-2">
-        {kinds.map((token) => {
-          const { plural, Icon } = kindWords(token);
-          const n = counts.counts.get(token);
-          const selected = open === token;
-          return (
-            <button
-              key={token}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => {
-                setOpen(selected ? null : token);
-                setOpenQuery("");
-              }}
-              className={cn(
-                "flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-left transition-colors",
-                selected
-                  ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                  : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
-              )}
-            >
-              {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
-              <span className="text-sm text-foreground">{plural}</span>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                {n === null || n === undefined ? "—" : n.toLocaleString()}
-              </span>
-            </button>
-          );
-        })}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-xs font-medium text-muted-foreground">Use existing</h3>
+        <SegmentedControl
+          value={breadth}
+          onValueChange={(v) => {
+            setBreadth(v === "all" ? "all" : "resources");
+            setOpen(null);
+          }}
+          data={[
+            { value: "resources", label: "Resources" },
+            { value: "all", label: "All" },
+          ]}
+          size="sm"
+          className="shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
+        />
       </div>
-      {open ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
-          <Input
-            value={openQuery}
-            onChange={(e) => setOpenQuery(e.target.value)}
-            placeholder={`Search ${kindWords(open).plural.toLowerCase()}`}
-            aria-label={`Search ${kindWords(open).plural.toLowerCase()}`}
-            className="text-base sm:text-sm"
-          />
-          <KindList token={open} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
-        </div>
-      ) : null}
+      {counts.loading ? (
+        <TileSkeleton />
+      ) : (
+        groupByRole(kinds).map((group) => (
+          <section key={group.id} aria-label={group.title} className="flex flex-col gap-1.5">
+            <h4 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              {group.dot ? <span className={cn("h-2 w-2 rounded-full", group.dot)} aria-hidden /> : null}
+              {group.title}
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {group.tokens.map((token) => {
+                const { plural, Icon } = kindWords(token);
+                const n = counts.counts.get(token);
+                const selected = open === token;
+                return (
+                  <button
+                    key={token}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => {
+                      setOpen(selected ? null : token);
+                      setOpenQuery("");
+                    }}
+                    className={cn(
+                      "flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-left transition-colors",
+                      selected
+                        ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                        : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
+                    )}
+                  >
+                    {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+                    <span className="text-sm text-foreground">{plural}</span>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {n === null || n === undefined ? "—" : n.toLocaleString()}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {open && group.tokens.includes(open) ? (
+              <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
+                <Input
+                  value={openQuery}
+                  onChange={(e) => setOpenQuery(e.target.value)}
+                  placeholder={`Search ${kindWords(open).plural.toLowerCase()}`}
+                  aria-label={`Search ${kindWords(open).plural.toLowerCase()}`}
+                  className="text-base sm:text-sm"
+                />
+                <KindList token={open} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
+              </div>
+            ) : null}
+          </section>
+        ))
+      )}
     </div>
   );
 }
+
+function TileSkeleton() {
+  return (
+    <div className="flex flex-wrap gap-2" aria-hidden>
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="h-11 w-28 animate-pulse rounded-lg border border-border bg-muted/40" />
+      ))}
+    </div>
+  );
+}
+
 
 /** One kind's matches under the one search box: the first few, then Show more. */
 function KindMatches({

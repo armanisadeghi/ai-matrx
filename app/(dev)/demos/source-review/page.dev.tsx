@@ -18,8 +18,8 @@ import { Button, Input } from "@ai-matrx/design-system";
 import { createSourceRef, createSourceSet, type SourceSet } from "@ai-matrx/agents/sources";
 import { SourceReview } from "@/features/resource-manager/source-input/review/SourceReview";
 import { openSourceReview } from "@/features/resource-manager/source-input/review/openSourceReview";
-import { fetchSourceManifest, resolveSourceSet } from "@/features/resource-manager/source-input/sourceSetApi";
-import type { SourcePlan } from "@/features/resource-manager/source-input/review/plan";
+import { sourcesClient } from "@/features/resource-manager/source-input/sourceSetApi";
+import type { SourcePlan } from "@ai-matrx/agents/sources/runtime";
 import type { SourceReviewOutcome } from "@/features/resource-manager/source-input/review/types";
 
 /** Real Sources owned by admin@admin.com: a 240-page PDF, a 227-page PDF and a note. */
@@ -71,7 +71,7 @@ export default function SourceReviewHarnessPage() {
     setChecking(true);
     setCheck(null);
     try {
-      const [manifest, resolved] = await Promise.all([fetchSourceManifest(target), resolveSourceSet(target)]);
+      const [manifest, resolved] = await Promise.all([sourcesClient.manifest(target), sourcesClient.resolve(target)]);
       setCheck({
         planned,
         manifestTotal: manifest.total_chars,

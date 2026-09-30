@@ -98,23 +98,75 @@ function cardsFromStructured(set: Record<string, unknown>): NewCardInput[] {
   return cards;
 }
 
+/** The artifact position a set was stamped with (null on pre-index sets). */
+function readSourceIndex(metadata: unknown): number | null {
+  if (!isRecord(metadata)) return null;
+  const value = metadata.source_index;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * The first candidate set that no artifact other than `artifactId` links to.
+ * A set another artifact already links belongs to that artifact; handing it
+ * to a second one sends both "Open in Flashcards" doors to the same deck.
+ */
+async function firstUnclaimedSet(
+  candidateIds: string[],
+  artifactId: string,
+): Promise<string | null> {
+  if (candidateIds.length === 0) return null;
+  const { data: claims, error } = await supabase
+    .schema("canvas")
+    .from("canvas_items")
+    .select("id, external_id")
+    .eq("external_system", EXTERNAL_SYSTEM)
+    .in("external_id", candidateIds)
+    .neq("id", artifactId);
+  if (error) {
+    console.warn(
+      "[FLASHCARDS_CANONICAL_ADAPTER] claim check failed; reusing first set:",
+      error,
+    );
+    return candidateIds[0];
+  }
+  const claimed = new Set((claims ?? []).map((row) => row.external_id));
+  return candidateIds.find((id) => !claimed.has(id)) ?? null;
+}
+
 export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<FlashcardsCanonicalState> =
   {
     async onMaterialize(
       info: MaterializedArtifactInfo,
     ): Promise<ArtifactLink | void> {
-      // 1) Dedup: a set already materialized from this source?
-      const { data: existing } = await supabase
+      // 1) Dedup: a set already materialized from this exact artifact? One
+      //    message can carry several flashcard sets, so the key is the source
+      //    AND the artifact's position in it — keying on the message alone
+      //    linked every later set in a message to the first one's deck.
+      const { data: sameSource } = await supabase
         .schema("education")
         .from("fc_set")
-        .select("id")
+        .select("id, metadata")
         .eq("metadata->>source_system", info.source.system)
         .eq("metadata->>source_id", info.source.id)
         .is("deleted_at", null)
-        .limit(1)
-        .maybeSingle();
-      if (existing?.id) {
-        return { externalSystem: EXTERNAL_SYSTEM, externalId: existing.id };
+        .order("created_at", { ascending: true });
+      const sourceIndex = info.artifactIndex ?? null;
+      const exact = (sameSource ?? []).find(
+        (row) => readSourceIndex(row.metadata) === sourceIndex,
+      );
+      if (exact?.id) {
+        return { externalSystem: EXTERNAL_SYSTEM, externalId: exact.id };
+      }
+      // Sets stamped before the index existed: reuse one only while no OTHER
+      // artifact already links it (that artifact is its rightful owner).
+      const unindexed = await firstUnclaimedSet(
+        (sameSource ?? [])
+          .filter((row) => readSourceIndex(row.metadata) === null)
+          .map((row) => row.id),
+        info.artifactId,
+      );
+      if (unindexed) {
+        return { externalSystem: EXTERNAL_SYSTEM, externalId: unindexed };
       }
       // D-WP3 single-writer contract: a generation SURFACE (from-topic /
       // from-source / convert deck) may have already saved this run's deck,
@@ -138,13 +190,19 @@ export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<Flashcards
         const { data: legacy } = await supabase
           .schema("education")
           .from("fc_set")
-          .select("id")
+          .select("id, metadata")
           .eq("metadata->>source_message_id", info.source.id)
           .is("deleted_at", null)
-          .limit(1)
-          .maybeSingle();
-        if (legacy?.id) {
-          return { externalSystem: EXTERNAL_SYSTEM, externalId: legacy.id };
+          .order("created_at", { ascending: true });
+        // Indexed sets belong to their own artifact position (step 1).
+        const legacyId = await firstUnclaimedSet(
+          (legacy ?? [])
+            .filter((row) => readSourceIndex(row.metadata) === null)
+            .map((row) => row.id),
+          info.artifactId,
+        );
+        if (legacyId) {
+          return { externalSystem: EXTERNAL_SYSTEM, externalId: legacyId };
         }
       }
 
@@ -187,6 +245,9 @@ export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<Flashcards
           metadata: {
             source_system: info.source.system,
             source_id: info.source.id,
+            ...(info.artifactIndex != null
+              ? { source_index: info.artifactIndex }
+              : {}),
             ...(info.source.system === "cx_message"
               ? { source_message_id: info.source.id }
               : {}),

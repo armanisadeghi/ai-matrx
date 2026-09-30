@@ -12,7 +12,7 @@
  */
 
 import type { SourceSet } from "@ai-matrx/agents/sources";
-import type { SourceDelivery } from "../delivery";
+import type { SourceDelivery } from "@ai-matrx/agents/sources/runtime";
 import type { SourceDescription } from "./SourceReviewRow";
 
 /** Why the review opened — it changes the one sentence at the top. */

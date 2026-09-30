@@ -26,11 +26,7 @@ import {
   type SourceSet,
 } from "@ai-matrx/agents/sources";
 import type { JsonObject } from "@ai-matrx/data/db";
-import { sourceKey } from "@/features/resource-manager/source-input/sourceKinds";
-import type {
-  SourceDraft,
-  SourceKindId,
-} from "@/features/resource-manager/source-input/types";
+import { sourceKey, type SourceDraft, type SourceKindId } from "@ai-matrx/agents/sources/runtime";
 import { fcService } from "./fcService";
 
 /** How one Source was shown on its card when the deck was made. */

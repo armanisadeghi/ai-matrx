@@ -112,7 +112,7 @@ export function DrillSavedViews({
 
   const save = async (name: string) => {
     if (!organizationId || !naming) return;
-    const done = await saveDrillView({ surfaceKey, organizationId, name, question: naming.question });
+    const done = await saveDrillView({ surfaceKey, organizationId, name, question: naming.question, visibility: homeOrganizationId ? "internal" : "personal" });
     if (!done.ok) {
       toast.error(done.message);
       return;
@@ -191,7 +191,7 @@ export function DrillSavedViews({
           )}
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs text-muted-foreground">
-            {error ?? (views === null ? "Reading your saved views…" : views.length === 0 ? "No saved views yet" : "Your saved views")}
+            {error ?? (views === null ? "Reading your saved views…" : views.length === 0 ? "No saved views yet" : homeOrganizationId ? "Platform saved views" : "Your saved views")}
           </DropdownMenuLabel>
           {(views ?? []).map((view) => (
             <DropdownMenuItem key={view.id} data-drill-explorer-view={view.id} onSelect={() => open(view)} className="flex items-center gap-2">

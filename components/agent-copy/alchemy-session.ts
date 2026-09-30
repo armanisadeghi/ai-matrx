@@ -10,11 +10,16 @@
 // or destination list.
 
 import type { FormatAdapter, Payload, Source } from "@ai-matrx/kit/content-transfer";
-import type { TransferMenuVariant } from "@ai-matrx/design-system/content-transfer";
+import type { EnvelopeMeta, TransferMenuVariant } from "@ai-matrx/design-system/content-transfer";
 
 export type AlchemySessionIntent =
-  /** The preparation workspace (trim, choose, AI preparation, destinations). */
-  | { kind: "prepare"; variantId?: string }
+  /**
+   * The preparation workspace (trim, choose, AI preparation, destinations). `forDestination`: the
+   * person pressed this to SEND the content somewhere (a chat, an assistant, a note) — every
+   * destination is filed under an organization, so with none chosen the one write helper asks first
+   * (cancel = the workspace opens anyway, without destinations), exactly as the `action` intent does.
+   */
+  | { kind: "prepare"; variantId?: string; forDestination?: boolean }
   /** One destination action by id (`matrx:notes`, `matrx:task`, `email-markdown`, …). */
   | { kind: "action"; actionId: string; label: string };
 
@@ -27,6 +32,12 @@ export interface AlchemySessionRequest {
   /** Source-specific engines for built-in format names (e.g. a conversation's JSON = its chosen messages). */
   formats?: readonly FormatAdapter[];
   variants?: readonly TransferMenuVariant[];
+  /**
+   * Who the primary source is, for the AI envelope ("Copy as: For AI" and the AI preparation): its
+   * kind, location, description, summary, attributes. Without it the workspace falls back to a
+   * generic "Captured content" envelope, which says nothing about where the content came from.
+   */
+  envelope?: EnvelopeMeta;
   intent: AlchemySessionIntent;
 }
 

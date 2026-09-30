@@ -1791,6 +1791,13 @@ export function KgCostDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <AppLink
+            href="/administration/knowledge/kg-cost/explore"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            data-kg-cost-explore-link=""
+          >
+            Explore unit economics
+          </AppLink>
+          <AppLink
             href="/administration/knowledge/batch"
             className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >

@@ -1,76 +1,61 @@
 "use client";
 
 /**
- * useSourceSet(surfaceKey) — THE client handler for the one Source input.
+ * useSourceSet(surfaceKey) — the web app's BINDING of the one Source input's
+ * core (`@ai-matrx/agents/sources/runtime` + `/react`, USI-7 "one core, many
+ * screens") to Redux. Every rule — adding, settling, one card per Source,
+ * restore after a reload, the payload, the measurement, resolve with display
+ * names — lives in the package; this file only says WHERE the state lives:
  *
- * State lives in the EXISTING `instanceResources` machinery (no parallel
- * slice), keyed by the surface instance `source-input:<surfaceKey>` instead of
- * a chat conversation: each picked Source is a `ManagedResource` of block type
- * `source_ref` whose `source` is its `SourceDraft` (the pointer) and whose
- * `preview` is the server's manifest entry (sizes, forms, parts, state).
+ *   - cards: the EXISTING `instanceResources` machinery (no parallel slice),
+ *     keyed by `source-input:<surfaceKey>`; each card is a `ManagedResource`
+ *     of block type `source_ref` whose `source` is its `SourceDraft` and whose
+ *     `preview` is the server's manifest entry;
+ *   - the draft a reload reads back: the generic `wizardDraft` primitive
+ *     (IDB + localStorage, cross-tab), wizardId `source-input:<surfaceKey>`
+ *     holding `{ sources, topic }`;
+ *   - the doors: `sourcesClient` (typed `apiPost`, `sourceSetApi.ts`).
  *
- * Draft persistence is EXPLICIT: every change writes the draft list through
- * the generic `wizardDraft` primitive (IDB + localStorage, cross-tab), so a
- * refresh keeps the picks. A Source that was still being added when the page
- * reloaded keeps what the person handed over (`SourceDraft.input`) and is
- * picked up again by the input (`interrupted.ts`); a file cut off mid-upload
- * says so and keeps its name — never silently dropped, never shown as if it
- * finished.
- *
- * It speaks the frozen v1 wire contract only: `toSourceSet()` builds the
- * `SourceSet`, `manifest()` asks `POST /sources/manifest`, `resolve()` asks
- * `POST /sources/resolve`.
+ * A host that needs the payload calls `useSourceSet` with the SAME
+ * `surfaceKey` it gave `<SourceInput>` — both read the same Redux entry.
  */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import {
-  createSourceRef,
-  createSourceSet,
-  type ResolvedSourceSet,
-  type SourceManifest,
-  type SourceManifestEntry,
-  type SourceRef,
-  type SourceRefOptions,
-  type SourceSet,
-  totalChars as sumChars,
-} from "@ai-matrx/agents/sources";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+  useSourceSet as useSourceSetCore,
+  type UseSourceSetResult,
+} from "@ai-matrx/agents/sources/react";
+import {
+  isSourceDraft,
+  type SourceCardModel,
+  type SourceDelivery,
+  type SourceSetAdapter,
+  type SourceSetState,
+} from "@ai-matrx/agents/sources/runtime";
+import type { SourceManifestEntry } from "@ai-matrx/agents/sources";
+import { useAppStore } from "@/lib/redux/hooks";
+import type { AppStore } from "@/lib/redux/store";
 import {
   addResource,
   initInstanceResources,
   removeResource,
+  reorderResources,
   setResourcePreview,
   setResourceSource,
   setResourceStatus,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import {
-  patchWizardDraft,
-  selectWizardDraft,
-} from "@/lib/redux/slices/wizardDraftSlice";
+import { patchWizardDraft, selectWizardDraft } from "@/lib/redux/slices/wizardDraftSlice";
 import { generateResourceId } from "@/features/agents/redux/execution-system/utils/ids";
 import type { ManagedResource } from "@/features/agents/types/instance.types";
-import { fetchSourceManifest, resolveSourceSet } from "./sourceSetApi";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import { useSyncHydrated } from "@/lib/sync/useSyncHydrated";
-import { reloadedCard, WAITING_FOR_ORGANIZATION } from "./interrupted";
-import type { SourceCardModel, SourceDraft } from "./types";
+import { sourcesClient } from "./sourceSetApi";
 
-/** The instanceResources key for one surface's Source input. */
+export type { UseSourceSetResult };
+
+/** The instanceResources key (and wizardDraft id) for one surface's Source input. */
 export function sourceSurfaceKey(surfaceKey: string): string {
   return `source-input:${surfaceKey}`;
-}
-
-interface PersistedCard {
-  id: string;
-  draft: SourceDraft;
-  status: SourceCardModel["status"];
-  error: string | null;
-}
-
-interface PersistedSourceInput {
-  sources: PersistedCard[];
-  topic: string;
 }
 
 const EMPTY_RESOURCES: Record<string, ManagedResource> = {};
@@ -80,18 +65,8 @@ const noSubscribe = () => () => {};
 const onClientSnapshot = () => true;
 const onServerSnapshot = () => false;
 
-function isDraft(value: unknown): value is SourceDraft {
-  return (
-    !!value &&
-    typeof value === "object" &&
-    typeof (value as SourceDraft).kind === "string" &&
-    typeof (value as SourceDraft).label === "string"
-  );
-}
-
 function toCard(resource: ManagedResource): SourceCardModel | null {
-  if (resource.blockType !== "source_ref" || !isDraft(resource.source))
-    return null;
+  if (resource.blockType !== "source_ref" || !isSourceDraft(resource.source)) return null;
   return {
     id: resource.resourceId,
     draft: resource.source,
@@ -101,490 +76,138 @@ function toCard(resource: ManagedResource): SourceCardModel | null {
   };
 }
 
-function readPersisted(data: Record<string, unknown> | undefined): PersistedSourceInput {
-  const sources = Array.isArray(data?.sources)
-    ? (data.sources as PersistedCard[]).filter(
-        (c) => c && typeof c.id === "string" && isDraft(c.draft),
-      )
-    : [];
-  return { sources, topic: typeof data?.topic === "string" ? data.topic : "" };
-}
-
-function sameRef(a: SourceRef, b: SourceRef): boolean {
-  return a.resource_type === b.resource_type && a.resource_id === b.resource_id;
+function sortedResources(resources: Record<string, ManagedResource>): ManagedResource[] {
+  return Object.values(resources).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 /**
- * Every generator names a Source the way the person saw it on its card — the
- * file name, the name they gave pasted text — never the stored document's own
- * title (V2-F #5: a citation named a PDF "Campbell Biology, 12th Edition" while
- * its card said "official-ap-biology.pdf"). The server's label stays only for
- * a Source the input does not hold.
+ * The Redux adapter for one surface: the runtime's store over
+ * `instanceResources[key]` (+ the topic in `wizardDraft[key]`), and the draft
+ * storage over `wizardDraft[key]`. `getState` is memoized on the two slices it
+ * reads, so it returns the SAME object until something changes.
  */
-export function withDisplayNames(
-  resolved: ResolvedSourceSet,
-  cards: readonly Pick<SourceCardModel, "draft">[],
-): ResolvedSourceSet {
-  const names = new Map<string, string>();
-  for (const c of cards) {
-    const label = c.draft.label?.trim();
-    if (c.draft.ref && label) names.set(`${c.draft.ref.resource_type}:${c.draft.ref.resource_id}`, label);
-  }
-  return {
-    ...resolved,
-    sources: resolved.sources.map((s) => {
-      const name = names.get(`${s.ref.resource_type}:${s.ref.resource_id}`);
-      return name ? { ...s, label: name } : s;
-    }),
+export function reduxSourceSetAdapter(store: AppStore, key: string): SourceSetAdapter {
+  let lastResources: Record<string, ManagedResource> | null = null;
+  let lastTopic: string | null = null;
+  let lastState: SourceSetState | null = null;
+
+  const liveResources = () => store.getState().instanceResources.byConversationId[key] ?? EMPTY_RESOURCES;
+  const savedData = () => selectWizardDraft(key)(store.getState())?.data;
+  const savedTopic = () => {
+    const topic = savedData()?.topic;
+    return typeof topic === "string" ? topic : "";
   };
-}
 
-export interface UseSourceSetResult {
-  /** Every picked Source, in the order picked. */
-  sources: SourceCardModel[];
-  topic: string;
-  setTopic: (topic: string) => void;
-  /** Add a Source that is already a pointer (a stored record, a landed Source). */
-  addReady: (draft: SourceDraft) => string;
-  /** Add a Source that is still landing; finish it with `settle` or `fail`. */
-  addPending: (draft: Omit<SourceDraft, "ref">) => string;
-  settle: (id: string, patch: Partial<SourceDraft> & { ref: SourceRef }) => void;
-  fail: (id: string, sentence: string) => void;
-  remove: (id: string) => void;
-  /** Change the pointer's choices (form, parts, cap, delivery). */
-  updateRef: (id: string, options: SourceRefOptions) => void;
-  setWaitForClean: (id: string, wait: boolean) => void;
-  /** How many Sources are picked RIGHT NOW (read from the store, never a stale render). */
-  liveCount: () => number;
-  /** True when this pointer is already picked (the "Your sources" list ticks it). */
-  hasRef: (resourceType: string, resourceId: string) => boolean;
-  /** The frozen v1 payload, built from the ready Sources. */
-  toSourceSet: (options?: { targetModelId?: string }) => SourceSet;
-  /** Apply a set the review page returned (forms, parts, caps, delivery). */
-  applySourceSet: (set: SourceSet) => void;
-  /** POST /sources/manifest for the ready Sources; cards update with it. */
-  manifest: () => Promise<SourceManifest | null>;
-  /** POST /sources/resolve — the grounded text for a generator. */
-  resolve: (options?: { targetModelId?: string }) => Promise<ResolvedSourceSet>;
-  /** Characters that will go in (the server's measurement; 0 until measured). */
-  totalChars: number;
-  measuring: boolean;
-  /** Why the measurement failed, with its remedy. */
-  manifestError: string | null;
-  /** Every Source finished landing (nothing pending) and none failed. */
-  settled: boolean;
-  /**
-   * The saved draft has not been read back yet (the device store loads a
-   * moment after the page). While true, "nothing picked" is not known — show
-   * a loading state, never an empty one. (Added by USI-3b.)
-   */
-  restoring: boolean;
-  /** Put a failed or interrupted card back to "adding" to land it again. (USI-3b) */
-  /** Back to landing. False when the card is gone (removed) — nothing to land. */
-  restart: (id: string) => boolean;
-  /** Change what a card that is still landing says or keeps (label, input, fileId, notes). (USI-3b) */
-  updateDraft: (id: string, patch: Partial<Omit<SourceDraft, "ref">>) => void;
-}
-
-export function useSourceSet(
-  surfaceKey: string,
-  options: { defaultForm?: string; organizationId?: string } = {},
-): UseSourceSetResult {
-  const key = sourceSurfaceKey(surfaceKey);
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const resources = useAppSelector(
-    (state: RootState) =>
-      state.instanceResources.byConversationId[key] ?? EMPTY_RESOURCES,
-  );
-  const persistedEntry = useAppSelector(selectWizardDraft(key));
-  const syncHydrated = useSyncHydrated();
-  const onClient = useSyncExternalStore(noSubscribe, onClientSnapshot, onServerSnapshot);
-  const persisted = readPersisted(persistedEntry?.data);
-  const [measuring, setMeasuring] = useState(false);
-  const [manifestError, setManifestError] = useState<string | null>(null);
-  const hydrated = useRef(false);
-  /** The newest measurement wins: an older answer never overwrites a newer one. */
-  const measurement = useRef<AbortController | null>(null);
-
-  const sources = Object.values(resources)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map(toCard)
-    .filter((c): c is SourceCardModel => c !== null);
-
-  // ── Registry entry + restore the persisted draft once ────────────────────
-  useEffect(() => {
-    if (!store.getState().instanceResources.byConversationId[key]) {
-      dispatch(initInstanceResources({ conversationId: key }));
-    }
-  }, [dispatch, store, key]);
-
-  useEffect(() => {
-    if (hydrated.current) return;
-    const live = store.getState().instanceResources.byConversationId[key];
-    if (live && Object.keys(live).length > 0) {
-      hydrated.current = true;
-      return;
-    }
-    if (persisted.sources.length === 0) return;
-    hydrated.current = true;
-    if (!live) dispatch(initInstanceResources({ conversationId: key }));
-    for (const card of persisted.sources) {
-      dispatch(
-        addResource({
-          conversationId: key,
-          blockType: "source_ref",
-          source: card.draft,
-          resourceId: card.id,
-        }),
-      );
-      // Cut off mid-landing: an error the input resolves (it re-lands the
-      // kept input, or asks for the file again) — never a spinner forever.
-      // A landing held for an organization lost its hold with the page: it is
-      // picked up again like one cut off mid-landing (and held again if needed).
-      const reloaded = reloadedCard(
-        card.draft,
-        card.status === "error" && card.error === WAITING_FOR_ORGANIZATION ? "resolving" : card.status,
-      );
-      dispatch(
-        setResourceStatus({
-          conversationId: key,
-          resourceId: card.id,
-          status: reloaded ? "error" : card.status,
-          errorMessage: reloaded ? reloaded.sentence : (card.error ?? undefined),
-        }),
-      );
-    }
-  }, [dispatch, store, key, persisted.sources]);
-
-  /** Write the draft list as it is NOW in the store (explicit persistence). */
-  const persist = (patch: Partial<PersistedSourceInput> = {}) => {
-    hydrated.current = true;
-    const live = store.getState().instanceResources.byConversationId[key] ?? {};
-    const cards: PersistedCard[] = Object.values(live)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .filter((r) => r.blockType === "source_ref" && isDraft(r.source))
-      .map((r) => ({
-        id: r.resourceId,
-        draft: r.source as SourceDraft,
-        status: r.status,
-        error: r.errorMessage,
-      }));
-    const current = readPersisted(
-      selectWizardDraft(key)(store.getState())?.data,
-    );
-    dispatch(
-      patchWizardDraft({
-        wizardId: key,
-        patch: { sources: cards, topic: patch.topic ?? current.topic },
-      }),
-    );
+  const getState = (): SourceSetState => {
+    const resources = liveResources();
+    const topic = savedTopic();
+    if (lastState && resources === lastResources && topic === lastTopic) return lastState;
+    lastResources = resources;
+    lastTopic = topic;
+    lastState = {
+      cards: sortedResources(resources)
+        .map(toCard)
+        .filter((c): c is SourceCardModel => c !== null),
+      topic,
+    };
+    return lastState;
   };
 
   const ensureEntry = () => {
     if (!store.getState().instanceResources.byConversationId[key]) {
-      dispatch(initInstanceResources({ conversationId: key }));
+      store.dispatch(initInstanceResources({ conversationId: key }));
     }
   };
 
-  const withDefaultForm = (ref: SourceRef): SourceRef =>
-    options.defaultForm && !ref.representation
-      ? createSourceRef(ref.resource_type, ref.resource_id, {
-          ...ref,
-          representation: options.defaultForm,
-        })
-      : ref;
-
-  const addReady = (draft: SourceDraft): string => {
+  const setState = (next: SourceSetState) => {
     ensureEntry();
-    const id = generateResourceId();
-    const ref = draft.ref ? withDefaultForm(draft.ref) : null;
-    dispatch(
-      addResource({
-        conversationId: key,
-        blockType: "source_ref",
-        source: { ...draft, ref },
-        resourceId: id,
-      }),
-    );
-    dispatch(
-      setResourceStatus({ conversationId: key, resourceId: id, status: "ready" }),
-    );
-    persist();
-    return id;
-  };
-
-  const addPending = (draft: Omit<SourceDraft, "ref">): string => {
-    ensureEntry();
-    const id = generateResourceId();
-    dispatch(
-      addResource({
-        conversationId: key,
-        blockType: "source_ref",
-        source: { ...draft, ref: null },
-        resourceId: id,
-      }),
-    );
-    dispatch(
-      setResourceStatus({ conversationId: key, resourceId: id, status: "resolving" }),
-    );
-    persist();
-    return id;
-  };
-
-  const readDraft = (id: string): SourceDraft | null => {
-    const r = store.getState().instanceResources.byConversationId[key]?.[id];
-    return r && isDraft(r.source) ? r.source : null;
-  };
-
-  const settle: UseSourceSetResult["settle"] = (id, patch) => {
-    const draft = readDraft(id);
-    if (!draft) return; // removed while it was landing — nothing to finish
-    // The door dedupes by content: landing the same thing twice returns the
-    // Source already picked. Keep ONE card and say so on it — never two.
-    const live = store.getState().instanceResources.byConversationId[key] ?? {};
-    const twin = Object.values(live)
-      .map(toCard)
-      .find((c) => c && c.id !== id && c.draft.ref && sameRef(c.draft.ref, patch.ref));
-    if (twin) {
-      dispatch(removeResource({ conversationId: key, resourceId: id }));
-      const note = "You added this again — it is the same Source, so it is listed once.";
-      if (!twin.draft.notes?.includes(note))
-        dispatch(
-          setResourceSource({
+    const live = liveResources();
+    const wanted = new Set(next.cards.map((c) => c.id));
+    for (const resource of Object.values(live)) {
+      if (resource.blockType === "source_ref" && !wanted.has(resource.resourceId)) {
+        store.dispatch(removeResource({ conversationId: key, resourceId: resource.resourceId }));
+      }
+    }
+    for (const card of next.cards) {
+      const resource = liveResources()[card.id];
+      if (!resource) {
+        store.dispatch(
+          addResource({ conversationId: key, blockType: "source_ref", source: card.draft, resourceId: card.id }),
+        );
+      } else if (resource.source !== card.draft) {
+        store.dispatch(setResourceSource({ conversationId: key, resourceId: card.id, source: card.draft }));
+      }
+      const now = liveResources()[card.id];
+      // The preview write also marks the resource ready — the status is written after it.
+      if (card.manifest && now?.preview !== card.manifest) {
+        store.dispatch(setResourcePreview({ conversationId: key, resourceId: card.id, preview: card.manifest }));
+      }
+      const after = liveResources()[card.id];
+      if (after && (after.status !== card.status || after.errorMessage !== card.error)) {
+        store.dispatch(
+          setResourceStatus({
             conversationId: key,
-            resourceId: twin.id,
-            source: { ...twin.draft, notes: [...(twin.draft.notes ?? []), note] },
+            resourceId: card.id,
+            status: card.status,
+            errorMessage: card.error ?? undefined,
           }),
         );
-      persist();
-      return;
-    }
-    dispatch(
-      setResourceSource({
-        conversationId: key,
-        resourceId: id,
-        // Landed: the kept input has done its job and leaves the draft.
-        source: { ...draft, ...patch, input: undefined, ref: withDefaultForm(patch.ref) },
-      }),
-    );
-    dispatch(setResourceStatus({ conversationId: key, resourceId: id, status: "ready" }));
-    persist();
-  };
-
-  const fail: UseSourceSetResult["fail"] = (id, sentence) => {
-    if (!readDraft(id)) return;
-    dispatch(
-      setResourceStatus({
-        conversationId: key,
-        resourceId: id,
-        status: "error",
-        errorMessage: sentence,
-      }),
-    );
-    persist();
-  };
-
-  const restart = (id: string): boolean => {
-    if (!readDraft(id)) return false;
-    dispatch(setResourceStatus({ conversationId: key, resourceId: id, status: "resolving" }));
-    persist();
-    return true;
-  };
-
-  const updateDraft: UseSourceSetResult["updateDraft"] = (id, patch) => {
-    const draft = readDraft(id);
-    if (!draft) return;
-    dispatch(
-      setResourceSource({ conversationId: key, resourceId: id, source: { ...draft, ...patch } }),
-    );
-    persist();
-  };
-
-  const remove = (id: string) => {
-    dispatch(removeResource({ conversationId: key, resourceId: id }));
-    persist();
-  };
-
-  const updateRef: UseSourceSetResult["updateRef"] = (id, refOptions) => {
-    const draft = readDraft(id);
-    if (!draft?.ref) return;
-    const ref = createSourceRef(draft.ref.resource_type, draft.ref.resource_id, {
-      ...draft.ref,
-      ...refOptions,
-    });
-    dispatch(
-      setResourceSource({ conversationId: key, resourceId: id, source: { ...draft, ref } }),
-    );
-    persist();
-  };
-
-  const setWaitForClean = (id: string, wait: boolean) => {
-    const draft = readDraft(id);
-    if (!draft) return;
-    dispatch(
-      setResourceSource({
-        conversationId: key,
-        resourceId: id,
-        source: { ...draft, waitForClean: wait },
-      }),
-    );
-    persist();
-  };
-
-  const setTopic = (topic: string) => {
-    ensureEntry();
-    persist({ topic });
-  };
-
-  const liveCount = () =>
-    Object.values(store.getState().instanceResources.byConversationId[key] ?? {}).filter(
-      (r) => r.blockType === "source_ref",
-    ).length;
-
-  const hasRef = (resourceType: string, resourceId: string) =>
-    sources.some(
-      (s) =>
-        s.draft.ref?.resource_type === resourceType &&
-        s.draft.ref.resource_id === resourceId,
-    );
-
-  const readyRefs = (): SourceRef[] => {
-    const live = store.getState().instanceResources.byConversationId[key] ?? {};
-    return Object.values(live)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map(toCard)
-      .filter((c): c is SourceCardModel => !!c && c.status === "ready" && !!c.draft.ref)
-      .map((c) => c.draft.ref as SourceRef);
-  };
-
-  const currentTopic = () =>
-    readPersisted(selectWizardDraft(key)(store.getState())?.data).topic.trim();
-
-  const toSourceSet: UseSourceSetResult["toSourceSet"] = (setOptions = {}) => {
-    const topic = currentTopic();
-    return createSourceSet(readyRefs(), {
-      topic: topic || undefined,
-      grounding: "whole",
-      target_model_id: setOptions.targetModelId,
-    });
-  };
-
-  const applySourceSet = (set: SourceSet) => {
-    const live = store.getState().instanceResources.byConversationId[key] ?? {};
-    for (const resource of Object.values(live)) {
-      const card = toCard(resource);
-      if (!card?.draft.ref) continue;
-      const match = set.sources.find((r) => sameRef(r, card.draft.ref as SourceRef));
-      if (!match) continue;
-      dispatch(
-        setResourceSource({
-          conversationId: key,
-          resourceId: card.id,
-          source: { ...card.draft, ref: match },
-        }),
-      );
-    }
-    persist(set.topic !== undefined ? { topic: set.topic } : {});
-  };
-
-  const manifest = async (): Promise<SourceManifest | null> => {
-    const refs = readyRefs();
-    if (refs.length === 0) {
-      setManifestError(null);
-      return null;
-    }
-    measurement.current?.abort();
-    const controller = new AbortController();
-    measurement.current = controller;
-    setMeasuring(true);
-    try {
-      const result = await fetchSourceManifest(createSourceSet(refs), {
-        organizationId: options.organizationId,
-        signal: controller.signal,
-      });
-      if (measurement.current !== controller) return null;
-      const live = store.getState().instanceResources.byConversationId[key] ?? {};
-      for (const resource of Object.values(live)) {
-        const card = toCard(resource);
-        if (!card?.draft.ref || card.status !== "ready") continue;
-        const entry = result.sources.find((e) => sameRef(e.ref, card.draft.ref as SourceRef));
-        if (entry) {
-          dispatch(
-            setResourcePreview({ conversationId: key, resourceId: card.id, preview: entry }),
-          );
-        }
       }
-      setManifestError(null);
-      return result;
-    } catch (err) {
-      // A superseded measurement was cancelled on purpose — not a failure.
-      if (measurement.current !== controller) return null;
-      setManifestError(
-        `Sizes and parts could not be read: ${sourceRefusalSentence(err)} Your picks are kept — try again.`,
-      );
-      return null;
-    } finally {
-      if (measurement.current === controller) setMeasuring(false);
+    }
+    const order = sortedResources(liveResources())
+      .filter((r) => r.blockType === "source_ref")
+      .map((r) => r.resourceId);
+    const wantedOrder = next.cards.map((c) => c.id);
+    if (order.join("\u0000") !== wantedOrder.join("\u0000")) {
+      store.dispatch(reorderResources({ conversationId: key, orderedIds: wantedOrder }));
+    }
+    if (savedTopic() !== next.topic) {
+      store.dispatch(patchWizardDraft({ wizardId: key, patch: { topic: next.topic } }));
     }
   };
-
-  const resolve: UseSourceSetResult["resolve"] = async (resolveOptions = {}) => {
-    const resolved = await resolveSourceSet(toSourceSet(resolveOptions), {
-      organizationId: options.organizationId,
-    });
-    const live = store.getState().instanceResources.byConversationId[key] ?? {};
-    return withDisplayNames(
-      resolved,
-      Object.values(live).map(toCard).filter((c): c is SourceCardModel => !!c),
-    );
-  };
-
-  // THE one size rule (the package's `totalChars`): the chosen form, or the
-  // picked parts, capped — measured against each card's CURRENT pointer.
-  const measured = sources.flatMap((s) =>
-    s.status === "ready" && s.manifest && s.draft.ref
-      ? [{ ...s.manifest, ref: s.draft.ref }]
-      : [],
-  );
-  const totalChars = measured.length
-    ? sumChars({
-        __kind: "source_manifest",
-        sources: measured,
-        total_chars: 0,
-        estimated_tokens: 0,
-        model_context_tokens: null,
-      })
-    : 0;
 
   return {
-    sources,
-    topic: persisted.topic,
-    setTopic,
-    addReady,
-    addPending,
-    settle,
-    fail,
-    remove,
-    updateRef,
-    setWaitForClean,
-    liveCount,
-    hasRef,
-    toSourceSet,
-    applySourceSet,
-    manifest,
-    resolve,
-    totalChars,
-    measuring,
-    manifestError,
-    settled: sources.every((s) => s.status === "ready"),
-    // Not read back yet, or read back but the restore has not landed in the
-    // store (one render between the two) — both would draw a false "empty".
-    restoring:
-      !onClient ||
-      !syncHydrated ||
-      (persisted.sources.length > 0 && Object.keys(resources).length === 0),
-    restart,
-    updateDraft,
+    store: {
+      getState,
+      setState,
+      subscribe: (listener) => store.subscribe(listener),
+      init: ensureEntry,
+    },
+    persistence: {
+      load: savedData,
+      save: (value) =>
+        store.dispatch(patchWizardDraft({ wizardId: key, patch: { sources: value.sources, topic: value.topic } })),
+      subscribe: (listener) => store.subscribe(listener),
+    },
+    client: sourcesClient,
+    createId: generateResourceId,
+    describeError: sourceRefusalSentence,
   };
+}
+
+export function useSourceSet(
+  surfaceKey: string,
+  options: {
+    defaultForm?: string;
+    organizationId?: string;
+    /** What the host can use (the input's `deliveries` prop) — `fitDeliveries()` switches the rest back. */
+    deliveries?: readonly SourceDelivery[];
+    /** Most Sources the host takes (the input's `max` prop) — `roomLeft()` counts against it. */
+    max?: number;
+  } = {},
+): UseSourceSetResult {
+  const store = useAppStore();
+  const key = sourceSurfaceKey(surfaceKey);
+  const adapter = useMemo(() => reduxSourceSetAdapter(store, key), [store, key]);
+  const syncHydrated = useSyncHydrated();
+  const onClient = useSyncExternalStore(noSubscribe, onClientSnapshot, onServerSnapshot);
+  return useSourceSetCore(adapter, {
+    persistenceReady: onClient && syncHydrated,
+    config: {
+      defaultForm: options.defaultForm,
+      organizationId: options.organizationId,
+      deliveries: options.deliveries,
+      max: options.max,
+    },
+  });
 }

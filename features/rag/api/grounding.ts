@@ -99,12 +99,12 @@ export async function listLearnerOwnedGroundingSources(
       .is("archived_at", null)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false }),
-    filesDb(supabase)
-      .from("file_rag_jobs")
-      .select("file_id")
-      .eq("user_id", userId)
-      .eq("status", "completed")
-      .order("updated_at", { ascending: false }),
+    // files.my_rag_jobs, never a plain `.from("file_rag_jobs")`: the table's read policy
+    // materialises every file the caller can see before judging a row (56,968 ids, ~11 s for
+    // admin@admin.com — past the statement timeout, so every tutor Send failed). The door asks the
+    // identical policy per row over only the signed-in caller's own jobs (~0.1 s), proved
+    // row-for-row equal on the clone (migrations/files_my_rag_jobs_asks_per_row.sql).
+    filesDb(supabase).rpc("my_rag_jobs", { p_status: "completed" }),
   ]);
   if (documentsResult.error) {
     throw new Error("We couldn't read your uploaded study materials.", {
@@ -121,7 +121,11 @@ export async function listLearnerOwnedGroundingSources(
   }
 
   const completedFileIds = [
-    ...new Set(jobsResult.data.map((job) => job.file_id)),
+    ...new Set(
+      jobsResult.data
+        .filter((job) => job.user_id === userId)
+        .map((job) => job.file_id),
+    ),
   ];
   // DECLARED `mine` (DD-137c / §3.3): a learner's grounding inventory is the study material THEY
   // uploaded — the file token lands on the organization, and this surface deliberately does not.

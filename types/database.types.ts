@@ -43799,6 +43799,33 @@ export type Database = {
       is_user_visible_path: { Args: { p_file_path: string }; Returns: boolean }
       is_user_visible_paths: { Args: { p_paths: string[] }; Returns: Json }
       min_tombstone_retention_days: { Args: never; Returns: number }
+      my_rag_jobs: {
+        Args: { p_status?: string }
+        Returns: {
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          custom_fields: Json
+          error: Json | null
+          file_id: string
+          id: string
+          metadata: Json
+          organization_id: string
+          scheduled_for: string
+          skipped_reason: string | null
+          started_at: string | null
+          status: string
+          trigger_source: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "file_rag_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       private_children_missing_parent: {
         Args: never
         Returns: {
@@ -88600,6 +88627,10 @@ export type Database = {
       secure_delivery_verify_and_consume: {
         Args: { p_code: string; p_ip?: unknown; p_secret: string }
         Returns: Json
+      }
+      seed_list_landing_tab_knob: {
+        Args: { p_token: string }
+        Returns: undefined
       }
       seed_shown_to_default_knob: {
         Args: { p_token: string }

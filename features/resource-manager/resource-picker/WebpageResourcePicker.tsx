@@ -53,6 +53,14 @@ export interface WebpageLanded {
 
 interface WebpageResourcePickerCoreProps {
   onSelect: (content: PreFetchedUrl, landed: WebpageLanded) => void;
+  /**
+   * A read of `url` started (after the link was checked). A host that keeps
+   * the link while it is read (the Source input: a reload mid-read brings it
+   * back) listens here; `onSelect` or `onReadEnd` follows.
+   */
+  onReadStart?: (url: string) => void;
+  /** The read ended without a pick: it failed, or the person closed the preview. */
+  onReadEnd?: () => void;
   onSwitchTo?: (
     type: "youtube" | "image_url" | "file_url",
     url: string,
@@ -133,6 +141,8 @@ export function detectUrlType(
 
 export function WebpageResourcePickerCore({
   onSelect,
+  onReadStart,
+  onReadEnd,
   onSwitchTo,
   onFileUrl,
   initialUrl,
@@ -236,15 +246,20 @@ export function WebpageResourcePickerCore({
     setSuggestedType(null);
     setPasteOpen(false);
 
+    onReadStart?.(normalized);
     try {
       const result = await scrapeUrl(normalized);
-      if (!result) return;
+      if (!result) {
+        onReadEnd?.();
+        return;
+      }
       setEditedContent(result.textContent);
       setCharLimit(0);
       setPreviewTab("pretty");
       setShowPreview(true);
     } catch {
       // Error is already captured in hook state (hasError / error)
+      onReadEnd?.();
     }
   };
 
@@ -282,6 +297,7 @@ export function WebpageResourcePickerCore({
   };
 
   const handleClosePreview = () => {
+    onReadEnd?.();
     setShowPreview(false);
     setPreviewTab("pretty");
     reset();

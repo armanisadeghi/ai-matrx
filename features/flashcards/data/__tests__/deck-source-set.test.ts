@@ -14,7 +14,7 @@ import {
   sourceNamesOf,
   topUpSeed,
 } from "../deckSourceSet";
-import type { SourceDraft } from "@/features/resource-manager/source-input/types";
+import type { SourceDraft } from "@ai-matrx/agents/sources/runtime";
 
 const PDF = "e7c4d481-6b4d-430a-9c5e-330b464e6c8f";
 const NOTE = "0d0b92dc-a02d-42cc-af40-5bd9a476e137";

@@ -14,7 +14,17 @@
  */
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
+import type {
+  SeoRulingConfirmationSet,
+  SeoRulingCorrectionSet,
+  SeoRulingDimensionCatalog,
+  SeoRulingExampleSet,
+  SeoRulingKeywordSet,
+  SeoRulingMatcherHitSet,
+  SeoRulingMatcherSet,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
 import type { MatcherProbeHit, SessionQueueRow } from "./data";
 
 /** The two mandates this loop runs. Never an agent id — see the SoR. */
@@ -161,73 +171,31 @@ export function matcherKindWords(kind: string): string {
  * bare array, so the builders wrap — the records inside are unchanged.
  */
 
-export interface RulingKeywordSet {
-  __kind: "seo_ruling_keyword_set";
-  keywords: Array<{
-    keyword_id: string;
-    phrase: string;
-    clicks: number;
-    impressions: number;
-  }>;
-}
+/**
+ * The shapes are the REGISTRY's, never written down here: `kinds.generated.ts`
+ * is generated from the live registry (`pnpm shape:types`). A registered kind's
+ * `__kind` and its defaulted list field are optional in its generated type
+ * (pydantic defaults them), but every builder below always emits both, so the
+ * offered type makes every top-level field required.
+ */
+type Offered<T extends { [KIND_KEY]?: string }> = T & Required<T>;
 
-export interface RulingDimensionCatalog {
-  __kind: "seo_ruling_dimension_catalog";
-  dimensions: Array<{
-    slug: string;
-    label: string;
-    description: string | null;
-    values: Array<{ slug: string; label: string; description: string | null }>;
-  }>;
-}
-
-export interface RulingExampleSet {
-  __kind: "seo_ruling_example_set";
-  examples: Array<{
-    phrase: string;
-    dimension_slug: string;
-    dimension_label: string;
-    value_slug: string;
-    value_label: string;
-    reason: string;
-  }>;
-}
-
-export interface RulingMatcherHitSet {
-  __kind: "seo_ruling_matcher_hit_set";
-  hits: Array<{
-    phrase: string;
-    value_slug: string;
-    matcher_kind: string;
-    pattern: string;
-  }>;
-}
-
-export interface RulingCorrectionSet {
-  __kind: "seo_ruling_correction_set";
-  corrections: Array<{
-    phrase: string;
-    proposed_value_slug: string;
-    proposed_value_label: string;
-    corrected_value_slug: string;
-    corrected_value_label: string;
-    human_reason: string;
-  }>;
-}
-
-export interface RulingConfirmationSet {
-  __kind: "seo_ruling_confirmation_set";
-  confirmations: Array<{ phrase: string; value_slug: string; value_label: string }>;
-}
-
-export interface RulingMatcherSet {
-  __kind: "seo_ruling_matcher_set";
-  matchers: Array<{ value_slug: string; matcher_kind: string; pattern: string }>;
-}
+export type RulingKeywordSet = Offered<SeoRulingKeywordSet>;
+export type RulingDimensionCatalog = Offered<SeoRulingDimensionCatalog>;
+export type RulingExampleSet = Offered<SeoRulingExampleSet>;
+export type RulingMatcherHitSet = Offered<SeoRulingMatcherHitSet>;
+export type RulingCorrectionSet = Offered<SeoRulingCorrectionSet>;
+export type RulingConfirmationSet = Offered<SeoRulingConfirmationSet>;
+export type RulingMatcherSet = Offered<SeoRulingMatcherSet>;
 
 /** The keywords a proposer is asked to stamp. */
 export function keywordsPayload(
-  rows: Array<{ keywordId: string; keyword: string; clicks: number; impressions: number }>,
+  rows: Array<{
+    keywordId: string;
+    keyword: string;
+    clicks: number;
+    impressions: number;
+  }>,
 ): RulingKeywordSet {
   return {
     __kind: "seo_ruling_keyword_set",
@@ -264,7 +232,9 @@ export function dimensionCatalogPayload(
   };
 }
 
-export function humanExamplesPayload(rulings: SessionRuling[]): RulingExampleSet {
+export function humanExamplesPayload(
+  rulings: SessionRuling[],
+): RulingExampleSet {
   return {
     __kind: "seo_ruling_example_set",
     examples: rulings.map((ruling) => ({
@@ -278,7 +248,9 @@ export function humanExamplesPayload(rulings: SessionRuling[]): RulingExampleSet
   };
 }
 
-export function matcherHitsPayload(proposals: TrialProposal[]): RulingMatcherHitSet {
+export function matcherHitsPayload(
+  proposals: TrialProposal[],
+): RulingMatcherHitSet {
   return {
     __kind: "seo_ruling_matcher_hit_set",
     hits: proposals
@@ -292,11 +264,15 @@ export function matcherHitsPayload(proposals: TrialProposal[]): RulingMatcherHit
   };
 }
 
-export function correctionsPayload(verdicts: TrialVerdict[]): RulingCorrectionSet {
+export function correctionsPayload(
+  verdicts: TrialVerdict[],
+): RulingCorrectionSet {
   return {
     __kind: "seo_ruling_correction_set",
     corrections: verdicts
-      .filter((verdict) => verdict.status === "wrong" && verdict.correctedValueSlug)
+      .filter(
+        (verdict) => verdict.status === "wrong" && verdict.correctedValueSlug,
+      )
       .map((verdict) => ({
         phrase: verdict.proposal.keyword,
         proposed_value_slug: verdict.proposal.valueSlug,
@@ -308,7 +284,9 @@ export function correctionsPayload(verdicts: TrialVerdict[]): RulingCorrectionSe
   };
 }
 
-export function confirmationsPayload(verdicts: TrialVerdict[]): RulingConfirmationSet {
+export function confirmationsPayload(
+  verdicts: TrialVerdict[],
+): RulingConfirmationSet {
   return {
     __kind: "seo_ruling_confirmation_set",
     confirmations: verdicts
@@ -322,7 +300,9 @@ export function confirmationsPayload(verdicts: TrialVerdict[]): RulingConfirmati
 }
 
 /** The site rules behind rule-sourced proposals (the teach round's context). */
-export function existingMatchersPayload(verdicts: TrialVerdict[]): RulingMatcherSet {
+export function existingMatchersPayload(
+  verdicts: TrialVerdict[],
+): RulingMatcherSet {
   return {
     __kind: "seo_ruling_matcher_set",
     matchers: verdicts

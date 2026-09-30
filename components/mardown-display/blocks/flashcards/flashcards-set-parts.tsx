@@ -26,6 +26,7 @@ import type { FlashcardsBlockData } from "@/types/python-generated/stream-events
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { usePrintOptions } from "@ai-matrx/print/react";
 import { useLinkedFlashcardSet } from "@/features/flashcards/data/useLinkedFlashcardSet";
+import { flashcardSetHref } from "@/features/flashcards/routes";
 
 export type LayoutMode = "grid" | "list";
 
@@ -63,8 +64,14 @@ export function useFlashcardsSet({
     busy: openingCanvas,
     lastResult,
   } = useOpenArtifactInCanvas();
-  // The canonical deck this chat set was saved as (null until linked).
-  const { href: deckHref } = useLinkedFlashcardSet(artifactId);
+  // The canonical deck this chat set was saved as (null until linked). An
+  // "Open in canvas" that persists the link late reports it directly.
+  const { href: linkedDeckHref } = useLinkedFlashcardSet(artifactId);
+  const deckHref =
+    linkedDeckHref ??
+    (lastResult?.externalSystem === "fc_set" && lastResult.externalId
+      ? flashcardSetHref({ id: lastResult.externalId })
+      : null);
 
   const { flashcards, isComplete } = useMemo(
     () =>

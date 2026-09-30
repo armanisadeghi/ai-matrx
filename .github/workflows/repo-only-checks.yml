@@ -35,7 +35,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
+      # Full history and tags: self-tests replay a guard's pre-fix copy from git
+      # (check:self-tests-stay-out-of-tree reads `<sha>^`), and the patrol delivery check
+      # needs a version tag. A depth-1 checkout made both report failure without judging
+      # (2026-09-30, common-docs/projects/checks-run-in-the-app/COORDINATOR.md § Broken checks).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # matrx-local is PUBLIC, so it is cloned beside this repo with no secret: the honest-state
+      # parity guard and its self-test read the engine artifact there and were UNMEASURED without it.
+      # aidream is private and cannot be reached from this public workflow — the rows that read it
+      # say UNMEASURED and the page shows them as broken with that reason.
+      - name: Clone matrx-local's contracts beside this repo (public, no secret)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/armanisadeghi/matrx-local.git ../matrx-local
+          git -C ../matrx-local sparse-checkout set crates/matrx-sync/contracts
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -43,6 +57,10 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # The shell-layout gate measures shipped CSS in a real browser; without Chromium it
+      # printed "UNMEASURED: … could not launch Chromium" on every run.
+      - name: Install Chromium for the real-browser rows
+        run: pnpm exec playwright install --with-deps chromium
       # The full type-check alone peaks near 13 GB; with it running, this 16 GB runner measured
       # 15.5 GB used and 500 MB available (runs 36670255447, 36671478127). 8 GB of swap turns the
       # next spike into a slower row instead of a runner shut down mid-run (36653040837).

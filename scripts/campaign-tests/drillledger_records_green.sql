@@ -504,6 +504,75 @@ select pg_temp.chk('F1 workflow._run_cost is one row per run and its cost = the 
   format('%s runs, $%s', (select count(*) from workflow._run_cost), (select sum(cost) from workflow._run_cost)))
   where to_regclass('workflow._run_cost') is not null;
 
+-- ════════════════════════════════════════════════════════════════════════════════════════════
+-- L. A COST THAT LANDS AFTER THE COUNT (VERIFY-DRILL-LEDGER-RECORDS F1 / attack A7): the number and
+--    its records are equal as of the count, and any difference is SAID — then a rebuild brings them
+--    back equal.
+-- ════════════════════════════════════════════════════════════════════════════════════════════
+create temp table dll (step text, page jsonb, ask numeric) on commit drop;
+grant all on dll to authenticated;
+create or replace function pg_temp.late_page(p_step text, p_org uuid, p_w jsonb) returns void language plpgsql as $$
+begin
+  insert into pg_temp.dll
+  select p_step,
+         platform.drill_rows(p_org, '{"kind":"entity","token":"ai_usage"}', jsonb_build_object('lane', 'mine', 'window', p_w, 'limit', 5)),
+         (select (a.measures ->> 'cost')::numeric from platform.drill_ask(p_org, '{"kind":"entity","token":"ai_usage"}',
+            jsonb_build_object('lane', 'mine', 'show', '["cost","calls"]'::jsonb, 'window', p_w)) a where a.kind = 'total');
+end $$;
+grant execute on function pg_temp.late_page(text, uuid, jsonb) to authenticated;
+do $$
+declare
+  c_test constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
+  v_w jsonb := jsonb_build_object('key', 'at', 'from', (select last_hour from pg_temp.dlt) - interval '3 days', 'to', (select last_hour from pg_temp.dlt) + interval '1 hour');
+  v_org uuid; v_exec uuid; v_before jsonb; v_after jsonb; v_healed jsonb;
+begin
+  select c.organization_id, c.execution_id into v_org, v_exec from runtime._ai_usage_calls c
+   where c.person_id = c_test and c.created_at >= (v_w ->> 'from')::timestamptz and c.created_at < (v_w ->> 'to')::timestamptz
+   order by c.created_at desc limit 1;
+  perform set_config('request.jwt.claims', json_build_object('sub', c_test, 'role', 'authenticated')::text, true);
+  perform set_config('request.headers', '{}', true);
+  execute 'set local role authenticated';
+  perform pg_temp.late_page('before', v_org, v_w);
+  execute 'reset role';
+  update runtime.global_execution set cost = coalesce(cost, 0) + 1.2345 where id = v_exec;   -- the cost lands after the count
+  execute 'set local role authenticated';
+  perform pg_temp.late_page('late', v_org, v_w);
+  execute 'reset role';
+  perform runtime.ai_usage_hourly_refresh(now() - interval '5 days', now());                 -- the next rebuild
+  execute 'set local role authenticated';
+  perform pg_temp.late_page('recounted', v_org, v_w);
+  execute 'reset role';
+  select page into v_before from pg_temp.dll where step = 'before';
+  select page into v_after from pg_temp.dll where step = 'late';
+  select page into v_healed from pg_temp.dll where step = 'recounted';
+  perform pg_temp.chk('L1 before a late cost the records page carries the number''s own sums (counted) = the records'' sums = the answer, and says nothing',
+    (v_before -> 'counted' ->> 'cost')::numeric = (v_before -> 'measures' ->> 'cost')::numeric
+    and (v_before -> 'counted' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'before')
+    and not (v_before ? 'settling') and not (v_before ? 'says'),
+    format('counted %s records %s', v_before -> 'counted' ->> 'cost', v_before -> 'measures' ->> 'cost'));
+  perform pg_temp.chk('L2 a cost that lands after the count: the number still = counted, the records = the ledger now, and the page SAYS the difference ("$1.23 more has landed since the count at HH:MI UTC")',
+    (v_after -> 'counted' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'late')
+    and (v_after -> 'measures' ->> 'cost')::numeric - (v_after -> 'counted' ->> 'cost')::numeric = 1.2345
+    and (v_after -> 'settling' -> 'cost' ->> 'difference')::numeric = 1.2345
+    and v_after ->> 'says' ~ '^\$1\.23 more has landed since the count at [0-9]{2}:[0-9]{2} UTC\.',
+    v_after ->> 'says');
+  perform pg_temp.chk('L3 the next rebuild brings them back equal: nothing to say, counted = records = the answer, and the answer took the late cost',
+    (v_healed -> 'counted' ->> 'cost')::numeric = (v_healed -> 'measures' ->> 'cost')::numeric
+    and (v_healed -> 'counted' ->> 'cost')::numeric = (select ask from pg_temp.dll where step = 'recounted')
+    and (select ask from pg_temp.dll where step = 'recounted') - (select ask from pg_temp.dll where step = 'before') = 1.2345
+    and not (v_healed ? 'settling'),
+    format('before %s after the recount %s', (select ask from pg_temp.dll where step = 'before'), (select ask from pg_temp.dll where step = 'recounted')));
+end $$;
+
+-- ════════════════════════════════════════════════════════════════════════════════════════════
+-- G. No client reaches the two text helpers (VERIFY-DRILL-LEDGER-RECORDS F3).
+-- ════════════════════════════════════════════════════════════════════════════════════════════
+select pg_temp.chk('G1 platform._drill_ratio_sql and platform._drill_question_problems: no EXECUTE for public, anon or authenticated',
+  not has_function_privilege('authenticated', 'platform._drill_ratio_sql(jsonb,text,text)', 'execute')
+  and not has_function_privilege('anon', 'platform._drill_ratio_sql(jsonb,text,text)', 'execute')
+  and not has_function_privilege('authenticated', 'platform._drill_question_problems(jsonb,jsonb,text)', 'execute')
+  and not has_function_privilege('anon', 'platform._drill_question_problems(jsonb,jsonb,text)', 'execute'));
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, left(detail, 300) as detail from pg_temp.dlr order by n;
 select format('%s passed, %s failed', count(*) filter (where ok), count(*) filter (where not ok)) as summary from pg_temp.dlr;
 rollback;

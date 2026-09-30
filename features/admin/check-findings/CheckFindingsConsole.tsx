@@ -81,6 +81,7 @@ import {
   hasAccept,
   isCheckRepo,
   isReservedKey,
+  SUMMARY_ITEM_KEY,
   isStateFilter,
   pendingAcceptView,
   summarizeChecks,
@@ -208,6 +209,7 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
     checks: rows.length,
     open: rows.reduce((n, r) => n + r.openCount, 0),
     broken: rows.filter((r) => r.brokenReasons.length > 0).length,
+    unitemized: rows.filter((r) => r.brokenReasons.length === 0 && r.unitemizedFailure != null).length,
     overdue: rows.filter((r) => r.overdue).length,
     neverRan: rows.filter((r) => r.run == null).length,
   };
@@ -242,6 +244,14 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
               <span className={totals.open ? "font-medium text-foreground" : undefined}>
                 {formatCount(totals.open)} open
               </span>
+              {totals.unitemized ? (
+                <span
+                  className="font-medium text-foreground"
+                  title="These checks ran and failed, but name no items one by one: each one's headline is the finding to fix."
+                >
+                  {formatCount(totals.unitemized)} failing without an item list
+                </span>
+              ) : null}
               {totals.broken ? (
                 <span className="font-medium text-destructive">{totals.broken} check broken</span>
               ) : null}
@@ -879,6 +889,12 @@ function CheckDetail({
             {run?.apply_note ? (
               <span className="text-warning sm:col-span-2 lg:col-span-4">Apply note: {run.apply_note}</span>
             ) : null}
+            {row.unitemizedFailure && !row.brokenReasons.length ? (
+              <span className="text-foreground sm:col-span-2 lg:col-span-4">
+                Failed — this check names no items one by one, so its headline is the finding to fix:{" "}
+                {row.unitemizedFailure}
+              </span>
+            ) : null}
             {row.brokenReasons.length ? (
               <span className="text-destructive sm:col-span-2 lg:col-span-4">
                 The check itself needs repair: {row.brokenReasons.join(" · ")}
@@ -998,6 +1014,16 @@ function ItemDecision({
   onAccept: (item: CheckItem) => void;
 }) {
   if (item.state !== "open" && item.state !== "handed_off") return null;
+  if (item.item_key === SUMMARY_ITEM_KEY) {
+    return (
+      <span
+        className="text-[11px] text-muted-foreground"
+        title="The check failed without listing items — fix what its headline names; it closes on the next passing run."
+      >
+        fix what it names
+      </span>
+    );
+  }
   if (isReservedKey(item.item_key)) {
     return (
       <span

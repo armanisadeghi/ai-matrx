@@ -151,6 +151,21 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Workflow Runs",
+    iconName: "Workflow",
+    iconColor: "text-indigo-600",
+    features: [
+      {
+        title: "Workflow Runs Explorer",
+        description:
+          "Every workflow run on the platform as numbers: how many, which failed, how long they took and what they spent, by workflow, how they started, person, organization and period.",
+        iconName: "Workflow",
+        link: "/administration/automation/workflow-runs",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Scheduling",
     landingPath: "/administration/automation/scheduling",
     iconName: "CalendarClock",
@@ -288,6 +303,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Auto-ingest spend per org, in-flight provider batches, and cap KPIs (spend today, 7d, orgs near cap, pending batches).",
         iconName: "DollarSign",
         link: "/administration/knowledge/kg-cost",
+        isNew: true,
+      },
+      {
+        title: "Knowledge Ingestion Cost Explorer",
+        description:
+          "The unit economics of reading notes, files, transcripts and pages into knowledge, as one explorer: cost and runs by source kind, status, organization, person and period.",
+        iconName: "DollarSign",
+        link: "/administration/knowledge/kg-cost/explore",
         isNew: true,
       },
       {

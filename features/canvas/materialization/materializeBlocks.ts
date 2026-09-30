@@ -183,6 +183,7 @@ export async function materializeBlocks(
             source: { system: source.system, id: source.id },
             sourceMessageId: isChat ? source.id : undefined,
             conversationId: persistedConversationId,
+            artifactIndex: artifact.artifactIndex,
           });
           if (link && (link.externalSystem || link.externalId)) {
             await canvasArtifactService.setExternalLink(saved.id, link);

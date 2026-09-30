@@ -1,0 +1,22 @@
+/**
+ * /knowledge/search — multi-tab Knowledge Search Lab.
+ *
+ * Tabs:
+ *   ?tab=search        (default) clean user search
+ *   ?tab=agent-sim     full pipeline trace / score breakdown / prompt preview
+ *   ?tab=agent-chat    Claude agent with knowledge_search as a tool, fully transparent
+ *   ?tab=diagnostics   per-user content inventory & ACL routes
+ *
+ * Deep-link params:
+ *   ?q=<query>&store_id=<uuid>&tab=<tab>
+ */
+
+import { RagSearchExperience } from "@/features/rag/components/search/RagSearchExperience";
+import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
+
+export default async function Page() {
+  const { isAuthenticated } = await getSessionVerdict();
+  if (!isAuthenticated) return <KnowledgeLanding />;
+  return <RagSearchExperience />;
+}

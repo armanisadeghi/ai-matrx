@@ -5,7 +5,9 @@
  * grew on the page. A file's state is read only when an organization is known
  * — the file's own, or the one the person picked; until then the card is HELD
  * for an organization (it says so, with "Choose organization") and nothing
- * is asked.
+ * is asked. (The decisions live in `@ai-matrx/agents/sources/runtime` and are
+ * tested there; this proves the web app's binding wires the real
+ * `/files/{id}/rag-status` read through them.)
  */
 const fetchFileRagStatus = jest.fn();
 jest.mock("@/features/rag/api/rag-jobs", () => ({
@@ -15,10 +17,13 @@ jest.mock("@/features/rag/api/rag-jobs", () => ({
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import { renderHook } from "@/test-utils/renderHook";
 import type { UseProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
+import {
+  fileCardHeldForOrganization,
+  KEEP_WAITING_FOR_ORGANIZATION,
+  WAITING_FOR_ORGANIZATION,
+  type SourceCardModel,
+} from "@ai-matrx/agents/sources/runtime";
 import { useSourceRecovery } from "./useSourceRecovery";
-import { fileCardHeldForOrganization } from "./fileSource";
-import { KEEP_WAITING_FOR_ORGANIZATION, WAITING_FOR_ORGANIZATION } from "./interrupted";
-import type { SourceCardModel } from "./types";
 import type { UseSourceIntakeResult } from "./useSourceIntake";
 import type { UseSourceSetResult } from "./useSourceSet";
 

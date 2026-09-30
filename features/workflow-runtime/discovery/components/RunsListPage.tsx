@@ -13,8 +13,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { ListOrdered } from "lucide-react";
+import { BarChart3, ListOrdered } from "lucide-react";
 
+import AppLink from "@/components/navigation/AppLink";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -67,7 +68,22 @@ export function RunsListPage({ definitionId }: { definitionId?: string }) {
             </span>
           </div>
         }
-        right={<WaitingBadge />}
+        right={
+          <div className="flex items-center gap-2">
+            {/* The runs you started as numbers (lane DRILL-CONVERSIONS); this list stays where runs open. */}
+            {definitionId ? null : (
+              <AppLink
+                href="/workflows/runs/analyze"
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                data-runs-analyze-link=""
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Analyze
+              </AppLink>
+            )}
+            <WaitingBadge />
+          </div>
+        }
       />
       <div className="h-full overflow-hidden">
         <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">

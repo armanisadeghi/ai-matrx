@@ -38,16 +38,17 @@ import {
 } from "@ai-matrx/design-system";
 import { formatChars, pagesPhrase } from "@/lib/tokens/estimate";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { SourceRef } from "@ai-matrx/agents/sources";
-import { chosenForm, type SourcePlanEntry } from "./plan";
+import { createSourceRef, type SourceRef, type SourceRefOptions } from "@ai-matrx/agents/sources";
 import { SourcePartsPicker } from "./SourcePartsPicker";
 import {
+  chosenForm,
   DELIVERY_WORDS,
   deliveryChoicesFor,
   deliveryPatch,
   sourceDelivery,
   type SourceDelivery,
-} from "../delivery";
+  type SourcePlanEntry,
+} from "@ai-matrx/agents/sources/runtime";
 
 /** Phones: every segment is a 44px target (the package control is 28px at "sm"). */
 const SEGMENTED_TOUCH = "max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!";
@@ -121,18 +122,15 @@ export function SourceReviewRow({
   const delivery = sourceDelivery(ref);
   const deliveryChoices = deliveryChoicesFor(deliveries);
 
-  const update = (patch: Partial<SourceRef>) => {
-    const next: SourceRef = { ...ref, ...patch };
-    for (const key of Object.keys(patch) as Array<keyof SourceRef>) {
-      if (patch[key] === undefined) delete next[key];
-    }
-    onChange(next);
-  };
+  // The package's builder forwards the ref's fields, applies the patch and
+  // drops every emptied field — one pointer shape, never hand-merged.
+  const update = (patch: SourceRefOptions) =>
+    onChange(createSourceRef(ref.resource_type, ref.resource_id, { ...ref, ...patch }));
 
   const sizeWords =
     plan.status === "on_demand"
       ? `${formatChars(plan.formChars)} characters, not sent up front`
-      : `${formatChars(plan.sentChars)} characters${plan.exact ? "" : " (about)"}`;
+      : `${formatChars(plan.chars)} characters${plan.exact ? "" : " (about)"}`;
 
   return (
     <li className="rounded-lg border border-border bg-card">
@@ -147,7 +145,7 @@ export function SourceReviewRow({
           <span className="block truncate text-sm font-medium text-foreground">{describe?.name || entry.label}</span>
           <span
             className="block truncate text-xs text-muted-foreground"
-            title={`${plan.sentChars.toLocaleString()} characters go in`}
+            title={`${plan.chars.toLocaleString()} characters go in`}
             data-sent-chars={plan.sentChars}
           >
             {describe?.kind || kind.label}

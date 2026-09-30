@@ -8,7 +8,7 @@
 // preview table of scopes x context items with current values, and the
 // inline add-scope flow. Everything reads from the canonical module:
 // scopes via makeSelectScopesForType, item catalog via ensureScopeTypeItems,
-// per-scope values via ensureContextValues + the contextValues sidecar.
+// every scope's values in one read (ensureContextValuesForScopes) + the contextValues sidecar.
 
 import { withArticle } from "@/lib/text/withArticle";
 import { useEffect, useMemo, useState } from "react";
@@ -38,7 +38,7 @@ import {
 } from "@/features/scopes/redux/selectors/context-items";
 import { makeSelectScopeValuesEntry } from "@/features/scopes/redux/selectors/context-values";
 import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
-import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
+import { ensureContextValuesForScopes } from "@/features/scopes/redux/thunks/ensureContextValues";
 import { EditScopeTypeSheet } from "@/features/scopes/components/management/EditScopeTypeSheet";
 import { NewScopeInline } from "@/features/scopes/components/management/NewScopeInline";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
@@ -73,11 +73,11 @@ export function OrgScopeTypeSection({
     void dispatch(ensureScopeTypeItems(scopeType.id));
   }, [dispatch, scopeType.id]);
 
-  // Fetch values for each scope (deduped by the thunk — fine for the small N).
+  // Every scope's values in ONE read (STORE-READ-PERF-5): one door call for the whole card, never
+  // one per scope.
   useEffect(() => {
-    for (const scope of scopes) {
-      void dispatch(ensureContextValues(scope.id));
-    }
+    if (scopes.length === 0) return;
+    void dispatch(ensureContextValuesForScopes(scopes.map((scope) => scope.id)));
   }, [dispatch, scopes]);
 
   const Icon = resolveIcon(scopeType.icon);

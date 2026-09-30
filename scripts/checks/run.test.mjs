@@ -505,3 +505,26 @@ test("the worker count never exceeds the machine's cores or memory", () => {
   assert.equal(defaultWorkers({ cpus: 16, memBytes: 64 * GiB }), 6, "a workstation keeps the full pool");
   assert.equal(defaultWorkers({ cpus: 1, memBytes: 1 * GiB }), 1, "never zero");
 });
+
+// 2026-09-30: 71 checks read "check broken" on /administration/reporting/check-findings and the
+// store could not tell a check that could not judge from a check that found something. A row that
+// says UNMEASURED, or dies on an uncaught exception, is titled with aidream's own words so the one
+// ingest records the run `errored` (a broken check), never a finding about the code.
+test("a row that could not judge is titled 'could not establish truth'; a real failure is not", () => {
+  const { findings } = runWithManifest([
+    "No sibling checkout|echo 'UNMEASURED: no aidream checkout beside this repo, so nothing was compared.'; exit 2",
+    "Crashes on start|node -e 'throw new Error(\"spawnSync /bin/sh ENOBUFS\")'",
+    "Python crash|printf 'Traceback (most recent call last):\\n  File \"x.py\", line 3\\nValueError: not in the subpath\\n'; exit 1",
+    "Real violations|echo '[FAIL] 3 violations'; exit 1",
+    "Self test quotes it|echo '[self-test] PASS the guard goes red on UNMEASURED'; exit 0",
+  ]);
+  const byCheck = Object.fromEntries(findings.map((f) => [f.check, f]));
+  assert.match(
+    byCheck["no-sibling-checkout"].title,
+    /^check no-sibling-checkout could not establish truth: UNMEASURED: no aidream checkout beside this repo/,
+  );
+  assert.equal(byCheck["crashes-on-start"].title, "check crashes-on-start could not establish truth: crashed — Error: spawnSync /bin/sh ENOBUFS");
+  assert.equal(byCheck["python-crash"].title, "check python-crash could not establish truth: crashed — ValueError: not in the subpath");
+  assert.doesNotMatch(byCheck["real-violations"].title, /could not establish truth/);
+  assert.equal(byCheck["self-test-quotes-it"], undefined);
+});
