@@ -97,12 +97,12 @@ export function MadeFromSource({
             actually wants when they arrive on one piece of it. */}
         <Link
           href={kitHref(origin.entityType, origin.entityId)}
-          title="Open the study kit this belongs to"
+          title="Everything made from this material"
           data-tap-target
           className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
         >
           <Package className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Open the kit</span>
+          <span className="truncate">Everything made from it</span>
         </Link>
         {origins.map((o) => {
           const OriginIcon = tryGetEntityInfo(o.entityType)?.Icon ?? FileText;

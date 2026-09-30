@@ -36,7 +36,8 @@ import {
   Switch,
   cn,
 } from "@ai-matrx/design-system";
-import { formatChars } from "@/lib/tokens/estimate";
+import { formatChars, pagesPhrase } from "@/lib/tokens/estimate";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { SourceRef } from "@ai-matrx/agents/sources";
 import { chosenForm, type SourcePlanEntry } from "./plan";
 import { SourcePartsPicker } from "./SourcePartsPicker";
@@ -52,7 +53,6 @@ import {
 const SEGMENTED_TOUCH = "max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!";
 
 /** Roughly how many characters fill a printed page — only for "about N pages". */
-const CHARS_PER_PAGE = 3_000;
 
 const KIND_WORDS: Record<string, { label: string; icon: LucideIcon }> = {
   file: { label: "File", icon: FileText },
@@ -69,11 +69,6 @@ function kindWords(resourceType: string) {
       icon: FileText,
     }
   );
-}
-
-function pagesPhrase(chars: number): string {
-  const pages = Math.max(1, Math.round(chars / CHARS_PER_PAGE));
-  return `about ${pages.toLocaleString()} page${pages === 1 ? "" : "s"}`;
 }
 
 const STATUS_WORDS: Record<SourcePlanEntry["status"], { label: string; className: string }> = {
@@ -111,6 +106,7 @@ export function SourceReviewRow({
   describe,
 }: SourceReviewRowProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const isMobile = useIsMobile();
   const { entry, ref } = plan;
   const kind = kindWords(entry.resource_type);
   const Icon = kind.icon;
@@ -193,8 +189,8 @@ export function SourceReviewRow({
           <span>
             {plan.status === "left_out"
               ? deliveryChoices.some((c) => c.value === "context")
-                ? "There's no room left for this one, so it won't go in. Choose parts, set a size limit, or let the AI look it up when it needs it."
-                : "There's no room left for this one, so it won't go in. Choose parts or set a size limit so it fits."
+                ? "No room left — choose parts, limit its size, or let the AI look it up."
+                : "No room left — choose parts or limit its size."
               : (entry.state_detail ??
                 (entry.state === "processing"
                   ? "Still being prepared — the raw text is used for now."
@@ -206,8 +202,9 @@ export function SourceReviewRow({
       {open && (
         <div className="space-y-4 border-t border-border px-3 py-3">
           {usable && availableForms.length > 1 && (
-            <Field label="Which version" hint="Clean text reads best. Raw text keeps everything exactly as it was pulled from the file.">
-              {availableForms.length <= 4 ? (
+            <Field label="Which version">
+              {/* Phone: a Select — long version names never stack a switch into rows. */}
+              {availableForms.length <= 4 && !isMobile ? (
                 <SegmentedControl
                   value={form?.form ?? entry.default_form}
                   onValueChange={onFormChange}
@@ -236,7 +233,7 @@ export function SourceReviewRow({
           )}
 
           {usable && segments.length > 1 && delivery === "direct" && (
-            <Field label="How much" hint={`This Source has ${segments.length} parts.`}>
+            <Field label="How much" hint={`${segments.length} parts`}>
               <SegmentedControl
                 value={choosingParts ? "parts" : "all"}
                 onValueChange={(v) => {
@@ -268,7 +265,7 @@ export function SourceReviewRow({
           )}
 
           {usable && delivery === "direct" && (
-            <Field label="Size limit" hint="Stops this Source at a set size. Whole parts are kept in order until the limit is reached.">
+            <Field label="Size limit">
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex min-h-11 items-center gap-2 text-sm text-foreground sm:min-h-0">
                   <Switch
@@ -327,7 +324,7 @@ export function SourceReviewRow({
           <div className="flex justify-end">
             <Button type="button" variant="ghost" size="sm" onClick={onRemove} className="text-muted-foreground">
               <Trash2 className="mr-1.5 h-4 w-4" />
-              Remove from this request
+              Remove
             </Button>
           </div>
         </div>

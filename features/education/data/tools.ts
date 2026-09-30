@@ -222,7 +222,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "One kit page: all eight artifact kinds, ordered for studying, each opening",
       "Needs no kit table — a kit IS its source material, read from the lineage edges every generator already writes",
       "The kit is named once per run by `education.kit_title`, so every artifact shares one clean human title",
-      "Reachable from the run result, from any artifact ('Open the kit'), and from the tools grid",
+      "Reachable from the run result, from any artifact ('Everything made from it'), and from the tools grid",
     ],
   },
   {

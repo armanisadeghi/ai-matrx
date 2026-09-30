@@ -302,12 +302,12 @@ function AddMoreCardsDialog({
 
   const description =
     origins === null
-      ? "Checking which material this deck was made from…"
+      ? "Checking this deck's material…"
       : hasMaterial || set.sources.length > 0
         ? wholeSourcesOnly
-          ? "The material this deck was made from is already picked — whole, because this deck was made before the parts it used were recorded. Choose parts on a Source to narrow it. New cards are added to this deck and every card you have is kept."
-          : "The material this deck was made from is already picked, with the same parts and settings. Keep it, add more, or remove any — new cards are added to this deck and every card you have is kept."
-        : "This deck was not made from any material (it was imported or written by hand). Pick what the new cards should come from — new cards are added to this deck and every card you have is kept.";
+          ? "This deck's material, whole. Existing cards stay."
+          : "This deck's material. Existing cards stay."
+        : "Pick what the new cards come from. Existing cards stay.";
 
   const blocked = cardLimit.error
     ? cardLimit.error

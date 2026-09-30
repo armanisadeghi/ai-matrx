@@ -44,6 +44,8 @@ import type { CanonicalStorageImport } from "@/features/files/storage-sources/ty
 import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
 import { matchStorageAccept } from "@/features/files/storage-sources/accept";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Input } from "@ai-matrx/design-system";
+import { ImageLinkError, imageLinkToFile } from "./imageLink";
 
 export interface UploadedFile {
   /** Original local filename, retained even when the durable URL is opaque. */
@@ -89,6 +91,18 @@ interface InlineUploadAreaProps {
    * Omitted = anything.
    */
   accept?: string;
+  /**
+   * Also take an image LINK (the Source input's Image tile): the image is
+   * fetched into a File and goes through the same upload as a chosen one.
+   */
+  imageLinks?: boolean;
+}
+
+/** The drop line names what this area takes. */
+function dropLabel(accept: string | undefined): string {
+  if (accept === "image/*") return "Drop images";
+  if (accept?.startsWith("audio/")) return "Drop recordings";
+  return "Drop files or folders";
 }
 
 function classifyUploadType(mimeType: string): string {
@@ -338,8 +352,11 @@ export function InlineUploadArea({
   selectionMode = "multiple",
   organizationId = null,
   accept,
+  imageLinks = false,
 }: InlineUploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [link, setLink] = useState("");
+  const [fetchingLink, setFetchingLink] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [fileStatuses, setFileStatuses] = useState<FileStatus[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -595,6 +612,25 @@ export function InlineUploadArea({
     setBusy(false);
   }, [setBusy]);
 
+  const addImageLink = async () => {
+    if (!link.trim() || fetchingLink) return;
+    setUploadError(null);
+    setFetchingLink(true);
+    try {
+      const file = await imageLinkToFile(link);
+      setLink("");
+      await handleFiles([candidateFromFile(file)]);
+    } catch (err) {
+      setUploadError(
+        err instanceof ImageLinkError || err instanceof Error
+          ? err.message
+          : "That image could not be added.",
+      );
+    } finally {
+      setFetchingLink(false);
+    }
+  };
+
   const hasErrors = fileStatuses.some((f) => f.status === "error");
   const displayError = uploadError || hookError;
 
@@ -622,7 +658,7 @@ export function InlineUploadArea({
             <>
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Upload className="h-3.5 w-3.5 shrink-0" />
-                Drop files or folders
+                {dropLabel(accept)}
               </span>
               <FileAcquisitionActions
                 presentation="inline"
@@ -647,6 +683,40 @@ export function InlineUploadArea({
                 }}
                 onError={setUploadError}
               />
+              {imageLinks ? (
+                <form
+                  className="flex w-full items-center gap-1.5"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void addImageLink();
+                  }}
+                >
+                  <Input
+                    type="url"
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    placeholder="Or paste an image link"
+                    aria-label="Image link"
+                    disabled={fetchingLink}
+                    className="h-9 min-w-0 flex-1 text-base sm:h-8 sm:text-xs"
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 shrink-0 text-xs sm:h-8"
+                    disabled={!link.trim() || fetchingLink}
+                  >
+                    {fetchingLink ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
+                  </Button>
+                </form>
+              ) : null}
+              {displayError ? (
+                <p role="alert" className="flex w-full items-start gap-1.5 text-[11px] text-destructive">
+                  <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                  <span className="min-w-0 flex-1">{displayError}</span>
+                </p>
+              ) : null}
             </>
           )}
         </div>
@@ -724,7 +794,7 @@ export function InlineUploadArea({
               onClick={clearAndReset}
             >
               <Upload className="mr-1.5 h-3 w-3" />
-              {hasErrors ? "Try Again" : "Upload More Files"}
+              {hasErrors ? "Try again" : "Upload more"}
             </Button>
           )}
         </div>

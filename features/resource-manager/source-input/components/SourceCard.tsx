@@ -31,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 import type { SourceManifestEntry } from "@ai-matrx/agents/sources";
-import { Input, SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -62,8 +62,8 @@ import {
   sourceDelivery,
   type SourceDelivery,
 } from "../delivery";
-import { findParts, isWordQuery, type SourcePart } from "../partsSearch";
-import { useSourcePartsSearch } from "../useSourcePartsText";
+import type { SourcePart } from "../partsSearch";
+import { SourcePartsPicker } from "../review/SourcePartsPicker";
 import { resumableInput, WAITING_FOR_ORGANIZATION } from "../interrupted";
 import {
   ensureOrganizationContext,
@@ -71,8 +71,6 @@ import {
 } from "@/lib/organization/organization-gate";
 import type { SourceCardModel } from "../types";
 import type { UseSourceSetResult } from "../useSourceSet";
-
-const PARTS_SEARCH_FROM = 12;
 
 export function formatChars(chars: number): string {
   if (chars >= 1_000_000) return `${(chars / 1_000_000).toFixed(1)}M characters`;
@@ -447,6 +445,11 @@ function FormChooser({
   );
 }
 
+/**
+ * The card's "Choose parts" is THE one part picker the review uses too
+ * (`SourcePartsPicker` — same search, same words). No parts chosen = the whole
+ * Source; "Use all of it" returns there.
+ */
 function PartsChooser({
   sourceRef,
   segments,
@@ -454,95 +457,18 @@ function PartsChooser({
   onChange,
 }: {
   sourceRef: NonNullable<SourceCardModel["draft"]["ref"]>;
-  segments: readonly SourcePart[];
+  segments: SourcePart[];
   picked: readonly string[];
   onChange: (ids: string[]) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const words = isWordQuery(query);
-  const partsText = useSourcePartsSearch(sourceRef, query);
-  // "pick" = the person chose to build the list from nothing. Until they tick
-  // one, the whole Source still goes in (and the sentence says so).
-  const [picking, setPicking] = useState(false);
-  const pickedSet = new Set(picked);
-  const shown = findParts(segments, query, partsText.matches);
-  const all = picked.length === 0 && !picking;
-  const toggle = (id: string) => {
-    // "No parts picked" means the whole Source; the first untick starts from all.
-    const base = all ? new Set(segments.map((s) => s.id)) : new Set(pickedSet);
-    if (base.has(id)) base.delete(id);
-    else base.add(id);
-    const next = segments.filter((s) => base.has(s.id)).map((s) => s.id);
-    if (next.length === segments.length) setPicking(false);
-    onChange(next.length === segments.length ? [] : next);
-  };
   return (
     <div className="space-y-2 border-t border-border px-3 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-xs text-muted-foreground">
-          {all
-            ? "The whole Source goes in. Untick the parts you don't want, or pick them one by one."
-            : picked.length === 0
-              ? "Tick the parts you want. Until you do, the whole Source goes in."
-              : `${picked.length} of ${segments.length} parts go in.`}
-        </p>
-        <div className="ml-auto flex gap-1">
-          {all ? (
-            <Button type="button" variant="ghost" size="sm" className="h-9" onClick={() => setPicking(true)}>
-              Pick one by one
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-9"
-              onClick={() => {
-                setPicking(false);
-                onChange([]);
-              }}
-            >
-              Use all of it
-            </Button>
-          )}
-        </div>
-      </div>
-      {segments.length >= PARTS_SEARCH_FROM ? (
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Find a part — words, a page (12) or pages (3-10)"
-          className="text-base sm:text-sm"
-          aria-label="Find a part"
-        />
+      {picked.length > 0 ? (
+        <Button type="button" variant="ghost" size="sm" className="h-9" onClick={() => onChange([])}>
+          Use all of it
+        </Button>
       ) : null}
-      {words && (partsText.reading || partsText.error) ? (
-        <p className="text-xs text-muted-foreground" aria-live="polite">
-          {partsText.error ?? "Searching inside the text…"}
-        </p>
-      ) : null}
-      {query.trim() && shown.length === 0 && !partsText.reading ? (
-        <p className="text-xs text-muted-foreground">No part matches “{query.trim()}”.</p>
-      ) : null}
-      <ul className="grid max-h-64 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
-        {shown.map((s) => {
-          const on = all || pickedSet.has(s.id);
-          return (
-            <li key={s.id}>
-              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-accent/40 sm:min-h-9">
-                <Checkbox checked={on} onCheckedChange={() => toggle(s.id)} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm">{s.label}</span>
-                  {s.preview ? (
-                    <span className="block truncate text-xs text-muted-foreground">{s.preview}</span>
-                  ) : null}
-                </span>
-                <span className="shrink-0 text-xs text-muted-foreground">{formatChars(s.chars)}</span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+      <SourcePartsPicker sourceRef={sourceRef} segments={segments} selected={picked} onChange={onChange} />
     </div>
   );
 }

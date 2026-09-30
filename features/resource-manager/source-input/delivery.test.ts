@@ -40,7 +40,7 @@ describe("delivery — one source of truth", () => {
   });
 
   it("says the text goes in when it does — never the look-up sentence", () => {
-    expect(DELIVERY_WORDS.direct.hint).toMatch(/handed to the AI with your request/);
+    expect(DELIVERY_WORDS.direct.hint).toBe("Sent in full");
     expect(DELIVERY_WORDS.direct.hint).not.toMatch(/nothing/i);
     expect(DELIVERY_CHOICES.map((c) => c.value)).toEqual(["direct", "context"]);
   });

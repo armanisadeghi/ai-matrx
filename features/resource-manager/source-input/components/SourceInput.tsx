@@ -10,8 +10,9 @@
  *   Use existing  <kind> <count> …  (registry kinds, `useKindCounts`/`useKindItems`)
  *   picked Sources as cards
  *
- * Every door is an existing primitive: `InlineUploadArea` (upload, image,
- * recording), `WebpageResourcePickerCore`, `YouTubeResourcePicker`,
+ * Every door is an existing primitive: `InlineUploadArea` (upload; image with
+ * image links; a recording file), `AudioResourcePicker` (record in place),
+ * `WebpageResourcePickerCore`, `YouTubeResourcePicker`,
  * `SegmentedControl`, the inventory hooks. Configuration is by props only
  * (`kinds`, `max`, `required`, `defaultForm`, `title`, `attachTo`, `deliveries`).
  * State: `useSourceSet(surfaceKey)`; new material: `useSourceIntake`; tiles:
@@ -38,6 +39,7 @@ import {
 } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
 import { YouTubeResourcePicker } from "@/features/resource-manager/resource-picker/YouTubeResourcePicker";
+import { AudioResourcePicker } from "@/features/resource-manager/resource-picker/AudioResourcePicker";
 import type { KindScope } from "@/features/scopes/service/kindInventory";
 import {
   cancelSourceReview,
@@ -176,7 +178,7 @@ export function SourceInput({
         reason,
         purpose,
         targetModelId,
-        addMoreLabel: "Add more sources",
+        addMoreLabel: "Add more",
         deliveries,
         // The review names each Source the way its card does (V2-F #5).
         describe: Object.fromEntries(
@@ -304,6 +306,7 @@ export function SourceInput({
           ) : (
             <TileArea
               key={activeDef.id}
+              surfaceKey={surfaceKey}
               tile={activeDef}
               set={set}
               intake={intake}
@@ -444,6 +447,7 @@ function Tile({
 }
 
 function TileArea({
+  surfaceKey,
   tile,
   set,
   intake,
@@ -453,6 +457,7 @@ function TileArea({
   onClose,
   onVideoLink,
 }: {
+  surfaceKey: string;
   tile: SourceKindDef;
   set: ReturnType<typeof useSourceSet>;
   intake: ReturnType<typeof useSourceIntake>;
@@ -465,6 +470,7 @@ function TileArea({
 }) {
   const [text, setText] = useState("");
   const [name, setName] = useState("");
+  const [uploadRecording, setUploadRecording] = useState(false);
 
   switch (tile.control) {
     case "paste":
@@ -532,17 +538,52 @@ function TileArea({
           }}
         />
       );
-    case "upload":
     case "audio":
+      // Record in place with the family's recorder (Voice Pad); a recording
+      // the person already has is one click away.
+      if (!uploadRecording)
+        return (
+          <div className="flex flex-col gap-2">
+            <AudioResourcePicker
+              conversationId={`source-input-${surfaceKey}`}
+              onBack={onClose}
+              onSelect={(resource) => {
+                if (resource.type !== "text" || refuseOverMax()) return;
+                const at = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+                void intake.addPastedText(resource.data.text, `Recording ${at}`);
+              }}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-11 self-start text-xs sm:h-8"
+              onClick={() => setUploadRecording(true)}
+            >
+              Upload a recording
+            </Button>
+          </div>
+        );
       return (
         <InlineUploadArea
           accept={tile.accept}
-          selectionMode={tile.control === "audio" ? "single" : "multiple"}
+          selectionMode="single"
+          onSelect={async (uploaded) => {
+            const files = fitFiles(uploaded);
+            await Promise.all(files.map((f) => intake.addUploadedRecording(f)));
+          }}
+        />
+      );
+    case "upload":
+      return (
+        <InlineUploadArea
+          accept={tile.accept}
+          imageLinks={tile.id === "image"}
+          selectionMode="multiple"
           onSelect={async (uploaded) => {
             const files = fitFiles(uploaded);
             if (!files.length) return;
-            if (tile.control === "audio") await Promise.all(files.map((f) => intake.addUploadedRecording(f)));
-            else await intake.addUploaded(files, tile.id);
+            await intake.addUploaded(files, tile.id);
           }}
         />
       );

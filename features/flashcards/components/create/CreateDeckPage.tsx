@@ -643,8 +643,8 @@ export function CreateDeckPage() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {progress && progress.total > 1
-                            ? `Every part of your material gets its own pass — last finished: ${progress.label}.`
-                            : "Cards appear below as they are written, each citing where it came from."}
+                            ? `Last done: ${progress.label}`
+                            : "Cards appear below."}
                         </p>
                       </div>
                     </div>
@@ -663,8 +663,7 @@ export function CreateDeckPage() {
                       <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                       <span>
                         Waiting for the clean version of{" "}
-                        {waitingForClean.map((s) => `“${s.draft.label}”`).join(", ")}. Your deck
-                        starts by itself the moment it is ready — you can leave this page open.
+                        {waitingForClean.map((s) => `“${s.draft.label}”`).join(", ")} — the deck starts by itself.
                       </span>
                     </p>
                     <div className="flex flex-wrap gap-2">

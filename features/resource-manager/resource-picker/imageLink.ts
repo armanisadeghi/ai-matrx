@@ -177,7 +177,7 @@ export async function imageLinkToFile(
   }
   if (!res.ok) throw new ImageLinkError(`That image could not be fetched (${res.status}). Check the link.`);
   const blob = await res.blob();
-  const mime = blob.type || checked.type || "";
+  const mime = blob.type || res.headers.get("content-type")?.split(";")[0] || "";
   if (!mime.startsWith("image/")) throw new ImageLinkError("That link did not return an image.");
   return new File([blob], fileNameFromUrl(url, mime), { type: mime });
 }

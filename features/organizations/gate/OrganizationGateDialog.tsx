@@ -200,8 +200,7 @@ export function OrganizationGateDialog() {
         <DialogHeader>
           <DialogTitle>Which organization is this for?</DialogTitle>
           <DialogDescription>
-            Choose the organization for this action. We&apos;ll continue where
-            you left off and use it as your active organization.
+            It becomes your active organization.
           </DialogDescription>
         </DialogHeader>
 

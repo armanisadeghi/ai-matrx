@@ -19,7 +19,7 @@ import { Button, ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
-import { formatChars, formatTokens } from "@/lib/tokens/estimate";
+import { formatChars, formatTokens, pagesPhrase } from "@/lib/tokens/estimate";
 import { fetchSourceManifest } from "../sourceSetApi";
 import { deliveryPatch, deliverySwitchedNote, fitDelivery } from "../delivery";
 import { sourceKey } from "../sourceKinds";
@@ -228,17 +228,17 @@ export function SourceReview({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 pb-safe">
+      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3 pb-safe">
         {onAddMore && options.addMoreLabel && (
           <Button
             type="button"
             variant="outline"
-            className="mr-auto"
+            className="mr-auto min-w-0"
             disabled={!plan}
             onClick={() => plan && onAddMore(plan.sourceSet)}
           >
-            <Plus className="mr-1.5 h-4 w-4" />
-            {options.addMoreLabel}
+            <Plus className="mr-1.5 h-4 w-4 shrink-0" />
+            <span className="truncate">{options.addMoreLabel}</span>
           </Button>
         )}
         <Button type="button" variant="ghost" onClick={onCancel}>
@@ -272,10 +272,9 @@ function BudgetSummary({
   const v = VERDICT[plan.verdict];
   const pct = Math.round(plan.share * 100);
   const onDemand = plan.entries.filter((e) => e.status === "on_demand").length;
-  // One line, value only (R9): the verdict, the share and the size it is measured against.
-  const size = `${pct}% of ${formatTokens(plan.windowTokens)} tokens${
-    plan.windowIsFallback ? "" : modelLabel ? ` · ${modelLabel}` : ""
-  }`;
+  // One line, value only (R9): the verdict and how full the AI's reading room is.
+  // Sizes a person understands (characters, pages); tokens only in the tooltip.
+  const size = `${pct}% full${plan.windowIsFallback ? "" : modelLabel ? ` · ${modelLabel}` : ""}`;
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -283,7 +282,14 @@ function BudgetSummary({
           <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", v.dot)} />
           <span className={cn("text-sm font-semibold", v.text)}>{v.label}</span>
         </span>
-        {plan.verdict === "empty" ? null : <span className="text-sm text-foreground">{size}</span>}
+        {plan.verdict === "empty" ? null : (
+          <span
+            className="text-sm text-foreground"
+            title={`${formatTokens(plan.sentTokens)} of ${formatTokens(plan.windowTokens)} tokens`}
+          >
+            {size}
+          </span>
+        )}
       </div>
 
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
@@ -297,7 +303,7 @@ function BudgetSummary({
         <span title={`${plan.sentChars.toLocaleString()} characters`} data-sent-chars={plan.sentChars}>
           {formatChars(plan.sentChars)} characters
         </span>
-        {` · about ${formatTokens(plan.sentTokens)} tokens`}
+        {` · ${pagesPhrase(plan.sentChars)}`}
         {onDemand > 0 ? ` · ${onDemand} looked up when needed` : null}
       </p>
 

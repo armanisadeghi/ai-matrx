@@ -34,7 +34,7 @@ export interface FileSourceContext {
 }
 
 const UNREADABLE =
-  "The file is stored, but it could not be read into a Source, so nothing in it can be used yet. Remove it, or add a different copy (a PDF, Word file or plain text reads best).";
+  "Can't read this file — add a PDF, Word or text copy.";
 
 /** The one decision. `status` is the server's `/files/{id}/rag-status` answer. */
 export function nextFileStep(
@@ -48,7 +48,7 @@ export function nextFileStep(
     return {
       do: "unreadable",
       reason: status.error?.message
-        ? `The file could not be read: ${status.error.message}. Remove it, or add it again.`
+        ? `Can't read this file: ${status.error.message}. Add it again.`
         : UNREADABLE,
     };
   if (!ctx.started) return { do: "start" };

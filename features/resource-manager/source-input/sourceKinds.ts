@@ -2,9 +2,13 @@
  * THE one registry of the Source input's "Add new" tiles — the doors that
  * turn NEW material into a Source. Each entry names the EXISTING door it uses:
  *
- *   upload / image / recording → `InlineUploadArea` (the resource picker's
- *                    canonical upload surface: compression, folder drops,
- *                    Google import) → `useSourceIntake().addUploaded`.
+ *   upload / image → `InlineUploadArea` (the resource picker's canonical
+ *                    upload surface: compression, folder drops, Google
+ *                    import; image also takes an image link)
+ *                    → `useSourceIntake().addUploaded`.
+ *   recording      → `AudioResourcePicker` (Voice Pad, records in place) →
+ *                    its transcript lands as text; "Upload a recording" →
+ *                    `InlineUploadArea` → `addUploadedRecording`.
  *   paste          → `POST /sources/land`.
  *   web page       → `WebpageResourcePickerCore` (scrape, preview, confirm);
  *                    the scraper lands the page at its result boundary.

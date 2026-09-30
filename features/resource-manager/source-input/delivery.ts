@@ -41,7 +41,7 @@ export function deliveryPatch(
 export interface DeliveryWords {
   /** The choice's name on a control. */
   label: string;
-  /** One sentence under the control: what happens, in plain words. */
+  /** Two or three words under the control: what happens (copy law R9). */
   hint: string;
   /** The short phrase a summary line uses. */
   summary: string;
@@ -50,12 +50,12 @@ export interface DeliveryWords {
 export const DELIVERY_WORDS: Record<SourceDelivery, DeliveryWords> = {
   direct: {
     label: "Include the text",
-    hint: "The text is handed to the AI with your request, so it reads all of it before it starts.",
+    hint: "Sent in full",
     summary: "Text included",
   },
   context: {
     label: "Let the AI look it up",
-    hint: "Nothing is sent up front. The AI opens this Source and reads the parts it needs while it works — best for very large Sources.",
+    hint: "Read as needed",
     summary: "Looked up when needed",
   },
 };

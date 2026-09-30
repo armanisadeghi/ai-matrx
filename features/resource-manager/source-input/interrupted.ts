@@ -72,7 +72,7 @@ export const MAX_KEPT_TEXT_KNOB = { feature: "sources", key: "max_kept_draft_cha
 
 /** Said on a pasted card whose text is too large (or the limit unreadable) to keep for a reload. */
 export const NOT_KEPT_FOR_RELOAD =
-  "Too large to keep on this device, so it will not come back if the page reloads before it is added.";
+  "Too large to restore if the page reloads before it is added.";
 
 /**
  * A landing stopped only because no organization is chosen yet. The card

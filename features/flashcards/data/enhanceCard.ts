@@ -30,7 +30,7 @@ import type { CardWithDetails } from "./types";
 export const DEPTH_TIERS: { value: Depth; label: string; blurb: string }[] = [
   { value: "recall", label: "Recall", blurb: "Grasp & remember the basics" },
   { value: "applied", label: "Applied", blurb: "Use it to solve problems" },
-  { value: "exam", label: "Exam-level", blurb: "Exam-rigor depth & nuance" },
+  { value: "exam", label: "Exam-level", blurb: "Fine detail & tricky cases" },
 ];
 
 // ─── Generation-time depth (VISION §1 — "every AI generation path supports

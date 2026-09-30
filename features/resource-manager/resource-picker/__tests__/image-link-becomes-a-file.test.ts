@@ -6,14 +6,14 @@
  * LINK. `imageLinkToFile` is the one turn from a link to a File the canonical
  * upload pipeline takes; a site that will not share its bytes gets the remedy.
  */
-import { describe, expect, it, vi } from "vitest";
+
 import { ImageLinkError, imageLinkToFile } from "../imageLink";
 
 const png = () => new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" });
 
 describe("imageLinkToFile", () => {
   it("fetches an image link into a named image File", async () => {
-    const fetchImpl = vi.fn(async () => new Response(png(), { status: 200 }));
+    const fetchImpl = jest.fn(async () => new Response(png(), { status: 200, headers: { "content-type": "image/png" } }));
     const file = await imageLinkToFile("cdn.example.com/pics/cell-diagram.png", fetchImpl as typeof fetch);
     expect(fetchImpl).toHaveBeenCalledWith("https://cdn.example.com/pics/cell-diagram.png");
     expect(file.name).toBe("cell-diagram.png");
@@ -21,7 +21,7 @@ describe("imageLinkToFile", () => {
   });
 
   it("refuses a web page link without fetching it", async () => {
-    const fetchImpl = vi.fn();
+    const fetchImpl = jest.fn();
     await expect(imageLinkToFile("https://example.com/article", fetchImpl as typeof fetch)).rejects.toThrow(
       "That is a web page, not an image.",
     );
@@ -29,7 +29,7 @@ describe("imageLinkToFile", () => {
   });
 
   it("names the remedy when the site will not share the image", async () => {
-    const fetchImpl = vi.fn(async () => {
+    const fetchImpl = jest.fn(async () => {
       throw new TypeError("Failed to fetch");
     });
     const err = await imageLinkToFile("https://example.com/a.jpg", fetchImpl as typeof fetch).catch((e) => e);
