@@ -47,6 +47,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import { getWebDeviceId } from "./deviceId";
+import { useSignedIn } from "./useSignedIn";
 
 const TTL_MS = 60_000;
 
@@ -449,8 +450,11 @@ export function useEffectiveKnob(
     () => storeVersion,
     () => 0,
   );
+  // A knob read needs a caller: before a person is signed in (boot, signed-out
+  // pages) the door answers 42501 to anon, so nothing is asked until then.
+  const signedIn = useSignedIn();
   useEffect(() => {
-    if (value !== undefined) return;
+    if (value !== undefined || !signedIn) return;
     void ensureEffectiveKnob(organizationId ?? null, userId ?? null, ref, scopes).catch(
       (error: unknown) => {
         // 🚨 IT SCREAMS (law 4). The old comment here said "the caller's screen
@@ -471,6 +475,6 @@ export function useEffectiveKnob(
     // would re-run this effect on every render for a caller that builds it
     // inline, which every caller does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, userId, fullKey, scopeKey, value, version]);
+  }, [organizationId, userId, fullKey, scopeKey, value, version, signedIn]);
   return value;
 }
