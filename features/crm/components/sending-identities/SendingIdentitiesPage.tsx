@@ -295,6 +295,8 @@ export function SendingIdentitiesPage() {
       await setSendingPolicy(
         enabled,
         enabled ? undefined : "Switched off from the sending mailboxes screen.",
+        // The policy's OWN organization — never left for the server header to pick.
+        policy?.organization_id,
       );
       reload();
     } catch (err) {

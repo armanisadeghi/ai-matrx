@@ -19,6 +19,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { useCrmContext } from "../../hooks/useCrmContext";
 import {
   createOutreachList,
@@ -99,11 +100,13 @@ export function useOutreachListChoice(open: boolean): OutreachListChoice {
     if (creating) {
       const name = newName.trim();
       if (!name) throw new Error("Name the new outreach list.");
-      const owner = orgId ?? ctx?.orgIds[0];
-      if (!owner)
-        throw new Error(
-          "No organization resolved for the new outreach list. Pick an existing list instead.",
-        );
+      // The record's own org, else the ACTIVE org (waited for, never an arbitrary membership).
+      let owner = orgId;
+      if (!owner) {
+        const workspace = await awaitEffectiveOrganizationId();
+        if (workspace.status !== "ready") throw new Error(workspace.reason);
+        owner = workspace.organizationId;
+      }
       return {
         ...(await createOutreachList({ name, kind, orgId: owner })),
         members: [],

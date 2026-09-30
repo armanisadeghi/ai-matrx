@@ -80,7 +80,8 @@ export function AddToOutreachListDialog({
     setSaving(true);
     try {
       const list = await choice.resolve({
-        orgId: selectedRows[0]?.organization_id ?? ctx.orgIds[0],
+        // The selected record's own org; with none, the picker files a new list in the ACTIVE org.
+        orgId: selectedRows[0]?.organization_id,
         kind: "call",
       });
       const { added, skippedExisting } = await addMembersByPartyIds({
