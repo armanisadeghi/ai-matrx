@@ -16,11 +16,12 @@
  */
 type Row = Record<string, unknown>;
 
-const store: { plan: Row; days: Row[]; blocks: Row[]; calls: string[] } = {
+const store: { plan: Row; days: Row[]; blocks: Row[]; calls: string[]; rpcArgs: Row | null } = {
   plan: {},
   days: [],
   blocks: [],
   calls: [],
+  rpcArgs: null,
 };
 
 const REFUSAL =
@@ -76,8 +77,9 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     schema: () => ({
       from: (table: string) => builder(table),
-      rpc: (name: string) => {
+      rpc: (name: string, args: Row) => {
         store.calls.push(`rpc ${name}`);
+        store.rpcArgs = args;
         // The live function: the plan UPDATE runs first and raises 42501 on
         // zero rows — nothing after it runs, the transaction rolls back.
         return Promise.resolve({ data: null, error: { code: "42501", message: REFUSAL, details: null, hint: null } });
@@ -135,4 +137,18 @@ test("a refused regenerate leaves the plan's days and blocks intact and says why
   expect(store.days.map((d) => d.id)).toEqual(["d1", "d2"]);
   expect(store.blocks.map((b) => b.id)).toEqual(["b1", "b2"]);
   expect(store.calls.filter((c) => c.startsWith("delete"))).toEqual([]);
+});
+
+test("an AI re-plan never sends the planner's mandate key into the uuid column", async () => {
+  // The planner's draft names its generator by MANDATE KEY; the column is a
+  // uuid, so sending the key failed every AI re-plan with 22P02 (found by
+  // clicking Re-plan as admin@admin.com, 2026-09-29).
+  await planService.regeneratePlan(PLAN_ID, {
+    ...draft,
+    generatedBy: "ai",
+    generatorAgentId: "education.plan_generate",
+  } as PlanDraft);
+  const plan = (store.rpcArgs?.p_plan ?? {}) as Row;
+  expect(plan.generator_agent_id).toBeNull();
+  expect((plan.config as Row).generatorMandate).toBe("education.plan_generate");
 });

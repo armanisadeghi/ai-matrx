@@ -45,6 +45,26 @@ const EDU = () => supabase.schema("education");
 // so the row never depends on `public._stamp_org_default` to pick a tenant,
 // and a re-plan UPDATE leaves the plan filed where it already is.
 // common-docs/policies/context-is-carried-never-rebuilt.md
+// `generatorAgentId` carries the planner's MANDATE KEY ("education.plan_generate")
+// since the planner moved onto mandates; the column is a uuid, so writing the
+// key there failed every AI plan save and re-plan with 22P02. A uuid still goes
+// to the column; a mandate key is kept in `config.generatorMandate`.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function generatorFields(draft: PlanDraft): {
+  generator_agent_id: string | null;
+  config: Record<string, unknown>;
+} {
+  const generator = draft.generatorAgentId ?? null;
+  const isUuid = generator !== null && UUID_RE.test(generator);
+  return {
+    generator_agent_id: isUuid ? generator : null,
+    config: {
+      ...(draft.config ?? {}),
+      ...(generator && !isUuid ? { generatorMandate: generator } : {}),
+    },
+  };
+}
+
 function planPayload(draft: PlanDraft): Record<string, unknown> {
   return {
     title: draft.title,
@@ -55,9 +75,8 @@ function planPayload(draft: PlanDraft): Record<string, unknown> {
     rest_days: draft.restDays,
     goal_id: draft.goalId ?? null,
     generated_by: draft.generatedBy,
-    generator_agent_id: draft.generatorAgentId ?? null,
+    ...generatorFields(draft),
     rationale: draft.rationale ?? null,
-    config: draft.config ?? {},
     last_planned_at: new Date().toISOString(),
   };
 }
@@ -73,9 +92,9 @@ function regeneratePlanPayload(draft: PlanDraft): Json {
     rest_days: draft.restDays,
     goal_id: draft.goalId ?? null,
     generated_by: draft.generatedBy,
-    generator_agent_id: draft.generatorAgentId ?? null,
+    generator_agent_id: generatorFields(draft).generator_agent_id,
     rationale: draft.rationale ?? null,
-    config: (draft.config ?? {}) as Json,
+    config: generatorFields(draft).config as Json,
   };
 }
 
