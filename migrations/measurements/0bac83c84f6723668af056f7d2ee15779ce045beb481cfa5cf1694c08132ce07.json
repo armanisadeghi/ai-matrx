@@ -1,9 +1,0 @@
-{
-  "file": "nightwindow0930_custom_doc_signature_read_policy_carries_the_member_knob_guard.sql",
-  "sha256": "0bac83c84f6723668af056f7d2ee15779ce045beb481cfa5cf1694c08132ce07",
-  "target": "clone",
-  "firstPolicyDdlToEndMs": 5804,
-  "tables": [],
-  "measuredAt": "2026-09-30T23:10:15.448Z",
-  "note": "First policy statement to the end of the measure-pass transaction, measured on the dev clone by pnpm db:rehearse. That span is the sign-in freeze. Bound to the file's sha256: edit the file and this record stops answering for it."
-}
