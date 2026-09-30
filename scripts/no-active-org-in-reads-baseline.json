@@ -366,11 +366,6 @@
       "owner": "mandates",
       "note": "organizationId → useMandateLadder for one mandate's ladder resolution"
     },
-    "features/marketing/data/spend.ts": {
-      "class": "silent-filter",
-      "owner": "marketing",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: the active org reaches a read; replace with the person's ?org_filter= (default All) or annotate the exact call. Lines 191,192,201; sites: callApi(), queryKey, useQuery()"
-    },
     "features/marketing/seo/dataforseo/DataForSeoLab.tsx": {
       "class": "write-target",
       "owner": "marketing",
