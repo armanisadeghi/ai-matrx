@@ -678,9 +678,10 @@ export function EntityListTable<TRow>({
       // declared, so every list route inherits a phone layout instead of a
       // 3,000px table in a 364px box. See ../phoneCards.tsx.
       mobileCards={config.mobileCards ?? defaultMobileCards}
-      // Spread, never `selection={selection}`: a surface that declared no
-      // `bulkActions` must reach the table with the key absent (see Props).
-      {...(selection ? { selection } : {})}
+      // A surface that declared no `bulkActions` says `selection={false}` OUT LOUD: since
+      // design-system 0.49.x an ABSENT key means "self-managed copy selection", which draws a
+      // checkbox column (see Props). `false` is the package's own "no selection".
+      selection={selection ?? false}
       emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
       read={read}
     />
