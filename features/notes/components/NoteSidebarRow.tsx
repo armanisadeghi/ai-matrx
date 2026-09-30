@@ -15,6 +15,7 @@ import { ItemRow } from "@/components/official/item/ItemRow";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { cn } from "@/lib/utils";
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 import type { ContentSource } from "@/features/rich-document/types";
 import { saveNoteField, ensureNoteBodiesLoaded } from "../redux/thunks";
 import {
@@ -134,6 +135,10 @@ export function NoteSidebarRow({
               {isOpenTab && !isActive && (
                 <span className="h-1 w-1 rounded-full bg-foreground/40" />
               )}
+              <OrganizationTag
+                organizationId={note.organization_id}
+                className="h-4 max-w-[76px] px-1 text-[10px]"
+              />
               <span
                 className="text-xs text-muted-foreground tabular-nums"
                 title={

@@ -48,6 +48,7 @@ import type { CaptureItem } from "../types";
 import { closeItem, deleteItem, listAllFiles, listAllItems } from "../service";
 import { ItemSwipeRow } from "./ItemSwipeRow";
 import { ItemActionsDrawer } from "./ItemActionsDrawer";
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 
 interface ItemTableRow {
   id: string;
@@ -209,6 +210,12 @@ export function AllItemsTable() {
         ),
     },
     {
+      id: "organization",
+      accessorFn: (row) => row.item.organizationId ?? "",
+      header: "Organization",
+      cell: (row) => <OrganizationTag organizationId={row.item.organizationId} />,
+    },
+    {
       id: "photoCount",
       accessorKey: "photoCount",
       header: "Photos",
@@ -338,6 +345,7 @@ export function AllItemsTable() {
                     audioCount: row.audioCount,
                     firstPhotoFileId: row.firstPhotoFileId,
                     statusLabel: STATUS_LABELS[row.status] ?? row.status,
+                    organizationId: row.item.organizationId,
                   }}
                   onTap={() => openView(row)}
                   leading={{

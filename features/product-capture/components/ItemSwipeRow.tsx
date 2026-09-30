@@ -16,6 +16,7 @@ import { Camera, FileAudio, Loader2, Trash2, Video } from "lucide-react";
 
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { cn } from "@/lib/utils";
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 
 import { SwipeableRow, type SwipeRowAction } from "./SwipeableRow";
 import { useLongPress } from "../hooks/useLongPress";
@@ -31,6 +32,8 @@ export interface ItemRowSummary {
   firstPhotoFileId: string | null;
   /** Human status label (e.g. "Ready") — omit to hide. */
   statusLabel?: string;
+  /** The item's organization — a cross-org list names it. */
+  organizationId?: string | null;
 }
 
 export function ItemSwipeRow({
@@ -121,6 +124,10 @@ export function ItemSwipeRow({
               )}
             </p>
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <OrganizationTag
+                organizationId={row.organizationId}
+                className="h-4 max-w-[110px] px-1 text-[10px]"
+              />
               <span className="flex items-center gap-0.5">
                 <Camera className="h-3 w-3" /> {row.photoCount}
               </span>

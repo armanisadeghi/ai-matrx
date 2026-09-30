@@ -44,6 +44,7 @@ import {
 } from "../../pipeline-service";
 import { listFilesForItems } from "../../service";
 import { STAGE_LABELS } from "../../pipeline-types";
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 
 interface QueueEntry {
   question: PipelineQuestion;
@@ -264,7 +265,11 @@ export function AnswerQueue() {
             <p className="truncate text-sm font-semibold">
               {item.code ?? "No product number"}
             </p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="flex items-center gap-2 truncate text-xs text-muted-foreground">
+              <OrganizationTag
+                organizationId={item.organizationId}
+                className="h-4 max-w-[110px] px-1 text-[10px]"
+              />
               {STAGE_LABELS[item.stage]}
               {item.notes ? ` · ${item.notes}` : ""}
             </p>

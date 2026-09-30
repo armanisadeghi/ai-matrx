@@ -48,6 +48,7 @@ import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
 import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
@@ -342,6 +343,10 @@ export default function MobileNotesList({
                           <Clock size={10} />
                           <span>{formatDate(note.updated_at)}</span>
                         </div>
+                        <OrganizationTag
+                          organizationId={note.organization_id}
+                          className="h-4 max-w-[120px] px-1 text-[10px]"
+                        />
                         {filters.folder === "all" && note.folder_name && (
                           <div className="flex items-center gap-1">
                             <FolderOpen size={10} />

@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 import type { PipelineItem } from "../../pipeline-service";
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 
 export interface StageListEntry {
   item: PipelineItem;
@@ -86,6 +87,10 @@ export function StageItemList({
                 {item.code ?? "No product number"}
               </p>
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <OrganizationTag
+                  organizationId={item.organizationId}
+                  className="h-4 max-w-[110px] px-1 text-[10px]"
+                />
                 <span>
                   {photoCount} photo{photoCount === 1 ? "" : "s"}
                 </span>

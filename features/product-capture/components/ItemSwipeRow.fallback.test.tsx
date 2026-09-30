@@ -5,6 +5,10 @@ import { ItemSwipeRow } from "./ItemSwipeRow";
 
 const mockRemedy = jest.fn();
 
+jest.mock("@/features/commerce-review/components/OrganizationTag", () => ({
+  OrganizationTag: () => null,
+}));
+
 jest.mock("@ai-matrx/media/react", () => ({
   InlineMediaRef: () => (
     <div aria-label="Media unavailable">
