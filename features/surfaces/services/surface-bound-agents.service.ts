@@ -464,7 +464,7 @@ function bucketBindingRows(
   if (orgDeduped.length > 0) {
     sections.push({
       key: "my-orgs",
-      label: "My Orgs",
+      label: "My Orgs", // personal-seat-ok: user pages only; the admin seat returns before this (platform agents only)
       sortOrder: 100,
       agents: orgDeduped,
     });

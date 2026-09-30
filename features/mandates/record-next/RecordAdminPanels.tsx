@@ -219,10 +219,10 @@ export function RecordAdminPanels({
       ) : null}
       {/* RUN HISTORY — inside Health (the ten tabs are protected; no new tab
           on the admin route). Every run across the platform, filterable by
-          organization or person; never "Mine". */}
+          organization or person, with no personal lane. */}
       {section === "diagnostics" ? (
         <MandateRunHistory
-          mandateKey={mandate?.mandate_key ?? mandateKey}
+          mandateKey={mandate?.mandate_key ?? mandateKey} // key-is-the-subject: a prop handed to the run-history query, never rendered as a name
           view={onAdminSeat ? "platform" : "mine"}
           audience={onAdminSeat ? "admin" : "product"}
           className="mb-4"
