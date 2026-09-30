@@ -489,7 +489,11 @@ export function useEntityList<TRow>({
 
   // DERIVED, never written from an effect body: pending is simply "the counts
   // we are holding do not answer the question currently being asked".
-  const countsLoading = countsAnsweredFor !== countsKey;
+  // The typed search counts too: the question changes the moment the box does, while the
+  // debounced value (which the counts request carries) lags — those numbers answer the
+  // previous text, so they read as "not measured" until the new answer lands.
+  const countsLoading =
+    countsAnsweredFor !== countsKey || debouncedSearch !== query.search;
 
   useEffect(() => {
     let cancelled = false;

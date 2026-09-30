@@ -223,7 +223,9 @@ export function EntityScopeTabs({
     scope.kind === "industry" ? scopeIndustryId(scope) : scopeNarrowId(scope);
   const countOf = (kind: ListScopeKind): number | null => {
     const measured = counts.byKind[kind];
-    return typeof measured === "number" ? measured : countsLoading ? null : 0;
+    // A count nobody has measured for THE CURRENT filter is nothing — never the previous filter's number.
+    if (countsLoading) return null;
+    return typeof measured === "number" ? measured : 0;
   };
   const withCount = (label: string, n: number | null) => (n === null ? label : `${label} (${n})`);
   return (
@@ -303,8 +305,11 @@ export function EntityScopeTabs({
           : undefined;
 
         const measured = narrowed?.count ?? counts.byKind[kind];
-        const count =
-          typeof measured === "number" ? measured : countsLoading ? null : 0;
+        const count = countsLoading
+          ? null
+          : typeof measured === "number"
+            ? measured
+            : 0;
 
         const tab = (
           <button
