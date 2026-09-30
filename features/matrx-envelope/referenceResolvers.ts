@@ -36,7 +36,6 @@ import {
   parseTableMetadata,
   type TableMetadata,
 } from "@/features/data-tables/types";
-import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 // Static, not `await import()`: this module reaches ~714 entry contexts and the seam adds ~31
 // modules (`pnpm lab:graph`, 2026-09-23) — an async edge here would be a new chunk-group split in
@@ -52,15 +51,14 @@ import {
  * IS THIS TABLE IN THE RECORD STORE? (lane INTEG-CLIENTS, CUTOVER-PLAN F10.) A moved table
  * keeps its id and its older copy is ARCHIVED, so every `udt_*` read below would answer a
  * moved table from the archive (or not at all, for a table born in the store). A table the
- * record store holds is read through the data seam instead — the grid's own doors. With no
- * active organization there is nobody to ask for, and the older read answers as it always did.
+ * record store holds is read through the data seam instead — the grid's own doors. The table
+ * names its OWN organization (`custom.where_id_opens`, inside `locateTable`), never the active
+ * one (active-org law, rule 5).
  */
 async function inTheRecordStore(tableId: string | undefined): Promise<boolean> {
   if (!tableId) return false;
-  const organizationId = getActiveOrgId();
-  if (!organizationId) return false;
   try {
-    const where = await locateTable(tableId, organizationId);
+    const where = await locateTable(tableId);
     return where.ok && where.store === "record";
   } catch {
     return false;
