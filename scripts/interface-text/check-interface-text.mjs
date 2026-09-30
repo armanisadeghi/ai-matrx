@@ -83,6 +83,9 @@ const PLACEHOLDER_PROPS = new Set(["placeholder"]);
 /** Components whose `description=` is a page/section header sentence. */
 const HEADER_COMPONENT = /(Page|Route|Section|Panel|Shell|Screen|Card)?Header$|^(PageTitle|SectionTitle|PageShell|PageHead)$/;
 
+/** Promotional components — a signed-out pitch, where prose is allowed (module-landing-pages skill). */
+const PROMO_COMPONENTS = /^(ModuleLanding|ModuleSignInGate|MarketingHero|LandingHero)$/;
+
 /** Promotional surfaces — prose is allowed there. */
 const PROMO = [/^app\/\(public\)\//];
 /** Developer demo pages — scanned only with --include-dev. */
@@ -217,11 +220,12 @@ export function scanSource(file, source) {
   collectConsts(sf);
   const findings = [];
   const lineOf = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
+  let where = "";
   const push = (rule, node, text, detail) => {
     const t = collapse(text);
     const n = (t.match(SENTENCE_END) ?? []).length;
     const novel = rule === "implementation-leak" || rule === "page-description" || t.length > NOVEL.chars || n >= NOVEL.sentences;
-    findings.push({ file, line: lineOf(node), rule, severity: novel ? 1 : 2, chars: t.length, text: t.slice(0, 240), detail });
+    findings.push({ file, line: lineOf(node), rule, severity: novel ? 1 : 2, where, chars: t.length, text: t.slice(0, 240), detail });
   };
 
   const checkText = (node, text, kind) => {
@@ -237,6 +241,7 @@ export function scanSource(file, source) {
 
   const visit = (node) => {
     // Attribute text slots.
+    if ((ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) && PROMO_COMPONENTS.test(tagName(node) ?? "")) return;
     if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = tagName(node) ?? "";
       for (const a of attrsOf(node)) {
@@ -244,6 +249,7 @@ export function scanSource(file, source) {
         const kind = SECONDARY_PROPS.has(name) ? "secondary" : TOOLTIP_PROPS.has(name) ? "tooltip" : PLACEHOLDER_PROPS.has(name) ? "placeholder" : null;
         if (!kind) continue;
         for (const t of attrTexts(a)) {
+          where = `${tag}.${name}`;
           checkText(a, t, kind);
           if (name === "description" && HEADER_COMPONENT.test(tag) && collapse(t).length >= 12)
             push("page-description", a, t, `<${tag} description=…> renders a sentence under a title`);
@@ -260,6 +266,7 @@ export function scanSource(file, source) {
         const t = directText(node);
         const consequence = /^(Dialog|AlertDialog|Alert|Sheet|Drawer)Description$/.test(tag) || /EmptyState|ErrorState|ReadFailure/.test(enclosingComponent(node));
         const secondary = /Description$/.test(tag) || /text-muted-foreground/.test(cls) || /text-(xs|\[1[01]px\])/.test(cls);
+        where = `<${tag}>`;
         if (t) checkText(node.openingElement, t, consequence ? "consequence" : secondary ? "secondary" : "body");
       }
 
