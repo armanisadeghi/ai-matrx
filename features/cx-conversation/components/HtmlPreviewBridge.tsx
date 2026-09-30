@@ -54,7 +54,17 @@ export function HtmlPreviewBridge({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const user = useAppSelector(selectUser);
-  const organizationId = useAppSelector(selectOrganizationId);
+  // An existing conversation's artifact is filed in the CONVERSATION's own
+  // organization; the active one is only the fallback for a conversation that
+  // is not persisted yet (active-org law, rule 4).
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const conversationOrganizationId = useAppSelector((state) =>
+    conversationId
+      ? (state.conversations?.byConversationId?.[conversationId]
+          ?.organizationId ?? null)
+      : null,
+  );
+  const organizationId = conversationOrganizationId ?? activeOrganizationId;
   const taskId = useAppSelector(selectTaskId);
 
   // Look up existing artifact for this message (O(1) via secondary index)

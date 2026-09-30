@@ -60,11 +60,13 @@ export function useChatPersistence() {
     async (
       conversationId: string,
       messages: ChatMessage[],
+      /** The CONVERSATION's own organization — never left to a DB trigger. */
+      organizationId: string,
     ): Promise<boolean> => {
       try {
-        // org is omitted here: these rows are POSTed to /api/cx-chat/messages
-        // and chat.message inherits org from its conversation via DB trigger.
-        const cxMessages: Omit<CxMessageInsert, "organization_id">[] = messages.map((msg, index) => {
+        // Every write carries an explicit organization_id (active-org law,
+        // rule 4): an existing conversation's own org, never a trigger's pick.
+        const cxMessages: CxMessageInsert[] = messages.map((msg, index) => {
           // Store text content as a jsonb content array
           const content: CxContentBlock[] = [
             {
@@ -74,6 +76,7 @@ export function useChatPersistence() {
           ];
 
           return {
+            organization_id: organizationId,
             conversation_id: conversationId,
             role: msg.role,
             position: index,
