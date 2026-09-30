@@ -39,9 +39,8 @@ import {
   rowsByKey,
   type Row,
 } from "./lib/surface-sync-check";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function usage(): never {
   throw new Error(
@@ -141,7 +140,7 @@ async function main() {
     );
     if (
       system.rows.length !== 1 ||
-      !UUID_RE.test(system.rows[0]?.organization_id ?? "")
+      !isUuidShape(system.rows[0]?.organization_id ?? "")
     )
       throw new Error(
         "iam.system_orgs key system must resolve to exactly one UUID organization_id",
@@ -307,7 +306,7 @@ async function runSelfTest() {
     );
     if (
       system.rows.length !== 1 ||
-      !UUID_RE.test(system.rows[0]?.organization_id ?? "")
+      !isUuidShape(system.rows[0]?.organization_id ?? "")
     )
       throw new Error(
         "iam.system_orgs key system must resolve to exactly one UUID organization_id",

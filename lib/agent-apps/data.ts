@@ -16,9 +16,8 @@ import type {
   AppStatus,
   ComponentLanguage,
 } from "@/features/agent-apps/types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ---------------------------------------------------------------------------
 // Runtime validation of the `app.definition` row.
@@ -156,7 +155,7 @@ export interface AgentAppVersionRow {
 /** Fetch by id-or-slug; calls notFound() if RLS hides it or no row exists. */
 export async function getAgentApp(idOrSlug: string): Promise<AgentApp> {
   const supabase = await createClient();
-  const column = UUID_RE.test(idOrSlug) ? "id" : "slug";
+  const column = isUuidShape(idOrSlug) ? "id" : "slug";
   const result = await supabase
     .schema("app")
     .from("definition")

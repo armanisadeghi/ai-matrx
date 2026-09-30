@@ -16,8 +16,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { el, text, toText, type MNode } from "./mdast-helpers";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const SCHEME = /^([a-z][a-z0-9_]*):(.+)$/;
 
@@ -29,12 +29,12 @@ function mentionFor(link: MNode): MNode | null {
   const label = toText(link).trim();
   if (!label) return null;
   if (scheme === "user") {
-    return UUID.test(value) ? el("matrx-mention", { dataKind: "person", dataId: value.toLowerCase(), dataLabel: label }, [text(label)]) : null;
+    return isUuidShape(value) ? el("matrx-mention", { dataKind: "person", dataId: value.toLowerCase(), dataLabel: label }, [text(label)]) : null;
   }
   if (scheme === "date") {
     return ISO_DATE.test(value) ? el("matrx-mention", { dataKind: "date", dataId: value, dataLabel: label }, [text(label)]) : null;
   }
-  if (UUID.test(value)) {
+  if (isUuidShape(value)) {
     return el("matrx-wikilink", { dataTarget: `${scheme}:${value.toLowerCase()}`, dataAlias: label, dataMention: true }, [text(label)]);
   }
   return null;

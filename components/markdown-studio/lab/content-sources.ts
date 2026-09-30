@@ -42,6 +42,7 @@ import {
 import { operationFailed } from "@/utils/errors";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { loadDocument } from "@/features/rich-document/annotations/documentSource";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const STUDIO_SOURCE_KINDS = [
   "document",
@@ -108,11 +109,9 @@ export interface StudioSourceDef {
 /** How many recent items a picker shows. A picker, never a complete list. */
 export const STUDIO_SOURCE_RECENT_LIMIT = 30;
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isUuid(value: string): boolean {
-  return UUID_RE.test(value.trim());
+  return isUuidShape(value.trim());
 }
 
 function matches(search: string, ...fields: (string | null | undefined)[]) {

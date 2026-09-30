@@ -20,9 +20,8 @@ import {
   fileIdFromUserFilesUrl,
   isDurableMediaUrl,
 } from "@/lib/media/durability";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function pickStr(v: unknown): string | undefined {
   return typeof v === "string" && v.length > 0 ? v : undefined;
@@ -55,7 +54,7 @@ export function buildMediaSource(
   }
 
   const directId = pickStr(sd.fileId) ?? pickStr(sd.file_id);
-  if (directId && UUID_RE.test(directId)) {
+  if (directId && isUuidShape(directId)) {
     return { kind: "file_id", fileId: directId, mime };
   }
 

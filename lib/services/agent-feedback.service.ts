@@ -32,6 +32,7 @@ import {
   type TriageBatchData,
 } from "@/types/feedback-row-mapper";
 import { writeOneRow } from "@/utils/supabase/writeOne";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 // ============= Types =============
 
@@ -152,7 +153,7 @@ export function validateFeedbackScreenshotFileIds(ids: string[]): string[] {
   const normalized = ids.map((raw) => raw.trim()).filter(Boolean);
   for (const id of normalized) {
     if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      !isUuidShape(
         id,
       )
     ) {

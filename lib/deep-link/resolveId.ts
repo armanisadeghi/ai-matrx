@@ -11,6 +11,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { OpenSide } from "./openPath";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** What the door answers, one shape per state. */
 export type ResolvedId =
@@ -36,11 +37,10 @@ export type ResolvedId =
 /** The two ways "this function is not in the database" arrives through PostgREST. */
 const DOOR_ABSENT_CODES = new Set(["PGRST202", "42883"]);
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** True when `raw` is an id the door can be asked about at all. */
 export function isResolvableId(raw: string): boolean {
-  return UUID.test(raw.trim());
+  return isUuidShape(raw.trim());
 }
 
 /** Read `?side=`: only the two words mean anything; any other value is passed on for the door to refuse. */

@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * lib/field-formats/relation — the three states a `relation` cell can be in,
  * in ONE place, so no reader invents a fourth.
@@ -38,10 +40,8 @@ export const RELATION_WITHHELD_LABEL = "A record you have not been given access 
 export type RelationCellState = "resolved" | "unresolvable" | "withheld";
 
 /** A canonical uuid, which is the only shape a relation cell may store. */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export function looksLikeRecordId(value: unknown): boolean {
-  return typeof value === "string" && UUID.test(value.trim());
+  return typeof value === "string" && isUuidShape(value.trim());
 }
 
 /**

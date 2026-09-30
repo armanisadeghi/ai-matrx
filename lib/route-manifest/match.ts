@@ -35,6 +35,7 @@
 import manifest from "./manifest.generated.json";
 import type { RouteManifest, RouteManifestEntry, RouteStatus } from "./generate";
 import { closedVocabularyFor } from "./vocabulary";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const MANIFEST = manifest as RouteManifest;
 
@@ -289,8 +290,6 @@ function declaredParamValues(
  * `routeAnswerFor(hrefFor(site), { params: { siteId: site.id } })` passes a
  * value that came from a READ.
  */
-const UUID_SHAPED =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `siteId`, `brandId`, `id` — a segment whose value is somebody's record id. */
 function isIdSegment(name: string): boolean {
@@ -322,7 +321,7 @@ function declaredValueObjection(
   segment: FilledSegment,
   value: string,
 ): string | null {
-  if (UUID_SHAPED.test(value)) return null;
+  if (isUuidShape(value)) return null;
   const subject = segment.name.replace(/Id$/, "");
 
   const vocabulary = closedVocabularyFor(pattern, segment.name);
