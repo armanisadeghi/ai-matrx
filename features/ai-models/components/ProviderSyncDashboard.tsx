@@ -62,11 +62,13 @@ import type {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
-import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -85,7 +87,13 @@ type ProviderSummary = {
 // `ai.provider.slug` values the server's provider-models refresh knows how to
 // fetch (aidream/services/ai_catalog/provider_models_refresh.py). Keep in
 // sync with that module's `_FETCHERS` registry.
-const SUPPORTED_PROVIDER_SLUGS = ["openai", "anthropic", "groq", "google", "xai"];
+const SUPPORTED_PROVIDER_SLUGS = [
+  "openai",
+  "anthropic",
+  "groq",
+  "google",
+  "xai",
+];
 
 function summarizeProvider(provider: AiProvider): ProviderSummary {
   const cache = provider.provider_models_cache;
@@ -95,7 +103,8 @@ function summarizeProvider(provider: AiProvider): ProviderSummary {
     has_cache: cache != null,
     fetched_at: cache?.fetched_at ?? null,
     model_count: cache?.models.length ?? 0,
-    is_supported: provider.slug != null && SUPPORTED_PROVIDER_SLUGS.includes(provider.slug),
+    is_supported:
+      provider.slug != null && SUPPORTED_PROVIDER_SLUGS.includes(provider.slug),
     provider_key: provider.slug ?? null,
   };
 }
@@ -979,25 +988,221 @@ function ComparisonTable({
   onToggleExclusion: (c: ModelComparison) => void;
   policyBusy: boolean;
 }) {
+  const copy = useMemo<MatrxDataTableCopyConfig<ModelComparison>>(
+    () => ({
+      label: "Provider model",
+      listLabel: "Provider models (this view)",
+      location: "AI Matrx Admin — AI Models Provider Sync",
+      rowKind: "provider-sync-model",
+      listKind: "provider-sync-models",
+      // The existing row control owns the lean provider/local AI envelope.
+      // Keep shared view and selected-row copy without a second row action.
+      showRow: false,
+      rowDescription: "A single provider model comparison.",
+      listDescription:
+        "Provider-model comparisons currently shown after canonical table filters.",
+      humanRow: (comparison) =>
+        [
+          `Model: ${comparison.display_name} (${comparison.id})`,
+          `Status: ${comparison.status}`,
+          comparison.providerEntry?.created_at
+            ? `Released: ${comparison.providerEntry.created_at}`
+            : null,
+          comparison.localEntry?.common_name
+            ? `DB name: ${comparison.localEntry.common_name}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      agentRow: (comparison) => comparison,
+      rowAttributes: (comparison) => ({
+        model_id: comparison.id,
+        status: comparison.status,
+        provider: providerName ?? "unknown",
+      }),
+    }),
+    [providerName],
+  );
   const columns = useMemo<MatrxColumnDef<ModelComparison>[]>(
     () => [
-      { id: "display_name", header: "Display name", accessorFn: (comparison) => comparison.display_name, defaultSortDirection: "asc", cell: (comparison) => <span className="block max-w-[160px] truncate font-medium" title={comparison.display_name}>{comparison.display_name}</span> },
-      { id: "id", header: "Model ID", accessorFn: (comparison) => comparison.id, cell: (comparison) => <span className="block max-w-[200px] truncate font-mono text-[10px] text-muted-foreground" title={comparison.id}>{comparison.id}</span> },
-      { id: "context", header: "Context", accessorFn: (comparison) => comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window ?? null, defaultSortDirection: "desc", align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_input_tokens ?? comparison.localEntry?.context_window) },
-      { id: "max_out", header: "Max out", accessorFn: (comparison) => comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens ?? null, defaultSortDirection: "desc", align: "right", cell: (comparison) => formatNum(comparison.providerEntry?.max_tokens ?? comparison.localEntry?.max_tokens) },
-      { id: "released", header: "Released", accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "", sortValue: (comparison) => parseTimestamp(comparison.providerEntry?.created_at) ?? -Infinity, defaultSortDirection: "desc", cell: (comparison) => formatDate(comparison.providerEntry?.created_at) },
-      { id: "our_name", header: "Our name", accessorFn: (comparison) => comparison.localEntry?.common_name ?? "", cell: (comparison) => comparison.localEntry?.common_name ?? "—" },
-      { id: "input_price", header: "Input / 1M", accessorFn: (comparison) => comparison.pricing.ours?.input ?? null, align: "right", cell: (comparison) => <PriceValueCell pricing={comparison.pricing} field="input" /> },
-      { id: "output_price", header: "Output / 1M", accessorFn: (comparison) => comparison.pricing.ours?.output ?? null, align: "right", cell: (comparison) => <PriceValueCell pricing={comparison.pricing} field="output" /> },
-      { id: "cached_input_price", header: "Cached / 1M", accessorFn: (comparison) => comparison.pricing.ours?.cached ?? null, align: "right", cell: (comparison) => <PriceValueCell pricing={comparison.pricing} field="cached" /> },
-      { id: "usage_basis", header: "Pricing basis", accessorFn: (comparison) => comparison.pricing.usage_basis ?? "", cell: (comparison) => comparison.pricing.usage_basis ?? "—" },
-      { id: "provider_input_price", header: "Provider input / 1M", accessorFn: (comparison) => comparison.pricing.theirs?.input ?? null, align: "right", hidden: true, cell: (comparison) => <ProviderPriceValueCell pricing={comparison.pricing} field="input" /> },
-      { id: "provider_output_price", header: "Provider output / 1M", accessorFn: (comparison) => comparison.pricing.theirs?.output ?? null, align: "right", hidden: true, cell: (comparison) => <ProviderPriceValueCell pricing={comparison.pricing} field="output" /> },
-      { id: "provider_cached_input_price", header: "Provider cached / 1M", accessorFn: (comparison) => comparison.pricing.theirs?.cached ?? null, align: "right", hidden: true, cell: (comparison) => <ProviderPriceValueCell pricing={comparison.pricing} field="cached" /> },
-      { id: "verified", header: "Price checked", accessorFn: (comparison) => comparison.pricing.verified_at ?? "", cell: (comparison) => <PriceVerifiedCell pricing={comparison.pricing} /> },
-      { id: "primary", header: "Primary", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_primary ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : "—" },
-      { id: "deprecated", header: "Deprecated", accessorFn: (comparison) => Boolean(comparison.localEntry?.is_deprecated), defaultSortDirection: "desc", cell: (comparison) => comparison.localEntry?.is_deprecated ? <span className="font-medium text-amber-500">yes</span> : "—" },
-      { id: "status", header: "Status", accessorFn: (comparison) => comparison.status, sortValue: (comparison) => STATUS_SORT_ORDER[comparison.status], filter: "select", cell: (comparison) => <StatusBadge status={comparison.status} cutoff={cutoff} /> },
+      {
+        id: "display_name",
+        header: "Display name",
+        accessorFn: (comparison) => comparison.display_name,
+        defaultSortDirection: "asc",
+        cell: (comparison) => (
+          <span
+            className="block max-w-[160px] truncate font-medium"
+            title={comparison.display_name}
+          >
+            {comparison.display_name}
+          </span>
+        ),
+      },
+      {
+        id: "id",
+        header: "Model ID",
+        accessorFn: (comparison) => comparison.id,
+        cell: (comparison) => (
+          <span
+            className="block max-w-[200px] truncate font-mono text-[10px] text-muted-foreground"
+            title={comparison.id}
+          >
+            {comparison.id}
+          </span>
+        ),
+      },
+      {
+        id: "context",
+        header: "Context",
+        accessorFn: (comparison) =>
+          comparison.providerEntry?.max_input_tokens ??
+          comparison.localEntry?.context_window ??
+          null,
+        defaultSortDirection: "desc",
+        align: "right",
+        cell: (comparison) =>
+          formatNum(
+            comparison.providerEntry?.max_input_tokens ??
+              comparison.localEntry?.context_window,
+          ),
+      },
+      {
+        id: "max_out",
+        header: "Max out",
+        accessorFn: (comparison) =>
+          comparison.providerEntry?.max_tokens ??
+          comparison.localEntry?.max_tokens ??
+          null,
+        defaultSortDirection: "desc",
+        align: "right",
+        cell: (comparison) =>
+          formatNum(
+            comparison.providerEntry?.max_tokens ??
+              comparison.localEntry?.max_tokens,
+          ),
+      },
+      {
+        id: "released",
+        header: "Released",
+        accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "",
+        sortValue: (comparison) =>
+          parseTimestamp(comparison.providerEntry?.created_at) ?? -Infinity,
+        defaultSortDirection: "desc",
+        cell: (comparison) => formatDate(comparison.providerEntry?.created_at),
+      },
+      {
+        id: "our_name",
+        header: "Our name",
+        accessorFn: (comparison) => comparison.localEntry?.common_name ?? "",
+        cell: (comparison) => comparison.localEntry?.common_name ?? "—",
+      },
+      {
+        id: "input_price",
+        header: "Input / 1M",
+        accessorFn: (comparison) => comparison.pricing.ours?.input ?? null,
+        align: "right",
+        cell: (comparison) => (
+          <PriceValueCell pricing={comparison.pricing} field="input" />
+        ),
+      },
+      {
+        id: "output_price",
+        header: "Output / 1M",
+        accessorFn: (comparison) => comparison.pricing.ours?.output ?? null,
+        align: "right",
+        cell: (comparison) => (
+          <PriceValueCell pricing={comparison.pricing} field="output" />
+        ),
+      },
+      {
+        id: "cached_input_price",
+        header: "Cached / 1M",
+        accessorFn: (comparison) => comparison.pricing.ours?.cached ?? null,
+        align: "right",
+        cell: (comparison) => (
+          <PriceValueCell pricing={comparison.pricing} field="cached" />
+        ),
+      },
+      {
+        id: "usage_basis",
+        header: "Pricing basis",
+        accessorFn: (comparison) => comparison.pricing.usage_basis ?? "",
+        cell: (comparison) => comparison.pricing.usage_basis ?? "—",
+      },
+      {
+        id: "provider_input_price",
+        header: "Provider input / 1M",
+        accessorFn: (comparison) => comparison.pricing.theirs?.input ?? null,
+        align: "right",
+        hidden: true,
+        cell: (comparison) => (
+          <ProviderPriceValueCell pricing={comparison.pricing} field="input" />
+        ),
+      },
+      {
+        id: "provider_output_price",
+        header: "Provider output / 1M",
+        accessorFn: (comparison) => comparison.pricing.theirs?.output ?? null,
+        align: "right",
+        hidden: true,
+        cell: (comparison) => (
+          <ProviderPriceValueCell pricing={comparison.pricing} field="output" />
+        ),
+      },
+      {
+        id: "provider_cached_input_price",
+        header: "Provider cached / 1M",
+        accessorFn: (comparison) => comparison.pricing.theirs?.cached ?? null,
+        align: "right",
+        hidden: true,
+        cell: (comparison) => (
+          <ProviderPriceValueCell pricing={comparison.pricing} field="cached" />
+        ),
+      },
+      {
+        id: "verified",
+        header: "Price checked",
+        accessorFn: (comparison) => comparison.pricing.verified_at ?? "",
+        cell: (comparison) => (
+          <PriceVerifiedCell pricing={comparison.pricing} />
+        ),
+      },
+      {
+        id: "primary",
+        header: "Primary",
+        accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary),
+        defaultSortDirection: "desc",
+        cell: (comparison) =>
+          comparison.localEntry?.is_primary ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "deprecated",
+        header: "Deprecated",
+        accessorFn: (comparison) =>
+          Boolean(comparison.localEntry?.is_deprecated),
+        defaultSortDirection: "desc",
+        cell: (comparison) =>
+          comparison.localEntry?.is_deprecated ? (
+            <span className="font-medium text-amber-500">yes</span>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessorFn: (comparison) => comparison.status,
+        sortValue: (comparison) => STATUS_SORT_ORDER[comparison.status],
+        filter: "select",
+        cell: (comparison) => (
+          <StatusBadge status={comparison.status} cutoff={cutoff} />
+        ),
+      },
     ],
     [cutoff],
   );
@@ -1013,16 +1218,59 @@ function ComparisonTable({
         defaultSort={{ id: "released", direction: "desc" }}
         pageSize={0}
         emptyState={{ title: "No comparison data — sync this provider first." }}
-        coverage={{ noun: "provider model", answeredBy: "client" }}
-        copy={false}
+        coverage={{
+          noun: "provider model",
+          answeredBy: "client",
+          total: comparisons.length,
+        }}
+        copy={copy}
         detail={{ enabled: false }}
         window={{ enabled: false }}
         selectedId={selectedId}
-        onRowOpen={(comparison) => onSelect(comparison.id === selectedId ? null : comparison)}
-        rowClassName={(comparison) => `${STATUS_LEFT[comparison.status]} ${comparison.id === selectedId ? STATUS_BG_SEL[comparison.status] : STATUS_BG[comparison.status]}`}
-        rowActions={(comparison) => <div className="flex items-center gap-1"><ProviderSyncRowCopyForAiButton comparison={comparison} providerName={providerName} />{comparison.status === "matched" && comparison.localEntry && <OpenDetailButton onClick={() => { if (comparison.localEntry) onOpenModel(comparison.localEntry.id); }} />}{comparison.status === "missing_local" && <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[10px]" onClick={() => onAddMissing(comparison)}><Plus className="h-2.5 w-2.5" />Add</Button>}{comparison.status !== "extra_local" && <ExcludeButton comparison={comparison} onToggle={onToggleExclusion} busy={policyBusy} />}</div>}
+        onRowOpen={(comparison) =>
+          onSelect(comparison.id === selectedId ? null : comparison)
+        }
+        rowClassName={(comparison) =>
+          `${STATUS_LEFT[comparison.status]} ${comparison.id === selectedId ? STATUS_BG_SEL[comparison.status] : STATUS_BG[comparison.status]}`
+        }
+        rowActions={(comparison) => (
+          <div className="flex items-center gap-1">
+            {/* Retained by Arman's 2026-09-29 copy decision: this remains the
+                primary AI action because the package adapter cannot make its
+                row-specific provider/local envelope the primary payload. */}
+            <ProviderSyncRowCopyForAiButton
+              comparison={comparison}
+              providerName={providerName}
+            />
+            {comparison.status === "matched" && comparison.localEntry && (
+              <OpenDetailButton
+                onClick={() => {
+                  if (comparison.localEntry)
+                    onOpenModel(comparison.localEntry.id);
+                }}
+              />
+            )}
+            {comparison.status === "missing_local" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-5 px-1.5 text-[10px]"
+                onClick={() => onAddMissing(comparison)}
+              >
+                <Plus className="h-2.5 w-2.5" />
+                Add
+              </Button>
+            )}
+            {comparison.status !== "extra_local" && (
+              <ExcludeButton
+                comparison={comparison}
+                onToggle={onToggleExclusion}
+                busy={policyBusy}
+              />
+            )}
+          </div>
+        )}
       />
-
     </div>
   );
 }
@@ -1225,7 +1473,11 @@ function ProviderSection({
               <RefreshCw
                 className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
               />
-              {syncing ? "Syncing…" : snapshotStale ? "Refresh now" : "Sync Now"}
+              {syncing
+                ? "Syncing…"
+                : snapshotStale
+                  ? "Refresh now"
+                  : "Sync Now"}
             </Button>
           )}
         </div>
@@ -1284,7 +1536,10 @@ export default function ProviderSyncDashboard({
   onModelsChanged,
 }: Props) {
   const dispatch = useAppDispatch();
-  const summaries = useMemo(() => providers.map(summarizeProvider), [providers]);
+  const summaries = useMemo(
+    () => providers.map(summarizeProvider),
+    [providers],
+  );
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
@@ -1295,7 +1550,9 @@ export default function ProviderSyncDashboard({
     summary: ProviderSummary;
   } | null>(null);
   const [candidates, setCandidates] = useState<ProviderSyncCandidate[]>([]);
-  const [registry, setRegistry] = useState<Omit<ProviderSyncRegistry, "localModels">>({
+  const [registry, setRegistry] = useState<
+    Omit<ProviderSyncRegistry, "localModels">
+  >({
     offerings: [],
     aliases: [],
   });
@@ -1446,12 +1703,18 @@ export default function ProviderSyncDashboard({
     setSyncError(null);
     setSyncSuccess(null);
     try {
-      const result = await dispatch(refreshProviderModels([summary.provider_key]));
+      const result = await dispatch(
+        refreshProviderModels([summary.provider_key]),
+      );
       if (result === null) {
-        setSyncError(`Sync failed for ${summary.name ?? summary.provider_key} — request could not complete`);
+        setSyncError(
+          `Sync failed for ${summary.name ?? summary.provider_key} — request could not complete`,
+        );
         return;
       }
-      const row = result.results?.find((r) => r.provider_slug === summary.provider_key);
+      const row = result.results?.find(
+        (r) => r.provider_slug === summary.provider_key,
+      );
       if (!row) {
         setSyncError(
           `${summary.name ?? summary.provider_key} was not in the server's response — nothing refreshed`,
@@ -1467,7 +1730,10 @@ export default function ProviderSyncDashboard({
           `${summary.name ?? summary.provider_key} has no matching ai.provider row on the server`,
         );
       } else {
-        setSyncError(row.detail ?? `Sync failed for ${summary.name ?? summary.provider_key}`);
+        setSyncError(
+          row.detail ??
+            `Sync failed for ${summary.name ?? summary.provider_key}`,
+        );
       }
       onModelsChanged?.();
     } catch (err) {
@@ -1585,7 +1851,9 @@ export default function ProviderSyncDashboard({
           ) : (
             <CheckCircle2 className="h-4 w-4 shrink-0" />
           )}
-          <span className="flex-1 text-xs">{syncError ?? syncSuccess} <ErrorAlchemyMenu error={syncError} /></span>
+          <span className="flex-1 text-xs">
+            {syncError ?? syncSuccess} <ErrorAlchemyMenu error={syncError} />
+          </span>
           <button
             onClick={() => {
               setSyncError(null);
