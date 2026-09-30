@@ -1,3 +1,4 @@
+// New usages: a label's one-sentence definition belongs in `components/official/InfoHint.tsx` (reachable by mouse, keyboard and touch); this icon opens on mouse hover only.
 import React, { useState, useEffect, useRef } from 'react';
 import { InfoIcon, HelpCircleIcon, CopyIcon, CheckIcon, CircleDot } from 'lucide-react';
 import { createPortal } from 'react-dom';

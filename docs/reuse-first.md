@@ -211,6 +211,8 @@ this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
 | Route-specific actions in the canonical `(public)` header | `PublicHeaderActionsPortal`        | `components/matrx/PublicHeaderActionsPortal.tsx`                                     |
 | Resizable workbench side/bottom panel                     | `MatrxDynamicPanel`                | `components/matrx/resizable/MatrxDynamicPanel.tsx`                                   |
 | Settings preference controls                              | settings primitives + `useSetting` | `components/official/settings/primitives/*`, `features/settings/hooks/useSetting.ts` |
+| A label's one-sentence definition (info icon: hover, focus, tap) | `InfoHint`                         | `components/official/InfoHint.tsx`                                                   |
+| KPI tile row (one number, label, hint, definition, drill-in) | `KpiTile` / `KpiGrid`          | `components/official/kpi/KpiTile.tsx`                                                |
 
 ### Utilities
 
