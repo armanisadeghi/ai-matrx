@@ -107,6 +107,7 @@ export function OtherContactsReview() {
   const connectGoogleAccount = useCallback(() => {
     openGoogleConnect({
       reason: "to review a selected Google Other Contact",
+      mode: "overview",
       onWindowClose: () => inventory.refetch(),
     });
   }, [inventory, openGoogleConnect]);

@@ -74,6 +74,7 @@ test("opens the canonical connector in place and refreshes accounts after it clo
   expect(openGoogleConnect).toHaveBeenCalledWith(
     expect.objectContaining({
       reason: "to review a selected Google Other Contact",
+      mode: "overview",
     }),
   );
   const options = openGoogleConnect.mock.calls[0][0] as {
