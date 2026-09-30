@@ -63,10 +63,7 @@ export default function SchedulingAdminOverview() {
 
   return (
     <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
-      <div className="flex items-center gap-2">
-        <CalendarClock className="h-5 w-5 text-blue-500" />
-        {/* Cross-user view of sch_*; platform admins read all via is_platform_admin() in RLS. */}
-      </div>
+      {/* Cross-user view of sch_*; platform admins read all via is_platform_admin() in RLS. */}
 
       {error && (
         <Alert variant="destructive" data-surface-value="overview_load_error">
@@ -132,7 +129,7 @@ export default function SchedulingAdminOverview() {
           href="/administration/automation/scheduling/runs"
           icon={Activity}
           title="Runs"
-          description="Run history with status / surface / date filters."
+          description="Run history by status, surface and date"
         />
         <Tile
           href="/administration/automation/scheduling/system-jobs"
@@ -151,7 +148,7 @@ export default function SchedulingAdminOverview() {
           href="/administration/automation/scheduling/cron-tester"
           icon={CalendarClock}
           title="Cron tester"
-          description="Validate any expression + tz; preview the next N fires."
+          description="Validate an expression and preview next fires"
         />
         <Tile
           href="/administration/automation/scheduling/scanner-health"
@@ -164,7 +161,7 @@ export default function SchedulingAdminOverview() {
           href="/administration/automation/scheduling/templates"
           icon={CalendarClock}
           title="Templates"
-          description="Curated starter schedules users can clone."
+          description="Starter schedules users can clone"
         />
       </div>
     </div>

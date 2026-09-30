@@ -64,9 +64,11 @@ export default async function AdminSystemAgentDetailLayout({
       <AgentHydratorServer agentId={id} />
       {isUserAgent ? (
         <div className="flex h-full flex-col overflow-hidden bg-amber-500/10">
-          <div className="shrink-0 border-b border-amber-500/40 bg-amber-500/20 px-4 py-1.5 text-center text-xs font-medium text-amber-900 dark:text-amber-200">
-            Not a system agent — &ldquo;{agent.name}&rdquo; is personal. Use
-            Linked Agent Sync for its system version.
+          <div
+            className="shrink-0 border-b border-amber-500/40 bg-amber-500/20 px-4 py-1.5 text-center text-xs font-medium text-amber-900 dark:text-amber-200"
+            title="Use Linked Agent Sync to reach or create its system version."
+          >
+            Personal agent — edits here change &ldquo;{agent.name}&rdquo;
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
             {children}

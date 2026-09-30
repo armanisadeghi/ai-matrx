@@ -116,6 +116,7 @@ export default function AdminNewSystemAppPage() {
               <div className="text-lg font-semibold text-foreground">
                 {created.name}
               </div>
+              <p className="text-xs text-muted-foreground mt-1">Saved as draft</p>
             </div>
             <div className="flex items-center gap-2 pt-2 flex-wrap justify-center">
               <Button asChild variant="default" size="sm">

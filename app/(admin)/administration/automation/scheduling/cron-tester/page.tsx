@@ -4,7 +4,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import cronstrue from "cronstrue";
-import { Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@ai-matrx/design-system";
@@ -92,10 +91,7 @@ export default function CronTesterPage() {
       getWriteHandlers={getSurfaceWriteHandlers}
     >
       <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-w-3xl">
-        <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-blue-500" />
-          {/* Frontend preview only; the aidream Python parser is authoritative for schedule writes. */}
-        </div>
+        {/* Frontend preview only; the aidream Python parser is authoritative for schedule writes. */}
 
         <Card>
           <CardContent className="p-4 space-y-3">

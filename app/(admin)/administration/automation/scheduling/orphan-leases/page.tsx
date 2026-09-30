@@ -196,8 +196,7 @@ export default function OrphanLeasesPage() {
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         <span>
           {/* Rows are claimed/running with claim_expires_at in the past; the scanner re-claims on the next tick. */}
-          Runs whose claim has expired — rows that persist past a few minutes
-          need a look.
+          Expired claims; a row here for minutes needs a look
         </span>
       </p>
       <div
