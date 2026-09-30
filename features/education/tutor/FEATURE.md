@@ -188,6 +188,15 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-09-29** — Send is never silent. The per-turn material search (`prepareTutorTurn`, the surface's
+  `beforeExecute`) used to show nothing for 10–25 s and its failure reached only the console. Now the
+  shared pre-send window (`smartExecute` → `preSend` state → `PendingSendMessage` in
+  `AgentConversationColumn`) shows the outgoing message with "Searching your study material before
+  sending" (manifest `beforeExecuteLabel`), and a failure stays in place naming what failed, with Retry;
+  the draft never leaves the composer. OPEN, not fixable from here: the inventory read
+  (`listLearnerOwnedGroundingSources` → `files.file_rag_jobs`) statement-times-out for accounts that can
+  see tens of thousands of files — its RLS materialises `iam.accessible_entity_ids('file')` (~57k ids,
+  ~8 s for admin@admin.com). `file_rag_jobs` is uncertified; the fix is its canonicalization.
 - **2026-09-27** — page-pass `/education/tutor` + `/education/tutor/[conversationId]`: type list
   page (home) + AI workspace (conversation). Both already list-first, both already surface-wired
   (`matrx-user/education-tutor`, `SurfaceRuntimeProvider` + `getScope`/`getWriteHandlers` on the
