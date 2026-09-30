@@ -284,6 +284,8 @@ export interface DataHomeTableRow {
   team?: boolean;
   /** Its organization is one the platform keeps (System). */
   system?: boolean;
+  /** The Table's own maker (`created_by`) — the fact Mine and My team are decided from. */
+  created_by?: string | null;
 }
 
 /**

@@ -23,6 +23,7 @@ import { recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
 
 import { dataHomeTables, type DataHomeTableRow, type DoorFailure } from "./doors";
+import { inDataHomeScope, type DataHomeScope, type ScopeFacts } from "./dataHomeScope";
 
 // ONE data seam, built lazily (a fresh seam per render would rebuild its client every render).
 let seam: ReturnType<typeof recordsDataSource> | null = null;
@@ -79,4 +80,27 @@ export function countsByOrganization(rows: readonly DataHomeTableRow[]): Array<{
     byOrg.set(r.organization_id, held);
   }
   return [...byOrg.values()];
+}
+
+/**
+ * THE FACTS THE SHELL'S LANES READ, for one row (lane DATA-HOME-2, 2026-09-30): the same words the
+ * data home's tab bar decides All · Mine · My team · My Orgs · Shared · Public · System from
+ * (`inDataHomeScope`), straight from `custom.data_home_tables()` — the maker, team, member, shared,
+ * visibility and system organization.
+ */
+export function laneFactsOf(row: DataHomeTableRow): ScopeFacts & { createdBy: string | null } {
+  return {
+    mine: row.mine,
+    team: row.team ?? false,
+    member: row.member,
+    sharedWithMe: row.shared_with_me,
+    visibility: row.visibility,
+    system: row.system ?? false,
+    createdBy: row.created_by ?? null,
+  };
+}
+
+/** The rows one lane of the shell holds (`all` = Mine ∪ My team ∪ My Orgs ∪ Shared). */
+export function inLane(rows: readonly DataHomeTableRow[], lane: DataHomeScope): DataHomeTableRow[] {
+  return rows.filter((r) => inDataHomeScope(laneFactsOf(r), lane));
 }

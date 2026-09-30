@@ -258,13 +258,13 @@ begin
   select count(*) into v_diff from (
     ((select * from jsonb_to_recordset(v_home -> 'tables') as x(table_id uuid, table_name text, organization_id uuid,
         organization_name text, member boolean, visibility text, updated_at timestamptz, mine boolean,
-        shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean))
+        shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean, created_by uuid))
       except all (select * from custom.data_home_tables()))
     union all
     ((select * from custom.data_home_tables())
       except all (select * from jsonb_to_recordset(v_home -> 'tables') as x(table_id uuid, table_name text, organization_id uuid,
         organization_name text, member boolean, visibility text, updated_at timestamptz, mine boolean,
-        shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean)))) d;
+        shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean, created_by uuid)))) d;
   if v_diff <> 0 then raise exception 'K FAILED: tables differ on % row(s)', v_diff; end if;
   select count(*) into v_diff from (
     ((select * from jsonb_to_recordset(v_home -> 'items') as x(kind text, organization_id uuid, organization_name text,
@@ -317,9 +317,10 @@ begin
     from _all h join custom.record t on t.id = h.table_id
    where h.team is distinct from exists (select 1 from iam.my_team_reach(null) tr
                                           where tr.organization_id = h.organization_id and tr.user_id = t.created_by)
-      or h.system is distinct from coalesce((select o.is_system from iam.organizations o where o.id = h.organization_id), false);
+      or h.system is distinct from coalesce((select o.is_system from iam.organizations o where o.id = h.organization_id), false)
+      or h.created_by is distinct from t.created_by;
   if v_diff <> 0 then
-    raise exception 'L FAILED: % row(s) say team or system where the store says otherwise', v_diff;
+    raise exception 'L FAILED: % row(s) say the maker, team or system where the store says otherwise', v_diff;
   end if;
   raise notice 'L passed: % in My team, % in System', (select count(*) from _all where team), (select count(*) from _all where system);
 end $$;
