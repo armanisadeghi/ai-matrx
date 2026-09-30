@@ -232,9 +232,8 @@ export function AddFromLinkDialog({
             <Link2 className="h-4 w-4 text-muted-foreground" /> Add from link
           </DialogTitle>
           <DialogDescription>
-            Paste any Hugging Face or Civitai URL (or a direct file URL). The
-            aidream resolver extracts the files and suggests a catalog entry —
-            you review and save it through the normal diff-confirmed path.
+            Paste a Hugging Face, Civitai, or direct file URL. We suggest a
+            catalog entry for you to review and save.
           </DialogDescription>
         </DialogHeader>
 

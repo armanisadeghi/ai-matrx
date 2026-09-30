@@ -238,12 +238,10 @@ export function ApplicationsHistoryClient({
       }
     >
       <div className="flex h-full flex-col gap-3 p-4">
+        {/* Restore lives on the Configuration and Catalogs tabs, beside the write path. */}
         <p className="text-xs text-muted-foreground">
-          Merged audit timeline over remote configuration and remote catalogs —{" "}
-          {entries.length} snapshot{entries.length === 1 ? "" : "s"} (newest{" "}
-          {fetchLimit} per source). Open a row to diff it against the previous
-          snapshot of the same record. Restore lives on the Configuration and
-          Catalogs tabs, beside the write path.
+          {entries.length} snapshot{entries.length === 1 ? "" : "s"} · newest{" "}
+          {fetchLimit} per source
         </p>
 
         <div className="min-h-0 flex-1">

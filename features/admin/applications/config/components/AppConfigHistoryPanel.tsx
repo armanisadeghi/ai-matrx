@@ -311,10 +311,10 @@ export function AppConfigHistoryPanel({
         title="Restore this version?"
         description={
           restoreTarget
-            ? `This overwrites the live "${app}" config with the snapshot from ${format(
+            ? `Replaces live “${app}” config with the ${format(
                 new Date(restoreTarget.changed_at),
                 "yyyy-MM-dd HH:mm:ss",
-              )}. Every installed client in the field picks it up on its next refresh. The current row is snapshotted to history first.`
+              )} snapshot; clients get it on refresh. The current row goes to history first.`
             : undefined
         }
         contentClassName="sm:max-w-4xl"

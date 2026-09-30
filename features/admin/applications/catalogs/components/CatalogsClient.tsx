@@ -477,9 +477,9 @@ export function CatalogsClient({
       <div className="flex h-full flex-col gap-3 p-4">
         <p
           className="truncate text-xs text-muted-foreground"
-          title="New catalog entries start inactive — active entries are read by every installed copy in the field."
+          title="New entries start inactive; active ones reach every install"
         >
-          New catalog entries start inactive — active entries are read by every installed copy in the field.
+          New entries start inactive; active ones reach every install
         </p>
 
         <div className="min-h-0 flex-1">

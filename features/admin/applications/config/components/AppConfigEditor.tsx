@@ -371,8 +371,7 @@ export function AppConfigEditor({
           ) : null}
           {showSchemaVersionWarning ? (
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              This editor validates against payload schema v1 — payloads for
-              other schema versions are not validated client-side.
+              Only payload schema v1 is validated here
             </p>
           ) : null}
         </div>
@@ -559,7 +558,7 @@ export function AppConfigEditor({
             ? `Create config for "${appSlug.trim()}"?`
             : `Update "${appSlug}"?`
         }
-        description="This row changes every installed client in the field — each one picks up the new values on its next config refresh, with no app update. Review the diff before committing."
+        description="Every installed client picks up these values on its next config refresh, with no app update. Review the diff first."
         contentClassName="sm:max-w-4xl"
         content={
           pendingSave ? (

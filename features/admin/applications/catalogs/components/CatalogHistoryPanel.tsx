@@ -347,10 +347,10 @@ export function CatalogHistoryPanel({
         title="Restore this version?"
         description={
           restoreTarget
-            ? `This overwrites the live ${app}/${kind}/${entryKey} entry with the snapshot from ${format(
+            ? `Replaces live ${app}/${kind}/${entryKey} with the ${format(
                 new Date(restoreTarget.changed_at),
                 "yyyy-MM-dd HH:mm:ss",
-              )}. Every installed client picks it up on its next catalog refresh. The current entry is snapshotted to history first.`
+              )} snapshot; clients get it on refresh. The current entry goes to history first.`
             : undefined
         }
         contentClassName="sm:max-w-4xl"

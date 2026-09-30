@@ -568,10 +568,9 @@ export function CatalogKindTable({
                   ) : null}
                   {probe.status === "fail" ? (
                     <p className="flex items-center gap-1 font-medium text-destructive">
-                      <AlertTriangle className="h-3.5 w-3.5" /> <span>ARTIFACT
-                      UNREACHABLE — {asClause(probe.detail)}. Activating anyway ships a
-                      broken download to every client. Override only if you know
-                      the URL works outside the browser.
+                      <AlertTriangle className="h-3.5 w-3.5" /> <span>Artifact
+                      unreachable — {asClause(probe.detail)}. Activating ships a
+                      broken download to every client.
                       <ErrorAlchemyMenu /></span>
                     </p>
                   ) : null}

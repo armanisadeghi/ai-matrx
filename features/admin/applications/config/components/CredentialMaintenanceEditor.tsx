@@ -116,9 +116,8 @@ export function CredentialMaintenanceEditor({
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Store lifecycle metadata only. Private keys and client secrets must
-            never be pasted or saved here. Complete the real provider rotation
-            first, then record its dates below.
+            Lifecycle dates only; never paste private keys or secrets. Rotate
+            with the provider first, then record the dates.
           </p>
         </div>
       </div>
@@ -175,8 +174,7 @@ export function CredentialMaintenanceEditor({
                   </Badge>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Record rotation updates the draft only. The page-level Save
-                  button still shows the audited diff before anything changes.
+                  Updates the draft only; Save shows the diff first.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

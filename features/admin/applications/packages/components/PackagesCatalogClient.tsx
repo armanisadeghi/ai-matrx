@@ -151,11 +151,8 @@ export function PackagesCatalogClient({ rows, error }: PackagesCatalogClientProp
     >
       <div className="flex h-full min-h-0 flex-col gap-3 p-4">
         <div>
+          {/* Repository paths are declarations from each package's published metadata. */}
           <h1 className="text-base font-semibold">npm packages</h1>
-          <p className="text-xs text-muted-foreground">
-            Live public registry inventory for the exact <code>@ai-matrx/</code> scope.
-            Repository paths are declarations from each package&apos;s published metadata.
-          </p>
         </div>
 
         {error ? (

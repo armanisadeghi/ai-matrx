@@ -108,8 +108,7 @@ export function FlagsEditor({
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
             <code className="truncate text-sm">{key}</code>
             <span className="truncate text-xs text-amber-600 dark:text-amber-400">
-              non-boolean value ({JSON.stringify(value)}) — schema v1 requires
-              booleans; preserved as-is on save (never blocks Save)
+              non-boolean value ({JSON.stringify(value)}) — kept as-is on save
             </span>
           </div>
           <Button

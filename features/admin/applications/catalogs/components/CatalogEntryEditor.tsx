@@ -649,7 +649,12 @@ export function CatalogEntryEditor({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor="catalog-min-version">Min app version</Label>
+          <Label
+            htmlFor="catalog-min-version"
+            title="Clients on an older app version don't see this entry."
+          >
+            Min app version
+          </Label>
           <Input
             id="catalog-min-version"
             value={minAppVersion}
@@ -667,12 +672,7 @@ export function CatalogEntryEditor({
               {fieldErrors.min_app_version}
               <ErrorAlchemyMenu error={fieldErrors.min_app_version} />
             </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Entries above the installed binary&apos;s version are hidden from
-              that client.
-            </p>
-          )}
+          ) : null}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="catalog-sort-order">Sort order</Label>
@@ -813,9 +813,7 @@ export function CatalogEntryEditor({
         {fieldErrors.payload ? (
           <p className="text-xs text-destructive">{fieldErrors.payload} <ErrorAlchemyMenu error={fieldErrors.payload} /></p>
         ) : null}
-        <p className="text-xs text-muted-foreground">
-          Validated against the kind schema — unknown keys round-trip unchanged
-        </p>
+        {/* Validated against the kind schema; unknown keys round-trip unchanged. */}
         <div className="h-96 min-h-72 overflow-hidden rounded-md border border-border">
           <JsonInspector
             data={payload}
@@ -832,7 +830,7 @@ export function CatalogEntryEditor({
           id="catalog-notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Operator notes — license caveats, why this entry exists, rollout state…"
+          placeholder="License caveats, why it exists, rollout state"
           rows={3}
           className="text-sm"
         />
@@ -946,18 +944,16 @@ export function CatalogEntryEditor({
                   ) : null}
                   {artifactProbe.status === "fail" ? (
                     <p className="flex items-center gap-1 font-medium text-destructive">
-                      <AlertTriangle className="h-3.5 w-3.5" /> <span>ARTIFACT
-                      UNREACHABLE — {asClause(artifactProbe.detail)}. Activating anyway
-                      ships a broken download to every client. Override only if
-                      you know the URL works outside the browser.
+                      <AlertTriangle className="h-3.5 w-3.5" /> <span>Artifact
+                      unreachable — {asClause(artifactProbe.detail)}. Activating
+                      ships a broken download to every client.
                       <ErrorAlchemyMenu /></span>
                     </p>
                   ) : null}
                   {artifactProbe.status === "cors" ? (
                     <p className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                       <ShieldQuestion className="h-3.5 w-3.5" /> <span>Artifact probe
-                      blocked by CORS — could not verify from the browser.
-                      Verify reachability another way before relying on it.
+                      blocked by CORS — verify reachability another way
                       <ErrorAlchemyMenu /></span>
                     </p>
                   ) : null}
@@ -992,7 +988,7 @@ export function CatalogEntryEditor({
         title={
           row ? `Archive ${row.app}/${row.kind}/${row.key}?` : "Archive entry?"
         }
-        description="The entry is archived and turned off: it disappears from every client on its next catalog refresh. Its final state is snapshotted to history, and saving an entry with the same app/kind/key brings it back."
+        description="It turns off and leaves every client on their next refresh. Saving the same app/kind/key brings it back."
         contentClassName="sm:max-w-3xl"
         content={
           row ? (

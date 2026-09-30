@@ -361,11 +361,9 @@ export function InstallationsClient({
           <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              <strong>{summary.below}</strong> installed{" "}
-              {summary.below === 1 ? "instance is" : "instances are"} running
-              below the published minimum supported version (
-              <code className="font-mono">{minSupportedVersion}</code>). Filter
-              the “Below minimum” column to see them.
+              <strong>{summary.below}</strong>{" "}
+              {summary.below === 1 ? "install" : "installs"} below the minimum
+              version (<code className="font-mono">{minSupportedVersion}</code>)
             </span>
           </div>
         ) : null}
