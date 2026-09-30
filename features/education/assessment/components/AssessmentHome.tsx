@@ -125,7 +125,7 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
               variant="outline"
               className="h-11 lg:h-8"
               onClick={() =>
-                list.setScope(d.kind === "orgs" ? { kind: "orgs", organizationId: null } : { kind: "mine" })
+                list.setScope({ kind: d.kind })
               }
             >
               <d.icon className="h-4 w-4" />

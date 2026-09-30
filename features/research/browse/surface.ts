@@ -47,9 +47,8 @@ export function createResearchTopicsSurfaceScope(list: List) {
     search_query: list.query.search,
     active_filters: list.query.filters,
     sort: `${list.view.sort}-${list.view.direction}`,
-    ...(scope.kind === "orgs" && scope.organizationId
-      ? { list_scope_organization_id: scope.organizationId }
-      : {}),
+    // The list's organization filter (absent = All organizations).
+    ...(list.query.orgId ? { list_scope_organization_id: list.query.orgId } : {}),
     ...(failed ? { load_error: list.error?.message ?? "The topics could not be read." } : {}),
     list_archived: list.query.archived,
     ...(loaded

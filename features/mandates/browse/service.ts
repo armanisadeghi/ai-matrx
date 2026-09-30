@@ -47,8 +47,6 @@ export interface MandateHomeOrganization {
 export type MandateListMode =
   | {
       kind: "homes";
-      /** The organization the ladder resolves in (D-R1: the ACTIVE org). */
-      activeOrganizationId: string | null;
       /** Every organization the caller belongs to, in tab order. */
       organizations: readonly MandateHomeOrganization[];
       /**
@@ -76,11 +74,11 @@ export type MandateListMode =
  * belongs to — which is the only state in which a member of an organization
  * with no mandates of its own sees anything at all.
  */
-export function homeForScope(scope: ListScope): MandateHome {
+export function homeForScope(scope: ListScope, orgId: string | null = null): MandateHome {
   if (scope.kind === "system") return SYSTEM_HOME;
-  if (scope.kind === "orgs" && scope.organizationId) {
-    return orgHome(scope.organizationId);
-  }
+  // One organization is the page's organization filter (`query.orgId`), never the lane's
+  // and never the active organization.
+  if (scope.kind === "orgs" && orgId) return orgHome(orgId);
   return ALL_HOMES;
 }
 
@@ -126,9 +124,10 @@ export async function fetchMandateListPage(
     ...(mode.kind === "organization"
       ? { resolutionFor: "org" as const, organizationId: mode.organizationId }
       : {
-          home: homeForScope(query.scope),
+          home: homeForScope(query.scope, query.orgId),
           resolutionFor: "mine" as const,
-          organizationId: mode.activeOrganizationId,
+          // The page's ORGANIZATION FILTER — a list read never carries the active organization.
+          organizationId: query.orgId,
         }),
     search: query.search.trim() || undefined,
     sort: sort.sort,
@@ -177,7 +176,7 @@ export async function fetchMandateScopeCounts(
 
   const shared = {
     resolutionFor: "mine" as const,
-    organizationId: mode.activeOrganizationId,
+    organizationId: query.orgId,
     search,
     filters,
   };

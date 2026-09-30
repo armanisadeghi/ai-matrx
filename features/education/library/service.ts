@@ -9,13 +9,15 @@
 
 import { supabase } from "@/utils/supabase/client";
 
-import type {
-  EntityFacets,
-  EntityListPage,
-  EntityListQuery,
-  EntityListSort,
-  EntityScopeCounts,
+import {
+  scopeCountsFromRows,
+  type EntityFacets,
+  type EntityListPage,
+  type EntityListQuery,
+  type EntityListSort,
+  type EntityScopeCounts,
 } from "@/lib/entity-list/types";
+import { listOrgParam } from "@/lib/list-scope/types";
 import {
   mapPublicDeck,
   type EducationLibraryRow,
@@ -37,6 +39,7 @@ export async function fetchEducationLibraryPage(
 ): Promise<EntityListPage<EducationLibraryRow>> {
   const { data, error } = await supabase.rpc("edu_library_list_scoped", {
     p_scope: query.scope.kind,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_sort: sort.sort,
     p_dir: sort.direction,
@@ -55,19 +58,11 @@ export async function fetchEducationLibraryCounts(
   const { data, error } = await supabase.rpc("edu_library_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_filters: query.filters,
+    p_org_id: listOrgParam(query),
   });
   if (error) throw pgError(error);
-  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  for (const row of data ?? []) {
-    if (
-      row.scope === "mine" ||
-      row.scope === "shared" ||
-      row.scope === "public"
-    ) {
-      counts.byKind[row.scope] = Number(row.total ?? 0);
-    }
-  }
-  return counts;
+  // THE ONE READER: every lane the server counts (All, My team, …) reaches its tab.
+  return scopeCountsFromRows(data);
 }
 
 export async function fetchEducationLibraryFacets(

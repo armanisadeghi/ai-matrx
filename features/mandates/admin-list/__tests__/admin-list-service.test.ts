@@ -111,7 +111,7 @@ describe("reading the answers", () => {
     // Arman, 2026-09-26: "No one acts as themselves in admin."
     for (const lane of ["system", "support"] as const) {
       expect(() => scopeArgs(query({ scope: { kind: "mine" } }), lane)).toThrow(/"mine"/);
-      expect(() => scopeArgs(query({ scope: { kind: "orgs", organizationId: null } }), lane)).toThrow(/"orgs"/);
+      expect(() => scopeArgs(query({ scope: { kind: "orgs" } }), lane)).toThrow(/"orgs"/);
     }
   });
 

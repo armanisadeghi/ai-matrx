@@ -88,6 +88,16 @@ export function setListScopeFallbackReporter(fn: ListScopeFallbackReporter): voi
 export const LANDING_TAB_FEATURE = "lists.landing_tab";
 
 /**
+ * The Feature Knob family that decides WHETHER a list offers the organization filter:
+ * `lists.org_filter/<token>`, boolean, platform default true, overridable per organization and per
+ * person. It adds or removes the control only — a list with the filter off shows every organization.
+ */
+export const ORG_FILTER_FEATURE = "lists.org_filter";
+
+/** The key both families carry for a list with no registered record type. */
+export const DEFAULT_LIST_KNOB_KEY = "default";
+
+/**
  * Where this token's list should open, for THIS person in their active organization (person
  * override → organization override → platform value, one cached snapshot — never a read per list).
  * On any failure returns `mine` AND reports it.

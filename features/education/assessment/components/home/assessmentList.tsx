@@ -31,7 +31,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
-import { scopeOrgId, withTeamScope } from "@/lib/list-scope/types";
+import { withStandardLanes } from "@/lib/list-scope/types";
 import { visibilityWords } from "@/lib/record-words";
 import Link from "next/link";
 import { Play } from "lucide-react";
@@ -98,8 +98,9 @@ function toQuery(kind: KindConfig["kind"], query: EntityListQuery): AssessmentLi
   const scope = query.scope;
   return {
     kind,
-    lane: (withTeamScope(ASSESSMENT_SCOPES).includes(scope.kind) ? scope.kind : "mine") as AssessmentLane,
-    orgId: scopeOrgId(scope),
+    lane: (withStandardLanes(ASSESSMENT_SCOPES).includes(scope.kind) ? scope.kind : "all") as AssessmentLane,
+    // The page's organization filter (`?org_filter=`), never the active organization.
+    orgId: query.orgId,
     search: query.search.trim(),
     filters: query.filters,
     archived: query.archived,
@@ -123,7 +124,7 @@ function buildService(
       };
     },
     async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
-      const { lane: _lane, orgId: _org, ...rest } = toQuery(kind, query);
+      const { lane: _lane, ...rest } = toQuery(kind, query);
       return { byKind: await fetchAssessmentLaneCounts(rest), narrow: {} };
     },
     async fetchFacets(query: EntityListQuery): Promise<EntityFacets> {

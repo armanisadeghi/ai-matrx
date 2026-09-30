@@ -30,7 +30,6 @@ import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { MandatesHeader } from "@/features/mandates/components/MandatesHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAdminLevel } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 import { mandateListConfig } from "./listConfig";
@@ -44,7 +43,6 @@ export function MandatesBrowsePage() {
   // any Matrx admin level — so the tab is offered on exactly that bar, never a
   // stricter one the database would then contradict.
   const isPlatformAdmin = useAppSelector(selectAdminLevel) !== null;
-  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const {
     organizations: memberships,
     loading: organizationsLoading,
@@ -66,7 +64,6 @@ export function MandatesBrowsePage() {
   const { view, service } = useCoverageList({
     mode: {
       kind: "homes",
-      activeOrganizationId,
       organizations,
       organizationsLoading,
       organizationsError,
@@ -84,7 +81,6 @@ export function MandatesBrowsePage() {
   // moment the memberships land, so the counts are re-asked with the real
   // homes. Measured on production v0.4.1722.
   const serviceKey = JSON.stringify({
-    active: activeOrganizationId,
     orgs: organizations.map((o) => o.id),
     loading: organizationsLoading,
     error: organizationsError,

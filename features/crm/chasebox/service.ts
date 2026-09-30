@@ -6,7 +6,6 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { ListScope } from "@/lib/list-scope/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
 import {
   EMPTY_CHASEBOX_COUNTS,
   isChaseboxQueue,
@@ -26,10 +25,12 @@ function pgError(error: { message?: string; code?: string }): Error {
 
 export async function fetchChaseboxCounts(
   scope: ListScope,
+  /** The page's organization filter (null = All organizations) — never the active organization. */
+  orgId: string | null = null,
 ): Promise<ChaseboxCounts> {
   const { data, error } = await supabase.rpc("crm_chasebox_counts", {
     p_scope: scope.kind,
-    p_org_id: scopeOrgId(scope) ?? undefined,
+    p_org_id: orgId ?? undefined,
   });
   if (error) throw pgError(error);
 
@@ -48,13 +49,15 @@ export interface ChaseboxItemsPage {
 export async function fetchChaseboxItems(args: {
   queue: ChaseboxQueue;
   scope: ListScope;
+  /** The page's organization filter (null = All organizations). */
+  orgId?: string | null;
   page: number;
   pageSize: number;
 }): Promise<ChaseboxItemsPage> {
   const { data, error } = await supabase.rpc("crm_chasebox_items", {
     p_queue: args.queue,
     p_scope: args.scope.kind,
-    p_org_id: scopeOrgId(args.scope) ?? undefined,
+    p_org_id: args.orgId ?? undefined,
     p_limit: args.pageSize,
     p_offset: (args.page - 1) * args.pageSize,
   });

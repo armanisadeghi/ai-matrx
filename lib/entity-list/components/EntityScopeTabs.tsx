@@ -63,7 +63,7 @@ import {
 } from "@/lib/list-scope/types";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 
-interface Props {
+export interface EntityScopeTabsProps {
   scope: ListScope;
   /** Which of the fixed lanes this surface supports, in display order (All / My team are added here). */
   scopes: ListScopeKind[];
@@ -77,6 +77,12 @@ interface Props {
    * shown as nothing at all, never as a number nobody measured.
    */
   countsLoading?: boolean;
+  /**
+   * Render EXACTLY `scopes` — no All / My team added. Only for a standalone
+   * host whose reader cannot answer those lanes; a list on a `*_list_scoped`
+   * RPC never sets it.
+   */
+  exact?: boolean;
   onChange: (scope: ListScope) => void;
 }
 
@@ -171,8 +177,9 @@ export function EntityScopeTabs({
   scopes,
   counts,
   countsLoading,
+  exact = false,
   onChange,
-}: Props) {
+}: EntityScopeTabsProps) {
   // A row wider than the screen fades at the edge that has more tabs past it
   // (page-pass 2026-09-27, /education/quizzes: "Public" was cut off beside
   // the "+" with no cue that the row scrolls).
@@ -203,7 +210,7 @@ export function EntityScopeTabs({
         : more.start
           ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem)]"
           : "";
-  const kinds = withStandardLanes(scopes);
+  const kinds = exact ? [...scopes] : withStandardLanes(scopes);
   // Only a lane's OWN axis narrows inside its tab; organizations are the org filter's.
   const narrowOptions = (kind: ListScopeKind) =>
     LANE_NARROWS.has(kind) ? (counts.narrow[kind] ?? []) : [];

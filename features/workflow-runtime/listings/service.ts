@@ -38,7 +38,7 @@ import {
 export const WORKFLOW_PICKER_PAGE_SIZE = 200;
 
 function scopeOf(tab: WorkflowTab): ListScope {
-  return tab === "orgs" ? { kind: "orgs", organizationId: null } : { kind: tab };
+  return { kind: tab };
 }
 
 export interface WorkflowPickerQuery {
@@ -72,6 +72,8 @@ function filtersOf(query: WorkflowPickerQuery): EntityFilters {
 function listQueryOf(query: WorkflowPickerQuery): EntityListQuery {
   return {
     scope: scopeOf(query.tab),
+    // The picker lists every organization's workflows; it offers no organization filter.
+    orgId: null,
     search: query.search,
     deep: query.deep,
     archived: query.archived,

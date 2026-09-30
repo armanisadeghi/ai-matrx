@@ -57,6 +57,8 @@ import { countActiveFilters } from "../types";
 import { EditRowRegistry } from "../editRowRegistry";
 import { EntityScopeTabs, scopeKindLabel } from "./EntityScopeTabs";
 import { EntityOrgFilter } from "./EntityOrgFilter";
+import { DEFAULT_LIST_KNOB_KEY, ORG_FILTER_FEATURE } from "@/lib/list-scope";
+import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
 import {
@@ -184,8 +186,14 @@ export function EntityListPage<TRow>({
   const visibleScopes = withStandardLanes(scopes ?? config.scopes);
   // THE ORGANIZATION FILTER shows on personal-seat lists only: an admin page
   // never acts as the viewer, so it never offers the viewer's organizations.
-  const orgFilter =
-    config.orgFilter !== false &&
+  // Whether it is offered at all is the Feature Knob `lists.org_filter/<token>`
+  // (platform default on; an organization or a person may turn it off).
+  const orgFilterKnob = useSessionKnob({
+    feature: ORG_FILTER_FEATURE,
+    key: config.registryToken ?? DEFAULT_LIST_KNOB_KEY,
+  });
+  const orgFilterOffered =
+    orgFilterKnob !== false &&
     visibleScopes.some((kind) => PERSONAL_SEAT_SCOPES.includes(kind));
   // 🚨 THE URL IS THE QUERY ON EVERY LIST PAGE (default ON since 2026-09-26).
   // It used to be opt-in, and `/agents/all` and `/workflows/all` never opted
@@ -887,7 +895,8 @@ export function EntityListPage<TRow>({
             />
             )}
           </div>
-          {orgFilter && (
+          {/* A narrowing the address carries is always visible and clearable, knob or not. */}
+          {(orgFilterOffered || Boolean(list.query.orgId)) && (
             <div className="flex shrink-0 items-center sm:ml-auto">
               <EntityOrgFilter
                 orgId={list.query.orgId}

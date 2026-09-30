@@ -48,6 +48,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
@@ -602,10 +603,8 @@ export function CrmListPage({
     setPrefs({ sort: definition.sort, direction: definition.direction });
     setSelectedIds([]);
   };
-  const savedViewOrgId =
-    list.query.scope.kind === "orgs" && list.query.scope.organizationId
-      ? list.query.scope.organizationId
-      : activeOrgId;
+  // A saved view is a WRITE: it goes to the active organization, never the list's filter.
+  const savedViewOrgId = activeOrgId;
 
   /** One bulk write + one refresh, with the selection cleared on success. */
   const runBulk = async (
@@ -833,10 +832,7 @@ export function CrmListPage({
   const getScope = () =>
     buildCrmListContextData({
       scopeKind: list.query.scope.kind,
-      scopeOrganizationId:
-        list.query.scope.kind === "orgs"
-          ? (list.query.scope.organizationId ?? null)
-          : null,
+      scopeOrganizationId: list.query.orgId,
       search: list.query.search,
       partyKindFilter: list.query.kind,
       columnFilters: list.query.filters,
@@ -1013,11 +1009,7 @@ export function CrmListPage({
         className="h-11 gap-1 px-2 text-xs lg:h-7"
         onClick={() =>
           openGoogleContactsImport({
-            organizationId:
-              list.query.scope.kind === "orgs" &&
-              list.query.scope.organizationId
-                ? list.query.scope.organizationId
-                : activeOrgId,
+            organizationId: activeOrgId,
           })
         }
       >
@@ -1031,11 +1023,7 @@ export function CrmListPage({
         onClick={() => {
           openCreateParty({
             initialKind: "organization",
-            initialOrgId:
-              list.query.scope.kind === "orgs" &&
-              list.query.scope.organizationId
-                ? list.query.scope.organizationId
-                : activeOrgId,
+            initialOrgId: activeOrgId,
           });
         }}
       >
@@ -1048,11 +1036,7 @@ export function CrmListPage({
         onClick={() => {
           openCreateParty({
             initialKind: "person",
-            initialOrgId:
-              list.query.scope.kind === "orgs" &&
-              list.query.scope.organizationId
-                ? list.query.scope.organizationId
-                : activeOrgId,
+            initialOrgId: activeOrgId,
           });
         }}
       >
@@ -1093,6 +1077,12 @@ export function CrmListPage({
                 onChange={(scope) => list.setQuery({ scope })}
               />
             </div>
+            <EntityOrgFilter
+              orgId={list.query.orgId}
+              onChange={(orgId) => list.setQuery({ orgId })}
+              counts={list.counts}
+              countsLoading={list.countsLoading}
+            />
             <div className="ml-auto flex max-w-full items-center gap-1.5 max-sm:w-full max-sm:justify-between">
               <Button
                 size="sm"

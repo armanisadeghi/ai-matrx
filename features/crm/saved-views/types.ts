@@ -12,7 +12,7 @@
 // page away.
 
 import type { Database } from "@/types/database.types";
-import type { ListScopeKind } from "@/lib/list-scope/types";
+import { makeScope, type ListScopeKind } from "@/lib/list-scope/types";
 import type {
   DateBucket,
   ExpertStatusFilter,
@@ -77,13 +77,13 @@ export const SAVED_VIEW_DEFINITION_VERSION = 1;
  */
 export type SavedViewScopeKind = Extract<
   ListScopeKind,
-  "mine" | "orgs" | "public"
+  "all" | "mine" | "team" | "orgs" | "public"
 >;
 
 export interface SavedViewDefinition {
   version: number;
   scopeKind: SavedViewScopeKind;
-  /** Only meaningful for the `orgs` scope: narrowed to one org, or all mine. */
+  /** The organization filter the view was saved under (null = All organizations). */
   organizationId: string | null;
   search: string;
   kind: PartyKindFilter;
@@ -172,7 +172,9 @@ function parseFilters(raw: unknown): PartyListFilters {
 export function parseSavedViewDefinition(raw: unknown): SavedViewDefinition {
   if (!isRecord(raw)) return { ...DEFAULT_DEFINITION };
   const scopeKind =
+    raw.scopeKind === "all" ||
     raw.scopeKind === "mine" ||
+    raw.scopeKind === "team" ||
     raw.scopeKind === "orgs" ||
     raw.scopeKind === "public"
       ? raw.scopeKind
@@ -212,8 +214,8 @@ export function definitionFromQuery(
   return parseSavedViewDefinition({
     version: SAVED_VIEW_DEFINITION_VERSION,
     scopeKind: query.scope.kind,
-    organizationId:
-      query.scope.kind === "orgs" ? (query.scope.organizationId ?? null) : null,
+    // The list's organization filter (null = All organizations).
+    organizationId: query.orgId,
     search: query.search,
     kind: query.kind,
     filters: query.filters,
@@ -231,10 +233,8 @@ export function queryFromDefinition(
 ): PartyListQuery {
   return {
     ...DEFAULT_PARTY_QUERY,
-    scope:
-      definition.scopeKind === "orgs"
-        ? { kind: "orgs", organizationId: definition.organizationId ?? null }
-        : { kind: definition.scopeKind },
+    scope: makeScope(definition.scopeKind),
+    orgId: definition.organizationId ?? null,
     search: definition.search,
     kind: definition.kind,
     filters: definition.filters,
