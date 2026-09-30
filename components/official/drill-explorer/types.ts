@@ -113,7 +113,7 @@ export function explorerQuestionOf(q: DrillQuestionWithHaving): ExplorerQuestion
  * drills into ONE group, so the finding's rule (its thresholds and group limit) stays behind: the
  * group is the crumb. Its other filters come along.
  */
-export function findingQuestion(finding: DrillFinding, current: MatrxDrillQuestion): ExplorerQuestion {
+export function findingQuestion(finding: Pick<DrillFinding, "question">, current: MatrxDrillQuestion): ExplorerQuestion {
   const own = explorerQuestionOf(finding.question);
   const out: ExplorerQuestion = { ...own, window: own.window ?? current.window ?? null };
   if (out.door) {
