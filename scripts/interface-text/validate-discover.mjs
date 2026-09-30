@@ -70,6 +70,9 @@ export function validate(units, lines, readFile) {
       // Round 2 pilot: haiku met the budget by cutting the original at 60 chars mid-sentence.
       const norm = (x) => x.replace(/\s+/g, " ").trim().toLowerCase();
       if (proposed.length < u.text.length && norm(u.text).startsWith(norm(proposed).replace(/[.…]+$/, ""))) problems.push(`${id}: proposed is the original cut short — rewrite it to say the point in fewer words`);
+      const sentences = (proposed.match(/[.!?](?=\s+[A-Z(]|\s*$)/g) ?? []).length;
+      const maxSentences = u.slot === "consequence" || u.slot === "body" ? 2 : 1;
+      if (sentences > maxSentences) problems.push(`${id}: proposed has ${sentences} sentences; a ${u.slot ?? "secondary"} slot holds ${maxSentences}`);
       if (/\b(the|a|an|to|of|and|or|so|that|with|for|is|are)\s*$/i.test(proposed)) problems.push(`${id}: proposed ends mid-phrase ("${proposed.slice(-20)}")`);
     }
     if (d.verdict === "definition-to-tooltip") {
