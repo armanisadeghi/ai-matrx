@@ -68,8 +68,6 @@ describe("embedFor — the embed is chosen by kind", () => {
 
   it("every other kind falls back to the light peek", () => {
     expect(embedFor(hit({ entity: "project", id: "p" }))).toBeNull();
-    // The legacy transcripts table is not a Source.
-    expect(embedFor(hit({ entity: "transcript", id: "t" }))).toBeNull();
     // A Source of a kind with no embed yet, or no kind reported.
     expect(embedFor(hit({ entity: "processed_document", id: "s", source_kind: "inline" }))).toBeNull();
     expect(embedFor(hit({ entity: "processed_document", id: "s" }))).toBeNull();
@@ -77,7 +75,11 @@ describe("embedFor — the embed is chosen by kind", () => {
   });
 
   it("the parity list is the gate: every kind embedFor can return is on it", () => {
-    expect(Object.keys(EMBED_PARITY).sort()).toEqual(["conversation", "file", "note", "transcript", "web"]);
+    expect(Object.keys(EMBED_PARITY).sort()).toEqual(["conversation", "file", "note", "transcript", "transcript_record", "web"]);
+  });
+
+  it("a transcript record opens its own screen in the peek (text and player), never the light peek", () => {
+    expect(embedFor(hit({ entity: "transcript", id: "t" }))).toEqual({ kind: "transcript_record", transcriptId: "t" });
   });
 });
 

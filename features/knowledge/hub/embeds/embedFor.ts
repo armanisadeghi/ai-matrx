@@ -34,6 +34,8 @@ export const EMBED_PARITY = {
   transcript: "features/source-studio/components/SourceStudio.tsx (timed path: OriginalPane players)",
   conversation: "features/agents/components/messages-display/AgentConversationDisplay.tsx",
   note: "features/notes/components/NoteContentEditor.tsx",
+  transcript_record:
+    "features/knowledge/hub/embeds/TranscriptRecordEmbed.tsx (its Source screen's timed path, else features/transcripts/components/TranscriptViewer.tsx)",
 } as const;
 
 export type EmbedKind = keyof typeof EMBED_PARITY;
@@ -41,7 +43,8 @@ export type EmbedKind = keyof typeof EMBED_PARITY;
 export type HubEmbed =
   | { kind: SourceEmbedVariant; sourceId: string; deepLink: SourceDeepLink }
   | { kind: "conversation"; conversationId: string; messageId: string | null }
-  | { kind: "note"; noteId: string };
+  | { kind: "note"; noteId: string }
+  | { kind: "transcript_record"; transcriptId: string };
 
 function sourceVariant(sourceKind: string | null | undefined): SourceEmbedVariant | null {
   if (!sourceKind) return null;
@@ -89,6 +92,7 @@ export function embedFor(hit: KnowledgeHit): HubEmbed | null {
     });
   }
   if (hit.entity === "note") return withParity({ kind: "note", noteId: hit.id });
+  if (hit.entity === "transcript") return withParity({ kind: "transcript_record", transcriptId: hit.id });
   return null;
 }
 
@@ -99,6 +103,8 @@ export function embedKey(embed: HubEmbed): string {
       return `conversation:${embed.conversationId}:${embed.messageId ?? ""}`;
     case "note":
       return `note:${embed.noteId}`;
+    case "transcript_record":
+      return `transcript:${embed.transcriptId}`;
     default:
       return `source:${embed.sourceId}:${embed.deepLink.chunkId ?? ""}:${embed.deepLink.page ?? ""}:${embed.deepLink.ms ?? ""}`;
   }

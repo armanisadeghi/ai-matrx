@@ -10,6 +10,7 @@ import type { HubEmbed } from "./embedFor";
 import { ConversationEmbed } from "./ConversationEmbed";
 import { NoteEmbed } from "./NoteEmbed";
 import { SourceEmbed } from "./SourceEmbed";
+import { TranscriptRecordEmbed } from "./TranscriptRecordEmbed";
 
 export default function HubDetailEmbedsImpl({ embed }: { embed: HubEmbed }) {
   switch (embed.kind) {
@@ -17,6 +18,8 @@ export default function HubDetailEmbedsImpl({ embed }: { embed: HubEmbed }) {
       return <ConversationEmbed conversationId={embed.conversationId} messageId={embed.messageId} />;
     case "note":
       return <NoteEmbed noteId={embed.noteId} />;
+    case "transcript_record":
+      return <TranscriptRecordEmbed transcriptId={embed.transcriptId} />;
     default:
       return <SourceEmbed sourceId={embed.sourceId} deepLink={embed.deepLink} />;
   }

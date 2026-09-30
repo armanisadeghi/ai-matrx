@@ -139,6 +139,9 @@ export function originLabel(origin: string | null | undefined): string {
 
 /** "Open full" — the item's own route (server href wins, then the registry). */
 export function openFullHref(hit: KnowledgeHit): string | null {
+  // A transcript opens on its own page in the Knowledge area (its text and player), not the
+  // transcripts module's processor.
+  if (hit.entity === "transcript") return `/knowledge/transcripts/${encodeURIComponent(hit.id)}`;
   if (hit.href) return hit.href;
   if (hit.entity === "segment" && hit.segment?.source_id)
     return tryGetEntityInfo("processed_document")?.hrefFor?.(hit.segment.source_id) ?? null;
