@@ -1,29 +1,26 @@
 // app/(core)/transcripts/page.tsx
 //
-// Transcripts LIST page — unified hub across every storage dimension:
-//   • `transcripts` (Processor records)
-//   • `studio_sessions` source≠cleanup (Studio + Scribe sessions)
-//   • `studio_sessions` source=cleanup (Cleanup workspaces)
-//   • detached `studio_recording_segments` (Scribe unsorted pool)
-//
-// Each section paginates independently on the client for efficiency.
-// Guests: marketing landing. Authed: client hub island.
-//
-// NOT retired into the Knowledge hub yet (H6d, 2026-09-27): the hub's
-// Transcripts view lists transcript records and transcript Sources, but not
-// studio sessions, cleanup sessions or unsorted recordings (the seeded preset
-// matches source_kind 'transcript', which only those two carry). When the
-// preset covers them, this page becomes
-// `redirect(transcriptsToHubHref(await searchParams))` — the helper, its tests
-// and every hub action are already in place (legacyRoutes.ts).
+// The Transcripts LIST lives in the Knowledge hub now (KNOWLEDGE-HUB §6, H6d):
+// `/knowledge?view=transcripts` reads the list's own server functions
+// (trx_list_scoped / trx_list_facets / trx_list_scope_counts), so every row
+// kind — transcripts, recording sessions, cleanups, unsorted recordings — and
+// every filter, scope and search is there, plus the list's row menu, rename,
+// Export and Copy. This address lands there with its search, scope, sort and
+// filters kept. The old list stays reviewable at /compare/old/transcripts
+// until Arman confirms (2026-09-29). Every processing page (processor,
+// studio, cleanup, scribe, new) stays its record page. Guests see the landing.
 
+import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { TranscriptsListPage } from "@/features/transcripts/components/TranscriptsListPage";
+import { transcriptsToHubHref } from "@/features/knowledge/hub/legacyRoutes";
 import TranscriptsLanding from "@/features/auth/components/module-landing/landings/TranscriptsLanding";
 
-export default async function TranscriptsIndexPage() {
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function TranscriptsIndexPage({ searchParams }: PageProps) {
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <TranscriptsLanding />;
-
-  return <TranscriptsListPage />;
+  redirect(transcriptsToHubHref(await searchParams));
 }

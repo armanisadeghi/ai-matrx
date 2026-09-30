@@ -22,19 +22,23 @@ import { TranscriptsSurfaceGuide } from "./TranscriptsSurfaceGuide";
 import { HUB_LIBRARIES_HREF, transcriptsToHubHref } from "@/features/knowledge/hub/legacyRoutes";
 
 export function TranscriptsListPage() {
-  // SIDE BY SIDE (Arman, 2026-09-29): the Knowledge hub's Transcripts view is
-  // the replacement for this page, and he compares the two before this one is
-  // replaced — so this page links to the new view on the SAME search, scope and
-  // filters, and the new view links back ("Back to the old page").
+  // KEPT FOR COMPARISON (Arman, 2026-09-29): the Knowledge hub's Transcripts
+  // view is the live page (/transcripts redirects there). This list survives
+  // only at the review address /compare/old/transcripts until he confirms, then
+  // it is deleted. The banner says so and opens the new view on the SAME
+  // search, scope and filters; the new view links back here the same way.
   const searchParams = useSearchParams();
   const newViewHref = transcriptsToHubHref(Object.fromEntries(searchParams.entries()));
-  const tryNewButton = (
-    <Button asChild size="sm" variant="ghost" className="h-11 lg:h-7">
-      <Link href={newViewHref} aria-label="Try the new Transcripts view in Knowledge">
-        <ArrowRight className="h-4 w-4" />
-        <span className="max-sm:sr-only">Try the new Transcripts</span>
+  const compareNotice = (
+    <div
+      role="note"
+      className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/60 px-3 py-1.5 text-xs"
+    >
+      <span className="font-medium">Old page, kept for comparison</span>
+      <Link href={newViewHref} className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
+        Open the new Transcripts view <ArrowRight className="h-3 w-3" />
       </Link>
-    </Button>
+    </div>
   );
   const newButton = (
     <Button asChild size="sm" className="h-11 lg:h-7">
@@ -69,7 +73,6 @@ export function TranscriptsListPage() {
 
   const headerActions = (
     <div className="flex items-center gap-2">
-      {tryNewButton}
       {wholeChannelButton}
       {newButton}
     </div>
@@ -91,6 +94,7 @@ export function TranscriptsListPage() {
       </PageHeader>
       <EntityListPage
         config={transcriptListConfig}
+        notice={compareNotice}
         headerActions={headerActions}
         emptyAction={emptyAction}
       />

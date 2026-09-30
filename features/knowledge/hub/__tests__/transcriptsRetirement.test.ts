@@ -2,9 +2,9 @@
  * H6d: the Transcripts LIST's actions in the hub's Transcripts view
  * (`/knowledge?view=transcripts`) — the address a retired `/transcripts` lands
  * on (search, scope, sort, filters kept), the per-kind row menu, the facets
- * and the CSV, all the real pure code the hub page calls. The route itself is
- * NOT retired yet (studio / cleanup sessions are not in the preset — GAP), so
- * the real route module is asserted to still render the list.
+ * and the CSV, all the real pure code the hub page calls. The real route
+ * modules run: `/transcripts` redirects there, and the old list survives only
+ * at the review address `/compare/old/transcripts` (Arman, 2026-09-29).
  */
 const redirect = jest.fn((to: string) => {
   throw Object.assign(new Error("NEXT_REDIRECT"), { to });
@@ -26,8 +26,14 @@ jest.mock("@/components/agent-copy/export", () => {
 });
 
 import TranscriptsRoute from "@/app/(core)/transcripts/page";
+import OldTranscriptsRoute from "@/app/(core)/compare/old/transcripts/page";
 import { hubHref, hubStateFromParams, DEFAULT_HUB_STATE } from "@/features/knowledge/hub/hubState";
-import { HUB_TRANSCRIPTS_HREF, transcriptsToHubHref } from "@/features/knowledge/hub/legacyRoutes";
+import {
+  HUB_TRANSCRIPTS_HREF,
+  OLD_TRANSCRIPTS_PATH,
+  hubToTranscriptsHref,
+  transcriptsToHubHref,
+} from "@/features/knowledge/hub/legacyRoutes";
 import { mergePresetQuery } from "@/features/knowledge/hub/hubSavedViews";
 import {
   buildTranscriptFacts,
@@ -45,7 +51,16 @@ import { exportTranscriptRows } from "@/features/transcripts/browse/bulkExport";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import type { TranscriptListRow } from "@/features/transcripts/browse/types";
 
-const land = async (search: Record<string, string>) => transcriptsToHubHref(search);
+/** The real /transcripts route: where it redirects (or "LANDING" / "LIST" when it renders). */
+async function land(search: Record<string, string>): Promise<string> {
+  redirect.mockClear();
+  try {
+    const out = (await TranscriptsRoute({ searchParams: Promise.resolve(search) })) as { type: () => string };
+    return out.type();
+  } catch (e) {
+    return (e as { to: string }).to;
+  }
+}
 
 const params = (href: string) => new URLSearchParams(href.split("?")[1] ?? "");
 
@@ -70,8 +85,9 @@ describe("the /transcripts address maps to the hub's Transcripts view, keeping i
     });
     const state = hubStateFromParams(params(to as string));
     expect(state.view).toEqual({ kind: "preset", key: "transcripts" });
-    expect(state.query).toEqual({ mode: "find", text: "board meeting", captured_by: "me", sort: "title" });
+    expect(state.query).toEqual({ mode: "find", text: "board meeting", sort: "title" });
     expect(state.group).toEqual({
+      scope: "mine",
       kind: "transcript,cleanup",
       status: "draft",
       folder: "Interviews",
@@ -86,15 +102,40 @@ describe("the /transcripts address maps to the hub's Transcripts view, keeping i
     expect(hubStateFromParams(params(transcriptsToHubHref({ scope: "public" }))).group).toEqual({ scope: "public" });
   });
 
-  it("the /transcripts route still renders the list while sessions are missing from the view (GAP)", async () => {
-    redirect.mockClear();
-    const out = await (TranscriptsRoute as unknown as () => Promise<{ type: () => string }>)();
+  it("guests still get the Transcripts landing, not a redirect", async () => {
+    authed = false;
+    expect(await land({ q: "x" })).toBe("LANDING");
     expect(redirect).not.toHaveBeenCalled();
+    authed = true;
+  });
+
+  it("the old list renders only at its review address, for signed-in people", async () => {
+    redirect.mockClear();
+    const out = (await OldTranscriptsRoute()) as unknown as { type: () => string };
     expect(out.type()).toBe("LIST");
     authed = false;
-    const guest = await (TranscriptsRoute as unknown as () => Promise<{ type: () => string }>)();
-    expect(guest.type()).toBe("LANDING");
+    await expect(OldTranscriptsRoute()).rejects.toMatchObject({ to: "/transcripts" });
     authed = true;
+  });
+
+  it("the new view links back to the old list on the same search, scope and filters", () => {
+    const back = hubToTranscriptsHref({
+      query: { mode: "find", text: "board", sort: "title" },
+      group: { scope: "shared", folder: "Interviews", kind: "cleanup,session" },
+    });
+    expect(back.startsWith(`${OLD_TRANSCRIPTS_PATH}?`)).toBe(true);
+    const p = params(back);
+    expect(p.get("q")).toBe("board");
+    expect(p.get("scope")).toBe("shared");
+    expect(p.get("sort")).toBe("title");
+    expect(JSON.parse(p.get("filters")!)).toEqual({
+      kind: { kind: "select", values: ["cleanup", "session"] },
+      folder_name: { kind: "select", values: ["Interviews"] },
+    });
+    // …and the round trip lands on the same hub view.
+    const again = hubStateFromParams(params(transcriptsToHubHref(Object.fromEntries(p.entries()))));
+    expect(again.group).toEqual({ scope: "shared", folder: "Interviews", kind: "cleanup,session" });
+    expect(hubToTranscriptsHref({ query: { mode: "find" }, group: {} })).toBe(OLD_TRANSCRIPTS_PATH);
   });
 
   it("the preset's filters merge under what the address carried", () => {

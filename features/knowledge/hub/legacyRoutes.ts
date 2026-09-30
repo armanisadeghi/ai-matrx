@@ -210,10 +210,13 @@ export function transcriptsToHubHref(params: LegacySearchParams): string {
 }
 
 /**
- * The reverse: the hub's Transcripts view → the old `/transcripts` list on the
+ * The reverse: the hub's Transcripts view → the old list (its review address) on the
  * same search, scope, sort and filters — Arman compares the two side by side
  * before the old page is replaced (2026-09-29), so each links to the other.
  */
+/** The old list's review-only address (Arman, 2026-09-29) — deleted once he confirms the new view. */
+export const OLD_TRANSCRIPTS_PATH = "/compare/old/transcripts";
+
 export function hubToTranscriptsHref(state: Pick<HubState, "query" | "group">): string {
   const qs = new URLSearchParams();
   const text = state.query.text?.trim();
@@ -229,7 +232,7 @@ export function hubToTranscriptsHref(state: Pick<HubState, "query" | "group">): 
   if (Object.keys(filters).length) qs.set("filters", JSON.stringify(filters));
   if (state.query.sort === "title") qs.set("sort", "title");
   const out = qs.toString();
-  return out ? `/transcripts?${out}` : "/transcripts";
+  return out ? `${OLD_TRANSCRIPTS_PATH}?${out}` : OLD_TRANSCRIPTS_PATH;
 }
 
 /** Where the Transcripts list lives now — the link every retired "/transcripts" pointer uses. */
