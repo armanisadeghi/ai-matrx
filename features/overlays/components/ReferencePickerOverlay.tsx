@@ -41,7 +41,7 @@ export interface ReferencePickerOverlayProps {
 
 const TITLE = "Add a reference";
 const DESCRIPTION =
-  "Pick what to reference; it becomes a live link wherever it is used.";
+  "Link to something, or insert a button that acts on it.";
 
 export default function ReferencePickerOverlay({
   isOpen,

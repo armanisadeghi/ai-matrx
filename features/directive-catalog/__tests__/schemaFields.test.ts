@@ -11,6 +11,7 @@ import type { EntityTypeToken } from "@ai-matrx/associations";
 import {
   buildSchemaPayload,
   deriveSchemaFields,
+  humanFormFields,
   splitWarnings,
   valuesFromPayload,
   type SchemaField,
@@ -140,6 +141,26 @@ describe("deriveSchemaFields — task create, field by field", () => {
     expect(noteFields[0]!.tier).toBe("essential");
   });
 
+  it("labels the title column 'Title' — a note's is stored as `label`", () => {
+    const n = noun("note");
+    const noteFields = deriveSchemaFields(n.schemas!.create, {
+      titleColumn: n.title_column,
+    });
+    expect(noteFields[0]).toMatchObject({ key: "label", label: "Title" });
+  });
+
+  it("the human form drops raw JSON and bare-id boxes, but never a required field", () => {
+    const human = humanFormFields(fields);
+    expect(human.some((f) => f.kind === "json")).toBe(false);
+    // assignee_id has no resolver in this test → a bare id box → not offered.
+    expect(human.some((f) => f.key === "assignee_id")).toBe(false);
+    // project_id resolves to a record search → offered.
+    expect(human.some((f) => f.key === "project_id")).toBe(true);
+    expect(human.some((f) => f.key === "title")).toBe(true);
+    const requiredJson = [{ ...field(fields, "metadata"), required: true }];
+    expect(humanFormFields(requiredJson)).toHaveLength(1);
+  });
+
   it("returns [] for anything that is not an object schema", () => {
     expect(deriveSchemaFields(null)).toEqual([]);
     expect(deriveSchemaFields({ type: "string" })).toEqual([]);
@@ -192,9 +213,21 @@ describe("buildSchemaPayload", () => {
       "update",
       { id: "task-1" },
     );
-    // A touched-then-emptied nullable field CLEARS it; untouched fields are absent.
-    expect(payload).toEqual({ id: "task-1", status: "completed", description: null });
+    expect(payload).toEqual({ id: "task-1", status: "completed" });
     expect(warnings).toEqual([]);
+  });
+
+  it("a blank field is NEVER sent on an update — not as '' and not as null", () => {
+    // Live 2026-09-30: typing into Metadata then clearing it sent
+    // `metadata: null` into a NOT NULL column. Every update field is optional
+    // in the schema, which says nothing about whether the column may be emptied.
+    const { payload } = buildSchemaPayload(
+      updateFields,
+      { metadata: touched(""), description: touched("   ") },
+      "update",
+      { id: "task-1" },
+    );
+    expect(payload).toEqual({ id: "task-1" });
   });
 
   it("an update that sets nothing warns that the button would do nothing", () => {

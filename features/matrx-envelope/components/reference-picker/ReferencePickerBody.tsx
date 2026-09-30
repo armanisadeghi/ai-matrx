@@ -59,6 +59,7 @@ import {
   applyFieldChange,
   buildSchemaPayload,
   deriveSchemaFields,
+  humanFormFields,
   splitWarnings,
   type SchemaFieldValue,
 } from "@/features/directive-catalog/schemaFields";
@@ -711,13 +712,13 @@ function WriteStep({
   const fields = useMemo(
     () =>
       noun && isJsonSchema(schema)
-        ? deriveSchemaFields(schema, {
+        ? humanFormFields(deriveSchemaFields(schema, {
             titleColumn: noun.title_column,
             // The record an update changes was chosen by search; it is not a field.
             exclude: formMode === "update" ? ["id"] : [],
             resolveRecordToken: (key) =>
               payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
-          })
+          }))
         : [],
     [noun, schema, formMode],
   );

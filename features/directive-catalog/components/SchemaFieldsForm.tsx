@@ -60,7 +60,6 @@ export interface SchemaFieldsFormProps {
 
 /** Radix Select forbids "" as an item value; this stands for "not set". */
 const UNSET = "__unset__";
-const CLEAR = "__clear__";
 
 export function SchemaFieldsForm({
   fields,
@@ -76,7 +75,11 @@ export function SchemaFieldsForm({
   const [moreOpen, setMoreOpen] = useState(
     moreOpenByDefault || essential.length === 0,
   );
-  const setInMore = more.filter((f) => values[f.key]?.touched).length;
+  // "Set" means it will be sent: touched AND not blank.
+  const setInMore = more.filter((f) => {
+    const v = values[f.key];
+    return v?.touched && !(typeof v.raw === "string" && v.raw.trim() === "");
+  }).length;
 
   const fieldWarnings = splitWarnings(warnings, values).field;
   const warningFor = (key: string) =>
@@ -151,12 +154,6 @@ function FieldRow({
   onChange: (value: SchemaFieldValue | null) => void;
 }) {
   const touched = value?.touched === true;
-  const clearing =
-    mode === "update" &&
-    touched &&
-    field.nullable &&
-    typeof value?.raw === "string" &&
-    value.raw.trim() === "";
   const id = `schema-field-${field.key}`;
 
   return (
@@ -167,11 +164,6 @@ function FieldRow({
         </label>
         {field.required && (
           <span className="text-[11px] text-muted-foreground">Required</span>
-        )}
-        {clearing && (
-          <span className="text-[11px] text-amber-700 dark:text-amber-300">
-            Will be cleared
-          </span>
         )}
         {touched && (
           <button
@@ -312,9 +304,7 @@ function ChoiceControl({
       ? value.raw === true
         ? "true"
         : "false"
-      : value.raw === ""
-        ? CLEAR
-        : String(value.raw);
+      : String(value.raw) || UNSET;
 
   const unsetLabel =
     mode === "update"
@@ -335,7 +325,6 @@ function ChoiceControl({
       value={current}
       onValueChange={(next) => {
         if (next === UNSET) onChange(null);
-        else if (next === CLEAR) onChange({ raw: "", touched: true });
         else if (isBool) onChange({ raw: next === "true", touched: true });
         else onChange({ raw: next, touched: true });
       }}
@@ -350,9 +339,6 @@ function ChoiceControl({
             {o.label}
           </SelectItem>
         ))}
-        {mode === "update" && field.nullable && !isBool && (
-          <SelectItem value={CLEAR}>Clear it</SelectItem>
-        )}
       </SelectContent>
     </Select>
   );
@@ -376,7 +362,6 @@ function RecordControl({
     value?.touched && typeof value.raw === "string" && value.raw.length > 0
       ? value
       : null;
-  const clearing = value?.touched && value.raw === "";
   const noun = (info?.label ?? field.label).toLowerCase();
   const Icon = info?.Icon;
 
@@ -401,11 +386,9 @@ function RecordControl({
             <span className="truncate">
               {picked
                 ? (picked.recordTitle ?? `Chosen ${noun}`)
-                : clearing
-                  ? "Cleared"
-                  : mode === "update"
-                    ? `Unchanged — choose a ${noun}`
-                    : `Choose a ${noun}`}
+                : mode === "update"
+                  ? `Unchanged — choose a ${noun}`
+                  : `Choose a ${noun}`}
             </span>
           </button>
         </PopoverTrigger>
@@ -433,15 +416,6 @@ function RecordControl({
           className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
-        </button>
-      )}
-      {mode === "update" && field.nullable && !value?.touched && (
-        <button
-          type="button"
-          onClick={() => onChange({ raw: "", touched: true })}
-          className="min-h-7 text-xs text-muted-foreground hover:text-foreground"
-        >
-          or clear it
         </button>
       )}
     </div>

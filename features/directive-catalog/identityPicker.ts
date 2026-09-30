@@ -12,6 +12,9 @@ import {
 
 /** Compound-reference ids whose owning record is unambiguous. */
 const FIELD_TOKEN: Readonly<Partial<Record<string, EntityTypeToken>>> = {
+  // A person: every users.profiles id IS the auth user id (454/454 on
+  // 2026-09-30), and assignee_id references auth.users — so the pick is exact.
+  assignee_id: "user_profile",
   context_item_id: "context_item",
   document_id: "udt_document",
   file_id: "file",

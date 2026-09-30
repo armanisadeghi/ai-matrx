@@ -16,8 +16,11 @@
  *   - "essential" = required fields + the noun's title column. Everything else
  *     is "more", ordered by kind (pick-lists and records first, raw JSON last)
  *     and then by the schema's own property order.
- *   - Update sends ONLY what the person touched: an action button that sets a
+ *   - Update sends ONLY what the person set: an action button that sets a
  *     task's status must not also overwrite every other column with blanks.
+ *     A blank field is never sent — not as "", not as null.
+ *   - The noun's title column is always labelled "Title" (a note's is stored
+ *     as `label`; people never see storage names).
  *   - Validation OFFERS, never blocks (common-docs/policies/
  *     validation-offers-never-blocks.md): `buildSchemaPayload` returns
  *     warnings next to the payload and never refuses to build one.
@@ -44,7 +47,11 @@ export interface SchemaField {
   label: string;
   kind: SchemaFieldKind;
   required: boolean;
-  /** The schema accepts `null` — an update may clear it. */
+  /**
+   * The schema accepts `null`. On an UPDATE schema every field is optional this
+   * way, so it says nothing about whether the column may be emptied — never
+   * read it as "clearable".
+   */
   nullable: boolean;
   /** Allowed values when `kind === "enum"`. */
   enumValues: string[];
@@ -274,7 +281,12 @@ export function deriveSchemaFields(
     const isRequired = required.has(key);
     fields.push({
       key,
-      label: title && title !== "JSON" ? title.replace(/ Id$/, "") : humanize(key),
+      label:
+        key === titleColumn
+          ? "Title"
+          : title && title !== "JSON"
+            ? title.replace(/ Id$/, "")
+            : humanize(key),
       kind,
       required: isRequired,
       nullable,
@@ -303,15 +315,6 @@ export function deriveSchemaFields(
 
 function isBlank(raw: string | boolean): boolean {
   return typeof raw === "string" && raw.trim().length === 0;
-}
-
-/** The value a blank, touched field sends: null on an update that can clear it. */
-function blankValue(
-  field: SchemaField,
-  mode: SchemaFormMode,
-): { send: boolean; value: unknown } {
-  if (mode === "update" && field.nullable) return { send: true, value: null };
-  return { send: false, value: undefined };
 }
 
 function coerce(
@@ -403,12 +406,13 @@ export function buildSchemaPayload(
       continue;
     }
 
+    // Blank never sends — not even null on an update. A published update schema
+    // marks EVERY field optional (`| None` means "may be left out", not "the
+    // column accepts null"), so a blank-means-clear rule sent `metadata: null`
+    // into a NOT NULL column (live 2026-09-30). Clearing a value is an explicit
+    // act, available in the admin builder's JSON view.
     if (isBlank(value.raw)) {
-      const blank = blankValue(field, mode);
-      if (blank.send) {
-        payload[field.key] = blank.value;
-        if (field.key !== "id") changed += 1;
-      } else if (field.required) {
+      if (field.required) {
         warnings.push({
           key: field.key,
           kind: "required",
@@ -486,6 +490,23 @@ export function splitWarnings(
     else action.push(w.message);
   }
   return { field, action };
+}
+
+/**
+ * The fields a non-technical person is offered. Raw JSON is never a human
+ * control, and an id with no record search would ask them to type an id —
+ * both stay available in the admin builder, which shows every field. This
+ * narrows CONTROLS on a human form; it never narrows what a type can do.
+ */
+export function humanFormFields(fields: readonly SchemaField[]): SchemaField[] {
+  // A REQUIRED field always stays: dropping one would insert a button that
+  // can never succeed.
+  return fields.filter(
+    (f) =>
+      f.required ||
+      (f.kind !== "json" &&
+        !(f.kind === "text" && (f.key === "id" || f.key.endsWith("_id")))),
+  );
 }
 
 /** Apply one control change; `null` returns the field to "not set / unchanged". */
