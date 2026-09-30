@@ -538,10 +538,6 @@
         {
           "file": "features/action-requests/components/ActionRequestAnswerForm.tsx",
           "why": "IS the money capability (a spend-approval amount) and cannot collapse honestly yet: its `money` prints 2 places at a dollar or more and UP TO 4 below a dollar with trailing zeros trimmed (\"$0.29\", \"$0.018\"). formatUsd's `adaptive` voice FIXES the places (\"$0.2900\", \"$0.0180\") and `digits: 2` rounds $0.0035 to \"$0.00\". Blocked on a kit voice: a trimmed-precision money style (minimum 2 places, trailing zeros dropped, sub-cent digits kept). Same gap as features/admin/dated-changes/describe.ts."
-        },
-        {
-          "file": "features/admin/dated-changes/describe.ts",
-          "why": "IS the money capability (per-million-token prices in a dated price change) and cannot collapse honestly yet: it prints \"$0.75 in / $3.75 out / $0.075 cached\" (minimum 2 places, up to 4, trailing zeros trimmed; pinned by features/admin/attention/__tests__/dated-change-items.test.ts). formatUsd `adaptive` prints \"$0.7500\" and \"$0.0750\"; `digits: 2` rounds $0.075 to \"$0.08\". Blocked on a kit voice: a trimmed-precision money style. Same gap as ActionRequestAnswerForm.tsx."
         }
       ]
     },

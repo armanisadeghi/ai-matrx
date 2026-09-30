@@ -8,7 +8,7 @@
 
 import { formatDistanceStrict } from "date-fns";
 import type { DatedChange, DatedChangeAttention } from "./service";
-import { formatCount } from "@ai-matrx/kit/format";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 
 export const DATED_CHANGES_PAGE_HREF = "/administration/automation/scheduling/dated-changes";
 export const OFFERINGS_PAGE_HREF = "/administration/ai/ai-models/offerings";
@@ -18,9 +18,10 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+/** A per-million-token price as a price reads: "$0.75", "$0.075". Absent → null (the part is omitted). */
 function money(value: unknown): string | null {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
-  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+  return formatUsd(value, { digits: "trim" });
 }
 
 function tokens(n: unknown): string {
