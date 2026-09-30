@@ -84,7 +84,9 @@ export function useEntitlement(capability: Capability): UseEntitlementResult {
   const dispatch = useAppDispatch();
   const refresh = useCallback(async () => {
     const snapshot = await fetchEntitlementSnapshot();
-    dispatch(setEntitlementSnapshot(snapshot));
+    // null = no organization resolved yet: a tier belongs to an organization, so
+    // there is nothing to hydrate (the boot path re-runs once one is set).
+    if (snapshot) dispatch(setEntitlementSnapshot(snapshot));
   }, [dispatch]);
 
   const definition = useMemo(() => getCapability(capability), [capability]);
@@ -228,7 +230,7 @@ export function useEntitlementConsume(capability: Capability): EntitlementCommit
         // The write failed (already screamed in dev). Re-hydrate the whole
         // snapshot so the meter still converges to server truth on next tick.
         const snapshot = await fetchEntitlementSnapshot();
-        dispatch(setEntitlementSnapshot(snapshot));
+        if (snapshot) dispatch(setEntitlementSnapshot(snapshot));
       }
       return result;
     },

@@ -13,6 +13,8 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { getCapability, isCapability, type Capability } from "./registry";
 import type {
   EntitlementCheckResult,
@@ -61,21 +63,6 @@ function warnUnknownCapability(capability: Capability): void {
   );
 }
 
-// An org-scoped capability asked without an org. Loud, because the fallback
-// answer (user tier only) looks perfectly normal and is quietly wrong.
-const warnedMissingOrg = new Set<Capability>();
-function warnMissingOrg(capability: Capability): void {
-  if (process.env.NODE_ENV === "production") return;
-  if (warnedMissingOrg.has(capability)) return;
-  warnedMissingOrg.add(capability);
-  // eslint-disable-next-line no-console -- intentional loud-recovery dev signal
-  console.error(
-    `[entitlements] "${capability}" is scope:"org" but was checked with no ` +
-      `organizationId — the verdict fell back to the USER's tier alone. Pass the ` +
-      `org that owns the record being acted on (never the active-org selection).`,
-  );
-}
-
 function permissiveVerdict(capability: Capability): EntitlementCheckResult {
   warnPermissiveOnce(capability);
   const dfn = getCapability(capability);
@@ -108,12 +95,29 @@ export async function checkEntitlement(
   const dfn = getCapability(capability);
   if (!dfn.enforced) return permissiveVerdict(capability);
 
-  const organizationId = opts?.organizationId ?? null;
-  // An org-scoped capability resolved WITHOUT an org would silently answer on
-  // the user's tier alone — a quieter, wronger answer than an error. Scream in
-  // dev; still resolve (fail-open on the read), because a missing org must
-  // never be the reason a working surface goes dark.
-  if (dfn.scope === "org" && !organizationId) warnMissingOrg(capability);
+  // 🚨 A TIER BELONGS TO AN ORGANIZATION (DD-047; billing.user_plan retired
+  // 2026-09-29). There is no personal plan to answer from, so a check with no
+  // organization is HELD, never answered: `ensureOrgId` uses the organization
+  // the caller named (the record's own), else the one the person is working in,
+  // else asks them to set one and continues. Closing the picker is "not now":
+  // the action does not run and nothing is shown (reason organization_required).
+  let organizationId: string;
+  try {
+    organizationId = await ensureOrgId(opts?.organizationId ?? null);
+  } catch (e) {
+    if (isOrganizationSelectionCancelled(e)) {
+      return {
+        ...permissiveVerdict(capability),
+        allowed: false,
+        reason: "organization_required",
+      };
+    }
+    return {
+      ...permissiveVerdict(capability),
+      allowed: false,
+      reason: "resolver_error",
+    };
+  }
 
   try {
     const supabase = createClient();
@@ -121,10 +125,8 @@ export async function checkEntitlement(
       .schema("billing")
       .rpc("entitlement_check", {
         p_capability: capability,
-        // The 2-arg RPC (user-only) and the 3-arg (org-aware) are distinct
-        // overloads; pass the org only when we have one so a user-scoped
-        // capability keeps hitting the exact signature it always did.
-        ...(organizationId ? { p_org: organizationId } : {}),
+        // Always the organization: the one-argument overload refuses (23502).
+        p_org: organizationId,
       });
 
     if (error || !data) {
@@ -267,11 +269,16 @@ export function usageFromConsume(r: EntitlementConsumeResult): EntitlementUsage 
 }
 
 /**
- * Fetch the full boot snapshot (tier + trial + per-capability usage). Hydrated
- * once at session boot into the entitlements slice. Fails soft to the free
- * permissive snapshot so anonymous / pre-billing sessions still resolve.
+ * Fetch the full boot snapshot (tier + trial + per-capability usage) for the
+ * organization the person is working in. A tier belongs to an organization
+ * (DD-047), so with no organization resolved this returns `null` and the caller
+ * hydrates nothing — never a personal-plan answer, never an invented "free".
+ * The boot path re-runs when the organization is set or switched. Fails soft to
+ * the free permissive snapshot on a resolver error.
  */
-export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot> {
+export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot | null> {
+  const resolution = await awaitEffectiveOrganizationId();
+  if (resolution.status !== "ready") return null;
   const empty: EntitlementSnapshot = {
     tier: "free",
     isSubscribed: false,
@@ -283,7 +290,7 @@ export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot> {
     const supabase = createClient();
     const { data, error } = await supabase
       .schema("billing")
-      .rpc("entitlement_snapshot");
+      .rpc("entitlement_snapshot", { p_org: resolution.organizationId });
     if (error || !data) return empty;
     return mapSnapshotRow(data as EntitlementSnapshotRow);
   } catch {
@@ -318,7 +325,6 @@ export async function fetchOrgCapabilityStatus(
     return {
       organizationId,
       tier: row.tier,
-      userTier: row.user_tier,
       orgTier: row.org_tier,
       capabilities,
       fetchedAt: Date.now(),
@@ -333,7 +339,6 @@ export async function fetchOrgCapabilityStatus(
 interface OrgCapabilityStatusRow {
   organization_id: string;
   tier: EntitlementTier;
-  user_tier: EntitlementTier;
   org_tier: EntitlementTier;
   capabilities: Record<string, unknown>;
 }

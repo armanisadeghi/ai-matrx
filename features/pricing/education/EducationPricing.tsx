@@ -42,7 +42,8 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { selectEntitlementTier } from "@/features/entitlements/state/selectors";
-import { readMyPlanSource } from "@/features/entitlements/plan-service";
+import { readPlanSource } from "@/features/entitlements/plan-service";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { PRELAUNCH_COMPLIMENTARY_PREMIUM } from "./pricingPolicy";
 import type { EducationPricing as EducationPricingData } from "./loadEducationPricing";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
@@ -142,18 +143,20 @@ export function EducationPricing({
   const isPremium = isAuthenticated && tier === "premium";
   const isFreeMember = isAuthenticated && !isPremium;
   // `entitlement_snapshot().is_subscribed` is just `tier in (premium, trial)`,
-  // so the grant source is read from the person's own billing.user_plan row.
+  // so the grant source is read from the plan of the organization the person
+  // is in (a tier belongs to an organization, DD-047).
+  const organizationId = useAppSelector(selectOrganizationId);
   const [planSource, setPlanSource] = useState<string | null>(null);
   useEffect(() => {
-    if (!isPremium) return;
+    if (!isPremium || !organizationId) return;
     let cancelled = false;
-    void readMyPlanSource().then((source) => {
+    void readPlanSource(organizationId).then((source) => {
       if (!cancelled) setPlanSource(source);
     });
     return () => {
       cancelled = true;
     };
-  }, [isPremium]);
+  }, [isPremium, organizationId]);
   const isComplimentary = isPremium && planSource === "complimentary";
   const [checkingOut, setCheckingOut] = useState(false);
 

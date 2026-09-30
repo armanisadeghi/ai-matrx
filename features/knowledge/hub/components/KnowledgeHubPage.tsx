@@ -821,8 +821,7 @@ export function KnowledgeHubPage({
     }
   };
 
-  const transcriptAgentPayload = (rows: TranscriptListRow[]) =>
-    buildAgentPayload({
+  const transcriptAgentInput = (rows: TranscriptListRow[]) => ({
       kind: rows.length === 1 ? TRANSCRIPT_COPY_ROW_KIND : TRANSCRIPT_COPY_LIST_KIND,
       location: "/knowledge?view=transcripts",
       description:
@@ -832,6 +831,7 @@ export function KnowledgeHubPage({
       data: rows.length === 1 ? transcriptCopyAgent(rows[0], transcriptLink(rows[0])) : rows.map((r) => transcriptCopyAgent(r, transcriptLink(r))),
       attributes: { rows: rows.length },
     });
+  const transcriptAgentPayload = (rows: TranscriptListRow[]) => buildAgentPayload(transcriptAgentInput(rows));
 
   const onTranscriptAction = (hit: KnowledgeHit, action: TranscriptMenuAction) => {
     const fact = factFor(hit);
@@ -1035,6 +1035,26 @@ export function KnowledgeHubPage({
         icon: TRANSCRIPT_MEDIA_ICON[c.mediaKind],
         group: TRANSCRIPT_MEDIA_LABEL[c.mediaKind],
       };
+    },
+    copyProjection: (h) => {
+      if (!isTranscriptHit(h)) return undefined;
+      const fact = factFor(h);
+      if (!fact) return undefined;
+      return {
+        human: transcriptCopyHuman(fact, transcriptKindLabel(fact)),
+        agent: transcriptCopyAgent(fact, transcriptLink(fact)),
+        kind: TRANSCRIPT_COPY_ROW_KIND,
+        location: "/knowledge?view=transcripts",
+        description:
+          "One transcript item from the Knowledge hub — a transcript, studio session, cleanup session or transcript Source. Metadata only; no transcript body.",
+        attributes: { rows: 1 },
+      };
+    },
+    copyListProjection: (rows) => {
+      const facts = rows.map((row) => factFor(row));
+      const completeFacts = facts.filter((fact): fact is TranscriptListRow => Boolean(fact));
+      if (!completeFacts.length || completeFacts.length !== facts.length) return undefined;
+      return transcriptAgentInput(completeFacts);
     },
     renamingKey,
     onRenameCommit: (h, title) => void commitRename(h, title),

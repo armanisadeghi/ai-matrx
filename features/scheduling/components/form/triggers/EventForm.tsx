@@ -217,6 +217,7 @@ export function EventForm({ value, onChange, error }: Props) {
             {(tables ?? []).map((t) => (
               <SelectItem key={t.id} value={t.id}>
                 {t.table_name}
+                {t.organization_name ? ` · ${t.organization_name}` : ""}
               </SelectItem>
             ))}
           </SelectContent>

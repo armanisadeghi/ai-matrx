@@ -28,10 +28,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
-import {
-  useOrganizationRequired,
-  type OrganizationState,
-} from "@/features/organizations/useOrganizationRequired";
 import { callApi } from "@/lib/api/call-api";
 
 import { parseWaitingRuns, type WaitingRunRow } from "./waiting";
@@ -45,33 +41,15 @@ export interface WaitingRunsState {
   loading: boolean;
   /** Set when the projection could not be read — never rendered as "all clear". */
   error: string | null;
-  /**
-   * The organization question's answer, as ONE value: `resolving` (still being
-   * asked), `required` (settled with nothing selected), `unavailable` (the read
-   * FAILED — nobody looked, R37) or `ready`. The projection cannot be read in
-   * any state but `ready`, so the caller renders `OrganizationContextNotice`
-   * with this — NOT a skeleton, which is what the non-ready states used to show,
-   * forever.
-   *
-   * 🚨 It replaces the old `organizationRequired` boolean, which could not see
-   * the fourth state: under a failed read it was false while `canLoad` was also
-   * false, so `loading` stayed true and this inbox spun for as long as the tab
-   * was open.
-   */
-  organizationState: OrganizationState;
   refresh: () => void;
 }
 
 export function useWaitingRuns(): WaitingRunsState {
   const dispatch = useAppDispatch();
-  /**
-   * THE HYDRATION RACE (the same one `useResultSchema` documents): every
-   * backend transport calls `requireSelectedOrgId()`, which throws until
-   * `appContext.organization_id` has hydrated. A fetch fired on mount alone is
-   * refused on every cold load and never retried.
-   */
-  const { organizationId, canLoad, organizationState } =
-    useOrganizationRequired();
+  // 🚨 A LIST IS DECIDED BY ACCESS, NEVER BY THE SELECTED ORGANIZATION
+  // (common-docs/policies/access-belongs-to-the-person.md): `GET /runs/waiting`
+  // answers the person's waiting runs in EVERY organization with none
+  // selected, so this inbox never waits for or refetches with the header's.
   const [rows, setRows] = useState<WaitingRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,15 +58,6 @@ export function useWaitingRuns(): WaitingRunsState {
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
   useEffect(() => {
-    // Terminal, not pending — and there are TWO terminal answers, not one:
-    // boot settled with nothing selected (`required`), and the read that would
-    // have told us FAILED (`unavailable`, R37). Stop the skeleton for both, so
-    // the caller can say which it is instead of spinning forever.
-    if (organizationState === "required" || organizationState === "unavailable") {
-      setLoading(false);
-      return undefined;
-    }
-    if (!canLoad) return undefined;
     let live = true;
     void (async () => {
       const result = await dispatch(
@@ -113,7 +82,7 @@ export function useWaitingRuns(): WaitingRunsState {
     return () => {
       live = false;
     };
-  }, [canLoad, dispatch, organizationState, organizationId, generation]);
+  }, [dispatch, generation]);
 
   /**
    * Coalesced refetch. A single answered interrupt produces several
@@ -157,5 +126,5 @@ export function useWaitingRuns(): WaitingRunsState {
     },
   });
 
-  return { rows, loading, error, organizationState, refresh };
+  return { rows, loading, error, refresh };
 }

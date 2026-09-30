@@ -16,7 +16,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table/types";
 import {
   Select,
   SelectContent,
@@ -41,7 +44,6 @@ import {
   type AgentAppAdminView,
   type UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   AgentAppRef,
@@ -86,11 +88,45 @@ function agentAppAdminSummary(a: AgentAppAdminView): string {
     .join(" ");
 }
 
+function agentAppAdminCsvRow(
+  app: AgentAppAdminView,
+): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(app));
+}
+
+const systemAppsCopy: MatrxDataTableCopyConfig<AgentAppAdminView> = {
+  label: "System app",
+  listLabel: "System apps (visible loaded view)",
+  location:
+    "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
+  rowKind: "agent-app",
+  listKind: "agent-apps",
+  rowDescription: "A single system agent app.",
+  listDescription: "The filtered and sorted loaded system-app view on this page.",
+  humanRow: agentAppAdminSummary,
+  listHuman: (visible) => visible.map(agentAppAdminSummary).join("\n"),
+  listJson: (visible) => visible,
+  agentRow: (app) => app,
+  rowAttributes: (app) => ({ id: app.id, slug: app.slug }),
+  listAttributes: (visible) => ({
+    count: visible.length,
+    cap: 500,
+  }),
+  export: (visible) => ({
+    items: [
+      jsonExportItem(() => visible, "JSON (visible loaded view)"),
+      csvExportItem(
+        () => visible.map(agentAppAdminCsvRow),
+        "CSV (visible loaded view)",
+      ),
+    ],
+  }),
+};
+
 export default function AdminSystemAppsListPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
-  const [visibleApps, setVisibleApps] = useState<AgentAppAdminView[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   // The last read's failure (RC-B12 r13). A failed read is never "No system
@@ -110,7 +146,6 @@ export default function AdminSystemAppsListPage() {
     try {
       const data = await fetchAgentAppsAdmin({ scope: "global", limit: 500 });
       setApps(data);
-      setVisibleApps(data);
       setReadError(null);
     } catch (error) {
       console.error("Failed to load system apps:", error);
@@ -377,7 +412,6 @@ export default function AdminSystemAppsListPage() {
                   columns={columns}
                   getRowId={(app) => app.id}
                   searchText={(app) => app.id}
-                  onViewChange={setVisibleApps}
                   isLoading={loading}
                   isFetching={refreshing}
                   pageSize={50}
@@ -407,56 +441,12 @@ export default function AdminSystemAppsListPage() {
                       onRefresh: () => load(true),
                       label: "Refresh system apps",
                     },
-                    actions: (
-                        <CopyButtons
-                          size="icon"
-                          label="Visible system apps"
-                          human={() => visibleApps.map(agentAppAdminSummary).join("\n")}
-                          json={() => visibleApps}
-                          agent={() => ({
-                            kind: "agent-apps",
-                            location:
-                              "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
-                            description:
-                              "The filtered and sorted loaded system-app view on this page.",
-                            data: visibleApps,
-                            attributes: { count: visibleApps.length, cap: 500 },
-                          })}
-                          export={{
-                            items: [
-                              jsonExportItem(() => visibleApps, "JSON (visible loaded view)"),
-                              csvExportItem(
-                                () =>
-                                  visibleApps as unknown as Array<
-                                  Record<string, unknown>
-                                  >,
-                                "CSV (visible loaded view)",
-                              ),
-                            ],
-                          }}
-                        />
-                    ),
                   }}
-                  copy={false}
+                  copy={systemAppsCopy}
                   detail={{ enabled: false }}
                   window={{ enabled: false }}
                   rowActions={(app) => (
                     <div className="flex items-center justify-end gap-0.5">
-                      <CopyButtons
-                        size="xs"
-                        label={app.name}
-                        human={() => agentAppAdminSummary(app)}
-                        json={() => app}
-                        agent={() => ({
-                          kind: "agent-app",
-                          location:
-                            "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
-                          description: "A single system agent app.",
-                          data: app,
-                          summary: agentAppAdminSummary(app),
-                          attributes: { id: app.id, slug: app.slug },
-                        })}
-                      />
                       {app.status === "published" && (
                         <Button
                           asChild

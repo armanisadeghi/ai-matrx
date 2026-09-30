@@ -53,7 +53,7 @@ import {
 } from "@/utils/user-table-utls/table-utils";
 import { whereANewTableIsBorn } from "./data-source/where-a-table-is-born";
 import { oneRowPerTable } from "./data-source/one-row-per-table";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { getUserOrganizations } from "@/features/organizations/service";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import type {
   BulkOp,
@@ -205,6 +205,10 @@ export type UserTableListItem = {
   last_activity_at?: string;
   /** Which store holds it — `custom.table_list_everywhere` says so; `get_user_tables` does not. */
   store?: "older" | "records";
+  /** The organization the table lives in (the door answers it for both stores). */
+  organization_id?: string | null;
+  /** Its name, set when the list spans more than one organization. */
+  organization_name?: string | null;
 };
 
 /**
@@ -1332,7 +1336,7 @@ export async function readRelationWords(args: {
 
 /**
  * EVERY TABLE A "SAVE INTO A TABLE" PICKER MAY OFFER (lane INTEG-CLIENTS, CUTOVER-PLAN F1).
- * The person's older tables AND the active organization's record-store Tables, one list,
+ * The person's older tables AND every record-store Table they may open in any organization, one list,
  * de-duplicated by id (a moved table keeps its id, and its archived older copy is not in
  * `get_user_tables`). Picking a store table works because the save paths `locateTable`
  * before they write.
@@ -1340,54 +1344,39 @@ export async function readRelationWords(args: {
 export async function listTablesEverywhere(args: { organizationId?: string | null } = {}): Promise<
   ServiceResult<UserTableListItem[]>
 > {
-  let organizationId: string;
-  try {
-    organizationId = await ensureOrgId(args.organizationId ?? null);
-  } catch {
-    return listUserTables();
-  }
-  // THE ONE LIST, from the database (GRID-PRIMITIVES G9): `custom.table_list_everywhere` answers
-  // `get_user_tables`' shape for BOTH stores — this person's live older datasets in this
-  // organization plus every Table here they may open, each with its real row count and `store`.
+  // ACCESS BELONGS TO THE PERSON: with no organization named, `custom.table_list_everywhere` answers
+  // for EVERY organization the person belongs to (NULL = all), never the selected one, and never asks
+  // to choose one. `organizationId` is only an explicit narrowing a picker's own on-page control passes.
+  // THE ONE LIST, from the database (GRID-PRIMITIVES G9): `get_user_tables`' shape for BOTH stores —
+  // this person's live older datasets plus every Table they may open, each with its real row count and `store`.
   const everywhere = await (supabase as unknown as SupabaseClient)
     .schema("custom")
-    .rpc("table_list_everywhere", { p_organization_id: organizationId });
-  if (!everywhere.error) {
-    const payload = everywhere.data as { success?: boolean; tables?: unknown } | null;
-    const tables = Array.isArray(payload?.tables) ? (payload.tables as UserTableListItem[]) : [];
-    // The door unions both stores, so a table in both came back twice (review 2: the picker drew it
-    // twice, React threw a duplicate key). One row, for the store it lives in.
-    return { success: true, data: await oneRowPerTable(supabase as unknown as SupabaseClient, tables) };
-  }
-  if (!DOOR_ABSENT.has(everywhere.error.code ?? "")) return refused(everywhere.error);
-
-  // DOOR NOT ON THIS DATABASE YET (G9 reaches production in the 2026-09-24 window). The same
-  // answer composed here — the older list plus the store's Tables with their counts — so no
-  // picker loses a moved table meanwhile. Retire this arm once the door is everywhere.
-  console.warn("[data-tables] custom.table_list_everywhere is not on this database yet; composing the list from both stores.");
-  const older = await listUserTables();
-  const { data: session } = await supabase.auth.getSession();
-  const store = await recordStore.listTables({
-    store: "record",
-    organizationId,
-    userId: session.session?.user?.id ?? null,
-  });
-  if (!store.success) {
-    console.warn(`[data-tables] The record store's tables could not be listed, so only older tables are offered: ${store.error}`);
-    return older;
-  }
-  const seen = new Set<string>();
-  const merged: UserTableListItem[] = [];
-  for (const t of [...store.data, ...(older.success ? older.data : [])]) {
-    if (seen.has(t.id)) continue;
-    seen.add(t.id);
-    merged.push(t as UserTableListItem);
-  }
-  return { success: true, data: merged };
+    .rpc("table_list_everywhere", args.organizationId ? { p_organization_id: args.organizationId } : {});
+  if (everywhere.error) return refused(everywhere.error);
+  const payload = everywhere.data as { success?: boolean; tables?: unknown } | null;
+  const tables = Array.isArray(payload?.tables) ? (payload.tables as UserTableListItem[]) : [];
+  // The door unions both stores, so a table in both came back twice (review 2: the picker drew it
+  // twice, React threw a duplicate key). One row, for the store it lives in.
+  const one = await oneRowPerTable(supabase as unknown as SupabaseClient, tables);
+  return { success: true, data: await withOrganizationNames(one) };
 }
 
-/** PostgREST / Postgres codes for "that function is not on this database". */
-const DOOR_ABSENT = new Set(["PGRST202", "42883"]);
+/**
+ * Each table names the organization it lives in, so a list that spans several stays readable.
+ * Best effort: a failed membership read leaves the names off (and says so once), never the list.
+ */
+async function withOrganizationNames(rows: UserTableListItem[]): Promise<UserTableListItem[]> {
+  const orgIds = new Set(rows.map((r) => r.organization_id).filter((id): id is string => Boolean(id)));
+  if (orgIds.size < 2) return rows;
+  try {
+    const mine = await getUserOrganizations();
+    const names = new Map(mine.map((o) => [o.id, o.name] as const));
+    return rows.map((r) => ({ ...r, organization_name: (r.organization_id && names.get(r.organization_id)) || null }));
+  } catch (err) {
+    console.warn(`[data-tables] Could not read organization names for the table list: ${err instanceof Error ? err.message : String(err)}`);
+    return rows;
+  }
+}
 
 /**
  * The tables a header's switcher lists while `tableId` is open. An older table

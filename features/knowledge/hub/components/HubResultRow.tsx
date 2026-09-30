@@ -37,6 +37,25 @@ export interface RowContent {
   group?: string | null;
 }
 
+/** A domain row's canonical copy projection, resolved from its full record when available. */
+export interface ResultCopyProjection {
+  human: string;
+  agent: Record<string, unknown>;
+  kind: string;
+  location: string;
+  description: string;
+  attributes: Record<string, string | number | boolean | null | undefined>;
+}
+
+/** The domain envelope for a complete table view or a selected transcript batch. */
+export interface ResultCopyListProjection {
+  kind: string;
+  location: string;
+  description: string;
+  data: unknown;
+  attributes: Record<string, string | number | boolean | null | undefined>;
+}
+
 export interface ResultHandlers {
   selected: Set<string>;
   focusedKey: string | null;
@@ -53,6 +72,10 @@ export interface ResultHandlers {
   rowFacts?: (hit: KnowledgeHit) => string[];
   /** What is inside the row's record: its opening words and a poster frame (Granola / Otter rows). */
   rowContent?: (hit: KnowledgeHit) => RowContent | undefined;
+  /** Domain copy fields from the resolved record; absent rows use the visible hit projection. */
+  copyProjection?: (hit: KnowledgeHit) => ResultCopyProjection | undefined;
+  /** Domain view/batch envelope when every loaded row has a resolved copy projection. */
+  copyListProjection?: (hits: KnowledgeHit[]) => ResultCopyListProjection | undefined;
   /** The words being searched for: marked where they appear in a title or passage. */
   highlight?: string;
   /** The view names the kind already (Transcripts): rows say only what differs (Session, Cleanup) in their facts. */

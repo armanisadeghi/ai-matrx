@@ -36,6 +36,9 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Types
 type UserTable = UserTableListRow;
+
+/** The organization a table lives in, named when the list spans several (from `listTablesEverywhere`). */
+const orgNameOf = (t: UserTable): string | null => (t as { organization_name?: string | null }).organization_name ?? null;
 type TableField = UserTableFieldRow;
 
 interface TableRow {
@@ -380,9 +383,9 @@ export function TablesResourcePicker({
                       <div className="text-xs font-medium text-foreground truncate">
                         {table.table_name}
                       </div>
-                      {table.description && (
+                      {(orgNameOf(table) || table.description) && (
                         <div className="text-[10px] text-muted-foreground truncate">
-                          {table.description}
+                          {orgNameOf(table) ? `${orgNameOf(table)}${table.description ? " · " : ""}` : ""}{table.description}
                         </div>
                       )}
                     </div>

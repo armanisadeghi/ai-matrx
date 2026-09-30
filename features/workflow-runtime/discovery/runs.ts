@@ -33,6 +33,8 @@ export interface RunListRow {
   parentRunId: string | null;
   /** The kind this run's primary deliverable settled as, when it declared one. */
   deliverableKind: string | null;
+  /** The organization the run belongs to — the list spans all of them. */
+  organizationId: string | null;
 }
 
 function text(value: unknown): string | null {
@@ -89,6 +91,7 @@ export function parseRunListRow(raw: unknown): RunListRow | null {
     completedAt: text(row.completed_at),
     parentRunId: text(row.parent_run_id),
     deliverableKind: primaryDeliverableKind(row.result),
+    organizationId: text(row.organization_id),
   };
 }
 

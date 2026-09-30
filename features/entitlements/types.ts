@@ -45,7 +45,9 @@ export type EntitlementReason =
   | "tier_locked"
   | "trial_expired"
   | "not_authenticated"
-  | "resolver_error";
+  | "resolver_error"
+  /** The person closed the organization picker: the action did not run, nothing to show. */
+  | "organization_required";
 
 /**
  * Metering window a capability's cap resets over. `null` = not metered (gate only).
@@ -133,8 +135,6 @@ export interface OrgCapabilityStatus {
   organizationId: string;
   /** The EFFECTIVE tier: the more permissive of the user's and the org's. */
   tier: EntitlementTier;
-  /** The user's own tier, ignoring the org. */
-  userTier: EntitlementTier;
   /** The org's carried tier, ignoring the user. */
   orgTier: EntitlementTier;
   capabilities: Partial<Record<Capability, EntitlementResult>>;

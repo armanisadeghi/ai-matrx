@@ -116,7 +116,7 @@ describe("HtmlPageListView", () => {
       answeredBy: "client",
       total: 1,
     });
-    expect(tableProps.copy).toBe(false);
+    expect(tableProps.copy).toBeUndefined();
 
     if (tableProps.query?.mode !== "controlled-local") {
       throw new Error(

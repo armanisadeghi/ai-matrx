@@ -317,7 +317,9 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
   {
     id: "organization_name",
     label: "Organization",
-    scopedToShared: true,
+    // NOT scopedToShared: "mine" spans EVERY organization the person belongs
+    // to (access-belongs-to-the-person.md), so each row names its organization
+    // there too — six organizations stay readable.
     facet: "organization_name",
     column: {
       id: "organization_name",

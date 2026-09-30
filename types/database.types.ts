@@ -6399,7 +6399,9 @@ export type Database = {
         }
         Returns: Json
       }
-      entitlement_snapshot: { Args: never; Returns: Json }
+      entitlement_snapshot:
+        | { Args: never; Returns: Json }
+        | { Args: { p_org: string }; Returns: Json }
       org_capability_status: { Args: { p_org: string }; Returns: Json }
       org_plan_assign: {
         Args: { p_note: string; p_org: string; p_plan: string }
@@ -6466,6 +6468,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      repair_prelaunch_org_plan: { Args: { p_org: string }; Returns: undefined }
       resolve_capability:
         | { Args: { p_capability: string; p_user: string }; Returns: Json }
         | {
@@ -23179,6 +23182,16 @@ export type Database = {
           node_outcome_payload: number
         }[]
       }
+      kind_instances_everywhere: {
+        Args: {
+          p_include_archived?: boolean
+          p_kind?: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_id?: string
+        }
+        Returns: Json
+      }
       owned_child_instances: {
         Args: { p_ids: string[] }
         Returns: {
@@ -35854,7 +35867,7 @@ export type Database = {
       }
       table_kernel_id: { Args: never; Returns: string }
       table_list_everywhere: {
-        Args: { p_organization_id: string }
+        Args: { p_organization_id?: string }
         Returns: Json
       }
       table_move: {

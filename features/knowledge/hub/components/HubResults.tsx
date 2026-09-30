@@ -13,7 +13,7 @@
  */
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { useEffect, useRef, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useRef, useState } from "react";
 import { Loader2, RotateCw } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
@@ -42,6 +42,7 @@ import {
   titleLinesFor,
   type ResultHandlers,
 } from "@/features/knowledge/hub/components/HubResultRow";
+import type { HubMenuGroup } from "@/features/knowledge/hub/components/HubRowMenu";
 import { dateGroupOf, dateInGroup, groupByDate, type DatedItem } from "@/features/knowledge/hub/dateGroups";
 
 // ─── shared pieces ──────────────────────────────────────────────────────────
@@ -543,6 +544,99 @@ function TableLayout({
       : sourceMayHaveMore
         ? { loaded: hits.length, answeredBy: "source" as const, noun: "item" }
         : undefined;
+  const shownTitle = (hit: KnowledgeHit) => handlers.rowContent?.(hit)?.title ?? hit.title;
+  const shownSnippet = (hit: KnowledgeHit) => handlers.rowContent?.(hit)?.snippet ?? hit.snippet ?? null;
+  const genericRowSummary = (hit: KnowledgeHit) =>
+    [
+      `Title: ${shownTitle(hit)}`,
+      `Kind: ${kindLabel(hit)}`,
+      ...(shownSnippet(hit) ? [`Preview: ${shownSnippet(hit)}`] : []),
+      ...(hit.updated_at ? [`Updated: ${formatRelativeTime(hit.updated_at)}`] : []),
+    ].join("\n");
+  const genericRowProjection = (hit: KnowledgeHit) => ({
+    id: hit.id,
+    entity: hit.entity,
+    title: shownTitle(hit),
+    preview: shownSnippet(hit),
+    source_kind: hit.source_kind ?? null,
+    origin: hit.origin ?? null,
+    captured_by: hit.captured_by?.name ?? null,
+    organization_id: hit.organization_id ?? null,
+    created_at: hit.created_at ?? null,
+    updated_at: hit.updated_at ?? null,
+    filed_under: (hit.filed_under ?? []).map((filed) => filed.name ?? filed.id),
+    href: hit.href ?? null,
+    body_included: false,
+  });
+  const domainCopy = (hit: KnowledgeHit) => handlers.copyProjection?.(hit);
+  const domainListCopy = handlers.copyListProjection?.(hits);
+  const rowSummary = (hit: KnowledgeHit) => domainCopy(hit)?.human ?? genericRowSummary(hit);
+  const rowProjection = (hit: KnowledgeHit) => domainCopy(hit)?.agent ?? genericRowProjection(hit);
+  const copy = {
+    label: "Knowledge item",
+    listLabel: "Knowledge items",
+    location: domainListCopy?.location ?? "Knowledge Hub (/knowledge)",
+    rowKind: "knowledge-hub-item",
+    listKind: domainListCopy?.kind ?? "knowledge-hub-items",
+    rowDescription: "One result shown in the Knowledge Hub. Transcript bodies are not included.",
+    listDescription: domainListCopy?.description ?? "The current filtered and sorted Knowledge Hub view.",
+    humanRow: rowSummary,
+    agentRow: rowProjection,
+    ...(domainListCopy ? { listAgent: () => domainListCopy } : {}),
+    rowAttributes: (hit: KnowledgeHit) => ({
+      entity: hit.entity,
+      source_kind: hit.source_kind ?? undefined,
+      ...domainCopy(hit)?.attributes,
+    }),
+    listAttributes: (visible: KnowledgeHit[], all: KnowledgeHit[]) => ({
+      loaded_items: all.length,
+      visible_items: visible.length,
+      source_total: sourceTotal,
+      source_may_have_more: sourceMayHaveMore,
+      ...domainListCopy?.attributes,
+    }),
+    listContext: () => ({
+      source_total: sourceTotal,
+      source_may_have_more: sourceMayHaveMore,
+      loaded_items: hits.length,
+    }),
+    // The retired Transcripts list's Copy for AI action carried metadata only.
+    // Keep that focused action inside the table-owned Alchemy menu so it remains
+    // available wherever the table renders a row (including selected rows).
+    rowAiVariants: (hit: KnowledgeHit) => {
+      const projection = domainCopy(hit);
+      return projection
+        ? [
+            {
+              id: "transcript-metadata",
+              label: "Transcript metadata",
+              hint: "Transcript metadata only; no transcript body",
+              build: () => ({
+                kind: projection.kind,
+                location: projection.location,
+                description: projection.description,
+                data: projection.agent,
+                summary: projection.human,
+                attributes: projection.attributes,
+              }),
+            },
+          ]
+        : [];
+    },
+  };
+  const rowActions = (hit: KnowledgeHit) => {
+    const menu = handlers.rowMenu?.(hit);
+    if (!isValidElement<{ groups?: HubMenuGroup[] }>(menu) || !Array.isArray(menu.props.groups)) return menu;
+    // The same compact table control now owns Copy and Copy for AI. Keep the
+    // transcript menu's link/reference and every non-copy action intact.
+    return cloneElement(menu, {
+      groups: menu.props.groups.map((group) =>
+        group.id === "copy"
+          ? { ...group, items: group.items.filter((item) => item.id !== "copy" && item.id !== "copy-ai") }
+          : group,
+      ),
+    });
+  };
   return (
     <div className="min-h-0 flex-1 overflow-hidden">
       <MatrxDataTable<KnowledgeHit>
@@ -591,11 +685,8 @@ function TableLayout({
         // Keep all loaded rows in this table. Cursor continuation stays with the hub's
         // one button below, which can advance every section that still has a cursor.
         pageSize={0}
-        // The row's own menu (Open, Keep, Archive, Tag, File to, Copy, Trash) in the Actions column.
-        // The Hub's menu supplies its own transcript-specific Copy and Copy for AI entries.
-        // It cannot yet host the table's Alchemy control, so enabling it would duplicate them.
-        copy={false}
-        rowActions={handlers.rowMenu ? (h) => handlers.rowMenu?.(h) : undefined}
+        copy={copy}
+        rowActions={handlers.rowMenu ? (h) => rowActions(h) : undefined}
       />
     </div>
   );

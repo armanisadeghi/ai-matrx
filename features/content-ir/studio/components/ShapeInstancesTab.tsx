@@ -48,6 +48,7 @@ import {
   instanceDataAsRecord,
   isValidatorDrift,
   listKindInstances,
+  type UnreadableOrganization,
   repinKindInstance,
   softDeleteKindInstance,
   updateKindInstance,
@@ -79,7 +80,7 @@ interface ShapeInstancesTabProps {
 type ListState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; entries: KindInstanceListEntry[] };
+  | { status: "ready"; entries: KindInstanceListEntry[]; unreadable: UnreadableOrganization[] };
 
 /** Field types a flat table projection can hold (arrays join, scalars pass). */
 const FLAT_FIELD_TYPES = new Set([
@@ -186,14 +187,18 @@ export default function ShapeInstancesTab({
 
   const reload = useCallback(async () => {
     try {
+      let unreadable: UnreadableOrganization[] = [];
       const entries = await listKindInstances(
         kindDefinitionId,
         archiveFilter,
         scope ?? undefined,
         adminSeat ? SYSTEM_ORGANIZATION_ID : undefined,
         activeOrganizationId,
+        (orgs) => {
+          unreadable = orgs;
+        },
       );
-      setList({ status: "ready", entries });
+      setList({ status: "ready", entries, unreadable });
       return entries;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -493,6 +498,16 @@ export default function ShapeInstancesTab({
               </button>
             )}
           </div>
+          {list.status === "ready" && list.unreadable.length > 0 && (
+            <p
+              role="status"
+              className="mb-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-800 dark:text-amber-200"
+              title={list.unreadable.map((o) => `${o.name ?? o.id}: ${o.message}`).join("\n")}
+            >
+              Not shown: could not read {list.unreadable.map((o) => o.name ?? "another organization").join(", ")}.
+              Refresh to try again.
+            </p>
+          )}
           <ul className="space-y-1">
             {entries.map((entry) => {
               const stale = entry.kindVersion < currentVersion;

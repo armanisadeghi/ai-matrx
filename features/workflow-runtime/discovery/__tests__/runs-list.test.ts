@@ -24,6 +24,7 @@ const ROW = {
   started_at: "2026-08-27T10:00:05Z",
   completed_at: "2026-08-27T10:01:35Z",
   parent_run_id: null,
+  organization_id: "org-1",
   result: {
     __kind: "run_result",
     outputs: { final: { output_kind: "article", output: { __kind: "article" } } },
@@ -40,6 +41,7 @@ describe("parseRunListRow", () => {
       completedAt: "2026-08-27T10:01:35Z",
       parentRunId: null,
       deliverableKind: "article",
+      organizationId: "org-1",
     });
   });
 

@@ -413,7 +413,6 @@ export default function HtmlPageListView({
           }
           onRowOpen={(page) => captureScrollAndOpen(page.id, {})}
           detail={{ enabled: false }}
-          copy={false}
           isLoading={isLoading && pages.length === 0}
           isFetching={isLoading && pages.length > 0}
           coverage={{

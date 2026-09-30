@@ -10,11 +10,13 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 import { BrowseResults, browseHits, searchHitsByItem } from "@/features/knowledge/hub/components/HubResults";
+import { HubRowMenu } from "@/features/knowledge/hub/components/HubRowMenu";
 import { createFixtureRunner } from "@/features/knowledge/api/knowledgeSearchFixture";
 import type { SectionState } from "@/features/knowledge/hub/hooks/useKnowledgeResults";
 import type { ResultHandlers } from "@/features/knowledge/hub/components/HubResultRow";
 import type { HubLayout } from "@/features/knowledge/hub/hubState";
 import type { KnowledgeHit, KnowledgeSection } from "@/features/knowledge/api/knowledgeSearch";
+import { ClipboardCopy, Copy, Link2 } from "lucide-react";
 
 function toStates(sections: KnowledgeSection[]): SectionState[] {
   return sections.map((s) => ({
@@ -177,6 +179,97 @@ it("keeps a passage-only search result's total unknown", async () => {
   expect(host.textContent).toContain("The total number of items in this table is not known.");
   expect(host.textContent).not.toContain("out of 100 items in this table.");
   expect(host.querySelector("[data-matrx-table-footer]")?.textContent).not.toContain(" / 100 loaded");
+});
+
+it("uses the table-owned Alchemy control for transcript copy while retaining transcript links", async () => {
+  const copyProjection = jest.fn(() => ({
+    human: "Transcript: User interview\nDuration: 12 min\nWords: 1,250",
+    agent: {
+      id: "transcript-1",
+      kind: "transcript",
+      title: "User interview",
+      duration_seconds: 720,
+      word_count: 1250,
+      href: "/transcripts/processor?focus=transcript-1",
+      body_included: false,
+    },
+    kind: "transcript-hub-item",
+    location: "/knowledge?view=transcripts",
+    description: "One transcript item from the Knowledge hub — metadata only; no transcript body.",
+    attributes: { rows: 1 },
+  }));
+  const copyListProjection = jest.fn((rows: KnowledgeHit[]) => ({
+    kind: "transcript-hub-list",
+    location: "/knowledge?view=transcripts",
+    description: "Transcript items selected in the Knowledge hub. Metadata only; no transcript bodies.",
+    data: rows.map((row) => copyProjection.mock.results[0]?.value.agent ?? row),
+    attributes: { rows: rows.length },
+  }));
+  const transcript = {
+    entity: "transcript",
+    id: "transcript-1",
+    title: "User interview",
+    source_kind: "transcript",
+    snippet: "The opening words shown in the Knowledge Hub.",
+  } as KnowledgeHit;
+  const transcriptHandlers: ResultHandlers = {
+    ...handlers,
+    copyProjection,
+    copyListProjection,
+    rowMenu: () => (
+      <HubRowMenu
+        title={transcript.title}
+        groups={[
+          {
+            id: "copy",
+            submenu: { label: "Copy", icon: Copy },
+            items: [
+              { id: "copy", label: "Copy", icon: Copy, onSelect: jest.fn() },
+              { id: "copy-ai", label: "Copy for AI", icon: ClipboardCopy, onSelect: jest.fn() },
+              { id: "copy-link", label: "Copy link", icon: Link2, onSelect: jest.fn() },
+            ],
+          },
+        ]}
+      />
+    ),
+  };
+
+  await act(async () => {
+    root.render(
+      <div style={{ height: 800 }}>
+        <BrowseResults
+          layout="table"
+          sections={[]}
+          hits={[transcript]}
+          handlers={transcriptHandlers}
+          emptySentence="Nothing here."
+          onShowMore={jest.fn()}
+          onRetry={jest.fn()}
+        />
+      </div>,
+    );
+  });
+
+  const alchemy = host.querySelector<HTMLElement>('[data-alchemy-trigger]');
+  expect(alchemy).not.toBeNull();
+  await act(async () => alchemy?.click());
+  expect(copyProjection).toHaveBeenCalledWith(transcript);
+  expect(copyListProjection).toHaveBeenCalledWith([transcript]);
+  expect(document.body.textContent).toContain("Transcript metadata");
+  expect(copyProjection.mock.results[0]?.value).toMatchObject({
+    human: "Transcript: User interview\nDuration: 12 min\nWords: 1,250",
+    agent: {
+      duration_seconds: 720,
+      word_count: 1250,
+      href: "/transcripts/processor?focus=transcript-1",
+      body_included: false,
+    },
+  });
+  expect(copyListProjection.mock.results[0]?.value).toMatchObject({
+    kind: "transcript-hub-list",
+    location: "/knowledge?view=transcripts",
+    attributes: { rows: 1 },
+  });
 });
 
 it("a failed lane says so with a retry, and the other lanes still render", async () => {

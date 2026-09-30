@@ -66,6 +66,9 @@ export function useEntitlementGuard(
         const v = await ent.check();
         lastCheckIdRef.current = v.checkId;
         if (!v.allowed) {
+          // The person closed the organization picker: "not now". The action
+          // does not run and there is nothing to explain — no paywall, no toast.
+          if (v.reason === "organization_required") return v;
           // A transient resolver error is NOT a cap — never present a server
           // blip as an upgrade prompt. Fail closed (don't run) but ask to retry.
           if (v.reason === "resolver_error") {

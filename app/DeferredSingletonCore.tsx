@@ -16,6 +16,7 @@ import { Suspense, useEffect } from "react";
 import { useIdleTask } from "@ai-matrx/kit/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
 import OverlayController from "@/features/overlays/OverlayController";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
@@ -47,6 +48,7 @@ import { OrganizationGateDialog } from "@/features/organizations/gate/Organizati
 export default function DeferredSingletonCore() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   // NOTE: global error capture + persistence install live in the WRAPPER
   // (DeferredSingletonWrapper.tsx), not here — they must be running during
@@ -91,13 +93,16 @@ export default function DeferredSingletonCore() {
         dispatch(clearEntitlements());
         return;
       }
+      // A tier belongs to an organization (DD-047): the snapshot is the
+      // organization's, so it re-reads when the person sets or switches one, and
+      // hydrates nothing (null) until there is one.
       const snapshot = await fetchEntitlementSnapshot();
-      if (!cancelled) dispatch(setEntitlementSnapshot(snapshot));
+      if (!cancelled && snapshot) dispatch(setEntitlementSnapshot(snapshot));
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id, dispatch]);
+  }, [user?.id, organizationId, dispatch]);
 
   return (
     <>

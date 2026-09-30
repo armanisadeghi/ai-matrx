@@ -27,7 +27,6 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ListX } from "lucide-react";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -42,6 +41,7 @@ import {
 import { runDurationMs, runHref, type RunListRow } from "../runs";
 import { useRunsList } from "../useRunsList";
 import { useWorkflowFacts } from "../useWorkflowFacts";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
@@ -76,27 +76,17 @@ function Muted({ children }: { children: React.ReactNode }) {
 export function RunsList({ definitionId }: { definitionId?: string }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const { rows, loading, error, organizationState, refresh } = useRunsList({
+  const { rows, loading, error, refresh } = useRunsList({
     definitionId,
   });
   const facts = useWorkflowFacts(rows.map((row) => row.definitionId));
   const [clickedRow, setClickedRow] = useState<RunRowView | null>(null);
 
-  // 🚨 THE ORGANIZATION QUESTION COMES FIRST, AND IT HAS FOUR ANSWERS. `/runs`
-  // is read per organization and refuses before networking without one, so with
-  // no answer there is nothing to show — and this table's `isLoading` skeleton
-  // used to stand in for all three non-ready answers, forever. The ONE notice
-  // says which it is: checking, choose one, or "we could not check" with Try
-  // again (R37).
-  if (organizationState !== "ready") {
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        what="Runs"
-        description="Runs are listed per organization, and none is selected for this session. Pick one and this list loads."
-      />
-    );
-  }
+
+  // The list spans every organization the person belongs to; name each row's.
+  const { organizations } = useUserOrganizations();
+  const orgName = new Map(organizations.map((o) => [o.id, o.name]));
+  const showOrganization = organizations.length > 1;
 
   const view: RunRowView[] = rows.map((row) => {
     const fact = row.definitionId ? facts.get(row.definitionId) : undefined;
@@ -125,6 +115,22 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
               row.workflowName ?? <Muted>Unnamed workflow</Muted>,
           } satisfies MatrxColumnDef<RunRowView>,
         ]),
+    ...(showOrganization
+      ? [
+          {
+            id: "organization",
+            accessorFn: (row: RunRowView) =>
+              (row.organizationId && orgName.get(row.organizationId)) ?? "",
+            header: "Organization",
+            width: 170,
+            entityToken: (row: RunRowView) =>
+              row.organizationId ? "organization" : undefined,
+            entityId: (row: RunRowView) => row.organizationId ?? undefined,
+            cell: (row: RunRowView) =>
+              (row.organizationId && orgName.get(row.organizationId)) ?? <Muted>—</Muted>,
+          } satisfies MatrxColumnDef<RunRowView>,
+        ]
+      : []),
     {
       id: "status",
       accessorKey: "status",

@@ -323,7 +323,9 @@ function generateHandler(input: HandlerInput, plural: string): SurfaceWriteHandl
         refuseSurfaceWrite(
           verdict.reason === "resolver_error"
             ? `${where}: the plan check could not be reached; nothing was started. Try again.`
-            : `${where}: the person's plan has no ${config.noun} generations left this period${
+            : verdict.reason === "organization_required"
+              ? `${where}: no organization was set for this request, so its plan could not be checked; nothing was started.`
+              : `${where}: the person's plan has no ${config.noun} generations left this period${
                 verdict.limit != null ? ` (${verdict.used} of ${verdict.limit} used)` : ""
               }. Nothing was started.`,
         );

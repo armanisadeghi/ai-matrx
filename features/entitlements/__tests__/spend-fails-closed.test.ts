@@ -102,15 +102,22 @@ describe("a spend path fails closed when the resolver errors", () => {
     expect(verdict.reason).toBe("permissive_stub");
   });
 
-  it("screams in dev rather than resolving an org capability without an org", async () => {
+  // Replaced 2026-09-29: this used to assert a dev scream while the verdict
+  // "fell back to the USER's tier alone". There is no user tier any more
+  // (billing.user_plan retired, DD-047) — the check is held for an organization
+  // instead (a-tier-belongs-to-an-organization.test.ts). What must still hold
+  // here: with no organization obtainable, the spend path refuses and the
+  // resolver is never asked a question without one.
+  it("never resolves an org capability without an organization — it refuses instead", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "x" } });
     const orgScoped = (Object.keys(CAPABILITY_REGISTRY) as Capability[]).find(
       (c) => CAPABILITY_REGISTRY[c].enforced && CAPABILITY_REGISTRY[c].scope === "org",
     );
     expect(orgScoped).toBeDefined();
-    await checkEntitlement(orgScoped!);
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining("was checked with no"),
-    );
+    const verdict = await checkEntitlement(orgScoped!);
+    expect(verdict.allowed).toBe(false);
+    for (const call of rpc.mock.calls) {
+      expect((call[1] as { p_org?: string }).p_org).toBeTruthy();
+    }
   });
 });

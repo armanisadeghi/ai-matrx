@@ -42,7 +42,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 import {
   DEFAULT_ARCHIVE_FILTER,
@@ -330,6 +330,12 @@ export async function saveKindInstance(
   };
 }
 
+export interface UnreadableOrganization {
+  id: string;
+  name: string | null;
+  message: string;
+}
+
 export interface KindInstanceListEntry {
   id: string;
   title: string | null;
@@ -427,6 +433,11 @@ export async function listKindInstances(
    * table, as it always did.
    */
   activeOrganizationId?: string | null,
+  /**
+   * Told which organizations could NOT be read (their store refused or could not be
+   * checked), so the screen can name them — a list that is missing an organization says so.
+   */
+  onUnreadable?: (organizations: UnreadableOrganization[]) => void,
 ): Promise<KindInstanceListEntry[]> {
   const { data: auth, error: authError } = await getClaimsUser(supabase);
   if (authError)
@@ -435,6 +446,7 @@ export async function listKindInstances(
     );
   const userId = auth.user?.id;
   if (!userId) throw new Error("Not signed in — cannot list instances.");
+  const unreadable: UnreadableOrganization[] = [];
 
   const listScope = await defaultListFilter("content_ir_kind_instance", { userId, requested: scope });
 
@@ -478,7 +490,10 @@ export async function listKindInstances(
   );
   for (const r of settled) {
     if (r.home?.store === "record") storeHomes.push(r.home);
-    else if (r.failed) console.warn("[content-ir] could not check where records live for", r.orgId, r.failed);
+    else if (r.failed) {
+      console.warn("[content-ir] could not check where records live for", r.orgId, r.failed);
+      unreadable.push({ id: r.orgId, name: names.get(r.orgId) ?? null, message: r.failed });
+    }
   }
   const storeOrgIds = new Set(storeHomes.map((h) => h.organizationId));
 
@@ -567,11 +582,17 @@ export async function listKindInstances(
         // organization's refusal never hides the rest.
         if (home.organizationId === activeOrganizationId) throw error;
         console.warn("[content-ir] record store list failed for", home.organizationId, error);
+        unreadable.push({
+          id: home.organizationId,
+          name: names.get(home.organizationId) ?? null,
+          message: error instanceof Error ? error.message : String(error),
+        });
         return [] as KindInstanceListEntry[];
       }
     }),
   ]);
   const orgNames = names;
+  onUnreadable?.(unreadable);
   return [...older, ...stores.flat()]
     .map((row) => ({
       ...row,
@@ -683,17 +704,19 @@ export async function updateKindInstance(
   // The kind is re-read from the row being updated, never trusted from the
   // caller — the marker written must be the row's ACTUAL kind.
   const data = withRootKindMarker(args.value, await instanceKindSlug(args.id));
-  const { data: row, error } = await supabase
-    .schema("content_ir")
-    .from("kind_instance")
-    .update({
-      data: data as Json,
-      title: deriveInstanceTitle(data, null, args.titleKey),
-      updated_by: await currentUserId(),
-    })
-    .eq("id", args.id)
-    .select("id,title,validation_status,kind_version,confirmation")
-    .single();
+  const { data: row, error } = await writeOneRow(
+    supabase
+      .schema("content_ir")
+      .from("kind_instance")
+      .update({
+        data: data as Json,
+        title: deriveInstanceTitle(data, null, args.titleKey),
+        updated_by: await currentUserId(),
+      })
+      .eq("id", args.id)
+      .select("id,title,validation_status,kind_version,confirmation"),
+    { action: "update", noun: "kind instance" },
+  );
   if (error) {
     throw new Error(`Failed to update the instance: ${error.message}`);
   }
@@ -745,13 +768,15 @@ export async function repinKindInstance(
       "repin the instance",
     );
   }
-  const { data: row, error } = await supabase
-    .schema("content_ir")
-    .from("kind_instance")
-    .update({ kind_version: live.version, updated_by: await currentUserId() })
-    .eq("id", args.id)
-    .select("id,title,validation_status,kind_version,confirmation")
-    .single();
+  const { data: row, error } = await writeOneRow(
+    supabase
+      .schema("content_ir")
+      .from("kind_instance")
+      .update({ kind_version: live.version, updated_by: await currentUserId() })
+      .eq("id", args.id)
+      .select("id,title,validation_status,kind_version,confirmation"),
+    { action: "update", noun: "kind instance" },
+  );
   if (error) {
     throw new Error(`Failed to repin the instance: ${error.message}`);
   }

@@ -46,6 +46,7 @@ interface UserTable {
   row_count: number;
   field_count: number;
   updated_at?: string;
+  organization_name?: string | null;
 }
 
 /**
@@ -191,7 +192,7 @@ export function QuickDataSheet({
                   <span className="flex w-full items-center justify-between gap-3">
                     <span className="truncate">{table.table_name}</span>
                     <span className="text-[10px] text-muted-foreground shrink-0">
-                      {table.row_count} rows
+                      {table.organization_name ? `${table.organization_name} · ` : ""}{table.row_count} rows
                     </span>
                   </span>
                 </SelectItem>

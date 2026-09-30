@@ -182,6 +182,15 @@ that is the exit-test surface.
 - 2026-09-27 — **The run as a board.** `WorkflowRunPage` gains a Page | Board toggle (per viewer, `?view=board`); Board mounts `components/spatial/WorkflowRunSpatialView` over the spatial engine: every definition node pre-placed by stage (`run-board-layout.ts`, jest-tested incl. cycles and wide fan-outs), live lanes zoom-paced through `StreamTileBody`, laneless steps through `InvocationBody`, queued steps naming what they wait for. Known gap: lanes are promoted when a tile becomes readable but never released when it leaves (the adoption handle has no release verb).
 
 - 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37) in the three org-gated readers.** `useWorkflowTriggers`, `useServedRunForm` and `useResultSchema` turned `!organizationId && orgBootstrapResolved` into "No organization is selected — choose one from the picker". `setOrgBootstrapFailure` sets that flag TRUE, so a failed read produced the same sentence. All three now read `useOrganizationRequired().organizationState`: `required` keeps the refusal, `unavailable` returns `ORGANIZATION_UNAVAILABLE_DESCRIPTION`. Test: `triggers/__tests__/the-triggers-say-the-organization-read-failed.organization-context.test.tsx` (red on the prior bytes). Guard: `pnpm check:org-three-states` rule 5.
+- 2026-09-29 — **The runs lists read by ACCESS, never by the selected
+  organization** (lane WF-ORG; law `common-docs/policies/access-belongs-to-the-person.md`).
+  `useRunsList` / `useWaitingRuns` no longer gate on `useOrganizationRequired`,
+  render no "choose an organization" notice, and never re-read when the header's
+  organization changes: `GET /runs` and `GET /runs/waiting` are declared reads
+  that answer the person's runs in every organization (the entry below is
+  superseded). `RunsList` names each run's organization when the person has
+  several; `/workflows/all` shows its Organization column in the Mine scope too.
+  Proof: `discovery/__tests__/runs-lists-read-by-access.organization-context.test.tsx`.
 - 2026-09-19 — **A FAILED organization read no longer holds the run lists on a
   skeleton forever (R37, the fourth state).** `useWaitingRuns` and `useRunsList`
   both gated on the legacy boolean pair, and under a failed organization read
