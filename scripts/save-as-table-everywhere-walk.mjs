@@ -286,6 +286,116 @@ if (STEP === "table-after") {
   console.log("rows:", (await page.locator("tbody").innerText()).replace(/\s+/g, " ").slice(0, 600));
 }
 
+/** Open the one screen from `open`, screenshot it, close it — proof that a surface reaches it. */
+async function reachesTheScreen(prefix, open) {
+  await open();
+  const dlg = await theDialog();
+  await sleep(1500);
+  await shot(`${prefix}-dialog`);
+  console.log(`${prefix}:`, (await dlg.innerText()).split("\n").slice(0, 6).join(" | "));
+  await page.keyboard.press("Escape");
+  await sleep(1000);
+}
+
+if (STEP === "blocks") {
+  const fence = "`".repeat(3);
+  const text = [
+    "## Room hours",
+    "",
+    `${fence}csv`,
+    "Room,Opens",
+    "Gym A,7:00 AM",
+    "Aquatic pool,8:30 AM",
+    fence,
+    "",
+    `${fence}json`,
+    '[{"room":"Gym A","floor":1},{"room":"Aquatic pool","floor":0}]',
+    fence,
+    "",
+    `${fence}json`,
+    '{"__kind":"data_table","title":"Therapist caseload","columns":[{"name":"Therapist"},{"name":"Patients"}],"rows":[["Dana Whitfield",12],["Marcus Bell",9]]}',
+    fence,
+  ].join("\n");
+  await newNote(text);
+  await sleep(6000);
+  await shot("05-blocks-before");
+  const saveButtons = page.getByRole("button", { name: /^Save to a table$/ });
+  console.log("block buttons:", await saveButtons.count());
+  await reachesTheScreen("05-csv-block", () => page.getByTitle("Save to a table").first().click());
+  await reachesTheScreen("05-data-table-kind", () => page.getByRole("button", { name: "Save to a table" }).last().click());
+  // The JSON block's menu (its own AdvancedMenu): open it, then its "Save to a table…".
+  const jsonMenu = page.locator('[data-block-type="json"], [data-json-block]').first();
+  console.log("json block present:", await jsonMenu.count());
+}
+
+if (STEP === "json-block") {
+  // The note from STEP=blocks is the newest "Room hours" note; the JSON block's own menu is the ⋯
+  // at the right of its header.
+  await goto("/notes");
+  await sleep(5000);
+  await page.getByText("Room hours").first().click();
+  await sleep(6000);
+  // The JSON block's ⋯ ("More actions") sits at the end of its header, after Copy.
+  const clicked = await page.evaluate(() => {
+    const compact = document.querySelector('[aria-label="Compact JSON"], [aria-label="Expand JSON"]');
+    let box = compact?.parentElement ?? null;
+    for (let up = 0; box && up < 6; up += 1, box = box.parentElement) {
+      const dots = box.querySelector("svg.lucide-ellipsis, svg.lucide-more-horizontal");
+      const btn = dots?.closest("button");
+      if (btn) {
+        btn.click();
+        return true;
+      }
+    }
+    return false;
+  });
+  console.log("kebab clicked:", clicked);
+  await sleep(1500);
+  await shot("05-json-block-menu");
+  await reachesTheScreen("05-json-block", () => page.getByText("Save to a table…", { exact: true }).first().click());
+}
+
+if (STEP === "shapes") {
+  await goto("/shapes/wine_tasting/instances");
+  await until("the instances", async () => (await page.getByRole("button", { name: /Save to a table/ }).count()) > 0, 120000);
+  await sleep(2000);
+  await shot("06-shape-instances-before");
+  await reachesTheScreen("06-shape-instances", () => page.getByRole("button", { name: /Save to a table/ }).first().click());
+}
+
+if (STEP === "chat-dots") {
+  await goto(new URL(state.chatUrl).pathname);
+  await until("the answer", async () => (await page.locator("main").innerText()).includes("Ivy Chen"), 120000);
+  await sleep(4000);
+  const more = page.getByRole("button", { name: /More actions|More options|More/i }).last();
+  await more.click();
+  await sleep(1500);
+  await shot("07-chat-dots-menu");
+  const direct = page.getByRole("menuitem", { name: /^Save to a table/ }).first();
+  if (!(await direct.isVisible().catch(() => false))) {
+    await page.getByRole("menuitem", { name: /^Save$/ }).first().hover();
+    await sleep(1200);
+  }
+  await shot("07-chat-dots-save");
+  await page.getByRole("menuitem", { name: /^Save to a table/ }).first().click();
+  const dlg = await theDialog();
+  await sleep(1200);
+  await shot("07-chat-dots-dialog");
+  console.log("chat dots:", (await dlg.innerText()).split("\n").slice(0, 5).join(" | "));
+}
+
+if (STEP === "agent") {
+  await askChat(
+    "Use your records tool to save these rows as a NEW table named 'Front desk supplies' in this organization, with import_propose: Item: Intake forms, Count: 200; Item: Ice packs, Count: 40; Item: Resistance bands, Count: 25. Then tell me what the tool answered.",
+    "Front desk supplies",
+  );
+  await sleep(20000);
+  state.agentChatUrl = page.url();
+  await shot("08-agent-import");
+  console.log("agent said:", (await page.locator("main").innerText()).slice(-900));
+  save();
+}
+
 if (STEP === "explore") {
   await goto(process.env.PATHNAME ?? "/notes");
   await sleep(8000);
