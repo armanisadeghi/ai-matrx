@@ -85,7 +85,9 @@ export function HubRowMenu({ title, groups }: { title: string; groups: HubMenuGr
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        {/* A menu item that opens a dialog (Tag…, File to…, Rename) must not get focus pulled back
+            to this trigger as the menu closes — the dialog keeps it, so its input types and Esc closes it. */}
+        <DropdownMenuContent align="end" className="w-56" onCloseAutoFocus={(e) => e.preventDefault()}>
           {shown.map((g, i) => (
             <div key={g.id}>
               {/* A rule between groups; consecutive submenus (Open with, Copy) sit together. */}

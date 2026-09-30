@@ -255,6 +255,7 @@ describe("the Transcripts row menu, per kind", () => {
   });
 
   it("each row's link is its own record page", () => {
+    expect(transcriptRowHref(factFor(H.transcript)!, sourceHref)).toBe("/knowledge/transcripts/t1");
     expect(transcriptRowHref(factFor(H.cleanup)!, sourceHref)).toBe("/transcripts/cleanup?session=c1");
     expect(transcriptRowHref(factFor(H.source)!, sourceHref)).toBe("/rag/viewer/p1");
   });

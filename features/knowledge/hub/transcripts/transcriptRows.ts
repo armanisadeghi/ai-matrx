@@ -297,6 +297,9 @@ export type SourceHref = (id: string) => string | null;
 /** Where a row opens — the record page for its kind (the list's `primaryRowHref`), a Source its own page. */
 export function transcriptRowHref(fact: TranscriptListRow, sourceHref: SourceHref): string {
   if (fact.kind === "source") return sourceHref(fact.id) ?? `/knowledge?peek=processed_document:${encodeURIComponent(fact.id)}`;
+  // A transcript's own page is in the Knowledge area (its text and player); sessions and
+  // cleanups keep the recording studio, where their work is done.
+  if (fact.kind === "transcript") return `/knowledge/transcripts/${encodeURIComponent(fact.id)}`;
   return primaryRowHref(fact);
 }
 
