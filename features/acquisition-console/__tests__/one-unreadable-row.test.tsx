@@ -36,7 +36,6 @@ import {
 
 // ── Stubs: the page's three environment seams ──────────────────────────────
 
-const ORG = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 const USER = "87a6e699-3622-4869-8843-d0867456c0dd";
 
 /** Rows the fake database hands back, keyed `schema.table`. */
@@ -76,7 +75,8 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: () => ORG,
+  // The page reads the person's organizations for its on-page filter; none = "All organizations".
+  useAppSelector: () => [],
 }));
 
 jest.mock("next/navigation", () => ({

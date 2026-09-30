@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, BookA, ChevronLeft, Loader2, Plus, Save } from "lucide-react";
 import {
@@ -16,7 +16,8 @@ import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   archiveTermList,
@@ -69,11 +70,15 @@ export function TermListsWorkspace() {
   // The rail's read failure, said in the rail — never "No term lists yet".
   const [listsError, setListsError] = useState<unknown>(null);
   const [creating, setCreating] = useState(false);
+  const memberOrgs = useAppSelector(selectAllOrgs);
+  const orgNames = useMemo(
+    () => new Map(memberOrgs.map((o) => [o.id, o.name] as const)),
+    [memberOrgs],
+  );
 
   const reload = async () => {
     try {
-      const orgId = await ensureOrgId(null);
-      setLists(await listTermLists(orgId));
+      setLists(await listTermLists());
       setListsError(null);
     } catch (e) {
       setListsError(e);
@@ -171,6 +176,11 @@ export function TermListsWorkspace() {
               >
                 <BookA className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate">{list.name}</span>
+                {orgNames.size > 1 && orgNames.get(list.organization_id) ? (
+                  <span className="max-w-[6rem] shrink-0 truncate rounded bg-muted px-1 text-[10px] text-muted-foreground">
+                    {orgNames.get(list.organization_id)}
+                  </span>
+                ) : null}
                 <span className="text-xs text-muted-foreground">{list.entries.length}</span>
               </button>
             ))

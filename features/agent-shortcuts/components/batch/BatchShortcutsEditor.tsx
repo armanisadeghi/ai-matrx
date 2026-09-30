@@ -3,6 +3,7 @@
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
 import {
   CheckCircle2,
   Layers,
@@ -98,27 +99,20 @@ export function BatchShortcutsEditor({
   useAgentShortcuts({ scope: "global" });
 
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  const activeOrgId = useAppSelector((s) => {
-    const orgState = (
-      s as unknown as {
-        organizations?: { activeOrganizationId?: string | null };
-      }
-    ).organizations;
-    return orgState?.activeOrganizationId ?? null;
-  });
+  // Every organization the person belongs to — never just the header's
+  // selected one (access-by-person law).
+  const memberOrgs = useAppSelector(selectAllOrgs);
+  const memberOrgIds = useMemo(() => memberOrgs.map((o) => o.id), [memberOrgs]);
 
   useEffect(() => {
     void dispatch(fetchCategoriesForScope({ scope: "global", scopeId: null }));
     void dispatch(fetchCategoriesForScope({ scope: "user", scopeId: null }));
-    if (activeOrgId) {
+    for (const orgId of memberOrgIds) {
       void dispatch(
-        fetchCategoriesForScope({
-          scope: "organization",
-          scopeId: activeOrgId,
-        }),
+        fetchCategoriesForScope({ scope: "organization", scopeId: orgId }),
       );
     }
-  }, [dispatch, activeOrgId]);
+  }, [dispatch, memberOrgIds]);
 
   useEffect(() => {
     void dispatch(loadSurfaces());
@@ -137,11 +131,11 @@ export function BatchShortcutsEditor({
             c.taskId == null;
           if (isGlobal) return true;
           if (currentUserId && c.userId === currentUserId) return true;
-          if (activeOrgId && c.organizationId === activeOrgId) return true;
+          if (c.organizationId && memberOrgIds.includes(c.organizationId)) return true;
           return false;
         })
         .map((c) => ({ value: c.id, label: c.label })),
-    [allCategories, currentUserId, activeOrgId],
+    [allCategories, currentUserId, memberOrgIds],
   );
 
   const surfaces = useAppSelector(selectActiveSurfaces);

@@ -27,7 +27,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
 import { supabase } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { BLOCKED_COLUMNS, CONNECTED_COLUMNS, HAVE_COLUMNS } from "./columns";
@@ -78,10 +78,13 @@ function Section({
 }
 
 export function AcquisitionConsolePage() {
-  const organizationId = useAppSelector(selectOrganizationId);
+  // The organization is an ON-PAGE filter (`?org=`), default "All organizations"
+  // — never the header's selected organization (access belongs to the person).
+  const memberOrgs = useAppSelector(selectAllOrgs);
   const router = useRouter();
   const params = useSearchParams();
   const rulebookId = params.get("rulebook");
+  const organizationId = params.get("org");
 
   const [userId, setUserId] = useState<string | null>(null);
   const [data, setData] = useState<ConsoleData>(EMPTY);
@@ -106,7 +109,7 @@ export function AcquisitionConsolePage() {
   }, []);
 
   const refresh = useCallback(async () => {
-    if (!organizationId || !userId) return;
+    if (!userId) return;
     setLoading(true);
     setFailure(null);
     try {
@@ -129,6 +132,18 @@ export function AcquisitionConsolePage() {
     void refresh();
   }, [refresh]);
 
+  const setOrganization = useCallback(
+    (next: string) => {
+      const query = new URLSearchParams(params.toString());
+      if (next === "all") query.delete("org");
+      else query.set("org", next);
+      query.delete("rulebook");
+      const suffix = query.toString();
+      replaceAddressOrNavigate(router, suffix ? `/acquisition?${suffix}` : "/acquisition");
+    },
+    [params, router],
+  );
+
   const setRulebook = useCallback(
     (next: string) => {
       const query = new URLSearchParams(params.toString());
@@ -145,25 +160,6 @@ export function AcquisitionConsolePage() {
     [data.rulebooks, rulebookId],
   );
 
-  // A workspace was never chosen. This is a QUESTION, not a dead screen: the
-  // console is per-workspace by definition and there is no honest default.
-  if (!organizationId) {
-    return (
-      <>
-        <PageHeader>
-          <h1 className="truncate text-sm font-medium">Acquisition</h1>
-        </PageHeader>
-        <div className="px-4 pt-[var(--shell-header-h)]">
-          <p className="max-w-prose py-8 text-sm text-muted-foreground">
-            Pick a workspace from the switcher at the top and this screen fills
-            in. It reads one workspace at a time, so there is nothing sensible to
-            show until you say which.
-          </p>
-        </div>
-      </>
-    );
-  }
-
   // One read feeds all three tables: a refused read is never "Nothing from this expert yet" (RC-B12 r13).
   const consoleRead = readOf({ loading, error: failure }, { what: "this workspace's sources", onRetry: () => void refresh() });
 
@@ -177,6 +173,21 @@ export function AcquisitionConsolePage() {
           </span>
         </div>
         <HeaderActionsSlot className="ml-auto flex shrink-0 items-center gap-3 text-xs">
+          {memberOrgs.length > 1 && (
+            <select
+              aria-label="Organization"
+              value={organizationId ?? "all"}
+              onChange={(event) => setOrganization(event.target.value)}
+              className="max-w-[12rem] truncate rounded-md border border-border bg-background px-2 py-1 text-xs"
+            >
+              <option value="all">All organizations</option>
+              {memberOrgs.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+          )}
           {data.rulebooks.length > 0 && (
             <select
               aria-label="Narrow to one Rulebook"
@@ -184,7 +195,7 @@ export function AcquisitionConsolePage() {
               onChange={(event) => setRulebook(event.target.value)}
               className="max-w-[12rem] truncate rounded-md border border-border bg-background px-2 py-1 text-xs"
             >
-              <option value="all">Everything in this workspace</option>
+              <option value="all">Every Rulebook</option>
               {data.rulebooks.map((entry) => (
                 <option key={entry.id} value={entry.id}>
                   {entry.name}

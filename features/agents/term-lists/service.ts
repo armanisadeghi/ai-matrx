@@ -71,17 +71,23 @@ function toTermList(row: TermListRow): TermList {
   };
 }
 
-/** Every live term list in an organization (complete — read with readAllRows). */
-export async function listTermLists(organizationId: string): Promise<TermList[]> {
+/**
+ * Every live term list the person can access, across ALL their organizations
+ * (complete — read with readAllRows). `organizationId` is an OPTIONAL, explicit
+ * filter for an on-page control; it is never the header's selected organization
+ * (access belongs to the person — org-filter sweep 2026-09-25).
+ */
+export async function listTermLists(organizationId?: string | null): Promise<TermList[]> {
   const rows = await readAllRows<TermListRow>(
-    ({ from, to }) =>
-      db()
-        .select(COLUMNS, { count: "exact" })
-        .eq("organization_id", organizationId)
+    ({ from, to }) => {
+      let q = db().select(COLUMNS, { count: "exact" });
+      if (organizationId) q = q.eq("organization_id", organizationId);
+      return q
         .is("deleted_at", null)
         .order("name", { ascending: true })
         .order("id", { ascending: true })
-        .range(from, to),
+        .range(from, to);
+    },
     { label: "agent.term_list" },
   );
   return rows.map(toTermList);

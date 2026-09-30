@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
 import { AlertTriangle, Loader2, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -142,27 +143,21 @@ export function ShortcutEditorNext({
   // global + their personal + their active org. Single-scope fetches
   // miss two-thirds of what's available.
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  const activeOrgId = useAppSelector((s) => {
-    const orgState = (
-      s as unknown as {
-        organizations?: { activeOrganizationId?: string | null };
-      }
-    ).organizations;
-    return orgState?.activeOrganizationId ?? null;
-  });
+  // Every organization the person belongs to — never just the header's
+  // selected one (access-by-person law): a category in any of their
+  // organizations is theirs to pick.
+  const memberOrgs = useAppSelector(selectAllOrgs);
+  const memberOrgIds = useMemo(() => memberOrgs.map((o) => o.id), [memberOrgs]);
 
   useEffect(() => {
     void dispatch(fetchCategoriesForScope({ scope: "global", scopeId: null }));
     void dispatch(fetchCategoriesForScope({ scope: "user", scopeId: null }));
-    if (activeOrgId) {
+    for (const orgId of memberOrgIds) {
       void dispatch(
-        fetchCategoriesForScope({
-          scope: "organization",
-          scopeId: activeOrgId,
-        }),
+        fetchCategoriesForScope({ scope: "organization", scopeId: orgId }),
       );
     }
-  }, [dispatch, activeOrgId]);
+  }, [dispatch, memberOrgIds]);
 
   const allLoadedCategories = useAppSelector(selectAllCategoriesArray);
   const categories = useMemo(
@@ -176,10 +171,10 @@ export function ShortcutEditorNext({
           c.taskId == null;
         if (isGlobal) return true;
         if (currentUserId && c.userId === currentUserId) return true;
-        if (activeOrgId && c.organizationId === activeOrgId) return true;
+        if (c.organizationId && memberOrgIds.includes(c.organizationId)) return true;
         return false;
       }),
-    [allLoadedCategories, currentUserId, activeOrgId],
+    [allLoadedCategories, currentUserId, memberOrgIds],
   );
 
   // ── Agent-surface bindings (used to seed mappings) ────────────────────

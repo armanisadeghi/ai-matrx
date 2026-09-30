@@ -58,13 +58,14 @@ function capSentence(register: string, cap: number): string {
   );
 }
 
-async function readLibraries(organizationId: string) {
-  const { data, error } = await supabase
+async function readLibraries(organizationId: string | null) {
+  let builder = supabase
     .schema("media")
     .from("source_library")
     .select("id,adapter,name,item_count,last_synced_at,updated_at,metrics,visibility,created_by")
-    .eq("organization_id", organizationId)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  if (organizationId) builder = builder.eq("organization_id", organizationId);
+  const { data, error } = await builder
     .order("updated_at", { ascending: false })
     .limit(CAP);
   if (error) throw error;
@@ -74,13 +75,13 @@ async function readLibraries(organizationId: string) {
   return parsed;
 }
 
-async function readRulebookSources(organizationId: string, rulebookId: string | null) {
+async function readRulebookSources(organizationId: string | null, rulebookId: string | null) {
   let builder = supabase
     .schema("platform")
     .from("masterwork_source")
     .select("id,rulebook_id,medium,turn_count,word_count,captured_at,created_at")
-    .eq("organization_id", organizationId)
     .is("deleted_at", null);
+  if (organizationId) builder = builder.eq("organization_id", organizationId);
   if (rulebookId) builder = builder.eq("rulebook_id", rulebookId);
 
   const { data, error } = await builder
@@ -150,30 +151,37 @@ async function readRulebookChoices(
  * So this reads both halves explicitly and labels each row with which it is.
  * RLS already limits it to the person's own rows plus their organizations'.
  */
-async function readConnections(organizationId: string, userId: string) {
-  const { data, error } = await supabase
+async function readConnections(organizationId: string | null, userId: string) {
+  let builder = supabase
     .schema("users")
     .from("integration_connections")
     .select(
       "id,provider,owner_type,status,account_email,account_name,last_verified_at,last_error,organization_id,owner_user_id",
     )
-    .or(`organization_id.eq.${organizationId},owner_user_id.eq.${userId}`)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  // No organization filter (the default) = every connection the person can
+  // read, across all their organizations. A chosen organization narrows to that
+  // organization's connections plus the person's own.
+  if (organizationId) {
+    builder = builder.or(`organization_id.eq.${organizationId},owner_user_id.eq.${userId}`);
+  }
+  const { data, error } = await builder
     .order("last_verified_at", { ascending: false, nullsFirst: false })
     .limit(CAP);
   if (error) throw error;
   return parseConnections(data ?? []);
 }
 
-async function readBlocks(organizationId: string) {
-  const { data, error } = await supabase
+async function readBlocks(organizationId: string | null) {
+  let builder = supabase
     .schema("platform")
     .from("acquisition_block")
     .select(
       "id,input_ref,input_label,error_class,error_sentence,unblock_note,lawful_route,first_seen_at,last_seen_at,occurrence_count,status",
     )
-    .eq("organization_id", organizationId)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  if (organizationId) builder = builder.eq("organization_id", organizationId);
+  const { data, error } = await builder
     // A resolved block is not a block. It stays in the ledger and leaves here.
     .neq("status", "resolved")
     .order("last_seen_at", { ascending: false })
@@ -185,15 +193,16 @@ async function readBlocks(organizationId: string) {
   return parsed;
 }
 
-async function readHandoffs(organizationId: string) {
-  const { data, error } = await supabase
+async function readHandoffs(organizationId: string | null) {
+  let builder = supabase
     .schema("media")
     .from("capture_handoff")
     .select(
       "id,url,title,reason,what_to_do,attempt_count,status,created_at,updated_at",
     )
-    .eq("organization_id", organizationId)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  if (organizationId) builder = builder.eq("organization_id", organizationId);
+  const { data, error } = await builder
     // Only the ones still waiting on a person. A captured hand-off is not a block.
     .in("status", ["waiting", "claimed", "failed"])
     .order("created_at", { ascending: false })
@@ -213,7 +222,8 @@ async function readHandoffs(organizationId: string) {
  * make the page slower.
  */
 export async function loadConsole(
-  organizationId: string,
+  /** null = every organization the person can access (the default). */
+  organizationId: string | null,
   userId: string,
   rulebookId: string | null,
 ): Promise<ConsoleData> {
