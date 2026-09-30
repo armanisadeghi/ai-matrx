@@ -32,6 +32,35 @@ export type CoverageCaptureStatus =
   | "blocked"
   | "skipped";
 
+/**
+ * Coverage verdicts that say a row is NOT a mention of whoever it was filed for: a different
+ * entity with the same name (Giorgio Armani for a founder called Arman), a junk page (an
+ * "Access Denied" wall, a CloudFront 403, a job listing), or a page we could not read and so
+ * cannot confirm. Such a row is still LISTED — with its reason — but never counted: not in
+ * "Stories about you", not in share of voice, not as coverage won. A row with no verdict yet
+ * is counted (competitor rows are never read by design, so excluding unjudged rows would count
+ * one side only). Server twin: `matrx_seo.coverage.NOT_A_MENTION_VERDICTS` / `counts_as_mention`.
+ */
+export const NOT_A_MENTION_VERDICTS = [
+  "wrong_entity",
+  "junk",
+  "uncertain",
+] as const;
+/** The two of those that mean "this page is not about you at all" — hidden from the default feed. */
+export const NOT_ABOUT_YOU_VERDICTS = ["wrong_entity", "junk"] as const;
+
+export function countsAsMention(row: Pick<CoverageMentionRow, "verdict">): boolean {
+  return !(NOT_A_MENTION_VERDICTS as readonly string[]).includes(row.verdict ?? "");
+}
+
+export function isNotAboutYou(row: Pick<CoverageMentionRow, "verdict">): boolean {
+  return (NOT_ABOUT_YOU_VERDICTS as readonly string[]).includes(row.verdict ?? "");
+}
+
+/** PostgREST `or=` filters for the same two sets (NULL verdicts are not matched by `not.in`). */
+export const COUNTS_AS_MENTION_FILTER = `verdict.is.null,verdict.not.in.(${NOT_A_MENTION_VERDICTS.join(",")})`;
+export const ABOUT_YOU_OR_UNJUDGED_FILTER = `verdict.is.null,verdict.not.in.(${NOT_ABOUT_YOU_VERDICTS.join(",")})`;
+
 export type CoverageSentiment = "positive" | "neutral" | "negative" | "mixed";
 export type CoverageProminence = "headline" | "lede" | "body" | "passing";
 
@@ -62,7 +91,12 @@ export interface CoverageShareOfVoice {
 
 export interface CoverageSummary {
   total: number;
+  /** Brand rows that count as a mention (see `countsAsMention`). */
   brandMentions: number;
+  /** Brand rows judged to be about someone or something else (`wrong_entity`) or junk pages. */
+  notAboutYou: number;
+  /** Brand rows we could not read and so cannot confirm (`uncertain`). */
+  unconfirmed: number;
   linked: number;
   analyzed: number;
   awaitingCapture: number;

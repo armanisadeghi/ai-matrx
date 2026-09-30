@@ -8,13 +8,17 @@
  */
 
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
-import type {
-  CoverageMentionRow,
-  CoveragePagedResult,
-  CoverageShareOfVoice,
-  CoverageSummary,
-  CoverageTrackerRow,
-  CoverageVoiceShare,
+import {
+  ABOUT_YOU_OR_UNJUDGED_FILTER,
+  NOT_ABOUT_YOU_VERDICTS,
+  countsAsMention,
+  isNotAboutYou,
+  type CoverageMentionRow,
+  type CoveragePagedResult,
+  type CoverageShareOfVoice,
+  type CoverageSummary,
+  type CoverageTrackerRow,
+  type CoverageVoiceShare,
 } from "@/features/marketing/data/coverage-types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
@@ -29,6 +33,11 @@ export interface CoverageFilters {
   includeCompetitors?: boolean;
   /** Only the pieces that link to you — mentions that became assets. */
   linkedOnly?: boolean;
+  /**
+   * Rows judged not about you (a same-name stranger, a bot wall). Hidden from the default
+   * feed — they are not coverage — and listed on their own when `true`.
+   */
+  notAboutYou?: boolean;
   windowDays?: number;
 }
 
@@ -95,6 +104,9 @@ export async function listCoverageMentions(
   if (filters.trackerId) query = query.eq("tracker_id", filters.trackerId);
   if (!filters.includeCompetitors) query = query.eq("is_competitor", false);
   if (filters.linkedOnly) query = query.eq("links_to_site", true);
+  query = filters.notAboutYou
+    ? query.in("verdict", [...NOT_ABOUT_YOU_VERDICTS])
+    : query.or(ABOUT_YOU_OR_UNJUDGED_FILTER);
 
   const search = cleanSearch(state.search);
   if (search) {
@@ -155,8 +167,11 @@ export function shareOfVoice(
   brandKey: string,
   brandLabel?: string,
 ): CoverageShareOfVoice {
+  // Only real mentions: a wrong-entity match, a junk page or a page we could not confirm is
+  // not someone writing about you (or a rival), so it never moves the percentage.
+  const counted = rows.filter(countsAsMention);
   const buckets = new Map<string, CoverageMentionRow[]>([[brandKey, []]]);
-  for (const row of rows) {
+  for (const row of counted) {
     const key = row.is_competitor
       ? (row.competitor_key ?? "unattributed")
       : brandKey;
@@ -165,7 +180,7 @@ export function shareOfVoice(
     else buckets.set(key, [row]);
   }
 
-  const total = rows.length;
+  const total = counted.length;
   const entries: CoverageVoiceShare[] = [...buckets.entries()].map(
     ([key, bucket]) => {
       const scored = bucket
@@ -200,18 +215,22 @@ export function shareOfVoice(
 }
 
 export function summarize(rows: CoverageMentionRow[]): CoverageSummary {
-  const brand = rows.filter((row) => !row.is_competitor);
+  const brandRows = rows.filter((row) => !row.is_competitor);
+  // Every count below is over the stories that are actually about you.
+  const brand = brandRows.filter(countsAsMention);
   const scored = brand
     .map((row) => row.hit_score)
     .filter((score): score is number => score !== null);
   return {
     total: rows.length,
     brandMentions: brand.length,
+    notAboutYou: brandRows.filter(isNotAboutYou).length,
+    unconfirmed: brandRows.filter((row) => row.verdict === "uncertain").length,
     linked: brand.filter((row) => row.links_to_site).length,
     analyzed: brand.filter((row) => row.analyzed_at !== null).length,
-    awaitingCapture: brand.filter((row) => row.capture_status === "pending")
+    awaitingCapture: brandRows.filter((row) => row.capture_status === "pending")
       .length,
-    blocked: brand.filter((row) => row.capture_status === "blocked").length,
+    blocked: brandRows.filter((row) => row.capture_status === "blocked").length,
     avgHitScore: scored.length
       ? Math.round(scored.reduce((sum, n) => sum + n, 0) / scored.length)
       : null,

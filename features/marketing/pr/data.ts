@@ -35,6 +35,7 @@ import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { isJsonRecord } from "@/features/marketing/types";
+import { COUNTS_AS_MENTION_FILTER } from "@/features/marketing/data/coverage-types";
 import { operationFailed } from "@/utils/errors";
 import { WriteDidNotLandError, tryWriteOne } from "@/utils/supabase/writeOne";
 // TYPE ONLY. `fixtures.ts` is ~950 lines of sample dataset that almost nobody
@@ -120,6 +121,8 @@ export async function listCoverageWon(
     .select("*")
     .eq("site_id", siteId)
     .eq("is_competitor", false)
+    // Coverage WON is coverage about you: never a same-name stranger, a bot wall or an unread page.
+    .or(COUNTS_AS_MENTION_FILTER)
     .gte("discovered_at", since)
     .order("published_at", { ascending: false, nullsFirst: false })
     .limit(200)

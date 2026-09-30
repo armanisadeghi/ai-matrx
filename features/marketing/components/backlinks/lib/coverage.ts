@@ -79,12 +79,54 @@ export interface CoverageVerdict {
   tone: "good" | "bad" | "default";
 }
 
+/** A stored verdict reason, as a sentence: code verdicts carry a `rule_name: ` prefix. */
+export function verdictReasonText(reason: string | null): string | null {
+  const text = (reason ?? "").replace(/^[a-z_]+: /, "").trim();
+  if (!text || text === "capture_unavailable") return null;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /** One sentence about what happened, one about what it means. */
 export function coverageVerdict(row: CoverageMentionRow): CoverageVerdict {
   const who = row.is_competitor
     ? (row.competitor_key ?? "a rival")
     : "you";
   const outlet = row.domain;
+  const title = row.title ? `“${row.title}”` : null;
+  const reason = verdictReasonText(row.verdict_reason);
+
+  // The verdict speaks first: a page that is not about you is never phrased as a mention of you.
+  if (row.verdict === "wrong_entity") {
+    return {
+      headline: `Not about ${who} — ${outlet} is about a different name or topic`,
+      detail: [title, reason, "Not counted in your coverage or share of voice."]
+        .filter(Boolean)
+        .join(" · "),
+      tone: "default",
+    };
+  }
+  if (row.verdict === "junk") {
+    return {
+      headline: `Not a story — ${outlet} gave us no article to read`,
+      detail: [title, reason, "Not counted in your coverage or share of voice."]
+        .filter(Boolean)
+        .join(" · "),
+      tone: "default",
+    };
+  }
+  if (row.verdict === "uncertain") {
+    return {
+      headline: `Not confirmed — we could not tell whether ${outlet} is about ${who}`,
+      detail: [
+        title,
+        reason ?? captureExplainer(row.capture_status),
+        "Not counted until it is confirmed.",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      tone: "default",
+    };
+  }
 
   if (row.analyzed_at === null) {
     return {

@@ -73,6 +73,9 @@ const LINKED_PARAM = "linked";
 /** `?rivals=1` — include tracked competitors in the table (they always count
  *  toward share of voice; this only decides whether they are listed). */
 const RIVALS_PARAM = "rivals";
+/** `?notyou=1` — the rows judged not about you (same-name strangers, bot walls). They are
+ *  never counted; the default feed leaves them out and this lens lists them with the reason. */
+const NOT_YOU_PARAM = "notyou";
 
 function humanMentionRow(row: CoverageMentionRow): string {
   return humanLines([
@@ -195,6 +198,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
   const highlightId = searchParams.get(MENTION_PARAM);
   const linkedOnly = searchParams.get(LINKED_PARAM) === "1";
   const includeCompetitors = searchParams.get(RIVALS_PARAM) === "1";
+  const notAboutYou = searchParams.get(NOT_YOU_PARAM) === "1";
 
   const trackers = useCoverageTrackers(siteId);
   const activeTracker = trackers.data?.find((tracker) => tracker.is_active);
@@ -210,9 +214,10 @@ export function CoverageTab({ siteId }: { siteId: string }) {
     () => ({
       includeCompetitors,
       linkedOnly,
+      notAboutYou,
       windowDays: COVERAGE_WINDOW_DAYS,
     }),
-    [includeCompetitors, linkedOnly],
+    [includeCompetitors, linkedOnly, notAboutYou],
   );
   const mentions = useCoverageMentions(siteId, table.queryState, filters);
   const rollup = useCoverageRollup(siteId, brandKey, {
@@ -223,7 +228,11 @@ export function CoverageTab({ siteId }: { siteId: string }) {
   const summary = rollup.data?.summary;
   const share = rollup.data?.share;
 
-  const lensHref = (next: { linked?: boolean; rivals?: boolean }): string => {
+  const lensHref = (next: {
+    linked?: boolean;
+    rivals?: boolean;
+    notYou?: boolean;
+  }): string => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("view", "coverage");
     params.delete(MENTION_PARAM);
@@ -231,6 +240,8 @@ export function CoverageTab({ siteId }: { siteId: string }) {
     else params.delete(LINKED_PARAM);
     if (next.rivals) params.set(RIVALS_PARAM, "1");
     else params.delete(RIVALS_PARAM);
+    if (next.notYou) params.set(NOT_YOU_PARAM, "1");
+    else params.delete(NOT_YOU_PARAM);
     clearTableUrlParams(params);
     const query = params.toString();
     return query ? `${pathname}?${query}` : pathname;
@@ -270,9 +281,18 @@ export function CoverageTab({ siteId }: { siteId: string }) {
     },
     {
       label: "Share of voice",
-      value: share ? `${share.brandSharePct}%` : "—",
+      // No confirmed story on either side is "no share yet", never a 0% or a 100%.
+      value: share && share.totalMentions > 0 ? `${share.brandSharePct}%` : "—",
       detail: "Your share of coverage across you and the rivals you track",
       href: lensHref({ rivals: true }),
+      tone: "default",
+    },
+    {
+      label: "Not about you",
+      value: summary?.notAboutYou ?? 0,
+      detail:
+        "Found by the search but about a different name, or not an article — never counted",
+      href: lensHref({ notYou: true }),
       tone: "default",
     },
     {
@@ -314,11 +334,13 @@ export function CoverageTab({ siteId }: { siteId: string }) {
     site_id: siteId,
     brand_key: brandKey,
     window_days: COVERAGE_WINDOW_DAYS,
-    lens: linkedOnly
-      ? "links_to_you"
-      : includeCompetitors
-        ? "with_rivals"
-        : null,
+    lens: notAboutYou
+      ? "not_about_you"
+      : linkedOnly
+        ? "links_to_you"
+        : includeCompetitors
+          ? "with_rivals"
+          : null,
     summary: summary ?? null,
     share_of_voice: share ?? null,
     total_rows: total,
@@ -605,14 +627,16 @@ export function CoverageTab({ siteId }: { siteId: string }) {
             pass.
           </span>
         ) : null}
-        {linkedOnly || includeCompetitors ? (
+        {linkedOnly || includeCompetitors || notAboutYou ? (
           <>
             <span className="text-xs text-muted-foreground">
               Showing:{" "}
               <b className="text-foreground">
-                {linkedOnly
-                  ? "coverage that links to you"
-                  : "you and your rivals"}
+                {notAboutYou
+                  ? "stories the search found that are not about you"
+                  : linkedOnly
+                    ? "coverage that links to you"
+                    : "you and your rivals"}
               </b>
             </span>
             <Button asChild size="sm" variant="outline" className="h-7">
