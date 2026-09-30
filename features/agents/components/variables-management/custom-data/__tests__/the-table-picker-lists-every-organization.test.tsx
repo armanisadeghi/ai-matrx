@@ -39,6 +39,9 @@ function row(id: string, name: string, org: string, orgName: string, extra: Reco
     shared_with_me: org === OJAI,
     kept_by_the_app: false,
     kind: "table",
+    team: false,
+    system: false,
+    created_by: null,
     ...extra,
   };
 }
@@ -50,6 +53,12 @@ const EVERY_ROW = [
   row("a1000000-0000-4000-8000-000000000004", "Status choices", RINCON, "Rincon Plumbing Co", {
     kept_by_the_app: true,
     kind: "list",
+  }),
+  // Published by an organization she is not in: Public lane only, never folded into All.
+  row("a1000000-0000-4000-8000-000000000005", "Tide chart", "7e000000-0000-4000-8000-000000000009", "Harbor Tide Co-op", {
+    member: false,
+    shared_with_me: false,
+    visibility: "public",
   }),
 ];
 
@@ -125,7 +134,15 @@ jest.mock("@/components/ui/label", () => ({
 }));
 jest.mock("@/components/ui/select", () => {
   const Pass = ({ children }: { children?: unknown }) => <>{children as never}</>;
-  return { Select: Pass, SelectContent: Pass, SelectItem: Pass, SelectTrigger: Pass, SelectValue: () => null };
+  return {
+    Select: Pass,
+    SelectContent: Pass,
+    SelectGroup: Pass,
+    SelectLabel: Pass,
+    SelectItem: Pass,
+    SelectTrigger: Pass,
+    SelectValue: () => null,
+  };
 });
 jest.mock("../CustomDataBindingPreview", () => ({ CustomDataBindingPreview: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
@@ -237,7 +254,8 @@ it("shows the shell's organization filter on the Table row, starting on All orga
   // All organizations first; each organization with its count from the complete answer.
   expect(choices[0]).toContain("All organizations");
   expect(choices.join("|")).toContain("Harbor Dental Group1");
-  expect(choices.join("|")).toContain("Rincon Plumbing Co2");
+  // Counts are what the list shows: Rincon's "Status choices" sits behind the kept-by-the-app fold.
+  expect(choices.join("|")).toContain("Rincon Plumbing Co1");
 });
 
 it("narrows to the organization chosen — and the door is asked once, for every organization", async () => {
@@ -262,4 +280,33 @@ it("is never remembered: a fresh picker starts on All organizations again", asyn
   await render();
   expect(host.querySelector("[data-entity-org-filter]")?.textContent).toContain("All organizations");
   expect(offered().join("\n")).toContain("Service calls");
+});
+
+
+function tab(label: string): HTMLButtonElement {
+  const found = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((b) =>
+    (b.textContent ?? "").startsWith(label),
+  );
+  if (!found) throw new Error(`no "${label}" tab`);
+  return found;
+}
+
+it("draws the shell's lanes — All · Mine · My team · My Orgs · Shared · Public · System — starting on All", async () => {
+  await render();
+  const labels = [...host.querySelectorAll('[role="tab"]')].map((b) => (b.textContent ?? "").replace(/\d+$/, ""));
+  expect(labels).toEqual(["All", "Mine", "My team", "My Orgs", "Shared", "Public", "System"]);
+  expect(tab("All").getAttribute("aria-selected")).toBe("true");
+  // All = Mine ∪ My team ∪ My Orgs ∪ Shared: the public table of an outside organization is not in it.
+  expect(offered().join("\n")).not.toContain("Tide chart");
+  expect(tab("All").textContent).toContain("3");
+});
+
+it("each lane narrows the list to its own rows", async () => {
+  await render();
+  await act(async () => tab("Mine").click());
+  expect(offered().map((o) => o.split(" — ")[0])).toEqual(["Patient recall list"]);
+  await act(async () => tab("Shared").click());
+  expect(offered().map((o) => o.split(" — ")[0])).toEqual(["Backflow test schedule"]);
+  await act(async () => tab("Public").click());
+  expect(offered().map((o) => o.split(" — ")[0])).toEqual(["Tide chart"]);
 });

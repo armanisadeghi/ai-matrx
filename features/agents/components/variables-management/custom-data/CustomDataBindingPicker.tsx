@@ -63,10 +63,20 @@ import { CustomDataBindingPreview } from "./CustomDataBindingPreview";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   countsByOrganization,
+  inLane,
   inOrganization,
   useTablesEverywhere,
 } from "@/features/unified-data/hub/useTablesEverywhere";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
+import type { EntityScopeCounts } from "@/lib/entity-list/types";
+import { makeScope } from "@/lib/list-scope/types";
+import {
+  DATA_HOME_SCOPES,
+  DATA_HOME_SHELL_LANES,
+  isDataHomeScope,
+  type DataHomeScope,
+} from "@/features/unified-data/hub/dataHomeScope";
 import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
 import { CustomDataRecordsScope } from "./CustomDataRecordsScope";
 
@@ -99,6 +109,8 @@ export function CustomDataBindingPicker({
   // THE ORGANIZATION FILTER: All organizations (null) every time the picker opens — a filter on
   // this list only, never remembered, never the active organization.
   const [orgFilter, setOrgFilter] = useState<string | null>(null);
+  // THE SHELL'S LANES (All · Mine · My team · My Orgs · Shared · Public · System), All on every open.
+  const [lane, setLane] = useState<DataHomeScope>("all");
   const tableId = binding.table_id || null;
   const shape = binding.semantic_type;
   // Tables the app keeps for itself (choice lists, ledgers) are out of sight
@@ -121,40 +133,63 @@ export function CustomDataBindingPicker({
     });
   };
 
-  const allTables = inOrganization(tables.rows, orgFilter);
+  // The organization filter narrows every lane; the lane narrows the list; counts are what shows.
+  const shown = (t: { kept_by_the_app: boolean; table_id: string }) =>
+    showAppTables || !t.kept_by_the_app || t.table_id === tableId;
+  const inOrg = inOrganization(tables.rows, orgFilter);
+  const allTables = inLane(inOrg, lane);
   const appKeptCount = allTables.filter((t) => t.kept_by_the_app).length;
+  const laneCounts: EntityScopeCounts = {
+    byKind: Object.fromEntries(
+      DATA_HOME_SCOPES.map((k) => [k, inLane(inOrg, k).filter(shown).length]),
+    ),
+    narrow: {
+      all: countsByOrganization(inLane(tables.rows, lane).filter(shown)),
+    },
+  };
   // ONE FLAT LIST, never grouped by organization: each row names its organization in its hint,
   // and the search reads it too.
-  const tableOptions: CreatableOption[] = allTables
-    .filter(
-      (t) => showAppTables || !t.kept_by_the_app || t.table_id === tableId,
-    )
-    .map((t) => ({
-      value: t.table_id,
-      label: t.table_name,
-      hint: tableHint(t),
-      keywords: `${t.organization_name} ${t.kind}`,
-    }));
+  const tableOptions: CreatableOption[] = allTables.filter(shown).map((t) => ({
+    value: t.table_id,
+    label: t.table_name,
+    hint: tableHint(t),
+    keywords: `${t.organization_name} ${t.kind}`,
+  }));
   // Looked up in the COMPLETE answer: a table outside the filter still knows its organization.
   const chosenRow = tables.rows.find((t) => t.table_id === tableId) ?? null;
 
   const storedTableMissing =
     Boolean(tableId) && !tables.loading && !tables.error && chosenRow === null;
   const filteredOut =
-    chosenRow !== null && orgFilter !== null && chosenRow.organization_id !== orgFilter;
-  const filteredToOne = orgFilter !== null;
+    chosenRow !== null &&
+    !allTables.some((t) => t.table_id === chosenRow.table_id);
+  const filteredToOne = orgFilter !== null || lane !== "all";
 
   return (
     <div className="space-y-2">
       {/* ── Table ─────────────────────────────────────────────────────── */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <Label className="text-xs text-muted-foreground">Table</Label>
+          <Label className="shrink-0 text-xs text-muted-foreground">
+            Table
+          </Label>
+          {/* THE SHELL'S TAB BAR, on the row it filters — never a private one. */}
+          <div className="min-w-0 flex-1">
+            <EntityScopeTabs
+              scope={makeScope(lane)}
+              scopes={[...DATA_HOME_SHELL_LANES]}
+              counts={laneCounts}
+              countsLoading={tables.loading}
+              onChange={(next) =>
+                setLane(isDataHomeScope(next.kind) ? next.kind : "all")
+              }
+            />
+          </div>
           {/* THE SHELL'S ORGANIZATION FILTER, on the row it filters (default All organizations). */}
           <EntityOrgFilter
             orgId={orgFilter}
             onChange={setOrgFilter}
-            counts={{ byKind: {}, narrow: { all: countsByOrganization(tables.rows) } }}
+            counts={laneCounts}
             countsLoading={tables.loading}
           />
         </div>
@@ -169,7 +204,7 @@ export function CustomDataBindingPicker({
                 ? "Your tables could not be read"
                 : tableOptions.length === 0
                   ? filteredToOne
-                    ? "No tables in this organization — choose All organizations"
+                    ? "No tables here — choose All and All organizations"
                     : "No tables yet — make one in Data"
                   : "Choose a table…"
           }
@@ -211,23 +246,26 @@ export function CustomDataBindingPicker({
         )}
         {filteredOut && (
           <p className="text-[11px] text-muted-foreground">
-            The bound table ({chosenRow?.table_name}) is in{" "}
-            {chosenRow?.organization_name}, outside the organization chosen
-            above.{" "}
+            The bound table ({chosenRow?.table_name}, in{" "}
+            {chosenRow?.organization_name}) is outside the lane or
+            organization chosen above.{" "}
             <button
               type="button"
               className="underline underline-offset-2"
-              onClick={() => setOrgFilter(null)}
+              onClick={() => {
+                setOrgFilter(null);
+                setLane("all");
+              }}
             >
-              Show all organizations
+              Show everything
             </button>
           </p>
         )}
         {storedTableMissing && (
           <p className="text-[11px] text-warning">
-            The table this variable is bound to is not one you can open — it
-            was removed, or it is no longer shared with you. Pick a table here
-            to rebind it. The binding is unchanged until you do.
+            The table this variable is bound to is not one you can open — it was
+            removed, or it is no longer shared with you. Pick a table here to
+            rebind it. The binding is unchanged until you do.
           </p>
         )}
       </div>
