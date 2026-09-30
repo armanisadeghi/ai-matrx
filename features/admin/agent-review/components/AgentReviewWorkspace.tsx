@@ -463,12 +463,7 @@ export default function AgentReviewWorkspace({
         <section className="flex min-h-[32rem] flex-col border-b lg:min-h-0 lg:border-b-0 lg:border-r">
           <div className="flex shrink-0 items-center gap-2 border-b bg-muted/20 px-4 py-2.5">
             <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <h2 className="text-sm font-semibold">Review discussion</h2>
-              <p className="text-xs text-muted-foreground">
-                Agent activity and your replies stay together here.
-              </p>
-            </div>
+            <h2 className="text-sm font-semibold">Review discussion</h2>
           </div>
           {row.conversation_id ? (
             <ConversationPane
@@ -491,9 +486,6 @@ export default function AgentReviewWorkspace({
 
         <aside className="bg-muted/15 p-4 lg:overflow-y-auto lg:p-5">
           <h2 className="font-semibold">Your decision</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Add a note for the agent, then choose what should happen next.
-          </p>
           <ProTextarea
             value={feedback}
             onChange={(event) => setFeedback(event.target.value)}
@@ -536,10 +528,6 @@ export default function AgentReviewWorkspace({
             >
               <Flag className="mr-1.5 h-4 w-4" /> Approve and raise
             </Button>
-            <p className="text-xs text-muted-foreground">
-              Approves this review and files your note as a new feedback item,
-              so a problem this review exposed gets its own thread.
-            </p>
             <Button
               className="h-11 sm:h-9"
               variant="ghost"

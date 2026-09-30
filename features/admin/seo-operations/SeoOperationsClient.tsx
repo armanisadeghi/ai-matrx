@@ -146,6 +146,7 @@ export function AutomationsPanel() {
               variant="outline"
               disabled={runningId === row.id}
               onClick={() => void trigger(row)}
+              title="Queues one run without enabling the schedule."
             >
               {runningId === row.id ? "Queuing…" : "Run now"}
             </Button>
@@ -177,18 +178,6 @@ export function AutomationsPanel() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Every recurring SEO/web task, including the ones switched off in the
-        2026-08-20 governance pass. <strong>Run now</strong> queues one manual
-        execution without enabling the schedule — watch it under{" "}
-        <AppLink
-          className="underline underline-offset-2"
-          href="/administration/automation/scheduling/runs"
-        >
-          Scheduling › Runs
-        </AppLink>
-        .
-      </p>
       <NonEditableContextMenu
         sourceFeature="admin"
         contentSource={{ type: "raw" }}
@@ -322,17 +311,13 @@ function MandatesPanel() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Every <span className="font-mono">seo.*</span> mandate with its
-        judge-grade goal, its provision (the declared input menu), and its
-        output contract. Rebinding, test runs, and version pins live in the{" "}
+      <p className="text-sm">
         <AppLink
           className="underline underline-offset-2"
           href={ADMIN_MANDATES_HOME}
         >
-          admin mandates list
+          Admin mandates list
         </AppLink>
-        .
       </p>
       {/* `mandate` also renders on the admin mandates list with its own
          richer menu — extracting a shared builder is future work (flagged
@@ -664,7 +649,7 @@ export function WorkbenchPanel() {
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             rows={3}
-            placeholder='e.g. "Where does this site&apos;s organic traffic actually come from, and what is our biggest evidence gap?"'
+            placeholder='e.g. "Where does organic traffic come from?"'
           />
         </div>
 
@@ -719,10 +704,8 @@ export function WorkbenchPanel() {
           </div>
         ) : (
           <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-            Pick a site, choose which evidence the agent may see, and ask a
-            question. The live run opens in a floating window and can be
-            rejoined after a reload; the completed answer remains here with
-            the exact evidence the agent was shown.
+            Pick a site, choose the evidence, and ask a question. The answer
+            stays here with the evidence the agent saw.
           </div>
         )}
       </div>
@@ -737,10 +720,6 @@ export function SeoOperationsClient() {
     <div className="space-y-4 p-4 md:p-6">
       <div>
         <h1 className="text-xl font-semibold">SEO Operations</h1>
-        <p className="text-sm text-muted-foreground">
-          Trigger any SEO automation or agent manually, watch it live, and
-          judge the results — before anything is trusted on a schedule.
-        </p>
       </div>
       <Tabs defaultValue="automations">
         <TabsList>

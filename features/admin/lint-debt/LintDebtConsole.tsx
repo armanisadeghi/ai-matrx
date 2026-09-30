@@ -664,12 +664,9 @@ function Header({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        {/* Advisory: every error-severity finding from the repo's real ESLint
+            config, classified bug vs style. Never blocks a build or commit. */}
         <h1 className="text-lg font-semibold text-foreground">ESLint debt</h1>
-        <p className="text-xs text-muted-foreground">
-          Every error-severity finding from the repo&apos;s real ESLint config,
-          classified by whether it is a bug or a style note. Advisory — this
-          never blocks a build or a commit.
-        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -828,7 +825,7 @@ function ClassCard({
         >
           {realTotal.toLocaleString()}
         </span>{" "}
-        are real bugs or correctness hazards — the rest is style and doctrine.
+        real bugs
       </p>
 
       <div className="mt-2 flex flex-col gap-0.5">

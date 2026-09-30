@@ -995,8 +995,7 @@ const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
         {storageSize && (
           <div className="text-sm text-muted-foreground">
             Storage: {formatFileSize(storageSize.used)} used /{" "}
-            {formatFileSize(storageSize.remaining)} remaining (assumes a 5MB
-            quota — browsers vary)
+            {formatFileSize(storageSize.remaining)} free (5MB assumed)
           </div>
         )}
       </div>

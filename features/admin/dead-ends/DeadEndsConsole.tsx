@@ -755,16 +755,12 @@ function Header({
         >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           <strong className="font-semibold">
-            {problems.length > 0 && historyDrift
-              ? "Snapshot is inconsistent — the totals disagree with the findings below, and the trend is from a different scan."
-              : problems.length > 0
-                ? "Snapshot is inconsistent — the totals below do not match its own findings."
-                : "Snapshot is inconsistent — the trend below is from a different scan than the totals."}
+            Snapshot is inconsistent
           </strong>
           <span>
             {[...problems, ...(historyDrift ? [historyDrift] : [])].join("; ")}.
             Re-run <code className="font-mono">pnpm check:dead-ends:write</code>{" "}
-            and commit both JSON files together.
+            and commit both JSON files.
           </span>
           <button
             type="button"
@@ -909,9 +905,8 @@ function Trend({
   if (points.length < 2) {
     return (
       <p className="mt-3 text-[11px] text-muted-foreground">
-        Trend appears after a second scan — run{" "}
-        <code className="font-mono">pnpm check:dead-ends:write</code> and
-        commit.
+        Trend needs a second scan — run{" "}
+        <code className="font-mono">pnpm check:dead-ends:write</code>
       </p>
     );
   }
@@ -1175,8 +1170,8 @@ function FindingDetail({
             </AppLink>
           ) : (
             <span className="text-muted-foreground">
-              The detector could not name this entity, so there is no token to
-              register — identify the record yourself, then use its token.
+              Detector couldn&apos;t name this entity — identify the record
+              yourself
             </span>
           )}
         </Row>
@@ -1220,10 +1215,12 @@ function AllowlistPanel({ report }: { report: DeadEndReport }) {
   if (report.allowlist.length === 0) return null;
   return (
     <div className="rounded-lg border border-border bg-card p-3">
-      <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+      <p
+        className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
+        title="Edit in scripts/dead-ends/allowlist.ts"
+      >
         <ShieldOff className="h-3.5 w-3.5" />
-        Deliberate exemptions ({report.allowlist.length}) —
-        scripts/dead-ends/allowlist.ts
+        Deliberate exemptions ({report.allowlist.length})
       </p>
       <ul className="space-y-1.5">
         {report.allowlist.map((entry) => (

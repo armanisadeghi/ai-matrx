@@ -66,9 +66,8 @@ export default async function AdminLayout({
           sidebarExpanded={sidebarExpanded}
         >
           <div className="p-4 text-sm text-muted-foreground">
-            We could not verify who you are on this request, so administration
-            is not showing its data. You have not been signed out — reload in a
-            moment.
+            We couldn&apos;t verify you on this request. You&apos;re still signed
+            in — reload in a moment.
           </div>
         </AppShell>
       );

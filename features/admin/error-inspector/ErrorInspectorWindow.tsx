@@ -522,10 +522,7 @@ export default function ErrorInspectorWindow({
           {/* read-gate-exempt: lists errors captured in this browser session's memory; there is no read that can fail */}
           <p className="text-sm font-medium">No errors captured</p>
           <p className="text-xs mt-1 max-w-xs">
-            Every runtime error in this session — Supabase, uncaught exceptions,
-            rejected promises, console.error, backend HTTP failures, and React
-            render errors — appears here automatically, with full detail and
-            Copy for AI.
+            Runtime errors appear here as they happen.
           </p>
         </div>
       )}

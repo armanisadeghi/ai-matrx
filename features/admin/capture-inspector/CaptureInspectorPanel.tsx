@@ -120,8 +120,7 @@ export default function CaptureInspectorPanel({
 
       {mode === "minimal" && (
         <p className="border-b border-border bg-muted/40 px-3 py-1.5 text-[11px] text-muted-foreground">
-          Minimal retention: only the last 3 exchanges are kept so the buffer
-          can never accumulate. Switch on full retention to record a session.
+          Last 3 exchanges only — turn on full retention to record
         </p>
       )}
 
@@ -194,8 +193,7 @@ export default function CaptureInspectorPanel({
                 )}
                 {selected.truncated && (
                   <p className="mb-1 text-[10px] text-amber-600">
-                    Truncated — earlier events were dropped. Event indexes are
-                    the true wire positions, so the gap is visible below.
+                    Truncated: earlier events were dropped.
                   </p>
                 )}
 

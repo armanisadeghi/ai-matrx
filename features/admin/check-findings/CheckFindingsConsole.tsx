@@ -328,8 +328,7 @@ function LoadError({ what, message, onRetry }: { what: string; message: string; 
           <ErrorAlchemyMenu error={message} operation={`Read ${what}`} />
         </p>
         <p className="text-muted-foreground">
-          These tables are readable only by a platform admin on an /administration page. If you are one,
-          retry; a permission error here means the admin lane did not reach the database.
+          Admin-only data. Retry, and report it if it persists.
         </p>
       </div>
       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onRetry}>
@@ -1233,16 +1232,14 @@ function AcceptDialog({
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
           <p className="font-medium text-destructive">The accept landed, but the check still reports this finding.</p>
           <p className="text-muted-foreground">
-            A run that started after the commit ({pending.pending.commitSha?.slice(0, 7)}) still lists it. Mark OK again
-            checks main: if the accept was reverted it commits it again; if main&apos;s newest run already carries it and
-            still reports this finding, it records that the entry does not match what the check reads, with the fix.
+            A run after {pending.pending.commitSha?.slice(0, 7)} still lists it. Mark OK again recommits if reverted, or
+            records the mismatch and its fix.
           </p>
         </div>
       ) : null}
       {!repo || !checkId ? (
         <p className="text-destructive">
-          This finding&apos;s check has no repository and id on record, so there is no accept to offer. The
-          checks store requires both for every static check; this row breaks that rule — report it.
+          This check has no repository or id on record, so it can&apos;t be accepted. Report it.
         </p>
       ) : noAdapter ? (
         <div className="space-y-1">
@@ -1264,10 +1261,9 @@ function AcceptDialog({
             />
           </label>
           <p className="text-muted-foreground">
-            Mark OK writes this finding into the check&apos;s own allowlist in {repo}
-            {fe?.files ? ` (${fe.files.join(", ")})` : ""} with your reason, name and date, and commits it to main — so CI,
-            hand runs and this page all agree. The finding reads &ldquo;Marked OK — landing&rdquo; until the next checks run
-            confirms it, then moves to Accepted.
+            Mark OK commits this to the check&apos;s allowlist in {repo}
+            {fe?.files ? ` (${fe.files.join(", ")})` : ""} with your reason. It reads &ldquo;Marked OK — landing&rdquo;
+            until the next run.
           </p>
           {result.kind === "error" ? (
             <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
