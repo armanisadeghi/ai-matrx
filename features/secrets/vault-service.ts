@@ -1361,7 +1361,10 @@ export async function resolveCredentialHome(
     if (!byName && orgShare?.organization_id) {
       return {
         state: "found",
-        scope: { kind: "organization", organizationId: orgShare.organization_id },
+        scope: {
+          kind: "organization",
+          organizationId: orgShare.organization_id,
+        },
       };
     }
     return { state: "found", scope: { kind: "shared" } };
@@ -1430,7 +1433,12 @@ async function askCredentialHoldings(
  */
 export async function fetchVaultItems(
   scope: VaultScope,
-  opts?: { orgAdmin?: boolean },
+  opts?: {
+    /** One organization scope: the person is an owner/admin there. */
+    orgAdmin?: boolean;
+    /** All-organizations scope: the organizations where the person is an owner/admin. */
+    orgAdminIds?: readonly string[];
+  },
 ): Promise<VaultItem[]> {
   const supabase = createClient();
   const {
@@ -1464,18 +1472,33 @@ export async function fetchVaultItems(
   // is not none; the ids are read first, then exactly those items.
   let sharedIntoOrgIds: string[] = [];
   const orgShareEditIds = new Set<string>();
+  // Which organization each shared-in item was shared into (its own org role bounds it).
+  const shareOrgsByItem = new Map<string, Set<string>>();
+  // ALL ORGANIZATIONS (`organizationId: null`, the Organization tab's default): the same reads
+  // without the single-org narrowing. A filter change only — RLS still decides every row.
+  const oneOrganizationId =
+    scope.kind === "organization" ? scope.organizationId : null;
   if (scope.kind === "organization") {
-    const { data: orgGrants, error: orgGrantsError } = await supabase
+    let grantsQuery = supabase
       .schema("users")
       .from("user_secret_grants")
-      .select("credential_item_id, can_use, can_manage")
-      .eq("organization_id", scope.organizationId)
+      .select("credential_item_id, can_use, can_manage, organization_id")
       .not("credential_item_id", "is", null);
+    grantsQuery = oneOrganizationId
+      ? grantsQuery.eq("organization_id", oneOrganizationId)
+      : grantsQuery.not("organization_id", "is", null);
+    const { data: orgGrants, error: orgGrantsError } = await grantsQuery;
     assertVaultData(orgGrants, orgGrantsError);
     for (const g of orgGrants ?? []) {
       if (!g.credential_item_id || !(g.can_use || g.can_manage)) continue;
       sharedIntoOrgIds.push(g.credential_item_id);
       if (g.can_manage) orgShareEditIds.add(g.credential_item_id);
+      if (g.organization_id) {
+        const orgs =
+          shareOrgsByItem.get(g.credential_item_id) ?? new Set<string>();
+        orgs.add(g.organization_id);
+        shareOrgsByItem.set(g.credential_item_id, orgs);
+      }
     }
     sharedIntoOrgIds = Array.from(new Set(sharedIntoOrgIds));
   }
@@ -1488,12 +1511,17 @@ export async function fetchVaultItems(
     .order("created_at", { ascending: false })
     .order("id", { ascending: false });
   if (scope.kind === "organization") {
+    const inOrganizations = oneOrganizationId
+      ? `organization_id.eq.${oneOrganizationId}`
+      : "organization_id.not.is.null";
     itemsQuery =
       sharedIntoOrgIds.length > 0
         ? itemsQuery.or(
-            `organization_id.eq.${scope.organizationId},id.in.(${sharedIntoOrgIds.join(",")})`,
+            `${inOrganizations},id.in.(${sharedIntoOrgIds.join(",")})`,
           )
-        : itemsQuery.eq("organization_id", scope.organizationId);
+        : oneOrganizationId
+          ? itemsQuery.eq("organization_id", oneOrganizationId)
+          : itemsQuery.not("organization_id", "is", null);
   } else if (scope.kind === "shared") {
     // Items I was granted — deliberately EXCLUDING my own, which live in Mine.
     itemsQuery = itemsQuery
@@ -1562,19 +1590,68 @@ export async function fetchVaultItems(
     if (alarm) throw new Error(alarm);
   }
 
-  // My own access to this organization's vault bounds what it gives me.
-  const orgVaultAccess: OrganizationVaultAccess | null =
-    scope.kind === "organization"
-      ? opts?.orgAdmin
-        ? "admin"
-        : await fetchMyOrganizationVaultAccess(scope.organizationId)
-      : null;
+  // My own access to each organization's vault bounds what it gives me. One organization: one
+  // answer. All organizations: each item is judged by ITS OWN organization's role — the org it
+  // lives in, or the ones it was shared into — never one role for the whole list.
+  const orgAdminSet = new Set(opts?.orgAdminIds ?? []);
+  const accessByOrg = new Map<string, OrganizationVaultAccess>();
+  if (scope.kind === "organization") {
+    const orgIds = oneOrganizationId
+      ? [oneOrganizationId]
+      : Array.from(
+          new Set([
+            ...items.map((i) => i.organization_id),
+            ...Array.from(shareOrgsByItem.values()).flatMap((s) =>
+              Array.from(s),
+            ),
+          ]),
+        ).filter((id): id is string => Boolean(id));
+    await Promise.all(
+      orgIds.map(async (orgId) => {
+        const admin = oneOrganizationId
+          ? Boolean(opts?.orgAdmin)
+          : orgAdminSet.has(orgId);
+        accessByOrg.set(
+          orgId,
+          admin ? "admin" : await fetchMyOrganizationVaultAccess(orgId),
+        );
+      }),
+    );
+  }
+  const accessRank: Record<string, number> = {
+    none: 0,
+    use: 1,
+    editor: 2,
+    admin: 3,
+  };
+  const orgVaultAccessOf = (
+    item: CredentialItemMaskedRow,
+  ): OrganizationVaultAccess | null => {
+    if (scope.kind !== "organization") return null;
+    if (oneOrganizationId) return accessByOrg.get(oneOrganizationId) ?? null;
+    if (item.organization_id)
+      return accessByOrg.get(item.organization_id) ?? null;
+    let best: OrganizationVaultAccess | null = null;
+    for (const orgId of shareOrgsByItem.get(item.id) ?? []) {
+      const access = accessByOrg.get(orgId);
+      if (
+        access &&
+        (!best || (accessRank[access] ?? 0) > (accessRank[best] ?? 0))
+      )
+        best = access;
+    }
+    return best;
+  };
+  const orgAdminOf = (item: CredentialItemMaskedRow): boolean =>
+    oneOrganizationId || scope.kind !== "organization"
+      ? (opts?.orgAdmin ?? false)
+      : Boolean(item.organization_id && orgAdminSet.has(item.organization_id));
 
   // My own grants refine capabilities for rows I don't own (self-read policy).
   let manageGrantItemIds = new Set<string>();
   const needsGrantRefine =
     scope.kind === "shared" ||
-    (scope.kind === "organization" && !opts?.orgAdmin);
+    (scope.kind === "organization" && (!oneOrganizationId || !opts?.orgAdmin));
   if (needsGrantRefine) {
     const { data: grantRows, error: grantsError } = await supabase
       .schema("users")
@@ -1634,9 +1711,9 @@ export async function fetchVaultItems(
     fields: fieldsByItem.get(item.id) ?? [],
     attachments: attachmentsByItem.get(item.id) ?? [],
     capabilities: deriveCapabilities(item, user.id, {
-      orgAdmin: opts?.orgAdmin ?? false,
+      orgAdmin: orgAdminOf(item),
       manageGrantItemIds,
-      orgVaultAccess,
+      orgVaultAccess: orgVaultAccessOf(item),
       orgShareEditIds,
     }),
   }));
@@ -1691,12 +1768,16 @@ export interface VaultFillDevice {
 
 /** The browsers that may fill this person's saved passwords, newest first. */
 export async function listVaultFillDevices(): Promise<VaultFillDevice[]> {
-  const resp = await vaultFetch<{ devices: VaultFillDevice[] }>("/fill-devices");
+  const resp = await vaultFetch<{ devices: VaultFillDevice[] }>(
+    "/fill-devices",
+  );
   return resp.devices;
 }
 
 /** Turn filling off for one browser. It stays listed as turned off (audited). */
-export function revokeVaultFillDevice(deviceId: string): Promise<VaultFillDevice> {
+export function revokeVaultFillDevice(
+  deviceId: string,
+): Promise<VaultFillDevice> {
   return vaultFetch<VaultFillDevice>(
     `/fill-devices/${encodeURIComponent(deviceId)}/revoke`,
     { method: "POST" },

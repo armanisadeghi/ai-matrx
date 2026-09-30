@@ -72,6 +72,10 @@ describe("Vault scope persistence", () => {
   });
 
   test("rejects unknown and incomplete persisted scopes", () => {
+    expect(parseVaultScopeKey(vaultScopeKey({ kind: "organization", organizationId: null }))).toEqual({
+      kind: "organization",
+      organizationId: null,
+    });
     expect(parseVaultScopeKey("organization:")).toBeNull();
     expect(parseVaultScopeKey("active-organization")).toBeNull();
   });

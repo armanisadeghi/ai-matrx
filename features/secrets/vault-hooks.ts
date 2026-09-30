@@ -75,7 +75,10 @@ export function useCredentialHome(
   itemId: string | null | undefined,
   enabled = true,
 ): CredentialHome | null {
-  const [answer, setAnswer] = useState<{ id: string; home: CredentialHome } | null>(null);
+  const [answer, setAnswer] = useState<{
+    id: string;
+    home: CredentialHome;
+  } | null>(null);
   useEffect(() => {
     if (!itemId || !enabled) return;
     let active = true;
@@ -207,12 +210,19 @@ export interface VaultActions {
   fork: (itemId: string, to: VaultPrincipal) => Promise<void>;
 }
 
-export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
+export function useVault(
+  scope: VaultScope,
+  opts?: { orgAdmin?: boolean; orgAdminIds?: readonly string[] },
+) {
   const orgAdmin = opts?.orgAdmin ?? false;
+  // Primitive dep for the all-organizations read (each item judged by its own org's role).
+  const orgAdminKey = (opts?.orgAdminIds ?? []).join(",");
   // Primitive deps so the effect doesn't re-run on every object identity.
   const scopeKind = scope.kind;
   const organizationId =
     scope.kind === "organization" ? scope.organizationId : null;
+  const allOrganizations =
+    scope.kind === "organization" && !scope.organizationId;
   // The principal a create/import writes to. "Shared with me" owns nothing.
   const principal: VaultPrincipal | null = organizationId
     ? { type: "organization", organizationId }
@@ -229,19 +239,29 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
 
   const scopeKey = organizationId
     ? `organization:${organizationId}`
-    : scopeKind;
+    : allOrganizations
+      ? "organization"
+      : scopeKind;
 
   const currentScope = useCallback((): VaultScope => {
     if (organizationId) return { kind: "organization", organizationId };
+    if (allOrganizations) return { kind: "organization", organizationId: null };
     return scopeKind === "shared" ? { kind: "shared" } : { kind: "mine" };
-  }, [organizationId, scopeKind]);
+  }, [organizationId, allOrganizations, scopeKind]);
+  const readOpts = useCallback(
+    () => ({
+      orgAdmin,
+      orgAdminIds: orgAdminKey ? orgAdminKey.split(",") : [],
+    }),
+    [orgAdmin, orgAdminKey],
+  );
 
   // Post-mutation refresh (event-handler-invoked, so sync setState is fine).
   const refresh = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     setError(null);
     try {
-      const rows = await fetchVaultItems(currentScope(), { orgAdmin });
+      const rows = await fetchVaultItems(currentScope(), readOpts());
       if (requestId !== requestIdRef.current) return;
       setItems(rows);
       setLoadedScopeKey(scopeKey);
@@ -253,13 +273,13 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [currentScope, orgAdmin, scopeKey]);
+  }, [currentScope, readOpts, scopeKey]);
 
   // Initial load — setState only inside async callbacks (lint doctrine).
   useEffect(() => {
     let active = true;
     const requestId = ++requestIdRef.current;
-    fetchVaultItems(currentScope(), { orgAdmin })
+    fetchVaultItems(currentScope(), readOpts())
       .then((rows) => {
         if (!active || requestId !== requestIdRef.current) return;
         setItems(rows);
@@ -278,7 +298,7 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
     return () => {
       active = false;
     };
-  }, [currentScope, orgAdmin, scopeKey]);
+  }, [currentScope, readOpts, scopeKey]);
 
   const run = useCallback(
     async <T>(success: string | null, op: () => Promise<T>): Promise<T> => {

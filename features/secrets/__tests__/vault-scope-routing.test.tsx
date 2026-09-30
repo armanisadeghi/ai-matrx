@@ -10,14 +10,11 @@
  *  1. The personal scopes following the active organization. "Mine" and
  *     "Shared with me" are the person's own credentials; they must load with
  *     NO organization selected at all.
- *  2. The Organization tab picking a membership nobody chose. Until
- *     d30f8934e0 it fell back to `availableOrganizations[0]`, so a person who
- *     had selected their second organization was shown — and could write to —
- *     the first one's credentials. The fixture gives two memberships and
- *     selects the SECOND, so a first-membership fallback lands on the wrong
- *     id observably; with nothing selected the tab opens the organization
- *     chooser and reads nothing until the person picks (ACCESS-FIX-18: it
- *     used to toast and change nothing — a dead control).
+ *  2. The Organization tab narrowing to ONE organization nobody chose (the
+ *     ACTIVE one, or the first membership). The law (active org is never a
+ *     list filter, 2026-09-30): the tab lists credentials across ALL the
+ *     person's organizations, an organization filter starting at "All
+ *     organizations" narrows it, and the active organization never does.
  */
 import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -84,13 +81,25 @@ jest.mock("@/lib/redux/hooks", () => ({
   // it against the shape the real appContext slice holds keeps the selector
   // itself real.
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({ appContext: { organization_id: selectedOrganizationId }, userAuth: { id: selectedActorId } }),
+    selector({
+      appContext: { organization_id: selectedOrganizationId },
+      userAuth: { id: selectedActorId },
+    }),
 }));
 
 let selectedActorId = "user-1";
-const getBulk = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: { items: [] } }));
-const setFavorite = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: null }));
-const touch = jest.fn(async (..._args: unknown[]) => ({ ok: true, data: null }));
+const getBulk = jest.fn(async (..._args: unknown[]) => ({
+  ok: true,
+  data: { items: [] },
+}));
+const setFavorite = jest.fn(async (..._args: unknown[]) => ({
+  ok: true,
+  data: null,
+}));
+const touch = jest.fn(async (..._args: unknown[]) => ({
+  ok: true,
+  data: null,
+}));
 jest.mock("@/features/scopes/service/favoritesService", () => ({
   favoritesService: {
     getBulk: (...args: unknown[]) => getBulk(...args),
@@ -122,7 +131,10 @@ jest.mock("@/hooks/use-media-query", () => ({
 }));
 
 import { VaultWorkspace } from "../components/VaultWorkspace";
-import { VaultRouteWorkspaceStateProvider, VaultRouteWorkspaceStateBoundary } from "../components/VaultRouteWorkspaceState";
+import {
+  VaultRouteWorkspaceStateProvider,
+  VaultRouteWorkspaceStateBoundary,
+} from "../components/VaultRouteWorkspaceState";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -133,9 +145,30 @@ import { VaultRouteWorkspaceStateProvider, VaultRouteWorkspaceStateBoundary } fr
 const ROWS: Record<string, VaultItem[]> = {
   mine: [row("mine-row", "My Personal Login")],
   shared: [row("shared-row", "A Login Shared With Me")],
-  "organization:org-first": [row("first-row", "First Org Login")],
-  "organization:org-selected": [row("selected-row", "Selected Org Login")],
+  "organization:org-first": [
+    orgRow("first-row", "First Org Login", "org-first"),
+  ],
+  "organization:org-selected": [
+    orgRow("selected-row", "Selected Org Login", "org-selected"),
+  ],
+  // ALL ORGANIZATIONS: the tab's default read (`organizationId: null`).
+  organization: [
+    orgRow("first-row", "First Org Login", "org-first"),
+    orgRow("selected-row", "Selected Org Login", "org-selected"),
+  ],
 };
+
+function orgRow(
+  id: string,
+  displayName: string,
+  organizationId: string,
+): VaultItem {
+  return {
+    ...row(id, displayName),
+    user_id: "user-2",
+    organization_id: organizationId,
+  };
+}
 
 /** Built through the production normalizer, so the row carries every field the
  *  real read path materializes — never a hand-shaped partial. */
@@ -172,9 +205,10 @@ function row(
 }
 
 function scopeKey(scope: VaultScope): string {
-  return scope.kind === "organization"
+  if (scope.kind !== "organization") return scope.kind;
+  return scope.organizationId
     ? `organization:${scope.organizationId}`
-    : scope.kind;
+    : "organization";
 }
 
 // jsdom ships no matchMedia; the context menu's `useIsMobile` calls it during
@@ -207,7 +241,13 @@ async function mount(
   root = createRoot(container);
   await act(async () => {
     root.render(
-      <VaultRouteWorkspaceStateProvider><VaultWorkspace principal={{ type: "user" }} presentation="full" {...props} /></VaultRouteWorkspaceStateProvider>,
+      <VaultRouteWorkspaceStateProvider>
+        <VaultWorkspace
+          principal={{ type: "user" }}
+          presentation="full"
+          {...props}
+        />
+      </VaultRouteWorkspaceStateProvider>,
     );
   });
 }
@@ -241,16 +281,16 @@ async function chooseRenderedSort(label: string): Promise<void> {
   );
   if (!sortTrigger) throw new Error("Missing sort control");
   await act(async () => sortTrigger.click());
-  const option = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).find(
-    (candidate) => candidate.textContent === label,
-  );
+  const option = Array.from(
+    document.querySelectorAll<HTMLElement>("[role=option]"),
+  ).find((candidate) => candidate.textContent === label);
   if (!option) throw new Error(`Missing ${label} sort option`);
   await act(async () => option.click());
 }
 
 function renderedItemIds(): Array<string | null> {
-  return Array.from(container.querySelectorAll("[data-vault-item-id]")).map((node) =>
-    node.getAttribute("data-vault-item-id"),
+  return Array.from(container.querySelectorAll("[data-vault-item-id]")).map(
+    (node) => node.getAttribute("data-vault-item-id"),
   );
 }
 
@@ -290,63 +330,59 @@ describe("VaultWorkspace scope routing", () => {
   });
 
   /**
-   * THE TAB IS NEVER DEAD (ACCESS-FIX-18, VERIFIER-18 M4). With nothing selected, pressing
-   * Organization used to toast and change nothing. It must open the
-   * chooser, read NOTHING until the person picks (never a first-membership guess), and the pick
-   * must open that organization's credentials.
+   * THE ORGANIZATION TAB LISTS EVERY ORGANIZATION (2026-09-30): pressing it reads ALL the
+   * person's organizations (`organizationId: null`), each credential labelled with its own
+   * organization; nothing to choose first, and the active organization never narrows it.
    */
-  async function pickFromChooser(name: string): Promise<void> {
-    const option = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).find(
-      (candidate) => (candidate.textContent ?? "").includes(name),
-    );
-    if (!option) throw new Error(`The organization chooser offers no "${name}"`);
-    await act(async () => option.click());
-  }
-
-  it("opens the organization chooser when nothing is selected, and the pick opens that list", async () => {
+  it("opens the Organization tab on All organizations, labelled by organization", async () => {
     selectedOrganizationId = null;
     await mount();
 
     await clickScope("Organization");
 
-    // The chooser is open and offers both organizations; nothing was read yet.
-    const offered = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).map(
-      (o) => o.textContent,
-    );
-    expect(offered).toEqual(expect.arrayContaining(["First Org", "Selected Org"]));
-    expect(requestedScopes()).toEqual(["mine"]);
-    expect(container.textContent).not.toContain("First Org Login");
-    expect(toastError).not.toHaveBeenCalled();
-
-    await pickFromChooser("Selected Org");
-
-    expect(requestedScopes()).toEqual(["mine", "organization:org-selected"]);
+    expect(requestedScopes()).toEqual(["mine", "organization"]);
+    expect(container.textContent).toContain("First Org Login");
     expect(container.textContent).toContain("Selected Org Login");
     expect(container.textContent).not.toContain("My Personal Login");
+    // Each row names its own organization.
+    expect(
+      container.querySelector('[title="Organization: First Org"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[title="Organization: Selected Org"]'),
+    ).not.toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("never lets the ACTIVE organization pick the tab's organization: the person chooses", async () => {
+  it("never lets the ACTIVE organization narrow the Organization tab", async () => {
     selectedOrganizationId = "org-selected";
     await mount();
 
     await clickScope("Organization");
 
-    // Two memberships and an active organization set: nothing is read until the person picks.
-    expect(requestedScopes()).toEqual(["mine"]);
-    expect(container.textContent).not.toContain("Selected Org Login");
-    expect(container.textContent).not.toContain("First Org Login");
-
-    await pickFromChooser("First Org");
-    expect(requestedScopes()).toEqual(["mine", "organization:org-first"]);
+    // Both organizations' credentials, whichever organization is active.
+    expect(requestedScopes()).toEqual(["mine", "organization"]);
+    expect(container.textContent).toContain("Selected Org Login");
     expect(container.textContent).toContain("First Org Login");
-    expect(container.textContent).not.toContain("Selected Org Login");
-    expect(toastError).not.toHaveBeenCalled();
+    // And the filter control offers All organizations, not the active one.
+    const filter = container.querySelector("[data-entity-org-filter]");
+    expect(filter?.textContent).toContain("All organizations");
   });
 
   it("filters and sorts rendered full controls without changing canonical selection routing", async () => {
     ROWS.mine = [
-      row("z", "Zulu Login", "2026-09-02T00:00:00.000Z", "2026-09-01T00:00:00.000Z"),
-      row("a", "Alpha Login", "2026-09-01T00:00:00.000Z", "2026-09-03T00:00:00.000Z"),
+      row(
+        "z",
+        "Zulu Login",
+        "2026-09-02T00:00:00.000Z",
+        "2026-09-01T00:00:00.000Z",
+      ),
+      row(
+        "a",
+        "Alpha Login",
+        "2026-09-01T00:00:00.000Z",
+        "2026-09-03T00:00:00.000Z",
+      ),
     ];
     const onSelectedItemIdChange = jest.fn();
     await mount({ selectedItemId: null, onSelectedItemIdChange });
@@ -383,7 +419,9 @@ describe("VaultWorkspace scope routing", () => {
     await chooseRenderedSort("Name Z–A");
     expect(renderedItemIds()).toEqual(["z", "a"]);
 
-    const alpha = container.querySelector<HTMLButtonElement>('[aria-label="Open Alpha Login"]');
+    const alpha = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Open Alpha Login"]',
+    );
     if (!alpha) throw new Error("Missing credential row");
     await act(async () => alpha.click());
     expect(onSelectedItemIdChange).toHaveBeenCalledWith("a");
@@ -393,16 +431,23 @@ describe("VaultWorkspace scope routing", () => {
     desktopWorkspace = false;
     ROWS.mine = [row("narrow-z", "Zulu Login"), row("narrow-a", "Alpha Login")];
     await mount({ presentation: "full" });
-    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]');
+    const search = container.querySelector<HTMLInputElement>(
+      'input[aria-label="Search credentials"]',
+    );
     if (!search) throw new Error("Missing narrow search control");
-    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    const setValue = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
     if (!setValue) throw new Error("Missing input value setter");
     await act(async () => {
       setValue.call(search, "no results");
       search.dispatchEvent(new Event("input", { bubbles: true }));
     });
     expect(container.textContent).toContain("No credentials match");
-    const clear = container.querySelector<HTMLButtonElement>('button[aria-label="Clear search"]');
+    const clear = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Clear search"]',
+    );
     if (!clear) throw new Error("Missing narrow clear search control");
     await act(async () => clear.click());
     await chooseRenderedSort("Name Z–A");
@@ -410,18 +455,28 @@ describe("VaultWorkspace scope routing", () => {
   });
 
   it("keeps compact cards on the same metadata controls", async () => {
-    ROWS.mine = [row("compact-z", "Zulu Login"), row("compact-a", "Alpha Login")];
+    ROWS.mine = [
+      row("compact-z", "Zulu Login"),
+      row("compact-a", "Alpha Login"),
+    ];
     await mount({ presentation: "compact" });
-    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]');
+    const search = container.querySelector<HTMLInputElement>(
+      'input[aria-label="Search credentials"]',
+    );
     if (!search) throw new Error("Missing compact search control");
-    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    const setValue = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
     if (!setValue) throw new Error("Missing input value setter");
     await act(async () => {
       setValue.call(search, "alpha");
       search.dispatchEvent(new Event("input", { bubbles: true }));
     });
     expect(renderedItemIds()).toEqual(["compact-a"]);
-    const clear = container.querySelector<HTMLButtonElement>('button[aria-label="Clear search"]');
+    const clear = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Clear search"]',
+    );
     if (!clear) throw new Error("Missing compact clear search control");
     await act(async () => clear.click());
     await chooseRenderedSort("Name Z–A");
@@ -430,48 +485,96 @@ describe("VaultWorkspace scope routing", () => {
 
   it("does not touch a default full-pane item or when its star is clicked", async () => {
     await mount();
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(touch).not.toHaveBeenCalled();
-    const star = container.querySelector<HTMLButtonElement>('[aria-label="Add My Personal Login to favorites"]');
+    const star = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Add My Personal Login to favorites"]',
+    );
     if (!star) throw new Error("Missing favorite control");
     await act(async () => star.click());
-    expect(setFavorite).toHaveBeenCalledWith("credential_item", "mine-row", true);
+    expect(setFavorite).toHaveBeenCalledWith(
+      "credential_item",
+      "mine-row",
+      true,
+    );
     expect(touch).not.toHaveBeenCalled();
   });
 
   it("keeps compact stars separate from opening a credential", async () => {
     await mount({ presentation: "compact" });
-    await act(async () => { await Promise.resolve(); });
-    const star = container.querySelector<HTMLButtonElement>('[aria-label="Add My Personal Login to favorites"]');
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const star = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Add My Personal Login to favorites"]',
+    );
     if (!star) throw new Error("Missing compact favorite control");
     await act(async () => star.click());
-    expect(setFavorite).toHaveBeenCalledWith("credential_item", "mine-row", true);
+    expect(setFavorite).toHaveBeenCalledWith(
+      "credential_item",
+      "mine-row",
+      true,
+    );
     expect(touch).not.toHaveBeenCalled();
   });
 
   it("keeps route-local search and sort when the item route remounts the workspace", async () => {
     await mount();
-    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]');
+    const search = container.querySelector<HTMLInputElement>(
+      'input[aria-label="Search credentials"]',
+    );
     if (!search) throw new Error("Missing Vault search control");
-    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    const setValue = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
     if (!setValue) throw new Error("Missing input value setter");
-    await act(async () => { setValue.call(search, "personal"); search.dispatchEvent(new Event("input", { bubbles: true })); });
+    await act(async () => {
+      setValue.call(search, "personal");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
     await chooseRenderedSort("Recently viewed");
     await act(async () => {
-      root.render(<VaultRouteWorkspaceStateProvider><VaultWorkspace key="item-route" principal={{ type: "user" }} presentation="full" selectedItemId="mine-row" /></VaultRouteWorkspaceStateProvider>);
+      root.render(
+        <VaultRouteWorkspaceStateProvider>
+          <VaultWorkspace
+            key="item-route"
+            principal={{ type: "user" }}
+            presentation="full"
+            selectedItemId="mine-row"
+          />
+        </VaultRouteWorkspaceStateProvider>,
+      );
     });
-    expect(container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]')?.value).toBe("personal");
-    expect(container.querySelector('[aria-label="Sort credentials"]')?.textContent).toContain("Recently viewed");
+    expect(
+      container.querySelector<HTMLInputElement>(
+        'input[aria-label="Search credentials"]',
+      )?.value,
+    ).toBe("personal");
+    expect(
+      container.querySelector('[aria-label="Sort credentials"]')?.textContent,
+    ).toContain("Recently viewed");
   });
 
-  it("keeps the chosen Vault scope when the item route remounts", async () => {
+  it("keeps a routed organization credential's scope when the item route remounts", async () => {
     selectedOrganizationId = "org-selected";
     await mount();
     await clickScope("Organization");
-    await pickFromChooser("Selected Org");
     await act(async () => {
-      root.render(<VaultRouteWorkspaceStateProvider><VaultWorkspace key="organization-item-route" principal={{ type: "user" }} presentation="full" selectedItemId="selected-row" /></VaultRouteWorkspaceStateProvider>);
+      root.render(
+        <VaultRouteWorkspaceStateProvider>
+          <VaultWorkspace
+            key="organization-item-route"
+            principal={{ type: "user" }}
+            presentation="full"
+            selectedItemId="selected-row"
+          />
+        </VaultRouteWorkspaceStateProvider>,
+      );
     });
+    // A routed credential opens in the organization that HOLDS it (read from the record).
     expect(requestedScopes().at(-1)).toBe("organization:org-selected");
     expect(container.textContent).toContain("Selected Org Login");
   });
@@ -489,7 +592,9 @@ describe("VaultWorkspace scope routing", () => {
   it("still shows the No Access page for a routed credential she was never given", async () => {
     await mount({ selectedItemId: "someone-elses-row" });
     expect(requestedScopes()).toEqual(["mine"]);
-    expect(container.textContent).toContain("No access page for someone-elses-row");
+    expect(container.textContent).toContain(
+      "No access page for someone-elses-row",
+    );
   });
 
   it("keeps the Favorites filter when the item route remounts", async () => {
@@ -497,30 +602,51 @@ describe("VaultWorkspace scope routing", () => {
     await clickScope("Favorites");
     expect(container.textContent).toContain("No credentials match");
     await act(async () => {
-      root.render(<VaultRouteWorkspaceStateProvider><VaultWorkspace key="favorite-item-route" principal={{ type: "user" }} presentation="full" selectedItemId="mine-row" /></VaultRouteWorkspaceStateProvider>);
+      root.render(
+        <VaultRouteWorkspaceStateProvider>
+          <VaultWorkspace
+            key="favorite-item-route"
+            principal={{ type: "user" }}
+            presentation="full"
+            selectedItemId="mine-row"
+          />
+        </VaultRouteWorkspaceStateProvider>,
+      );
     });
-    const favoriteButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Favorites"));
+    const favoriteButton = Array.from(
+      container.querySelectorAll("button"),
+    ).find((button) => button.textContent?.includes("Favorites"));
     expect(favoriteButton?.getAttribute("aria-current")).toBe("page");
     expect(container.textContent).toContain("No credentials match");
   });
 
-  it.each(["actor", "organization"])("resets route view state on a change of actor only (%s)", async (changed) => {
-    await mount();
-    const renderBoundary = () => <VaultRouteWorkspaceStateBoundary><VaultWorkspace principal={{ type: "user" }} presentation="full" /></VaultRouteWorkspaceStateBoundary>;
-    await act(async () => root.render(renderBoundary()));
-    await clickScope("Favorites");
-    await chooseRenderedSort("Recently viewed");
-    if (changed === "actor") selectedActorId = "user-2";
-    else selectedOrganizationId = "org-selected";
-    await act(async () => root.render(renderBoundary()));
-    const favoriteButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Favorites"));
-    // A new person starts clean; the ACTIVE organization changing never throws the list state away.
-    const reset = changed === "actor";
-    expect(favoriteButton?.getAttribute("aria-current")).toBe(reset ? null : "page");
-    expect(container.querySelector('[aria-label="Sort credentials"]')?.textContent).toContain(
-      reset ? "Newest added" : "Recently viewed",
-    );
-    if (reset) expect(container.textContent).toContain("My Personal Login");
-  });
-
+  it.each(["actor", "organization"])(
+    "resets route view state on a change of actor only (%s)",
+    async (changed) => {
+      await mount();
+      const renderBoundary = () => (
+        <VaultRouteWorkspaceStateBoundary>
+          <VaultWorkspace principal={{ type: "user" }} presentation="full" />
+        </VaultRouteWorkspaceStateBoundary>
+      );
+      await act(async () => root.render(renderBoundary()));
+      await clickScope("Favorites");
+      await chooseRenderedSort("Recently viewed");
+      if (changed === "actor") selectedActorId = "user-2";
+      else selectedOrganizationId = "org-selected";
+      await act(async () => root.render(renderBoundary()));
+      const favoriteButton = Array.from(
+        container.querySelectorAll("button"),
+      ).find((button) => button.textContent?.includes("Favorites"));
+      // A new person starts clean; the ACTIVE organization changing never throws the list state away.
+      const reset = changed === "actor";
+      expect(favoriteButton?.getAttribute("aria-current")).toBe(
+        reset ? null : "page",
+      );
+      expect(
+        container.querySelector('[aria-label="Sort credentials"]')?.textContent,
+      ).toContain(reset ? "Newest added" : "Recently viewed");
+      if (reset) expect(container.textContent).toContain("My Personal Login");
+    },
+  );
 });

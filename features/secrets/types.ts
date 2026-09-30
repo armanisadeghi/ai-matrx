@@ -241,23 +241,30 @@ export function isOrganizationVaultAccess(
   value: unknown,
 ): value is OrganizationVaultAccess {
   return (
-    value === "none" || value === "use" || value === "editor" || value === "admin"
+    value === "none" ||
+    value === "use" ||
+    value === "editor" ||
+    value === "admin"
   );
 }
 
-export const MEMBER_VAULT_ACCESS_LABELS: Record<OrganizationVaultAccess, string> = {
+export const MEMBER_VAULT_ACCESS_LABELS: Record<
+  OrganizationVaultAccess,
+  string
+> = {
   none: "No access",
   use: "Use only",
   editor: "Editor",
   admin: "Full (owner or admin)",
 };
 
-export const MEMBER_VAULT_ACCESS_HELP: Record<OrganizationVaultAccess, string> = {
-  none: "Cannot see or use the organization's saved logins.",
-  use: "They and their agents can sign in with saved logins, but cannot see passwords.",
-  editor: "Can see and edit saved values.",
-  admin: "Owners and admins always have full access.",
-};
+export const MEMBER_VAULT_ACCESS_HELP: Record<OrganizationVaultAccess, string> =
+  {
+    none: "Cannot see or use the organization's saved logins.",
+    use: "They and their agents can sign in with saved logins, but cannot see passwords.",
+    editor: "Can see and edit saved values.",
+    admin: "Owners and admins always have full access.",
+  };
 export type VaultGrantAddRequest = ApiSchemas["VaultGrantAddRequest"];
 export type VaultAssignRequest = ApiSchemas["VaultAssignRequest"];
 export type VaultAssignResponse = ApiSchemas["VaultAssignResponse"];
@@ -308,7 +315,9 @@ export function toPrincipalIn(principal: VaultPrincipal): VaultPrincipalIn {
 export type VaultScope =
   | { kind: "mine" }
   | { kind: "shared" }
-  | { kind: "organization"; organizationId: string };
+  /** `organizationId: null` is ALL the person's organizations (the tab's default — a filter,
+   *  never a permission: RLS still decides what each item lets them see and do). */
+  | { kind: "organization"; organizationId: string | null };
 
 export const VAULT_SCOPE_LABELS = {
   mine: "Mine",
@@ -318,9 +327,10 @@ export const VAULT_SCOPE_LABELS = {
 
 /** Stable, non-secret persistence key for a viewed Vault scope. */
 export function vaultScopeKey(scope: VaultScope): string {
-  return scope.kind === "organization"
+  if (scope.kind !== "organization") return scope.kind;
+  return scope.organizationId
     ? `organization:${scope.organizationId}`
-    : scope.kind;
+    : "organization";
 }
 
 /** Parse only the three canonical Vault destinations from persisted UI state. */
@@ -329,6 +339,8 @@ export function parseVaultScopeKey(
 ): VaultScope | null {
   if (value === "mine") return { kind: "mine" };
   if (value === "shared") return { kind: "shared" };
+  if (value === "organization")
+    return { kind: "organization", organizationId: null };
   if (value?.startsWith("organization:")) {
     const organizationId = value.slice("organization:".length).trim();
     if (organizationId) return { kind: "organization", organizationId };
@@ -365,9 +377,11 @@ export const VAULT_LABELS = {
  *  creating from that scope is meaningless, so the UI hides create there. */
 export function scopeToPrincipal(scope: VaultScope): VaultPrincipal | null {
   if (scope.kind === "mine") return { type: "user" };
-  if (scope.kind === "organization") {
+  if (scope.kind === "organization" && scope.organizationId) {
     return { type: "organization", organizationId: scope.organizationId };
   }
+  // "Shared with me" owns nothing; neither does the all-organizations view (a new
+  // organization credential needs one organization named).
   return null;
 }
 

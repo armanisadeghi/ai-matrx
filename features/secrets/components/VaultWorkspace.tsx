@@ -9,7 +9,10 @@
  * The list is modelled on the best password managers: one identity line and
  * one concise supporting line. Values and full metadata belong in detail.
  */
-import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import {
+  UntrustedCount,
+  type CountRead,
+} from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ReactNode } from "react";
@@ -90,7 +93,7 @@ import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultLoginExportDialog } from "./VaultLoginExportDialog";
 import { VaultBackupDialog } from "./VaultBackupDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
-import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
@@ -141,27 +144,17 @@ export function VaultWorkspace({
   const actorId = useAppSelector(selectUserId);
   const routeWorkspaceState = useVaultRouteWorkspaceState();
   /**
-   * 🚨 THE ORGANIZATION TAB IS NEVER A DEAD CONTROL (lane ACCESS-FIX-18, VERIFIER-18 M4). With
-   * pressing it used to raise a toast and change nothing; clicked twice on production, "nothing
-   * says why". Now it opens the organization's credentials:
-   *   · the one organization they belong to, when there is exactly one;
-   *   · otherwise the organization chooser opens right there, and the pick opens that list.
-   * Never the active organization and never a silent first-membership pick (d30f8934e0): with
-   * several, THEY choose, and the chooser beside the tab names which list is showing afterwards.
+   * THE ORGANIZATION TAB LISTS EVERY ORGANIZATION'S CREDENTIALS (active-org-is-never-a-list-filter
+   * law): it opens on All organizations — the org is a label on each row — and the shell's
+   * `EntityOrgFilter` narrows to one. Never the active organization, never a saved pick. What the
+   * person may DO with each credential is decided by their own role in that credential's
+   * organization (a filter change only; RLS still decides what they can read).
    */
-  const [organizationChooser, setOrganizationChooser] = useState<
-    "aside" | "bar" | "compact" | null
-  >(null);
-  const switchToOrganizationScope = (
-    from: "aside" | "bar" | "compact",
-  ): string | null => {
-    if (availableOrganizations.length === 1)
-      return availableOrganizations[0]!.id;
-    setOrganizationChooser(from);
-    return null;
+  const openOrganizationScope = () => {
+    setUserScope({ kind: "organization", organizationId: null });
+    setSelectedId(null);
   };
-  const chooseOrganizationVault = (organizationId: string) => {
-    setOrganizationChooser(null);
+  const chooseOrganizationFilter = (organizationId: string | null) => {
     setUserScope({ kind: "organization", organizationId });
     setSelectedId(null);
   };
@@ -177,6 +170,7 @@ export function VaultWorkspace({
     parseVaultScopeKey(controlledScope) ?? uncontrolledScope;
   const userScope: VaultScope =
     requestedUserScope.kind !== "organization" ||
+    requestedUserScope.organizationId === null ||
     availableOrganizations.some(
       (org) => org.id === requestedUserScope.organizationId,
     )
@@ -190,23 +184,44 @@ export function VaultWorkspace({
     principal.type === "organization"
       ? { kind: "organization", organizationId: principal.organizationId }
       : userScope;
+  // The ONE organization the viewed list is narrowed to (filter), or the routed organization.
   const activeOrganization =
-    scope.kind === "organization"
+    scope.kind === "organization" && scope.organizationId
       ? availableOrganizations.find((org) => org.id === scope.organizationId)
       : undefined;
+  const organizationNameById = new Map(
+    availableOrganizations.map((org) => [org.id, org.name] as const),
+  );
+  /** Organizations where the person is an owner/admin — each credential is judged by its own. */
+  const orgAdminIds = availableOrganizations
+    .filter((org) => org.role === "owner" || org.role === "admin")
+    .map((org) => org.id);
   const orgAdmin =
     scope.kind === "organization"
-      ? principal.type === "organization"
-        ? Boolean(canManage)
-        : Boolean(
-            activeOrganization?.role === "owner" ||
-            activeOrganization?.role === "admin",
-          )
+      ? !scope.organizationId
+        ? false
+        : principal.type === "organization"
+          ? Boolean(canManage)
+          : Boolean(
+              activeOrganization?.role === "owner" ||
+              activeOrganization?.role === "admin",
+            )
       : true;
-  const viewedPrincipal = scopeToPrincipal(scope) ?? { type: "user" };
+  const viewedPrincipal: VaultPrincipal = scopeToPrincipal(scope) ?? {
+    type: "user",
+  };
+  /** A credential's own principal: in the all-organizations view each item names its organization. */
+  const principalFor = (
+    item: { organization_id: string | null } | null | undefined,
+  ): VaultPrincipal =>
+    scope.kind === "organization" &&
+    !scope.organizationId &&
+    item?.organization_id
+      ? { type: "organization", organizationId: item.organization_id }
+      : viewedPrincipal;
   const isShared = scope.kind === "shared";
 
-  const vault = useVault(scope, { orgAdmin });
+  const vault = useVault(scope, { orgAdmin, orgAdminIds });
   /** The vault read's outcome — every count below says "—" when it failed. */
   const vaultRead = readOf({ loading: vault.loading, error: vault.error });
   const { definitions } = useVaultDefinitions();
@@ -345,13 +360,7 @@ export function VaultWorkspace({
     void vaultItemState.touch(selectedItemId, touchKey).then((touched) => {
       if (touched) deepLinkTouch.current = touchKey;
     });
-  }, [
-    actorId,
-    selectedItemId,
-    selected,
-    scope,
-    vaultItemState,
-  ]);
+  }, [actorId, selectedItemId, selected, scope, vaultItemState]);
   const openItem = (itemId: string) => {
     setSelectedId(itemId);
     void vaultItemState.touch(itemId);
@@ -389,7 +398,7 @@ export function VaultWorkspace({
                 <div className="min-w-0">
                   <p className="whitespace-normal break-words text-sm font-semibold text-foreground">
                     {scope.kind === "organization"
-                      ? (activeOrganization?.name ?? "Organization vault")
+                      ? (activeOrganization?.name ?? "Organization credentials")
                       : "Personal vault"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
@@ -453,32 +462,13 @@ export function VaultWorkspace({
                             ? vault.items.length
                             : null
                         }
-                        onClick={() => {
-                          const organizationId =
-                            switchToOrganizationScope("aside");
-                          if (!organizationId) return;
-                          setUserScope({
-                            kind: "organization",
-                            organizationId,
-                          });
-                          setSelectedId(null);
-                        }}
+                        onClick={openOrganizationScope}
                       />
-                      {(scope.kind === "organization" ||
-                        organizationChooser === "aside") && (
-                        <OrganizationVaultChooser
-                          value={
-                            scope.kind === "organization"
-                              ? scope.organizationId
-                              : null
-                          }
-                          organizations={availableOrganizations}
-                          open={organizationChooser === "aside"}
-                          onOpenChange={(next) =>
-                            setOrganizationChooser(next ? "aside" : null)
-                          }
-                          onPick={chooseOrganizationVault}
-                          className="h-8 w-full"
+                      {scope.kind === "organization" && (
+                        <EntityOrgFilter
+                          orgId={scope.organizationId}
+                          onChange={chooseOrganizationFilter}
+                          className="h-8 w-full sm:max-w-none lg:h-8 lg:max-w-none"
                         />
                       )}
                     </>
@@ -577,16 +567,7 @@ export function VaultWorkspace({
                         type="button"
                         role="tab"
                         aria-selected={scope.kind === "organization"}
-                        onClick={() => {
-                          const organizationId =
-                            switchToOrganizationScope("bar");
-                          if (!organizationId) return;
-                          setUserScope({
-                            kind: "organization",
-                            organizationId,
-                          });
-                          setSelectedId(null);
-                        }}
+                        onClick={openOrganizationScope}
                         className={cn(
                           "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                           scope.kind === "organization"
@@ -599,24 +580,12 @@ export function VaultWorkspace({
                     )}
                   </div>
                 )}
-                {principal.type === "user" &&
-                  (scope.kind === "organization" ||
-                    organizationChooser === "bar") && (
-                    <OrganizationVaultChooser
-                      value={
-                        scope.kind === "organization"
-                          ? scope.organizationId
-                          : null
-                      }
-                      organizations={availableOrganizations}
-                      open={organizationChooser === "bar"}
-                      onOpenChange={(next) =>
-                        setOrganizationChooser(next ? "bar" : null)
-                      }
-                      onPick={chooseOrganizationVault}
-                      className="h-8 w-auto min-w-40"
-                    />
-                  )}
+                {principal.type === "user" && scope.kind === "organization" && (
+                  <EntityOrgFilter
+                    orgId={scope.organizationId}
+                    onChange={chooseOrganizationFilter}
+                  />
+                )}
                 {familiesPresent.length > 1 && (
                   <Select
                     value={family}
@@ -801,6 +770,14 @@ export function VaultWorkspace({
                     <VaultWorkspaceListRow
                       key={item.id}
                       item={item}
+                      organizationName={
+                        scope.kind === "organization" &&
+                        !scope.organizationId &&
+                        item.organization_id
+                          ? (organizationNameById.get(item.organization_id) ??
+                            null)
+                          : null
+                      }
                       sharedIn={
                         scope.kind === "organization" && !item.organization_id
                       }
@@ -856,7 +833,7 @@ export function VaultWorkspace({
                   <VaultItemDetail
                     key={detailItem.id}
                     item={detailItem}
-                    principal={viewedPrincipal}
+                    principal={principalFor(detailItem)}
                     definitions={defsByKey}
                     busy={vault.busy}
                     actions={vault.actions}
@@ -896,7 +873,7 @@ export function VaultWorkspace({
                 )
               : null
           }
-          principal={viewedPrincipal}
+          principal={principalFor(selected)}
           definitions={defsByKey}
           busy={vault.busy}
           actions={vault.actions}
@@ -1003,12 +980,7 @@ export function VaultWorkspace({
                 type="button"
                 role="tab"
                 aria-selected={scope.kind === "organization"}
-                onClick={() => {
-                  const organizationId = switchToOrganizationScope("compact");
-                  if (!organizationId) return;
-                  setUserScope({ kind: "organization", organizationId });
-                  setSelectedId(null);
-                }}
+                onClick={openOrganizationScope}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                   scope.kind === "organization"
@@ -1021,22 +993,12 @@ export function VaultWorkspace({
             )}
           </div>
         )}
-        {principal.type === "user" &&
-          (scope.kind === "organization" ||
-            organizationChooser === "compact") && (
-            <OrganizationVaultChooser
-              value={
-                scope.kind === "organization" ? scope.organizationId : null
-              }
-              organizations={availableOrganizations}
-              open={organizationChooser === "compact"}
-              onOpenChange={(next) =>
-                setOrganizationChooser(next ? "compact" : null)
-              }
-              onPick={chooseOrganizationVault}
-              className="h-8 w-auto min-w-40"
-            />
-          )}
+        {principal.type === "user" && scope.kind === "organization" && (
+          <EntityOrgFilter
+            orgId={scope.organizationId}
+            onChange={chooseOrganizationFilter}
+          />
+        )}
 
         <div className="relative min-w-0 flex-1 basis-56">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1198,6 +1160,13 @@ export function VaultWorkspace({
               <VaultItemCard
                 key={item.id}
                 item={item}
+                organizationName={
+                  scope.kind === "organization" &&
+                  !scope.organizationId &&
+                  item.organization_id
+                    ? (organizationNameById.get(item.organization_id) ?? null)
+                    : null
+                }
                 sharedIn={
                   scope.kind === "organization" && !item.organization_id
                 }
@@ -1258,7 +1227,7 @@ export function VaultWorkspace({
               <VaultItemDetail
                 key={selected.id}
                 item={selected}
-                principal={viewedPrincipal}
+                principal={principalFor(selected)}
                 definitions={defsByKey}
                 busy={vault.busy}
                 actions={vault.actions}
@@ -1423,9 +1392,12 @@ function VaultWorkspaceListRow({
   onOpen,
   onToggleFavorite,
   sharedIn = false,
+  organizationName = null,
 }: {
   /** A member's personal credential shared into this organization's vault. */
   sharedIn?: boolean;
+  /** The organization this credential lives in — a label on the all-organizations view. */
+  organizationName?: string | null;
   item: VaultItem;
   definition: CredentialDefinition | undefined;
   selected: boolean;
@@ -1475,6 +1447,15 @@ function VaultWorkspaceListRow({
           )}
         </div>
       </button>
+      {organizationName && (
+        <Badge
+          variant="outline"
+          className="max-w-[9rem] shrink-0 truncate font-normal"
+          title={`Organization: ${organizationName}`}
+        >
+          {organizationName}
+        </Badge>
+      )}
       {sharedIn && (
         <Badge
           variant="outline"
@@ -1615,9 +1596,12 @@ function VaultItemCard({
   onOpen,
   onToggleFavorite,
   sharedIn = false,
+  organizationName = null,
 }: {
   /** A member's personal credential shared into this organization's vault. */
   sharedIn?: boolean;
+  /** The organization this credential lives in — a label on the all-organizations view. */
+  organizationName?: string | null;
   item: VaultItem;
   definition: CredentialDefinition | undefined;
   favorite: boolean;
@@ -1669,6 +1653,15 @@ function VaultItemCard({
         {item.organization_id && item.access_mode === "restricted" && (
           <Badge variant="outline" className="shrink-0 font-normal">
             Restricted
+          </Badge>
+        )}
+        {organizationName && (
+          <Badge
+            variant="outline"
+            className="max-w-[9rem] shrink-0 truncate font-normal"
+            title={`Organization: ${organizationName}`}
+          >
+            {organizationName}
           </Badge>
         )}
         {sharedIn && (
@@ -1789,62 +1782,5 @@ function VaultEmptyState({
         </Button>
       )}
     </div>
-  );
-}
-
-/**
- * WHICH ORGANIZATION'S CREDENTIALS ARE SHOWING, AND THE WAY TO CHANGE IT — one control for the
- * three places the Organization tab lives. Opened by the tab itself when the person has not
- * said which organization (ACCESS-FIX-18); the pick opens that organization's list.
- */
-function OrganizationVaultChooser({
-  value,
-  organizations,
-  open,
-  onOpenChange,
-  onPick,
-  className,
-}: {
-  value: string | null;
-  organizations: ReadonlyArray<{
-    id: string;
-    name: string;
-    slug?: string | null;
-  }>;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onPick: (organizationId: string) => void;
-  className: string;
-}) {
-  return (
-    <Select
-      // ALWAYS CONTROLLED ("" = nothing chosen yet, the placeholder shows). Uncontrolled, Radix
-      // reports the pick from an effect, after the pick has already closed — and unmounted —
-      // this chooser, so the pick was lost.
-      value={value ?? ""}
-      open={open}
-      onOpenChange={onOpenChange}
-      onValueChange={onPick}
-    >
-      <SelectTrigger className={className} aria-label="Organization vault">
-        <SelectValue placeholder="Choose an organization" />
-      </SelectTrigger>
-      <SelectContent>
-        {organizations.map((org) => {
-          // THE SAME NAME, TOLD APART (UI-FIX-19): keyed by id, and a shared name carries its address.
-          const distinguisher = orgNameDistinguisher(org, organizations);
-          return (
-            <SelectItem key={org.id} value={org.id}>
-              {org.name}
-              {distinguisher ? (
-                <span className="ml-1.5 text-xs text-muted-foreground">
-                  {distinguisher}
-                </span>
-              ) : null}
-            </SelectItem>
-          );
-        })}
-      </SelectContent>
-    </Select>
   );
 }
