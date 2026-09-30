@@ -38,7 +38,25 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 jest.mock("@/features/kg-suggestions/hooks/useScopeSuggestions", () => ({
-  useScopeSuggestions: () => ({ suggestionsFor: () => [], forScope: () => [], decide: jest.fn(), accept: jest.fn() }),
+  // No knowledge-graph suggestions on this page; the hook's own empty shape.
+  useScopeSuggestions: () => ({
+    items: [],
+    byScope: new Map(),
+    byScopeItem: new Map(),
+    accept: jest.fn(),
+    reject: jest.fn(),
+    defer: jest.fn(),
+    status: "ready",
+    refresh: jest.fn(),
+    forScope: () => [],
+    forScopeItem: () => [],
+    countForScopes: () => 0,
+  }),
+}));
+// The type page's attachments grid needs the host's associations binding; it reads no values.
+jest.mock("@ai-matrx/associations/react", () => ({
+  ...jest.requireActual("@ai-matrx/associations/react"),
+  AssociationCardGrid: () => null,
 }));
 jest.mock("@/features/overlays/openers/contextItemsWindow", () => ({
   useOpenContextItemsWindow: () => jest.fn(),
