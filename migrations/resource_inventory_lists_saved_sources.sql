@@ -1,7 +1,9 @@
 -- resource_inventory_lists_saved_sources.sql
 --
 -- lane: A3-F follow-up, "one source input" campaign (follows resource_inventory_hides_child_and_system_files.sql).
--- based-on: platform._inventory_filter(text, uuid, uuid, boolean, boolean) prosrc sha256 f4a8d7ce881116e674c6d4e7358938e799b4f44b76f5dfc9c0837ad90b8bfaaa
+-- based-on: platform._inventory_filter(text, uuid, uuid, boolean, boolean) 103fda78c19224c62f03d9edc92c6fe6db4fc07b7890d1e139ab2dd33796df06
+-- (first executed through the Supabase MCP on 2026-09-29 against the A5-P body; this hash is that result, so a
+-- re-run through db:apply is a no-op that records the ledger row.)
 --
 -- "Use existing" in the Source input offered files, notes, transcripts, documents, tables and workbooks,
 -- so a person's own pasted text, saved web pages, YouTube captions and recordings (Sources in
