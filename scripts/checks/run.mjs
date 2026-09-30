@@ -65,9 +65,11 @@ import { ITEMS_END_PREFIX, ITEMS_ENV, ITEM_PREFIX, itemFingerprint, itemUnit, pa
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const LOG_DIR = join(REPO_ROOT, "tmp", "checks");
 const DEFAULT_WORKERS = 6;
-// Memory each concurrent row may take before the machine runs out. The heavy rows (the whole
-// type-check, the jest suites) take several GB each; a GitHub-hosted runner has 4 cores and 16 GB.
-const WORKER_MEMORY_GIB = 4;
+// Memory each concurrent row may take before the machine runs out. Measured on GitHub's 4-core /
+// 16 GB runner (run 36670255447, tmp/checks/memory.log): at 4 GiB per worker (3 workers) the run
+// sat at 15.4 of 15.6 GB used for seven minutes, 543 MB from the runner being killed. 6 GiB gives
+// that runner 2 workers; a 64 GB workstation keeps all 6.
+const WORKER_MEMORY_GIB = 6;
 
 /**
  * How many rows run at once: never more than the machine's cores or memory allow. Six fixed

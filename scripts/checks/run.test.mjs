@@ -498,9 +498,10 @@ test("--target clone without a prepared copy environment refuses to run", () => 
 // by the machine it runs on.
 test("the worker count never exceeds the machine's cores or memory", () => {
   const GiB = 1024 ** 3;
-  assert.equal(defaultWorkers({ cpus: 4, memBytes: 16 * GiB }), 4, "GitHub's hosted runner");
-  assert.equal(defaultWorkers({ cpus: 2, memBytes: 8 * GiB }), 2, "a 2-core private runner");
-  assert.equal(defaultWorkers({ cpus: 16, memBytes: 12 * GiB }), 3, "memory binds before cores");
+  // GitHub's hosted runner reports ~15.6 GB; at 3 workers it peaked 543 MB short of running out.
+  assert.equal(defaultWorkers({ cpus: 4, memBytes: 15.6 * GiB }), 2, "GitHub's hosted runner");
+  assert.equal(defaultWorkers({ cpus: 2, memBytes: 8 * GiB }), 1, "a 2-core / 8 GB private runner");
+  assert.equal(defaultWorkers({ cpus: 16, memBytes: 24 * GiB }), 4, "memory binds before cores");
   assert.equal(defaultWorkers({ cpus: 16, memBytes: 64 * GiB }), 6, "a workstation keeps the full pool");
   assert.equal(defaultWorkers({ cpus: 1, memBytes: 1 * GiB }), 1, "never zero");
 });
