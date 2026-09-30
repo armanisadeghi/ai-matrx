@@ -14,6 +14,14 @@ jest.mock("@/features/surfaces/runtime/surface-writeback", () => ({
 
 const vocab = { subtype: ["quiz", "flashcards"], status: ["ready"], visibility: ["private"] };
 
+describe("library_view filter key", () => {
+  it("sends the visibility choice under the `shown` key, validated against the visibility facet", () => {
+    expect(parseLibraryViewValue({ visibilities: ["private"] }, vocab)).toEqual({
+      filters: { shown: ["private"] },
+    });
+  });
+});
+
 describe("library_view", () => {
   it("reads every key", () => {
     expect(
