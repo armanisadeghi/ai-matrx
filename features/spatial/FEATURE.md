@@ -299,7 +299,10 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   inside a tile that is off the visible board (tabbing grid cells, find-next) or a contenteditable
   caret leaving it pans the CAMERA by the smallest amount, 24px margin, never a zoom (Figma, Excel) —
   what a native scroll would have done now that the board never scrolls natively. Not for a click's
-  focus (within 400ms of a press) and never while a pointer is down.
+  focus (within 400ms of a press) and never while a pointer is down. It reveals only what the content
+  itself shows (`clipToVisible`: a cell hidden past a grid's own scroll edge brings at most that edge on
+  screen — the grid scrolls its content), and re-checks for 700ms while the content settles (a grid
+  scrolling its own cell into view a frame later).
 
 - 2026-09-30 — Keys and scroll belong to their owner: `engine/key-target.ts` (`isTyping`, `boardOwnsKey`)
   is the one guard for every board key — a key inside a tile's content (grid cell, editor, Monaco

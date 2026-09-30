@@ -45,3 +45,31 @@ export const PRESS_FOCUS_WINDOW_MS = 400;
 export function shouldReveal(at: { inTile: boolean; pointersDown: number; msSincePress: number }): boolean {
   return at.inTile && at.pointersDown === 0 && at.msSincePress >= PRESS_FOCUS_WINDOW_MS;
 }
+
+/**
+ * The part of `el` its clipping boxes (the content's own scroll boxes, up to
+ * the tile) let anyone see. A focused element hidden inside the content's own
+ * clip — a cell past a grid's scroll edge — is not the camera's to reveal:
+ * the result collapses to the clip's nearest 1px edge, so the board brings
+ * at most that edge on screen and the content scrolls itself.
+ */
+export function clipToVisible(el: ScreenRect, clips: ScreenRect[]): ScreenRect {
+  let { left, top, right, bottom } = el;
+  for (const c of clips) {
+    left = Math.max(left, c.left);
+    top = Math.max(top, c.top);
+    right = Math.min(right, c.right);
+    bottom = Math.min(bottom, c.bottom);
+    if (left >= right) {
+      const edge = el.left >= c.right ? c.right : c.left + 1;
+      left = edge - 1;
+      right = edge;
+    }
+    if (top >= bottom) {
+      const edge = el.top >= c.bottom ? c.bottom : c.top + 1;
+      top = edge - 1;
+      bottom = edge;
+    }
+  }
+  return { left, top, right, bottom };
+}

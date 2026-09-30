@@ -38,7 +38,7 @@ import { type WheelMode, routeWheel } from "../engine/wheel-input";
 import { isCreationTool, toolForKey } from "../engine/tools";
 import { boardOwnsKey, isTyping } from "../engine/key-target";
 import { isAccidentalScroll } from "../engine/native-scroll";
-import { panToReveal, shouldReveal } from "../engine/reveal";
+import { type ScreenRect, clipToVisible, panToReveal, shouldReveal } from "../engine/reveal";
 import { FocusHostContext, SpatialStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
 
@@ -47,6 +47,7 @@ const HASH_THROTTLE_MS = 400;
 /** Screen px kept between a revealed element and the board's edge. */
 const REVEAL_MARGIN_PX = 24;
 const REVEAL_MS = 140;
+const REVEAL_SETTLE_MS = 700;
 
 interface SpatialViewportProps {
   initialCamera?: Camera;
@@ -202,6 +203,14 @@ export function SpatialViewport({
     const down = new Set<number>();
     let pressedAt = -Infinity;
     let frame = 0;
+    let recheck: ReturnType<typeof setTimeout> | undefined;
+    // A grid or editor often scrolls its own content to the focused element
+    // a frame or two AFTER focus moves (and smooth scrolling keeps moving
+    // it), so for a short window after a keyboard focus change the reveal
+    // re-runs on those scrolls. Outside the window a scroll is the person's
+    // own and never drags the board.
+    let settleUntil = 0;
+    let settling: { el: Node; measure: () => ScreenRect | null } | null = null;
     const onDown = (e: PointerEvent) => {
       down.add(e.pointerId);
       pressedAt = performance.now();
@@ -209,28 +218,68 @@ export function SpatialViewport({
     const onUp = (e: PointerEvent) => {
       down.delete(e.pointerId);
     };
-    const reveal = (from: Node | null, measure: () => DOMRect | null) => {
+    // The smallest camera pan that brings `r` inside the visible board.
+    const panInto = (r: ScreenRect | null, animate: boolean) => {
+      if (!r || (r.right - r.left === 0 && r.bottom - r.top === 0)) return;
+      const box = root.getBoundingClientRect();
+      const inset = store.getInsets();
+      const { dx, dy } = panToReveal(
+        r,
+        { left: box.left + inset.left, top: box.top + inset.top, right: box.right - inset.right, bottom: box.bottom - inset.bottom },
+        REVEAL_MARGIN_PX,
+      );
+      if (dx === 0 && dy === 0) return;
+      const next = panBy(store.getCamera(), dx, dy);
+      if (animate) store.flyTo(next, REVEAL_MS);
+      else store.setCamera(next);
+    };
+    // What of `rect` the content inside the tile lets anyone see: clipped by
+    // every non-visible-overflow box between it and the tile (its own grid
+    // scroller, the card). A cell hidden past a grid's edge is the grid's to
+    // scroll, not the camera's to chase.
+    const visible = (host: Element | null, rect: ScreenRect | null): ScreenRect | null => {
+      if (!host || !rect) return rect;
+      const clips: ScreenRect[] = [];
+      for (let el = host.parentElement; el && !el.matches("[data-spatial-tile]"); el = el.parentElement) {
+        const st = getComputedStyle(el);
+        if (st.overflowX !== "visible" || st.overflowY !== "visible") clips.push(el.getBoundingClientRect());
+      }
+      return clipToVisible(rect, clips);
+    };
+    const reveal = (from: Node | null, measure: () => ScreenRect | null) => {
       const el = from instanceof Element ? from : from?.parentElement ?? null;
       const inTile = !!el && root.contains(el) && !!el.closest("[data-spatial-tile]");
       if (!shouldReveal({ inTile, pointersDown: down.size, msSincePress: performance.now() - pressedAt })) return;
+      if (from) {
+        settling = { el: from, measure };
+        settleUntil = performance.now() + REVEAL_SETTLE_MS;
+      }
       cancelAnimationFrame(frame);
       // After layout settles (a grid scrolls its own cell into view first).
       frame = requestAnimationFrame(() => {
-        const r = measure();
-        if (!r || (r.width === 0 && r.height === 0)) return;
-        const box = root.getBoundingClientRect();
-        const inset = store.getInsets();
-        const { dx, dy } = panToReveal(
-          r,
-          { left: box.left + inset.left, top: box.top + inset.top, right: box.right - inset.right, bottom: box.bottom - inset.bottom },
-          REVEAL_MARGIN_PX,
-        );
-        if (dx !== 0 || dy !== 0) store.flyTo(panBy(store.getCamera(), dx, dy), REVEAL_MS);
+        panInto(measure(), true);
+      });
+      // Once more after the flight lands: content that re-laid itself out
+      // meanwhile (a virtualised grid) is caught without a scroll event.
+      clearTimeout(recheck);
+      const mine = settling;
+      recheck = setTimeout(() => {
+        if (settling === mine && down.size === 0) panInto(measure(), false);
+      }, REVEAL_MS + 120);
+    };
+    const onContentScroll = (e: Event) => {
+      if (!settling || performance.now() > settleUntil) return;
+      const target = e.target;
+      if (!(target instanceof Element) || !target.contains(settling.el)) return;
+      const { measure } = settling;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        panInto(measure(), false);
       });
     };
     const onFocusIn = (e: FocusEvent) => {
       const el = e.target as Element | null;
-      reveal(el, () => el?.getBoundingClientRect() ?? null);
+      reveal(el, () => visible(el, el?.getBoundingClientRect() ?? null));
     };
     const onSelection = () => {
       const sel = document.getSelection();
@@ -239,15 +288,18 @@ export function SpatialViewport({
       const host = node instanceof Element ? node : node?.parentElement;
       if (!host?.closest("[contenteditable='true'], [contenteditable='']")) return;
       const range = sel.getRangeAt(0);
-      reveal(node, () => range.getClientRects()[0] ?? range.getBoundingClientRect());
+      reveal(node, () => visible(host, range.getClientRects()[0] ?? range.getBoundingClientRect()));
     };
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("pointerup", onUp, true);
     window.addEventListener("pointercancel", onUp, true);
     root.addEventListener("focusin", onFocusIn);
     document.addEventListener("selectionchange", onSelection);
+    document.addEventListener("scroll", onContentScroll, true);
     return () => {
+      document.removeEventListener("scroll", onContentScroll, true);
       cancelAnimationFrame(frame);
+      clearTimeout(recheck);
       window.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("pointerup", onUp, true);
       window.removeEventListener("pointercancel", onUp, true);
