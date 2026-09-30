@@ -183,12 +183,23 @@ savepoint r2;
 select public.edu_class_set_access(:'CLASS', 'open');
 \set old_r2 :LAST_ERROR_SQLSTATE '|' :LAST_ERROR_MESSAGE
 rollback to savepoint r2;
+savepoint r2b;
+select custom.context_scope_archive((select s.id from context.scopes s where s.organization_id = :'W' and s.deleted_at is null order by s.id limit 1));
+\set old_r3 :LAST_ERROR_SQLSTATE '|' :LAST_ERROR_MESSAGE
+rollback to savepoint r2b;
+savepoint r2c;
+select custom.context_item_write((select i.id from context.context_items i join context.scope_types t on t.id = i.scope_type_id where t.organization_id = :'W' and i.deleted_at is null order by i.id limit 1), null, '{"max_items":5}');
+\set old_r4 :LAST_ERROR_SQLSTATE '|' :LAST_ERROR_MESSAGE
+rollback to savepoint r2c;
 \set ON_ERROR_STOP 1
 reset role;
 rollback to savepoint old_run;
 
 -- ═══ APPLY THE FILE (inside this transaction) ═════════════════════════════════════════════════
 \i :up
+-- the register's deferred guards (door_body_must_decide, provision_shape_guard) judge now, not at a commit that never comes
+set constraints all immediate;
+set constraints all deferred;
 
 -- ═══ F1 AFTER ══════════════════════════════════════════════════════════════════════════════════
 select count(*) as n_after from pg_proc p
@@ -246,6 +257,14 @@ savepoint r2n;
 select public.edu_class_set_access(:'CLASS', 'open');
 \set new_r2 :LAST_ERROR_SQLSTATE '|' :LAST_ERROR_MESSAGE
 rollback to savepoint r2n;
+savepoint r2nb;
+select custom.context_scope_archive((select s.id from context.scopes s where s.organization_id = :'W' and s.deleted_at is null order by s.id limit 1));
+\set new_r3 :LAST_ERROR_SQLSTATE '|' :LAST_ERROR_MESSAGE
+rollback to savepoint r2nb;
+savepoint r2nc;
+select custom.context_item_write((select i.id from context.context_items i join context.scope_types t on t.id = i.scope_type_id where t.organization_id = :'W' and i.deleted_at is null order by i.id limit 1), null, '{"max_items":5}');
+\set new_r4 :LAST_ERROR_SQLSTATE '|' :LAST_ERROR_MESSAGE
+rollback to savepoint r2nc;
 \set ON_ERROR_STOP 1
 reset role;
 rollback to savepoint new_run;
@@ -268,6 +287,8 @@ insert into l11_result values
      :'old_s8b' || ' ' || :'new_s8b' || ' ' || :'old_s8c' || ' ' || :'new_s8c'),
   ('F3 refusal: a member calling S6 hears the same', :'old_r1' = :'new_r1', :'old_r1' || ' | ' || :'new_r1'),
   ('F3 refusal: a non-owner calling S8 hears the same', :'old_r2' = :'new_r2', :'old_r2' || ' | ' || :'new_r2'),
+  ('F3 refusal: a member (not an admin) archiving a scope through the door hears the same', :'old_r3' = :'new_r3' and :'old_r3' like '42501|%', :'old_r3' || ' | ' || :'new_r3'),
+  ('F3 refusal: a member changing a field''s columns through the door hears the same', :'old_r4' = :'new_r4' and :'old_r4' like '42501|%', :'old_r4' || ' | ' || :'new_r4'),
   ('F3 the compare saw real rows (types, items, scopes, values, suggestions accepted)',
      jsonb_array_length(:'new_snap'::jsonb -> 'types') >= 4 and jsonb_array_length(:'new_snap'::jsonb -> 'items') >= 3
      and jsonb_array_length(:'new_snap'::jsonb -> 'scopes') >= 7 and jsonb_array_length(:'new_snap'::jsonb -> 'values') >= 4
@@ -279,6 +300,9 @@ insert into l11_result values
 
 -- ═══ F4 THE INVERSE ═══════════════════════════════════════════════════════════════════════════
 \i :down
+-- the register's deferred guards (door_body_must_decide, provision_shape_guard) judge now, not at a commit that never comes
+set constraints all immediate;
+set constraints all deferred;
 insert into l11_result
 select 'F4 the inverse puts every body and security back', count(*) = 0, coalesce(string_agg(b.fn, ', '), 'every body equal')
   from l11_bodies_before b

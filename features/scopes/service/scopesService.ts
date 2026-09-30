@@ -18,7 +18,7 @@
 // PROGRESS-SCOPES-WEB-REVERT.md. `pnpm check:old-system-unreachable` holds the old-table reads here
 // in its census while the switch is off; flipping it on is the moment to remove them.
 //
-// The two WRITES that still name the `context` schema live in `olderContextWrites.ts`
+// The one WRITE that still names the `context` schema lives in `olderContextWrites.ts`
 // (lane SCOPES-OLD-WRITERS).
 //
 // SCOPE ASSIGNMENTS MOVED OFF ctx_scope_assignments → platform.associations
@@ -51,10 +51,7 @@ import { readAllRowsIn } from "@/lib/supabase/readAllRowsIn";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
-import {
-  provisionScopeDatasetInTheOlderStore,
-  updateContextItemRow,
-} from "@/features/scopes/service/olderContextWrites";
+import { provisionScopeDatasetInTheOlderStore } from "@/features/scopes/service/olderContextWrites";
 import {
   callContextDoor,
   contextDoorQuery,
@@ -116,12 +113,10 @@ import type {
   TaskBucketLevel,
   TaskNode,
   TemplateScopeTypeDetail,
-  UpdateContextItemParams,
   UpdateScopeParams,
   UpdateScopeTypeParams,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import type { Database } from "@/types/database.types";
 
 // One denormalized scope row for tags: which entity, which scope, plus the
 // scope's name and its type's singular label (sidebar grouping).
@@ -1850,59 +1845,9 @@ export const scopesService = {
     }
   },
 
-  /**
-   * THE context-item edit door.
-   *
-   * `update_context_item` (SECURITY DEFINER, org-admin checked inside) takes
-   * the everyday columns and COALESCEs each one, so it can neither clear a
-   * column nor reach the ones it has no parameter for (custom input
-   * component, review interval, reference-cell config). A patch that needs
-   * either goes as one RLS-checked row update of `context.context_items` —
-   * the path the scope console has always used for those columns. Both
-   * answer with the authoritative row.
-   */
-  async updateContextItem(
-    params: UpdateContextItemParams,
-  ): Promise<ScopesRpcResult<ContextItemRow>> {
-    try {
-      requireUserId();
-      const { item_id, ...fields } = params;
-      const needsRowUpdate =
-        Object.values(fields).some((v) => v === null) ||
-        fields.custom_component !== undefined ||
-        fields.review_interval_days !== undefined ||
-        fields.allowed_reference_types !== undefined ||
-        fields.max_items !== undefined ||
-        fields.allowed_scope_type_ids !== undefined ||
-        fields.reference_source !== undefined;
-      if (needsRowUpdate) {
-        const patch: Database["context"]["Tables"]["context_items"]["Update"] = {};
-        for (const [k, v] of Object.entries(fields)) {
-          if (v !== undefined) (patch as Record<string, unknown>)[k] = v;
-        }
-        const { data, error } = await updateContextItemRow(item_id, patch);
-        if (error) return err(...mapPgErrorPair(error));
-        return decodeContextItemRow(data, "context_items update");
-      }
-      const { data, error } = await supabase.rpc("update_context_item", {
-        p_item_id: item_id,
-        p_display_name: fields.display_name,
-        p_description: fields.description,
-        p_category: fields.category ?? undefined,
-        p_value_type: fields.value_type,
-        p_fetch_hint: fields.fetch_hint,
-        p_sensitivity: fields.sensitivity,
-        p_tags: fields.tags,
-        p_sort_order: fields.sort_order,
-        p_status: fields.status,
-        p_status_note: fields.status_note ?? undefined,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      return decodeContextItemRow(data, "update_context_item");
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
+  // updateContextItem retired (lane SCOPES-OLD-WRITERS, 2026-09-29): a context field is edited only
+  // through the store's scope door, scopeStore.updateContextItem (custom.context_item_write), which
+  // decides the RPC-or-column split from the patch exactly as this method did.
 
   /** `delete_context_item` — soft archive (`is_active=false`, values retained). */
   async deleteContextItem(

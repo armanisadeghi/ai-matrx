@@ -484,66 +484,6 @@ describe("context item mutations", () => {
     expect(res).toEqual({ ok: true, data: contextItemRow });
   });
 
-  it("updateContextItem sends only the patch fields given", async () => {
-    mockReplies.push(ok({ ...contextItemRow, display_name: "Sector" }));
-
-    await scopesService.updateContextItem({
-      item_id: ITEM_ID,
-      display_name: "Sector",
-    });
-
-    expect(mockRequests).toEqual([
-      rpc("update_context_item", {
-        p_item_id: ITEM_ID,
-        p_display_name: "Sector",
-      }),
-    ]);
-  });
-
-  it("updateContextItem sends a clear or an RPC-less column as ONE row update of exactly that item", async () => {
-    // `update_context_item` COALESCEs every argument and has no parameter for
-    // the custom input component, so a clear (null) and that column go as a
-    // row update — only the fields given, only this item's id.
-    mockReplies.push(
-      ok({ ...contextItemRow, category: null, custom_component: { type: "toggle" } }),
-    );
-
-    const res = await scopesService.updateContextItem({
-      item_id: ITEM_ID,
-      category: null,
-      custom_component: { type: "toggle" },
-    });
-
-    expect(mockRequests).toEqual([
-      {
-        path: `/rest/v1/context_items?id=eq.${ITEM_ID}&select=*`,
-        profile: "context",
-        args: { category: null, custom_component: { type: "toggle" } },
-      },
-    ]);
-    expect(res).toEqual({
-      ok: true,
-      data: { ...contextItemRow, category: null, custom_component: { type: "toggle" } },
-    });
-  });
-
-  it("updateContextItem refuses a row that carries no scope type id", async () => {
-    mockReplies.push(ok({ ...contextItemRow, scope_type_id: null }));
-
-    const res = await scopesService.updateContextItem({
-      item_id: ITEM_ID,
-      display_name: "Sector",
-    });
-
-    expect(res).toEqual({
-      ok: false,
-      error: {
-        code: "internal",
-        message: "update_context_item returned no context item row",
-      },
-    });
-  });
-
   it("deleteContextItem archives exactly that item and reports its id", async () => {
     mockReplies.push(ok({ id: ITEM_ID, is_active: false }));
 

@@ -21,6 +21,7 @@ import Dexie, { type Table } from "dexie";
 import { logger } from "../logger";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { extractErrorMessage } from "@/utils/errors";
+import { fairTimeout } from "@/lib/timing/fairTimeout";
 
 export const IDB_NAME = "matrx-sync";
 export const IDB_SCHEMA_VERSION = 1;
@@ -109,33 +110,37 @@ async function completeIdbOperation<T>(
   operation: string,
   request: Promise<T>,
 ): Promise<T | null> {
-  let timeoutHandle: ReturnType<typeof globalThis.setTimeout> | null = null;
+  // A window the page was frozen through is not a fair test of IDB: closing
+  // its connection then would turn a page freeze into a spurious "IndexedDB
+  // stalled" and a needless reconnect (the 2026-09-30 /board capture).
+  const timeout = fairTimeout(IDB_OPERATION_TIMEOUT_MS, {
+    onStarvedWindow: (lateMs, starvedWindows) =>
+      logger.warn("idb.timeout.starved", { meta: { operation, lateMs, starvedWindows } }),
+  });
   const outcome = await Promise.race([
     request.then(
       (value) => ({ type: "value" as const, value }),
       (error) => ({ type: "error" as const, error }),
     ),
-    new Promise<{ type: "timeout" }>((resolve) => {
-      timeoutHandle = globalThis.setTimeout(
-        () => resolve({ type: "timeout" }),
-        IDB_OPERATION_TIMEOUT_MS,
-      );
-    }),
+    timeout.expired.then((starved) => ({ type: "timeout" as const, ...starved })),
   ]);
-  if (timeoutHandle !== null) globalThis.clearTimeout(timeoutHandle);
+  timeout.cancel();
 
   if (outcome.type === "value") return outcome.value;
   if (outcome.type === "error") throw outcome.error;
+  const { starvedWindows, starvedMs } = outcome;
 
   // This is a recovered, local diagnostic: it stays visible in the Error
   // Inspector even in production, but deliberately never enters system_error
   // / Patrol. The context is bounded operational metadata only — no keys,
-  // identities, persisted bodies, or browser storage values.
+  // identities, persisted bodies, or browser storage values. `starvedWindows`
+  // > 0 means page freezes also occurred; the freeze itself is reported by the
+  // main-thread stall monitor with its culprit scripts.
   captureError({
     source: "runtime-exception",
     code: "sync-idb-operation-timeout",
     message: "[sync] IndexedDB operation timed out; persistence recovery continued.",
-    details: `operation=${operation}; timeoutMs=${IDB_OPERATION_TIMEOUT_MS}; generation=${connectionFor(db).generation}`,
+    details: `operation=${operation}; timeoutMs=${IDB_OPERATION_TIMEOUT_MS}; generation=${connectionFor(db).generation}; starvedWindows=${starvedWindows}; starvedMs=${starvedMs}`,
     recoverable: true,
     level: "low",
     durable: false,

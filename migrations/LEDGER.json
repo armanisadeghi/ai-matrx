@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-30T02:07:01.588Z",
+  "generated_at": "2026-09-30T02:36:44.102Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1904,6 +1904,24 @@
       "checksum": "a0c35ab7ba1d4947daf1799bcb50cbf5bf3f092e71346d396340e24e590a08ce",
       "applied_at": "2026-09-29 23:09:39.77926+00"
     },
+    "migrations/campaign/drillusage_the_rollup_is_filled_from_the_ledger.sql": {
+      "source": "matrx-frontend",
+      "filename": "drillusage_the_rollup_is_filled_from_the_ledger.sql",
+      "checksum": "abda7f4811bf29c4982041e30d9d5134a99576303a548cdaae7bc0ab253c436d",
+      "applied_at": "2026-09-30 02:35:34.71621+00"
+    },
+    "migrations/campaign/drillusage_usage_is_counted_from_an_hourly_rollup.sql": {
+      "source": "matrx-frontend",
+      "filename": "drillusage_usage_is_counted_from_an_hourly_rollup.sql",
+      "checksum": "3e4bae38e6354f2c7ebda24478923123592e3ed327462a3d010a07c35b5375bc",
+      "applied_at": "2026-09-30 02:35:18.894338+00"
+    },
+    "migrations/campaign/drillusagepage_drill_declares_ai_usage.sql": {
+      "source": "matrx-frontend",
+      "filename": "drillusagepage_drill_declares_ai_usage.sql",
+      "checksum": "883d0f30d762762396a645e2fb2ee59dbf9f157473e9dc4b93fc26594b86450d",
+      "applied_at": "2026-09-30 02:36:42.268504+00"
+    },
     "migrations/campaign/enrich_a_field_a_model_owns.sql": {
       "source": "matrx-frontend",
       "filename": "enrich_a_field_a_model_owns.sql",
@@ -2371,6 +2389,12 @@
       "filename": "followbatch3_a_copy_step_never_deadlocks_with_a_migration.sql",
       "checksum": "23c565220aed3a3e9c8e0c0903992c393b500309ef75b7bb1366cda1403d0c54",
       "applied_at": "2026-09-30 00:02:12.078979+00"
+    },
+    "migrations/campaign/followbatch3_promoting_a_table_never_pauses_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "followbatch3_promoting_a_table_never_pauses_the_store.sql",
+      "checksum": "91f2aeb080aba8657729c0ce383399d407e43faee4fc8a20eec78685156995a7",
+      "applied_at": "2026-09-30 02:29:17.586585+00"
     },
     "migrations/campaign/followbatch3_saving_a_booking_page_never_pauses_the_store.sql": {
       "source": "matrx-frontend",
@@ -4219,6 +4243,12 @@
       "filename": "scopesaccess_one_reader_of_a_scopes_settings.sql",
       "checksum": "d5a3d617356d600647507684a2f574ae9127d4fa2f4a2512660fcc5604ec0d7b",
       "applied_at": "2026-09-30 02:06:59.568665+00"
+    },
+    "migrations/campaign/scopesaccess_platform_tags_are_read_through_the_scopes_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesaccess_platform_tags_are_read_through_the_scopes_door.sql",
+      "checksum": "2c4e1c3e75c6b4abf6bc9ceee1a3df9dd9a110c09eccb8a1ce89c44713751d0b",
+      "applied_at": "2026-09-30 02:23:30.794981+00"
     },
     "migrations/campaign/scopesaccess_the_class_and_access_readers_read_the_store.sql": {
       "source": "matrx-frontend",

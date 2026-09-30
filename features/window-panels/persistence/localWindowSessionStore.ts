@@ -1,6 +1,7 @@
 import { deleteSlice, readSlice, writeSlice } from "@/lib/sync/persistence/idb";
 import { localStorageAdapter } from "@/lib/sync/persistence/local-storage";
 import type { IdentityKey } from "@/lib/sync/types";
+import { fairTimeout } from "@/lib/timing/fairTimeout";
 import {
   WINDOW_WORKSPACE_SCHEMA_VERSION,
   type PersistedWindowWorkspace,
@@ -302,8 +303,9 @@ export async function loadLocalWindowWorkspace(
     return { workspace: localWorkspace, source: "local-storage" };
   }
 
-  let budgetTimer: ReturnType<typeof setTimeout> | undefined;
   const timeout = Symbol("idb-window-read-timeout");
+  // Fair: a page frozen through the budget is not IDB missing it.
+  const budget = fairTimeout(IDB_READ_BUDGET_MS);
   const idbRead = readSlice(
     identity.key,
     sliceName(workspaceId),
@@ -317,11 +319,9 @@ export async function loadLocalWindowWorkspace(
   });
   const idbRecord = await Promise.race([
     idbRead,
-    new Promise<typeof timeout>((resolve) => {
-      budgetTimer = setTimeout(() => resolve(timeout), IDB_READ_BUDGET_MS);
-    }),
+    budget.expired.then(() => timeout),
   ]);
-  if (budgetTimer) clearTimeout(budgetTimer);
+  budget.cancel();
   if (idbRecord === timeout) {
     console.warn(
       "[window-preservation] IndexedDB did not answer within the hydration budget; preserving the unknown cache without overwriting it.",

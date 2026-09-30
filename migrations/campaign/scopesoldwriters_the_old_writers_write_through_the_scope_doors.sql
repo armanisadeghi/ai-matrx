@@ -1,8 +1,14 @@
--- draft: SCOPES-OLD-WRITERS rehearsal and shadow compare not yet run
--- chair-step: lane SCOPES-OLD-WRITERS (L11 of common-docs/projects/data-doctrine-adoption/v5/SCOPES-CUTOVER-PLAN.md, Phase 3.1). Three old scope writers stop writing context.* themselves and write through the record store's scope doors (custom.context_*): the agents' structure tool public.scope_system_apply (census S6), the knowledge accepts public.accept_scope_suggestion / accept_context_item_suggestion (S7), and a class's join code and access mode public.edu_class_join_code / edu_class_set_access (S8). The ten scope doors that call the old public write functions become SECURITY DEFINER so the next file can take those functions away from clients: they decide the caller exactly as before (the old functions' own checks by auth.uid(), then custom.assert_scope_door / custom._ctx_answer), and the one door that also wrote a row under the caller's row policy (context_item_write's column branch) now asks that policy's own question by name. Two doors adopt what scope_system could do and they could not (Arman's law 2026-09-29: the old path's better parts first): a scope type's parent and a cleared "max per record" (context_type_write), and a scope's parent (context_scope_write). Nothing is created, nothing is dropped, no table is touched, no row of data moves. Proof: scripts/campaign-tests/scopesoldwriters_red_green.sql (RED before: the catalogue census names five old writers; GREEN after: none, and every writer's effect on context.* and the store equals the old body's in a rolled-back shadow compare).
+-- chair-step: lane SCOPES-OLD-WRITERS (L11 of common-docs/projects/data-doctrine-adoption/v5/SCOPES-CUTOVER-PLAN.md, Phase 3.1). Three old scope writers stop writing context.* themselves and write through the record store's scope doors (custom.context_*): the agents' structure tool public.scope_system_apply (census S6), the knowledge accepts public.accept_scope_suggestion / accept_context_item_suggestion (S7), and a class's join code and access mode public.edu_class_join_code / edu_class_set_access (S8). The ten scope doors that call the old public write functions become SECURITY DEFINER so the next file can take those functions away from clients: they decide the caller exactly as before (the old functions' own checks by auth.uid() first, then the one ladder, custom.assert_client_may_reach, in each door's own name, and custom._ctx_answer), and the one door that also wrote a row under the caller's row policy (context_item_write's column branch) now asks that policy's own question by name. Two doors adopt what scope_system could do and they could not (Arman's law 2026-09-29: the old path's better parts first): a scope type's parent and a cleared "max per record" (context_type_write), and a scope's parent (context_scope_write). Nothing is created, nothing is dropped, no table is touched, no row of data moves. Proof: scripts/campaign-tests/scopesoldwriters_red_green.sql (RED before: the catalogue census names five old writers; GREEN after: none, and every writer's effect on context.* and the store equals the old body's in a rolled-back shadow compare).
 -- based-on: custom.context_type_write(uuid, uuid, jsonb) 7c5dcfdb54bcc009748c7fd587261c0f6d1a1eff5b0c9b0fd149eae32c0e46fb
 -- based-on: custom.context_scope_write(uuid, uuid, uuid, jsonb) 3f393f455a253a58e6e72fef19a04e63716ef2a2799a42bda391ac96ddedd491
 -- based-on: custom.context_item_write(uuid, uuid, jsonb) f26d4aecd864dcab2ba87fe73b85821ed8af7ab2adffaf9aea4f60e0dab6c526
+-- based-on: custom.context_type_archive(uuid) 1d8373378c322a6a6b5821bb91cfd85ac237b39fe45ecfa69bfb9e3660f363a6
+-- based-on: custom.context_type_restore(uuid) 886889c3713f289b0de40ae760345a5e531ab1bb02e4c9af089c0aedc5b22a69
+-- based-on: custom.context_scope_archive(uuid) 1f8506abb2dfbca23e772a6a70bf624310a7fa605f11d368b74b628038ebb49d
+-- based-on: custom.context_scope_restore(uuid) 0fd4a0efb04b09103078ec5fd2e5b639f5e445e0b62dbba1542529b0fa9323f1
+-- based-on: custom.context_item_archive(uuid) 56f74346b82c22e6180a8228cda86542e166a32e76b69cf47cbae591bf3ef162
+-- based-on: custom.context_item_restore(uuid) 4edf9cb788e5344a78831bd9a5206cba25727630891481b810c5a8076e4d1832
+-- based-on: custom.context_tags_set(text, uuid, uuid[]) 057f5b6157ff9ba395f7aa3fbabe3b8b0631009c5149115a1e37216b1fed205a
 -- based-on: public.scope_system_apply(uuid, jsonb) 589694d3a4183c026230b5adf727b052884fc0c0d5f5c82efc2cf52a513b16f8
 -- based-on: public.accept_scope_suggestion(uuid, uuid) ee7db4c2cd562895f4e7d457e5693cfa5b8a036ff31e540dc67a6f244ea064a6
 -- based-on: public.accept_context_item_suggestion(uuid) b5edaf743bfb9893402815f3bbe6ba6a4aa0a21363a79f32a265fe81616ffe0b
@@ -10,7 +16,7 @@
 -- based-on: public.edu_class_set_access(uuid, text) cfe85999045aed0d3f7730e9ac080d4a2db57ac99d6d7f97f3cb2a55087bd125
 -- lane: SCOPES-OLD-WRITERS
 -- INVERSE: migrations/inverse/scopesoldwriters_the_old_writers_write_through_the_scope_doors_down.sql
--- window-class: eight function bodies replaced, seven functions' SECURITY attribute changed, ten register rows' reason updated; no table, policy, trigger or grant touched; no relation lock above what CREATE OR REPLACE FUNCTION takes.
+-- window-class: fifteen function bodies replaced, ten register rows' reason updated and four given the argument rules the register asks of a two-id door; no table, policy, trigger or grant touched; no relation lock above what CREATE OR REPLACE FUNCTION takes.
 
 -- ══════════════════════════════════════════════════════════════════════════════════════════
 -- 1 · THE SCOPE DOORS DECIDE IN THEIR OWN RIGHT (SECURITY DEFINER)
@@ -22,7 +28,9 @@
 -- which is exactly the grant Phase 3 takes away. As definers they reach the old bodies in the
 -- owner's right, and every decision is unchanged:
 --   · the old function still decides by auth.uid() (the JWT claim survives the definer boundary);
---   · custom.assert_scope_door / custom._ctx_answer still decide by custom.caller_role() (the
+--   · the one ladder (custom.assert_client_may_reach, now named in each door's own body, where the
+--     two write doors used custom.assert_scope_door, its one-line wrapper) and custom._ctx_answer still
+--     decide by custom.caller_role() (the
 --     `role` GUC, which does not move either);
 --   · the organization lookups that fed _ctx_answer now read context.* without the caller's row
 --     policy — they only ever run after the old function has already decided, and _ctx_answer
@@ -48,7 +56,7 @@ begin
     if v_org is null then
       raise exception 'A new scope type needs the organization it belongs to.' using errcode = '22004';
     end if;
-    perform custom.assert_scope_door(v_org, 'custom.context_type_write');
+    perform custom.assert_client_may_reach(v_org, 'custom.context_type_write');
     v_row := public.create_scope_type(
       v_org, s ->> 'label_singular', s ->> 'label_plural', nullif(s ->> 'parent_type_id', '')::uuid,
       coalesce(s ->> 'icon', 'folder'), coalesce(s ->> 'description', ''),
@@ -67,7 +75,7 @@ begin
       raise exception 'not authorized for this organization' using errcode = '42501',
               detail = jsonb_build_object('org_id', v_org)::text;
     end if;
-    perform custom.assert_scope_door(v_org, 'custom.context_type_write');
+    perform custom.assert_client_may_reach(v_org, 'custom.context_type_write');
     v_parent := nullif(s ->> 'parent_type_id', '')::uuid;
     if s ? 'parent_type_id' and v_parent is not null and (
          v_parent = p_type_id
@@ -101,7 +109,7 @@ begin
       p_type_id, s ->> 'label_singular', s ->> 'label_plural', s ->> 'icon', s ->> 'description',
       (s ->> 'sort_order')::smallint, (s ->> 'max_assignments')::smallint, s ->> 'color', nullif(s ->> 'slug', ''));
     v_org := (v_row ->> 'organization_id')::uuid;
-    perform custom.assert_scope_door(v_org, 'custom.context_type_write');
+    perform custom.assert_client_may_reach(v_org, 'custom.context_type_write');
   end if;
   return custom._ctx_answer(coalesce(v_org, (v_row ->> 'organization_id')::uuid), (v_row ->> 'id')::uuid, v_row);
 end;
@@ -120,7 +128,7 @@ declare
   v_parent uuid;
 begin
   if p_scope_id is null then
-    perform custom.assert_scope_door(p_organization_id, 'custom.context_scope_write');
+    perform custom.assert_client_may_reach(p_organization_id, 'custom.context_scope_write');
     v_row := public.create_scope(
       p_organization_id, p_type_id, s ->> 'name', nullif(s ->> 'parent_scope_id', '')::uuid,
       coalesce(s ->> 'description', ''), coalesce(s -> 'settings', '{}'::jsonb), nullif(s ->> 'slug', ''),
@@ -167,7 +175,7 @@ begin
       nullif(s ->> 'slug', ''), (s ->> 'sort_order')::smallint);
   end if;
   if p_scope_id is not null then
-    perform custom.assert_scope_door((v_row ->> 'organization_id')::uuid, 'custom.context_scope_write');
+    perform custom.assert_client_may_reach((v_row ->> 'organization_id')::uuid, 'custom.context_scope_write');
   end if;
   return custom._ctx_answer((v_row ->> 'organization_id')::uuid, (v_row ->> 'id')::uuid, v_row);
 end;
@@ -246,18 +254,194 @@ begin
     end if;
   end if;
   select t.organization_id into v_org from context.scope_types t where t.id = (v_row ->> 'scope_type_id')::uuid;
+  if v_org is not null then
+    perform custom.assert_client_may_reach(v_org, 'custom.context_item_write');
+  end if;
   return custom._ctx_answer(v_org, (v_row ->> 'id')::uuid, v_row);
 end;
 $function$;
 
--- The seven doors whose bodies need nothing but the owner's right to reach the old function.
-ALTER FUNCTION custom.context_type_archive(uuid) SECURITY DEFINER;
-ALTER FUNCTION custom.context_type_restore(uuid) SECURITY DEFINER;
-ALTER FUNCTION custom.context_scope_archive(uuid) SECURITY DEFINER;
-ALTER FUNCTION custom.context_scope_restore(uuid) SECURITY DEFINER;
-ALTER FUNCTION custom.context_item_archive(uuid) SECURITY DEFINER;
-ALTER FUNCTION custom.context_item_restore(uuid) SECURITY DEFINER;
-ALTER FUNCTION custom.context_tags_set(text, uuid, uuid[]) SECURITY DEFINER;
+-- The seven doors that only wrapped an old function: the same wrap, as definers, and each asks the one ladder
+-- in its own name after the old function has decided (the order of every refusal is unchanged).
+CREATE OR REPLACE FUNCTION custom.context_type_archive(p_type_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_org uuid := (select t.organization_id from context.scope_types t where t.id = p_type_id);
+  v_row jsonb;
+begin
+  -- The old function decides first, in its own sentences; then the one ladder answers for this door by
+  -- its own name (SCOPES-OLD-WRITERS: a definer door goes through the ladder itself).
+  v_row := public.delete_scope_type(p_type_id);
+  if v_org is not null then
+    perform custom.assert_client_may_reach(v_org, 'custom.context_type_archive');
+  end if;
+  return custom._ctx_answer(v_org, p_type_id, v_row);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_type_restore(p_type_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_org uuid := (select t.organization_id from context.scope_types t where t.id = p_type_id);
+  v_row jsonb;
+begin
+  -- The old function decides first, in its own sentences; then the one ladder answers for this door by
+  -- its own name (SCOPES-OLD-WRITERS: a definer door goes through the ladder itself).
+  v_row := public.restore_scope_type(p_type_id);
+  if v_org is not null then
+    perform custom.assert_client_may_reach(v_org, 'custom.context_type_restore');
+  end if;
+  return custom._ctx_answer(v_org, p_type_id, v_row);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_scope_archive(p_scope_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_org uuid := (select s.organization_id from context.scopes s where s.id = p_scope_id);
+  v_row jsonb;
+begin
+  -- The old function decides first, in its own sentences; then the one ladder answers for this door by
+  -- its own name (SCOPES-OLD-WRITERS: a definer door goes through the ladder itself).
+  v_row := public.delete_scope(p_scope_id);
+  if v_org is not null then
+    perform custom.assert_client_may_reach(v_org, 'custom.context_scope_archive');
+  end if;
+  return custom._ctx_answer(v_org, p_scope_id, v_row);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_scope_restore(p_scope_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_org uuid := (select s.organization_id from context.scopes s where s.id = p_scope_id);
+  v_row jsonb;
+begin
+  -- The old function decides first, in its own sentences; then the one ladder answers for this door by
+  -- its own name (SCOPES-OLD-WRITERS: a definer door goes through the ladder itself).
+  v_row := public.restore_scope(p_scope_id);
+  if v_org is not null then
+    perform custom.assert_client_may_reach(v_org, 'custom.context_scope_restore');
+  end if;
+  return custom._ctx_answer(v_org, p_scope_id, v_row);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_item_archive(p_item_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_org uuid := (select t.organization_id from context.context_items i join context.scope_types t on t.id = i.scope_type_id where i.id = p_item_id);
+  v_row jsonb;
+begin
+  -- The old function decides first, in its own sentences; then the one ladder answers for this door by
+  -- its own name (SCOPES-OLD-WRITERS: a definer door goes through the ladder itself).
+  v_row := public.delete_context_item(p_item_id);
+  if v_org is not null then
+    perform custom.assert_client_may_reach(v_org, 'custom.context_item_archive');
+  end if;
+  return custom._ctx_answer(v_org, p_item_id, v_row);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_item_restore(p_item_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_org uuid := (select t.organization_id from context.context_items i join context.scope_types t on t.id = i.scope_type_id where i.id = p_item_id);
+  v_row jsonb;
+begin
+  -- The old function decides first, in its own sentences; then the one ladder answers for this door by
+  -- its own name (SCOPES-OLD-WRITERS: a definer door goes through the ladder itself).
+  v_row := public.restore_context_item(p_item_id);
+  if v_org is not null then
+    perform custom.assert_client_may_reach(v_org, 'custom.context_item_restore');
+  end if;
+  return custom._ctx_answer(v_org, p_item_id, v_row);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_tags_set(p_entity_type text, p_entity_id uuid, p_scope_ids uuid[])
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_out jsonb;
+  v_org uuid;
+begin
+  v_out := to_jsonb(public.set_entity_scopes(p_entity_type, p_entity_id, coalesce(p_scope_ids, '{}'::uuid[])));
+  -- set_entity_scopes has decided (editor on the record, a member of every scope's organization); the one
+  -- ladder then answers for this door by its own name for each organization a tag belongs to.
+  for v_org in select distinct s.organization_id from context.scopes s where s.id = any(coalesce(p_scope_ids, '{}'::uuid[])) loop
+    perform custom.assert_client_may_reach(v_org, 'custom.context_tags_set');
+  end loop;
+  return jsonb_build_object('ok', true, 'row', v_out);
+end;
+$function$;
+
+-- Every id a definer door takes says why a foreign one cannot widen access (the register's own rule for a
+-- client door taking two or more ids, platform.door_body_must_decide). Each decision is the old function's,
+-- made before any read or write, and a foreign id answers exactly as an invented one.
+update platform.client_callable_door d
+   set argument_rules = r.rules
+  from (values
+    ('context_type_write', jsonb_build_object('version', 1, 'declared_by', 'scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql', 'arguments', jsonb_build_object(
+       'p_organization_id', jsonb_build_object('type', 'uuid', 'position', 1, 'optional', false, 'null_rule', '{}'::jsonb,
+          'check', 'a new type: custom.assert_client_may_reach(p_organization_id) and public.create_scope_type''s is_platform_admin() or iam.has_org_access(p_organization_id), before the insert',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'refused 42501 before anything is read or written for an organization the caller does not reach')),
+       'p_type_id', jsonb_build_object('type', 'uuid', 'position', 2, 'optional', true, 'null_rule', '{}'::jsonb,
+          'check', 'a change: the type''s own organization is read and public.update_scope_type (or the row branch, the same predicate) decides service_role / is_platform_admin() / iam.has_org_access before the write; a type that is not live answers as not found',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'another organization''s type is refused before the write, in the same words as a type that does not exist'))))),
+    ('context_scope_write', jsonb_build_object('version', 1, 'declared_by', 'scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql', 'arguments', jsonb_build_object(
+       'p_organization_id', jsonb_build_object('type', 'uuid', 'position', 1, 'optional', false, 'null_rule', '{}'::jsonb,
+          'check', 'a new scope: custom.assert_client_may_reach(p_organization_id) and public.create_scope''s is_platform_admin() or iam.has_org_access(p_organization_id), before the insert',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'refused 42501 before anything is read or written for an organization the caller does not reach')),
+       'p_scope_id', jsonb_build_object('type', 'uuid', 'position', 2, 'optional', true, 'null_rule', '{}'::jsonb,
+          'check', 'a change: the scope''s own organization is read and public.update_scope (or the parent branch, the same predicate) decides is_platform_admin() / iam.has_org_access before the write',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'another organization''s scope and an invented id are refused with the same sentence (not authorized to update scope)')),
+       'p_type_id', jsonb_build_object('type', 'uuid', 'position', 3, 'optional', true, 'null_rule', '{}'::jsonb,
+          'check', 'public.create_scope: the type must be a scope type of p_organization_id (0850), 22023 otherwise',
+          'foreign', jsonb_build_object('decided_before_read', true, 'same_as_invented', true, 'note', 'a type of another organization answers exactly as an invented one'))))),
+    ('context_item_write', jsonb_build_object('version', 1, 'declared_by', 'scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql', 'arguments', jsonb_build_object(
+       'p_item_id', jsonb_build_object('type', 'uuid', 'position', 1, 'optional', true, 'null_rule', '{}'::jsonb,
+          'check', 'a change: public.update_context_item checks service_role / iam.has_org_admin of the item''s organization; the column branch asks is_platform_admin() or iam.has_org_admin of the item''s organization (the row policy context_items_update, by name) before the write',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'a field the caller may not change answers "There is no such context field you may change." exactly as a field that does not exist')),
+       'p_scope_type_id', jsonb_build_object('type', 'uuid', 'position', 2, 'optional', true, 'null_rule', '{}'::jsonb,
+          'check', 'a new field: public.create_context_item reads the live type''s organization and checks service_role / iam.has_org_admin before the insert',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'another organization''s type is refused 42501 before the insert'))))),
+    ('context_tags_set', jsonb_build_object('version', 1, 'declared_by', 'scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql', 'arguments', jsonb_build_object(
+       'p_entity_id', jsonb_build_object('type', 'uuid', 'position', 2, 'optional', false, 'null_rule', '{}'::jsonb,
+          'check', 'public.set_entity_scopes: iam.has_access_for(caller, p_entity_type, p_entity_id, editor) before any read',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'a record the caller cannot edit and an invented id are refused with one sentence that names only the type')),
+       'p_scope_ids', jsonb_build_object('type', 'uuid[]', 'position', 3, 'optional', false, 'null_rule', '{}'::jsonb,
+          'check', 'public.set_entity_scopes: every scope must belong to an organization the caller is a member of, and so must every scope already tagged',
+          'foreign', jsonb_build_object('decided_before_read', true, 'note', 'a scope outside the caller''s organizations refuses the whole call before any edge is written')))))
+  ) as r(fn, rules)
+ where d.schema_name = 'custom' and d.function_name = r.fn;
 
 -- The register says what each door is, truthfully.
 update platform.client_callable_door d
@@ -775,6 +959,19 @@ BEGIN
     'created', v_created));
 END;
 $function$;
+
+-- Replacing a SECURITY DEFINER body owes its access decision in data (platform.provision_shape_debt).
+-- accept_context_item_suggestion never had a row; nothing about who may call it changes (its grants are kept).
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select 'public', 'accept_context_item_suggestion', 'p_suggestion_id uuid', array['uuid'::regtype]::oid[],
+       'p_suggestion_id is read only as a suggestion the acting user owns (user_id = auth.uid(), pending); the field is made only when that person is an owner or admin of the suggestion''s scope type''s organization (iam.organization_member role owner/admin), and through custom.context_item_write, whose create_context_item checks the same organization again.',
+       'migrations/campaign/scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql (lane SCOPES-OLD-WRITERS)',
+       'server_only: service_role alone holds EXECUTE; the knowledge system''s accept path on the server calls it with the acting person''s claims (auth.uid()), and no client grant exists.',
+       false, false
+ where not exists (select 1 from platform.client_callable_door d
+                    where d.schema_name = 'public' and d.function_name = 'accept_context_item_suggestion'
+                      and d.identity_args = 'p_suggestion_id uuid');
 
 -- ══════════════════════════════════════════════════════════════════════════════════════════
 -- 4 · S8 — A CLASS'S JOIN CODE AND ACCESS MODE ARE WRITTEN THROUGH THE SCOPE DOOR

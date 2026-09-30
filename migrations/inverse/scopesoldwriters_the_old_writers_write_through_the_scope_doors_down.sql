@@ -1,8 +1,15 @@
 -- INVERSE of migrations/campaign/scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql (lane SCOPES-OLD-WRITERS).
--- chair-step: puts back, byte for byte as production held them on 2026-09-29, the eight bodies the file replaced (the three scope doors that call the old write functions, the agents' structure tool, the two knowledge accepts, a class's join code and access mode), turns the seven doors it only made definers back into SECURITY INVOKER, and takes the SCOPES-OLD-WRITERS sentence back off the ten door rows. Run it only while clients still hold EXECUTE on the old public write functions (i.e. after the inverse of scopesoldwriters_clients_lose_the_old_scope_write_doors.sql, if that file was applied): an invoker door needs that grant.
--- based-on: custom.context_type_write(uuid, uuid, jsonb) b25d660e70a848ddc86b31acee5af5a718dbc22f955df7ef01ea6ac4555660c2
--- based-on: custom.context_scope_write(uuid, uuid, uuid, jsonb) 420e695039bcc2a01ee544a62a4527f7d6027a4f78211b2972fb6e5f218ad03c
--- based-on: custom.context_item_write(uuid, uuid, jsonb) 05de0dfb75a7fa00b642fb390a478ed9acba18ca25c9118521545a24c629ea62
+-- chair-step: puts back, byte for byte as production held them on 2026-09-29, the fifteen bodies the file replaced (the ten scope doors, the agents' structure tool, the two knowledge accepts, a class's join code and access mode), puts the seven wrapper doors back as the SECURITY INVOKER bodies they were, and takes the SCOPES-OLD-WRITERS sentence back off the ten door rows. Run it only while clients still hold EXECUTE on the old public write functions (i.e. after the inverse of scopesoldwriters_clients_lose_the_old_scope_write_doors.sql, if that file was applied): an invoker door needs that grant.
+-- based-on: custom.context_type_write(uuid, uuid, jsonb) d1e11f9ced7a5ac3d98eee5f73e2f01e03ec703a1afc9c56f2cb56006dc9e08c
+-- based-on: custom.context_scope_write(uuid, uuid, uuid, jsonb) e22357d3d6e1de646eaae962a6307865c140f629fe7874f06d58b18f9ef715f7
+-- based-on: custom.context_item_write(uuid, uuid, jsonb) 5995fa185cc8c1a4e69d44ae5102c919345db8684a7d5caaf55b991c51910443
+-- based-on: custom.context_type_archive(uuid) 5800525728f943e7df2e83541005d60c310b993d188746c3609bd9f4a89b6658
+-- based-on: custom.context_type_restore(uuid) 3450e18aa8bd40bf6ca29bc206ccdd546251ae7107c4a348aa30ee9bba1563ed
+-- based-on: custom.context_scope_archive(uuid) 3fede8104d91c5daf1c45eeb88b90c0106c2bd3a84206a2d5703c689d84b4cf0
+-- based-on: custom.context_scope_restore(uuid) 0354c43465def4edd8ea0b3dd6c32e3d7d63d5e0472c04bcd28bc8e0de4e2530
+-- based-on: custom.context_item_archive(uuid) 0e8d9a003368e9664e29854265ee092623a22ece931d4ce03d2260fdb6063d38
+-- based-on: custom.context_item_restore(uuid) 545b46f5520d6551a54be7b4bb0dd9100bd384a204085850b6c25a201d65dec5
+-- based-on: custom.context_tags_set(text, uuid, uuid[]) 7771727e7263bbbf5d437398bdd1bc596e90945e11de5cfd1dd77556c311ad33
 -- based-on: public.scope_system_apply(uuid, jsonb) c9d2c8cbb6be64e79fe21a7a511abdfcfa839b3cc7954ed86929349460905034
 -- based-on: public.accept_scope_suggestion(uuid, uuid) cc70fbf808b09a1358170f44bd546ad0df516154d4d9571081ebabb18b4d0eba
 -- based-on: public.accept_context_item_suggestion(uuid) 27d502026e22ce836290b60625ca0a98a85fc8844a26253005d21ef76e8c02ad
@@ -693,13 +700,85 @@ $function$
 
 ;
 
-ALTER FUNCTION custom.context_type_archive(uuid) SECURITY INVOKER;
-ALTER FUNCTION custom.context_type_restore(uuid) SECURITY INVOKER;
-ALTER FUNCTION custom.context_scope_archive(uuid) SECURITY INVOKER;
-ALTER FUNCTION custom.context_scope_restore(uuid) SECURITY INVOKER;
-ALTER FUNCTION custom.context_item_archive(uuid) SECURITY INVOKER;
-ALTER FUNCTION custom.context_item_restore(uuid) SECURITY INVOKER;
-ALTER FUNCTION custom.context_tags_set(text, uuid, uuid[]) SECURITY INVOKER;
+CREATE OR REPLACE FUNCTION custom.context_type_archive(p_type_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare v_org uuid := (select t.organization_id from context.scope_types t where t.id = p_type_id);
+begin
+  return custom._ctx_answer(v_org, p_type_id, public.delete_scope_type(p_type_id));
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_type_restore(p_type_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare v_org uuid := (select t.organization_id from context.scope_types t where t.id = p_type_id);
+begin
+  return custom._ctx_answer(v_org, p_type_id, public.restore_scope_type(p_type_id));
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_scope_archive(p_scope_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare v_org uuid := (select s.organization_id from context.scopes s where s.id = p_scope_id);
+begin
+  return custom._ctx_answer(v_org, p_scope_id, public.delete_scope(p_scope_id));
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_scope_restore(p_scope_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare v_org uuid := (select s.organization_id from context.scopes s where s.id = p_scope_id);
+begin
+  return custom._ctx_answer(v_org, p_scope_id, public.restore_scope(p_scope_id));
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_item_archive(p_item_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare v_org uuid := (select t.organization_id from context.context_items i join context.scope_types t on t.id = i.scope_type_id where i.id = p_item_id);
+begin
+  return custom._ctx_answer(v_org, p_item_id, public.delete_context_item(p_item_id));
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_item_restore(p_item_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare v_org uuid := (select t.organization_id from context.context_items i join context.scope_types t on t.id = i.scope_type_id where i.id = p_item_id);
+begin
+  return custom._ctx_answer(v_org, p_item_id, public.restore_context_item(p_item_id));
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.context_tags_set(p_entity_type text, p_entity_id uuid, p_scope_ids uuid[])
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare v_out jsonb;
+begin
+  v_out := to_jsonb(public.set_entity_scopes(p_entity_type, p_entity_id, coalesce(p_scope_ids, '{}'::uuid[])));
+  -- Which system writes each scope's organization is answered by custom._ctx_answer, which decides
+  -- who is asking (VERIFIER-27); a tag door names only the tags it set.
+  return jsonb_build_object('ok', true, 'row', v_out);
+end;
+$function$;
 
 update platform.client_callable_door d
    set reason = regexp_replace(
@@ -711,3 +790,24 @@ update platform.client_callable_door d
                            'context_item_write', 'context_item_archive', 'context_item_restore',
                            'context_tags_set')
    and d.reason like '%(SCOPES-OLD-WRITERS 2026-09-29: a definer%';
+
+-- The argument rules this file wrote (the four rows carried none before it).
+update platform.client_callable_door d
+   set argument_rules = null
+ where d.schema_name = 'custom'
+   and d.function_name in ('context_type_write', 'context_scope_write', 'context_item_write', 'context_tags_set')
+   and d.argument_rules ->> 'declared_by' = 'scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql';
+
+-- The register row the up file added for public.accept_context_item_suggestion STAYS: it is as true of the old body as
+-- of the new one (server-only, the acting person's own suggestion, an owner or admin of its organization), and a
+-- replaced SECURITY DEFINER body must carry a declaration in the same transaction (platform.provision_shape_debt).
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select 'public', 'accept_context_item_suggestion', 'p_suggestion_id uuid', array['uuid'::regtype]::oid[],
+       'p_suggestion_id is read only as a suggestion the acting user owns (user_id = auth.uid(), pending); the field is made only when that person is an owner or admin of the suggestion''s scope type''s organization (iam.organization_member role owner/admin), and through custom.context_item_write, whose create_context_item checks the same organization again.',
+       'migrations/campaign/scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql (lane SCOPES-OLD-WRITERS)',
+       'server_only: service_role alone holds EXECUTE; the knowledge system''s accept path on the server calls it with the acting person''s claims (auth.uid()), and no client grant exists.',
+       false, false
+ where not exists (select 1 from platform.client_callable_door d
+                    where d.schema_name = 'public' and d.function_name = 'accept_context_item_suggestion'
+                      and d.identity_args = 'p_suggestion_id uuid');

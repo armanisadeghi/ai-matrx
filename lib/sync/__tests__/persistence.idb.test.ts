@@ -94,6 +94,45 @@ describe("persistence/idb", () => {
         }
     });
 
+    it("does not blame IndexedDB for a page freeze: an answer queued behind the freeze still lands", async () => {
+        // The /board capture (2026-09-30): the page froze past the 1s timer,
+        // so the timer and IDB's answer were both due when the thread came
+        // back. The timer ran first, IDB was declared stalled, a healthy
+        // connection was closed, and the write was reported as a timeout.
+        const db = await openDb();
+        expect(db).not.toBeNull();
+        const database = db!;
+        const record = {
+            key: "auth:u1:frozen:1",
+            identityKey: "auth:u1",
+            sliceName: "frozen",
+            version: 1,
+            body: { ok: true },
+            persistedAt: 1,
+        };
+        const get = jest
+            .spyOn(database.slices, "get")
+            .mockImplementation((() =>
+                new Promise((resolve) =>
+                    globalThis.setTimeout(() => resolve(record), IDB_OPERATION_TIMEOUT_MS + 100),
+                )) as unknown as typeof database.slices.get);
+        try {
+            const reading = readSlice("auth:u1", "frozen", 1);
+            await Promise.resolve();
+            await Promise.resolve();
+            // Freeze the main thread past both the timeout and IDB's answer.
+            const frozenUntil = Date.now() + IDB_OPERATION_TIMEOUT_MS + 500;
+            while (Date.now() < frozenUntil) {
+                /* a long task: nothing else can run */
+            }
+            await expect(reading).resolves.toEqual(record);
+            expect(getSnapshot().filter((e) => e.code === "sync-idb-operation-timeout")).toEqual([]);
+            expect(await openDb()).toBe(database);
+        } finally {
+            get.mockRestore();
+        }
+    });
+
     it("keeps a recovered IDB timeout visible locally in production", async () => {
         const originalNodeEnv = process.env.NODE_ENV;
         Object.defineProperty(process.env, "NODE_ENV", {

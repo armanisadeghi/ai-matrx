@@ -23,6 +23,7 @@ import { isKnownThirdPartyNoise } from "@/lib/console-noise";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 import { isStructuredConsoleMirrorActive } from "./structuredConsoleMirror";
 import { installAppApiFetchCapture } from "@/lib/diagnostics/captureAppApiFetch";
+import { installMainThreadStallMonitor } from "@/lib/diagnostics/mainThreadStallMonitor";
 
 let installed = false;
 /** Guards against capturing a console.error that fires from inside capture. */
@@ -179,6 +180,7 @@ export function installGlobalErrorCapture(): void {
   if (installed || typeof window === "undefined") return;
   installed = true;
   installAppApiFetchCapture();
+  installMainThreadStallMonitor();
 
   // ── Uncaught runtime exceptions ──────────────────────────────────────────
   window.addEventListener("error", (event: ErrorEvent) => {

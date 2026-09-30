@@ -129,6 +129,13 @@ interface Row {
    * One that the catalogue still finds writing context.* is an OLD WRITER LEFT and keeps the fact false.
    */
   writesNothingItself?: string[];
+  /**
+   * Functions this row says NO client may call any more (lane SCOPES-OLD-WRITERS): the old doors a
+   * client used to reach, now reached only by the scope doors in the owner's right and by the
+   * server. One that `authenticated` or `anon` can still EXECUTE is an OLD DOOR OPEN and keeps the
+   * fact false.
+   */
+  clientClosed?: string[];
 }
 
 /**
@@ -172,8 +179,8 @@ export const WRITERS: Row[] = [
   {
     id: "S5",
     what: "The old scope doors (type, scope, item, value, template, restore)",
-    status: "carried",
-    plain: "public.create_scope_type … public.set_context_value, apply_template and the restores write context.* as today; in an organization whose store is the writer the write-through carries every row they write (and every cascaded row) into the store in the same statement, and a store refusal refuses them (suite T1, T3, T4, T10).",
+    status: "proven",
+    plain: "Closed to clients (lane SCOPES-OLD-WRITERS, 2026-09-29): neither authenticated nor anon holds EXECUTE on any of them, and their register rows say server_only. They are reached only by the store's scope doors (custom.context_*, SECURITY DEFINER since the same lane, so they call these bodies in the owner's right and every decision is still the old body's), by Trash's own restore (entity_undelete / org_trash_restore) and by the server. The write-through carries every row they write into the store in the same statement. Suites scopesoldwriters_clients_lose_red_green.sql (R1 red: a client call of public.create_scope lands; G1 green: refused 42501, G2 every door a screen uses still lands) and scopeswt T1–T10. At the final switch the doors stop calling them.",
     functions: [
       "public.create_scope_type", "public.update_scope_type", "public.delete_scope_type", "public.restore_scope_type",
       "public.create_scope", "public.update_scope", "public.delete_scope", "public.restore_scope",
@@ -182,37 +189,48 @@ export const WRITERS: Row[] = [
       "public.apply_template", "public.apply_template_by_key", "public.ctx_seed_template",
       "public.ctx_version_context_item_value",
     ],
+    clientClosed: [
+      "public.create_scope_type", "public.update_scope_type", "public.delete_scope_type", "public.restore_scope_type",
+      "public.create_scope", "public.update_scope", "public.delete_scope", "public.restore_scope",
+      "public.create_context_item", "public.update_context_item", "public.delete_context_item", "public.restore_context_item",
+      "public.set_context_value", "public.set_scope_context_value", "context.write_context_value",
+      "public.apply_template", "public.apply_template_by_key", "public.ctx_seed_template",
+    ],
   },
   {
     id: "S6",
     what: "The agents' structure tool (scope_system)",
-    status: "carried",
-    plain: "public.scope_system_apply writes context.* directly; the write-through carries it (tested on the dev clone in a born-on-the-store organization). Its server wrapper is aidream services/scope_system/service.py.",
+    status: "proven",
+    plain: "public.scope_system_apply writes every scope type, context item, scope and value through custom.context_type_write / _archive, custom.context_item_write / _archive, custom.context_scope_write / _archive and custom.context_value_write (lane SCOPES-OLD-WRITERS); the doors adopted what only this tool could do (move a type's or a scope's parent, clear a type's limit). Same gate, same receipt: the shadow compare in scopesoldwriters_red_green.sql runs one batch of every operation old and new and finds the receipt, the rows and the store equal. Its server wrapper is aidream services/scope_system/service.py.",
     functions: ["public.scope_system_apply"],
+    writesNothingItself: ["public.scope_system_apply"],
     claims: { aidream: ["aidream/services/scope_system/**", "packages/matrx-ai/matrx_ai/tools/kinds/scope_tools.py"] },
   },
   {
     id: "S7",
     what: "The knowledge system's suggestion accepts",
-    status: "carried",
-    plain: "public.accept_scope_suggestion / accept_context_item_suggestion write context.*; the write-through carries them. The web app's accept path writes values and tags through scopeStore.",
+    status: "proven",
+    plain: "public.accept_scope_suggestion / accept_context_item_suggestion make the type, the scope, each seeded value and the field through custom.context_type_write / context_scope_write / context_value_write / context_item_write (lane SCOPES-OLD-WRITERS); a seeded value the value door refuses now refuses the accept in the door's words. Shadow compare equal (scopesoldwriters_red_green.sql). The web app's accept path writes values and tags through scopeStore.",
     functions: ["public.accept_scope_suggestion", "public.accept_context_item_suggestion"],
+    writesNothingItself: ["public.accept_scope_suggestion", "public.accept_context_item_suggestion"],
     claims: { "matrx-frontend": ["features/kg-suggestions/**"], aidream: ["aidream/db/kgsm_managers.py", "aidream/services/suggestion_sweeps/**"] },
   },
   {
     id: "S8",
     what: "Education: a class's join code and access mode",
-    status: "carried",
-    plain: "public.edu_class_join_code / edu_class_set_access update a class scope's settings; the write-through carries each settings key as a declared Field of the Classes Table.",
+    status: "proven",
+    plain: "public.edu_class_join_code / edu_class_set_access merge into the class row's own settings and write them through custom.context_scope_write (lane SCOPES-OLD-WRITERS); the owner check and every sentence are unchanged. Shadow compare equal after rotate, access mode and disable, image and store (scopesoldwriters_red_green.sql).",
     functions: ["public.edu_class_join_code", "public.edu_class_set_access"],
+    writesNothingItself: ["public.edu_class_join_code", "public.edu_class_set_access"],
     claims: { "matrx-frontend": ["features/education/**", "app/api/stripe/**", "app/api/education/**", "app/(public)/invitations/**"] },
   },
   {
     id: "S9",
     what: "Tags (set_entity_scopes / assoc_set_targets to a scope)",
-    status: "carried",
-    plain: "Tag edges to a scope are written by the associations doors; the tag follow trigger carries each edge's store copy in the same statement in an organization whose store is the writer (suite T6).",
+    status: "proven",
+    plain: "Every client tag write goes through the tag door custom.context_tags_set (scopeStore.setEntityScopes; SECURITY DEFINER since lane SCOPES-OLD-WRITERS), and the old tag door public.set_entity_scopes is closed to clients. The tag follow trigger writes each edge's `<kind> -> record` copy in the same statement (suite T6). The `-> scope` edge is the image: it stops with every other image write at the final switch, when the tag door writes the record edge alone.",
     functions: ["public.set_entity_scopes"],
+    clientClosed: ["public.set_entity_scopes"],
     claims: { "matrx-frontend": ["features/scopes/service/associationsService.ts"] },
   },
   {
@@ -365,6 +383,14 @@ const DB_WRITERS_SQL = `
      and p.prosrc ~* '(insert\\s+into|update|delete\\s+from)\\s+(context\\.)?(scope_types|scopes|context_items|context_item_values)\\M'
    group by 1 order by 1`;
 
+/** Which of the named functions a client role can still EXECUTE (any overload) — lane SCOPES-OLD-WRITERS. */
+const CLIENT_OPEN_SQL = `
+  select distinct n.nspname || '.' || p.proname as fn
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where (n.nspname || '.' || p.proname) = any($1::text[])
+     and (has_function_privilege('authenticated', p.oid, 'EXECUTE') or has_function_privilege('anon', p.oid, 'EXECUTE'))
+   order by 1`;
+
 /** Which contract RPCs still name a leaving table in their own body (L6–L8 have not rewritten them yet). */
 const RPC_BODIES_ON_OLD_SQL = `
   select distinct n.nspname || '.' || p.proname as fn
@@ -414,12 +440,14 @@ async function main(argv: string[]): Promise<number> {
 
   let dbWriters: string[] = [];
   let rpcBodiesOnOld: string[] = [];
+  let clientOpen: string[] = [];
   let dbError: string | null = null;
   let db: pg.Client | null = null;
   try {
     db = await connect(target);
     dbWriters = (await db.query(DB_WRITERS_SQL)).rows.map((r: { fn: string }) => r.fn);
     rpcBodiesOnOld = (await db.query(RPC_BODIES_ON_OLD_SQL, [CONTRACT_RPCS.split("|")])).rows.map((r: { fn: string }) => r.fn);
+    clientOpen = (await db.query(CLIENT_OPEN_SQL, [WRITERS.flatMap((r) => r.clientClosed ?? [])])).rows.map((r: { fn: string }) => r.fn);
   } catch (e) {
     dbError = (e as Error).message;
   }
@@ -433,6 +461,9 @@ async function main(argv: string[]): Promise<number> {
     ...unlistedFiles.map((h) => ({ kind: "file", repo: h.repo, where: h.file, names: h.names })),
     ...unlistedFns.map((fn) => ({ kind: "function", repo: "database", where: fn, names: [fn] })),
     ...oldWritersLeft.map(({ row, fn }) => ({ kind: "old_writer_left", repo: "database", where: fn, names: [`${row} says ${fn} writes through the doors, but it writes context.* itself`] })),
+    // A ROW THAT SAYS "CLOSED TO CLIENTS" IS HELD TO IT (lane SCOPES-OLD-WRITERS, S5 / S9).
+    ...(dbError ? [] : WRITERS.flatMap((r) => (r.clientClosed ?? []).filter((fn) => clientOpen.includes(fn))
+      .map((fn) => ({ kind: "old_door_open", repo: "database", where: fn, names: [`${r.id} says ${fn} is closed to clients, but a client role can still EXECUTE it`] })))),
   ];
   const census = {
     target,
@@ -445,6 +476,7 @@ async function main(argv: string[]): Promise<number> {
     product_readers: readerHits.filter((h) => !withTheImage(h)).map((h) => ({ repo: h.repo, file: h.file, names: h.names })),
     contract_rpc_callers: rpcHits.map((h) => ({ repo: h.repo, file: h.file, names: h.names })),
     contract_rpcs_still_reading_context: rpcBodiesOnOld,
+    old_doors_open_to_clients: clientOpen,
   };
 
   console.log(`SCOPES WRITERS CENSUS — catalogue on ${target}; code at ${trees.map((t) => `${t.repo} ${t.sha.slice(0, 10)}`).join(" · ")}`);

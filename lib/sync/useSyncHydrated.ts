@@ -21,6 +21,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { useAppStore } from "@/lib/redux/hooks";
+import { fairTimeout, type FairTimeout } from "@/lib/timing/fairTimeout";
 
 /** How long a surface waits for persisted hydration before giving up, loudly. */
 export const HYDRATION_BACKSTOP_MS = 8000;
@@ -76,11 +77,14 @@ function createSettledTracker(store: unknown): SettledTracker {
       // first render. SyncBootstrap defers boot on purpose (window load, idle,
       // streamed boundaries) and bounds that wait itself; counting it here
       // turned a slow page load into a false "defect in the boot path" (D345).
-      let backstop: ReturnType<typeof globalThis.setTimeout> | null = null;
+      // A FAIR timeout: a page frozen past the deadline is not the engine's
+      // failure, and settling is usually queued right behind the freeze.
+      let backstop: FairTimeout | null = null;
       const armBackstop = () => {
         if (backstop !== null || backstopFired) return;
         if (source.bootStarted && !source.bootStarted()) return;
-        backstop = globalThis.setTimeout(() => {
+        backstop = fairTimeout(HYDRATION_BACKSTOP_MS);
+        void backstop.expired.then(() => {
           if (source.hydrationSettled()) return;
           // LOUD: reaching here means the engine never finished reading
           // persisted state. Consumers stop waiting and show their honest empty
@@ -92,7 +96,7 @@ function createSettledTracker(store: unknown): SettledTracker {
           );
           backstopFired = true;
           onChange();
-        }, HYDRATION_BACKSTOP_MS);
+        });
       };
       const unsubscribe = source.onHydrationSettledChange(() => {
         armBackstop();
@@ -101,7 +105,7 @@ function createSettledTracker(store: unknown): SettledTracker {
       armBackstop();
       return () => {
         unsubscribe();
-        if (backstop !== null) globalThis.clearTimeout(backstop);
+        backstop?.cancel();
       };
     },
   };

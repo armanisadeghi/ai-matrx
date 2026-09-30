@@ -1,6 +1,7 @@
 -- INVERSE of migrations/campaign/scopesaccess_platform_tags_are_read_through_the_scopes_door.sql (lane SCOPES-READS-ACCESS).
 -- chair-step: puts back the organization wall and the scopes door as production held them (Matrx System's tags behind the organization wall again) and drops custom.table_is_platform_context.
-@BASEDON@
+-- based-on: custom.assert_client_may_reach(uuid, text) 4928729e8a1030094245e7e14b30772991b39a5b028b7d758770b9a279b1a06d
+-- based-on: custom.context_scopes(uuid[]) 62c9ef80a1221b4541f3b08a4cbe3df2273aacad040626f804d84798f9a44749
 
 CREATE OR REPLACE FUNCTION custom.assert_client_may_reach(p_organization_id uuid, p_door text)
  RETURNS void
