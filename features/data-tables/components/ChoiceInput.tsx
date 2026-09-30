@@ -25,6 +25,7 @@
 import { usePersonChoices } from "../person-choices";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
+import { typedMatchScore } from "@ai-matrx/records";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,9 @@ import {
 } from "@/lib/field-formats/relation";
 import { cn } from "@/utils/cn";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+
+/** The cmdk value of the "use / add what was typed" line — ranked below every real choice. */
+const NEW_WORDS_ITEM = "\u2063typed:";
 
 export type ChoiceInputProps = {
   id?: string;
@@ -277,11 +281,18 @@ export function ChoiceInput({
         <PopoverContent sizing="content" className="p-0" align="start">
           {/* A SPACE BEFORE OR AFTER THE WORDS IS NOT PART OF THEM (BREAKER-2 B2-12): "Completed " matched
               nothing and Enter did nothing. The list searches the words as a person reads them. */}
+          {/* WHAT IS TYPED IS THE START OF WHAT IS MEANT (grids review 3): `Cal` highlighted Electrical —
+              "Electri-CAL" contains the letters — and Enter wrote it. The list is ranked by the ONE ranking
+              every picker uses (`@ai-matrx/records` typedMatchScore: exact, starts with, a word starts
+              with, contains), on a choice's words and its label; ties keep the owner's order. The
+              "use / add the typed words" line ranks after every real choice, so it never takes Enter
+              from one. */}
           <Command
             shouldFilter
-            filter={(itemValue, search) =>
-              itemValue.toLocaleLowerCase().includes(search.trim().replace(/\s+/g, " ").toLocaleLowerCase()) ? 1 : 0
-            }
+            filter={(itemValue, search, keywords) => {
+              if (itemValue.startsWith(NEW_WORDS_ITEM)) return 0.5;
+              return Math.max(typedMatchScore(itemValue, search), ...(keywords ?? []).map((k) => typedMatchScore(k, search)));
+            }}
           >
             <CommandInput
               ref={searchRef}
@@ -349,6 +360,7 @@ export function ChoiceInput({
                         <CommandItem
                           key={choice.value}
                           value={choice.value}
+                          {...(choice.label && choice.label !== choice.value ? { keywords: [choice.label] } : {})}
                           onSelect={() => pick(choice.value)}
                         >
                           <Check
@@ -373,7 +385,7 @@ export function ChoiceInput({
 
               {canAddOther && (
                 <CommandGroup>
-                  <CommandItem value={trimmedQuery} onSelect={() => pick(trimmedQuery)}>
+                  <CommandItem value={`${NEW_WORDS_ITEM}${trimmedQuery}`} onSelect={() => pick(trimmedQuery)}>
                     <Plus className="mr-2 h-3.5 w-3.5 shrink-0" />
                     {allowOther ? <>Use &ldquo;{trimmedQuery}&rdquo;</> : <>Add &ldquo;{trimmedQuery}&rdquo;&hellip;</>}
                   </CommandItem>

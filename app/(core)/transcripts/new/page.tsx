@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { Columns2, FileUp, Import, Mic, Eraser, Library } from "lucide-react";
-import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
@@ -62,7 +62,7 @@ const OPTIONS: CreationOption[] = [
     // A WHOLE CHANNEL IS NOT FIVE MORE CLICKS OF "Upload". Someone who wants a
     // creator's entire back catalogue gets a Library (the Knowledge hub's
     // Libraries group) — this door moved here from the retired list (H6d).
-    href: HUB_LIBRARIES_HREF,
+    href: LIBRARIES_PATH,
     title: "Whole channel",
     description:
       "Catalogue a whole YouTube channel or feed as a Library, then transcribe the episodes you want.",

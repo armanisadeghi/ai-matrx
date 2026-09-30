@@ -2102,6 +2102,7 @@ export function KnowledgeHubPage({
             onShowMore={triageView ? triage.showMore : serverTranscripts ? () => transcriptList.showMore() : results.showMore}
             onRetry={triageView ? triage.refresh : serverTranscripts ? () => transcriptList.retry() : results.retry}
             stage={stageColumn}
+            transcriptRowFor={serverTranscripts ? factFor : undefined}
             groupByDate={dateOrdered}
             restore={{
               scrollTop: listRestore.saved?.scrollTop,

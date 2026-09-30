@@ -11,16 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { VALID_DATA_TYPES } from '@/utils/user-table-utls/table-utils';
-import { storageTypeLabel } from '@/features/data-tables/column-storage-types';
 import { addTableColumn } from '@/features/data-tables/service';
 import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
 import { setFieldFormat } from '@/features/data-tables/service';
@@ -260,30 +251,9 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
             ) : null}
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="dataType">Data Type</Label>
-            <Select
-              value={dataType}
-              onValueChange={(next) => {
-                setDataType(next);
-                // A format only fits certain storage types — reset to plain.
-                setFormat({ id: defaultFormatForBase(next) });
-              }}
-            >
-              <SelectTrigger id="dataType">
-                <SelectValue placeholder="Select data type" />
-              </SelectTrigger>
-              <SelectContent>
-                {VALID_DATA_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {/* The person's word for it (DATA-V2-BASICS-2 T3), never "String" or "Json". */}
-                    {storageTypeLabel(type)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+          {/* ONE TYPE CONTROL (BREAKER-3 B3-32, BREAKER-2 B2-27). A "Data Type" dropdown sat beside "Shows as"
+              and said "Text" next to "Choice" or "Relation": the look already decides what the column stores
+              (a date look stores dates, several choices a list), and "More kinds" lists every other one. */}
           <div className="space-y-2">
             <Label>Shows as</Label>
             <FieldFormatPicker

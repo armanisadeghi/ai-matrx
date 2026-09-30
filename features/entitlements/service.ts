@@ -14,6 +14,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { getCapability, isCapability, type Capability } from "./registry";
 import type {
@@ -105,7 +106,7 @@ export async function checkEntitlement(
   try {
     organizationId = await ensureOrgId(opts?.organizationId ?? null);
   } catch (e) {
-    if (isOrganizationSelectionCancelled(e)) {
+    if (isOrganizationSelectionCancelled(e) || isOrganizationRequiredError(e)) {
       return {
         ...permissiveVerdict(capability),
         allowed: false,

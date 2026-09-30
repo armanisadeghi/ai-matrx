@@ -102,7 +102,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { RunStages } from "../RunStages";
 import { useLaunchGate } from "@/lib/launch-gate/useLaunchGate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { librariesToHubHref } from "@/features/knowledge/hub/legacyRoutes";
+import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 
 /**
  * The registered source→rulebook pairs live in ONE place — `../../sourceLinks`
@@ -1293,7 +1293,7 @@ export function RulebookSourcesPanel({
                       className="h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
                     >
                       <Link
-                        href={librariesToHubHref({ from: "rulebook", rulebook_id: rulebook.id })}
+                        href={`${LIBRARIES_PATH}?from=rulebook&rulebook_id=${encodeURIComponent(rulebook.id)}`}
                         data-tap-target
                         title="Catalogue a whole YouTube channel in Libraries"
                       >

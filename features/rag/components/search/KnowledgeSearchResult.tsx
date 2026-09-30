@@ -14,7 +14,8 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import { kindGlyph } from "@/features/rag/components/hit-card/kindGlyph";
-import { getQueryHighlightSegments } from "@/features/rag/components/hit-card/query-highlighting";
+import { markdownWithQueryMarks } from "@/features/rag/components/hit-card/query-highlighting";
+import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import {
   searchHitHref,
   type SearchHitSourceView,
@@ -38,7 +39,7 @@ export function KnowledgeSearchResult({
   const href = searchHitHref(hit) ?? citationHrefFor(hit);
   const glyph = kindGlyph(hit.source_kind);
   const Icon = glyph.icon;
-  const segments = getQueryHighlightSegments(hit.snippet ?? "", query);
+  const passage = markdownWithQueryMarks(hit.snippet ?? "", query);
   const meta = [
     source.kindLabel,
     source.site,
@@ -67,20 +68,16 @@ export function KnowledgeSearchResult({
           <p className="truncate text-xs text-muted-foreground">
             {meta.join(" · ")}
           </p>
-          <p className="line-clamp-4 text-sm leading-relaxed text-foreground/85">
-            {segments.map((segment, index) =>
-              segment.highlighted ? (
-                <mark
-                  key={index}
-                  className="rounded-sm bg-primary/15 px-0.5 font-medium text-foreground"
-                >
-                  {segment.text}
-                </mark>
-              ) : (
-                <span key={index}>{segment.text}</span>
-              ),
-            )}
-          </p>
+          {/* The passage is markdown: rendered by the shared renderer (images and links stay
+              inert-safe via the "other" policy), the query's words drawn as marks, and the
+              height capped so one long passage never pushes the list around. */}
+          <div
+            className="max-h-28 overflow-hidden text-sm leading-relaxed text-foreground/85 [&_*]:!my-0 [&_p]:!mb-1 [&_h1]:!text-sm [&_h2]:!text-sm [&_h3]:!text-sm [&_h4]:!text-sm [&_mark]:rounded-sm [&_mark]:bg-primary/15 [&_mark]:px-0.5 [&_mark]:text-foreground [&>div]:!p-0"
+            style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent)" }}
+            data-testid="knowledge-search-passage"
+          >
+            <BasicMarkdownContent imagePolicy="other" content={passage} showCopyButton={false} />
+          </div>
         </div>
       </div>
       {details ? (

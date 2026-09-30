@@ -30,13 +30,19 @@ import {
   type LibraryFacts,
 } from "@/features/acquisition-console/contract";
 
-const stateOf = (href: string) => hubStateFromParams(new URL(href, "https://x").searchParams);
+// The link lands on the live Libraries page; its `?scope=&filters=` bag is read by
+// the page and (same mapper) by the hub's Libraries group, so one state walks both.
+const stateOf = (href: string) => {
+  const u = new URL(href, "https://x");
+  const asHub = librariesToHubHref(Object.fromEntries(u.searchParams.entries()));
+  return hubStateFromParams(new URL(asHub, "https://x").searchParams);
+};
 
 describe("the console's Libraries row addresses one kind of Library", () => {
   it("lands on the hub's Libraries group with the adapter", () => {
     const href = librariesHref("gmail_mbox", "internal");
     const s = stateOf(href);
-    expect(new URL(href, "https://x").pathname).toBe("/knowledge/hub");
+    expect(new URL(href, "https://x").pathname).toBe("/libraries");
     expect(s.view).toEqual({ kind: "group", token: "media_source_library" });
     expect(s.group).toEqual({ lane: "orgs", adapter: "gmail_mbox" });
   });

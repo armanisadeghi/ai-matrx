@@ -12,7 +12,7 @@ import {
   type ModuleStep,
   type ModuleSubArea,
 } from "@/features/auth/components/module-landing/ModuleLanding";
-import { HUB_DATA_STORES_HREF, HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { DATA_STORES_PATH, SOURCES_PATH } from "@/features/knowledge/modulePaths";
 
 const CAPABILITIES: ModuleCapability[] = [
   {
@@ -72,7 +72,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Data stores",
     status: "Live",
-    href: HUB_DATA_STORES_HREF,
+    href: DATA_STORES_PATH,
     items: [
       "Create + manage",
       "Cloud + repo sync",
@@ -94,7 +94,7 @@ const SUB_AREAS: ModuleSubArea[] = [
   {
     title: "Document library",
     status: "Live",
-    href: HUB_SOURCES_HREF,
+    href: SOURCES_PATH,
     items: [
       "Every doc you've added",
       "Filter + sort",
@@ -126,7 +126,7 @@ export default function KnowledgeLanding() {
       description="Group your docs, code, and reference material into named data stores. Agents query the right store for the right job, cite every source, and stay scoped to who's allowed to see what."
       primaryCtaHref="/sign-up?source=knowledge-landing"
       primaryCtaLabel="Build Your Knowledge Base Free"
-      workspaceHref={HUB_DATA_STORES_HREF}
+      workspaceHref={DATA_STORES_PATH}
       workspaceLabel="Knowledge"
       capabilitiesHeading="More than file upload + hope"
       capabilitiesDescription="Five capabilities that make retrieval actually work — typed stores, hybrid search, citations, scopes, freshness."

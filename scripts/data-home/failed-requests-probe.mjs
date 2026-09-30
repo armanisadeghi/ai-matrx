@@ -17,6 +17,16 @@ page.on("response", async (r) => {
 });
 page.on("console", (m) => { if (m.type() === "error") errors.push(m.text().slice(0, 300)); });
 page.on("pageerror", (e) => errors.push("PAGEERROR " + String(e.message).slice(0, 300)));
+if (!ORIGIN.includes("aimatrx.com")) {
+  await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
+  await page.evaluate(async () => {
+    const body = new FormData();
+    body.set("returnTo", "/login");
+    return (await fetch("/__dev-walk", { method: "POST", body, redirect: "manual" })).status;
+  }).catch(() => null);
+  if (page.url().includes("__dev-walk")) await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+  await new Promise((r) => setTimeout(r, 6000));
+}
 const who = await signIn(page, ORIGIN, process.env.E, process.env.P);
 for (const path of (process.env.PATHS ?? "/data-v2").split(",")) {
   failed.length = 0; errors.length = 0;

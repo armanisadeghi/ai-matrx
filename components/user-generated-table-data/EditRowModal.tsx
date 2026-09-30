@@ -43,6 +43,7 @@ import {
   parseValidationRules,
   validateCellValue,
 } from "@/features/data-tables/validation";
+import { readRowFormWords } from "@/features/data-tables/row-form-words";
 import { columnRuleRefusal, type ColumnRuleRefusal } from "@/features/data-tables/validation-refusal";
 import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -180,14 +181,20 @@ export default function EditRowModal({
     // Column validation rules, checked before anything is sent. `unique` is
     // skipped here on purpose: this form holds one row, not the table, and a
     // uniqueness claim made without the other rows would be a guess.
+    // Typed numbers are read first, by the one reader (row-form-words.ts): "(150)" is -150.
+    const typed = readRowFormWords(fields, rowData);
     const nextErrors: Record<string, ColumnRuleRefusal> = {};
+    for (const [fieldName, why] of Object.entries(typed.refusals)) {
+      const field = fields.find((f) => f.field_name === fieldName);
+      if (field) nextErrors[fieldName] = columnRuleRefusal({ fieldDisplayName: field.display_name, reason: why });
+    }
     for (const field of fields) {
-      if (isComputedColumn(field)) continue;
+      if (isComputedColumn(field) || nextErrors[field.field_name]) continue;
       const verdict = validateCellValue({
         rules: parseValidationRules(field.validation_rules),
         dataType: field.data_type,
         format: resolveFieldFormat(field.data_type, field.metadata),
-        value: rowData[field.field_name],
+        value: typed.data[field.field_name],
       });
       if (!verdict.ok) {
         // THE ONE REFUSAL SHAPE. The bare red sentence this used to be said what
@@ -238,7 +245,7 @@ export default function EditRowModal({
       // udt_upsert_row scopes by both table_id and row_id, fires the validation
       // and version triggers, and routes through the owner-or-editor permission
       // gate — replaces the legacy update_data_row_in_user_table RPC.
-      const result = await upsertRow({ tableId, rowId, data: rowData });
+      const result = await upsertRow({ tableId, rowId, data: typed.data });
       if (isServiceFailure(result)) {
         throw rowWriteError(result);
       }
@@ -335,21 +342,16 @@ export default function EditRowModal({
 
       case "number":
       case "integer":
+        // A TEXT BOX THAT KEEPS WHAT WAS TYPED (grids review 3): the browser's number control could not
+        // hold "(150)" or "$1,250.50", and the column was saved empty. Read on Save (row-form-words.ts).
         return (
           <Input
             id={field.field_name}
-            type="number"
-            value={value === null || value === undefined ? "" : value}
-            onChange={(e) => {
-              const val =
-                e.target.value === ""
-                  ? null
-                  : field.data_type === "integer"
-                    ? parseInt(e.target.value)
-                    : parseFloat(e.target.value);
-              handleValueChange(field.field_name, val);
-            }}
-            step={field.data_type === "integer" ? 1 : 0.01}
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            value={value === null || value === undefined ? "" : String(value)}
+            onChange={(e) => handleValueChange(field.field_name, e.target.value === "" ? null : e.target.value)}
           />
         );
 

@@ -27,6 +27,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";
@@ -100,7 +101,7 @@ export function PicklistsIndex({ organizationName, userId, dataSource }: Picklis
       const made = (await createList({
         p_list_name: trimmed,
         p_user_id: userId,
-        p_organization_id: await ensureOrgId(null),
+        p_organization_id: await withOrganizationRefusalShown("created", () => ensureOrgId(null)),
         p_items: [],
       })) as { list_id?: string; id?: string } | null;
       const id = made?.list_id ?? made?.id;

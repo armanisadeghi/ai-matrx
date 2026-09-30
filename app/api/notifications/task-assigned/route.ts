@@ -109,6 +109,12 @@ export async function POST(request: Request) {
         : NaN;
     const outboxActive = Number.isFinite(cutoverAt);
     const dmReplayGuardActive = configValues?.assignment_dm_replay_key_active === true;
+    const dmOutboxCutoverAt = configValues?.assignment_dm_outbox_active === true &&
+      typeof configValues.assignment_dm_outbox_activated_at === "string"
+        ? Date.parse(configValues.assignment_dm_outbox_activated_at)
+        : NaN;
+    const dmOutboxOwnsAssignment = Number.isFinite(dmOutboxCutoverAt) &&
+      Date.parse(taskRow.updated_at) >= dmOutboxCutoverAt;
     let outboxOwnsEmail = false;
     let assignmentNoticeExists = true;
     if (outboxActive) {
@@ -166,7 +172,8 @@ export async function POST(request: Request) {
         taskId,
         taskDescription,
       });
-    const dmDelivery: Promise<SendDmResult> = dmReplayGuardActive && assignmentNoticeExists ? sendDm({
+    const dmDelivery: Promise<SendDmResult> = dmReplayGuardActive &&
+      assignmentNoticeExists && !dmOutboxOwnsAssignment ? sendDm({
         senderId: user.id,
         recipientId: assigneeId,
         organizationId: taskRow.organization_id,
@@ -187,9 +194,10 @@ export async function POST(request: Request) {
         success: true,
         msg: result.message,
         skipped: result.skipped,
-        dmSkipped: !dmReplayGuardActive || !assignmentNoticeExists,
+        dmSkipped: !dmReplayGuardActive || !assignmentNoticeExists || dmOutboxOwnsAssignment,
         dmSkipReason: !dmReplayGuardActive ? "replay_guard_not_active" :
-          !assignmentNoticeExists ? "no_saved_in_app_assignment_notice" : undefined,
+          !assignmentNoticeExists ? "no_saved_in_app_assignment_notice" :
+          dmOutboxOwnsAssignment ? "saved_assignment_dm_outbox" : undefined,
       });
     }
 

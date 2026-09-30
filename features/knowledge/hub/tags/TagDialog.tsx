@@ -5,7 +5,7 @@
  * item under that tag (creating it in the item's organization if it is new).
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Hash, Plus } from "lucide-react";
 import {
   Command,
@@ -45,6 +45,12 @@ export function TagDialog({
   for (const t of tags) if (!names.some((n) => n.toLowerCase() === t.name.toLowerCase())) names.push(t.name);
   const matches = names.filter((n) => !lower || n.toLowerCase().includes(lower)).slice(0, 8);
   const exists = names.some((n) => n.toLowerCase() === lower);
+  // With the list unfiltered (cmdk's own filter is off) nothing is highlighted on its own, so ↵ on a
+  // freshly typed name did nothing. The first choice is always the highlighted one; arrows move it.
+  const firstValue = typed && !exists ? `new:${typed}` : matches[0] ? `tag:${matches[0]}` : "";
+  const [active, setActive] = useState("");
+  useEffect(() => setActive(firstValue), [firstValue]);
+  const inputRef = useRef<HTMLInputElement>(null);
   const pick = (name: string) => {
     setText("");
     onPick(name);
@@ -57,13 +63,22 @@ export function TagDialog({
         onOpenChange(o);
       }}
     >
-      <DialogContent className="max-w-md p-0">
+      <DialogContent
+        className="max-w-md p-0"
+        // The dialog's own first-focus rule lands on the dialog itself on the first open after a page
+        // load; the name field is where typing goes, every time.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
+      >
         <DialogHeader className="px-4 pt-4">
           <DialogTitle>Tag {count === 1 ? "1 item" : `${count} items`}</DialogTitle>
           <DialogDescription className="sr-only">Type a tag and press Enter.</DialogDescription>
         </DialogHeader>
-        <Command shouldFilter={false} className="border-t border-border">
+        <Command shouldFilter={false} value={active} onValueChange={setActive} className="border-t border-border">
           <CommandInput
+            ref={inputRef}
             value={text}
             onValueChange={setText}
             placeholder="Tag name…"

@@ -6,6 +6,7 @@
 
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 
@@ -53,7 +54,7 @@ export const mathProblemAdminService = {
   },
 
   async create(input: Omit<MathProblemInsert, "organization_id">): Promise<MathProblemRow> {
-    const organizationId = await ensureOrgId(undefined);
+    const organizationId = await withOrganizationRefusalShown("saved", () => ensureOrgId(undefined));
     const { data, error } = await education()
       .from("math_problems")
       .insert({ ...input, organization_id: organizationId })

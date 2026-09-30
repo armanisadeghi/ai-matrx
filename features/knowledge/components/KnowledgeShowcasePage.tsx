@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { KnowledgePipelineDiagram } from "./KnowledgePipelineDiagram";
-import { HUB_DATA_STORES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { DATA_STORES_PATH } from "@/features/knowledge/modulePaths";
 
 /**
  * KnowledgeShowcasePage — `/knowledge`
@@ -62,7 +62,7 @@ const CAPABILITIES: Capability[] = [
     icon: Layers,
     title: "Many representations, one source",
     description: `The same document is held as text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, vectors, summaries, schemas, and indices — each scoped to who's allowed to see it, all tracing back to the original.`,
-    href: HUB_DATA_STORES_HREF,
+    href: DATA_STORES_PATH,
     hrefLabel: "Data stores",
   },
   {

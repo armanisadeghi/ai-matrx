@@ -10,7 +10,7 @@
  *   · numbers: a currency symbol, commas, a percent sign, brackets or a minus for a negative
  *     (`readTypedNumber`); a Whole number is whole, or it is said;
  *   · a tick box: yes / no, true / false, y / n, 1 / 0, on / off, ✓, x;
- *   · a time of day (`readTypedTime`); a date or a date-and-time that a calendar can read;
+ *   · a time of day (`readTypedTime`); a date, or a date and time as an absolute instant (`readDateCellWords`);
  *   · a choice: its own words however they are cased or spaced; several choices (and tags) split on
  *     commas, semicolons and new lines;
  *   · everything else: the column's format, then the words as they are.
@@ -22,6 +22,7 @@ import { parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/fie
 import type { FieldChoice, FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { inlineChoices, isChoiceFormat, isWordChoiceFormat } from "@/lib/field-formats/choices";
 import { splitListWords } from "@/lib/field-formats/list-words";
+import { readDateCellWords } from "./date-cell-words";
 
 export type CellWordColumn = {
   display_name: string;
@@ -101,9 +102,12 @@ export function readCellWord(raw: unknown, column: CellWordColumn): CellWord {
     return { ok: true, value: read.value };
   }
   if (id === "date" || id === "datetime" || column.data_type === "date" || column.data_type === "datetime") {
-    const time = Date.parse(text);
-    if (Number.isNaN(time)) return { ok: false, why: `${name} holds a date, and “${text}” is not one a calendar can read. Write it like 2026-10-12.` };
-    return { ok: true, value: parseFieldInput(text, format, column.data_type) };
+    // THE ONE DATE READER (date-cell-words.ts; grids review 3): a day stays a day, a date and time is
+    // an absolute instant read in the reader's zone — never `Date.parse`'s guess, never a zone-less
+    // wall-clock string.
+    const kind = id === "datetime" || (id !== "date" && column.data_type === "datetime") ? "datetime" : "date";
+    const read = readDateCellWords(text, kind);
+    return read.ok ? { ok: true, value: read.stored } : { ok: false, why: `${name} holds a date, and ${read.why}` };
   }
   return { ok: true, value: parseFieldInput(text, format, column.data_type) };
 }

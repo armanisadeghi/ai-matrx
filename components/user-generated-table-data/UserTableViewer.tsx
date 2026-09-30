@@ -69,7 +69,8 @@ import {
 } from "@/features/data-tables/components/EditableCell";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
-import { formatFieldValue, parseFieldInput, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import { formatFieldValue, getFieldFormat, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import { readCellWord, type CellWord } from "@/features/data-tables/cell-word";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { formatDateCellDisplay } from "@/features/data-tables/format-date-cell";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -811,6 +812,12 @@ const UserTableViewer = ({
   /** When the rename input opened — see the blur guard on the input. */
   const [renameOpenedAt, setRenameOpenedAt] = useState(0);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
+  /**
+   * SPACE TICKS THE SELECTED TICK BOX (grids review 3; Sheets, Airtable). The grid's own keys never
+   * open an editor on a bare Space, so on a Yes/No cell it did nothing. The cell owns its write
+   * (`EditableCell` — the same one-click path, undo included); this asks it, once per press.
+   */
+  const [toggleAsk, setToggleAsk] = useState<{ rowId: string; fieldName: string; n: number } | null>(null);
   const [showColorsDialog, setShowColorsDialog] = useState(false);
   /**
    * The table's colors, patched locally the moment a write is sent so the grid
@@ -2549,6 +2556,14 @@ const UserTableViewer = ({
   // table fills in itself, which every write path below must skip.
   const isFormulaField = (fieldName: string): boolean =>
     computedPage.formulaFieldNames.has(fieldName);
+  /** A Yes/No cell — the one the grid's Space ticks. Boolean storage or a declared tick-box look. */
+  const isTickBoxField = (fieldName: string): boolean => {
+    if (isFormulaField(fieldName)) return false;
+    const field = fields.find((f) => f.field_name === fieldName);
+    if (!field) return false;
+    const look = resolveFieldFormat(field.data_type, field.metadata);
+    return field.data_type === "boolean" || getFieldFormat(look.id)?.editor === "checkbox";
+  };
 
   // ─── Validation rules (features/data-tables/validation.ts) ───────────────
   // Parsed once per render per column; the cell editors, the amber mismatch
@@ -2797,12 +2812,11 @@ const UserTableViewer = ({
    * number, empty text becomes null). A second normalizer here is how a paste
    * and a typed edit end up storing different things for the same characters.
    */
-  const coerceForField = (field: TableField, raw: string): unknown =>
-      parseFieldInput(
-        raw,
-        resolveFieldFormat(field.data_type, field.metadata),
-        field.data_type,
-      );
+  const coerceForField = (field: TableField, raw: string): CellWord =>
+      // THE ONE READER OF A WORD (cell-word.ts) — the one a typed cell and the paste-rows dialog use.
+      // The look's own loose parse read "(150)" in a Money column as nothing and stored it EMPTY,
+      // and a date & time as zone-less words (grids review 3).
+      readCellWord(raw, field);
 
   /**
    * Delete / Backspace on the selection (one cell or a range), and the second
@@ -3202,7 +3216,14 @@ const UserTableViewer = ({
           skippedComputed += 1;
           continue;
         }
-        const next = coerceForField(field, cell.raw);
+        const read = coerceForField(field, cell.raw);
+        if (!read.ok) {
+          if (!rejected.some((r) => r.fieldDisplayName === field.display_name && r.reason === read.why)) {
+            rejected.push(columnRuleRefusal({ fieldDisplayName: field.display_name, reason: read.why }));
+          }
+          continue;
+        }
+        const next = read.value;
         const rules = validationByField.get(cell.fieldName);
         if (rules) {
           const verdict = validateCellValue({
@@ -3252,6 +3273,18 @@ const UserTableViewer = ({
       // half a paste and no way back to what was refused. The refusals are now put
       // in front of them BEFORE anything is written, on the columns they belong to,
       // through the one notice, and the paste is theirs to take or leave.
+      // The rows a paste would ADD are read by the same reader, and what it cannot read is in the same
+      // question — never dropped after the person said yes.
+      for (const overflow of plan.overflowRows) {
+        plan.fieldNames.forEach((fieldName, i) => {
+          const field = fieldByName.get(fieldName);
+          if (!field || isFormulaField(fieldName)) return;
+          const read = coerceForField(field, overflow[i] ?? "");
+          if (!read.ok && !rejected.some((r) => r.fieldDisplayName === field.display_name && r.reason === read.why)) {
+            rejected.push(columnRuleRefusal({ fieldDisplayName: field.display_name, reason: read.why }));
+          }
+        });
+      }
       if (rejected.length > 0) {
         const go = await askAboutRefusedPaste(rejected, ops.length);
         if (!go) return;
@@ -3273,7 +3306,10 @@ const UserTableViewer = ({
             const data: Record<string, unknown> = {};
             plan.fieldNames.forEach((fieldName, i) => {
               const field = fieldByName.get(fieldName);
-              if (field) data[fieldName] = coerceForField(field, overflow[i] ?? "");
+              if (!field) return;
+              // A word the reader refused was already in the question above; it is left out.
+              const read = coerceForField(field, overflow[i] ?? "");
+              if (read.ok) data[fieldName] = read.value;
             });
             ops.push({ op: "insert", data });
             appended += 1;
@@ -3408,10 +3444,17 @@ const UserTableViewer = ({
   const handleBulkSetColumn = async (fieldName: string, rawValue: string) => {
       const rows = orderSelectedRows(displayRows, selectedRowIds);
       const field = fields.find((f) => f.field_name === fieldName);
-      // Coerce exactly the way a hand edit does — a second normalizer is how an
-      // agent write and a bulk write end up storing different things.
+      // Read exactly the way a hand edit does — a second normalizer is how an
+      // agent write and a bulk write end up storing different things. The words
+      // go through the one reader of a word (cell-word.ts): "(150)" is -150 in a
+      // Money column, never empty; a word it cannot read is said, never written.
+      const read = field ? readCellWord(rawValue, field) : { ok: true as const, value: rawValue };
+      if (!read.ok) {
+        toast({ title: `Nothing was set on ${field?.display_name ?? fieldName}`, description: read.why, variant: "destructive" });
+        return;
+      }
       const value = normalizeCellValue(
-        rawValue,
+        read.value,
         field?.data_type ?? "string",
         (field?.metadata as { format?: FieldFormatConfig } | null)?.format ?? null,
       );
@@ -4144,6 +4187,7 @@ const UserTableViewer = ({
     showReadOnlyToast,
     surfaceOpenCell,
     tableId,
+    toggleAsk,
     toggleRowSelection,
     validationByField,
     viewFields,
@@ -4256,6 +4300,7 @@ const UserTableViewer = ({
       showEditModal && selectedRowId === row.id,
       cells,
       editingHere ? grid.editSeed : null,
+      toggleAsk?.rowId === row.id ? `${toggleAsk.fieldName}:${toggleAsk.n}` : null,
     ];
   };
   const renderSheetRow = (row: TableDataRow, index: number): React.ReactNode => (
@@ -4611,6 +4656,11 @@ const UserTableViewer = ({
                   // (BREAKER-2 B2-11: a late "done" overwrote another row's Title).
                   onEndEdit={(move) => S().grid.endEdit(move, { rowId: row.id, fieldName: field.field_name })}
                   commitRequest={S().grid.isEditing(row.id, field.field_name) ? S().grid.editCommit : null}
+                  toggleRequest={
+                    S().toggleAsk?.rowId === row.id && S().toggleAsk?.fieldName === field.field_name
+                      ? (S().toggleAsk?.n ?? null)
+                      : null
+                  }
                   onRecordEdit={(priorValue, nextValue) =>
                     S().cellUndo.record({
                       tableId: S().tableId,
@@ -5323,7 +5373,22 @@ const UserTableViewer = ({
         // the grid has focus and a selection.
         tabIndex={0}
         role="grid"
-        onKeyDown={grid.onKeyDown}
+        onKeyDown={(e) => {
+          const at = grid.selected;
+          if (
+            e.key === " " &&
+            !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey &&
+            !grid.editing && at && !grid.range &&
+            !(e.target instanceof Element && e.target.closest("[data-matrx-cell-editor]")) &&
+            isTickBoxField(at.fieldName)
+          ) {
+            e.preventDefault();
+            if (isReadOnly) showReadOnlyToast();
+            else setToggleAsk((prev) => ({ rowId: at.rowId, fieldName: at.fieldName, n: (prev?.n ?? 0) + 1 }));
+            return;
+          }
+          grid.onKeyDown(e);
+        }}
         // Tab into the grid lands on the container; focus moves on to the
         // type catcher so typed text has somewhere to go.
         onFocus={grid.onGridFocus}

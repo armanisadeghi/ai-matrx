@@ -286,7 +286,7 @@ export function ResultRow({
   hideKind?: boolean;
   /** The date as its section wants it ("3:42 PM", "Sep 12"); relative when absent. */
   whenLabel?: string | null;
-  /** A narrow pane: the date joins the fact line and tags stay in the peek. */
+  /** A narrow pane: the date joins the fact line and the tags shorten to one chip and a count. */
   compact?: boolean;
   /** Lines the title may take (the list measured it: 2 on a narrow pane when it will not fit one). */
   titleLines?: 1 | 2;
@@ -312,7 +312,7 @@ export function ResultRow({
   // A tag that repeats a fact already on the line (#Veritasium beside "Veritasium") is noise.
   const said = new Set(parts.map((p) => p.toLowerCase()));
   const own = handlers.rowTags?.(hit);
-  const tags = compact ? [] : (own ?? hitTags(hit)).filter((t) => !said.has(t.replace(/^#/, "").toLowerCase()));
+  const tags = (own ?? hitTags(hit)).filter((t) => !said.has(t.replace(/^#/, "").toLowerCase()));
   return (
     <div
       role="option"
@@ -393,7 +393,7 @@ export function ResultRow({
                 {stageNode}
               </span>
             ) : null}
-            <TagChips tags={tags} onFilter={handlers.onFilterTag} className="shrink-0 flex-nowrap" />
+            <TagChips tags={tags} onFilter={handlers.onFilterTag} max={compact ? 1 : 3} className="shrink-0 flex-nowrap" />
             {handlers.highlight && (hit as KnowledgeHit & { matched?: boolean }).matched ? (
               <WhyMatchedPopover hit={hit} text={handlers.highlight} />
             ) : null}

@@ -89,7 +89,14 @@ function FiledChip({ f }: { f: FiledRef }) {
 
 /** Live outward associations for a real record. */
 function LiveFiledUnder({ entity, id }: { entity: string; id: string }) {
-  const { edges, status, error } = useAssociations({ type: entity, id });
+  // Filing writes go through the associations service, which never touches the cache these hooks
+  // render from — so the peek reads the edges fresh each time it opens (and after every write,
+  // which remounts it), instead of showing what was cached before "File to".
+  const { edges, status, error, reload } = useAssociations({ type: entity, id, autoLoad: false });
+  useEffect(() => {
+    void reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entity, id]);
   // Tags have their own section above: a tag is not also "filed under" here.
   const scopeIds = edges.filter((e) => e.direction === "outgoing" && e.otherType === "scope").map((e) => e.otherId);
   const scopeKey = scopeIds.sort().join("|");

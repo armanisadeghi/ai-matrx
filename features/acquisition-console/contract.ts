@@ -17,7 +17,7 @@
 // failure took the whole running-jobs panel down on 2026-09-18. A row that
 // cannot be read is DROPPED AND NAMED, and the page prints the names.
 
-import { librariesToHubHref } from "@/features/knowledge/hub/legacyRoutes";
+import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 import {
   ContractError,
   createReaders,
@@ -314,13 +314,13 @@ const LANE_TO_LIST_SCOPE: Record<string, string> = {
  * no parameter. aidream `d7093434f6` closed that; the link is now exact.
  */
 export function librariesHref(adapter: string, lane: string): string {
-  // The Libraries list retired into the Knowledge hub's Libraries group (H6b);
-  // the same scope + adapter bag, translated by the ONE mapper the old
-  // address's redirect uses, so the link and a typed `/libraries?…` agree.
-  return librariesToHubHref({
+  // The Libraries page is live at its own address (a module's home is its own,
+  // Arman 2026-09-29) and reads this same scope + adapter bag natively.
+  const qs = new URLSearchParams({
     scope: LANE_TO_LIST_SCOPE[lane] ?? "mine",
     filters: JSON.stringify({ adapter: { kind: "select", values: [adapter] } }),
   });
+  return `${LIBRARIES_PATH}?${qs.toString()}`;
 }
 
 /**

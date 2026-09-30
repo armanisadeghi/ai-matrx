@@ -18,7 +18,7 @@ import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { transcriptListConfig } from "../browse/listConfig";
 import { TranscriptsListHeader } from "./TranscriptsListHeader";
 import { TranscriptsSurfaceGuide } from "./TranscriptsSurfaceGuide";
-import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 
 export function TranscriptsListPage() {
   const newButton = (
@@ -43,7 +43,7 @@ export function TranscriptsListPage() {
   const wholeChannelButton = (
     <Button asChild size="sm" variant="outline" className="h-11 lg:h-7">
       <Link
-        href={HUB_LIBRARIES_HREF}
+        href={LIBRARIES_PATH}
         aria-label="Catalogue a whole YouTube channel in Libraries"
       >
         <Library className="h-4 w-4" />

@@ -49,7 +49,7 @@ import {
   offerFormatWhereRelationIs,
   useRelationColumnsEnabled,
 } from "@/features/data-tables/relation-knob";
-import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import { getFieldFormat, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import { ColumnValidationEditor } from "@/features/data-tables/components/ColumnValidationEditor";
 import { FormulaExpressionEditor } from "@/features/data-tables/components/FormulaExpressionEditor";
@@ -238,6 +238,15 @@ function ColumnSettingsForm({
     else setDefaultWords("");
   };
   const typeChanged = dataType !== field.data_type;
+  // THE KINDS THIS COLUMN MAY BECOME (DATA-V2-BASICS-2 T2), now asked of each look: a look whose storage
+  // the store cannot convert into is not offered, the column's own kind always is.
+  const allowedBases = new Set<string>(
+    storageTypesToChangeInto({ onTheRecordStore: isRecordStoreTable(tableId), changeInto: RECORD_STORE_COLUMN_TYPES, current: field.data_type }).map((t) => t.value),
+  );
+  const canBecome = (formatId: string): boolean => {
+    const base = getFieldFormat(formatId)?.base;
+    return !base || base === dataType || allowedBases.has(base);
+  };
   const onTheRecordStore = isRecordStoreTable(tableId);
 
   const save = async () => {
@@ -403,38 +412,9 @@ function ColumnSettingsForm({
               />
               {nameSays ? <p className="text-xs text-destructive">{nameSays}</p> : null}
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Stores</Label>
-              <Select
-                value={dataType}
-                disabled={readOnly || saving || computed}
-                onValueChange={(v) => {
-                  setDataType(v as FieldDataType);
-                  // A format only fits certain storage types — reset to plain.
-                  setFormat(null);
-                  setRules({});
-                }}
-              >
-                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {/* ONLY WHAT THIS TABLE CAN BECOME (DATA-V2-BASICS-2 T2): a record-store column cannot
-                      be changed into "Structured data" or "List", and offering them was a Save that
-                      refused every time. The column's own current kind always stays listed. */}
-                  {storageTypesToChangeInto({
-                    onTheRecordStore,
-                    changeInto: RECORD_STORE_COLUMN_TYPES,
-                    current: field.data_type,
-                  }).map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {typeChanged && (
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Changing the type converts every stored value.
-                </p>
-              )}
-            </div>
+            {/* ONE TYPE CONTROL (BREAKER-3 B3-32): the "Stores" dropdown said "Text" beside "Multi-choice".
+                The look below decides what the column stores; a change is still confirmed before any value
+                is converted (Save), and only kinds this table can change into are offered. */}
           </div>
 
           <div className="space-y-1">
@@ -443,7 +423,7 @@ function ColumnSettingsForm({
               dataType={dataType}
               value={format ?? resolveFieldFormat(dataType, null)}
               onChange={setFormat}
-              offerFormat={offerFormatWhereRelationIs(relationEnabled)}
+              offerFormat={(id) => offerFormatWhereRelationIs(relationEnabled)(id) && canBecome(id)}
               onDataTypeChange={(base, next) => {
                 setDataType(base as FieldDataType);
                 setRules({});
@@ -464,6 +444,11 @@ function ColumnSettingsForm({
                 siblingFields={siblings}
                 disabled={readOnly || saving}
               />
+            )}
+            {typeChanged && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                This changes what the column holds: every stored value is converted when you save.
+              </p>
             )}
           </div>
 

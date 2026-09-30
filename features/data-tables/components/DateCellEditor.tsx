@@ -18,8 +18,10 @@
  * `date` column immediately; a `datetime` column keeps the calendar open for
  * the time, and Done / Enter / clicking away saves it.
  *
- * Stored shapes are unchanged: `yyyy-MM-dd` for a date, and the local
- * `yyyy-MM-ddTHH:mm` the native datetime input always wrote for a datetime.
+ * Stored shapes: `yyyy-MM-dd` for a date, and an ABSOLUTE INSTANT (`…Z`) for a
+ * date and time, read in the viewer's zone — the record grids' own shape, through
+ * the one conversion in `date-cell-words.ts` (grids review 3: the Sheet used to
+ * write the zone-less `yyyy-MM-ddTHH:mm`, so one column held two formats).
  * An unchanged cell hands back the ORIGINAL value untouched, so opening and
  * closing the editor never rewrites a value it did not change.
  */
@@ -27,13 +29,13 @@
 
 import {
   forwardRef,
+  useEffect,
   useRef,
   useState,
   type KeyboardEvent,
   type SyntheticEvent,
 } from "react";
-import { format as formatDate, isValid } from "date-fns";
-import { readTypedDate } from "@ai-matrx/records";
+import { format as formatDate } from "date-fns";
 import { CalendarDays, Clock } from "lucide-react";
 
 import {
@@ -45,10 +47,16 @@ import {
 } from "@ai-matrx/design-system";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import {
+  dateFromStored,
+  readDateCellWords,
+  storedFromDate,
+  type DateCellKind,
+} from "../date-cell-words";
 
 import type { GridMove } from "@ai-matrx/design-system/data-table/grid-selection";
 
-export type DateCellKind = "date" | "datetime";
+export type { DateCellKind };
 
 type Props = {
   kind: DateCellKind;
@@ -68,28 +76,12 @@ const DATETIME_TEXT = "MMM d, yyyy h:mm a";
 
 /** Reads a STORED value. Date-only strings are local calendar days, never UTC. */
 export function fromStored(value: unknown, kind: DateCellKind): Date | null {
-  if (value === null || value === undefined || value === "") return null;
-  if (value instanceof Date) return isValid(value) ? value : null;
-  const text = String(value);
-  const dayOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(
-    text.slice(0, kind === "date" ? 10 : text.length),
-  );
-  if (dayOnly) {
-    return new Date(
-      Number(dayOnly[1]),
-      Number(dayOnly[2]) - 1,
-      Number(dayOnly[3]),
-    );
-  }
-  const d = new Date(text);
-  return isValid(d) ? d : null;
+  return dateFromStored(value, kind);
 }
 
+/** What the store keeps for a moment: a day, or an absolute instant (`date-cell-words.ts`). */
 export function toStored(date: Date, kind: DateCellKind): string {
-  return formatDate(
-    date,
-    kind === "date" ? "yyyy-MM-dd" : "yyyy-MM-dd'T'HH:mm",
-  );
+  return storedFromDate(date, kind);
 }
 
 /** How a date reads to a person — the words the cell's own text field shows. */
@@ -101,27 +93,21 @@ export function toText(date: Date | null, kind: DateCellKind): string {
 /**
  * Reads what a person TYPED. `undefined` = could not read it.
  *
- * 🚨 THE ONE READER (`@ai-matrx/records` `readTypedDate`), the same reading the record-store
- * grids use — never a list of patterns tried until one "works". The old loose reading took a
- * half-typed "0/03/" as 1 March 2000 and "9/30" as this year by guesswork; this one reads the
- * person's locale order, a month word, a time after the day (2:30 PM, 1200PM, 14:30), and refuses
- * a two-digit or missing year with the way to write it (`whyUnread`).
+ * 🚨 THE ONE READER (`date-cell-words.ts` over `@ai-matrx/records` `readTypedDate`), the same
+ * reading the record-store grids use — never a list of patterns tried until one "works". It reads
+ * the person's locale order, a month word, a time after the day (2:30 PM, 1200PM, 14:30), a time
+ * alone over a date & time cell that already has its day (`current`), and refuses a two-digit or
+ * missing year with the way to write it (`whyUnread`).
  */
-export function fromText(text: string, kind: DateCellKind): Date | null | undefined {
-  const trimmed = text.trim().replace(/\s+/g, " ");
-  if (trimmed === "") return null;
-  const read = readTypedDate(trimmed, { withTime: kind === "datetime" });
+export function fromText(text: string, kind: DateCellKind, current?: unknown): Date | null | undefined {
+  const read = readDateCellWords(text, kind, current);
   if (!read.ok) return undefined;
-  if (kind === "datetime" && read.instant) return new Date(read.instant);
-  const [y, m, d] = read.day.split("-").map(Number);
-  return new Date(y!, m! - 1, d!);
+  return read.stored === null ? null : dateFromStored(read.stored, kind);
 }
 
 /** Why the typed text is not a date — the reader's own sentence, or `null` when it reads. */
-export function whyUnread(text: string, kind: DateCellKind): string | null {
-  const trimmed = text.trim().replace(/\s+/g, " ");
-  if (trimmed === "") return null;
-  const read = readTypedDate(trimmed, { withTime: kind === "datetime" });
+export function whyUnread(text: string, kind: DateCellKind, current?: unknown): string | null {
+  const read = readDateCellWords(text, kind, current);
   return read.ok ? null : read.why;
 }
 
@@ -152,7 +138,26 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
     const [touched, setTouched] = useState<boolean>(seed !== null);
     const [unreadable, setUnreadable] = useState(false);
 
-    const parsed = fromText(text, kind);
+    // KEYS TYPED BEFORE THIS FIELD TOOK FOCUS JOIN IT (grids review 3). The grid grows the edit's
+    // seed with every key that reached it while the calendar was mounting; this field used to read
+    // the seed once, so `1200PM` typed fast kept only its first key. What has not been seen yet is
+    // appended — or, for an edit opened without typing, replaces the value, as typing would.
+    const seenSeed = useRef<string | null>(seed);
+    useEffect(() => {
+      const held = seenSeed.current;
+      seenSeed.current = seed;
+      if (!seed || seed === held) return;
+      if (held && seed.startsWith(held)) {
+        const more = seed.slice(held.length);
+        setText((t) => t + more);
+      } else {
+        setText(seed);
+      }
+      setTouched(true);
+      setUnreadable(false);
+    }, [seed]);
+
+    const parsed = fromText(text, kind, value);
     const current = parsed === undefined ? null : parsed;
     const [month, setMonth] = useState<Date>(() => current ?? new Date());
     const anchorRef = useRef<HTMLDivElement>(null);
@@ -175,13 +180,13 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
         onCommit(value, move);
         return;
       }
-      const read = fromText(text, kind);
-      if (read === undefined) {
+      const read = readDateCellWords(text, kind, value);
+      if (!read.ok) {
         // Never guess and never drop what they typed — say so, keep the editor.
         setUnreadable(true);
         return;
       }
-      onCommit(read === null ? null : toStored(read, kind), move);
+      onCommit(read.stored, move);
     };
 
     const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -256,7 +261,7 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
                 setText(e.target.value);
                 setTouched(true);
                 setUnreadable(false);
-                const read = fromText(e.target.value, kind);
+                const read = fromText(e.target.value, kind, value);
                 if (read) setMonth(read);
               }}
               onKeyDown={handleKey}
@@ -297,7 +302,7 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
         >
           {unreadable && (
             <p className="w-0 min-w-full border-b border-border px-3 py-2 text-xs text-destructive">
-              {whyUnread(text, kind) ?? "That is not a date this cell can read."} Or pick one below.
+              {whyUnread(text, kind, value) ?? "That is not a date this cell can read."} Or pick one below.
             </p>
           )}
           <div className="flex justify-center">

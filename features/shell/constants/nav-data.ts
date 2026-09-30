@@ -943,6 +943,12 @@ export const primaryNavItems: ShellNavItem[] = [
         group: "Knowledge",
       },
       {
+        label: "Library Catalog",
+        href: "/knowledge/library-catalog",
+        iconName: "BookOpen",
+        group: "Knowledge",
+      },
+      {
         label: "Repositories",
         href: "/knowledge/repositories",
         iconName: "Code2",

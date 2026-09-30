@@ -2594,6 +2594,41 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
             </div>
           ) : null}
 
+          {!inv && loading && (
+            <div
+              className="space-y-3"
+              role="status"
+              aria-live="polite"
+              data-testid="diagnostics-loading"
+            >
+              <div className="flex items-center gap-2 rounded-md border bg-muted/20 p-4 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">
+                    Counting what you can search…
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    This reads your whole search index and can take 10–15 seconds.
+                  </p>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {[0, 1].map((i) => (
+                  <div key={i} className="rounded-md border bg-card overflow-hidden">
+                    <div className="px-3 py-2 border-b bg-muted/30">
+                      <div className="h-3 w-28 animate-pulse rounded bg-muted" />
+                    </div>
+                    <div className="space-y-2 p-3">
+                      {[0, 1, 2, 3].map((j) => (
+                        <div key={j} className="h-3 animate-pulse rounded bg-muted" style={{ width: `${90 - j * 12}%` }} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {!inv && !loading && !error && (
             <div className="rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
               <p className="font-medium text-foreground mb-1">
@@ -2664,14 +2699,14 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                           key={b.source_kind}
                           className="px-3 py-1.5 flex items-center gap-2 text-xs"
                         >
-                          <code className="font-mono uppercase tracking-wide w-24">
+                          <code className="min-w-0 flex-1 truncate font-mono uppercase tracking-wide" title={b.source_kind}>
                             {b.source_kind}
                           </code>
-                          <span className="tabular-nums">
+                          <span className="shrink-0 whitespace-nowrap tabular-nums">
                             {b.visible_chunks.toLocaleString()}{" "}
                             {RAG_VOCAB.segmentsShort.toLowerCase()}
                           </span>
-                          <span className="ml-auto tabular-nums text-muted-foreground">
+                          <span className="ml-auto shrink-0 whitespace-nowrap tabular-nums text-muted-foreground">
                             {b.distinct_sources.toLocaleString()} sources
                           </span>
                         </div>
@@ -2822,7 +2857,9 @@ export function RagSearchExperience() {
                 <PanelLeftOpen className="h-4 w-4" />
               </Button>
             )}
-            <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
+            {/* Below md the strip scrolls; from md up it is never squeezed — the scope chips
+                (which truncate) give way, so no tab (Diagnostics) is ever clipped. */}
+            <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scrollbar-hide md:flex-none md:shrink-0 md:overflow-visible">
               <TabsList className="h-9 inline-flex">
                 <TabsTrigger value="search" className="gap-1.5 shrink-0">
                   <SearchIcon className="h-3.5 w-3.5" /> Search
@@ -2838,10 +2875,10 @@ export function RagSearchExperience() {
                 </TabsTrigger>
               </TabsList>
             </div>
-            <div className="hidden lg:flex min-w-0 max-w-[min(42rem,40vw)] items-center overflow-hidden">
+            <div className="hidden lg:flex min-w-0 flex-1 max-w-[min(42rem,40vw)] items-center overflow-hidden">
               <ActiveScopeChips className="min-w-0" />
             </div>
-            <div className="hidden md:block ml-auto text-[11px] text-muted-foreground shrink-0">
+            <div className="hidden xl:block ml-auto text-[11px] text-muted-foreground shrink-0">
               Knowledge search
             </div>
           </div>

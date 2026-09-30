@@ -86,7 +86,7 @@ import {
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { SOURCES_PATH } from "@/features/knowledge/modulePaths";
 
 interface ScrapeItemState {
   loading: boolean;
@@ -506,7 +506,7 @@ export function ScraperFloatingWorkspace({
             toast.success("Page indexed for Knowledge", {
               action: {
                 label: "View in library",
-                onClick: () => router.push(HUB_SOURCES_HREF),
+                onClick: () => router.push(SOURCES_PATH),
               },
             });
           }}

@@ -518,14 +518,15 @@ export function FieldFormatPicker({
               {otherKinds.length > 0 && (
                 <SelectGroup>
                   <SelectLabel className="text-[11px] uppercase tracking-wide">
-                    Other kinds · changes what the column stores
+                    More kinds
                   </SelectLabel>
                   {otherKinds.map((f) => (
                     <SelectItem key={f.id} value={f.id}>
                       <div>
                         <div className="font-medium">{f.label}</div>
                         <div className="text-xs text-muted-foreground">
-                          {f.description} · stores {BASE_LABELS[f.base] ?? f.base}
+                          {/* A look is said by what it is for, never by the storage word under it (B3-32, B2-27). */}
+                          {f.description}
                         </div>
                       </div>
                     </SelectItem>

@@ -88,7 +88,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { HUB_DATA_STORES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { DATA_STORES_PATH } from "@/features/knowledge/modulePaths";
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_DATA_STORES_SURFACE = "matrx-user/knowledge-data-stores";
@@ -828,7 +828,7 @@ function StoreDetailPanel({
         id={storeId}
         error={detail.readError}
         onRetry={detail.refresh}
-        fallbackHref={HUB_DATA_STORES_HREF}
+        fallbackHref={DATA_STORES_PATH}
         fallbackLabel="All data stores"
       />
     );

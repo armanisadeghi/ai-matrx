@@ -147,6 +147,47 @@ describe("task assignment notification admission", () => {
     expect(noticeQuery.eq).toHaveBeenCalledWith("recipient_user_id", assigneeId);
   });
 
+  it("leaves a post-cutover action DM to the saved transition", async () => {
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: {
+        assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
+        assignment_dm_outbox_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 120_000).toISOString(),
+        assignment_dm_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+    noticeQuery.maybeSingle.mockResolvedValue({ data: { id: taskId }, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(sendDm).not.toHaveBeenCalled();
+    expect(await response.json()).toMatchObject({
+      dmSkipped: true, dmSkipReason: "saved_assignment_dm_outbox",
+    });
+  });
+
+  it("keeps the browser DM for a saved write predating the DM cutover", async () => {
+    taskQuery.maybeSingle.mockResolvedValue({ data: {
+      ...savedTask, updated_at: new Date(Date.now() - 90_000).toISOString(),
+    }, error: null });
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: {
+        assignment_outbox_active: true,
+        assignment_dm_replay_key_active: true,
+        assignment_dm_outbox_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 120_000).toISOString(),
+        assignment_dm_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+    noticeQuery.maybeSingle.mockResolvedValue({ data: { id: taskId }, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+    expect(response.status).toBe(200);
+    expect(sendDm).toHaveBeenCalledTimes(1);
+  });
+
   it("does not send a DM when the saved transition has email but no in-app notice", async () => {
     eventQuery.maybeSingle.mockResolvedValue({ data: {
       config: {

@@ -60,7 +60,7 @@ import {
 import type { StarterPackSummary } from "@/features/marketing/seo/value-system/types";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { HUB_LIBRARY_CATALOG_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { LIBRARY_CATALOG_PATH } from "@/features/knowledge/modulePaths";
 
 export function LibraryCuratePage() {
   const router = useRouter();
@@ -426,7 +426,7 @@ function NotACurator() {
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             <Button asChild size="sm">
-              <a href={HUB_LIBRARY_CATALOG_HREF}>
+              <a href={LIBRARY_CATALOG_PATH}>
                 <BookOpenText className="mr-1.5 size-3.5" /> Browse the Matrx Library
               </a>
             </Button>

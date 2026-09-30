@@ -35,7 +35,7 @@ import { loadConsole, type ConsoleData } from "./service";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
-import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 
 const EMPTY_ORGS: { id: string; name: string }[] = [];
 
@@ -261,7 +261,7 @@ export function AcquisitionConsolePage() {
               </span>
             ) : (
               <Link
-                href={HUB_LIBRARIES_HREF}
+                href={LIBRARIES_PATH}
                 className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               >
                 Libraries

@@ -506,6 +506,7 @@ export function SourcesPage() {
     try {
       // Name the organization first: the scraper refuses without one, and the
       // person should be asked to choose — not told the page was unreadable.
+      // org-refusal-presented-by: features/sources/addFailure.ts
       await ensureOrgId(activeOrgId);
       const result = await scrapeUrl(
         /^https?:\/\//i.test(url) ? url : `https://${url}`,

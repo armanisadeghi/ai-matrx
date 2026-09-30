@@ -2,7 +2,7 @@
 
 // RagHubHeader — the ONE shell header for the Knowledge/Knowledge hub level
 // (`/knowledge/data-stores`, `/knowledge/library-catalog`, `/knowledge/library-curate`,
-// `/knowledge/repositories`; Sources is the hub since H6a; the Search Lab is a kept user page). Center is the canonical section nav (RouteModeNav);
+// `/knowledge/repositories`; Sources, Catalog and Data Stores are module pages; the Search Lab is a kept user page). Center is the canonical section nav (RouteModeNav);
 // callers pass their contextual action tap-buttons via `right`. No title
 // text — the nav IS the identity. Pattern mirrors CmsHubHeader.
 
@@ -17,27 +17,28 @@ import {
   Library,
   Search,
 } from "lucide-react";
-import { HUB_DATA_STORES_HREF, HUB_LIBRARY_CATALOG_HREF, HUB_SOURCES_HREF, SEARCH_LAB_PATH } from "@/features/knowledge/hub/legacyRoutes";
+import { SEARCH_LAB_PATH } from "@/features/knowledge/hub/legacyRoutes";
+import { DATA_STORES_PATH, KNOWLEDGE_HUB_PATH, LIBRARY_CATALOG_PATH, SOURCES_PATH } from "@/features/knowledge/modulePaths";
 
 const HUB_NAV_ITEMS = [
-  { name: "Hub", href: "/knowledge", icon: Home },
-  { name: "Data Stores", href: HUB_DATA_STORES_HREF, icon: Database },
-  { name: "Sources", href: HUB_SOURCES_HREF, icon: FileText },
-  { name: "Catalog", href: HUB_LIBRARY_CATALOG_HREF, icon: Library },
+  { name: "Hub", href: KNOWLEDGE_HUB_PATH, icon: Home },
+  { name: "Data Stores", href: DATA_STORES_PATH, icon: Database },
+  { name: "Sources", href: SOURCES_PATH, icon: FileText },
+  { name: "Catalog", href: LIBRARY_CATALOG_PATH, icon: Library },
   { name: "Search Lab", href: SEARCH_LAB_PATH, icon: Search },
   { name: "Repositories", href: "/knowledge/repositories", icon: Code2 },
 ];
 
 /**
- * The Data Stores and Catalog tabs open the hub's container groups (H6b), so a
- * pathname match would light "Hub" on their record pages; the record page's
- * own route names its tab.
+ * Each tab is its module's own page; a record page under a module keeps that
+ * module's tab lit.
  */
 function activeTabFor(pathname: string | null): string | undefined {
   if (!pathname) return undefined;
-  if (pathname.startsWith("/knowledge/data-stores")) return HUB_DATA_STORES_HREF;
-  if (pathname.startsWith("/knowledge/library-catalog") || pathname.startsWith("/knowledge/library-curate"))
-    return HUB_LIBRARY_CATALOG_HREF;
+  if (pathname.startsWith(DATA_STORES_PATH)) return DATA_STORES_PATH;
+  if (pathname.startsWith(LIBRARY_CATALOG_PATH) || pathname.startsWith("/knowledge/library-curate"))
+    return LIBRARY_CATALOG_PATH;
+  if (pathname.startsWith(SOURCES_PATH)) return SOURCES_PATH;
   if (pathname.startsWith("/knowledge/repositories")) return "/knowledge/repositories";
   return undefined;
 }

@@ -27,8 +27,9 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   const { unit } = useCostDisplay();
@@ -68,10 +69,21 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
 
 export function SeoSpendPanel() {
   const { unit } = useCostDisplay();
-  const spend = useSeoSpendSummary();
-  // Provider spend is ONE organization's budget (its ceiling vs its spend) — a
-  // billing subject, so it says which organization it is showing.
-  const orgName = useAppSelector(selectOrganizationName);
+  // THE PAGE'S ORGANIZATION FILTER (`?org_filter=`, default All organizations — never the active
+  // organization, which only decides where new things are saved). All organizations sums the
+  // person's organizations; one organization shows its own ceilings against its own spend, and
+  // the header says which.
+  const [orgFilter, setOrgFilter] = useOrgFilterParam();
+  const { organizations } = useUserOrganizations();
+  const spend = useSeoSpendSummary(orgFilter);
+  const orgName = orgFilter
+    ? (organizations.find((org) => org.id === orgFilter)?.name ?? "")
+    : "All organizations";
+  const orgFilterControl = (
+    <div className="flex justify-end pb-2">
+      <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
+    </div>
+  );
   /** Right-clicked rejection row — STATE (not a ref) so the menu reads the
    *  row that was actually clicked. */
   const [clickedRejection, setClickedRejection] =
@@ -79,14 +91,20 @@ export function SeoSpendPanel() {
 
   if (spend.isError) {
     return (
-      <QueryError error={spend.error} onRetry={() => void spend.refetch()} />
+      <div>
+        {orgFilterControl}
+        <QueryError error={spend.error} onRetry={() => void spend.refetch()} />
+      </div>
     );
   }
   if (spend.isLoading || !spend.data) {
     return (
-      <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading SEO provider
-        spend…
+      <div>
+        {orgFilterControl}
+        <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading SEO provider
+          spend…
+        </div>
       </div>
     );
   }
@@ -196,11 +214,14 @@ export function SeoSpendPanel() {
   };
 
   return (
-    <div className="grid h-full grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto p-1">
+    <div className="h-full overflow-y-auto p-1">
+    {orgFilterControl}
+    <div className="grid grid-rows-[auto_auto_1fr] gap-3">
       <section className="rounded-lg border border-border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             This month by provider{orgName ? ` · ${orgName}` : ""}
+            {data.organizationCount > 1 ? ` (${data.organizationCount} organizations)` : ""}
           </h2>
           <Button
             size="sm"
@@ -224,6 +245,13 @@ export function SeoSpendPanel() {
             ))}
           </div>
         )}
+        {data.unreadOrganizationIds.length > 0 ? (
+          <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-400">
+            {data.unreadOrganizationIds.length} of your organizations could not
+            be read, so their spend is not included below. Pick one
+            organization above to see its own error.
+          </p>
+        ) : null}
         <p className="mt-2 text-[10px] text-muted-foreground">
           Org·provider monthly ceiling{" "}
           {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, unit)} ·
@@ -266,6 +294,7 @@ export function SeoSpendPanel() {
         />
         </NonEditableContextMenu>
       </section>
+    </div>
     </div>
   );
 }

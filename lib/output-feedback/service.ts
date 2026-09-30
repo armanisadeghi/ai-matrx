@@ -11,6 +11,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
 import {
@@ -46,7 +47,9 @@ export async function saveOutputFeedback(
   // EVERY SAVE CARRIES AN ORGANIZATION (law: active-org-is-never-a-list-filter, rule 4): the
   // subject's own when the caller knows it, else the one the person works in — the database never
   // picks one. With none set the write is held and the person picks.
-  const organizationId = await ensureOrgId(args.organizationId ?? undefined);
+  const organizationId = await withOrganizationRefusalShown("saved", () =>
+    ensureOrgId(args.organizationId ?? undefined),
+  );
   const { data, error } = await supabase
     .schema("platform")
     .rpc("upsert_output_feedback", {

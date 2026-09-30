@@ -44,6 +44,8 @@ import {
 } from "@/features/knowledge/hub/components/HubResultRow";
 import { SearchExplainHeader } from "@/features/knowledge/hub/components/HubSearchExplain";
 import type { HubMenuGroup } from "@/features/knowledge/hub/components/HubRowMenu";
+import { transcriptHubColumns } from "@/features/knowledge/hub/transcripts/transcriptTableColumns";
+import type { TranscriptListRow } from "@/features/transcripts/browse/types";
 import { dateGroupOf, dateInGroup, groupByDate, type DatedItem } from "@/features/knowledge/hub/dateGroups";
 
 // ─── shared pieces ──────────────────────────────────────────────────────────
@@ -451,13 +453,14 @@ export function hubTableColumns(
   stage?: HubStageColumn,
   handlers?: ResultHandlers,
   hits?: KnowledgeHit[],
+  /** The Transcripts view: each row's transcript list row — its table then carries that module's own columns. */
+  transcriptRowFor?: (hit: KnowledgeHit) => TranscriptListRow | undefined,
 ): MatrxColumnDef<KnowledgeHit>[] {
   const when = (h: KnowledgeHit) => h.updated_at ?? h.created_at ?? "";
   // A column no loaded row has a value for is absent, never a column of "Not reported".
   const any = (has: (h: KnowledgeHit) => boolean) => !hits || hits.some(has);
   const single = hits ? oneKind(hits) : false;
-  return [
-    {
+  const nameColumn: MatrxColumnDef<KnowledgeHit> = {
       id: "title",
       header: "Name",
       // Pixel widths, never a percentage: the table is `w-max`, so "40%" resolved against its own
@@ -474,7 +477,10 @@ export function hubTableColumns(
           <span className="font-medium">{h.title}</span>
         ),
       filter: "text",
-    },
+  };
+  if (transcriptRowFor) return [nameColumn, ...transcriptHubColumns(transcriptRowFor, hits ?? [])];
+  return [
+    nameColumn,
     ...(single
       ? []
       : [
@@ -523,14 +529,25 @@ export function hubTableColumns(
             header: "Captured by",
             width: 150,
             minWidth: 120,
-            cell: (h: KnowledgeHit) => <span className="block truncate">{capturedByLabel(h)}</span>,
-            accessorFn: (h: KnowledgeHit) => capturedByLabel(h),
+            cell: (h: KnowledgeHit) =>
+              h.captured_by?.name ? <span className="block truncate">{capturedByLabel(h)}</span> : <span className="text-muted-foreground">—</span>,
+            accessorFn: (h: KnowledgeHit) => (h.captured_by?.name ? capturedByLabel(h) : ""),
             filter: "select" as const,
           },
         ]
       : []),
     ...(any((h) => Boolean(h.origin))
-      ? [{ id: "origin", header: "Origin", width: 110, minWidth: 90, accessorFn: (h: KnowledgeHit) => originLabel(h.origin), filter: "select" as const }]
+      ? [
+          {
+            id: "origin",
+            header: "Origin",
+            width: 110,
+            minWidth: 90,
+            accessorFn: (h: KnowledgeHit) => (h.origin ? originLabel(h.origin) : ""),
+            cell: (h: KnowledgeHit) => (h.origin ? originLabel(h.origin) : <span className="text-muted-foreground">—</span>),
+            filter: "select" as const,
+          },
+        ]
       : []),
     ...(any((h) => Boolean(h.filed_under?.length))
       ? [
@@ -557,6 +574,7 @@ function TableLayout({
   sourceTotal,
   sourceMayHaveMore,
   more,
+  transcriptRowFor,
 }: {
   hits: KnowledgeHit[];
   handlers: ResultHandlers;
@@ -564,6 +582,8 @@ function TableLayout({
   error: string | null;
   onRetry: () => void;
   stage?: HubStageColumn;
+  /** The Transcripts view: the module's own columns, read from each row's transcript list row. */
+  transcriptRowFor?: (hit: KnowledgeHit) => TranscriptListRow | undefined;
   /** The hub's one paging model: the table reads the next page as you scroll, like every layout. */
   more: MoreState;
   /** Exact item total reported by every source section, when available. */
@@ -571,7 +591,7 @@ function TableLayout({
   /** A source section still has unread rows, or has not answered yet. */
   sourceMayHaveMore: boolean;
 }) {
-  const columns = hubTableColumns(stage, handlers, hits);
+  const columns = hubTableColumns(stage, handlers, hits, transcriptRowFor);
   const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
     pageSize: 0,
@@ -899,6 +919,7 @@ export function BrowseResults({
   groupByDate = false,
   highlight = "",
   restore,
+  transcriptRowFor,
 }: {
   layout: HubLayout;
   sections: SectionState[];
@@ -914,6 +935,8 @@ export function BrowseResults({
   groupByDate?: boolean;
   /** What was typed: marked in titles and passages. */
   highlight?: string;
+  /** The Transcripts view: its table carries the Transcripts module's own columns. */
+  transcriptRowFor?: (hit: KnowledgeHit) => TranscriptListRow | undefined;
   /** Back to the list: its scroll position, and where to keep it as it changes. */
   restore?: {
     scrollTop?: number;
@@ -997,6 +1020,7 @@ export function BrowseResults({
           sourceTotal={sourceTotal}
           sourceMayHaveMore={sourceMayHaveMore}
           more={moreState}
+          transcriptRowFor={transcriptRowFor}
         />
         </div>
       </div>

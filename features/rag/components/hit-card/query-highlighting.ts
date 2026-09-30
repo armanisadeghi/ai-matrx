@@ -218,3 +218,30 @@ export function getQueryHighlightSegments(
 
   return segments;
 }
+
+const PLAIN_WORDS = /^[\p{L}\p{N}' -]+$/u;
+/** Link targets and bare addresses: a `==` inside one would break the link. */
+const URL_SPANS = /\]\([^)\s]*\)|https?:\/\/[^\s)\]]+/g;
+
+/**
+ * The passage as markdown with the query's words marked (`==word==`, which the
+ * shared markdown renderer draws as `<mark>`). Only plain words are marked: a
+ * match that crosses markdown punctuation, or sits inside a link address, is
+ * left unmarked rather than risk breaking the passage's formatting.
+ */
+export function markdownWithQueryMarks(text: string, query: string): string {
+  const urlRanges = Array.from(text.matchAll(URL_SPANS), (m) => [m.index, m.index + m[0].length] as const);
+  let cursor = 0;
+  let out = "";
+  for (const segment of getQueryHighlightSegments(text, query)) {
+    const start = cursor;
+    const end = cursor + segment.text.length;
+    cursor = end;
+    const inUrl = urlRanges.some(([a, b]) => start < b && end > a);
+    out +=
+      segment.highlighted && !inUrl && PLAIN_WORDS.test(segment.text)
+        ? `==${segment.text}==`
+        : segment.text;
+  }
+  return out;
+}

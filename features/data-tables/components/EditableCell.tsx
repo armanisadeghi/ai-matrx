@@ -33,6 +33,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   type KeyboardEvent,
@@ -61,6 +62,7 @@ import { isDirectClickEditor, type GridMove } from "@ai-matrx/design-system/data
 import { isRecordStoreTable, readChoiceNudge, upsertCell, upsertCellAddingChoice } from "../service";
 import { decideTypedChoice } from "../choice-option-nudge";
 import { readCellWord } from "../cell-word";
+import { readDateCellWords } from "../date-cell-words";
 import { storeFieldForRelationColumn } from "../relation-cell";
 import { ChoiceNudgeAsk, type PendingChoiceAsk } from "./ChoiceNudgeAsk";
 import { validateCellValue, type ValidationRules } from "../validation";
@@ -139,6 +141,11 @@ type Props = {
    * held and move on. The editor commits once per `n`.
    */
   commitRequest?: { n: number; move: GridMove } | null;
+  /**
+   * Space was pressed on this selected tick box (grids review 3). The cell ticks or unticks itself
+   * through its own one-click path, once per `n`.
+   */
+  toggleRequest?: number | null;
 };
 
 export function EditableCell({
@@ -165,6 +172,7 @@ export function EditableCell({
   onEndEdit,
   onRecordEdit,
   commitRequest = null,
+  toggleRequest = null,
 }: Props) {
   const [draft, setDraft] = useState<unknown>(value);
   const [saving, setSaving] = useState(false);
@@ -332,17 +340,29 @@ export function EditableCell({
     // the record-store grids use. A time (`1200PM`, `9:30a`, `0930`) and a number (`-150`,
     // `(300)`) sit in a plain text box while they are typed; nothing the reader would have to
     // guess is written — the editor stays open holding the words, with the way to write them.
-    if (typeof source === "string" && source.trim() !== "") {
+    if (typeof source === "string" && source.trim() !== "" && !valuesEqual(source, value)) {
       const kind = typedReaderKind(format, dataType);
       // A NUMBER IS READ BY THE ONE READER OF A WORD (cell-word.ts; BREAKER-2 B2-13): "7.5" in a Whole
-      // number column was kept as 7 without a word, and "12abc" as 12.
+      // number column was kept as 7 without a word, and "12abc" as 12. EVERY number look reads here —
+      // money and percent too (grids review 3: "(150)" in a Money cell went through the look's own
+      // loose parse, which read the brackets as nothing, and was stored EMPTY).
       const numberRead = kind === "number" ? readCellWord(source, { display_name: fieldDisplayName, data_type: dataType, metadata: format ? { format } : null }) : null;
       const read = kind === "time" ? readTypedTime(source) : null;
-      if ((read && !read.ok) || (numberRead && !numberRead.ok)) {
+      // A DATE OR A DATE AND TIME IS READ BY THE ONE DATE READER (date-cell-words.ts; grids review 3):
+      // a key typed before the calendar mounted reached this commit as raw words — `1200PM` was
+      // sent as it was and saved nothing, with nothing said. A value the calendar already stored
+      // reads back to itself.
+      const dateRead = kind === "date" || kind === "datetime" ? readDateCellWords(source, kind, value) : null;
+      if ((read && !read.ok) || (numberRead && !numberRead.ok) || (dateRead && !dateRead.ok)) {
         setRuleRefusal(
           columnRuleRefusal({
             fieldDisplayName,
-            reason: numberRead && !numberRead.ok ? numberRead.why : `${fieldDisplayName} holds a time of day, and ${read && !read.ok ? read.why : ""}`,
+            reason:
+              numberRead && !numberRead.ok
+                ? numberRead.why
+                : dateRead && !dateRead.ok
+                  ? `${fieldDisplayName} holds a date, and ${dateRead.why}`
+                  : `${fieldDisplayName} holds a time of day, and ${read && !read.ok ? read.why : ""}`,
           }),
         );
         requestAnimationFrame(() => inputRef.current?.focus());
@@ -350,6 +370,7 @@ export function EditableCell({
       }
       if (read && read.ok) source = read.value;
       if (numberRead && numberRead.ok) source = numberRead.value;
+      if (dateRead && dateRead.ok) source = dateRead.stored;
     }
 
     // A declared format owns the coercion (currency strips "$", tags split on
@@ -572,6 +593,37 @@ export function EditableCell({
     onSelect?.();
     void commitEdit({ value: next });
   };
+
+  // SPACE ON A SELECTED TICK BOX (grids review 3): the same write a click makes, once per press.
+  const tickFromSpace = useEffectEvent(() => {
+    if (!directClickable || readEditorKind !== "checkbox") return;
+    void commitEdit({ value: value !== true });
+  });
+  const answeredToggle = useRef<number | null>(null);
+  useEffect(() => {
+    if (toggleRequest === null || answeredToggle.current === toggleRequest) return;
+    answeredToggle.current = toggleRequest;
+    tickFromSpace();
+  }, [toggleRequest]);
+
+  // A DIGIT TYPED ON A SELECTED RATING SETS IT (grids review 3; Airtable). The grid opened the stars
+  // with the digit as the edit's seed, and the stars ignored it — the typed rating was lost. 1–9 set
+  // that many stars (up to the column's maximum), 0 clears; a digit above the maximum is said.
+  const rateFromDigit = useEffectEvent((typed: string) => {
+    if (readEditorKind !== "rating") return;
+    const digit = typed.slice(-1);
+    if (!/^[0-9]$/.test(digit)) return;
+    const n = Number(digit);
+    const max = format?.options?.ratingMax ?? 5;
+    if (n > max) {
+      setRuleRefusal(columnRuleRefusal({ fieldDisplayName, reason: `${fieldDisplayName} goes up to ${max} stars, and ${n} is more. Type 1 to ${max}, or 0 to clear it.` }));
+      return;
+    }
+    void commitEdit({ value: n === 0 ? null : n, answered: true });
+  });
+  useEffect(() => {
+    if (editing && seed) rateFromDigit(seed);
+  }, [editing, seed]);
 
   const endedWithoutSettling = useRef(false);
   const wasEditingChoice = useRef(false);
@@ -1162,13 +1214,19 @@ export class RelationCellValueError extends Error {
 export function typedReaderKind(
   format: FieldFormatConfig | null | undefined,
   dataType: FieldDataType | string,
-): "time" | "number" | null {
+): "time" | "number" | "date" | "datetime" | null {
   if (format) {
     if (format.id === "time") return "time";
-    return format.id === "number" || format.id === "decimal" || format.id === "integer" ? "number" : null;
+    if (NUMBER_LOOKS.has(format.id)) return "number";
+    if (format.id === "date" || format.id === "datetime") return format.id;
   }
+  if (dataType === "date" || dataType === "datetime") return dataType;
+  if (format) return null;
   return dataType === "number" || dataType === "integer" ? "number" : null;
 }
+
+/** Every look that holds a number a person types — the same set `readCellWord` reads as a number. */
+const NUMBER_LOOKS = new Set(["number", "decimal", "integer", "currency", "percent", "progress", "duration", "file_size", "rating"]);
 
 export function normalizeCellValue(
   raw: unknown,

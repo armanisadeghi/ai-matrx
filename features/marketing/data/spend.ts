@@ -7,9 +7,9 @@
  * the "Provider spend" mode on `/marketing/cost`.
  */
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useQuery } from "@tanstack/react-query";
 import type { components } from "@/types/python-generated/api-types";
 import { isJsonObject } from "@/types/json";
@@ -183,29 +183,137 @@ export function readSeoSpendSummary(value: unknown): SeoSpendSummary {
   };
 }
 
-export function useSeoSpendSummary() {
+/** The rollup for one organization, or every organization read merged into one. */
+export type SeoSpendRollup = SeoSpendSummary & {
+  /** Organizations the rollup was asked of that could not be read (named by id, never dropped silently). */
+  unreadOrganizationIds: string[];
+  /** How many organizations the numbers cover. */
+  organizationCount: number;
+};
+
+function mergeProviderRows(
+  lists: SeoProviderSpendRow[][],
+): SeoProviderSpendRow[] {
+  const byProvider = new Map<string, SeoProviderSpendRow>();
+  for (const row of lists.flat()) {
+    const held = byProvider.get(row.provider);
+    if (!held) {
+      byProvider.set(row.provider, { ...row });
+      continue;
+    }
+    held.reported_cost += row.reported_cost;
+    held.estimated_cost += row.estimated_cost;
+    held.effective_cost += row.effective_cost;
+    held.billable_cost += row.billable_cost;
+    held.unpriced_runs += row.unpriced_runs;
+    held.run_count += row.run_count;
+    held.ceiling_usd += row.ceiling_usd;
+  }
+  for (const row of byProvider.values()) {
+    row.pct_used =
+      row.ceiling_usd > 0 ? (row.effective_cost / row.ceiling_usd) * 100 : 0;
+  }
+  return [...byProvider.values()];
+}
+
+/**
+ * Several organizations' summaries as ONE (All organizations). Costs, runs and each provider's
+ * ceiling add up across organizations; the daily series merges by date; rejections interleave
+ * newest first. The per-organization and platform ceilings stay the single values every summary
+ * reports (the largest, so no organization's ceiling is understated).
+ */
+export function mergeSeoSpendSummaries(
+  summaries: SeoSpendSummary[],
+  unreadOrganizationIds: string[] = [],
+): SeoSpendRollup {
+  if (summaries.length === 0) {
+    throw new Error("There is no SEO spend summary to merge.");
+  }
+  const days = new Map<string, SeoDailySpendPoint>();
+  for (const point of summaries.flatMap((s) => s.daily_series)) {
+    const held = days.get(point.date);
+    if (!held) {
+      days.set(point.date, { ...point });
+      continue;
+    }
+    held.effective_cost += point.effective_cost;
+    held.billable_cost += point.billable_cost;
+    held.unpriced_runs += point.unpriced_runs;
+    held.run_count += point.run_count;
+  }
+  return {
+    ...summaries[0],
+    organization_id: summaries.length === 1 ? summaries[0].organization_id : "all",
+    generated_at: summaries
+      .map((s) => s.generated_at)
+      .sort()
+      .at(-1) as string,
+    this_month: mergeProviderRows(summaries.map((s) => s.this_month)),
+    last_month: mergeProviderRows(summaries.map((s) => s.last_month)),
+    daily_series: [...days.values()].sort((a, b) => a.date.localeCompare(b.date)),
+    org_provider_monthly_ceiling_usd: Math.max(
+      ...summaries.map((s) => s.org_provider_monthly_ceiling_usd),
+    ),
+    global_provider_monthly_ceiling_usd: Math.max(
+      ...summaries.map((s) => s.global_provider_monthly_ceiling_usd),
+    ),
+    unpriced_run_assumed_cost_usd: Math.max(
+      ...summaries.map((s) => s.unpriced_run_assumed_cost_usd),
+    ),
+    recent_budget_rejections: summaries
+      .flatMap((s) => s.recent_budget_rejections)
+      .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)),
+    unreadOrganizationIds,
+    organizationCount: summaries.length,
+  };
+}
+
+/**
+ * The SEO spend rollup for the PAGE'S ORGANIZATION FILTER — `null` = All organizations (the
+ * default), one id = that organization. Never the active organization: it is a read, so it covers
+ * everything the person may see (active-org-is-never-a-list-filter law). Each request names its
+ * organization explicitly on the wire.
+ */
+export function useSeoSpendSummary(orgFilter: string | null) {
   const dispatch = useAppDispatch();
-  // Goes on the wire as `organization_id` to the aidream SEO route — the
-  // explicit selection, never the personal-org fallback (2026-09-12 class fix).
-  const organizationId = useAppSelector(selectOrganizationId);
+  const { organizations, loading: organizationsLoading } = useUserOrganizations();
+  const organizationIds = orgFilter
+    ? [orgFilter]
+    : organizations.map((org) => org.id);
+  const key = organizationIds.join(",");
   return useQuery({
-    queryKey: ["marketing", "seo-spend-summary", organizationId],
-    enabled: Boolean(organizationId),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error(
-          "An organization is required to load the SEO spend summary.",
-        );
-      }
-      const response = await dispatch(
-        callApi({
-          path: SPEND_SUMMARY_PATH,
-          method: "GET",
-          queryParams: { organization_id: organizationId },
+    queryKey: ["marketing", "seo-spend-summary", key],
+    enabled: !organizationsLoading && organizationIds.length > 0,
+    queryFn: async (): Promise<SeoSpendRollup> => {
+      const settled = await Promise.allSettled(
+        organizationIds.map(async (organizationId) => {
+          const response = await dispatch(
+            callApi({
+              path: SPEND_SUMMARY_PATH,
+              method: "GET",
+              queryParams: { organization_id: organizationId },
+            }),
+          );
+          if (response.error) throw new Error(response.error.message);
+          return readSeoSpendSummary(response.data);
         }),
       );
-      if (response.error) throw new Error(response.error.message);
-      return readSeoSpendSummary(response.data);
+      const summaries: SeoSpendSummary[] = [];
+      const unread: string[] = [];
+      let firstError: unknown = null;
+      settled.forEach((result, index) => {
+        if (result.status === "fulfilled") summaries.push(result.value);
+        else {
+          unread.push(organizationIds[index]);
+          firstError ??= result.reason;
+        }
+      });
+      if (summaries.length === 0) {
+        throw firstError instanceof Error
+          ? firstError
+          : new Error("The SEO spend summary could not be loaded.");
+      }
+      return mergeSeoSpendSummaries(summaries, unread);
     },
   });
 }

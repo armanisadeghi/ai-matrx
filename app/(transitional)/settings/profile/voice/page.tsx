@@ -7,6 +7,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { VoicePage } from "@/features/marketing/voice/VoicePage";
 
 export default function PersonVoicePage() {
@@ -19,7 +20,7 @@ export default function PersonVoicePage() {
       ownerId={userId}
       ownerName={name || "Your"}
       organizationId={null}
-      resolveOrganization={() => ensureOrgId(null)}
+      resolveOrganization={() => withOrganizationRefusalShown("measured", () => ensureOrgId(null))}
     />
   );
 }

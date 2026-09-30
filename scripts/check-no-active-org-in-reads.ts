@@ -24,7 +24,7 @@
  * readActiveOrganizationId / readActiveOrganizationForIdentity, the selectors selectOrganizationId /
  * selectActiveOrganizationId / selectEffectiveOrganizationId, a hand-read `state.appContext` /
  * `appContext.organization_id`, the shared cookie (`activeOrgCookie.read(...)`), and — across files —
- * any wrapper hook/selector (use*/get*/select*/read*/resolve*/current*/active*/require*) whose body
+ * any wrapper hook/selector (named use…, get…, select…, read…, resolve…, current…, active… or require…) whose body
  * reads one of those, wherever it is defined (a hook reading it in one file and a page listing in
  * another is the same read).
  *
@@ -34,7 +34,7 @@
  *  RULE 2 (call site, 2026-09-30). Inside one function, a value derived from a source (the variable it
  *  was assigned to, and anything assigned from that) that reaches a READ CALL — .select() / .rpc() (any
  *  name) / .eq .in .match .or .filter (unless the chain writes) / useQuery / a `queryKey` / fetch or
- *  callApi (unless POST/PUT/PATCH/DELETE) / list* fetch* load* search* query* find* count* / use*List /
+ *  callApi (unless POST/PUT/PATCH/DELETE) / list* fetch* load* search* query* count* / use*List /
  *  <RecordsProvider> — is a read of the active organization UNLESS THAT EXACT CALL is annotated. The
  *  annotation is per call site, never per variable: a note where the organization is first read
  *  covers nothing after it. (An rpc whose name starts with a write verb — create_ update_ … — and a
@@ -98,17 +98,17 @@ const LIST_READS: readonly RegExp[] = [
 ];
 
 /** Call-site rule: callee names that READ. */
-const READ_CALLEES = new Set([
-  "select", "rpc", "eq", "in", "match", "or", "filter", "neq",
-  "useQuery", "useInfiniteQuery", "useSuspenseQuery", "useQueries", "fetchQuery",
-  "fetch", "callApi",
-]);
-const READ_CALLEE_SHAPE = /^(list|fetch|load|search|query|find|count)[A-Z_]\w*$|^use\w*(List|Query|Tables|Records|Search)$/;
+const READ_CALLEES = new Set(["useQuery", "useInfiniteQuery", "useSuspenseQuery", "useQueries", "fetchQuery", "fetch", "callApi"]);
+/** Method calls (`x.select(…)`) that read — bare `select(…)` is somebody's local function, never a query. */
+const READ_METHODS = new Set(["select", "rpc", "eq", "in", "match", "or", "neq", "filter"]);
+const READ_CALLEE_SHAPE = /^(list|fetch|load|search|count)[A-Z_]\w*$|^query(?!Selector)[A-Z_]\w*$|^use\w*(List|Query|Tables|Records|Search)$/;
 /** Filter methods that also appear on writes (`.update(x).eq("organization_id", org)`): read only when no write verb is in the chain. */
 const FILTER_CALLEES = new Set(["eq", "in", "match", "or", "filter", "neq", "select"]);
 const WRITE_VERBS = new Set(["insert", "update", "upsert", "delete"]);
 /** An rpc whose name starts with a write verb carries the active org as a write/server-call target. */
 const WRITE_RPC = /^(create|update|delete|insert|upsert|set|save|archive|restore|add|remove|grant|revoke|invite|accept|transfer|submit|start|run|send|enqueue|record|log|register|mark|apply|rename|move|copy|duplicate|publish|unpublish|claim|release)_/;
+/** …and one whose name ENDS in one (library_subscribe, library_unsubscribe). */
+const WRITE_RPC_SUFFIX = /_(subscribe|unsubscribe|create|update|delete|archive|restore|grant|revoke|set|save|add|remove)$/;
 const WRITE_METHOD = /method\s*:\s*["'`](POST|PUT|PATCH|DELETE)/;
 const READ_TAGS = new Set(["RecordsProvider", "RecordsMount"]);
 
@@ -226,7 +226,7 @@ function isExemptWrite(call: ts.CallExpression, name: string): boolean {
   }
   if (name === "rpc") {
     const first = call.arguments[0];
-    if (first && (ts.isStringLiteral(first) || ts.isNoSubstitutionTemplateLiteral(first)) && WRITE_RPC.test(first.text)) return true;
+    if (first && (ts.isStringLiteral(first) || ts.isNoSubstitutionTemplateLiteral(first)) && (WRITE_RPC.test(first.text) || WRITE_RPC_SUFFIX.test(first.text))) return true;
   }
   if (name === "fetch" || name === "callApi" || /^fetch[A-Z]/.test(name)) {
     if (call.arguments.some((a) => WRITE_METHOD.test(a.getText()))) return true;
@@ -234,7 +234,12 @@ function isExemptWrite(call: ts.CallExpression, name: string): boolean {
   return false;
 }
 
-function isReadCallee(name: string): boolean {
+function isReadCall(call: ts.CallExpression): boolean {
+  const name = calleeName(call);
+  if (ts.isPropertyAccessExpression(call.expression) && READ_METHODS.has(name)) {
+    // Array.prototype.filter is client-side narrowing: a read only when its callback names an organization.
+    return name !== "filter" || call.arguments.some((a) => /org(anization)?_?id/i.test(a.getText()));
+  }
   return READ_CALLEES.has(name) || READ_CALLEE_SHAPE.test(name);
 }
 
@@ -336,62 +341,127 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
   }
 
   // Call-site rule, per outermost function (and module level): taint, then reads that receive it.
-  const scopes: ts.Node[] = [];
+  // A component's props carry it too: `<Bench organizationId={organizationId}>` taints `organizationId`
+  // inside `function Bench` in the same file (the organization read once at the top of a screen and used
+  // by a child three hundred lines later is still a read of the active organization).
+  const scopes: Array<{ node: ts.Node; name: string }> = [];
+  const nameOfFn = (fn: ts.Node): string => {
+    if (ts.isFunctionDeclaration(fn) && fn.name) return fn.name.text;
+    let p: ts.Node | undefined = fn.parent;
+    while (p && (ts.isCallExpression(p) || ts.isParenthesizedExpression(p))) p = p.parent;
+    return p && ts.isVariableDeclaration(p) && ts.isIdentifier(p.name) ? p.name.text : "";
+  };
   const collect = (n: ts.Node, insideFn: boolean) => {
     const isFn = ts.isFunctionLike(n) && !ts.isTypeNode(n) && "body" in n && !!(n as ts.FunctionLikeDeclaration).body;
     if (isFn && !insideFn) {
-      scopes.push(n);
+      scopes.push({ node: n, name: nameOfFn(n) });
       return;
     }
     ts.forEachChild(n, (c) => collect(c, insideFn));
   };
   collect(sf, false);
   // Module-level statements that are not function bodies form one more scope.
-  scopes.push(sf);
+  scopes.push({ node: sf, name: "" });
 
-  for (const scope of scopes) {
-    const tainted = new Set<string>();
+  const propTaint = new Map<string, Set<string>>();
+  const taintOf = new Map<ts.Node, Set<string>>();
+  const skipInner = (scope: ts.Node, n: ts.Node) =>
+    scope === sf && n !== sf && ts.isFunctionLike(n) && "body" in n && !!(n as ts.FunctionLikeDeclaration).body;
+
+  const kit = (scope: ts.Node, tainted: Set<string>) => {
+    const isTaintedIdent = (x: ts.Identifier): boolean => {
+      if (!tainted.has(x.text)) return false;
+      const p = x.parent;
+      return !((ts.isPropertyAccessExpression(p) && p.name === x) || (ts.isPropertyAssignment(p) && p.name === x));
+    };
+    /** Anywhere inside `n`: a source, or a tainted name (used for call ARGUMENTS — any value that reaches a read). */
     const mentionsTaint = (n: ts.Node): boolean => {
       let hit = false;
       const walk = (x: ts.Node) => {
         if (hit) return;
-        if (isSource(x, derived)) {
+        if (isSource(x, derived) || (ts.isIdentifier(x) && isTaintedIdent(x))) {
           hit = true;
           return;
-        }
-        if (ts.isIdentifier(x) && tainted.has(x.text)) {
-          const p = x.parent;
-          const isMemberName = ts.isPropertyAccessExpression(p) && p.name === x;
-          const isKey = ts.isPropertyAssignment(p) && p.name === x;
-          if (!isMemberName && !isKey) {
-            hit = true;
-            return;
-          }
         }
         ts.forEachChild(x, walk);
       };
       walk(n);
       return hit;
     };
-    const declared = (name: ts.BindingName, into: string[]) => {
-      if (ts.isIdentifier(name)) into.push(name.text);
-      else for (const el of name.elements) if (!ts.isOmittedExpression(el)) declared(el.name, into);
+    /** Does the VALUE of `e` itself hold the active organization (not merely something computed with it)? Only these propagate taint. */
+    const carriesTaint = (e: ts.Node): boolean => {
+      if (isSource(e, derived)) return true;
+      if (ts.isIdentifier(e)) return isTaintedIdent(e);
+      if (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isTypeAssertionExpression(e) || ts.isSatisfiesExpression(e)) {
+        return carriesTaint(e.expression);
+      }
+      if (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) return carriesTaint(e.expression);
+      if (ts.isBinaryExpression(e)) return carriesTaint(e.left) || carriesTaint(e.right);
+      if (ts.isConditionalExpression(e)) return carriesTaint(e.whenTrue) || carriesTaint(e.whenFalse);
+      if (ts.isObjectLiteralExpression(e)) {
+        return e.properties.some((pr) =>
+          ts.isShorthandPropertyAssignment(pr) ? tainted.has(pr.name.text) : ts.isPropertyAssignment(pr) ? carriesTaint(pr.initializer) : ts.isSpreadAssignment(pr) ? carriesTaint(pr.expression) : false,
+        );
+      }
+      if (ts.isArrayLiteralExpression(e)) return e.elements.some((x) => carriesTaint(x));
+      if (ts.isTemplateExpression(e)) return e.templateSpans.some((sp) => carriesTaint(sp.expression));
+      if (ts.isCallExpression(e)) {
+        // wrappers that hand back what they were given: selector hooks, memo, string coercion
+        if (/^(useAppSelector|useSelector|useMemo|String)$/.test(calleeName(e))) return e.arguments.some((a) => mentionsTaint(a));
+      }
+      return false;
     };
-    // fixpoint over declarations
-    for (let i = 0; i < 6; i += 1) {
-      const before = tainted.size;
-      const walk = (n: ts.Node) => {
-        if (scope === sf && n !== sf && ts.isFunctionLike(n) && "body" in n && (n as ts.FunctionLikeDeclaration).body) return;
-        if (ts.isVariableDeclaration(n) && n.initializer && mentionsTaint(n.initializer)) {
-          const names: string[] = [];
-          declared(n.name, names);
-          names.forEach((x) => tainted.add(x));
-        }
-        ts.forEachChild(n, walk);
-      };
-      walk(scope);
-      if (tainted.size === before) break;
+    return { mentionsTaint, carriesTaint };
+  };
+  const declared = (name: ts.BindingName, into: string[]) => {
+    if (ts.isIdentifier(name)) into.push(name.text);
+    else for (const el of name.elements) if (!ts.isOmittedExpression(el)) declared(el.name, into);
+  };
+
+  for (let round = 0; round < 5; round += 1) {
+    let changed = false;
+    for (const sc of scopes) {
+      const tainted = taintOf.get(sc.node) ?? new Set<string>();
+      taintOf.set(sc.node, tainted);
+      for (const a of propTaint.get(sc.name) ?? []) if (sc.name && !tainted.has(a)) { tainted.add(a); changed = true; }
+      const { carriesTaint } = kit(sc.node, tainted);
+      for (let i = 0; i < 6; i += 1) {
+        const before = tainted.size;
+        const walk = (n: ts.Node) => {
+          if (skipInner(sc.node, n)) return;
+          if (ts.isVariableDeclaration(n) && n.initializer && carriesTaint(n.initializer)) {
+            const names: string[] = [];
+            declared(n.name, names);
+            names.forEach((x) => tainted.add(x));
+          }
+          if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
+            const tag = n.tagName.getText(sf);
+            if (/^[A-Z]/.test(tag)) {
+              for (const at of n.attributes.properties) {
+                if (!ts.isJsxAttribute(at) || !at.initializer || !ts.isJsxExpression(at.initializer) || !at.initializer.expression) continue;
+                if (!carriesTaint(at.initializer.expression)) continue;
+                const set = propTaint.get(tag) ?? new Set<string>();
+                if (!set.has(at.name.getText(sf))) {
+                  set.add(at.name.getText(sf));
+                  propTaint.set(tag, set);
+                  changed = true;
+                }
+              }
+            }
+          }
+          ts.forEachChild(n, walk);
+        };
+        walk(sc.node);
+        if (tainted.size === before) break;
+        changed = true;
+      }
     }
+    if (!changed) break;
+  }
+
+  for (const sc of scopes) {
+    const scope = sc.node;
+    const { mentionsTaint } = kit(scope, taintOf.get(scope) ?? new Set<string>());
     const flag = (node: ts.Node, kind: string) => {
       const line = lineOf(sf, node);
       const note = annotationFor(raw, line);
@@ -399,10 +469,10 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
       push(line, note.found ? badNote(note.cls) : `${WHY_SITE} [${kind}]`);
     };
     const walkSites = (n: ts.Node) => {
-      if (scope === sf && n !== sf && ts.isFunctionLike(n) && "body" in n && (n as ts.FunctionLikeDeclaration).body) return;
+      if (skipInner(scope, n)) return;
       if (ts.isCallExpression(n)) {
         const name = calleeName(n);
-        if (isReadCallee(name) && !isExemptWrite(n, name) && n.arguments.some((a) => mentionsTaint(a))) flag(n, `${name}()`);
+        if (isReadCall(n) && !isExemptWrite(n, name) && n.arguments.some((a) => mentionsTaint(a))) flag(n, `${name}()`);
       }
       if (ts.isPropertyAssignment(n) && ts.isIdentifier(n.name) && n.name.text === "queryKey" && mentionsTaint(n.initializer)) flag(n, "queryKey");
       if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
@@ -528,7 +598,133 @@ function selfTest(): number {
       expectFindings: false,
     },
   ];
+  // ── 2026-09-30 blind-spot fixtures: each of these was INVISIBLE to the first version of this guard.
+  const blind: Array<{ name: string; files: string[]; target: string; expect: boolean }> = [
+    {
+      name: "RED: a hook reads the active org in one file, a page lists with it in another",
+      files: [
+        plant("hooks/useWorkingOrgId.ts", `export function useWorkingOrgId() { return useAppSelector(selectOrganizationId); }\n`),
+        plant("features/x1/Page.tsx", `export function P() { const org = useWorkingOrgId(); const rows = loadThings(org); return rows; }\n`),
+      ],
+      target: "features/x1/Page.tsx",
+      expect: true,
+    },
+    {
+      name: "GREEN: the same wrapper hook is defined but nothing reads with it",
+      files: [
+        plant("hooks/useWorkingOrgId2.ts", `export function useWorkingOrgId2() { return useAppSelector(selectOrganizationId); }\n`),
+        plant("features/x1b/Badge.tsx", `export function B() { const org = useWorkingOrgId2(); return org; }\n`),
+      ],
+      target: "features/x1b/Badge.tsx",
+      expect: false,
+    },
+    {
+      name: "RED: an rpc NOT named list_* receives the active organization",
+      files: [
+        plant("features/x2/Inbox.tsx", `export function I() {\n  const { organizationId } = useOrganizationRequired();\n  return supabase.rpc("work_inbox", { p_organization_id: organizationId, p_limit: 200 });\n}\n`),
+      ],
+      target: "features/x2/Inbox.tsx",
+      expect: true,
+    },
+    {
+      name: "RED: state.appContext.organization_id read by hand feeds a query key",
+      files: [
+        plant("features/x3/Q.tsx", `export function Q() {\n  const org = useAppSelector((s) => s.appContext.organization_id);\n  return useQuery({ queryKey: ["things", org], queryFn: () => null });\n}\n`),
+      ],
+      target: "features/x3/Q.tsx",
+      expect: true,
+    },
+    {
+      name: "RED: selectEffectiveOrganizationId narrows a .select() with .eq('organization_id')",
+      files: [
+        plant("features/x4/S.ts", `export async function s(state: any) {\n  const org = selectEffectiveOrganizationId(state);\n  return supabase.from("things").select("*").eq("organization_id", org);\n}\n`),
+      ],
+      target: "features/x4/S.ts",
+      expect: true,
+    },
+    {
+      name: "RED: the shared cookie read (activeOrgCookie.read) feeds a list fetch",
+      files: [
+        plant("features/x5/C.ts", `export async function c(userId: string) {\n  const org = activeOrgCookie.read(userId);\n  return listThings(org);\n}\n`),
+      ],
+      target: "features/x5/C.ts",
+      expect: true,
+    },
+    {
+      name: "RED: a one-line write-target note at the source does NOT cover a later read of the variable",
+      files: [
+        plant(
+          "features/x6/Bench.tsx",
+          `export function B() {\n  // org-filter: write-target the bench creates its disposable table in the organization the person works in\n  const { organizationId } = useOrganizationRequired();\n  const create = () => createTable({ organizationId });\n  useEffect(() => {\n    supabase.rpc("work_inbox", { p_organization_id: organizationId });\n  }, [organizationId]);\n  return create;\n}\n`,
+        ),
+      ],
+      target: "features/x6/Bench.tsx",
+      expect: true,
+    },
+    {
+      name: "RED: the active org is passed as a prop to a child in the same file that runs the rpc (TryEverythingScreen shape)",
+      files: [
+        plant(
+          "features/x6b/Screen.tsx",
+          `export default function Screen() {\n  // org-filter: write-target the bench creates its disposable table in the organization the person works in\n  const { organizationId } = useOrganizationRequired();\n  return <Strip organizationId={organizationId!} />;\n}\nfunction Strip({ organizationId }: { organizationId: string }) {\n  useEffect(() => {\n    supabase.rpc("work_inbox", { p_organization_id: organizationId, p_limit: 200 });\n  }, [organizationId]);\n  return null;\n}\n`,
+        ),
+      ],
+      target: "features/x6b/Screen.tsx",
+      expect: true,
+    },
+    {
+      name: "GREEN: the same read annotated AT ITS OWN CALL SITE",
+      files: [
+        plant(
+          "features/x7/Bench.tsx",
+          `export function B() {\n  const { organizationId } = useOrganizationRequired();\n  useEffect(() => {\n    // org-filter: server-call the inbox is the run queue of the organization the person is working in\n    supabase.rpc("work_inbox", { p_organization_id: organizationId });\n  }, [organizationId]);\n  return null;\n}\n`,
+        ),
+      ],
+      target: "features/x7/Bench.tsx",
+      expect: false,
+    },
+    {
+      name: "GREEN: writes carry the active organization (insert, update().eq, POST fetch, create_ rpc)",
+      files: [
+        plant(
+          "features/x8/W.ts",
+          `export async function w() {\n  const org = getActiveOrgId();\n  await supabase.from("t").insert({ organization_id: org });\n  await supabase.from("t").update({ a: 1 }).eq("organization_id", org);\n  await fetch("/api/x", { method: "POST", body: JSON.stringify({ organization_id: org }) });\n  await supabase.rpc("create_thing", { p_organization_id: org });\n}\n`,
+        ),
+      ],
+      target: "features/x8/W.ts",
+      expect: false,
+    },
+    {
+      name: "RED: providers/ is scanned",
+      files: [plant("providers/P.tsx", `export function P() { const o = getActiveOrgId(); return listThings(o); }\n`)],
+      target: "providers/P.tsx",
+      expect: true,
+    },
+    {
+      name: "RED: utils/ is scanned",
+      files: [plant("utils/u.ts", `export async function u() { const o = getActiveOrgId(); return listThings(o); }\n`)],
+      target: "utils/u.ts",
+      expect: true,
+    },
+    {
+      name: "RED: packages/ is scanned",
+      files: [plant("packages/p/src/p.ts", `export async function p() { const o = getActiveOrgId(); return listThings(o); }\n`)],
+      target: "packages/p/src/p.ts",
+      expect: true,
+    },
+  ];
   let failures = 0;
+  for (const dirName of ["providers", "utils", "packages", "app", "features", "components", "lib", "hooks"]) {
+    const ok = (SCAN_DIRS as readonly string[]).includes(dirName);
+    if (!ok) failures += 1;
+    console.log(`${ok ? "[ OK ]" : "[FAIL]"} ${dirName}/ is in the scanned directories`);
+  }
+  for (const b of blind) {
+    const got = (scan(dir, b.files).get(b.target) ?? []).length > 0;
+    const ok = got === b.expect;
+    if (!ok) failures += 1;
+    console.log(`${ok ? "[ OK ]" : "[FAIL]"} ${b.name}`);
+  }
   for (const c of cases) {
     const got = (scan(dir, [c.file]).get(c.file) ?? []).length > 0;
     const ok = got === c.expectFindings;

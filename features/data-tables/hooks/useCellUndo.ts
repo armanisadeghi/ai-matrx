@@ -57,6 +57,9 @@ export type CellEdit = {
   nextValue: unknown;
 };
 
+/** A whole-row step with its own two doors; each answers whether it landed (and says so if not). */
+export type RowStep = { undo: () => Promise<boolean>; redo: () => Promise<boolean> };
+
 /** The handle `recordGroup` returns, so the toast that announced a change can undo exactly it. */
 export type UndoHandle = UndoEntry;
 
@@ -101,6 +104,13 @@ export function useCellUndo(options: {
   // What the pure entry does not carry (the table, the columns' human labels),
   // keyed by the entry object the stack hands back.
   const edits = useRef(new WeakMap<UndoEntry, CellEdit[]>());
+  /**
+   * A step that is not cell values — a row archived by Delete (grids review 3: the toolbar Undo did
+   * not bring a deleted row back, because the stack only held cells). Its two sides are the
+   * store's own doors (restore / archive), recorded with the step so Cmd-Z, the toolbar Undo and
+   * the notice's Undo are the SAME step on the ONE stack.
+   */
+  const actions = useRef(new WeakMap<UndoEntry, RowStep>());
   const [depths, setDepths] = useState({ undo: 0, redo: 0 });
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -123,6 +133,17 @@ export function useCellUndo(options: {
         label,
       );
       edits.current.set(entry, [...group]);
+      commit(pushUndo(stack.current, entry));
+      return entry;
+    },
+    [commit],
+  );
+
+  /** Record a step that already happened and is undone by its own doors (a row archived). */
+  const recordStep = useCallback(
+    (step: RowStep, label: string): UndoHandle => {
+      const entry = undoEntryFor([], [], label);
+      actions.current.set(entry, step);
       commit(pushUndo(stack.current, entry));
       return entry;
     },
@@ -209,6 +230,19 @@ export function useCellUndo(options: {
       if (readOnly || busyRef.current) return;
       const popped = direction === "undo" ? popUndo(stack.current) : popRedo(stack.current);
       const entry = popped.entry;
+      const rowStep = entry ? actions.current.get(entry) : undefined;
+      if (entry && rowStep) {
+        busyRef.current = true;
+        setBusy(true);
+        try {
+          // Loud, never silent: the step's own door says what went wrong; the stack only moves once it landed.
+          if (await (direction === "undo" ? rowStep.undo() : rowStep.redo())) commit(popped.stack);
+        } finally {
+          busyRef.current = false;
+          setBusy(false);
+        }
+        return;
+      }
       const group = entry ? edits.current.get(entry) : undefined;
       if (!entry || !group || group.length === 0) return;
 
@@ -244,6 +278,24 @@ export function useCellUndo(options: {
       if (!handle || readOnly || busyRef.current) return false;
       const past = stack.current.past;
       const at = past.lastIndexOf(handle);
+      const rowStep = actions.current.get(handle);
+      if (rowStep) {
+        if (at < 0) {
+          toast({ title: "Already undone", description: "That change is no longer on the undo list." });
+          return false;
+        }
+        busyRef.current = true;
+        setBusy(true);
+        try {
+          if (!(await rowStep.undo())) return false;
+          // Out of the past; into the future, so Redo archives it again.
+          commit({ ...stack.current, past: stack.current.past.filter((e) => e !== handle), future: [...stack.current.future, handle] });
+          return true;
+        } finally {
+          busyRef.current = false;
+          setBusy(false);
+        }
+      }
       const group = edits.current.get(handle);
       if (at < 0 || !group) {
         toast({ title: "Already undone", description: "That change is no longer on the undo list." });
@@ -290,6 +342,7 @@ export function useCellUndo(options: {
   return {
     record,
     recordGroup,
+    recordStep,
     undoThis,
     undo,
     redo,
