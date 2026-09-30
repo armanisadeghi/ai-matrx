@@ -63,12 +63,12 @@ import {
 import { ArchivedTablesList, type ArchivedTable } from "./ArchivedTablesList";
 import { ArchivedPortalsEverywhere } from "./ArchivedPortalsEverywhere";
 import { HubListing, type HubListingState } from "./HubListing";
+import { OrganizationFilterSelect } from "./OrganizationFilterSelect";
 import * as doors from "./doors";
 import type { DataHomeItemRow, DataHomeTableRow, DoorFailure, TableFactRow } from "./doors";
 import {
   ALL_KINDS,
   ALL_ORGANIZATIONS,
-  ALL_ORGANIZATIONS_TITLE,
   DATA_HOME_DEFAULT_KIND_KNOB,
   DATA_HOME_DEFAULT_ORDER_KNOB,
   DATA_HOME_DEFAULT_SCOPE_KNOB,
@@ -642,23 +642,12 @@ export function OrganizationHub({
           Orgs and is honoured by the doors in every lane and kind — tables, forms and booking pages
           alike, and every other listing on the page. */}
       <span className="ml-auto inline-flex items-center gap-x-2 whitespace-nowrap text-muted-foreground">
-        <label className="inline-flex items-center gap-1">
-          <span className="sr-only">Organization</span>
-          <select
-            data-hub-organization
-            aria-label="Organization"
-            value={organizationFilter}
-            onChange={(event) => onChooseOrganization?.(event.target.value)}
-            className="h-6 max-w-[14rem] truncate rounded-full border border-border bg-background px-2 text-xs text-foreground"
-          >
-            <option value={ALL_ORGANIZATIONS}>{ALL_ORGANIZATIONS_TITLE}</option>
-            {organizationChoices.map((org) => (
-              <option key={org.id} value={org.id}>
-                {org.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <OrganizationFilterSelect
+          dataAttribute="data-hub-organization"
+          value={organizationFilter}
+          choices={organizationChoices}
+          onChange={onChooseOrganization}
+        />
       </span>
       {facts.phase === "failed" ? (
         /* NEVER A LIE: without the organization's facts, which of its forms and pages are yours

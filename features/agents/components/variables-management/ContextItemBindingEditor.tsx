@@ -23,7 +23,6 @@ import {
   contextItemBindingOf,
   isCustomDataBinding,
 } from "@/features/agents/utils/variable-binding";
-import { CustomDataRecordsScope } from "./custom-data/CustomDataRecordsScope";
 import { CustomDataBindingPicker } from "./custom-data/CustomDataBindingPicker";
 import { emptyCustomDataBinding } from "./custom-data/customDataBinding";
 
@@ -149,15 +148,16 @@ export function ContextItemBindingEditor({
             customData={{
               active: customData !== undefined,
               onSelect: () => onChange(emptyCustomDataBinding()),
+              // No records provider here: the picker lists every table the person can see
+              // (the data home's list) and binds each chosen Table's reads to the Table's own
+              // organization — never the active one (ORG-FILTER-CLASS).
               children: customData ? (
-                <CustomDataRecordsScope>
-                  <CustomDataBindingPicker
-                    binding={customData}
-                    onChange={onChange}
-                    readonly={readonly}
-                    variableName={variableName}
-                  />
-                </CustomDataRecordsScope>
+                <CustomDataBindingPicker
+                  binding={customData}
+                  onChange={onChange}
+                  readonly={readonly}
+                  variableName={variableName}
+                />
               ) : null,
             }}
           />

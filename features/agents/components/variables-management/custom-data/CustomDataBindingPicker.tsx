@@ -10,7 +10,11 @@
  * the bottom shows EXACTLY what the agent will see, resolved by the server the
  * way a run resolves it (aidream `POST /agents/variable-bindings/preview`).
  *
- * Must render inside `CustomDataRecordsScope` (the records provider).
+ * THE TABLE LIST IS THE DATA HOME'S (lane ORG-FILTER-CLASS, Arman 2026-09-30): every table the
+ * person can see across ALL her organizations (`useTablesEverywhere` → custom.data_home_tables),
+ * with the same organization filter as the data home in the Table row (default All Orgs, saved
+ * per person). It used to list only the ACTIVE organization's tables — a silent filter. The chosen
+ * Table's details are read in the organization the Table lives in (`CustomDataRecordsScope`).
  * Contract: `common-docs/projects/data-kits/PLAN.md` § P1.
  */
 
@@ -26,16 +30,10 @@ import {
   useFields,
   useRecords,
   useTable,
-  useTables,
   isEntityReferenceConfig,
   type Field,
 } from "@ai-matrx/records/react";
-import {
-  fieldName,
-  keptByTheApp,
-  rowNameIn,
-  tableName,
-} from "@ai-matrx/records-ui";
+import { fieldName, rowNameIn } from "@ai-matrx/records-ui";
 import { Input, Textarea } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
@@ -61,6 +59,14 @@ import {
 } from "./customDataBinding";
 import { CustomDataBindingPreview } from "./CustomDataBindingPreview";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  useDataOrganizationFilter,
+  useTablesEverywhere,
+} from "@/features/unified-data/hub/useTablesEverywhere";
+import { OrganizationFilterSelect } from "@/features/unified-data/hub/OrganizationFilterSelect";
+import { ALL_ORGANIZATIONS } from "@/features/unified-data/hub/dataHomeScope";
+import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
+import { CustomDataRecordsScope } from "./CustomDataRecordsScope";
 
 /** How many records the record picker lists. Search narrows within them. */
 const RECORD_PICKER_PAGE = 200;
@@ -73,13 +79,219 @@ interface CustomDataBindingPickerProps {
   variableName?: string;
 }
 
+/** What a table row says beside its name: its organization, and what kind of table it is. */
+function tableHint(row: DataHomeTableRow): string {
+  const parts = [row.organization_name];
+  if (row.kind && row.kind !== "table") parts.push(row.kind);
+  if (row.kept_by_the_app) parts.push("kept by the app");
+  return parts.join(" · ");
+}
+
 export function CustomDataBindingPicker({
   binding,
   onChange,
   readonly,
   variableName,
 }: CustomDataBindingPickerProps) {
-  const tables = useTables();
+  const organization = useDataOrganizationFilter();
+  const tables = useTablesEverywhere(
+    organization.organizationId,
+    organization.ready,
+  );
+  const tableId = binding.table_id || null;
+  const shape = binding.semantic_type;
+  // Tables the app keeps for itself (choice lists, ledgers) are out of sight
+  // unless the author asks for them.
+  const [showAppTables, setShowAppTables] = useState(false);
+
+  const selectTable = (id: string) => {
+    if (id === binding.table_id) return;
+    // A new table invalidates everything chosen inside the old one.
+    onChange({
+      kind: "merge_field",
+      source: "record",
+      semantic_type: shape,
+      table_id: id,
+      missing: binding.missing,
+      override_policy: binding.override_policy,
+      ...(shape === "collection"
+        ? { limit: binding.limit ?? DEFAULT_ROW_LIMIT }
+        : {}),
+    });
+  };
+
+  const allTables = tables.rows;
+  const appKeptCount = allTables.filter((t) => t.kept_by_the_app).length;
+  // ONE FLAT LIST, never grouped by organization: each row names its organization in its hint,
+  // and the search reads it too.
+  const tableOptions: CreatableOption[] = allTables
+    .filter(
+      (t) => showAppTables || !t.kept_by_the_app || t.table_id === tableId,
+    )
+    .map((t) => ({
+      value: t.table_id,
+      label: t.table_name,
+      hint: tableHint(t),
+      keywords: `${t.organization_name} ${t.kind}`,
+    }));
+  const chosenRow = allTables.find((t) => t.table_id === tableId) ?? null;
+
+  const storedTableMissing =
+    Boolean(tableId) && !tables.loading && !tables.error && chosenRow === null;
+  const filteredToOne = organization.organizationFilter !== ALL_ORGANIZATIONS;
+
+  return (
+    <div className="space-y-2">
+      {/* ── Table ─────────────────────────────────────────────────────── */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs text-muted-foreground">Table</Label>
+          {/* THE ORGANIZATION FILTER — the data home's own, on the row it filters (default All Orgs). */}
+          <OrganizationFilterSelect
+            value={organization.organizationFilter}
+            choices={organization.choices}
+            onChange={organization.choose}
+            disabled={readonly || !organization.ready}
+          />
+        </div>
+        <CreatablePicker
+          value={tableId}
+          options={tableOptions}
+          onSelect={selectTable}
+          placeholder={
+            tables.loading
+              ? "Loading your tables…"
+              : tables.error
+                ? "Your tables could not be read"
+                : tableOptions.length === 0
+                  ? filteredToOne
+                    ? "No tables in this organization — choose All Orgs"
+                    : "No tables yet — make one in Data"
+                  : "Choose a table…"
+          }
+          searchPlaceholder="Search your tables…"
+          noun="table"
+          manageAction={{
+            label: "Open Data to add or edit tables",
+            href: "/data-v2",
+          }}
+          footerActions={
+            appKeptCount > 0
+              ? [
+                  {
+                    label: showAppTables
+                      ? "Hide the tables the app keeps"
+                      : `Show ${appKeptCount} ${appKeptCount === 1 ? "table" : "tables"} the app keeps`,
+                    note: "Choice lists and other tables the app manages for itself.",
+                    onSelect: () => setShowAppTables((v) => !v),
+                  },
+                ]
+              : undefined
+          }
+          disabled={readonly}
+          loading={tables.loading}
+          ariaLabel="Table"
+        />
+        {tables.error && (
+          <p className="text-[11px] text-destructive">
+            Your tables could not be read: {tables.error.message}{" "}
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={tables.reload}
+            >
+              Try again
+            </button>
+            <ErrorAlchemyMenu error={tables.error.message} />
+          </p>
+        )}
+        {storedTableMissing && (
+          <p className="text-[11px] text-warning">
+            {filteredToOne ? (
+              <>
+                The table this variable is bound to is not in the organization
+                chosen above.{" "}
+                <button
+                  type="button"
+                  className="underline underline-offset-2"
+                  onClick={() => organization.choose(ALL_ORGANIZATIONS)}
+                >
+                  Show All Orgs
+                </button>
+              </>
+            ) : (
+              "The table this variable is bound to is not one you can open — it was removed, or it is no longer shared with you. Pick a table here to rebind it. The binding is unchanged until you do."
+            )}
+          </p>
+        )}
+      </div>
+
+      {tableId ? (
+        <CustomDataRecordsScope
+          tableId={tableId}
+          organizationId={chosenRow?.organization_id}
+          fallback={(held) => (
+            <>
+              <p className="text-[11px] text-muted-foreground">
+                {held.state === "resolving" ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Reading the table…
+                  </span>
+                ) : held.state === "not-given" ? (
+                  "This table does not open for you, so its records and fields cannot be listed."
+                ) : (
+                  <>
+                    Where this table lives could not be read: {held.why}{" "}
+                    <button
+                      type="button"
+                      className="underline underline-offset-2"
+                      onClick={held.retry}
+                    >
+                      Try again
+                    </button>
+                  </>
+                )}
+              </p>
+              <MissingChoice
+                binding={binding}
+                onChange={onChange}
+                readonly={readonly}
+              />
+            </>
+          )}
+        >
+          <BoundTableDetails
+            binding={binding}
+            onChange={onChange}
+            readonly={readonly}
+            variableName={variableName}
+          />
+        </CustomDataRecordsScope>
+      ) : (
+        <>
+          <MissingChoice
+            binding={binding}
+            onChange={onChange}
+            readonly={readonly}
+          />
+          <CustomDataBindingPreview
+            binding={binding}
+            variableName={variableName}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+/** The chosen Table's shape, record, field, template and limit — read in the Table's own organization. */
+function BoundTableDetails({
+  binding,
+  onChange,
+  readonly,
+  variableName,
+}: CustomDataBindingPickerProps) {
   const tableId = binding.table_id || null;
   const table = useTable(tableId);
   const fields = useFields(tableId);
@@ -91,9 +303,6 @@ export function CustomDataBindingPicker({
   const records = useRecords(needsRecord ? tableId : null, {
     pageSize: recordLimit,
   });
-  // Tables the app keeps for itself (choice lists, ledgers) are out of sight
-  // unless the author asks for them.
-  const [showAppTables, setShowAppTables] = useState(false);
   const templateRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingCaretRef = useRef<number | null>(null);
 
@@ -130,22 +339,6 @@ export function CustomDataBindingPicker({
     tableRow,
     onChange,
   ]);
-
-  const selectTable = (id: string) => {
-    if (id === binding.table_id) return;
-    // A new table invalidates everything chosen inside the old one.
-    onChange({
-      kind: "merge_field",
-      source: "record",
-      semantic_type: shape,
-      table_id: id,
-      missing: binding.missing,
-      override_policy: binding.override_policy,
-      ...(shape === "collection"
-        ? { limit: binding.limit ?? DEFAULT_ROW_LIMIT }
-        : {}),
-    });
-  };
 
   const selectShape = (next: CustomDataShape) => {
     if (next === shape) return;
@@ -215,16 +408,6 @@ export function CustomDataBindingPicker({
     });
   };
 
-  const allTables = tables.data ?? [];
-  const appKeptCount = allTables.filter((t) => keptByTheApp(t)).length;
-  const tableOptions: CreatableOption[] = allTables
-    .filter((t) => showAppTables || !keptByTheApp(t) || t.id === tableId)
-    .map((t) => ({
-      value: t.id,
-      label: tableName(t),
-      hint: keptByTheApp(t) ? "kept by the app" : (t.label_plural ?? undefined),
-    }));
-
   // A record's name alone can repeat ("Dana Whitfield" three times), so each
   // option also shows the row's next one or two filled columns.
   const titleField = titleFieldOf(tableRow ?? null, fieldList);
@@ -253,243 +436,22 @@ export function CustomDataBindingPicker({
     },
   );
 
-  const storedTableMissing =
-    Boolean(tableId) &&
-    !tables.loading &&
-    Boolean(tables.data) &&
-    !(tables.data ?? []).some((t) => t.id === tableId);
-
   const recordTotal = records.data?.total ?? null;
   const recordsCapped =
     recordTotal !== null && recordTotal > recordOptions.length;
 
   return (
-    <div className="space-y-2">
-      {/* ── Table ─────────────────────────────────────────────────────── */}
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">Table</Label>
-        <CreatablePicker
-          value={tableId}
-          options={tableOptions}
-          onSelect={selectTable}
-          placeholder={
-            tables.loading
-              ? "Loading your tables…"
-              : tables.error
-                ? "Your tables could not be read"
-                : tableOptions.length === 0
-                ? "No tables yet — make one in Data"
-                : "Choose a table…"
-          }
-          searchPlaceholder="Search your tables…"
-          noun="table"
-          manageAction={{
-            label: "Open Data to add or edit tables",
-            href: "/data-v2",
-          }}
-          footerActions={
-            appKeptCount > 0
-              ? [
-                  {
-                    label: showAppTables
-                      ? "Hide the tables the app keeps"
-                      : `Show ${appKeptCount} ${appKeptCount === 1 ? "table" : "tables"} the app keeps`,
-                    note: "Choice lists and other tables the app manages for itself.",
-                    onSelect: () => setShowAppTables((v) => !v),
-                  },
-                ]
-              : undefined
-          }
-          disabled={readonly}
-          loading={tables.loading}
-          ariaLabel="Table"
-        />
-        {tables.error && (
-          <p className="text-[11px] text-destructive">
-            Your tables could not be read: {tables.error.message}{" "}
-            <button
-              type="button"
-              className="underline underline-offset-2"
-              onClick={tables.reload}
-            >
-              Try again
-            </button>
-            <ErrorAlchemyMenu error={tables.error.message} />
-          </p>
-        )}
-        {storedTableMissing && (
-          <p className="text-[11px] text-warning">
-            The table this variable is bound to is not in the organization you
-            have selected — it may live in another organization, or it was
-            removed. Switch organization to edit it, or pick a table here to
-            rebind it. The binding is unchanged until you do.
-          </p>
-        )}
-      </div>
-
-      {tableId && (
-        <>
-          {/* ── Shape ─────────────────────────────────────────────────── */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              What the agent gets
-            </Label>
-            <Select
-              value={shape}
-              onValueChange={(v) => {
-                const choice = SHAPE_CHOICES.find((c) => c.value === v);
-                if (choice) selectShape(choice.value);
-              }}
-              disabled={readonly}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SHAPE_CHOICES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    <span>{c.label}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {c.hint}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* ── Record ────────────────────────────────────────────────── */}
-          {needsRecord && (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Record</Label>
-              <CreatablePicker
-                value={binding.record_id ?? null}
-                options={recordOptions}
-                onSelect={(id) => onChange({ ...binding, record_id: id })}
-                placeholder={
-                  records.loading
-                    ? "Loading records…"
-                    : records.error
-                      ? "Records could not be read"
-                      : recordOptions.length === 0
-                      ? "This table has no records yet"
-                      : "Choose a record…"
-                }
-                searchPlaceholder="Search records…"
-                noun="record"
-                manageAction={{
-                  label: "Open this table to add records",
-                  href: `/data-v2/${tableId}`,
-                }}
-                footerActions={
-                  recordsCapped
-                    ? [
-                        {
-                          label: `Load ${Math.min(RECORD_PICKER_PAGE, (recordTotal ?? 0) - recordOptions.length)} more records`,
-                          note: `Showing ${recordOptions.length} of ${recordTotal}.`,
-                          onSelect: () =>
-                            setRecordLimit((n) => n + RECORD_PICKER_PAGE),
-                        },
-                      ]
-                    : undefined
-                }
-                disabled={readonly}
-                loading={records.loading}
-                ariaLabel="Record"
-              />
-              {recordsCapped && !records.error && (
-                <p className="text-[11px] text-muted-foreground">
-                  Showing {recordOptions.length} of {recordTotal} records —
-                  &ldquo;Load more&rdquo; in the list reaches the rest.
-                </p>
-              )}
-              {records.error && (
-                <p className="text-[11px] text-destructive">
-                  Records could not be read: {records.error.message}
-                  <ErrorAlchemyMenu error={records.error.message} />
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* ── Field (one value) ─────────────────────────────────────── */}
-          {shape === "value" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Field</Label>
-              <Select
-                value={binding.field_key ?? ""}
-                onValueChange={(key) =>
-                  onChange({ ...binding, field_key: key })
-                }
-                disabled={readonly || fields.loading}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      fields.loading ? "Loading fields…" : "Choose a field…"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {fieldList.map((f) => (
-                    <SelectItem key={f.id} value={f.key}>
-                      {fieldName(f)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* ── Row template ──────────────────────────────────────────── */}
-          {shape !== "value" && (
-            <TemplateEditor
-              value={binding.transform?.template ?? ""}
-              onChange={setTemplate}
-              onInsert={insertPlaceholder}
-              fields={fieldList}
-              fieldsLoading={fields.loading}
-              textareaRef={templateRef}
-              pendingCaretRef={pendingCaretRef}
-              readonly={readonly}
-              perRow={shape === "collection"}
-            />
-          )}
-
-          {/* ── Limit ─────────────────────────────────────────────────── */}
-          {shape === "collection" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                At most this many rows
-              </Label>
-              <Input
-                type="number"
-                min={1}
-                inputMode="numeric"
-                value={String(binding.limit ?? DEFAULT_ROW_LIMIT)}
-                onChange={(e) => setLimit(e.target.value)}
-                disabled={readonly}
-                className="text-base"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                When the table has more, the agent is told the list was cut
-                short.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── Missing ───────────────────────────────────────────────────── */}
+    <>
+      {/* ── Shape ─────────────────────────────────────────────────── */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">
-          When there is no data
+          What the agent gets
         </Label>
         <Select
-          value={binding.missing}
+          value={shape}
           onValueChange={(v) => {
-            const choice = MISSING_CHOICES.find((c) => c.value === v);
-            if (choice) onChange({ ...binding, missing: choice.value });
+            const choice = SHAPE_CHOICES.find((c) => c.value === v);
+            if (choice) selectShape(choice.value);
           }}
           disabled={readonly}
         >
@@ -497,11 +459,11 @@ export function CustomDataBindingPicker({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {MISSING_CHOICES.map((c) => (
+            {SHAPE_CHOICES.map((c) => (
               <SelectItem key={c.value} value={c.value}>
                 <span>{c.label}</span>
-                <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
-                  — {c.hint}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {c.hint}
                 </span>
               </SelectItem>
             ))}
@@ -509,7 +471,166 @@ export function CustomDataBindingPicker({
         </Select>
       </div>
 
+      {/* ── Record ────────────────────────────────────────────────── */}
+      {needsRecord && (
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Record</Label>
+          <CreatablePicker
+            value={binding.record_id ?? null}
+            options={recordOptions}
+            onSelect={(id) => onChange({ ...binding, record_id: id })}
+            placeholder={
+              records.loading
+                ? "Loading records…"
+                : records.error
+                  ? "Records could not be read"
+                  : recordOptions.length === 0
+                    ? "This table has no records yet"
+                    : "Choose a record…"
+            }
+            searchPlaceholder="Search records…"
+            noun="record"
+            manageAction={{
+              label: "Open this table to add records",
+              href: `/data-v2/${tableId}`,
+            }}
+            footerActions={
+              recordsCapped
+                ? [
+                    {
+                      label: `Load ${Math.min(RECORD_PICKER_PAGE, (recordTotal ?? 0) - recordOptions.length)} more records`,
+                      note: `Showing ${recordOptions.length} of ${recordTotal}.`,
+                      onSelect: () =>
+                        setRecordLimit((n) => n + RECORD_PICKER_PAGE),
+                    },
+                  ]
+                : undefined
+            }
+            disabled={readonly}
+            loading={records.loading}
+            ariaLabel="Record"
+          />
+          {recordsCapped && !records.error && (
+            <p className="text-[11px] text-muted-foreground">
+              Showing {recordOptions.length} of {recordTotal} records —
+              &ldquo;Load more&rdquo; in the list reaches the rest.
+            </p>
+          )}
+          {records.error && (
+            <p className="text-[11px] text-destructive">
+              Records could not be read: {records.error.message}
+              <ErrorAlchemyMenu error={records.error.message} />
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Field (one value) ─────────────────────────────────────── */}
+      {shape === "value" && (
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Field</Label>
+          <Select
+            value={binding.field_key ?? ""}
+            onValueChange={(key) => onChange({ ...binding, field_key: key })}
+            disabled={readonly || fields.loading}
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={
+                  fields.loading ? "Loading fields…" : "Choose a field…"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {fieldList.map((f) => (
+                <SelectItem key={f.id} value={f.key}>
+                  {fieldName(f)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* ── Row template ──────────────────────────────────────────── */}
+      {shape !== "value" && (
+        <TemplateEditor
+          value={binding.transform?.template ?? ""}
+          onChange={setTemplate}
+          onInsert={insertPlaceholder}
+          fields={fieldList}
+          fieldsLoading={fields.loading}
+          textareaRef={templateRef}
+          pendingCaretRef={pendingCaretRef}
+          readonly={readonly}
+          perRow={shape === "collection"}
+        />
+      )}
+
+      {/* ── Limit ─────────────────────────────────────────────────── */}
+      {shape === "collection" && (
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">
+            At most this many rows
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={String(binding.limit ?? DEFAULT_ROW_LIMIT)}
+            onChange={(e) => setLimit(e.target.value)}
+            disabled={readonly}
+            className="text-base"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            When the table has more, the agent is told the list was cut short.
+          </p>
+        </div>
+      )}
+
+      <MissingChoice
+        binding={binding}
+        onChange={onChange}
+        readonly={readonly}
+      />
+
       <CustomDataBindingPreview binding={binding} variableName={variableName} />
+    </>
+  );
+}
+
+function MissingChoice({
+  binding,
+  onChange,
+  readonly,
+}: Pick<CustomDataBindingPickerProps, "binding" | "onChange" | "readonly">) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-muted-foreground">
+        When there is no data
+      </Label>
+      <Select
+        value={binding.missing}
+        onValueChange={(v) => {
+          const choice = MISSING_CHOICES.find((c) => c.value === v);
+          if (choice) onChange({ ...binding, missing: choice.value });
+        }}
+        disabled={readonly}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {MISSING_CHOICES.map((c) => (
+            <SelectItem key={c.value} value={c.value}>
+              <span>{c.label}</span>
+              <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+                — {c.hint}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
