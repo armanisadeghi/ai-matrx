@@ -4,9 +4,11 @@
  * How one portion of a Source (`docproc.processed_document_pages` row) is
  * named to a person (SOURCE-CONVERGENCE §2.2): a page is "Page 12"; a web
  * section is its heading path ("Guide › Setup › Linux"); a transcript segment
- * is its time range and speaker ("01:05–01:32 · Ana"). Pure — the viewer, the
+ * is its time range and speaker ("1:05–1:32 · Ana"). Pure — the viewer, the
  * Sources screen and any agent-facing citation read the same words.
  */
+
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export type PortionKind =
   "page" | "section" | "segment" | "message" | "sheet" | "slide";
@@ -36,17 +38,6 @@ function obj(value: unknown): Record<string, unknown> {
 
 function num(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-/** 65_000 → "01:05"; 3_725_000 → "1:02:05". */
-export function formatMs(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const mm = String(m).padStart(2, "0");
-  const ss = String(s).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 export function portionKindOf(
@@ -91,8 +82,8 @@ export function portionLabel(row: PortionLocatorRow): string {
       const range =
         t0 !== null
           ? t1 !== null
-            ? `${formatMs(t0)}–${formatMs(t1)}`
-            : formatMs(t0)
+            ? `${formatDurationMs(t0)}–${formatDurationMs(t1)}`
+            : formatDurationMs(t0)
           : `Segment ${ordinal}`;
       return speaker ? `${range} · ${speaker}` : range;
     }

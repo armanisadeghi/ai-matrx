@@ -39,16 +39,9 @@ import {
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { selectRunModelId } from "@/features/agents/runtime/generation-job";
 import { useVideoSecondPoints } from "./useVideoSecondPoints";
-import { formatCost, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { formatCost, pointsToUsd, type CostUnit, formatDurationMs } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { currentCostUnit } from "@/components/cost/costUnit";
-
-export function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
 
 /** The value a control resolves to for this run: a variable bound to the
  *  control key wins (the run form's answer), else the literal setting. */
@@ -152,7 +145,7 @@ export function GenerationJobCard({
   if (job?.kind !== "video") return null;
 
   const started = startedAt ? Date.parse(startedAt) : NaN;
-  const elapsed = Number.isFinite(started) ? formatElapsed(now - started) : null;
+  const elapsed = Number.isFinite(started) ? formatDurationMs(now - started) : null;
   const duration = resolvedControl("duration_seconds", settings, definitions, values);
   const aspect = resolvedControl("aspect_ratio", settings, definitions, values);
   const estimate = estimateVideoJob(duration, pointsPerSecond);

@@ -13,6 +13,7 @@
  */
 
 import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 /** The columns the Sources list reads — nothing wider (no bodies). */
 export const SOURCE_LIST_COLUMNS = [
@@ -352,14 +353,6 @@ export function transcriptSegmentCount(
   return row.total_pages && row.total_pages > 0 ? row.total_pages : null;
 }
 
-function clock(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const sec = String(total % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
-}
-
 /**
  * "1:49 · 51 segments" from the facts the Source holds — the last segment's
  * end (`locator.t1_ms`) and its segment count. Says only what it knows; `null`
@@ -370,7 +363,7 @@ export function transcriptLengthWords(
   lastSegmentEndMs: number | null,
 ): string | null {
   const parts: string[] = [];
-  if (lastSegmentEndMs && lastSegmentEndMs > 0) parts.push(clock(lastSegmentEndMs));
+  if (lastSegmentEndMs && lastSegmentEndMs > 0) parts.push(formatDurationMs(lastSegmentEndMs));
   if (segments && segments > 0)
     parts.push(`${segments} ${segments === 1 ? "segment" : "segments"}`);
   return parts.length ? parts.join(" · ") : null;

@@ -6,6 +6,8 @@
 // and time are the anchor whenever the citation carries none. Pure — the
 // chunk row is read by `useCitedChunk`.
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
 /** What the viewer needs from the cited chunk's own row. */
 export interface CitedChunkFacts {
   pageNumbers: number[] | null;
@@ -101,18 +103,10 @@ export function citedTargetPage(pages: readonly number[]): number {
   return Math.max(1, pages[0] ?? 1);
 }
 
-function clock(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = String(total % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
-}
-
 /** "0:00–1:17" for a timed segment; null when the chunk has no time. */
 export function timeRangeLabel(t0Ms: number | null, t1Ms: number | null): string | null {
   if (t0Ms == null) return null;
-  return t1Ms != null && t1Ms > t0Ms ? `${clock(t0Ms)}–${clock(t1Ms)}` : clock(t0Ms);
+  return t1Ms != null && t1Ms > t0Ms ? `${formatDurationMs(t0Ms)}–${formatDurationMs(t1Ms)}` : formatDurationMs(t0Ms);
 }
 
 /** "Page 3" / "Pages 3–5"; null when there are none. */

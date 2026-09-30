@@ -18,13 +18,7 @@ import {
   selectRequestStartedAt,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { runJobLabel } from "@/lib/api/run-wait";
-
-function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export function RunJobWorkingLine({
   requestId,
@@ -45,7 +39,7 @@ export function RunJobWorkingLine({
 
   if (!job) return null;
   const started = startedAt ? Date.parse(startedAt) : NaN;
-  const elapsed = Number.isFinite(started) ? formatElapsed(now - started) : null;
+  const elapsed = Number.isFinite(started) ? formatDurationMs(now - started) : null;
 
   return (
     <div

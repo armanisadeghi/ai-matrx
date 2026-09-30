@@ -1,4 +1,4 @@
-import { formatMs, portionLabel } from "@/features/sources/portionLocator";
+import { portionLabel } from "@/features/sources/portionLocator";
 
 const r = (
   portion_kind: string,
@@ -38,11 +38,11 @@ describe("portionLabel names each portion from its locator", () => {
       portionLabel(
         r("segment", { t0_ms: 65_000, t1_ms: 92_000, speaker: "Ana" }),
       ),
-    ).toBe("01:05–01:32 · Ana");
+    ).toBe("1:05–1:32 · Ana");
     expect(portionLabel(r("segment", { t0_ms: 0 }, { speaker: "Bo" }))).toBe(
-      "00:00 · Bo",
+      "0:00 · Bo",
     );
-    expect(formatMs(3_725_000)).toBe("1:02:05");
+    expect(portionLabel(r("segment", { t0_ms: 3_725_000 }))).toBe("1:02:05");
   });
   it("an unknown kind reads as a page, never blank", () => {
     expect(portionLabel(r("mystery", {}))).toBe("Page 3");

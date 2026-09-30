@@ -11,7 +11,6 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn(
 import {
   describeEstimate,
   estimateVideoJob,
-  formatElapsed,
   resolvedControl,
 } from "@/features/agents/components/run/GenerationJobCard";
 import { readVideoSecondPoints } from "@/features/agents/components/run/useVideoSecondPoints";
@@ -45,7 +44,3 @@ test("only a per-second points price is read from the member-readable catalog vi
   expect(readVideoSecondPoints(null)).toBeNull();
 });
 
-test("elapsed reads m:ss", () => {
-  expect(formatElapsed(72_000)).toBe("1:12");
-  expect(formatElapsed(-5)).toBe("0:00");
-});

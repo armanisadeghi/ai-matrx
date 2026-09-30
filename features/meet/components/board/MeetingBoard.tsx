@@ -97,6 +97,7 @@ import {
   type MeetingSection,
 } from "./MeetingNotesBodies";
 import { useWheelModePreference } from "@/features/spatial/board/useWheelModePreference";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 // ── the board's tiles ────────────────────────────────────────────────────────
 
@@ -652,7 +653,7 @@ function BoardHeader({
       <header className="mx-meet__header">
         <h1 className="mx-meet__title">{snapshot?.meeting?.title ?? "Meeting"}</h1>
         <span className="mx-meet__meta">
-          {`${participantSummary(snapshot?.participants ?? [])}${elapsed > 0 ? ` · ${formatElapsed(elapsed)}` : ""}`}
+          {`${participantSummary(snapshot?.participants ?? [])}${elapsed > 0 ? ` · ${formatDurationMs(elapsed)}` : ""}`}
         </span>
         <RecordingIndicator />
         {snapshot?.locked === true && (
@@ -673,14 +674,6 @@ function BoardHeader({
       )}
     </>
   );
-}
-
-function formatElapsed(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = String(total % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
 // ── toolbar ──────────────────────────────────────────────────────────────────
