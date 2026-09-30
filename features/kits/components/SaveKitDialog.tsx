@@ -149,9 +149,10 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
     // The agent's setup is read in the organization the AGENT lives in (the record's own org), not
     // the one the person is working in; the kit is then published into the working organization.
     readAgentFacts(agentId)
-      .then((facts) =>
-        detectSetup(kitRecordsClient(facts.organizationId, userId), facts.organizationId, agentId, seedRowCap),
-      )
+      .then((facts) => {
+        if (!facts.organizationId) throw new Error("This agent belongs to no organization, so its tables can't be read.");
+        return detectSetup(kitRecordsClient(facts.organizationId, userId), facts.organizationId, agentId, seedRowCap);
+      })
       .then((d) => {
         if (cancelled) return;
         setDetected(d);

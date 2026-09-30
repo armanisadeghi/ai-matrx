@@ -63,7 +63,7 @@ export function KitGallery({
   const orgKits = useOrgKits(platformOrganizationId);
   const openSave = useOpenSaveKitDialog();
   const { organizations } = useUserOrganizations();
-  const orgNameOf = (id: string) => organizations.find((o) => o.id === id)?.name ?? null;
+  const orgNameOf = (id: string | null) => (id ? (organizations.find((o) => o.id === id)?.name ?? null) : null);
   const [category, setCategory] = useState<string>(ALL);
   const categories = [ALL, ...Array.from(new Set(kits.map((k) => k.manifest.category))).sort()];
   const shown = category === ALL ? kits : kits.filter((k) => k.manifest.category === category);
