@@ -284,9 +284,6 @@ export default function AdminEmailPage() {
                 </div>
                 <div>
                   <h2 className="font-semibold">Recipients</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Choose who receives this email
-                  </p>
                 </div>
               </div>
               <div className="p-6 space-y-4">
@@ -433,9 +430,6 @@ export default function AdminEmailPage() {
                 </div>
                 <div>
                   <h2 className="font-semibold">Email Content</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Compose your email message
-                  </p>
                 </div>
               </div>
               <div className="p-6 space-y-4">
@@ -465,7 +459,7 @@ export default function AdminEmailPage() {
                     className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Plain text message. Line breaks will be preserved.
+                    Plain text; line breaks are kept.
                   </p>
                 </div>
 
@@ -576,9 +570,6 @@ export default function AdminEmailPage() {
                 </div>
                 <div>
                   <h2 className="font-semibold">Templates</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Quick-start templates
-                  </p>
                 </div>
               </div>
               <div className="p-4 space-y-2">

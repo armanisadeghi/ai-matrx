@@ -32,7 +32,7 @@ export default function AdminOrganizationScopesPage() {
           </h1>
           <span className="text-xs text-muted-foreground">
             {org?.admin_lane
-              ? "Platform admin view: you are not a member of this organization."
+              ? "Platform admin view; you are not a member."
               : org
                 ? "You are a member of this organization."
                 : null}

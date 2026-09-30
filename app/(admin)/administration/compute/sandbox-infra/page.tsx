@@ -447,8 +447,7 @@ export default function SandboxInfraPage() {
                     {!deployTokenAttached && (
                         <div className="rounded border border-yellow-500/30 bg-yellow-500/5 p-2 text-xs text-yellow-700 dark:text-yellow-400 mb-2">
                             <CircleAlert className="w-3 h-3 inline mr-1" />
-                            <code className="font-mono">MATRX_SANDBOX_GH_TOKEN</code> not set on the Vercel server. Read works (rate-limited);
-                            triggering deploys is disabled.
+                            Deploys disabled: <code className="font-mono">MATRX_SANDBOX_GH_TOKEN</code> not set.
                         </div>
                     )}
                     {runsError && (
@@ -476,13 +475,12 @@ export default function SandboxInfraPage() {
                 {/* Glossary so non-experts can read the panel */}
                 <section className="text-xs text-muted-foreground border-t border-border pt-3">
                     <div className="grid gap-1.5 md:grid-cols-2">
+                        {/* Runbook: df -h / and docker system df, then the deploy's scoped retention cleanup; never remove active containers, user volumes or rollback images. */}
                         <p>
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
                                 <HardDrive className="w-3 h-3" /> Disk pressure
                             </span>
-                            : red &gt;90% means capacity is exhausted or close to it. First inspect <code className="font-mono">df -h /</code> and
-                            <code className="font-mono">docker system df</code>, then use the deploy&apos;s scoped retention cleanup. Do not remove active
-                            containers, user volumes, or rollback images while diagnosing.
+                            : red above 90% means the disk is full or nearly full.
                         </p>
                         <p>
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
@@ -496,19 +494,19 @@ export default function SandboxInfraPage() {
                             </span>
                             : 1m / 5m / 15m averages from <code className="font-mono">/proc/loadavg</code>. Sustained &gt;CPU-count = overloaded.
                         </p>
+                        {/* Usually an orchestrator restart lost track; reconcile via the orchestrator store's reconcile(). */}
                         <p>
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
                                 <Box className="w-3 h-3" /> DB vs Containers drift
                             </span>
-                            : when DB shows more active sandboxes than Docker has running, an orchestrator restart lost track. Reconcile via the orchestrator
-                            store&apos;s <code className="font-mono">reconcile()</code>.
+                            : DB lists more active sandboxes than Docker runs.
                         </p>
+                        {/* Panel does not infer latest main; inspect the selected GitHub Actions run if they differ. */}
                         <p>
                             <span className="font-medium text-foreground inline-flex items-center gap-1">
                                 <Clock className="w-3 h-3" /> Stale deploy
                             </span>
-                            : compare the reported source SHA with the exact commit attached to the intended deploy run. This panel does not infer a
-                            &ldquo;latest main&rdquo; target; inspect the selected GitHub Actions run if they differ or either value is unavailable.
+                            : reported source SHA differs from the deploy run&apos;s commit.
                         </p>
                     </div>
                 </section>

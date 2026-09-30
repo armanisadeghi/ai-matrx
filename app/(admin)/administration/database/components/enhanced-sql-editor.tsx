@@ -413,7 +413,7 @@ export const EnhancedSQLEditor = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Define placeholder replacements (e.g., TABLE_NAME → my_table)
+                  Replace placeholders, e.g. TABLE_NAME → my_table
                 </p>
                 <div className="flex gap-2">
                   <Button

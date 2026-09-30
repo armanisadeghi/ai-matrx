@@ -134,9 +134,8 @@ export function RepoDiffProposalPanel({
              saying so is the honest thing, and hiding the item would report only
              the easy half of the problem. */
           <div className="rounded border border-dashed p-3 text-sm text-muted-foreground">
-            No mechanically certain correction. Either side can be the wrong one
-            — the artifact may name something that was retired, or the thing may
-            have been retired by mistake and belongs back. A human decides.
+            No certain fix — either the artifact or the retirement may be wrong.
+            A human decides.
           </div>
         )}
 
@@ -165,11 +164,7 @@ export function RepoDiffProposalPanel({
             label="Copy diff"
             icon={<Copy className="h-3.5 w-3.5" />}
           />
-          <span className="text-xs text-muted-foreground">
-            Paste the prompt into a coding session — it is self-contained, and it
-            tells the session to verify against the live registry before changing
-            anything.
-          </span>
+          {/* The prompt is self-contained and tells the session to verify against the live registry first. */}
         </div>
       </div>
     </div>

@@ -552,10 +552,6 @@ export default function AdminSandboxManagementPage() {
               <Container className="w-6 h-6 text-orange-500" />
               <div>
                 <h1 className="text-lg font-semibold">Accessible sandboxes</h1>
-                <p className="text-xs text-muted-foreground">
-                  Sandbox records your account is authorized to access.
-                  Fleet-wide host health is separate.
-                </p>
               </div>
             </div>
           </div>

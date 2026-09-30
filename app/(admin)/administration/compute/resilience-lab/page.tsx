@@ -826,10 +826,6 @@ export default function ResilienceLabPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Simulated user input</CardTitle>
-          <CardDescription className="text-xs">
-            On failure, each scenario pretends to restore this text into a
-            composer. Watch it get cleared then restored.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <ProTextarea
@@ -876,12 +872,12 @@ export default function ResilienceLabPage() {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Fan-out / reload test</CardTitle>
-          <CardDescription className="text-xs">
-            Fires three scenarios simultaneously. Reload the page afterwards —
-            all three failed submissions should appear in the Recovery window
-            with a &quot;new&quot; nudge.
-          </CardDescription>
+          <CardTitle
+            className="text-sm"
+            title="After firing, reload — all three failed submissions should appear in the Recovery window."
+          >
+            Fan-out / reload test
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex gap-2">
           <Button size="sm" variant="outline" onClick={fireThreeThenReload}>
@@ -910,18 +906,7 @@ export default function ResilienceLabPage() {
           <CardTitle className="text-sm">
             Live server scenarios ({SERVER_SCENARIOS.length})
           </CardTitle>
-          <CardDescription className="text-xs">
-            Hits the Python mock router at{" "}
-            <code className="text-[11px]">
-              POST /ai/mock-stream/{"{scenario}"}
-            </code>
-            . Exercises the real resilientFetch + monitorStream stack end-to-end
-            against a live server. Tag{" "}
-            <span className="font-semibold">PASS</span> means the outcome
-            matched the scenario's expectation (success or specific failure);{" "}
-            <span className="font-semibold">UNEXPECTED</span> means something
-            drifted.
-          </CardDescription>
+          {/* Hits POST /ai/mock-stream/{scenario} via resilientFetch + monitorStream; PASS = expected outcome, UNEXPECTED = drift. */}
         </CardHeader>
         <CardContent>
           {!baseUrl ? (
@@ -974,10 +959,7 @@ export default function ResilienceLabPage() {
             {/* read-gate-exempt: requests this browser tab is running right now, held in memory, not a fetched list */}
             Live netRequests ({activeRequests.length})
           </CardTitle>
-          <CardDescription className="text-xs">
-            What the netRequests slice currently sees. Phases come from the
-            resilience layer, not the legacy activeRequests tracker.
-          </CardDescription>
+          {/* Shows netRequests slice phases from the resilience layer, not legacy activeRequests. */}
         </CardHeader>
         <CardContent>
           {activeRequests.length === 0 ? (

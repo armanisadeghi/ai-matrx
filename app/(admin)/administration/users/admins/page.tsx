@@ -768,10 +768,7 @@ function AdminsManagementPageContent() {
             <h2 className="text-sm font-medium text-foreground">
               Audit log{auditFailed ? "" : ` (${audit.length})`}
             </h2>
-            <p className="text-xs text-muted-foreground">
-              Every admin change is logged at the DB layer, including any made
-              via direct SQL.
-            </p>
+            {/* Every admin change is logged at the DB layer, including direct SQL. */}
           </div>
           <div className="h-[440px]">
             {/* Read-only navigation only — same protected-resource rule as

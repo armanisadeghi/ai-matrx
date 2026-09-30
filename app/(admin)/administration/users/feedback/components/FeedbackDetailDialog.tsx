@@ -1607,7 +1607,7 @@ export default function FeedbackDetailDialog({
                   <ProTextarea
                     value={direction}
                     onChange={(e) => setDirection(e.target.value)}
-                    placeholder="Specific instructions for the AI agent before it starts working on this..."
+                    placeholder="Instructions for the agent before it starts"
                     className="min-h-[80px]"
                   />
                 </div>
@@ -2519,8 +2519,8 @@ export default function FeedbackDetailDialog({
                             }
                             placeholder={
                               pendingTestResult === "fail"
-                                ? "e.g. The fix didn't work — the button still doesn't respond when clicked. Also, the loading state is missing..."
-                                : "e.g. The main issue is fixed, but there's still a layout shift when the modal opens. Also need to handle the empty state..."
+                                ? "e.g. The button still doesn't respond when clicked"
+                                : "e.g. Fixed, but the modal still shifts when it opens"
                             }
                             className="min-h-[100px] text-sm"
                           />
@@ -2588,7 +2588,7 @@ export default function FeedbackDetailDialog({
                             onChange={(e) =>
                               setUserReviewMessage(e.target.value)
                             }
-                            placeholder="Describe what the user should test and verify... (Ctrl+V to paste images)"
+                            placeholder="What should the user test? Ctrl+V pastes images"
                             className="min-h-[120px] text-sm"
                           />
                           {/* Compose attached images */}
@@ -2901,7 +2901,7 @@ export default function FeedbackDetailDialog({
                       ref={replyTextareaRef}
                       value={userReplyText}
                       onChange={(e) => setUserReplyText(e.target.value)}
-                      placeholder="Reply to user... (Ctrl+V to paste images, this will send them an email)"
+                      placeholder="Reply — emails the user; Ctrl+V pastes images"
                       className="min-h-[60px] w-full pr-20"
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {

@@ -298,8 +298,8 @@ function CheckDetail({ row }: { row: IntegrityRow }) {
           <FindingsTable rows={r.sample} total={r.count} />
           {r.count > r.sample.length && (
             <p className="text-[11px] text-muted-foreground">
-              Showing {r.sample.length} of {r.count} — re-run the CLI (`pnpm
-              check:data-integrity`) for the full set.
+              Showing {r.sample.length} of {r.count} — run pnpm
+              check:data-integrity for all.
             </p>
           )}
         </>
@@ -531,13 +531,6 @@ export default function DataIntegrityPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-primary" />
-          <p
-            className="truncate text-xs text-muted-foreground"
-            title="Read-only — nothing here mutates data. Repo gates are strictly on-demand; use the per-row run button."
-          >
-            Read-only — nothing here mutates data. Repo gates are strictly
-            on-demand; use the per-row run button.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {report && (

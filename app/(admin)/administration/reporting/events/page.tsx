@@ -264,10 +264,8 @@ export default function AdminEventsPage() {
     >
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="flex items-center gap-2">
+        {/* Source: platform.activity_log. */}
         <Activity className="size-5 text-primary" />
-        <span className="text-sm text-muted-foreground">
-          platform.activity_log — the event spine
-        </span>
       </div>
 
       {/* One failure, one message: the table below shows this read's failure

@@ -260,8 +260,7 @@ export default function EnumForm(props: EnumFormProps) {
                 </div>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Note: PostgreSQL doesn't support removing or renaming enum
-                values. You can only add new values.
+                Enum values can only be added, never removed or renamed.
               </p>
             </div>
           )}

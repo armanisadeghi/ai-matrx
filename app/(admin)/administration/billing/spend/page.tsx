@@ -45,9 +45,8 @@ export default async function PlatformSpendPage() {
           <div className="text-sm text-amber-700 dark:text-amber-400">
             <div className="font-medium">We could not verify who you are. <ErrorAlchemyMenu /></div>
             <p className="mt-1 text-xs">
-              The sign-in authority did not answer this request, so this page
-              cannot check your admin level. You have not been signed out —
-              reload in a moment.
+              The sign-in service did not answer, so your admin level could not
+              be checked. You are still signed in — reload in a moment.
             </p>
           </div>
         </div>
@@ -67,10 +66,8 @@ export default async function PlatformSpendPage() {
               Platform spend is Super Admin only.
             </div>
             <p className="mt-1 text-xs">
-              This page reads every organization&apos;s costs, so it sits above
-              the normal admin bar. Your account is an admin but not a Super
-              Admin. A Super Admin can raise your level from Administration
-              &rarr; Users &rarr; Admins.
+              Your account is an admin, not a Super Admin. A Super Admin can
+              raise it in Administration &rarr; Users &rarr; Admins.
             </p>
           </div>
         </div>
