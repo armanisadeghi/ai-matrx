@@ -14,7 +14,11 @@
  *      branch, or `createDatasetFromTable` anywhere at all;
  *   3. the two menus that carry the action for EVERY shape stop carrying it: the rich-document
  *      registry (chat ⋯ and right-click, notes, every RichDocument) must offer it by
- *      `hasTableShape`, and the selection toolbar must keep `selection:save-to-table`.
+ *      `hasTableShape`, and the selection toolbar must keep `selection:save-to-table` — sent to
+ *      the COMMON host half (VERIFIER-30: under the annotation key it never showed in Read mode);
+ *   4. a table is born anywhere but the two named homes (VERIFIER-30 #5: a heatmap, a PDF
+ *      extraction and the older importer each made their own) — `createTable` from the data
+ *      seam or records' `declareTable` outside `BIRTH_HOMES`.
  *
  *   pnpm check:save-to-table-everywhere              the tree
  *   pnpm check:save-to-table-everywhere --self-test  proves each rule can fail
@@ -28,6 +32,9 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Where a person meets content that can hold rows. */
 export const CONTENT_ROOTS = [
+  "app",
+  "components/user-generated-table-data",
+  "features/page-extraction",
   "components/mardown-display",
   "features/canvas/artifact-types",
   "features/rich-document",
@@ -59,11 +66,18 @@ export const DRAWS_NO_ROWS: Record<string, string> = {
   "components/mardown-display/tables/SaveTableModal.tsx": "the older-store save dialog the overlay itself opens",
 };
 
+/** The only files that may make a table themselves, each with why. */
+export const BIRTH_HOMES: Record<string, string> = {
+  "components/mardown-display/tables/SaveTableModal.tsx": "the older-store branch the saveToTable overlay opens, until the final switch",
+  "components/user-generated-table-data/CreateTableModal.tsx": "the older /data home's table builder: columns typed by hand with no rows (no shape to save), retired with the older store",
+  "features/kits/installer.ts": "a kit installs the tables its manifest declares — a template, not content a person is saving",
+};
+
 /** The one place the older-store dialog may be opened from. */
 const SAVE_TABLE_MODAL_HOME = "features/save-to-table/SaveToTableOverlay.tsx";
 
 export interface Finding {
-  rule: 1 | 2 | 3;
+  rule: 1 | 2 | 3 | 4;
   file: string;
   says: string;
 }
@@ -87,6 +101,14 @@ export function judge(files: ReadonlyMap<string, string>): Finding[] {
       out.push({ rule: 2, file, says: "createDatasetFromTable was replaced by the saveToTable overlay" });
     }
   }
+  for (const [file, text] of files) {
+    if (file in BIRTH_HOMES || /\.test\.tsx?$/.test(file) || file.includes("__tests__") || file.startsWith("features/data-tables/")) continue;
+    const seamBirth = /\bcreateTable\b[^;]*from\s+["']@\/features\/data-tables\/service["']/.test(text) && /\bcreateTable\(/.test(text);
+    const storeBirth = /\bdeclareTable\b[^;]*from\s+["']@ai-matrx\/records(-ui)?(\/core)?["']/.test(text);
+    if (seamBirth || storeBirth) {
+      out.push({ rule: 4, file, says: "makes a table itself — open the saveToTable overlay (useOpenSaveToTable) instead" });
+    }
+  }
   const registry = files.get("features/rich-document/actions/handlers/transfer.ts") ?? "";
   if (!/hasTableShape\(/.test(registry) || !/overlayId:\s*"saveToTable"/.test(registry)) {
     out.push({ rule: 3, file: "features/rich-document/actions/handlers/transfer.ts", says: "the registry no longer offers Save to a table for every shape (hasTableShape → saveToTable)" });
@@ -94,6 +116,11 @@ export function judge(files: ReadonlyMap<string, string>): Finding[] {
   const selection = files.get("components/selection-toolbar/common-actions.ts") ?? "";
   if (!selection.includes('"selection:save-to-table"')) {
     out.push({ rule: 3, file: "components/selection-toolbar/common-actions.ts", says: "the selection toolbar lost selection:save-to-table" });
+  }
+  const hosts = files.get("components/selection-toolbar/selection-actions.ts") ?? "";
+  const keyLine = hosts.split("\n").find((l) => l.includes("return SELECTION_COMMON_HOST_KEY")) ?? "";
+  if (!keyLine.includes('"selection:save-to-table"')) {
+    out.push({ rule: 3, file: "components/selection-toolbar/selection-actions.ts", says: "hostKeyOf does not send selection:save-to-table to the common host half, so Read mode never shows it" });
   }
   return out;
 }
@@ -127,10 +154,16 @@ function selfTest(): void {
   const second = new Map(base);
   second.set("components/mardown-display/blocks/fixture/Second.tsx", 'import SaveTableModal from "../../tables/SaveTableModal";');
   if (!judge(second).some((f) => f.rule === 2)) throw new Error("rule 2 did not fire on a second save path");
+  const birth = new Map(base);
+  birth.set("features/page-extraction/fixture/Planted.ts", 'import { createTable } from "@/features/data-tables/service";\nawait createTable({ tableName: "x" });');
+  if (!judge(birth).some((f) => f.rule === 4)) throw new Error("rule 4 did not fire on a table born outside the homes");
+  const toolbar = new Map(base);
+  toolbar.set("components/selection-toolbar/selection-actions.ts", (base.get("components/selection-toolbar/selection-actions.ts") ?? "").replace(' || id === "selection:save-to-table"', ""));
+  if (!judge(toolbar).some((f) => f.rule === 3)) throw new Error("rule 3 did not fire when the toolbar key fell back to the annotation host");
   const lost = new Map(base);
   lost.set("features/rich-document/actions/handlers/transfer.ts", (base.get("features/rich-document/actions/handlers/transfer.ts") ?? "").replace(/hasTableShape\(/g, "parseFirstMarkdownTable("));
   if (!judge(lost).some((f) => f.rule === 3)) throw new Error("rule 3 did not fire when the registry stopped reading every shape");
-  console.log("✓ self-test: each of the three rules fails when broken, and the tree is green");
+  console.log("✓ self-test: each of the four rules fails when broken, and the tree is green");
 }
 
 const argv = process.argv.slice(2);

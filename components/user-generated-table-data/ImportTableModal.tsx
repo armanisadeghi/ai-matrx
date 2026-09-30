@@ -23,17 +23,6 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  VALID_DATA_TYPES,
-  normalizeDataType,
-} from "@/utils/user-table-utls/table-utils";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import {
   cleanGrid,
@@ -45,13 +34,7 @@ import {
   analyzeData,
   type DetectedField,
 } from "@/utils/user-table-utls/type-inference";
-import { bulkWrite, createTable } from "@/features/data-tables/service";
-import {
-  isBulkOpError,
-  isServiceFailure,
-  type BulkInsertOp,
-} from "@/features/data-tables/types";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { Textarea } from "@/components/ui/textarea";
 import { RefusalNotice, refusal as importRefusal } from "@ai-matrx/records-ui";
 import type { RecordsError } from "@ai-matrx/records";
@@ -78,13 +61,11 @@ export default function ImportTableModal({
   prefilledFile = null,
 }: ImportTableModalProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload");
+  const openSaveToTable = useOpenSaveToTable();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Common fields
   const [tableName, setTableName] = useState("");
-  const [description, setDescription] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
-  const [authenticatedRead, setAuthenticatedRead] = useState(false);
 
   // Upload state
   const [fileName, setFileName] = useState<string>("");
@@ -96,8 +77,6 @@ export default function ImportTableModal({
   /** The file as a raw grid; whether its first row is column names is a guess the person can flip. */
   const [grid, setGrid] = useState<Grid | null>(null);
   const [firstRowIsHeader, setFirstRowIsHeader] = useState(true);
-  /** Set when the table exists but its rows did not all land — the notice then offers to open it. */
-  const [createdTableId, setCreatedTableId] = useState<string | null>(null);
 
   // Preview state
   const [fullData, setFullData] = useState<Record<string, any>[]>([]);
@@ -270,11 +249,6 @@ export default function ImportTableModal({
     }
   };
 
-  const updateFieldType = (index: number, newType: string) => {
-    const updated = [...detectedFields];
-    updated[index].data_type = newType;
-    setDetectedFields(updated);
-  };
 
   const toggleFieldInclusion = (index: number) => {
     const updated = [...detectedFields];
@@ -314,93 +288,31 @@ export default function ImportTableModal({
         return;
       }
 
-      // Create the table with included fields only
-      const createResult = await createTable({
-        tableName: tableName.trim(),
-        description:
-          description.trim() || `Imported table with ${fullData.length} rows`,
-        isPublic,
-        authenticatedRead,
-        fields: includedFields,
-      });
-
-      if (!createResult.success || !createResult.tableId) {
-        setError(
-          importRefusal(
-            "internal",
-            "The table could not be created, so nothing was imported.",
-            "Try the import again. Your file and settings are still here.",
-            createResult.error,
+      // THE ONE "Save to a table" (SAVE-AS-TABLE-EVERYWHERE, VERIFIER-30 #5). This modal still reads
+      // the file or the paste (CSV / Excel / Google Sheets advice, the first-row-is-names switch, the
+      // columns kept) and then hands the rows to the same screen every other table-shaped value
+      // opens — which makes the table where this organization keeps its tables, or adds the rows to
+      // one it already has. It no longer creates a table of its own.
+      const originalKeyOf = (field: { field_name: string }) =>
+        Object.keys(fullData[0] ?? {}).find((key) => sanitizeFieldName(key) === field.field_name) ?? field.field_name;
+      const handedOff = openSaveToTable?.({
+        grid: {
+          headers: includedFields.map((f) => f.display_name),
+          rows: fullData.map((row) =>
+            includedFields.map((f) => {
+              const v = row[originalKeyOf(f)];
+              return v === null || v === undefined ? "" : String(v);
+            }),
           ),
-        );
-        return;
-      }
-
-      const tableId = createResult.tableId;
-
-      // Build one bulk-write payload from every parsed row.
-      // udt_bulk_write inserts the whole batch in a single transaction — fast
-      // (one round-trip instead of N) and atomic (any failure rolls everything
-      // back). The pre-existing loop here did N round-trips and silently
-      // swallowed per-row errors; the atomicity upgrade is intentional.
-      const operations: BulkInsertOp[] = fullData.map((row) => {
-        const rowData: Record<string, unknown> = {};
-        includedFields.forEach((field) => {
-          const originalKey = Object.keys(row).find(
-            (key) => sanitizeFieldName(key) === field.field_name,
-          );
-          if (originalKey) {
-            rowData[field.field_name] = row[originalKey];
-          }
-        });
-        return { op: "insert", data: rowData };
+        },
+        title: tableName.trim(),
+        onSaved: ({ tableId }) => onSuccess(tableId),
       });
-
-      // A header-only file makes the table and its columns, and has no rows to write.
-      const bulkResult =
-        operations.length === 0
-          ? ({ success: true, data: { table_id: tableId, results: [] } } as unknown as Awaited<ReturnType<typeof bulkWrite>>)
-          : await bulkWrite({ tableId, operations });
-      if (isServiceFailure(bulkResult)) {
-        // The store's own refusal, whole (FIX-15 keeps DETAIL and HINT on it).
-        setError(
-          bulkResult.refusal ??
-            importRefusal(
-              "internal",
-              "The table was created but its rows were not written.",
-              "Open the table and paste the rows in, or try the import again.",
-              bulkResult.error,
-            ),
-        );
-        setCreatedTableId(tableId);
+      if (!handedOff) {
+        setError(importRefusal("internal", "The save screen could not open here.", "Reload the page and try again."));
         return;
       }
-
-      // Sanity-check the per-op envelope. With insert ops this is belt-and-
-      // suspenders — insert failures RAISE rather than soft-fail — but we
-      // check so a future op-mix change cannot silently lose rows.
-      const failedRows = bulkResult.data.results.filter(isBulkOpError);
-      if (failedRows.length > 0) {
-        // 🚨 NOTHING FAILS SILENTLY. This was a console warning and the modal
-        // closed on a table missing rows the person believed were in it.
-        setError(
-          importRefusal(
-            "refused_by_rule",
-            `${failedRows.length} of ${operations.length} rows were not written; the other ${
-              operations.length - failedRows.length
-            } are in the new table.`,
-            "Open the table to see what landed, then paste the missing rows in.",
-          ),
-        );
-        setCreatedTableId(tableId);
-        return;
-      }
-
-      // Reset form
       resetForm();
-
-      // Call success callback
-      onSuccess(tableId);
       onClose();
     } catch (err) {
       console.error("Error importing table:", err);
@@ -419,9 +331,6 @@ export default function ImportTableModal({
 
   const resetForm = () => {
     setTableName("");
-    setDescription("");
-    setIsPublic(false);
-    setAuthenticatedRead(false);
     setFileName("");
     setPasteData("");
     setFullData([]);
@@ -433,7 +342,6 @@ export default function ImportTableModal({
     setUploadError("");
     setPasteError("");
     setError(null);
-    setCreatedTableId(null);
   };
 
   const handleClose = () => {
@@ -451,31 +359,12 @@ export default function ImportTableModal({
         <div className="flex-1 overflow-y-auto min-h-0 space-y-4 py-4">
           {error && (
             // The file and settings are still in the form, so the notice owns the
-            // two doors out — unless the table already exists, when the way out
-            // is to open it (lane REFUSAL-SWEEP).
+            // two doors out (lane REFUSAL-SWEEP).
             <RefusalNotice
               error={error}
               className="text-left"
-              {...(createdTableId
-                ? {
-                    actions: (
-                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                        <button
-                          type="button"
-                          className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                          onClick={() => {
-                            const id = createdTableId;
-                            resetForm();
-                            onSuccess(id);
-                            onClose();
-                          }}
-                        >
-                          Open the table
-                        </button>
-                      </div>
-                    ),
-                  }
-                : { onKeepEditing: () => setError(null), onDiscard: resetForm })}
+              onKeepEditing={() => setError(null)}
+              onDiscard={resetForm}
             />
           )}
 
@@ -616,37 +505,6 @@ export default function ImportTableModal({
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (optional)</Label>
-                  <ProTextarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Add a description for this table"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="isPublic"
-                      checked={isPublic}
-                      onCheckedChange={setIsPublic}
-                    />
-                    <Label htmlFor="isPublic">Public Access</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="authenticatedRead"
-                      checked={authenticatedRead}
-                      onCheckedChange={setAuthenticatedRead}
-                    />
-                    <Label htmlFor="authenticatedRead">
-                      Authenticated Access
-                    </Label>
-                  </div>
-                </div>
 
                 {/* THE FIRST ROW IS A GUESS, SHOWN AS ONE (VERIFIER-16). A one-line
                     file used to be refused as "empty" because its only line was
@@ -697,30 +555,13 @@ export default function ImportTableModal({
                         >
                           {field.display_name}
                         </span>
-                        <Select
-                          value={field.data_type}
-                          onValueChange={(value) =>
-                            updateFieldType(index, value)
-                          }
-                          disabled={!field.included}
-                        >
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {VALID_DATA_TYPES.map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       </div>
                     ))}
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Toggle columns on/off to include or exclude them. Data types
-                    are auto-detected but can be changed.
+                    Toggle columns on/off to include or exclude them. Each
+                    column's type is proposed on the next screen, where you can
+                    change it before anything is made.
                   </p>
                   {/*
                     🚨 SAY WHAT IS TRUE ABOUT THE RULES (lane REFUSAL-SWEEP,
@@ -831,8 +672,8 @@ export default function ImportTableModal({
                 </>
               ) : (
                 fullData.length === 0
-                  ? "Create the table"
-                  : `Import ${fullData.length} ${fullData.length === 1 ? "row" : "rows"}`
+                  ? "Continue with these columns"
+                  : `Continue with ${fullData.length} ${fullData.length === 1 ? "row" : "rows"}`
               )}
             </Button>
           )}

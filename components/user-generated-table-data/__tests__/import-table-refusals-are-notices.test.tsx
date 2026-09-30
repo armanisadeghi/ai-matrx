@@ -42,6 +42,13 @@ jest.mock("@/components/official/ProTextarea", () => ({
   },
 }));
 
+const opened: Array<Record<string, unknown>> = [];
+jest.mock("@/features/overlays/openers/saveToTable", () => ({
+  useOpenSaveToTable: () => (options: Record<string, unknown>) => {
+    opened.push(options);
+    return { instanceId: "t", close: () => undefined };
+  },
+}));
 import ImportTableModal from "../ImportTableModal";
 
 const SERVICE_LOG =
@@ -59,6 +66,7 @@ beforeEach(() => {
   root = createRoot(container);
   bulkWrite.mockReset();
   createTable.mockReset();
+  opened.length = 0;
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -112,58 +120,25 @@ async function mount(onClose = jest.fn(), onSuccess = jest.fn()) {
 }
 
 describe("ImportTableModal refusals", () => {
-  it("a row the store did not write is a notice with the way to the table, and the modal stays open", async () => {
-    createTable.mockResolvedValue({ success: true, tableId: "3f1d2c4b-5a69-4e78-8f90-a1b2c3d4e5f6" });
-    bulkWrite.mockResolvedValue({
-      success: true,
-      data: { table_id: "t", results: [{ id: "a" }, { id: "b" }, { error: "row refused" }] },
-    });
+  // SAVE-AS-TABLE-EVERYWHERE (VERIFIER-30 #5): this modal reads the paste or file and hands the rows
+  // to the ONE "Save to a table" — it makes no table of its own, so its old create/bulk-write
+  // refusals now live in that screen (records-ui `SaveToTable` suites).
+  it("hands the rows it read to the one Save to a table, and closes", async () => {
     const { onClose, onSuccess } = await mount();
     await pasteAndPreview();
     await act(async () => {
-      byText("Import 3 rows").click();
+      byText("Continue with 3 rows").click();
     });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 20));
-    });
-
-    const notice = document.body.querySelector('[role="alert"]');
-    expect(notice?.textContent).toContain("1 of 3 rows were not written; the other 2 are in the new table.");
-    expect(notice?.textContent).toContain("Open the table to see what landed");
-    expect(onClose).not.toHaveBeenCalled();
-
-    await act(async () => {
-      byText("Open the table").click();
-    });
-    expect(onSuccess).toHaveBeenCalledWith("3f1d2c4b-5a69-4e78-8f90-a1b2c3d4e5f6");
+    expect(createTable).not.toHaveBeenCalled();
+    expect(bulkWrite).not.toHaveBeenCalled();
+    expect(opened).toHaveLength(1);
+    const grid = opened[0]!.grid as { headers: string[]; rows: string[][] };
+    expect(grid.headers).toEqual(["Customer", "Address", "Call type", "Billed"]);
+    expect(grid.rows[0]).toEqual(["Takeda Property Management", "2210 Ocean View Dr", "Water heater", "1840"]);
+    expect(opened[0]!.title).toBe("Rincon service calls");
     expect(onClose).toHaveBeenCalled();
-  });
-
-  it("a whole import that stopped says so with Keep editing and Discard, never the thrown text", async () => {
-    createTable.mockResolvedValue({ success: true, tableId: "3f1d2c4b-5a69-4e78-8f90-a1b2c3d4e5f6" });
-    bulkWrite.mockRejectedValue(new Error("TypeError: Failed to fetch at udt_bulk_write"));
-    await mount();
-    await pasteAndPreview();
-    await act(async () => {
-      byText("Import 3 rows").click();
-    });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 20));
-    });
-
-    const notice = document.body.querySelector('[role="alert"]') as HTMLElement;
-    const read = notice.cloneNode(true) as HTMLElement;
-    read.querySelectorAll('[aria-hidden="true"]').forEach((n) => n.remove());
-    expect(read.textContent).toContain("The import stopped before it finished.");
-    expect(read.textContent).not.toContain("Failed to fetch");
-    expect(notice.textContent).toContain("Keep editing");
-    expect(notice.textContent).toContain("Discard");
-    // Keep editing hands the form back with everything still in it.
-    await act(async () => {
-      byText("Keep editing").click();
-    });
-    expect(document.body.querySelector('[role="alert"]')).toBeNull();
-    expect((document.getElementById("tableName") as HTMLInputElement | null)?.value ?? "").not.toBe("");
+    (opened[0]!.onSaved as (e: { tableId: string }) => void)({ tableId: "3f1d2c4b-5a69-4e78-8f90-a1b2c3d4e5f6" });
+    expect(onSuccess).toHaveBeenCalledWith("3f1d2c4b-5a69-4e78-8f90-a1b2c3d4e5f6");
   });
 
   // VERIFIER-16: a one-line file was refused as "empty", because its only line
@@ -175,7 +150,7 @@ describe("ImportTableModal refusals", () => {
     expect(document.body.querySelector('[role="alert"]')).toBeNull();
     const says = document.body.querySelector("[data-matrx-import-first-row-says]");
     expect(says?.textContent).toContain("Every row is imported, 1 in all");
-    expect(byText("Import 1 row")).toBeTruthy();
+    expect(byText("Continue with 1 row")).toBeTruthy();
     // Flip it: the same line becomes the column names of an empty table.
     const toggle = document.getElementById("firstRowIsHeader") as HTMLElement;
     await act(async () => {
@@ -184,7 +159,7 @@ describe("ImportTableModal refusals", () => {
     expect(document.body.querySelector("[data-matrx-import-first-row-says]")?.textContent).toContain(
       "only column names, so the table will be created with these 3 columns and no rows yet",
     );
-    expect(byText("Create the table")).toBeTruthy();
+    expect(byText("Continue with these columns")).toBeTruthy();
   });
 
   it("a header plus one row is one row under those names", async () => {
@@ -194,7 +169,7 @@ describe("ImportTableModal refusals", () => {
       "The first row is used as column names, and the 1 row below it are imported.",
     );
     expect(document.body.textContent).toContain("Harbor Street Dental");
-    expect(byText("Import 1 row")).toBeTruthy();
+    expect(byText("Continue with 1 row")).toBeTruthy();
   });
 
   it("a blank paste is the one real refusal, through the notice", async () => {

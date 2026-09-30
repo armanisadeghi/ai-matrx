@@ -156,6 +156,12 @@ export interface SelectionCommonHost {
   saveToNotes(content: string): void;
   /** The one "Save to a table" (SAVE-AS-TABLE-EVERYWHERE) for a selection that reads as rows. */
   saveToTable(content: string): void;
+  /**
+   * The selection written back as the shapes it was drawn from (`shapeTextOfNode` over the
+   * selected DOM): a rendered table's rows as a markdown table, a list's bullets as bullets. The
+   * flattened `text` loses both. Null where the selection is not over rendered content.
+   */
+  shapeText: string | null;
   /** The app's feedback window (a passage report). */
   openFeedback(report: { title: string; subject: FeedbackSubject }): void;
 }
@@ -222,7 +228,7 @@ export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[
 /** The host half an action needs (an action whose provider is absent cannot take a slot). */
 function hostKeyOf(id: string): string {
   if (id.startsWith("selection:format-") || id.startsWith("selection:table-")) return "richEditor";
-  if (id === "selection:copy" || id === "selection:save-to-notes") return SELECTION_COMMON_HOST_KEY;
+  if (id === "selection:copy" || id === "selection:save-to-notes" || id === "selection:save-to-table") return SELECTION_COMMON_HOST_KEY;
   if (id === "selection:ai") return "contextMenuSelection";
   if (id.startsWith("selection:tutor-")) return PASSAGE_ACTIONS_HOST_KEY;
   return "annotation";
@@ -233,7 +239,10 @@ function presentAt(id: string, target: ClickTarget): boolean {
   // The common pair shows only where nothing richer owns the passage: an annotation host that can
   // pin THIS selection. One that cannot (a figure or other island in the Visual editor, text the
   // record's source does not hold) offers nothing, so Copy and Save to notes stay.
-  if (key === SELECTION_COMMON_HOST_KEY) {
+  // Save to a table is not one of the pair the annotation host replaces: an annotated answer or note
+  // (Read mode) offers highlights, never rows-as-a-table, so it stays wherever the text reads as rows
+  // (VERIFIER-30 #1).
+  if (key === SELECTION_COMMON_HOST_KEY && id !== "selection:save-to-table") {
     const annotation = hostHalf<{ capture?: (o: { silent?: boolean }) => unknown }>(target, "annotation");
     if (annotation && (!annotation.capture || annotation.capture({ silent: true }))) return false;
   }

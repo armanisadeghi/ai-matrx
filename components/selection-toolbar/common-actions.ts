@@ -25,6 +25,12 @@ function commonOf(target: ClickTarget): SelectionCommonHost | null {
   return half?.kind === "selection-common" && half.text ? half : null;
 }
 
+/** The selection's rows: its rendered shape when it has one, else the words as typed. */
+function rowsTextOf(common: SelectionCommonHost): string {
+  if (common.shapeText && hasTableShape(common.shapeText)) return common.shapeText;
+  return common.text;
+}
+
 function eligible(id: string) {
   return (t: ClickTarget) =>
     commonOf(t) && !hostHalf(t, "annotation") && shownInSelectionMode(id, t)
@@ -75,15 +81,18 @@ const ACTIONS: Action[] = [
     order: 1,
     placement: "overflow",
     preserveSelection: true,
+    // Offered in every mode the table allows, Read (annotated) included — only the words decide.
     eligible: (t) => {
       const common = commonOf(t);
-      return common && hasTableShape(common.text) ? eligible("selection:save-to-table")(t) : ({ status: "absent" } as const);
+      return common && shownInSelectionMode("selection:save-to-table", t) && hasTableShape(rowsTextOf(common))
+        ? ({ status: "available" } as const)
+        : ({ status: "absent" } as const);
     },
     run: (t) => {
       const common = commonOf(t);
       if (!common) return;
       selectionToolbarHostOf(t)?.ui.close();
-      common.saveToTable(common.text);
+      common.saveToTable(rowsTextOf(common));
     },
   },
 ];

@@ -54,6 +54,15 @@ import type { Rect } from "./SelectionToolbarFrame";
 // The common pair (copy, save to notes) declares itself on load.
 import "./common-actions";
 
+/**
+ * The live selection written back as the shapes it was drawn from (VERIFIER-30 #1). Null until
+ * records-ui's `shapeTextOfNode` is installed (the release that carries it is waiting on the
+ * publisher); the flattened words are read meanwhile.
+ */
+function selectionShapeText(): string | null {
+  return null;
+}
+
 // The frame (the package's selection layout, the portal, positioning) loads
 // the first time a toolbar opens — this shell is on every route; the frame is
 // not (code-splitting skill: one boundary, gated on `open`).
@@ -342,6 +351,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
     const common: SelectionCommonHost = {
       kind: "selection-common",
       text: open.text.trim(),
+      shapeText: selectionShapeText(),
       saveToNotes: (content: string) =>
         dispatch(openOverlay({ overlayId: "saveToNotes", instanceId: `selection-notes:${crypto.randomUUID()}`, data: { initialContent: content } })),
       saveToTable: (content: string) =>
