@@ -38,7 +38,6 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 // object-org-exempt: only the Organization list tab and item-state keying read it; a routed credential opens by useCredentialHome
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   Select,
@@ -135,28 +134,20 @@ export function VaultWorkspace({
       ? routedHomeScope.organizationId
       : null;
   const availableOrganizations = organizations;
-  // Switching to the Organization tab acts in the organization the person
-  // SELECTED — never the first one they happen to belong to. A
-  // first-membership pick showed (and let them write) another tenant's
-  // credentials without anyone choosing it. With no selection the tab says so
-  // and changes nothing; the Select beside it stays the explicit picker.
-  // common-docs/policies/context-is-carried-never-rebuilt.md
-  // object-org-exempt: picks which organization the visible Organization LIST tab shows; never whether a routed credential opens
-  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  // The Organization tab shows ONE organization's vault (an organization's credentials belong to
+  // it), and which one is the PERSON'S pick — never the active organization, never the first
+  // membership (active-org-is-never-a-list-filter law): a sole membership opens directly,
+  // otherwise the chooser opens right there and the chosen organization is named beside the tab.
   const actorId = useAppSelector(selectUserId);
   const routeWorkspaceState = useVaultRouteWorkspaceState();
-  const scopeSwitchOrganizationId =
-    availableOrganizations.find((org) => org.id === selectedOrganizationId)
-      ?.id ?? null;
   /**
    * 🚨 THE ORGANIZATION TAB IS NEVER A DEAD CONTROL (lane ACCESS-FIX-18, VERIFIER-18 M4). With
-   * no usable selection — pressing it used to raise a toast and change nothing; clicked twice on
-   * production, "nothing says why". Now it opens the organization's credentials:
-   *   · the organization the person is working in, when it has a list;
+   * pressing it used to raise a toast and change nothing; clicked twice on production, "nothing
+   * says why". Now it opens the organization's credentials:
    *   · the one organization they belong to, when there is exactly one;
    *   · otherwise the organization chooser opens right there, and the pick opens that list.
-   * Still never a silent first-membership pick (d30f8934e0): with several, THEY choose, and the
-   * chooser beside the tab names which list is showing afterwards.
+   * Never the active organization and never a silent first-membership pick (d30f8934e0): with
+   * several, THEY choose, and the chooser beside the tab names which list is showing afterwards.
    */
   const [organizationChooser, setOrganizationChooser] = useState<
     "aside" | "bar" | "compact" | null
@@ -164,7 +155,6 @@ export function VaultWorkspace({
   const switchToOrganizationScope = (
     from: "aside" | "bar" | "compact",
   ): string | null => {
-    if (scopeSwitchOrganizationId) return scopeSwitchOrganizationId;
     if (availableOrganizations.length === 1)
       return availableOrganizations[0]!.id;
     setOrganizationChooser(from);
@@ -262,7 +252,6 @@ export function VaultWorkspace({
   const canExport = principal.type === "user" && scope.kind === "mine";
   const vaultItemState = useVaultItemState({
     actorId,
-    organizationId: selectedOrganizationId,
     scopeKey: vaultScopeKey(scope),
     itemIds: vault.items.map((item) => item.id),
   });
@@ -346,7 +335,7 @@ export function VaultWorkspace({
   const deepLinkTouch = useRef<string | null>(null);
   useEffect(() => {
     if (!selectedItemId || !selected) return;
-    const touchKey = `${actorId ?? ""}\u0000${selectedOrganizationId ?? ""}\u0000${vaultScopeKey(scope)}\u0000${selectedItemId}`;
+    const touchKey = `${actorId ?? ""}\u0000${vaultScopeKey(scope)}\u0000${selectedItemId}`;
     if (
       !touchKey ||
       vaultItemState.status !== "ready" ||
@@ -360,7 +349,6 @@ export function VaultWorkspace({
     actorId,
     selectedItemId,
     selected,
-    selectedOrganizationId,
     scope,
     vaultItemState,
   ]);

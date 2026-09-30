@@ -19,10 +19,10 @@ function deferred<T>() {
 
 let activeState: ReturnType<typeof useVaultItemState>;
 
-function Harness({ actorId = "user", organizationId = "org", scopeKey = "mine", itemIds = ["a"], routedTouch = false }: {
-  actorId?: string | null; organizationId?: string | null; scopeKey?: string; itemIds?: string[]; routedTouch?: boolean;
+function Harness({ actorId = "user", scopeKey = "mine", itemIds = ["a"], routedTouch = false }: {
+  actorId?: string | null; scopeKey?: string; itemIds?: string[]; routedTouch?: boolean;
 }) {
-  const state = useVaultItemState({ actorId, organizationId, scopeKey, itemIds });
+  const state = useVaultItemState({ actorId, scopeKey, itemIds });
   const routedTouchRecorded = useRef(false);
   useLayoutEffect(() => { activeState = state; }, [state]);
   useEffect(() => {

@@ -4,7 +4,6 @@ import { createContext, useContext, useState } from "react";
 import type { VaultListSort } from "../vault-list";
 import type { CredentialFamily, VaultScope } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface VaultRouteWorkspaceState {
@@ -34,11 +33,12 @@ export function VaultRouteWorkspaceStateProvider({ children }: { children: React
   </VaultRouteWorkspaceStateContext>;
 }
 
-/** Route navigation keeps this boundary mounted; identity/context changes remount its in-memory view state. */
+/** Route navigation keeps this boundary mounted; a change of person remounts its in-memory view state. */
 export function VaultRouteWorkspaceStateBoundary({ children }: { children: React.ReactNode }) {
   const actorId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectOrganizationId);
-  return <VaultRouteWorkspaceStateProvider key={`${actorId ?? ""}\u0000${organizationId ?? ""}`}>
+  // Keyed by the person only: the active organization never resets the list (favorites and
+  // filters are per person; switching where new things are saved must not throw them away).
+  return <VaultRouteWorkspaceStateProvider key={actorId ?? ""}>
     {children}
   </VaultRouteWorkspaceStateProvider>;
 }

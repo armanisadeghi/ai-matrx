@@ -25,15 +25,14 @@ interface Intent {
 const EMPTY_ITEMS = new Map<string, VaultItemState>();
 
 /** Canonical per-user state, intersected with the current authorized Vault list. */
-export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }: {
+export function useVaultItemState({ actorId, scopeKey, itemIds }: {
   actorId: string | null;
-  organizationId: string | null;
   scopeKey: string;
   itemIds: readonly string[];
 }) {
   const ids = [...new Set(itemIds)].sort();
   const idsKey = ids.join("\u0000");
-  const contextKey = actorId ? JSON.stringify([actorId, organizationId, scopeKey, ids]) : null;
+  const contextKey = actorId ? JSON.stringify([actorId, scopeKey, ids]) : null;
   const [retry, setRetry] = useState(0);
   // Retry invalidates the rendered snapshot immediately, without a synchronous
   // state update in an effect or a window in which stale flags are actionable.

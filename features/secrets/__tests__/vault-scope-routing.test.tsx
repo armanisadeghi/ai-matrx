@@ -325,15 +325,21 @@ describe("VaultWorkspace scope routing", () => {
     expect(container.textContent).not.toContain("My Personal Login");
   });
 
-  it("loads the SELECTED organization's credentials, never the first membership", async () => {
+  it("never lets the ACTIVE organization pick the tab's organization: the person chooses", async () => {
     selectedOrganizationId = "org-selected";
     await mount();
 
     await clickScope("Organization");
 
-    expect(requestedScopes()).toEqual(["mine", "organization:org-selected"]);
-    expect(container.textContent).toContain("Selected Org Login");
+    // Two memberships and an active organization set: nothing is read until the person picks.
+    expect(requestedScopes()).toEqual(["mine"]);
+    expect(container.textContent).not.toContain("Selected Org Login");
     expect(container.textContent).not.toContain("First Org Login");
+
+    await pickFromChooser("First Org");
+    expect(requestedScopes()).toEqual(["mine", "organization:org-first"]);
+    expect(container.textContent).toContain("First Org Login");
+    expect(container.textContent).not.toContain("Selected Org Login");
     expect(toastError).not.toHaveBeenCalled();
   });
 
@@ -462,6 +468,7 @@ describe("VaultWorkspace scope routing", () => {
     selectedOrganizationId = "org-selected";
     await mount();
     await clickScope("Organization");
+    await pickFromChooser("Selected Org");
     await act(async () => {
       root.render(<VaultRouteWorkspaceStateProvider><VaultWorkspace key="organization-item-route" principal={{ type: "user" }} presentation="full" selectedItemId="selected-row" /></VaultRouteWorkspaceStateProvider>);
     });
@@ -497,7 +504,7 @@ describe("VaultWorkspace scope routing", () => {
     expect(container.textContent).toContain("No credentials match");
   });
 
-  it.each(["actor", "organization"])("resets route view state on %s change", async (changed) => {
+  it.each(["actor", "organization"])("resets route view state on a change of actor only (%s)", async (changed) => {
     await mount();
     const renderBoundary = () => <VaultRouteWorkspaceStateBoundary><VaultWorkspace principal={{ type: "user" }} presentation="full" /></VaultRouteWorkspaceStateBoundary>;
     await act(async () => root.render(renderBoundary()));
@@ -507,9 +514,13 @@ describe("VaultWorkspace scope routing", () => {
     else selectedOrganizationId = "org-selected";
     await act(async () => root.render(renderBoundary()));
     const favoriteButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Favorites"));
-    expect(favoriteButton?.getAttribute("aria-current")).toBeNull();
-    expect(container.querySelector('[aria-label="Sort credentials"]')?.textContent).toContain("Newest added");
-    expect(container.textContent).toContain("My Personal Login");
+    // A new person starts clean; the ACTIVE organization changing never throws the list state away.
+    const reset = changed === "actor";
+    expect(favoriteButton?.getAttribute("aria-current")).toBe(reset ? null : "page");
+    expect(container.querySelector('[aria-label="Sort credentials"]')?.textContent).toContain(
+      reset ? "Newest added" : "Recently viewed",
+    );
+    if (reset) expect(container.textContent).toContain("My Personal Login");
   });
 
 });
