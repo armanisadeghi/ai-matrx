@@ -55,25 +55,30 @@ const wire: MandateMemberWireRow = {
 };
 
 describe("member list scope args", () => {
-  it("person seat resolves in the active org and narrows My Orgs by the chosen org", () => {
+  it("person seat narrows AND resolves by the page organization filter, never the active org", () => {
     const args = memberScopeArgs(
-      query({ scope: { kind: "orgs", organizationId: ORG }, search: "  seo " }),
-      { level: "person", resolveOrgId: ACTIVE },
+      query({ scope: { kind: "orgs" }, orgId: ORG, search: "  seo " }),
+      { level: "person" },
     );
     expect(args).toMatchObject({
       p_level: "person",
       p_scope: "orgs",
       p_org_id: ORG,
-      p_resolve_org_id: ACTIVE,
+      p_resolve_org_id: ORG,
       p_search: "seo",
     });
   });
 
+  it("person seat with All organizations sends no org at all", () => {
+    const args = memberScopeArgs(query({ scope: { kind: "orgs" } }), { level: "person" });
+    expect(args.p_org_id).toBeUndefined();
+    expect(args.p_resolve_org_id).toBeUndefined();
+  });
+
   it("organization seat always names the route org and never a personal resolution", () => {
-    const args = memberScopeArgs(query({ scope: { kind: "system" } }), {
+    const args = memberScopeArgs(query({ scope: { kind: "system" }, orgId: ACTIVE }), {
       level: "organization",
       organizationId: ORG,
-      resolveOrgId: ACTIVE,
     });
     expect(args.p_org_id).toBe(ORG);
     expect(args.p_resolve_org_id).toBeUndefined();

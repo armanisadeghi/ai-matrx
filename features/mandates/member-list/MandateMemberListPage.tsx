@@ -28,7 +28,6 @@ import {
   selectAuthReady,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import { memberMandateListConfig } from "./listConfig";
 import { newSoftMandateHref } from "./routes";
@@ -53,18 +52,15 @@ export function MandateMemberListPage({
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
-  const activeOrgId = useAppSelector(selectOrganizationId);
   const [version, setVersion] = useState(0);
 
   // Any mandate write anywhere re-asks the list.
   useEffect(() => onMandateCacheInvalidated(() => setVersion((v) => v + 1)), []);
 
-  const resolveOrgId = level === "person" ? activeOrgId : null;
   // React Compiler memoizes these; `serviceKey` below is the list's identity.
   const service = createMandateMemberService({
     level,
     organizationId: orgId,
-    resolveOrgId,
   });
   const config = memberMandateListConfig({
     level,
@@ -92,11 +88,11 @@ export function MandateMemberListPage({
       config={{
         ...config,
         service,
-        serviceKey: `${userId ?? ""}:${level}:${orgId ?? ""}:${resolveOrgId ?? ""}:${version}`,
+        serviceKey: `${userId ?? ""}:${level}:${orgId ?? ""}:${version}`,
       }}
       defaultScope={
         level === "organization"
-          ? { kind: "orgs", organizationId: null }
+          ? { kind: "orgs" }
           : { kind: "system" }
       }
       notice={

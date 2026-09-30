@@ -37,8 +37,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import styles from "@/features/mandates/workspace/MandateWorkspace.module.css";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { displayResolutionOrgId, usePageOrgFilter } from "@/features/mandates/display-org";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
@@ -219,7 +219,7 @@ function OneMandateRecordBody({
   const { data, loading, failure, refresh } =
     useMandateWorkspaceData(mandateKeyOrId, { systemOnly });
   const { organizations } = useUserOrganizations();
-  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const pageOrgFilter = usePageOrgFilter();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const nameOfOrg = useMemo(() => {
     const byId = new Map(organizations.map((o) => [o.id, o.name]));
@@ -259,12 +259,17 @@ function OneMandateRecordBody({
   );
   const ownerCanEdit = Boolean(rights?.can_edit);
   const ladderKey = data ? data.mandate.mandate_key : "";
+  const personLadderOrgId = displayResolutionOrgId({
+    pageOrgFilter,
+    homeOrganizationId: data?.mandate.organization_id,
+    memberOrganizationIds: organizations.map((o) => o.id),
+  });
   const ladder = useMandateLadder(
     ladderKey,
     principal.kind === "org"
       ? principal.orgId
       : perspective === "person"
-        ? activeOrganizationId
+        ? personLadderOrgId
         : null,
   );
 
@@ -480,7 +485,7 @@ function OneMandateRecordBody({
             allowCopy={perspective === "organization"}
             nameOfOrg={nameOfOrg}
             activeOrganizationId={
-              principal.kind === "org" ? principal.orgId : activeOrganizationId
+              principal.kind === "org" ? principal.orgId : personLadderOrgId
             }
           />
         </div>

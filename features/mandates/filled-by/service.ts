@@ -4,13 +4,12 @@
 // page, in ONE call to `public.mnd_filled_by`
 // (migrations/mnd_filled_by_holders.sql). The answer is the holder the mandate
 // side shows for each mandate: the winning rung for the viewer's seat — the
-// system default, the viewer's ACTIVE organization's choice, the viewer's own.
+// system default, the chosen organization's choice (the page's organization filter — never the
+// active organization), the viewer's own.
 //
 // Direct browser → Supabase: a plain read the person is entitled to make.
 
 import { supabase } from "@/utils/supabase/client";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 export type MandateHolderKind = "agent" | "workflow";
@@ -41,16 +40,21 @@ export async function attachFilledMandates<TRow>(
   holderType: MandateHolderKind,
   rows: TRow[],
   idOf: (row: TRow) => string,
+  /**
+   * The page's organization filter (`query.orgId`), when one is set. This is a
+   * DISPLAY read: it resolves in the filtered organization or, with All
+   * organizations, in none — never in the ACTIVE organization, which only
+   * decides where new things are saved (active-org law).
+   */
+  orgFilterId: string | null = null,
 ): Promise<WithFilledMandates<TRow>[]> {
   if (rows.length === 0) return [];
   const ids = rows.map(idOf);
-  const state = getStoreSingleton()?.getState();
-  const resolveOrgId = state ? selectOrganizationId(state) : null;
 
   const { data, error } = await supabase.rpc("mnd_filled_by", {
     p_holder_type: holderType,
     p_holder_ids: ids,
-    p_resolve_org_id: resolveOrgId ?? undefined,
+    p_resolve_org_id: orgFilterId ?? undefined,
   });
 
   if (error) {

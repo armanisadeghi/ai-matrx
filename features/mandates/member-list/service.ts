@@ -4,8 +4,11 @@
 // entirely by the database (`public.mnd_member_list`). Unlike the admin list
 // there is no aidream report to fold in: every cell is on the database answer.
 //
-//   level person        scopes mine · orgs (narrowable) · system; resolution =
-//                       what runs FOR ME in `resolveOrgId` (my active org)
+//   level person        scopes mine · orgs · system; the page's organization
+//                       filter (`query.orgId`, null = All organizations) narrows
+//                       the rows AND names the organization whose ladder answers
+//                       "what runs for me". NEVER the active organization: it
+//                       only decides where new things are saved (active-org law).
 //   level organization  scopes orgs (this org's own) · system; resolution =
 //                       what runs for every member of `organizationId`
 
@@ -30,13 +33,11 @@ export interface MandateMemberServiceOptions {
   level: MandateListLevel;
   /** Organization level: the route's organization. */
   organizationId?: string | null;
-  /** Person level: the organization whose ladder answers "what runs for me". */
-  resolveOrgId?: string | null;
 }
 
 /** The scope half of every call. Pure — exported for tests. */
 export function memberScopeArgs(
-  query: Pick<EntityListQuery, "scope" | "search" | "filters">,
+  query: Pick<EntityListQuery, "scope" | "orgId" | "search" | "filters">,
   options: MandateMemberServiceOptions,
 ): Pick<
   MandateMemberListArgs,
@@ -58,10 +59,12 @@ export function memberScopeArgs(
       : scope.kind,
     p_org_id: orgLevel
       ? (options.organizationId ?? undefined)
-      : scope.kind === "orgs" && scope.organizationId
-        ? scope.organizationId
-        : undefined,
-    p_resolve_org_id: orgLevel ? undefined : (options.resolveOrgId ?? undefined),
+      : (query.orgId ?? undefined),
+    // Resolution follows the page's organization filter, never the active org.
+    // With All organizations there is no single org to resolve in, so the
+    // database answers without an organization rung (a per-row home-org
+    // resolution needs the door to take one — register AO-002).
+    p_resolve_org_id: orgLevel ? undefined : (query.orgId ?? undefined),
     p_search: query.search.trim() || undefined,
     p_filters: query.filters as unknown as Json,
   };

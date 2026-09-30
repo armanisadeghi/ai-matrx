@@ -21,6 +21,7 @@ import {
   selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
+import { usePageOrgFilter } from "@/features/mandates/display-org";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { memberMandateRecordHref } from "../member-list/routes";
@@ -86,11 +87,19 @@ export function FeatureIntelligence({
   const [level, setLevel] = useState<IntelligenceLevel>("person");
   const seatLevel: IntelligenceLevel = canManageOrg ? level : "person";
   const orgLevel = seatLevel === "organization";
+  // The organization this seat READS in. The organization level manages ONE
+  // organization by design (the page names it: "For <org>") and saves into it —
+  // that is the active organization, where new things are saved. The person
+  // level only DISPLAYS what runs for me, so it follows the page's
+  // organization filter (`?org_filter=`, none = All organizations) and never
+  // the active organization (active-org law, mandates ruling).
+  const pageOrgFilter = usePageOrgFilter();
+  const seatOrgId = orgLevel ? activeOrgId : pageOrgFilter;
 
   const state = useFeatureIntelligence({
     feature,
     level: seatLevel,
-    organizationId: activeOrgId,
+    organizationId: seatOrgId,
     userId,
     context,
     // Read once, for the settled seat: not before the organization bootstrap
@@ -103,7 +112,7 @@ export function FeatureIntelligence({
   });
   const actions = useIntelligenceActions({
     level: seatLevel,
-    organizationId: activeOrgId,
+    organizationId: seatOrgId,
   });
 
   const [hoverKey, setHoverKey] = useState<string | null>(null);
@@ -231,7 +240,7 @@ export function FeatureIntelligence({
                 (hoveredPlaceKeys?.has(row.mandateKey) ?? false)
               }
               orgLevel={orgLevel}
-              organizationId={activeOrgId}
+              organizationId={seatOrgId}
               busy={actions.busyKey === row.mandateKey}
               canReset={Boolean(topicChoice && !orgLevel) || row.decidedRung === rungFor(seatLevel)}
               resetLabel={topicChoice && !orgLevel

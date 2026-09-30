@@ -16,8 +16,7 @@ import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { usePageOrgFilter } from "../display-org";
 import {
   callMandateMemberList,
   memberRowFromWire,
@@ -104,8 +103,9 @@ export function useIntelligenceDirectory(): IntelligenceDirectoryState {
   const [error, setError] = useState<string | null>(null);
   const [epoch, setEpoch] = useState(0);
   const userId = useAppSelector(selectUserId);
-  const activeOrgId = useAppSelector(selectOrganizationId);
-  const { organizationState } = useOrganizationRequired();
+  // Display read: the page's organization filter (none = All organizations),
+  // never the active organization (active-org law).
+  const pageOrgFilter = usePageOrgFilter();
 
   useEffect(() => onMandateCacheInvalidated(() => setEpoch((n) => n + 1)), []);
 
@@ -129,12 +129,12 @@ export function useIntelligenceDirectory(): IntelligenceDirectoryState {
   // failed read leaves the index without its agent/workflow names; search
   // still finds jobs, places and names.
   useEffect(() => {
-    if (!defs || organizationState === "resolving") return;
+    if (!defs) return;
     let cancelled = false;
-    const key = `${activeOrgId ?? ""}|${userId ?? ""}`;
+    const key = `${pageOrgFilter ?? ""}|${userId ?? ""}`;
     let pending = holdersCache.get(key);
     if (!pending) {
-      pending = fetchHolders(defs, activeOrgId, userId);
+      pending = fetchHolders(defs, pageOrgFilter, userId);
       holdersCache.set(key, pending);
       pending.catch(() => holdersCache.delete(key));
     }
@@ -149,7 +149,7 @@ export function useIntelligenceDirectory(): IntelligenceDirectoryState {
     return () => {
       cancelled = true;
     };
-  }, [defs, activeOrgId, userId, organizationState, epoch]);
+  }, [defs, pageOrgFilter, userId, epoch]);
 
   return { domains: defs ? buildDomains(defs, holders) : null, defs, error };
 }
