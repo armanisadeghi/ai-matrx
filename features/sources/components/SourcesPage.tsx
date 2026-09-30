@@ -1021,6 +1021,14 @@ export function SourcesPage() {
           defaultSort={{ id: "created_at", direction: "desc" }}
           searchText={(r) => `${r.name} ${r.canonical_identity ?? ""}`}
           facets={{ enabled: true, totalRows: visibleRows.length }}
+          // The pager pages the rows LOADED so far (100 capture records at a time, recaptures
+          // folded into one Source). Its total is the real one for the current lane and filters:
+          // when more remain on the server the label says how many match, never a bare "of 97".
+          paginationLabelFormat={(start, end, shown) =>
+            hasMore && total !== null
+              ? `${start.toLocaleString()}–${end.toLocaleString()} of ${shown.toLocaleString()} loaded · ${total.toLocaleString()} matching capture records`
+              : `${start.toLocaleString()}–${end.toLocaleString()} of ${shown.toLocaleString()}`
+          }
           toolbar={{
             searchPlaceholder: "Search Sources",
             searchValue: search,
@@ -1175,11 +1183,13 @@ export function SourcesPage() {
           }}
         />
         )}
-        {/* The source is paged: show its raw match count without duplicating the table's distinct loaded count. */}
+        {/* ONE paging model: the table's "of N" counts the Sources loaded so far (recaptures
+            are grouped into one Source), so the footer never quotes a second, raw capture-record
+            total beside it — it only says there is more and offers the next page. */}
         {rows.length > 0 && total !== null && hasMore ? (
           <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
-            <span title="Includes recaptures; the number of distinct Sources may be smaller.">
-              {total.toLocaleString()} matching capture records
+            <span title="Sources are listed newest first, a page at a time. The count above is the Sources loaded so far; recaptures of the same page are grouped into one Source.">
+              Showing the newest {visibleRows.length.toLocaleString()} Sources — more available
             </span>
             <Button
               size="sm"
