@@ -1170,8 +1170,7 @@ function FindingDetail({
             </AppLink>
           ) : (
             <span className="text-muted-foreground">
-              Detector couldn&apos;t name this entity — identify the record
-              yourself
+              Detector couldn&apos;t name this entity — identify it yourself
             </span>
           )}
         </Row>
@@ -1215,10 +1214,8 @@ function AllowlistPanel({ report }: { report: DeadEndReport }) {
   if (report.allowlist.length === 0) return null;
   return (
     <div className="rounded-lg border border-border bg-card p-3">
-      <p
-        className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
-        title="Edit in scripts/dead-ends/allowlist.ts"
-      >
+      {/* Exemptions are edited in scripts/dead-ends/allowlist.ts. */}
+      <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <ShieldOff className="h-3.5 w-3.5" />
         Deliberate exemptions ({report.allowlist.length})
       </p>
