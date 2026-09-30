@@ -17,7 +17,7 @@ const OTHER_ORG = "57f2a22b-5875-46c6-80df-437076421c28";
 const BATCH = "b0000000-0000-4000-8000-000000000001";
 const ASSET = "a0000000-0000-4000-8000-000000000001";
 
-const addIdentifier = jest.fn(async () => undefined);
+const addIdentifier = jest.fn(async (..._args: unknown[]) => undefined);
 const createAsset = jest.fn();
 const ensureOpenBatch = jest.fn();
 

@@ -48,6 +48,8 @@ export interface EncoreRulebookRef {
   /** The Expert behind the Masterwork (Rulebook source.author, else its name). */
   expert: string;
   created_by: string;
+  /** The Rulebook's OWN organization — calls about this record carry it, never the active one. */
+  organization_id: string | null;
 }
 
 export interface EncoreMasterwork extends Masterwork {
@@ -117,7 +119,7 @@ async function withRulebooks(
     const { data, error } = await supabase
       .schema("platform")
       .from("rulebook")
-      .select("id,name,source,created_by")
+      .select("id,name,source,created_by,organization_id")
       .in("id", rulebookIds)
       .is("deleted_at", null);
     if (error) throw operationFailed("load the Encore shelves", error);
@@ -131,6 +133,7 @@ async function withRulebooks(
             ? source.author
             : row.name,
         created_by: row.created_by ?? "",
+        organization_id: row.organization_id ?? null,
       });
     }
   }
