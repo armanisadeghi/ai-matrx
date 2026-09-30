@@ -47,8 +47,10 @@
  *                                     and the untouched resolver must produce
  *                                     none.
  *   --strict                          exit 1 on any unexplained row.
- *   --per-site                        one statement per site (automatic on
- *                                     --target production: the live ceiling).
+ *   --per-site                        one statement per site in --dry-run and
+ *                                     --self-test. --snapshot and --compare are
+ *                                     ALWAYS per site and hold no temp table, so
+ *                                     they run on production (30 s ceiling, no DDL).
  *   --sites <uuid,uuid,...>           also compare these sites (added to the
  *                                     valued ones) — for a move that touches
  *                                     sites with no worth rows (COLLAPSE-4).
@@ -141,6 +143,17 @@ const PER_SITE = flag("--per-site");
 
 const SNAPSHOT_SQL = (table: string, onlySite?: string, insert = false) => `
   ${insert ? `insert into ${table}` : `create temp table ${table} on commit drop as`}
+  ${SNAPSHOT_CORE(onlySite)}`;
+
+/** The snapshot as a plain SELECT — no temp table, so it can run on production,
+ * where the guard refuses every CREATE (a temp table fires the DDL event triggers). */
+const SNAPSHOT_SELECT = (onlySite?: string) => `
+  select q.site_id::text as site_id, q.keyword_id::text as keyword_id, q.h, q.h_rootless,
+         q.value_score::text as value_score, q.value_band, q.value_source,
+         q.base_name, q.base_amount::text as base_amount, q.base_root
+    from (${SNAPSHOT_CORE(onlySite)}) q`;
+
+const SNAPSHOT_CORE = (onlySite?: string) => `
   with sites as (
     ${onlySite ? `select '${onlySite}'::uuid as site_id` : SITES_SQL}
   ),
@@ -182,6 +195,22 @@ const SNAPSHOT_SQL = (table: string, onlySite?: string, insert = false) => `
          n.base->>'root' as base_root
   from normal n
 `;
+
+/** Every (site, keyword) answer, read into memory one site per statement. */
+async function readSnapshot(client: Client): Promise<Row[]> {
+  const { rows: sites } = await client.query<{ site_id: string }>(
+    `select s.site_id::text as site_id from (${SITES_SQL}) s order by 1`,
+  );
+  const out: Row[] = [];
+  for (const { site_id } of sites) {
+    if (!/^[0-9a-f-]{36}$/i.test(site_id)) throw new Error(`not a site id: ${site_id}`);
+    const t0 = Date.now();
+    const { rows } = await client.query<Row>(SNAPSHOT_SELECT(site_id));
+    out.push(...rows);
+    console.log(`${C.d}  ${site_id} ${rows.length} keywords ${Date.now() - t0} ms${C.x}`);
+  }
+  return out;
+}
 
 type Row = {
   site_id: string;
@@ -411,8 +440,7 @@ async function snapshot(out: string) {
   const client = await connect();
   try {
     await begin(client);
-    await takeSnapshot(client, "_eq_snap");
-    const rows = await readTable(client, "_eq_snap");
+    const rows = await readSnapshot(client);
     writeFileSync(out, JSON.stringify({ taken_at: new Date().toISOString(), rows }));
     console.log(`snapshot: ${rows.length} rows over ${new Set(rows.map((r) => r.site_id)).size} sites -> ${out}`);
     if (rows.length === 0) exitAfterDrain(1);
@@ -427,8 +455,7 @@ async function compareLive(file: string) {
   const client = await connect();
   try {
     await begin(client);
-    await takeSnapshot(client, "_eq_now");
-    const after = await readTable(client, "_eq_now");
+    const after = await readSnapshot(client);
     const v = await diff(client, before, after);
     report(`COMPARE live vs ${file}`, v);
     return v;
