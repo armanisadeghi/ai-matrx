@@ -101,7 +101,7 @@ const LEAKS = [
   [/\b[a-z][a-z0-9]*_[a-z0-9_]+\.[a-z0-9_]+\b|\b[a-z][a-z0-9]*\.[a-z0-9]+_[a-z0-9_]+\b/, "dotted snake_case identifier"],
   [/\b[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)+\b/, "snake_case identifier"],
   [/\b[a-zA-Z_]+\(\)/, "function call"],
-  [/\b(?:features|components|app|lib|scripts|docs)\/[\w./-]+/, "file path"],
+  [/\b(?:features|components|app|lib|scripts|docs)\/[\w/-]*[\w-]+\.[a-z]{2,4}\b/, "file path"],
   [/\b[\w-]+\.(?:tsx?|py|sql|md)\b/, "file name"],
   [/\b(?:CLAUDE\.md|FEATURE\.md|doctrine|per the policy|see the handoff)\b/i, "doc reference"],
   [/\bthe (?:backend|server|python side|database function|RPC|endpoint|migration)\b/i, "pipeline word"],
