@@ -88,6 +88,7 @@ export async function createAgentMemory(
   let attempt = 0;
   let lastError: unknown = null;
 
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(undefined);
   const scopeId = scopeIdFor(input.scope, organizationId);
 

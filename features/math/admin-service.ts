@@ -54,6 +54,7 @@ export const mathProblemAdminService = {
   },
 
   async create(input: Omit<MathProblemInsert, "organization_id">): Promise<MathProblemRow> {
+    // org-filter: write-target writes into the organization the person is working in; no list reads it
     const organizationId = await withOrganizationRefusalShown("saved", () => ensureOrgId(undefined));
     const { data, error } = await education()
       .from("math_problems")

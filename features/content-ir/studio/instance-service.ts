@@ -428,12 +428,6 @@ export async function listKindInstances(
    */
   homeOrganizationId?: string,
   /**
-   * The person's active organization — the one whose store is asked where its kind
-   * records live. Without it (and without `homeOrganizationId`) the list reads today's
-   * table, as it always did.
-   */
-  activeOrganizationId?: string | null,
-  /**
    * Told which organizations could NOT be read (their store refused or could not be
    * checked), so the screen can name them — a list that is missing an organization says so.
    */
@@ -456,8 +450,7 @@ export async function listKindInstances(
   //   2. the RECORD STORE, read per organization (each org that keeps its kind records there
   //      answers through its own kind-record Table, as this person) — HOW an instance lives
   //      there: see `listFromRecordStore`.
-  // The selected organization only ever names WHICH store answers its own rows.
-  void activeOrganizationId;
+  // The active organization plays no part in a list (policies/active-org-is-never-a-list-filter.md).
   const { data: def, error: defError } = await supabase
     .schema("content_ir")
     .from("kind_definition")
@@ -578,9 +571,7 @@ export async function listKindInstances(
         );
         return rows.map((row) => ({ ...row, organizationId: home.organizationId }));
       } catch (error) {
-        // The organization the person selected keeps its refusal loud; another
-        // organization's refusal never hides the rest.
-        if (home.organizationId === activeOrganizationId) throw error;
+        // One organization's refusal never hides the rest: it is named on the screen.
         console.warn("[content-ir] record store list failed for", home.organizationId, error);
         unreadable.push({
           id: home.organizationId,

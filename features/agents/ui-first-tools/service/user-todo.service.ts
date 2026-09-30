@@ -35,6 +35,7 @@ export async function addUserTodo(
     .schema("chat").from("user_todo")
     .insert({
       // `created_by` is stamped by the `_stamp_actor` trigger — never client-set.
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       organization_id: await ensureOrgId(undefined),
       conversation_id: input.conversation_id,
       title: input.title,

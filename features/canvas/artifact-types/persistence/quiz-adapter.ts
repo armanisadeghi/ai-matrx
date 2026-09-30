@@ -203,6 +203,7 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
         // INSERT a new session. Embed artifactId in quiz_metadata for future lookup.
         const { error } = await supabase.schema("education").from("quiz_sessions").insert({
           created_by: userId,
+          // org-filter: write-target writes into the organization the person is working in; no list reads it
           organization_id: await ensureOrgId(undefined),
           state: quizState as unknown as import("@/types/database.types").Json,
           is_completed: isCompleted,

@@ -210,6 +210,7 @@ export function SaveSourcePanel({
     try {
       const fallbackOrg = sources.every((s) => s.organizationId)
         ? null
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         : await ensureOrgId(null);
       for (const source of sources) {
         try {

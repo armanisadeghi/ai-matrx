@@ -138,6 +138,7 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
     if (organizationId) return organizationId;
     if (resolveOrganization) return resolveOrganization();
     // No organization known and no resolver: hold and ask (the person picks), never a refusal of our own.
+    // org-filter: write-target writes into the organization the person is working in; no list reads it
     return ensureOrgId(null);
   };
 

@@ -281,6 +281,7 @@ export const createSkill = createAsyncThunk<
     created_by: userId,
     // Personal skill → the user's org (skill.definition org is NOT NULL with no
     // inherit trigger). Never insert a null org.
+    // org-filter: write-target writes into the organization the person is working in; no list reads it
     organization_id: await ensureOrgId(undefined),
   };
   const { data, error } = await supabase
@@ -591,6 +592,7 @@ export const createCategoryThunk = createAsyncThunk<
   // Personal category — Supabase direct via platform.categories (dimension='skill').
   // RLS stamps + validates. created_by and organization_id are required for
   // org-scoped dimensions — ride the active org (never null) via ensureOrgId.
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(undefined);
   const insertPayload = {
     dimension: "skill" as const,
@@ -611,6 +613,7 @@ export const createCategoryThunk = createAsyncThunk<
   // THE DOOR. `platform` is not a client-writable schema (chair ruling, VERIFIER-8
   // HIGH-3): `cat_write` stamps created_by from auth.uid() and takes the dimension as
   // a wall rather than as a column somebody has to remember to filter on.
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const { data, error } = await supabase.rpc(
     "cat_write",
     catWriteArgs(

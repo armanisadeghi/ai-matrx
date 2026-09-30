@@ -293,6 +293,7 @@ const notesAdapter: VirtualSourceAdapter = {
       // (organization + person + name). A raw insert here collided with the
       // retired org-blind key and answered "Please try again" — a retry that
       // could never work (2026-09-18).
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       const organizationId = await ensureOrgId(undefined);
       const { data: folderId, error } = await supabase
         .schema("workbench")
@@ -321,6 +322,7 @@ const notesAdapter: VirtualSourceAdapter = {
         content: args.content ?? "",
         folder_name: folderName,
         // Never create a homeless note — ride the user's active org.
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         organization_id: await ensureOrgId(undefined),
         // Notes are private by default. The `notes.visibility` enum column
         // (2026 canonicalization) defaults to `'internal'` at the DB; set it

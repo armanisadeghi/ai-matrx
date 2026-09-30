@@ -99,6 +99,7 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
             .schema("users").from("user_preferences")
             .insert({
               user_id: userId,
+              // org-filter: write-target writes into the organization the person is working in; no list reads it
               organization_id: await ensureOrgId(undefined),
               auto_rag_enabled: next,
               preferences: {},

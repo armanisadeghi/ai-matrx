@@ -153,6 +153,7 @@ async function uploadAndJournalOnce(
           file_id: normalized.fileId,
           mime_type: contentType,
           size_bytes: blob.size,
+          // org-filter: write-target writes into the organization the person is working in; no list reads it
           organization_id: await ensureOrgId(null),
         },
         { onConflict: "safety_id,chunk_index", ignoreDuplicates: true },

@@ -125,6 +125,7 @@ export async function loadNotificationScopes(): Promise<{
 }> {
   const [organizations, initialOrganizationId] = await Promise.all([
     getUserOrganizations(),
+    // org-filter: default-for-new pre-selects the organization tab; every organization stays listed
     ensureOrgId(null),
   ]);
   const scopes: NotificationScope[] = organizations.map((org) => ({

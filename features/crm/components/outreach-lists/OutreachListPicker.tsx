@@ -103,6 +103,7 @@ export function useOutreachListChoice(open: boolean): OutreachListChoice {
       // The record's own org, else the ACTIVE org (waited for, never an arbitrary membership).
       let owner = orgId;
       if (!owner) {
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         const workspace = await awaitEffectiveOrganizationId();
         if (workspace.status !== "ready") throw new Error(workspace.reason);
         owner = workspace.organizationId;

@@ -378,6 +378,7 @@ export interface CreateHighlightInput {
  */
 export async function createHighlight(input: CreateHighlightInput): Promise<{ documentId: string; edgeId: string }> {
   assertAnchorWritable(input.anchor);
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const orgId = await ensureOrgId(null);
   const call = supabase.schema("content").rpc as unknown as (
     fn: string,
@@ -625,6 +626,7 @@ export interface LinkInput {
 /** Link an existing record to the source (the whole document, or one passage). Idempotent. */
 export async function linkRecord(input: LinkInput): Promise<string> {
   assertAnchorWritable(input.anchor);
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const orgId = await ensureOrgId(null);
   const res = await associationsService.add({
     sourceType: input.token,

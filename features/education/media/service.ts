@@ -94,6 +94,7 @@ export const studyMediaService = {
     input: NewStudyMediaInput,
   ): Promise<MediaResult<StudyMediaRow>> {
     try {
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       const orgId = await ensureOrgId(undefined);
       const row = toInsert(input, orgId);
       if (input.shownTo !== undefined) row.shown_to = input.shownTo;

@@ -54,6 +54,7 @@ export async function upsertMemory(
     .upsert(
       {
         created_by: userId,
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         organization_id: await ensureOrgId(undefined),
         path,
         content,

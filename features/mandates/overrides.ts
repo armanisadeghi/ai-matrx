@@ -56,6 +56,7 @@ async function bindingScope(
   if (peekSelectedOrganizationId()) return {};
   await waitForOrganizationAdmission();
   if (peekSelectedOrganizationId()) return {};
+  // org-filter: server-call the call runs in the organization the person is working in
   return { scopeOverrides: { organization_id: await ensureOrgId(null) } };
 }
 import type { ConsumptionMap } from "./provision-shapes";

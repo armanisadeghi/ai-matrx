@@ -219,6 +219,7 @@ export async function createMandateNote(
   if (!user) throw new Error("Sign in to leave a note.");
 
   // EXPLICIT org on every write — the database never chooses one.
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = input.organizationId ?? (await ensureOrgId(undefined));
   if (!organizationId) {
     throw new Error(

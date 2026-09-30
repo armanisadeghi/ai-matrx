@@ -236,7 +236,9 @@ export async function createSavedRequest(
   input: SavedRequestInput,
 ): Promise<SavedRequest> {
   const supabase = createClient();
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(undefined);
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const { data: newId, error: createError } = await supabase.rpc(SHORTCUT_RPCS.create,
     {
       p_agent_id: input.agentId,

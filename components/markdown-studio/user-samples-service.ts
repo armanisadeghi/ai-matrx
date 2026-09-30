@@ -45,6 +45,7 @@ export async function createUserSample(
       content: input.content,
       detected_blocks: input.detected_blocks ?? [],
       created_by: userId,
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       organization_id: await ensureOrgId(undefined),
     })
     .select()

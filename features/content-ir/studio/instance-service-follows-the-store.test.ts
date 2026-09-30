@@ -264,7 +264,7 @@ describe("a record-store organization", () => {
 
   it("lists every organization's instances: the store's read door for it, the person-wide door for the rest", async () => {
     // The SELECTED organization is irrelevant to what is listed.
-    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, LEGACY_ORG);
+    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined);
     expect(entries.map((e) => e.id).sort()).toEqual(["legacy-row-1", "store-record-1"]);
     expect(entries.find((e) => e.id === "store-record-1")).toMatchObject({
       organizationId: STORE_ORG,
@@ -299,7 +299,7 @@ describe("an organization that has not adopted the store for kind records", () =
     const insert = tableCalls.find((c) => c.relation === "content_ir.kind_instance" && c.op === "insert");
     expect(insert?.args[0]).toMatchObject({ organization_id: LEGACY_ORG, created_by: USER });
 
-    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, LEGACY_ORG);
+    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined);
     expect(entries.map((e) => e.id)).toContain("legacy-row-1");
     // Reading the store-side organization is fine; a legacy organization never WRITES to a store.
     expect(writeDoors().filter((d) => d.startsWith("recordWrite") || d === "recordDelete")).toEqual([]);
@@ -308,7 +308,7 @@ describe("an organization that has not adopted the store for kind records", () =
   it("names an organization it could not read instead of dropping it silently", async () => {
     storeListRefuses = true;
     const unreadable: Array<{ id: string; name: string | null }> = [];
-    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, LEGACY_ORG, (orgs) =>
+    const entries = await listKindInstances(KIND_DEF, "active", undefined, undefined, (orgs) =>
       unreadable.push(...orgs),
     );
     expect(entries.map((e) => e.id)).toEqual(["legacy-row-1"]);

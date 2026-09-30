@@ -215,6 +215,7 @@ export async function consumeEntitlement(
   // `check:org-three-states` exists to catch (it caught this line).
   // `awaitEffectiveOrganizationId` joins the answer boot is already fetching,
   // bounded by the workspace knob, and then tells the three states apart.
+  // org-filter: server-call the call runs in the organization the person is working in
   const resolution = await awaitEffectiveOrganizationId();
   if (resolution.status !== "ready") {
     warnConsumeFailed(
@@ -232,6 +233,7 @@ export async function consumeEntitlement(
 
   try {
     const supabase = createClient();
+    // org-filter: server-call the call runs in the organization the person is working in
     const { data, error } = await supabase
       .schema("billing")
       .rpc("entitlement_consume", {
@@ -278,6 +280,7 @@ export function usageFromConsume(r: EntitlementConsumeResult): EntitlementUsage 
  * the free permissive snapshot on a resolver error.
  */
 export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot | null> {
+  // org-filter: server-call the call runs in the organization the person is working in
   const resolution = await awaitEffectiveOrganizationId();
   if (resolution.status !== "ready") return null;
   const empty: EntitlementSnapshot = {
@@ -289,6 +292,7 @@ export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot | 
   };
   try {
     const supabase = createClient();
+    // org-filter: server-call the call runs in the organization the person is working in
     const { data, error } = await supabase
       .schema("billing")
       .rpc("entitlement_snapshot", { p_org: resolution.organizationId });

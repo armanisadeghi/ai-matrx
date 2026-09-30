@@ -272,6 +272,7 @@ export const planService = {
   /** Persist a fresh plan (plan row + all days + blocks). Returns the plan id. */
   async savePlan(draft: PlanDraft): Promise<StudyResult<{ id: string }>> {
     try {
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       const organizationId = await ensureOrgId(undefined);
       const { data: plan, error } = await EDU()
         .from("study_plan")

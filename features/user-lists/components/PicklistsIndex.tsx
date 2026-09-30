@@ -101,6 +101,7 @@ export function PicklistsIndex({ organizationName, userId, dataSource }: Picklis
       const made = (await createList({
         p_list_name: trimmed,
         p_user_id: userId,
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         p_organization_id: await withOrganizationRefusalShown("created", () => ensureOrgId(null)),
         p_items: [],
       })) as { list_id?: string; id?: string } | null;

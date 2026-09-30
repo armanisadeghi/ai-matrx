@@ -118,6 +118,7 @@ export async function ownerUpsertKindContentBlock(
         .from("render_definition")
         .insert({
           ...fields,
+          // org-filter: write-target writes into the organization the person is working in; no list reads it
           organization_id: await ensureOrgId(undefined),
           created_by: userId,
           shown_to: "only_me",

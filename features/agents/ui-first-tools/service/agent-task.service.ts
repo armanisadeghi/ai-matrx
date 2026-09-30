@@ -59,6 +59,7 @@ export async function addTasks(
   // The row is owned through its parent conversation; `organization_id` is
   // also filled by `trg_inherit_org`, but the generated Insert type requires
   // it, so it is resolved here.
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(undefined);
   const rows = inputs.map((input, idx) => ({
     organization_id: organizationId,

@@ -177,6 +177,7 @@ export const canvasItemsService = {
         .upsert(
           {
             user_id: userId,
+            // org-filter: write-target writes into the organization the person is working in; no list reads it
             organization_id: await ensureOrgId(undefined),
             type: input.content.type,
             content: input.content as any,

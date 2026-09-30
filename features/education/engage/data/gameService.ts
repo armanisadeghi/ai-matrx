@@ -401,7 +401,9 @@ export const gameService = {
       // The caller NAMES the organization the membership belongs to — the
       // database never picks one (aidream 0929). ensureOrgId holds for the
       // org picker when no organization is active.
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       const orgId = await ensureOrgId(null);
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       const { data, error } = await supabase.rpc("league_set_opt_in", {
         p_opted_in: optedIn,
         p_display_name: displayName,

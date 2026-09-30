@@ -126,6 +126,7 @@ export async function setHandoffEmailPreference(enabled: boolean): Promise<void>
       // and NULL is never "global" — it is a row nobody can see).
       organization_id: await withOrganizationRefusalShown(
         "saved",
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         () => ensureOrgId(null),
         { subject: "This notification preference" },
       ),

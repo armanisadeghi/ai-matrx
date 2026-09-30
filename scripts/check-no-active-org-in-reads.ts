@@ -21,7 +21,8 @@
  *
  * ACTIVE-ORGANIZATION SOURCES (every way to read it): useOrganizationRequired, useActiveOrganizationId,
  * useServerOrganizationId, getActiveOrgId / getSelectedOrgId / requireSelectedOrgId,
- * readActiveOrganizationId / readActiveOrganizationForIdentity, the selectors selectOrganizationId /
+ * readActiveOrganizationId / readActiveOrganizationForIdentity, awaitEffectiveOrganizationId,
+ * `ensureOrgId()` called with undefined / null / nothing (an explicit record org is NOT a source), the selectors selectOrganizationId /
  * selectActiveOrganizationId / selectEffectiveOrganizationId, a hand-read `state.appContext` /
  * `appContext.organization_id`, the shared cookie (`activeOrgCookie.read(...)`), and — across files —
  * any wrapper hook/selector named with the use, get, select, read, resolve, current, active, or
@@ -45,9 +46,11 @@
  * A reasonless or unknown-class annotation fails (there is no "visible" class: a label does not
  * make an active-organization read of a list legal).
  *
- * THE BASELINE (`scripts/no-active-org-in-reads-baseline.json`) holds what is not fixed yet, each
- * with its census class and owner. It only SHRINKS: a baseline row whose file no longer trips the
- * guard fails until the row is removed, and a new file that trips fails.
+ * THE BASELINE (`scripts/no-active-org-in-reads-baseline.json`, `sites`) holds what is not fixed yet,
+ * ONE ROW PER CALL SITE — key `<file>::<enclosing function>::<the call expression>#<n>` — each with
+ * its census class and owner. It only SHRINKS: a row whose call site no longer trips the guard fails
+ * until removed, and a NEW read anywhere (including inside an already-baselined file) fails. Line
+ * numbers are not part of the key. (2026-09-30: it used to forgive whole files.)
  *
  * `--self-test` proves both directions on planted fixtures. `--list` prints every offender.
  */
@@ -75,7 +78,20 @@ const SOURCE_CALLS = new Set([
   "readActiveOrganizationId",
   "readActiveOrganizationForIdentity",
   "readActiveOrgCookie",
+  // 2026-09-30: resolves to the active organization once boot answers (features/organizations/awaitWorkspace.ts).
+  "awaitEffectiveOrganizationId",
 ]);
+/**
+ * `ensureOrgId(undefined | null | nothing)` is the funnel's way of saying "the ACTIVE organization, or ask
+ * the person": it RETURNS the active org. `ensureOrgId(<a record's own organization>)` returns that record's
+ * org — not a source. (2026-09-30: was invisible to the guard.)
+ */
+function isActiveEnsureOrgId(call: ts.CallExpression): boolean {
+  if (calleeName(call) !== "ensureOrgId") return false;
+  const a = call.arguments[0];
+  if (!a) return true;
+  return a.kind === ts.SyntaxKind.NullKeyword || (ts.isIdentifier(a) && a.text === "undefined");
+}
 /** Selectors that return it. */
 const SOURCE_IDENTS = new Set(["selectOrganizationId", "selectActiveOrganizationId", "selectEffectiveOrganizationId"]);
 /** `activeOrgCookie.read(userId)` and friends: the shared cookie IS the remembered active organization. */
@@ -120,6 +136,12 @@ export interface Finding {
   line: number;
   text: string;
   why: string;
+  /**
+   * The baseline key of THIS call site: `<file>::<enclosing function>::<the call expression>#<n>` (n = its
+   * order among identical ones in the file). Line numbers are never part of it, so moving code does not
+   * re-open a row; a NEW read in an already-baselined file has a key no row carries and fails.
+   */
+  key: string;
 }
 
 export interface BaselineEntry {
@@ -160,7 +182,7 @@ function isDeclarationName(node: ts.Identifier): boolean {
 function isSource(node: ts.Node, derived: ReadonlySet<string>): boolean {
   if (ts.isCallExpression(node)) {
     const n = calleeName(node);
-    if (SOURCE_CALLS.has(n) || derived.has(n)) return true;
+    if (SOURCE_CALLS.has(n) || derived.has(n) || isActiveEnsureOrgId(node)) return true;
     const e = node.expression;
     if (ts.isPropertyAccessExpression(e) && /^(read|get)$/.test(e.name.text) && ts.isIdentifier(e.expression) && COOKIE_OBJECT.test(e.expression.text)) {
       return true;
@@ -185,6 +207,25 @@ function isSource(node: ts.Node, derived: ReadonlySet<string>): boolean {
     if (ORG_PROP.test(node.name.text) && ts.isIdentifier(node.expression) && node.expression.text === APP_CONTEXT) return true;
   }
   return false;
+}
+
+/** The nearest NAMED function around `node` (declaration, `const x = () =>`, method), else `<module>`. */
+function enclosingFunctionName(node: ts.Node): string {
+  for (let p: ts.Node | undefined = node.parent; p; p = p.parent) {
+    if (ts.isFunctionDeclaration(p) && p.name) return p.name.text;
+    if ((ts.isMethodDeclaration(p) || ts.isGetAccessor(p) || ts.isSetAccessor(p)) && ts.isIdentifier(p.name)) return p.name.text;
+    if (ts.isArrowFunction(p) || ts.isFunctionExpression(p)) {
+      let q: ts.Node | undefined = p.parent;
+      while (q && (ts.isCallExpression(q) || ts.isParenthesizedExpression(q) || ts.isAsExpression(q))) q = q.parent;
+      if (q && ts.isVariableDeclaration(q) && ts.isIdentifier(q.name)) return q.name.text;
+    }
+  }
+  return "<module>";
+}
+
+/** The expression a finding is about, whitespace-collapsed and capped, so a row names the exact call. */
+function expressionText(node: ts.Node, sf: ts.SourceFile): string {
+  return node.getText(sf).replace(/\s+/g, " ").slice(0, 220);
 }
 
 function lineOf(sf: ts.SourceFile, node: ts.Node): number {
@@ -279,7 +320,7 @@ function carriersIn(sf: ts.SourceFile, derived: ReadonlySet<string>): string[] {
   return out.filter((n) => !SOURCE_CALLS.has(n) && !SOURCE_IDENTS.has(n));
 }
 
-const TOKEN_HINT = /useOrganizationRequired|useActiveOrganizationId|useServerOrganizationId|ActiveOrgId|SelectedOrgId|readActiveOrg|selectOrganizationId|selectActiveOrganizationId|selectEffectiveOrganizationId|appContext|ActiveOrgCookie|activeOrg\w*Cookie/;
+const TOKEN_HINT = /ensureOrgId|awaitEffectiveOrganizationId|useOrganizationRequired|useActiveOrganizationId|useServerOrganizationId|ActiveOrgId|SelectedOrgId|readActiveOrg|selectOrganizationId|selectActiveOrganizationId|selectEffectiveOrganizationId|appContext|ActiveOrgCookie|activeOrg\w*Cookie/;
 
 export function findDerivedSources(root: string, files: readonly string[]): Set<string> {
   const derived = new Set<string>();
@@ -310,11 +351,12 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
   const raw = text.split("\n");
   const findings: Finding[] = [];
   const seen = new Set<string>();
-  const push = (line: number, why: string) => {
-    const key = `${line}:${why.slice(0, 20)}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    findings.push({ file, line: line + 1, text: (raw[line] ?? "").trim(), why });
+  const push = (line: number, why: string, node: ts.Node) => {
+    const dedupe = `${line}:${why.slice(0, 20)}`;
+    if (seen.has(dedupe)) return;
+    seen.add(dedupe);
+    const base = `${file}::${enclosingFunctionName(node)}::${expressionText(node, sf)}`;
+    findings.push({ file, line: line + 1, text: (raw[line] ?? "").trim(), why, key: base });
   };
   const WHY_FILE =
     "reads the ACTIVE organization in a file that lists things — reads ignore the active organization (policies/active-org-is-never-a-list-filter.md). Narrow with the shell's EntityOrgFilter (?org_filter=, default All organizations), or, when this read only addresses a write or server call, say so: // org-filter: write-target|server-call|default-for-new <reason>";
@@ -324,19 +366,22 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
     `org-filter annotation must name write-target | server-call | default-for-new and a reason of 12+ characters (got "${cls}")`;
 
   // Direct sources in the file (the legacy file-level rule uses direct ones only).
-  const directLines: number[] = [];
+  const directNodes = new Map<number, ts.Node>();
   const visit = (n: ts.Node) => {
-    if (isSource(n, new Set())) directLines.push(lineOf(sf, n));
+    if (isSource(n, new Set())) {
+      const l = lineOf(sf, n);
+      if (!directNodes.has(l)) directNodes.set(l, n);
+    }
     ts.forEachChild(n, visit);
   };
   visit(sf);
 
   const code = codeOf(text);
-  if (directLines.length > 0 && LIST_READS.some((re) => re.test(code))) {
-    for (const line of new Set(directLines)) {
+  if (directNodes.size > 0 && LIST_READS.some((re) => re.test(code))) {
+    for (const [line, node] of directNodes) {
       const note = annotationFor(raw, line);
-      if (!note.found) push(line, WHY_FILE);
-      else if (!note.ok) push(line, badNote(note.cls));
+      if (!note.found) push(line, WHY_FILE, node);
+      else if (!note.ok) push(line, badNote(note.cls), node);
     }
   }
 
@@ -466,7 +511,7 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
       const line = lineOf(sf, node);
       const note = annotationFor(raw, line);
       if (note.found && note.ok) return;
-      push(line, note.found ? badNote(note.cls) : `${WHY_SITE} [${kind}]`);
+      push(line, note.found ? badNote(note.cls) : `${WHY_SITE} [${kind}]`, node);
     };
     const walkSites = (n: ts.Node) => {
       if (skipInner(scope, n)) return;
@@ -483,7 +528,15 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
     };
     walkSites(scope);
   }
-  return findings.sort((a, b) => a.line - b.line);
+  // Number identical call sites by POSITION (not scan order), so the key is stable under edits elsewhere.
+  findings.sort((a, b) => a.line - b.line);
+  const occurrence = new Map<string, number>();
+  for (const f of findings) {
+    const n = (occurrence.get(f.key) ?? 0) + 1;
+    occurrence.set(f.key, n);
+    f.key = `${f.key}#${n}`;
+  }
+  return findings;
 }
 
 export function scan(root: string, files: readonly string[]): Map<string, Finding[]> {
@@ -511,24 +564,24 @@ export function scannedFiles(root: string): string[] {
 
 function readBaseline(root: string): Record<string, BaselineEntry> {
   try {
-    return JSON.parse(readFileSync(join(root, BASELINE), "utf8")).files ?? {};
+    return JSON.parse(readFileSync(join(root, BASELINE), "utf8")).sites ?? {};
   } catch {
     return {};
   }
 }
 
-/** Exit code: 0 = no new silent filter and no stale baseline row. */
+/** Exit code: 0 = no new active-organization read (by CALL SITE) and no stale baseline row. */
 export function judge(found: Map<string, Finding[]>, baseline: Record<string, BaselineEntry>, log = console.log): number {
-  const fresh = [...found.keys()].filter((f) => !(f in baseline));
-  const stale = Object.keys(baseline).filter((f) => !found.has(f));
-  for (const f of fresh) {
-    for (const x of found.get(f) ?? []) log(`[FAIL] ${x.file}:${x.line}  ${x.text}\n       ${x.why}`);
-  }
-  for (const f of stale) {
-    log(`[FAIL] ${f} is in ${BASELINE} but no longer trips the guard — remove its row (the baseline only shrinks).`);
+  const all = [...found.values()].flat();
+  const keys = new Set(all.map((x) => x.key));
+  const fresh = all.filter((x) => !(x.key in baseline));
+  const stale = Object.keys(baseline).filter((k) => !keys.has(k));
+  for (const x of fresh) log(`[FAIL] ${x.file}:${x.line}  ${x.text}\n       ${x.why}\n       (baseline key: ${x.key})`);
+  for (const k of stale) {
+    log(`[FAIL] ${k} is in ${BASELINE} but no longer trips the guard — remove its row (the baseline only shrinks).`);
   }
   log(
-    `${fresh.length === 0 && stale.length === 0 ? "[ OK ]" : "[FAIL]"} check:no-active-org-in-reads — ${found.size} file(s) read the active organization where they list things; ${found.size - fresh.length} known (baseline, with owners), ${fresh.length} new, ${stale.length} stale baseline row(s).`,
+    `${fresh.length === 0 && stale.length === 0 ? "[ OK ]" : "[FAIL]"} check:no-active-org-in-reads — ${all.length} call site(s) in ${found.size} file(s) read the active organization; ${all.length - fresh.length} known (baseline, with owners), ${fresh.length} new, ${stale.length} stale baseline row(s).`,
   );
   return fresh.length === 0 && stale.length === 0 ? 0 : 1;
 }
@@ -743,26 +796,66 @@ function selfTest(): number {
   const scOk = serverCall.size === 0;
   if (!scOk) failures += 1;
   console.log(`${scOk ? "[ OK ]" : "[FAIL]"} GREEN: a reasoned server-call annotation`);
+  const knownBaseline: Record<string, BaselineEntry> = {};
+  for (const x of found.get("features/a/Picker.tsx") ?? []) knownBaseline[x.key] = { class: "silent-filter", owner: "x", note: "y" };
   const arms: Array<[string, number, number]> = [
     ["RED: a new offender not in the baseline", judge(found, {}, quiet), 1],
-    [
-      "GREEN: a known offender in the baseline",
-      judge(found, { "features/a/Picker.tsx": { class: "silent-filter", owner: "x", note: "y" } }, quiet),
-      0,
-    ],
+    ["GREEN: a known offender in the baseline", judge(found, knownBaseline, quiet), 0],
     [
       "RED: a stale baseline row",
-      judge(
-        found,
-        {
-          "features/a/Picker.tsx": { class: "silent-filter", owner: "x", note: "y" },
-          "features/gone.tsx": { class: "silent-filter", owner: "x", note: "y" },
-        },
-        quiet,
-      ),
+      judge(found, { ...knownBaseline, "features/gone.tsx::gone::listThings(org)#1": { class: "silent-filter", owner: "x", note: "y" } }, quiet),
       1,
     ],
   ];
+  // ── THE BASELINE IS PER CALL SITE (2026-09-30). The first version forgave whole files: a NEW read in a
+  // baselined file passed. Each arm baselines v1 of one file, then judges an edited version.
+  const siteFile = "features/site/Inbox.tsx";
+  const baselineOf = (m: Map<string, Finding[]>): Record<string, BaselineEntry> => {
+    const b: Record<string, BaselineEntry> = {};
+    for (const xs of m.values()) for (const x of xs) b[x.key] = { class: "silent-filter", owner: "x", note: "y" };
+    return b;
+  };
+  const v1 = `export function A() {\n  const o = getActiveOrgId();\n  return supabase.rpc("work_inbox", { p_organization_id: o });\n}\n`;
+  plant(siteFile, v1);
+  const v1Baseline = baselineOf(scan(dir, [siteFile]));
+  const judgeVersion = (body: string) => {
+    plant(siteFile, body);
+    return judge(scan(dir, [siteFile]), v1Baseline, quiet);
+  };
+  arms.push(
+    ["GREEN: the baselined file, unchanged", judgeVersion(v1), 0],
+    ["GREEN: the same read moved down the file (line numbers are not part of a row)", judgeVersion("// moved\n\n\n" + v1), 0],
+    [
+      "RED: a NEW read in a different function of a baselined file",
+      judgeVersion(v1 + `export function B() {\n  const o = getActiveOrgId();\n  return supabase.rpc("work_inbox", { p_organization_id: o });\n}\n`),
+      1,
+    ],
+    [
+      "RED: a DIFFERENT read added to the same function of a baselined file",
+      judgeVersion(v1.replace("return supabase.rpc", 'supabase.rpc("other_inbox", { p_organization_id: o });\n  return supabase.rpc')),
+      1,
+    ],
+    [
+      "RED: the SAME read repeated in the same function (the second is a new site)",
+      judgeVersion(v1.replace("return supabase.rpc", 'supabase.rpc("work_inbox", { p_organization_id: o });\n  return supabase.rpc')),
+      1,
+    ],
+  );
+  // ── ensureOrgId / awaitEffectiveOrganizationId return the active organization.
+  const srcCases: Array<{ name: string; body: string; expect: boolean }> = [
+    { name: "RED: ensureOrgId(undefined) feeds a read", body: `export async function f() {\n  const o = await ensureOrgId(undefined);\n  return supabase.rpc("work_inbox", { p_organization_id: o });\n}\n`, expect: true },
+    { name: "RED: ensureOrgId(null) feeds a read", body: `export async function f() {\n  const o = await ensureOrgId(null);\n  return supabase.rpc("work_inbox", { p_organization_id: o });\n}\n`, expect: true },
+    { name: "RED: ensureOrgId() with no argument feeds a read", body: `export async function f() {\n  const o = await ensureOrgId();\n  return supabase.rpc("work_inbox", { p_organization_id: o });\n}\n`, expect: true },
+    { name: "GREEN: ensureOrgId(<the record's own organization>) is not the active organization", body: `export async function f(record: { organizationId: string }) {\n  const o = await ensureOrgId(record.organizationId);\n  return supabase.rpc("work_inbox", { p_organization_id: o });\n}\n`, expect: false },
+    { name: "RED: awaitEffectiveOrganizationId() feeds a read", body: `export async function f() {\n  const w = await awaitEffectiveOrganizationId();\n  if (w.status !== "ready") return null;\n  return supabase.rpc("work_inbox", { p_organization_id: w.organizationId });\n}\n`, expect: true },
+    { name: "GREEN: ensureOrgId(null) that only feeds a write, annotated on its line", body: `export async function f() {\n  // org-filter: write-target the new row is created in the organization the person works in\n  const o = await ensureOrgId(null);\n  return supabase.from("things").insert({ organization_id: o });\n}\n`, expect: false },
+    { name: "RED: ensureOrgId(null) in a file that also lists, with no annotation", body: `export async function f() {\n  const o = await ensureOrgId(null);\n  await supabase.from("things").insert({ organization_id: o });\n  return listThings();\n}\n`, expect: true },
+  ];
+  srcCases.forEach((c, i) => {
+    const rel = plant(`features/src${i}/S.ts`, c.body);
+    const got = (scan(dir, [rel]).get(rel) ?? []).length > 0;
+    arms.push([c.name, got === c.expect ? 0 : 1, 0]);
+  });
   for (const [name, got, want] of arms) {
     const ok = got === want;
     if (!ok) failures += 1;
@@ -776,7 +869,7 @@ function main(): number {
   if (process.argv.includes("--self-test")) return selfTest();
   const found = scan(REPO_ROOT, scannedFiles(REPO_ROOT));
   if (process.argv.includes("--list")) {
-    for (const [file, xs] of found) console.log(`${file}\t${xs.map((x) => x.line).join(",")}`);
+    for (const [file, xs] of found) for (const x of xs) console.log(`${file}\t${x.line}\t${x.key}`);
     return 0;
   }
   return judge(found, readBaseline(REPO_ROOT));

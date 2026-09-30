@@ -59,6 +59,7 @@ export async function createSession(
   // `OrganizationContextError("organization_context_required")` when there is
   // no selection; both entry points render that refusal with its remedy.
   // Law: common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(undefined);
   const { data, error } = await interviewDb(supabase)
     .from("session")

@@ -154,6 +154,7 @@ async function drainEditStream<B extends object>(
   path: string,
   body: B,
 ): Promise<EditResponse> {
+  // org-filter: server-call the call runs in the organization the person is working in
   const organizationId = await ensureOrgId(undefined);
   let asset: EditResponse | null = null;
   for await (const evt of postNdjson(path, {
@@ -449,6 +450,7 @@ export interface GenerateImageResponse {
 export async function generateImage(
   body: GenerateImageBody,
 ): Promise<GenerateImageResponse> {
+  // org-filter: server-call the call runs in the organization the person is working in
   const organizationId = await ensureOrgId(undefined);
   let complete: ImageGenerateCompleteData | null = null;
   for await (const evt of postNdjson("/images/generate", {

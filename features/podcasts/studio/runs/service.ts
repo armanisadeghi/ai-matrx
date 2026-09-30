@@ -52,6 +52,7 @@ export const studioRunsService = {
     const row: PcStudioRunDbInsert = {
       ...payload,
       created_by: user.id,
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       organization_id: await ensureOrgId(undefined),
     };
 

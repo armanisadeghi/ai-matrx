@@ -81,6 +81,7 @@ export const articleService = {
         {
           ...payload,
           created_by: payload.created_by ?? user?.id ?? null,
+          // org-filter: write-target writes into the organization the person is working in; no list reads it
           organization_id: await ensureOrgId(undefined),
         },
         { onConflict: "episode_id,kind" },

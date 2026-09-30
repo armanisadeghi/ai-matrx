@@ -60,6 +60,7 @@ export async function createTemplate(
       autonomy_level: input.autonomy_level,
       metadata: Object.keys(input.metadata).length > 0 ? input.metadata : null,
       is_system: false,
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       organization_id: await ensureOrgId(undefined),
     })
     .select()

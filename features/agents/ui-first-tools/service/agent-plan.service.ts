@@ -70,6 +70,7 @@ export async function createPlan(
     .schema("chat").from("agent_plan")
     .insert({
       // `created_by` is stamped by the `_stamp_actor` trigger — never client-set.
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       organization_id: await ensureOrgId(undefined),
       conversation_id: input.conversation_id,
       title: input.title,

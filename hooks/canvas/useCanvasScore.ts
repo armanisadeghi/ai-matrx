@@ -51,6 +51,7 @@ export function useCanvasScore(canvasId: string) {
         // A score that silently fails to record is the worst possible
         // lie on a leaderboard — the person played and the board forgot.
         "recorded",
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         () => ensureOrgId(undefined),
         { subject: "Your score" },
       );

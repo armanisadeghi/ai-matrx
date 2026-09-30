@@ -103,6 +103,7 @@ export async function createGenerationDraft(
   // refuses with `OrganizationContextError` when there is none; the caller
   // surfaces that refusal with its remedy.
   // Law: common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(undefined);
 
   const { data, error } = await supabase

@@ -48,6 +48,7 @@ export const surfaceUserStateService = {
           // next visit. Say it once, with the remedy.
           organization_id: await withOrganizationRefusalShown(
             "saved",
+            // org-filter: write-target writes into the organization the person is working in; no list reads it
             () => ensureOrgId(undefined),
             { subject: "Your layout for this screen" },
           ),

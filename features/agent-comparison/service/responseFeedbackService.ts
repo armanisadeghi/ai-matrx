@@ -99,6 +99,7 @@ export async function saveFeedback(
   input: SaveFeedbackInput,
 ): Promise<ResponseFeedbackRow> {
   const payload = {
+    // org-filter: write-target writes into the organization the person is working in; no list reads it
     organization_id: await ensureOrgId(undefined),
     created_by: input.userId,
     conversation_id: input.conversationId,

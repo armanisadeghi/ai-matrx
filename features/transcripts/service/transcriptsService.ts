@@ -249,6 +249,7 @@ export async function createTranscript(
       tags: input.tags || [],
       folder_name: input.folder_name || "Transcripts",
       // Root entity (no org-inherit trigger) — org is NOT NULL; resolve it.
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       organization_id: await ensureOrgId(undefined),
     })
     .select()
@@ -352,6 +353,7 @@ export async function saveDraftTranscript(
       source_type: input.source_type || "audio",
       tags: input.tags || [],
       folder_name: input.folder_name || "Recordings",
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       organization_id: await ensureOrgId(undefined),
       is_draft: true,
       draft_saved_at: new Date().toISOString(),

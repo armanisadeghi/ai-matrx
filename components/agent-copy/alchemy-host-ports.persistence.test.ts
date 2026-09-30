@@ -27,7 +27,9 @@ jest.mock("@/utils/supabase/client", () => {
   const select = (table: string) => {
     const eqs: [string, unknown][] = [];
     let inFilter: [string, unknown[]] | null = null;
+    let newestFirst = false;
     const q = {
+      order: () => ((newestFirst = true), q),
       select: () => q,
       eq: (column: string, value: unknown) => (eqs.push([column, value]), q),
       in: (column: string, values: unknown[]) => ((inFilter = [column, values]), q),
@@ -38,7 +40,7 @@ jest.mock("@/utils/supabase/client", () => {
             eqs.every(([c, v]) => (r as Record<string, unknown>)[c] === v) &&
             (!inFilter || inFilter[1].includes((r as Record<string, unknown>)[inFilter[0]])),
         );
-        return Promise.resolve(resolve({ data, error: null }));
+        return Promise.resolve(resolve({ data: newestFirst ? [...data].reverse() : data, error: null }));
       },
     };
     return q;
@@ -112,6 +114,7 @@ const setOrganization = async (value: unknown) => {
 };
 
 beforeEach(() => {
+  mockAwaitOrganization.mockReset();
   mockRegister.platform = { "alchemy.transfer.default_recipe": {} };
   mockRegister.overrides = [];
   mockRegister.rpc = [];
@@ -150,29 +153,45 @@ describe("web app persistence + transfer knobs (PP-13a)", () => {
     await expect(setPersonDefaultRecipe(portsFor(ADMIN), CX, errorsOnly)).rejects.toThrow(/not saved: org_locked — Your organization manages this setting/);
   });
 
-  it("without an organization a personal setting is a sentence, not a guess", async () => {
+  it("without an organization a personal SAVE is a sentence, not a guess", async () => {
     mockAwaitOrganization.mockResolvedValueOnce({ status: "unavailable", reason: "unused", cause: "no-selection" });
     const before = mockRegister.rpc.length;
-    await expect(portsFor(ADMIN, null).persistence.readSetting("alchemy.transfer.default_recipe")).rejects.toThrow(
+    await expect(portsFor(ADMIN, null).persistence.writeSetting("alchemy.transfer.default_recipe", { [CX]: errorsOnly })).rejects.toThrow(
       /saved per organization, and none is selected\. Pick the one you are working in/,
     );
     expect(mockRegister.rpc.length).toBe(before);
   });
 
-  it("a FAILED organization read is said as that, never as 'pick one'", async () => {
+  it("a FAILED organization read is said as that on a save, never as 'pick one'", async () => {
     mockAwaitOrganization.mockResolvedValueOnce({
       status: "unavailable",
       reason: "We could not check which organization to file this in.",
       cause: "unreadable",
     });
-    await expect(portsFor(ADMIN, null).persistence.readSetting("alchemy.transfer.default_recipe")).rejects.toThrow(
+    await expect(portsFor(ADMIN, null).persistence.writeSetting("alchemy.transfer.default_recipe", { [CX]: errorsOnly })).rejects.toThrow(
       /We could not check which organization/,
     );
   });
 
-  it("an organization boot answers late is used, not refused", async () => {
+  it("an organization boot answers late is used for the save, not refused", async () => {
     mockAwaitOrganization.mockResolvedValueOnce({ status: "ready", organizationId: HARBOR });
-    mockRegister.overrides = [];
-    await expect(portsFor(ADMIN, null).persistence.readSetting("alchemy.transfer.default_recipe")).resolves.toBeNull();
+    await portsFor(ADMIN, null).persistence.writeSetting("alchemy.transfer.default_recipe", { [CX]: errorsOnly });
+    expect(mockRegister.rpc.at(-1)?.[1]).toMatchObject({ p_organization_id: HARBOR, p_scope_id: ADMIN });
+  });
+
+  it("READING the person's setting never asks which organization is active: the newest of their own rows, in any organization, wins", async () => {
+    const OTHER_ORG = "7e1f8b2a-4d3c-4a9e-8f60-3c2b1a0d9e88";
+    const row = (organization_id: string, scope_id: string, value: unknown): Row => ({
+      feature: "alchemy.transfer", key: "default_recipe", organization_id, scope_kind: "user", scope_id, value,
+    });
+    mockRegister.overrides = [
+      row(HARBOR, ADMIN, { [CX]: errorsOnly }),
+      row(OTHER_ORG, COLLEAGUE, { [CX]: platformFull }),
+      row(OTHER_ORG, ADMIN, { [CX]: compactSupport }),
+    ];
+    const persistence = portsFor(ADMIN, null).persistence;
+    await expect(persistence.readSetting("alchemy.transfer.default_recipe")).resolves.toEqual({ [CX]: compactSupport });
+    await expect(portsFor(COLLEAGUE, null).persistence.readSetting("alchemy.transfer.default_recipe")).resolves.toEqual({ [CX]: platformFull });
+    expect(mockAwaitOrganization).not.toHaveBeenCalled();
   });
 });

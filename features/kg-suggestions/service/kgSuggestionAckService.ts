@@ -51,6 +51,7 @@ export async function ackSuggestions(
   // A dismissal is filed in the organization the person has selected (asked
   // when none is). RLS scopes every row to auth.uid(), and the read side keys
   // on (created_by, suggestion_id), so the dismissal holds across organizations.
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(null);
   for (const suggestion_id of suggestionIds) {
     const row = {

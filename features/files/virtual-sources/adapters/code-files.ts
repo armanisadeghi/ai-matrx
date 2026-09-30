@@ -344,6 +344,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     // and refuses (OrganizationContextError -> the surface's honest state)
     // when nothing is selected.
     // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+    // org-filter: write-target writes into the organization the person is working in; no list reads it
     const organizationId = await ensureOrgId(undefined);
     if (args.kind === "folder") {
       const { data, error } = await supabase

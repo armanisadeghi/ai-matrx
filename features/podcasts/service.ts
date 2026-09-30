@@ -76,6 +76,7 @@ export const podcastService = {
   ): Promise<PcShow> {
     const { data, error } = await supabase
       .schema("podcast").from("pc_shows")
+      // org-filter: write-target writes into the organization the person is working in; no list reads it
       .insert({ ...payload, organization_id: await ensureOrgId(undefined) })
       .select()
       .single();
@@ -287,6 +288,7 @@ export const podcastService = {
       .insert({
         ...payload,
         created_by: payload.created_by ?? user?.id ?? null,
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         organization_id: await ensureOrgId(undefined),
       })
       .select()

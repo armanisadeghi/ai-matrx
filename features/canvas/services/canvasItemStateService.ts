@@ -57,6 +57,7 @@ export const canvasItemStateService = {
           // The lifetime key remains one row per canvas/viewer. A new save after an
           // archive revives that same identity instead of updating an invisible row.
           deleted_at: null,
+          // org-filter: write-target writes into the organization the person is working in; no list reads it
           organization_id: await ensureOrgId(undefined),
           state: merged,
         },

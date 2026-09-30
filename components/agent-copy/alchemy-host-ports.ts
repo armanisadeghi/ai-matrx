@@ -38,7 +38,7 @@ import type {
 } from "@ai-matrx/alchemy/ports";
 import { ensureEffectiveKnob, knobAddress } from "@/lib/scoped-config/effectiveKnobs";
 import {
-  fetchKnobRungOverrides,
+  fetchPlatformKnobOverrides,
   knobRefusalSentence,
   setKnobOverride,
 } from "@/lib/scoped-config/service";
@@ -175,6 +175,7 @@ async function knobPrincipal(store: AlchemyIdentityStore): Promise<{ userId: str
   const identity = readIdentity(store.getState());
   if (!identity) throw new Error("Sign in to use your own settings.");
   if (identity.organizationId) return { userId: identity.userId, organizationId: identity.organizationId };
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const resolved = await awaitEffectiveOrganizationId();
   if (resolved.status === "ready") return { userId: identity.userId, organizationId: resolved.organizationId };
   throw new Error(
@@ -189,9 +190,13 @@ export function createPersistencePort(store: AlchemyIdentityStore): PersistenceP
   return {
     async readSetting<T extends Json>(setting: string) {
       const { feature, key } = knobAddress(setting);
-      const { userId, organizationId } = await knobPrincipal(store);
-      const rows = await fetchKnobRungOverrides({ feature, key, organizationId, kinds: ["user"] });
-      return (rows.find((row) => row.scope_id === userId)?.value ?? null) as T | null;
+      // A READ: it never asks which organization is active. The person's own rows in every
+      // organization they belong to come back newest first (RLS scopes them); the latest wins.
+      const identity = readIdentity(store.getState());
+      if (!identity) throw new Error("Sign in to use your own settings.");
+      const rows = await fetchPlatformKnobOverrides({ feature, key });
+      const mine = rows.find((row) => row.scope_kind === "user" && row.scope_id === identity.userId);
+      return (mine?.value ?? null) as T | null;
     },
     async writeSetting(setting, value) {
       const { feature, key } = knobAddress(setting);

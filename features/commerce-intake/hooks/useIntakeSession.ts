@@ -247,6 +247,7 @@ export function useIntakeSession(
       ? ({ status: "ready", organizationId: heldOrganizationId } as const)
       : organizationId
         ? ({ status: "ready", organizationId } as const)
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         : await awaitEffectiveOrganizationId();
     if (workspace.status !== "ready") throw new Error(workspace.reason);
     const workspaceId = workspace.organizationId;

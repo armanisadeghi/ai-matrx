@@ -41,6 +41,7 @@ export function useCanvasLike(canvasId: string) {
                 .rpc('set_canvas_like', {
                     p_canvas_id: canvasId,
                     p_liked: true,
+                    // org-filter: write-target writes into the organization the person is working in; no list reads it
                     p_organization_id: await ensureOrgId(undefined)
                 });
 

@@ -666,19 +666,26 @@ async function agentWriteAllowed(
   }
   // Read the owning live surface, not the agent's potentially stale context.
   // Append targets carry a fragment, not the replacement document.
-  const originalName = target.updatesValue;
+  const originalName = target.comparisonValue ?? target.updatesValue;
   const originalDefinition = getManifest(surfaceName)?.values?.find(
     (entry) => entry.name === originalName,
   );
   // A string input can be an operation ON a structured record (add_note,
   // end_employment, etc.). Only an exact text read twin is a replacement.
+  // THE CLASS FIX: replacement is the DEFAULT for a string written into a
+  // string twin, so a target never ships an approval with no "before" just
+  // because its manifest forgot a flag (the notes editor did, 2026-09-30 —
+  // the person was asked to Apply a whole-note rewrite with no diff). Only an
+  // explicit declaration makes the original REQUIRED; the default degrades to
+  // the plain proposal when the live surface cannot supply it.
+  const declaredComparison = target.approvalComparison === "text-replacement";
   const compareText =
-    target.approvalComparison === "text-replacement" &&
+    target.approvalComparison !== "none" &&
     originalName !== undefined &&
     (originalDefinition?.valueType === "string" ||
       originalDefinition?.valueType === "document") &&
     typeof value === "string" &&
-    !target.name.startsWith("append");
+    !/^(append|insert)/.test(target.name);
   let currentValue: string | null | undefined;
   async function readCurrentText(): Promise<string | null> {
     if (!originalName)
@@ -692,16 +699,21 @@ async function agentWriteAllowed(
     }
     return current;
   }
+  // False once an undeclared (default) comparison could not read its original.
+  let comparing = compareText;
   if (compareText) {
     try {
       currentValue = await readCurrentText();
     } catch (error) {
-      return fail(
-        error instanceof Error
-          ? error.message
-          : "Could not read the original text for comparison.",
-        { targetName: target.name, surfaceName, error },
-      );
+      if (declaredComparison) {
+        return fail(
+          error instanceof Error
+            ? error.message
+            : "Could not read the original text for comparison.",
+          { targetName: target.name, surfaceName, error },
+        );
+      }
+      comparing = false;
     }
   }
   const decision = await requestApproval({
@@ -712,7 +724,7 @@ async function agentWriteAllowed(
     ...(currentValue !== undefined ? { currentValue } : {}),
   });
   if (decision.kind === "approved") {
-    if (compareText) {
+    if (comparing) {
       try {
         if (
           !registry.stack().includes(runtime) ||
@@ -1240,6 +1252,7 @@ async function applySurfaceFeedbackWrite(
   // as that, never as "pick one".
   let organizationId = readActiveOrganizationId(); // org-filter: write-target feedback is filed under the organization the person is acting in
   if (!organizationId) {
+    // org-filter: write-target writes into the organization the person is working in; no list reads it
     const resolved = await awaitEffectiveOrganizationId();
     if (resolved.status === "ready") organizationId = resolved.organizationId;
     else

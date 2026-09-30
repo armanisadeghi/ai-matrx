@@ -89,6 +89,7 @@ async function stampScopeForWrite<T extends ScopeStampInput>(
   // chosen org; project/task-scoped rows fall back to the personal org until
   // scope-adoption assigns the scope's org.
   if (!stamped.organization_id) {
+    // org-filter: write-target writes into the organization the person is working in; no list reads it
     stamped.organization_id = await ensureOrgId(undefined);
   }
   return stamped;

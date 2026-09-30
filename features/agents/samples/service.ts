@@ -489,6 +489,7 @@ export async function borrowSampleFromRun(input: {
   label?: string;
 }): Promise<AgentSampleRow> {
   const supabase = createClient();
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const organizationId = await ensureOrgId(null);
 
   let agentVersionNumber: number | null = null;

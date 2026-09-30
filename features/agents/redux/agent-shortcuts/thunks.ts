@@ -719,6 +719,7 @@ export const duplicateShortcut = createAsyncThunk<
   const shortcutId = typeof arg === "string" ? arg : arg.id;
   const targetCategoryId = typeof arg === "string" ? undefined : arg.categoryId;
 
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
   const { data, error } = await supabase.rpc(SHORTCUT_RPCS.duplicate, {
     p_shortcut_id: shortcutId,
     p_organization_id: await ensureOrgId(null),

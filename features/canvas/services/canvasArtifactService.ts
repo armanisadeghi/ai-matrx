@@ -561,10 +561,12 @@ export const canvasArtifactService = {
       // one; when it was retired every manual save failed with a raw 23502.
       const organizationId = input.conversationId
         ? undefined
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         : await ensureOrgId(undefined);
       // Safe to retry: the RPC resolves the actor before it inserts, so a
       // `not authenticated` refusal wrote nothing.
       const { data, error } = await runWithSessionRetry(() =>
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         supabase.rpc("cx_canvas_create_manual", {
           p_user_id: userId,
           p_type: input.type,
@@ -682,6 +684,7 @@ export const canvasArtifactService = {
         organizationId = conversation.organization_id;
         taskId = conversation.task_id;
       } else {
+        // org-filter: write-target writes into the organization the person is working in; no list reads it
         organizationId = await ensureOrgId(undefined);
       }
 
