@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -814,6 +814,10 @@ function SearchTab({
   onReviewModeChange?: (active: boolean) => void;
 }) {
   const router = useRouter();
+  // The page this lab is mounted on (the admin Search Lab, or a review copy) —
+  // /knowledge/search itself now redirects into the Knowledge hub (H6a), so a
+  // submitted search must stay on the current page, never jump there.
+  const pathname = usePathname() ?? "/administration/knowledge/search-lab";
   const params = useSearchParams();
   const initialQuery = params?.get("q") ?? "";
 
@@ -916,7 +920,7 @@ function SearchTab({
       if (scope.storeId) next.set("store_id", scope.storeId);
       // A SUBMITTED search is one discrete action (not one per keystroke) —
       // Back returns to the previous search.
-      pushAddressOrNavigate(router, `/knowledge/search${next.toString() ? `?${next}` : ""}`);
+      pushAddressOrNavigate(router, `${pathname}${next.toString() ? `?${next}` : ""}`);
     } catch (e) {
       if (seq !== seqRef.current) return;
       setError(e instanceof Error ? e.message : "Search failed");
