@@ -71,7 +71,7 @@ async function render(holder: HolderDraft, onHolderChange = jest.fn()) {
       <HolderAssignment
         holder={holder}
         onHolderChange={onHolderChange}
-        mandateKey="wfparity.text_summary"
+        mandateKey={storedMandateKey("wfparity.text_summary")}
         holderName="Summarize text to markdown"
       />,
     );
@@ -131,6 +131,7 @@ test("(c) picking a different workflow starts on Latest", async () => {
 
 // ── (b) the stored pin SEEDS the draft — the half that actually unpinned ──
 import { defaultHolderDraftOf, holderDraftOf } from "../holder-draft-seed";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 test("(b) a stored workflow binding pin seeds the draft", () => {
   const draft = holderDraftOf({

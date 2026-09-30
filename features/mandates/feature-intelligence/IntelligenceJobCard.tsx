@@ -46,6 +46,7 @@ import {
 import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
 import { OutputMismatchNotice, outputMismatchRung } from "./OutputMismatchNotice";
 import { MandateRunHistory } from "../run-history/MandateRunHistory";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** The record page's Runs tab for this job (the card's "All runs" door). */
 function runsTabHref(detailsHref: string): string {
@@ -128,7 +129,7 @@ export function IntelligenceJobCard({
   resetLabel: string;
   detailsHref: string;
   runOverride: RunOverride | null;
-  onHover: (key: string | null) => void;
+  onHover: (key: AnyMandateKey | null) => void;
   onDuplicate: () => void;
   onUseOwn: () => void;
   onReset: () => void;

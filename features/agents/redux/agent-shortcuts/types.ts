@@ -13,6 +13,7 @@ import type {
   ValueMappingMap,
   WritePolicyMap,
 } from "@/features/surfaces/types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type { ResultDisplayMode, ShortcutContext };
 
@@ -146,7 +147,7 @@ export interface AgentShortcut {
    * the writer's business (`mandate.definition`), not the shortcut view's.
    */
   mandateId?: string | null;
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
 
   // ── Status ───────────────────────────────────────────────────────────
   isActive: boolean;

@@ -74,6 +74,7 @@ import { PlacesSelector, type SelectablePlace } from "./PlacesSelector";
 import { usePlaceOffers } from "./usePlaceOffers";
 import { offeredValuesToSurfaceValues } from "../offered-adapter";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface BatchModeProps {
   rung: BindingRung;
@@ -89,7 +90,7 @@ export interface BatchModeProps {
   } | null;
   holderInputs: HolderInputs;
   /** The job the person opened — always in the batch, never a surprise. */
-  currentMandateKey: string;
+  currentMandateKey: AnyMandateKey;
   disabled?: boolean;
   onChanged: () => void;
 }
@@ -185,7 +186,7 @@ export function BatchMode({
 
   /** The binding already written AT THIS RUNG for a place, if any. */
   const bindingAt = useCallback(
-    (mandateKey: string): MandateBindingRow | null => {
+    (mandateKey: AnyMandateKey): MandateBindingRow | null => {
       if (console_.status !== "ready") return null;
       const rows = console_.bindings[mandateKey] ?? [];
       if (rung === "org") {
@@ -312,7 +313,7 @@ export function BatchMode({
   useEffect(() => {
     if (holderInputs.status !== "ready") return;
     for (const row of selectedRows) {
-      const key = row.mandate_key;
+      const key = storedMandateKey(row.mandate_key);
       const offer = offerOf(key);
       if (offer.status !== "ready") continue;
       const seedKey = `${key}|${holderInputs.targets.map((t) => t.name).join(",")}`;
@@ -422,13 +423,14 @@ export function BatchMode({
     () =>
       selectedRows.map((row) => {
         const offer = offerOf(row.mandate_key);
+        const mandateKey = storedMandateKey(row.mandate_key);
         return {
           key: row.mandate_key,
           mandateId: row.id,
-          mandateKey: row.mandate_key,
+          mandateKey,
           // W10-2 — prose speaks a name; the key rides the mono sub-line.
-          label: mandateDisplayName(row.mandate_key, row.label),
-          kind: bindingAt(row.mandate_key) ? "update" : "create",
+          label: mandateDisplayName(mandateKey, row.label),
+          kind: bindingAt(mandateKey) ? "update" : "create",
           offeredCount: offer.status === "ready" ? offer.offered.length : null,
         };
       }),
@@ -445,11 +447,12 @@ export function BatchMode({
           ? ((row as { draft_inputs?: unknown[] }).draft_inputs as unknown[])
               .length
           : 0;
+        const mandateKey = storedMandateKey(row.mandate_key);
         return {
           key: row.mandate_key,
-          label: mandateDisplayName(row.mandate_key, row.label),
-          mandateKey: row.mandate_key,
-          answeredHere: Boolean(bindingAt(row.mandate_key)),
+          label: mandateDisplayName(mandateKey, row.label),
+          mandateKey,
+          answeredHere: Boolean(bindingAt(mandateKey)),
           // W10-2 — the price is PROSE; a provision key is a slug and travels
           // in its own mono chip beside it, never inside the sentence.
           priceLine: wave1.provisionKey
@@ -533,7 +536,7 @@ export function BatchMode({
     for (const row of pendingRows) {
       const mandateRow = mandateByKey.get(row.key);
       const offer = offerOf(row.key);
-      const existing = bindingAt(row.key);
+      const existing = bindingAt(row.mandateKey);
       const storedOverrides = isJsonObject(existing?.config_overrides)
         ? (existing.config_overrides as JsonObject)
         : null;

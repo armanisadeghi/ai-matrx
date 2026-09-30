@@ -32,6 +32,7 @@ import {
 
 export { ADMIN_MANDATES_UNCONVERTED as UNCONVERTED_PATH, ADMIN_MANDATES_HEALTH as HEALTH_PATH } from "@/features/mandates/admin-routes";
 import { ADMIN_MANDATES_UNCONVERTED as UNCONVERTED_PATH } from "@/features/mandates/admin-routes";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type HealthSeverity = "high" | "medium" | "low";
 
@@ -79,7 +80,7 @@ export interface HealthFinding {
   kind: HealthKind;
   source: HealthSource;
   /** "" when the scan could not read which mandate the line calls. */
-  mandateKey: string;
+  mandateKey: AnyMandateKey | "";
   mandateName: string;
   /** What is wrong, in one plain sentence. */
   problem: string;
@@ -149,7 +150,7 @@ function driftFindings(
   definition: DefinitionFacts | undefined,
   aidreamGithub: string | null,
 ): HealthFinding[] {
-  const key = truth.mandate_key;
+  const key = storedMandateKey(truth.mandate_key);
   const name = mandateDisplayName(key, definition?.label);
   const src = truth.source;
   const file = src ? aidreamRelativePath(src.source_file) : "";

@@ -15,6 +15,7 @@ import {
   isUserTextOnly,
   parseMandateInputSurface,
 } from "@/features/mandates/input-surface";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const described = {
   mandate_key: "mandate.goal_writer",
@@ -45,14 +46,14 @@ const described = {
 
 describe("parseMandateInputSurface", () => {
   it("keeps the described input's label — the description IS the ask", () => {
-    const surface = parseMandateInputSurface(described, "mandate.goal_writer");
+    const surface = parseMandateInputSurface(described, storedMandateKey("mandate.goal_writer"));
     expect(surface.inputs).toHaveLength(2);
     expect(surface.inputs[0].label).toBe("Task overview");
     expect(surface.inputs[0].sourcing).toBe("require");
   });
 
   it("carries each input's provenance so the reader can judge it", () => {
-    const surface = parseMandateInputSurface(described, "mandate.goal_writer");
+    const surface = parseMandateInputSurface(described, storedMandateKey("mandate.goal_writer"));
     expect(surface.inputs.map((i) => i.origin)).toEqual([
       "mandate_input",
       "holder",
@@ -63,7 +64,7 @@ describe("parseMandateInputSurface", () => {
   it("drops an entry with no name or no kind — an input nobody can address is not an input", () => {
     const surface = parseMandateInputSurface(
       { ...described, inputs: [{ name: "", kind: "text" }, { name: "x" }] },
-      "k",
+      storedMandateKey("k"),
     );
     expect(surface.inputs).toHaveLength(0);
   });
@@ -71,7 +72,7 @@ describe("parseMandateInputSurface", () => {
   it("never reads as 'none' while it is serving inputs (version skew)", () => {
     const surface = parseMandateInputSurface(
       { ...described, surface_source: "none" },
-      "k",
+      storedMandateKey("k"),
     );
     expect(surface.surfaceSource).not.toBe("none");
   });
@@ -79,7 +80,7 @@ describe("parseMandateInputSurface", () => {
 
 describe("isUserTextOnly — the only license for the phrase", () => {
   it("is false when the surface served anything at all", () => {
-    expect(isUserTextOnly(parseMandateInputSurface(described, "k"))).toBe(false);
+    expect(isUserTextOnly(parseMandateInputSurface(described, storedMandateKey("k")))).toBe(false);
   });
 
   it("is false when the surface served nothing but SAID why", () => {
@@ -90,7 +91,7 @@ describe("isUserTextOnly — the only license for the phrase", () => {
         inputs: [],
         notes: ["This mandate names Provision 'x' but no live row exists for it."],
       },
-      "k",
+      storedMandateKey("k"),
     );
     expect(broken.inputs).toHaveLength(0);
     expect(isUserTextOnly(broken)).toBe(false);
@@ -99,7 +100,7 @@ describe("isUserTextOnly — the only license for the phrase", () => {
   it("is true only when nothing is declared anywhere and nothing failed", () => {
     const nothing = parseMandateInputSurface(
       { mandate_key: "k", surface_source: "none", inputs: [], notes: [] },
-      "k",
+      storedMandateKey("k"),
     );
     expect(isUserTextOnly(nothing)).toBe(true);
   });

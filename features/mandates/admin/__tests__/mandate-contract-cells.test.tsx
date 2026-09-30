@@ -7,6 +7,7 @@ import {
   MandateOutputCell,
 } from "../mandate-contract-cells";
 import type { MandateRow } from "../mandate-health";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const renderToStaticMarkup = (children: ReactNode) => renderMarkup(<TooltipProvider>{children}</TooltipProvider>);
 
@@ -63,7 +64,7 @@ const mandate: MandateDefinitionRow = {
 const row: MandateRow = {
   mandate,
   id: mandate.id,
-  mandateKey: mandate.mandate_key,
+  mandateKey: storedMandateKey(mandate.mandate_key),
   feature: "test",
   mandateName: "wrapped_output",
   label: mandate.label,

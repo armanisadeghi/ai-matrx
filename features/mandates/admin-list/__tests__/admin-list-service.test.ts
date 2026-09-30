@@ -13,6 +13,7 @@ import type { MandateCoverageResponse } from "@/features/mandates/coverage";
 import { buildFacts, sectionsFor, ALL_FACT_SECTIONS } from "../facts";
 import { countsFromAnswer, scopeArgs } from "../service";
 import { customizedByOf, declaredInOf, featureLabelOf } from "../rows";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 function query(partial: Partial<EntityListQuery> = {}): EntityListQuery {
   return { ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "system" }, ...partial };
@@ -167,7 +168,7 @@ describe("derivations", () => {
     expect(featureLabelOf("seo.ai_visibility_decision_analyst", "aidream.services.seo.ai_visibility")).toBe("SEO › AI Visibility");
     expect(featureLabelOf("podcast.audience_adapter", "aidream.services.podcast.mandates")).toBe("Podcast");
     expect(featureLabelOf("content_plan.brief_writer", null)).toBe("Content Plan");
-    expect(featureLabelOf("shortcut.action_item_extractor", null)).toBe("Shortcuts");
+    expect(featureLabelOf(storedMandateKey("shortcut.action_item_extractor"), null)).toBe("Shortcuts");
   });
 
   it("declared in: the code declaration's file, or the generated declared key set", () => {
@@ -190,7 +191,7 @@ describe("derivations", () => {
       } as unknown as MandateCodeTruth),
     ).toEqual({ declaredIn: "Python · aidream", declaredFile: null, codeState: "declared" });
     // A shortcut authored in the database is declared nowhere.
-    expect(declaredInOf("shortcut.action_item_extractor", undefined)).toEqual({
+    expect(declaredInOf(storedMandateKey("shortcut.action_item_extractor"), undefined)).toEqual({
       declaredIn: null,
       declaredFile: null,
       codeState: "not_in_code",

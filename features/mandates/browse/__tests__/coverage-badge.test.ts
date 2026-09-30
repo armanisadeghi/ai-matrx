@@ -21,6 +21,7 @@ import {
   type MandateCoverageView,
 } from "../CoverageBadge";
 import { withCoverageKeys } from "../service";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const REPORT: MandateCoverageStatesResponse = {
   organization_id: null,
@@ -94,7 +95,7 @@ describe("coverageBadgeVerdict", () => {
   // "Holder missing" — three words, one fact. The surviving one is the
   // platform's own noun, and it lives in `coverage.ts` as `RED_WORD`.
   it("says Binding needed in red when nothing resolves", () => {
-    const verdict = coverageBadgeVerdict(view(), "research.page_summary");
+    const verdict = coverageBadgeVerdict(view(), storedMandateKey("research.page_summary"));
     if (verdict.kind !== "state") throw new Error("expected a state badge");
     expect(verdict.bucket).toBe("red");
     expect(verdict.label).toBe("Binding needed");
@@ -112,13 +113,13 @@ describe("coverageBadgeVerdict", () => {
 
   it("marks a mandate an ORG-scoped report does not cover as unanswered", () => {
     expect(
-      coverageBadgeVerdict(view({ scoped: true }), "platform.something_else"),
+      coverageBadgeVerdict(view({ scoped: true }), storedMandateKey("platform.something_else")),
     ).toEqual({ kind: "unanswered" });
   });
 
   it("stays quiet for an absent key when the report covers everything", () => {
     expect(
-      coverageBadgeVerdict(view(), "platform.something_else").kind,
+      coverageBadgeVerdict(view(), storedMandateKey("platform.something_else")).kind,
     ).toBe("none");
   });
 

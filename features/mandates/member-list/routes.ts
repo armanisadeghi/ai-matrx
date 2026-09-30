@@ -5,10 +5,11 @@
 // new routes beside /organizations/<org>/settings/mandates (untouched).
 
 import type { MandateListLevel } from "./types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export const PERSON_MANDATE_LIST_HREF = "/mandates/list-preview";
 
-export function personMandateRecordHref(mandateKey: string, tab?: string): string {
+export function personMandateRecordHref(mandateKey: AnyMandateKey, tab?: string): string {
   const base = `/mandates/record-preview/${encodeURIComponent(mandateKey)}`;
   return tab ? `${base}?tab=${encodeURIComponent(tab)}` : base;
 }
@@ -17,7 +18,7 @@ export function orgMandateListHref(orgId: string): string {
   return `/organizations/${encodeURIComponent(orgId)}/mandates`;
 }
 
-export function orgMandateRecordHref(orgId: string, mandateKey: string, tab?: string): string {
+export function orgMandateRecordHref(orgId: string, mandateKey: AnyMandateKey, tab?: string): string {
   const base = `${orgMandateListHref(orgId)}/${encodeURIComponent(mandateKey)}`;
   return tab ? `${base}?tab=${encodeURIComponent(tab)}` : base;
 }
@@ -32,7 +33,7 @@ export function newSoftMandateHref(level: MandateListLevel, orgId?: string | nul
 /** One record href for a level — the list, peek and create flow all read this. */
 export function memberMandateRecordHref(
   level: MandateListLevel,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   orgId?: string | null,
   tab?: string,
 ): string {

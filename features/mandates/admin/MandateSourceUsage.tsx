@@ -37,6 +37,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface SourceUsageFallback {
   /** The code-truth declaration string, when discovery found one. */
@@ -155,7 +156,7 @@ export function MandateSourceUsage({
   mandateKey,
   fallback,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   fallback: SourceUsageFallback;
 }) {
   const dispatch = useAppDispatch();

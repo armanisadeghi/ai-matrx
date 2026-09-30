@@ -130,6 +130,7 @@ import {
 } from "./impact";
 import { VerdictDetail } from "./impact-cells";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -291,7 +292,7 @@ function DriftPanel({
       // the home organization exactly as a rebind does.
       await putMandateDefaultHolder(
         dispatch,
-        row.mandate.mandate_key,
+        storedMandateKey(row.mandate.mandate_key),
         agentDefaultHolder(
           agentId,
           mode === "pin" ? (latestSaved?.id ?? null) : null,
@@ -1776,7 +1777,7 @@ export function MandateDetailView({
   });
   const bindings = data.bindingsByMandateId[row.id] ?? [];
   const [verdictState, setVerdictState] = useState<{
-    mandateKey: string;
+    mandateKey: AnyMandateKey;
     verdicts: MandateVariableVerdict[];
     error: string | null;
   } | null>(null);
@@ -1813,7 +1814,7 @@ export function MandateDetailView({
       .then((result) => {
         if (cancelled) return;
         setVerdictState({
-          mandateKey: truth.mandate_key,
+          mandateKey: storedMandateKey(truth.mandate_key),
           verdicts: result.verdicts ?? [],
           error: null,
         });
@@ -1821,7 +1822,7 @@ export function MandateDetailView({
       .catch((error: unknown) => {
         if (cancelled) return;
         setVerdictState({
-          mandateKey: truth.mandate_key,
+          mandateKey: storedMandateKey(truth.mandate_key),
           verdicts: [],
           error: describeError(error),
         });
@@ -2015,7 +2016,7 @@ export function MandateDetailView({
           <MandateNotesPanel
             key={row.id}
             mandateId={row.mandate.id}
-            mandateKey={row.mandate.mandate_key}
+            mandateKey={storedMandateKey(row.mandate.mandate_key)}
             observedAgentId={row.agentId ?? null}
           />
         </div>

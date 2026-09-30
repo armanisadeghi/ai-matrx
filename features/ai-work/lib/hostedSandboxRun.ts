@@ -38,6 +38,7 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppThunk } from "@/lib/redux/store";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** See THE TWO-HOMES RULE. The one url for a hosted turn. */
 export const HOSTED_STREAM_PATH = "/coding-sessions/claude/stream" as const;
@@ -57,7 +58,7 @@ export interface HostedRunRequest {
   maxTurns?: number;
   model?: string | null;
   agentId?: string | null;
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   permissionMode?: "acceptEdits" | "plan";
 }
 

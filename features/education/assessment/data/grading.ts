@@ -122,7 +122,7 @@ function normalizeAcceptable(v: unknown): string[] {
  * explanation + misconception via the shared helpers) plus assessment's extras
  * (scoreValue, gradedBy).
  */
-function verdictToGraded(v: GradeVerdict, mandateKey: string): GradedAnswer {
+function verdictToGraded(v: GradeVerdict, mandateKey: AnyMandateKey): GradedAnswer {
   const result = verdictResult(v);
   return {
     result,
@@ -209,7 +209,7 @@ export function gradeAnswerAI(args: {
  */
 function stepVerdictToGraded(
   v: StepGradeVerdict,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   responseImageFileId: string,
 ): GradedAnswer {
   const result = verdictResult(v);

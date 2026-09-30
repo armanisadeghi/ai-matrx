@@ -65,6 +65,7 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({
 
 import { ScopeHolderBar, type WorkspaceRung } from "../ScopeHolderBar";
 import { defaultHolderRungOffer } from "../default-holder-rung";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const OFFER = defaultHolderRungOffer({
   homeOrganizationId: "2643e470-b275-47f3-95f3-ae275ad3ca47",
@@ -104,7 +105,7 @@ function render(
         holder={EMPTY_HOLDER}
         onHolderChange={() => undefined}
         job={{
-          mandateKey: "wraithmoor_museum.exhibit_walk",
+          mandateKey: storedMandateKey("wraithmoor_museum.exhibit_walk"),
           label: "Wraithmoor Museum Exhibit Walk",
           outputKind: "",
           offeredCount: 0,

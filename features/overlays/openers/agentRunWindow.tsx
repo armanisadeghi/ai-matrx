@@ -17,6 +17,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { Resource } from "@/features/agents/resources/types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const OVERLAY_ID = "agentRunWindow" as const;
 
@@ -73,7 +74,7 @@ export interface OpenAgentRunWindowOptions {
    * `__kind` output into a string — the transcript renders through the ONE
    * canonical pipeline and the person can keep talking.
    */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /**
    * Adopt a MOUNTED surface by name for this window's runs — the run reads
    * that surface's live scope and is offered its agent-writable targets

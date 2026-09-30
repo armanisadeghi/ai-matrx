@@ -21,6 +21,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@/types/python-generated/api-types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type MandateCatalogueEntry =
   components["schemas"]["MandateSummaryResponse"];
@@ -97,7 +98,7 @@ export async function fetchMandateCatalogue(
  * A caller that MUST have the answer awaits `fetchMandateCatalogue`.
  */
 export function peekMandateCatalogueEntry(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): MandateCatalogueEntry | null {
   return cached?.[mandateKey] ?? null;
 }

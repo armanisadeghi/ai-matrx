@@ -9,13 +9,14 @@
 // on this row.
 
 import type { MandateStatus } from "@/features/mandates/status/mandate-status";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Which seat the list answers from. The admin seat is ../admin-list. */
 export type MandateListLevel = "person" | "organization";
 
 export interface MandateMemberRow {
   id: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   name: string;
   featureLabel: string;
   goal: string | null;

@@ -33,6 +33,7 @@ import { generateConversationId } from "../utils/ids";
 import type { AgentType } from "@/features/agents/types/agent-definition.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import { createInstanceFull } from "../create-instance-full";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // =============================================================================
 // Record alias
@@ -86,7 +87,7 @@ interface CreateInstanceArgs {
   initialAgentId?: string | null;
   initialAgentVersionId?: string | null;
   /** Mandate key this conversation launches through — see ConversationRecord. */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   parentConversationId?: string | null;
   forkedFromId?: string | null;
   forkedAtPosition?: number | null;

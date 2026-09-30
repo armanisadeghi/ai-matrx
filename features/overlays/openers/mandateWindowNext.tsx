@@ -12,12 +12,13 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const OVERLAY_ID = "mandateWindowNext" as const;
 
 export interface OpenMandateWindowNextOptions {
   /** The mandate to select on open (key). */
-  initialMandateKey?: string;
+  initialMandateKey?: AnyMandateKey;
   /** The tab to open on (a record tab id, e.g. "holder"). */
   initialTab?: string;
 }

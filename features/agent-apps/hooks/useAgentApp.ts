@@ -121,6 +121,7 @@ import {
   type AppHolder,
   type AppHolderSource,
 } from "@/features/agent-apps/lib/appHolder";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface UseAgentAppArgs {
   /**
@@ -220,7 +221,7 @@ export interface UseAgentAppReturn {
    * (APP_MANDATE_CUTOVER OFF), which is how a surface knows not to draw them.
    */
   mandateId: string | null;
-  mandateKey: string | null;
+  mandateKey: AnyMandateKey | null;
   holderProvenance: AppHolder["provenance"];
   surfaceKey: string;
   conversationId: string | null;

@@ -31,6 +31,7 @@ import type {
   CodeEditorAgentConfig,
   CodeFile,
 } from "@/features/code-editor/agent-code-editor/types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface OpenSmartCodeEditorWindowOptions
   extends SmartCodeEditorWindowHandlers {
@@ -43,7 +44,7 @@ export interface OpenSmartCodeEditorWindowOptions
   /** Agents available in the history picker. First entry is the default. */
   agents: CodeEditorAgentConfig[];
   /** Picker-default job (mandate key). Defaults to `agents[0]`. */
-  defaultPickerMandateKey?: string;
+  defaultPickerMandateKey?: AnyMandateKey;
 
   // Single-file
   initialCode?: string;

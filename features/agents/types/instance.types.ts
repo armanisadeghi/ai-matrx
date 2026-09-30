@@ -261,7 +261,7 @@ export interface ExecutionInstance {
    * client deploy. Turn 2+ continues on `/ai/conversations/{id}` exactly as
    * before — the conversation is already bound to the agent the server chose.
    */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /** Model id used on the most recent assistant turn. */
   lastModelId?: string | null;
 

@@ -18,9 +18,10 @@ import { parseDraftInputs } from "@/features/mandates/authoring/service";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
 import type { MandateInputSurface } from "@/features/mandates/input-surface";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface DescribedOfferArgs {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string | null;
   /** The mandate row's raw `draft_inputs` — the authoring truth. */
   draftInputs: unknown;

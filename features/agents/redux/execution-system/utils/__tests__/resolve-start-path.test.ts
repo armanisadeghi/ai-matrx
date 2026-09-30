@@ -10,6 +10,7 @@
 
 import { aiVersionPathOverrides } from "@/lib/api/ai-api-version";
 import { resolveStartPath } from "../resolve-start-path";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const V2 = { pathOverrides: aiVersionPathOverrides("v2") };
 
@@ -38,7 +39,7 @@ describe("resolveStartPath — the mandate door", () => {
   test("a mandate key is URL-encoded, not interpolated raw", () => {
     const start = resolveStartPath({
       agentId: "a",
-      mandateKey: "weird key/with slash",
+      mandateKey: storedMandateKey("weird key/with slash"),
     });
     expect(start.path).toBe("/ai/mandates/weird%20key%2Fwith%20slash");
   });

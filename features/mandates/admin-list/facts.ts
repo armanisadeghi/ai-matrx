@@ -25,6 +25,7 @@ import {
 } from "@/features/mandates/admin/workflow-impact";
 import type { EntityListQuery } from "@/lib/entity-list/types";
 import { declaredInOf, featureLabelOf } from "./rows";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type FactSection =
   | "coverage"
@@ -156,7 +157,10 @@ export function buildFacts(
     const declaredIn: KeyLists = {};
     const featureLabel: Record<string, string> = {};
     const health = { agentDrift: [] as string[], importFailed: [] as string[], contractDrift: [] as string[] };
-    const keys = new Set<string>([...ALL_MANDATE_KEYS, ...Object.keys(truth)]);
+    const keys = new Set<AnyMandateKey>([
+      ...ALL_MANDATE_KEYS,
+      ...Object.keys(truth).map(storedMandateKey),
+    ]);
     for (const key of keys) {
       const entry = truth[key];
       const declared = declaredInOf(key, entry);

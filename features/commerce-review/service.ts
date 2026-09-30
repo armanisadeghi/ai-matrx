@@ -42,6 +42,7 @@ import type {
   TriageItem,
   ValueBucket,
 } from "./types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 interface CommerceReviewDatabase {
   commerce: CommerceReviewSchema;
@@ -208,7 +209,7 @@ export async function listTriageQueue(
       aiConfidence: v?.confidence ?? null,
       aiReasoning: v?.reasoning ?? null,
       valuationResultId: v?.id ?? null,
-      valuationMandateKey: v?.mandate_key ?? null,
+      valuationMandateKey: v?.mandate_key ? storedMandateKey(v.mandate_key) : null,
       photoFileIds: photos.get(a.id) ?? [],
       createdAt: a.created_at,
     };
@@ -313,7 +314,7 @@ export async function listDraftQueue(
       version: a.version,
       notes: a.notes ?? "",
       draftResultId: d?.id ?? null,
-      draftMandateKey: d?.mandate_key ?? null,
+      draftMandateKey: d?.mandate_key ? storedMandateKey(d.mandate_key) : null,
       confidence: d?.confidence ?? null,
       reasoning: d?.reasoning ?? null,
       fields: d ? toDraftFields(d.output) : [],

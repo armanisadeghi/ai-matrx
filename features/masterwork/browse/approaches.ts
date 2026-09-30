@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * The Approach registry — the many ways an Expert goes through Distillation.
@@ -26,7 +27,7 @@ export interface DistillationApproach {
   /** The honest time/cost sentence ("start now — rules within minutes"). */
   costTimeShape: string;
   /** The Mandate that runs it (informational to the picker). */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Query params appended to /masterwork/{id} when this Approach is chosen. */
   intakeQuery: Record<string, string>;
   sortOrder: number;
@@ -127,7 +128,7 @@ export async function fetchDistillationApproaches(): Promise<
       blurb: row.blurb,
       whatItNeeds: row.what_it_needs,
       costTimeShape: row.cost_time_shape,
-      mandateKey: row.mandate_key,
+      mandateKey: storedMandateKey(row.mandate_key),
       intakeQuery: toIntakeQuery(row.intake_query),
       sortOrder: row.sort_order,
       enabled: row.enabled,

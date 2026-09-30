@@ -24,11 +24,12 @@ jest.mock("../service", () => {
 
 import { useMandateHolder } from "../useMandateHolder";
 import { MandateOrganizationUnresolvedError } from "../service";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 describe("useMandateHolder — the organization is part of the question", () => {
   it("re-asks when the workspace is selected after mount, instead of keeping 'Not available'", async () => {
     resolveMandateHolder.mockImplementation(async () => {
-      if (!selectedOrg) throw new MandateOrganizationUnresolvedError("no org");
+      if (!selectedOrg) throw new MandateOrganizationUnresolvedError(storedMandateKey("no org"));
       return { holderType: "agent", holderId: "a-1", provenance: "system" };
     });
     let rerender: () => void = () => {};

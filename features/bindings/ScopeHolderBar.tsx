@@ -50,6 +50,7 @@ import {
   DEFAULT_HOLDER_RUNG,
   type DefaultHolderRungOffer,
 } from "./default-holder-rung";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * The rungs a mandate binding can actually be written at. There is no `global`
@@ -176,7 +177,7 @@ export interface ScopeHolderBarProps {
 
   /** The job being bound — identity, what it answers in, what it offers. */
   job: {
-    mandateKey: string;
+    mandateKey: AnyMandateKey;
     label: string;
     outputKind: string | null;
     /** null while the offer is still being read — never a premature 0. */

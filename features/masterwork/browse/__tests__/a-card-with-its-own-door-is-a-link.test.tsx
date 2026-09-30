@@ -40,6 +40,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { ApproachCard } from "../ApproachCard";
 import type { DistillationApproach } from "../approaches";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -54,7 +55,7 @@ function approach(
     blurb: "What it is.",
     whatItNeeds: "Twenty minutes.",
     costTimeShape: "Start now.",
-    mandateKey: "masterwork.test",
+    mandateKey: storedMandateKey("masterwork.test"),
     intakeQuery: {},
     sortOrder: 1,
     enabled: false,

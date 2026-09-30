@@ -45,6 +45,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllShortcutsArray } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
 import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcuts/types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** One item the requirement gate says this surface can run. */
 export interface AvailableHereItem {
@@ -56,7 +57,7 @@ export interface AvailableHereItem {
    * The mandate behind the row, when the active storage carries one. Null on
    * every row while `SHORTCUT_STORAGE_CUTOVER` is OFF — see the file header.
    */
-  mandateKey: string | null;
+  mandateKey: AnyMandateKey | null;
 }
 
 /** One item the gate REFUSED, with the reason — for the admin inspector. */
@@ -90,7 +91,7 @@ export function selectAvailableHere(args: {
   items: readonly (GateableItem & {
     label?: string | null;
     isActive?: boolean | null;
-    mandateKey?: string | null;
+    mandateKey?: AnyMandateKey | null;
   })[];
   surfaceName: string | null;
   availableKeys: ReadonlySet<string>;

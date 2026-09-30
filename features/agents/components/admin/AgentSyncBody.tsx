@@ -79,6 +79,7 @@ import {
 import { fetchAgentVersionFieldSnapshots } from "@/features/agents/sync/field-change-history.service";
 import { formatAbsoluteDate } from "@/utils/datetime";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const SYSTEM_AGENT_ADMIN_BASE_PATH =
   "/administration/agents/system-agents/agents";
@@ -94,7 +95,7 @@ interface AgentSyncBodyProps {
    * `onRebindToSystem`, offers "Rebind mandate to system side" inside the diff.
    * Every other caller passes nothing and is unchanged.
    */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   mandateLabel?: string;
   onRebindToSystem?: (systemAgentId: string) => Promise<void>;
 }

@@ -104,6 +104,7 @@ import {
 } from "./binding-lookup";
 import { agentSettingDisplay } from "./format-setting-value";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export type {
   OverridesLevel,
@@ -305,7 +306,7 @@ function OverridesBody({
       const ladder =
         rung === "org" || rung === "user"
           ? await fetchMandateLadder(
-              data.mandate.mandate_key,
+              storedMandateKey(data.mandate.mandate_key),
               inheritanceOrganizationId,
             )
           : [];
@@ -364,12 +365,12 @@ function OverridesBody({
 
   // ── The mandate's offer decides whether the mapping travels (unchanged) ───
   const surfaceState = useMandateInputSurface(
-    data.provisionKey ? null : data.mandate.mandate_key,
+    data.provisionKey ? null : storedMandateKey(data.mandate.mandate_key),
   );
   const describedOffer =
     !data.provisionKey && surfaceState.status === "ready"
       ? describedOfferFrom({
-          mandateKey: data.mandate.mandate_key,
+          mandateKey: storedMandateKey(data.mandate.mandate_key),
           label: data.mandate.label,
           draftInputs: (data.mandate as { draft_inputs?: unknown })
             .draft_inputs,
@@ -495,7 +496,7 @@ function OverridesBody({
         const swapped = bindAgentId != null && bindAgentId !== agentId;
         const result = await putMandateDefaultHolder(
           dispatch,
-          data.mandate.mandate_key,
+          storedMandateKey(data.mandate.mandate_key),
           own.kind === "workflow"
             ? {
                 holderType: "workflow",
@@ -547,7 +548,7 @@ function OverridesBody({
       });
       const report = await putMandateBinding(
         dispatch,
-        data.mandate.mandate_key,
+        storedMandateKey(data.mandate.mandate_key),
         level === "organization"
           ? { principalType: "org", organizationId: organizationId as string }
           : { principalType: "user" },

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ResolvedPlace } from "./types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export function PlacesMap({
   places,
@@ -17,7 +18,7 @@ export function PlacesMap({
   onHoverPlace,
 }: {
   places: readonly ResolvedPlace[];
-  activeMandateKey: string | null;
+  activeMandateKey: AnyMandateKey | null;
   activePlaceId: string | null;
   onHoverPlace: (placeId: string | null) => void;
 }) {

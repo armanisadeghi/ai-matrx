@@ -15,6 +15,7 @@ import {
   targetForKey,
 } from "./placement";
 import type { IntelligenceContext } from "./types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** The directory, opened at one Domain's section. */
 export function intelligenceDomainHref(domain: string): string {
@@ -36,7 +37,7 @@ export function resolveIntelligenceSlug(
 
 export function featureIntelligenceHref(
   featureSlug: string,
-  options: { mandateKey?: string | null; context?: IntelligenceContext } = {},
+  options: { mandateKey?: AnyMandateKey | null; context?: IntelligenceContext } = {},
 ): string {
   const resolved = options.mandateKey
     ? { target: targetForKey(options.mandateKey) }
@@ -61,6 +62,6 @@ export function featureIntelligenceHref(
 }
 
 /** The page (registry target) that shows a mandate key. */
-export function featureOfMandateKey(mandateKey: string): string {
+export function featureOfMandateKey(mandateKey: AnyMandateKey): string {
   return targetForKey(mandateKey);
 }

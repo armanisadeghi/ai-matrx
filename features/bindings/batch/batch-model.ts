@@ -38,13 +38,14 @@ import {
   setSources,
   sourcesFor,
 } from "../consumption-writer";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** One place in the batch: a job this holder would be bound to. */
 export interface PlaceRow {
   /** Row identity — the mandate key, which is also what the write addresses. */
   key: string;
   mandateId: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string;
   /** ADD = nothing answers at this rung yet · UPD = this replaces an answer. */
   kind: "create" | "update";

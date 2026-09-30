@@ -18,6 +18,7 @@ import { parseCallApiError } from "@/lib/api/errors";
 import { createClient } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "../service";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** One descriptive input: description is the only required field. */
 export interface DraftInput {
@@ -49,7 +50,7 @@ export interface CreateMandateInput {
 }
 
 export interface CreatedMandate {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   mandateId: string;
 }
 
@@ -94,14 +95,14 @@ export async function createMandate(
   // A brand-new Mandate is missing from every cache a page already loaded —
   // including the page-lifetime declaration catalogue, which would otherwise
   // answer "no such declaration" about the Mandate just created (FIX-Q9).
-  invalidateMandateCache(data.mandate_key);
-  return { mandateKey: data.mandate_key, mandateId: data.mandate_id };
+  invalidateMandateCache(storedMandateKey(data.mandate_key));
+  return { mandateKey: storedMandateKey(data.mandate_key), mandateId: data.mandate_id };
 }
 
 /** Set the goal (any mandate). The row's grounding becomes 'H'. */
 export async function patchMandateGoal(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   goal: string,
 ): Promise<void> {
   await requireAuthenticatedSupabaseSession(createClient());
@@ -120,7 +121,7 @@ export async function patchMandateGoal(
 /** Replace the mandate's descriptive input list. */
 export async function patchMandateDraftInputs(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   draftInputs: DraftInput[],
 ): Promise<void> {
   await requireAuthenticatedSupabaseSession(createClient());

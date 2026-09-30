@@ -5,6 +5,7 @@
 // "Feature intelligence pages", Arman 2026-09-25).
 
 import type { MandateMemberRow } from "../member-list/types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * Values a place's link may need (`topicId`, `setId`, `brandId`, …). A place
@@ -32,7 +33,7 @@ export interface MandatePlace {
    */
   urlPattern?: string;
   /** The jobs this place runs. */
-  mandateKeys: readonly string[];
+  mandateKeys: readonly AnyMandateKey[];
   /**
    * Files whose code runs these jobs — what the guard test reads. Paths are in
    * this repo, or (with `app: "workflow-studio"`) in aidream's
@@ -88,7 +89,7 @@ export interface ResolvedPlace {
   href: string | null;
   /** The route pattern, kept so an unlinked stop can say what it needs. */
   urlPattern: string | null;
-  mandateKeys: readonly string[];
+  mandateKeys: readonly AnyMandateKey[];
   origin: "declared" | "registered";
 }
 

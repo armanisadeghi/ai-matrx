@@ -69,6 +69,7 @@ import {
   contractOfMandate,
 } from "@/lib/supabase/mandateStorage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Externally-owned override store (e.g. research's per-topic
  * `rs_topic.agent_config`). When provided, picking a candidate still runs the
@@ -96,7 +97,7 @@ export function MandateAgentPicker({
   override,
   contractSource,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Styles the trigger button. */
   className?: string;
   override?: MandateAgentPickerOverrideControl;

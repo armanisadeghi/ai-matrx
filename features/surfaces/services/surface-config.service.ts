@@ -396,7 +396,8 @@ export async function fetchSurfaceConfigBundle(
   // hardcoded fallback.
   const mandateKeys = (rolesRes.data ?? [])
     .map((r) => r.mandate_key)
-    .filter((k): k is string => !!k);
+    .filter((k): k is string => !!k)
+    .map(storedMandateKey);
   const mandatePins =
     uid && mandateKeys.length > 0 ? await fetchMandatePins(mandateKeys) : {};
 

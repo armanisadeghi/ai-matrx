@@ -68,6 +68,7 @@ import {
   __resetAgentAddressCache,
   seedAgentAddress,
 } from "@/features/agents/addressing/agentAddressCache";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 
 /** `research_client.output_slides`' real holder — a BUILTIN (system) agent. */
@@ -78,7 +79,7 @@ const COVERAGE = "Every input this holder needs is fed — all 3.";
 const UNFED = "1 required input is still unmapped, and a run would refuse.";
 
 const JOB = {
-  mandateKey: "research_client.output_slides",
+  mandateKey: storedMandateKey("research_client.output_slides"),
   label: "Research Output: Slides",
   outputKind: "presentation_deck",
   offeredCount: 3,

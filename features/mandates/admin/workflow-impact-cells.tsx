@@ -28,6 +28,7 @@ import {
   type WorkflowBreakWay,
   type WorkflowImpactVerdict,
 } from "./workflow-impact";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const RUNG_WORDS: Record<WorkflowImpactVerdict["principal_kind"], string> = {
   system: "mandate default",
@@ -114,7 +115,7 @@ export function WorkflowImpactGradeCell({
   mandateKey,
   verdicts,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   verdicts: WorkflowImpactVerdict[];
 }) {
   const lead = leadWorkflowVerdict(verdicts);
@@ -185,8 +186,8 @@ export function WorkflowImpactBlockerCell({
           className="h-6 gap-1 px-1.5 text-[11px]"
           onClick={() =>
             openMandateWindow({
-              initialMandateKey: lead.mandate_key,
-              mandateKeys: [lead.mandate_key],
+              initialMandateKey: storedMandateKey(lead.mandate_key),
+              mandateKeys: [storedMandateKey(lead.mandate_key)],
               initialView: "admin",
               surfaceName: "administration-mandates",
             })

@@ -7,7 +7,7 @@
 // `usedBy`). `__tests__/intelligence-places.test.ts` proves every named
 // component still makes that call.
 
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/types";
 
 const K = MANDATE_KEYS;
@@ -82,7 +82,7 @@ export const RESEARCH_PLACE_CALLS: Record<string, Record<string, readonly Resear
   },
 };
 
-function jobsOf(placeId: string): string[] {
+function jobsOf(placeId: string): MandateKey[] {
   const calls = Object.values(RESEARCH_PLACE_CALLS[placeId] ?? {}).flat();
   return [...new Set(calls.flatMap((call) => RESEARCH_CALL_JOBS[call]))];
 }

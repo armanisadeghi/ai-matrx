@@ -89,6 +89,7 @@ import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
 import { outputConstraintsOf } from "./definition-output";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {
@@ -151,7 +152,7 @@ export function TriadInputSection({
   const save = async () => {
     setSaving(true);
     try {
-      await patchMandateDraftInputs(dispatch, data.mandate.mandate_key, draft);
+      await patchMandateDraftInputs(dispatch, storedMandateKey(data.mandate.mandate_key), draft);
       setEditing(false);
       onChanged();
     } catch (error: unknown) {
@@ -298,7 +299,7 @@ export function TriadInputSection({
           // declarations (Provision · contract · this mandate's described
           // inputs · the bound Holder's own variables), so this branch asks it
           // rather than concluding "nothing" from the two it can see locally.
-          <HolderDeclaredInputs mandateKey={data.mandate.mandate_key} />
+          <HolderDeclaredInputs mandateKey={storedMandateKey(data.mandate.mandate_key)} />
         )}
 
         {authoring && !data.offer && !editing ? (
@@ -320,7 +321,7 @@ export function TriadInputSection({
             a hardcoded claim that free text was always accepted, while the
             admin panel said the opposite about the same mandate. */}
         <MandateUserTextLine
-          mandateKey={data.mandate.mandate_key}
+          mandateKey={storedMandateKey(data.mandate.mandate_key)}
           className="rounded-lg border border-border bg-card px-3"
         />
       </div>
@@ -338,7 +339,7 @@ export function TriadInputSection({
  * (`GET /mandates/{key}/input-surface`) is the one reader that knows all four
  * declarations, so the sentence is now its answer, not our assumption.
  */
-function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
+function HolderDeclaredInputs({ mandateKey }: { mandateKey: AnyMandateKey }) {
   const state = useMandateInputSurface(mandateKey);
   if (state.status === "loading") {
     return (
@@ -472,7 +473,7 @@ export function TriadGoalSection({
   const openRun = useOpenAgentRunWindow();
   // The TARGET mandate's own served surface — what the goal writer needs told
   // about the job being refined. Never re-derived here (see `refineValues`).
-  const targetSurface = useMandateInputSurface(data.mandate.mandate_key);
+  const targetSurface = useMandateInputSurface(storedMandateKey(data.mandate.mandate_key));
 
   // ── THE SURFACE HALF: this section IS the goal editor, so it publishes the
   // goal values and owns the ONE write target (`mandate_goal_draft`). Only on
@@ -514,7 +515,7 @@ export function TriadGoalSection({
     }
     setSaving(true);
     try {
-      await patchMandateGoal(dispatch, data.mandate.mandate_key, draft.trim());
+      await patchMandateGoal(dispatch, storedMandateKey(data.mandate.mandate_key), draft.trim());
       setEditing(false);
       onChanged();
     } catch (error: unknown) {

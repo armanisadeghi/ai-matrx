@@ -42,6 +42,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** OFF — ships dark. The flip is a one-line release (R14 gate: Arman's nod). */
 export const SHORTCUT_STORAGE_CUTOVER = true;
@@ -171,9 +172,10 @@ export function writePoliciesOfShortcutRow(
 }
 
 /** The mandate key behind a shortcut row — `null` before the cutover. */
-export function mandateKeyOfShortcutRow(row: ShortcutRowLike): string | null {
+export function mandateKeyOfShortcutRow(row: ShortcutRowLike): AnyMandateKey | null {
   if (!SHORTCUT_STORAGE_CUTOVER) return null;
-  return ((row as Record<string, unknown>).mandate_key as string | null) ?? null;
+  const key = ((row as Record<string, unknown>).mandate_key as string | null) ?? null;
+  return key ? storedMandateKey(key) : null;
 }
 
 /**
@@ -188,7 +190,7 @@ export function mandateKeyOfShortcutRow(row: ShortcutRowLike): string | null {
 export async function fetchShortcutMandateKey(
   supabase: Client,
   shortcutId: string,
-): Promise<string> {
+): Promise<AnyMandateKey> {
   const { data, error } = await supabase
     .schema("mandate")
     .from("vw_shortcut")
@@ -206,5 +208,5 @@ export async function fetchShortcutMandateKey(
       `Shortcut ${shortcutId} has no mandate behind it, so it cannot run. Every shortcut runs through its mandate; open it in the shortcut editor and save it to repair the record.`,
     );
   }
-  return key;
+  return storedMandateKey(key);
 }

@@ -9,6 +9,7 @@ import { adminMandateListConfig } from "../listConfig";
 import { mandateListHref, unconvertedCallsHref } from "@/features/mandates/dashboard/list-link";
 import { workflowAdvanceEligibility } from "@/features/mandates/admin/workflow-advance";
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn() }));
 
@@ -45,8 +46,8 @@ describe("the contract column's word", () => {
 describe("every link in the new suite opens the new record page", () => {
   it("the name door and the row menu go to /administration/intelligence/mandates/<key>", () => {
     const row = { mandateKey: "podcast.script" } as never;
-    expect(adminMandateListConfig.door?.hrefFor?.(row)).toBe(adminMandateRecordHref("podcast.script"));
-    expect(adminMandateRecordHref("podcast.script")).toBe("/administration/intelligence/mandates/podcast.script");
+    expect(adminMandateListConfig.door?.hrefFor?.(row)).toBe(adminMandateRecordHref(storedMandateKey("podcast.script")));
+    expect(adminMandateRecordHref(storedMandateKey("podcast.script"))).toBe("/administration/intelligence/mandates/podcast.script");
   });
 
   it("dashboard tiles open the list filtered to mismatches, and unconverted filtered to waiting", () => {

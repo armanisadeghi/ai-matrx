@@ -35,6 +35,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@/types/python-generated/api-types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type MandateProvenanceReport =
   components["schemas"]["MandateProvenanceReport"];
@@ -62,7 +63,7 @@ export const ORIGIN_LABELS: Record<MandateOriginFacts["kind"], string> = {
 
 export async function fetchMandateProvenance(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): Promise<MandateProvenanceReport> {
   const response = await dispatch(
     callApi({
@@ -103,7 +104,7 @@ function isProvenanceReport(value: unknown): value is MandateProvenanceReport {
  * itself requires on every request (the same reason `useMandateCoverageStates`
  * waits) rather than firing at `null` and freezing on a pre-flight error.
  */
-export function useMandateProvenance(mandateKey: string | null): {
+export function useMandateProvenance(mandateKey: AnyMandateKey | null): {
   report: MandateProvenanceReport | null;
   loading: boolean;
   /** Verbatim server failure — a panel that vanishes on error reads as "fine". */

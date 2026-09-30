@@ -66,6 +66,7 @@ import {
   recordMandateAdminFailure,
 } from "./store";
 import type { MandateAdminRow } from "./types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /** Each lane's scope kinds → the words its database door answers. */
 const SERVER_SCOPE: Record<
@@ -233,7 +234,7 @@ function buildPageRows(
   const listState = getMandateAdminListState();
   const rows: MandateAdminRow[] = [];
   for (const answer of pageRows) {
-    const row = byKey.get(answer.mandate_key);
+    const row = byKey.get(storedMandateKey(answer.mandate_key));
     if (!row) continue;
     const checked = listState.sourceChecked.has(answer.mandate_key);
     rows.push({
@@ -331,7 +332,7 @@ export function createMandateAdminService(
           "[mandates] mnd_admin_list answered without the page's own rows — reading them separately. Apply migrations/mnd_admin_list_sources_contract_page_rows_2026_09_25.sql.",
         );
         const definitions = await fetchMandateConsoleData({
-          mandateKeys: page.rows.map((row) => row.mandate_key),
+          mandateKeys: page.rows.map((row) => storedMandateKey(row.mandate_key)),
           mandateIds: page.rows.map((row) => row.id),
         });
         return { answer: page, data: definitions };

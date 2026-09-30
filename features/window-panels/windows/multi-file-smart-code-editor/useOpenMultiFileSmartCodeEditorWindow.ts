@@ -19,6 +19,7 @@ import {
   createMultiFileSmartCodeEditorCallbackGroup,
   type MultiFileSmartCodeEditorWindowHandlers,
 } from "./callbacks";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface OpenMultiFileSmartCodeEditorWindowOptions extends MultiFileSmartCodeEditorWindowHandlers {
   /**
@@ -27,7 +28,7 @@ export interface OpenMultiFileSmartCodeEditorWindowOptions extends MultiFileSmar
   windowInstanceId?: string;
 
   /** The JOB to launch (`agent.mandate` key) — never an agent id. Required. */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Initial file set. */
   files: CodeFile[];
   /** Which file starts active (defaults to `files[0]`). */

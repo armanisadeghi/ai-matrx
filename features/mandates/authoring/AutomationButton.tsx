@@ -66,7 +66,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The one line shown when the only thing missing is a chosen workspace. */
 export const CHOOSE_WORKSPACE_LINE = "Choose a workspace to use this.";
 
-export function notifyMissingAutomationMandate(mandateKey: string): void {
+export function notifyMissingAutomationMandate(mandateKey: AnyMandateKey): void {
   toast.info(
     `Not yet — this needs the mandate "${mandateKey}", which does not exist. Create it and this runs.`,
   );
@@ -75,7 +75,7 @@ export function notifyMissingAutomationMandate(mandateKey: string): void {
 /** The sentence the screen prints when the door says NO SUCH JOB — a 404, and
  * nothing else. Exported so the guard asserts the copy a person actually reads,
  * not a paraphrase. */
-export function missingAutomationMandateLine(mandateKey: string): string {
+export function missingAutomationMandateLine(mandateKey: AnyMandateKey): string {
   return `Not available yet — this runs the job "${mandateKey}", and no live job has that name. Create it and this button works, with no deploy.`;
 }
 
@@ -97,7 +97,7 @@ export function missingAutomationMandateLine(mandateKey: string): string {
  * blocked by it.
  */
 export function unavailableAutomationMandateLine(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   reason: string,
 ): string {
   const said = reason.trim();

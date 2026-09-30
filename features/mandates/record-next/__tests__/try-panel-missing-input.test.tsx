@@ -70,6 +70,7 @@ jest.mock("../owner-service", () => ({
 
 // eslint-disable-next-line import/first
 import { MandateTryPanel } from "../MandateTryPanel";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 function mount() {
   const container = document.createElement("div");
@@ -94,7 +95,7 @@ describe("MandateTryPanel — a missing required input names itself", () => {
       root.render(
         <TooltipProvider>
           <MandateTryPanel
-            mandateKey="test.mandate"
+            mandateKey={storedMandateKey("test.mandate")}
             outputKind={null}
             organizationId="org-1"
           />

@@ -26,6 +26,7 @@ import { join, relative } from "node:path";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { DECLARED_FEATURES, featurePrefixes } from "../registry";
 import type { FeaturePlaces } from "../types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const ROOT = process.cwd();
 const OWN_GUARD = new Set(["flashcards", "research"]);
@@ -128,7 +129,7 @@ describe("declared intelligence places", () => {
               .flatMap((place) => place.mandateKeys),
           );
           for (const key of entry.keys) {
-            expect({ file: entry.file, key, mapped: listed.has(key) }).toEqual({
+            expect({ file: entry.file, key, mapped: listed.has(storedMandateKey(key)) }).toEqual({
               file: entry.file,
               key,
               mapped: true,
@@ -237,7 +238,7 @@ describe("workflow studio places", () => {
         const file = relative(STUDIO_ROOT, full);
         for (const key of keysInCode(readFileSync(full, "utf8"), feature)) {
           const mapped = places.some(
-            (place) => place.sources.includes(file) && place.mandateKeys.includes(key),
+            (place) => place.sources.includes(file) && place.mandateKeys.includes(storedMandateKey(key)),
           );
           if (!mapped) unmapped.push(`${file} → ${key}`);
         }

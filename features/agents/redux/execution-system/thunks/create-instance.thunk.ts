@@ -86,6 +86,7 @@ import {
 } from "@/features/agents/types/instance.types";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ValueMappingMap } from "@/features/surfaces/types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // =============================================================================
 // Shared helper — reads agent snapshot data. The ONLY place agentId is used.
@@ -147,7 +148,7 @@ interface CreateManualInstanceArgs {
    * principal. `agentId` here is display identity only (the name/avatar the
    * surface paints before the stream starts) — never the run target.
    */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   agentType?: AgentType;
   /**
    * When set, the new conversation is focused on this surface IN THE SAME COMMIT

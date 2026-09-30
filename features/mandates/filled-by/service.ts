@@ -11,13 +11,14 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type MandateHolderKind = "agent" | "workflow";
 
 /** One mandate a holder currently fills. */
 export interface FilledMandate {
   mandateId: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** The mandate's own label; null when it has none (display derives one). */
   label: string | null;
 }
@@ -75,7 +76,7 @@ export async function attachFilledMandates<TRow>(
     const list = byHolder.get(r.holder_id) ?? [];
     list.push({
       mandateId: r.mandate_id,
-      mandateKey: r.mandate_key,
+      mandateKey: storedMandateKey(r.mandate_key),
       // The RPC falls back to the key when there is no label; the display
       // helper derives a readable name from the key itself.
       label: r.label && r.label !== r.mandate_key ? r.label : null,

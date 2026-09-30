@@ -15,13 +15,14 @@ import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink"
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export function AnalysisMandateGate({
   mandateKey,
   title,
   error,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** What this tab does — "Fact Checker", "Keyword Analysis". */
   title: string;
   /** The resolver's message, shown verbatim. */

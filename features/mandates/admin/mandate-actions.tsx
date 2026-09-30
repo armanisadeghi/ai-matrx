@@ -36,6 +36,7 @@ import { promoteMandateToSystem } from "./promotion";
 import type { MandateCodeTruth, MandateDefinitionRow } from "./service";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /** A lineage relative, always rendered with a door. */
 export function LineageChip({
@@ -151,7 +152,7 @@ export function LinkedSyncButton({
         openConvertSystem({
           agentId,
           mandateId: mandate?.id,
-          mandateKey: mandate?.mandate_key,
+          mandateKey: (mandate ? storedMandateKey(mandate.mandate_key) : undefined),
           mandateLabel: mandate?.label ?? mandate?.mandate_key,
         });
       }}

@@ -16,6 +16,7 @@ import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { useMandateProvenance } from "../provenance";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
@@ -48,7 +49,7 @@ let container: HTMLDivElement;
 let root: Root;
 let seen: ReturnType<typeof useMandateProvenance> | null = null;
 
-function Probe({ mandateKey }: { mandateKey: string }) {
+function Probe({ mandateKey }: { mandateKey: AnyMandateKey }) {
   const state = useMandateProvenance(mandateKey);
   useEffect(() => {
     seen = state;
@@ -74,7 +75,7 @@ describe("useMandateProvenance with no organization selected", () => {
     organizationId = null;
 
     await act(async () => {
-      root.render(<Probe mandateKey="messaging.summarize" />);
+      root.render(<Probe mandateKey={storedMandateKey("messaging.summarize")} />);
     });
     await act(async () => {
       await Promise.resolve();

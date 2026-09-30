@@ -4,6 +4,7 @@ import {
   matchStrength,
   summarize,
 } from "../index-model";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const defs = [
   {
@@ -34,25 +35,25 @@ const defs = [
 
 const holders = [
   {
-    mandateKey: "flashcards.generate_cards",
+    mandateKey: storedMandateKey("flashcards.generate_cards"),
     holderName: "Card Smith",
     holderType: "agent",
     status: "active" as const,
   },
   {
-    mandateKey: "flashcards.grade",
+    mandateKey: storedMandateKey("flashcards.grade"),
     holderName: "Grader Flow",
     holderType: "workflow",
     status: "active" as const,
   },
   {
-    mandateKey: "notes.organize",
+    mandateKey: storedMandateKey("notes.organize"),
     holderName: "None",
     holderType: null,
     status: "draft" as const,
   },
   {
-    mandateKey: "seo.site_intake",
+    mandateKey: storedMandateKey("seo.site_intake"),
     holderName: "Intake Agent",
     holderType: "agent",
     status: "active" as const,

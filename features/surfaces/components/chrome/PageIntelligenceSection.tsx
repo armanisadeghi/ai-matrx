@@ -16,6 +16,7 @@ import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mand
 import { fetchMandateIdentities, type MandateIdentity } from "@/features/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** The page's management doors, after agents and conversations in the menu. */
 export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void }) {
@@ -25,12 +26,12 @@ export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void })
   const [identities, setIdentities] = useState<Record<string, MandateIdentity>>({});
   const [namesError, setNamesError] = useState<unknown>(null);
 
-  const byKey = new Map<string, string>();
+  const byKey = new Map<AnyMandateKey, string>();
   for (const key of declaredKeysForRoute(pathname)) {
     byKey.set(key, featureIntelligenceHref(targetForKey(key), { mandateKey: key }));
   }
   for (const ref of live) {
-    const key = ref.mandateKey as string;
+    const key = ref.mandateKey;
     byKey.set(key, featureIntelligenceHref(targetForKey(key), { mandateKey: key }));
   }
   for (const door of doors) {
@@ -52,7 +53,8 @@ export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void })
   useEffect(() => {
     if (!keyList) return;
     let cancelled = false;
-    fetchMandateIdentities(keyList.split("|"))
+    // The keys were typed on the way in; the join is only the effect's stable identity.
+    fetchMandateIdentities(keyList.split("|") as AnyMandateKey[])
       .then((next) => {
         if (!cancelled) {
           setIdentities(next);

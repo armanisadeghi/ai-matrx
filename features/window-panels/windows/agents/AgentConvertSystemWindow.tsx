@@ -26,6 +26,7 @@ import { selectAgentName } from "@/features/agents/redux/agent-definition/select
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 interface AgentConvertSystemWindowProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ interface AgentConvertSystemWindowProps {
    * (`putMandateDefaultHolder`), never through the definition row.
    */
   mandateId?: string | null;
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   mandateLabel?: string | null;
 }
 

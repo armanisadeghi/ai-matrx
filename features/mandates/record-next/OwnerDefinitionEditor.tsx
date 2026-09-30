@@ -25,11 +25,12 @@ import {
   patchOwnerDefinition,
   type MandateDefinitionRights,
 } from "./owner-service";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** What this viewer may do to the definition. `null` while unknown or when
  * the read failed — every affordance stays absent until the server says yes. */
 export function useDefinitionRights(
-  mandateKey: string | null,
+  mandateKey: AnyMandateKey | null,
 ): MandateDefinitionRights | null {
   const dispatch = useAppDispatch();
   const [rights, setRights] = useState<MandateDefinitionRights | null>(null);
@@ -88,7 +89,7 @@ export function OwnerDefinitionEditor({
   const save = async () => {
     setSaving(true);
     try {
-      await patchOwnerDefinition(dispatch, mandate.mandate_key, {
+      await patchOwnerDefinition(dispatch, storedMandateKey(mandate.mandate_key), {
         label,
         description,
         outputKind,

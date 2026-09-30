@@ -26,6 +26,7 @@ import { createClient } from "@/utils/supabase/client";
 import { MandateDoorError } from "@/features/mandates/door-error";
 import { invalidateMandateCache } from "@/features/mandates/service";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** A refusal or failure from the promotion door, in the database's own words. */
 export class MandatePromotionError extends MandateDoorError {
@@ -46,7 +47,7 @@ export class MandatePromotionError extends MandateDoorError {
 
 export interface PromotedMandate {
   id: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string;
 }
 
@@ -109,7 +110,7 @@ export async function promoteMandateToSystem(
 
   return {
     id: created.id,
-    mandateKey: created.mandate_key,
+    mandateKey: storedMandateKey(created.mandate_key),
     label: created.label,
   };
 }

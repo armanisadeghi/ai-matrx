@@ -35,6 +35,7 @@ import type { Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import type { ValueMapping } from "@/features/surfaces/types";
 import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // ── Kind vocabulary (mirrors aidream provisions.py — the one law) ────────────
 
@@ -527,7 +528,7 @@ export type MandateBindingLayer = "organization" | "user";
  * bug report.
  */
 export function holderNotExecutableMessage(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   layer: MandateBindingLayer,
   bindingId: string | null,
   holderType: string,

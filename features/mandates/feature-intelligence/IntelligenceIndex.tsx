@@ -39,9 +39,10 @@ import {
   type DirectoryFeature,
   type MatchReason,
 } from "./index-model";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Kept for the index tests: one row per feature with its counts. */
-export function buildIndexRows(mandateKeys: readonly string[]) {
+export function buildIndexRows(mandateKeys: readonly AnyMandateKey[]) {
   return buildDirectory(
     mandateKeys.map((mandate_key) => ({ mandate_key })),
   ).map((row) => ({

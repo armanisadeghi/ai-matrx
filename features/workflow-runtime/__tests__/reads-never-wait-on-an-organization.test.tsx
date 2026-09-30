@@ -50,6 +50,7 @@ jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
 import { useServedRunForm } from "../served-form/useServedRunForm";
 import { useResultSchema } from "../kind-emissions/useResultSchema";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 async function mount(useHook: () => unknown): Promise<{
   current: unknown;
@@ -95,7 +96,7 @@ const READERS = {
     path: "/workflows/{definition_id}/result-schema",
   },
   "what a job asks for": {
-    use: () => useMandateInputSurface("content.brief"),
+    use: () => useMandateInputSurface(storedMandateKey("content.brief")),
     path: "/mandates/{mandate_key}/input-surface",
   },
 } as const;

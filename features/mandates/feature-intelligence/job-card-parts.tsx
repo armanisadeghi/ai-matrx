@@ -26,6 +26,7 @@ import { inputDisplayLabel } from "../peek/input-label";
 import { MandateStatusBadge } from "../status/MandateStatusBadge";
 import { useMandateLadder, type MandateRung } from "../workspace/useMandateLadder";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface JobContext {
   places: readonly ResolvedPlace[];
@@ -254,7 +255,7 @@ export function LadderChips({ row, job, className }: { row: FeatureIntelligenceR
 }
 
 /** Inputs — the served input surface, in plain words. */
-export function InputChips({ mandateKey, className }: { mandateKey: string; className?: string }) {
+export function InputChips({ mandateKey, className }: { mandateKey: AnyMandateKey; className?: string }) {
   const state = useMandateInputSurface(mandateKey);
   if (state.status === "loading") {
     return <span className="inline-block h-5 w-40 animate-pulse rounded bg-muted" aria-label="Reading inputs" />;

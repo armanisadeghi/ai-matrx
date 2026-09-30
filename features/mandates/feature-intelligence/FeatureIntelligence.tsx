@@ -45,6 +45,7 @@ import type {
   IntelligenceLevel,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface FeatureIntelligenceProps {
   /** The registry target (`research`, `seo`, `education/unassigned`) — `placement.ts`. */
@@ -52,14 +53,14 @@ export interface FeatureIntelligenceProps {
   /** Values the feature's place links need (`topicId`, `setId`, …). */
   context?: IntelligenceContext;
   /** Open with this job in view and highlighted. */
-  focusMandateKey?: string | null;
+  focusMandateKey?: AnyMandateKey | null;
   /**
    * A choice made for THIS context that runs ahead of the ladder (a research
    * topic's own agent). Keyed by mandate key.
    */
   runOverrides?: Readonly<Record<string, RunOverride>>;
   /** Remove an older context-specific choice after a mandate choice is saved. */
-  clearRunOverride?: (mandateKey: string) => Promise<void>;
+  clearRunOverride?: (mandateKey: AnyMandateKey) => Promise<void>;
   /** False when the route's header already names the page. */
   showTitle?: boolean;
   className?: string;
@@ -115,7 +116,7 @@ export function FeatureIntelligence({
     organizationId: seatOrgId,
   });
 
-  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  const [hoverKey, setHoverKey] = useState<AnyMandateKey | null>(null);
   const [hoverPlace, setHoverPlace] = useState<string | null>(null);
   const [ownFor, setOwnFor] = useState<FeatureIntelligenceRow | null>(null);
 

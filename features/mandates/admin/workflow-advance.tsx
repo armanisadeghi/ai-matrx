@@ -40,6 +40,7 @@ import {
   workflowPinLabel,
   type WorkflowImpactVerdict,
 } from "./workflow-impact";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export interface WorkflowAdvanceEligibility {
   batchable: boolean;
@@ -113,7 +114,7 @@ async function advanceOne(
 ): Promise<WorkflowAdvanceRowResult> {
   const target = verdict.latest_version_id as string;
   if (verdict.holder_kind === "mandate_default") {
-    const report = await putMandateDefaultHolder(dispatch, verdict.mandate_key, {
+    const report = await putMandateDefaultHolder(dispatch, storedMandateKey(verdict.mandate_key), {
       holderType: "workflow",
       agentId: null,
       agentVersionId: null,
@@ -147,7 +148,7 @@ async function advanceOne(
     row.principal_type === "org"
       ? { principalType: "org" as const, organizationId: row.organization_id as string }
       : { principalType: "user" as const };
-  const report = await putMandateBinding(dispatch, verdict.mandate_key, principal, {
+  const report = await putMandateBinding(dispatch, storedMandateKey(verdict.mandate_key), principal, {
     holderType: "workflow",
     agentId: null,
     holderId: verdict.workflow_id,

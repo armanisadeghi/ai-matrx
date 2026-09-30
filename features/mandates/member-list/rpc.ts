@@ -8,6 +8,7 @@ import { mandateStatusOf } from "@/features/mandates/status/mandate-status";
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import type { MandateMemberRow } from "./types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export type MandateMemberListArgs =
   Database["public"]["Functions"]["mnd_member_list"]["Args"];
@@ -63,7 +64,7 @@ const RUNGS = new Set(["user", "org", "system"]);
 export function memberRowFromWire(wire: MandateMemberWireRow): MandateMemberRow {
   return {
     id: wire.id,
-    mandateKey: wire.mandate_key,
+    mandateKey: storedMandateKey(wire.mandate_key),
     name: wire.name,
     featureLabel: wire.feature_label,
     goal: wire.goal,

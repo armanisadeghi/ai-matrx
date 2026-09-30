@@ -28,6 +28,7 @@ import type {
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { useCopyMandateAgent } from "@/features/mandates/useCopyMandateAgent";
 import { mandateRoute, type MandateListRow } from "./types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export function useMandateRowActions(
   _list: EntityListController<MandateListRow>,
@@ -37,8 +38,8 @@ export function useMandateRowActions(
 
   const openRowWindow = (row: MandateListRow) => {
     openWindow({
-      initialMandateKey: row.mandate_key,
-      mandateKeys: [row.mandate_key],
+      initialMandateKey: storedMandateKey(row.mandate_key),
+      mandateKeys: [storedMandateKey(row.mandate_key)],
       surfaceName: "matrx-user/agent-mandates-browse",
     });
   };

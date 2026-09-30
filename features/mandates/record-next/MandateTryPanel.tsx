@@ -64,6 +64,7 @@ import {
 import { runMandateTry, type MandateTryCandidate } from "./owner-service";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 type CandidateMode = "current" | "candidate";
 
@@ -191,7 +192,7 @@ export function MandateTryPanel({
   outputKind,
   organizationId,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** The mandate's declared output kind — narrows the workflow picker. */
   outputKind: string | null;
   /** Organization seat: the route organization the run happens in. */

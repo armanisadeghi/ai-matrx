@@ -1,7 +1,8 @@
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 // Every live mandate key (mandate.definition, deleted_at is null) on 2026-09-26,
 // minus the `shortcut.*` (207) and `app.*` (96) bulk, represented by two each.
 // The placement guard proves each one lands on a real registry node.
-export const LIVE_MANDATE_KEYS_2026_09_26: readonly string[] = `
+export const LIVE_MANDATE_KEYS_2026_09_26: readonly AnyMandateKey[] = `
 agent_apps.auto_create agent_apps.auto_create_lightning agent_apps.metadata
 agent_apps.prompt_app_dev agent_factory.structure_builder alchemy.prepare_content
 ambient.page_guidance ambient.spoken_summary audio.live_music audio.speech chat.cx_default
@@ -163,4 +164,7 @@ workflow.recovery_advisor workflow.run_assist_suggester workflow.step_intelligen
 workflow.steward.agent_run workflow.steward.data workflow.steward.decision
 workflow.steward.user_input workflow.wizard.agent_run zzz.fixr3_34d6aba702ba shortcut.generate_image
 shortcut.summarize_content app.flashcard_generator app.city_explorer
-`.split(/\s+/).filter(Boolean);
+`
+  .split(/\s+/)
+  .filter(Boolean)
+  .map(storedMandateKey);

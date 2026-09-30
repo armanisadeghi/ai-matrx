@@ -29,11 +29,12 @@ import {
   applyBulkSelection,
   bulkSelectionLabel,
 } from "@/features/bindings/batch/batch-model";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface SelectablePlace {
   key: string;
   label: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Whether the chosen rung already answers this job. */
   answeredHere: boolean;
   /** What the job declares, in words — the price, before the work. PROSE ONLY:

@@ -162,7 +162,7 @@ export function TryItNowPanel({
   // nothing loads" class (2026-09-12). Boot now always ends with a selection.
   const viewerOrgId = useAppSelector(selectOrganizationId);
   const [testContext, setTestContext] = useState<"system" | "viewer">("system");
-  const surfaceState = useMandateInputSurface(mandate.mandate_key);
+  const surfaceState = useMandateInputSurface(storedMandateKey(mandate.mandate_key));
   const surface = surfaceState.status === "ready" ? surfaceState.surface : null;
   const fields = surface?.inputs ?? [];
   const pinnedVersionId = (effectiveHolder ?? holderOfMandate(mandate))
@@ -358,7 +358,7 @@ export function TryItNowPanel({
         });
         return;
       }
-      const result = await runMandateAdHocTest(dispatch, mandate.mandate_key, {
+      const result = await runMandateAdHocTest(dispatch, storedMandateKey(mandate.mandate_key), {
         variables,
         userInput: message,
         candidate: {

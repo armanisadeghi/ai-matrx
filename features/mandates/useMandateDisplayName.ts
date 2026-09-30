@@ -35,6 +35,7 @@ import { useEffect, useState } from "react";
 
 import { fetchMandateIdentities } from "@/features/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** key → the author's label, once read. `null` = read, and there is none. */
 const labels = new Map<string, string | null>();
@@ -47,7 +48,7 @@ export function __resetMandateDisplayNameCache(): void {
   inflight.clear();
 }
 
-async function readLabel(mandateKey: string): Promise<string | null> {
+async function readLabel(mandateKey: AnyMandateKey): Promise<string | null> {
   const existing = inflight.get(mandateKey);
   if (existing) return existing;
   const run = fetchMandateIdentities([mandateKey])
@@ -79,7 +80,7 @@ async function readLabel(mandateKey: string): Promise<string | null> {
  * its own identity read); the hook then does no work at all.
  */
 export function useMandateDisplayName(
-  mandateKey: string,
+  mandateKey: AnyMandateKey | "",
   label?: string | null,
 ): string {
   const given = typeof label === "string" ? label.trim() : "";

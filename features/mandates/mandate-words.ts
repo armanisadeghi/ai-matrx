@@ -14,6 +14,7 @@
 // on its own mono sub-line, which is its honest home.
 
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * A job's name as a person reads it.
@@ -25,7 +26,7 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
  * empty name, and still nothing is made up.
  */
 export function mandateDisplayName(
-  mandateKey: string,
+  mandateKey: AnyMandateKey | "",
   label?: string | null,
 ): string {
   const explicit = typeof label === "string" ? label.trim() : "";

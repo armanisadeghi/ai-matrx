@@ -42,6 +42,7 @@ import {
   MESSAGING_MANDATE_KEY_LIST,
   type MessagingCapability,
 } from "./messagingMandates";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * The mandate resolver already narrows a binding's `config_overrides` to the
@@ -52,7 +53,7 @@ import {
  * reject — the same posture `toLlmParams` takes one layer up.
  */
 function toWireOverrides(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   overrides: Readonly<Record<string, unknown>> | null,
 ): Record<string, string | number | boolean> | null {
   if (overrides === null) return null;
@@ -86,7 +87,7 @@ export interface MessagingIntelligences {
   /** The resolved knob, or undefined while it loads (the package keeps its default). */
   maxTranscriptMessages: number | undefined;
   /** Mandate keys that refused, with the reason. For diagnostics, not the page. */
-  unresolved: readonly { mandateKey: string; reason: string }[];
+  unresolved: readonly { mandateKey: AnyMandateKey; reason: string }[];
 }
 
 export function useMessagingIntelligences(options: {
@@ -141,7 +142,7 @@ export function useMessagingIntelligences(options: {
     const agents: {
       -readonly [K in MessagingCapability]?: MessagingAgentIdentity;
     } = {};
-    const unresolved: { mandateKey: string; reason: string }[] = [];
+    const unresolved: { mandateKey: AnyMandateKey; reason: string }[] = [];
 
     (Object.keys(MESSAGING_MANDATE_KEYS) as MessagingCapability[]).forEach(
       (capability) => {

@@ -37,6 +37,7 @@ import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import type { MandateRowDb } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { describedOfferFrom } from "../described-offer";
 import type { PlaceOfferState } from "./batch-model";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const LOADING: PlaceOfferState = { status: "loading" };
 
@@ -80,7 +81,7 @@ export function usePlaceOffers(
     }
     let live = true;
     for (const place of places) {
-      const key = place.mandate_key;
+      const key = storedMandateKey(place.mandate_key);
       if (startedRef.current.has(key)) continue;
       // A record of a STARTED fetch, so it must be released on every exit that
       // did not deliver an offer — the effect's cleanup abandons the in-flight

@@ -46,6 +46,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type RecordTabId = MandateWorkspaceTab | "overrides-simple" | "runs";
 
@@ -154,7 +155,7 @@ export const MANDATE_LIST_PREVIEW_HREF = ADMIN_MANDATES_HOME;
 
 /** The new record page's address — the window's "open in a new tab" uses it. */
 export function mandateRecordPreviewHref(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   tab?: RecordTabId,
 ): string {
   const base = adminMandateRecordHref(mandateKey);

@@ -28,6 +28,7 @@ import {
 } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 import { MandateHomeBadge } from "./MandateHome";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 // The filter vocabularies are the DATABASE's, named once in ./types.ts —
 // listing them a second time here is how `global`, `holder unreachable` and
@@ -231,7 +232,7 @@ export function mandateColumnsFor(
         // Wide enough for the leader's mandate key the badge names.
         width: 220,
         cell: (row) => (
-          <MandateCoverageBadge mandateKey={row.mandate_key} nameLeader />
+          <MandateCoverageBadge mandateKey={storedMandateKey(row.mandate_key)} nameLeader />
         ),
       },
     },

@@ -33,6 +33,7 @@ import {
   type MandateCoverageStateIndex,
   type MandateCoverageStatesResponse,
 } from "@/features/mandates/coverage";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** The two states a row can be filtered to. Green is quiet, so never a filter. */
 export type MandateCoverageFilterBucket = "orange" | "red";
@@ -120,7 +121,7 @@ export function useMandateCoverageStates(
 }
 
 export interface MandateCoverageBadgeProps {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Show the leader's key inline (the table has the width; cards do not). */
   nameLeader?: boolean;
 }
@@ -148,7 +149,7 @@ export type CoverageBadgeVerdict =
 
 export function coverageBadgeVerdict(
   view: MandateCoverageView | null,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   nameLeader = false,
 ): CoverageBadgeVerdict {
   if (!view) return { kind: "none" };

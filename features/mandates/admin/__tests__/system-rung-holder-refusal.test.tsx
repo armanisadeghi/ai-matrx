@@ -77,6 +77,7 @@ import {
 } from "@/features/bindings/system-rung";
 import { defaultHolderRungOffer } from "@/features/bindings/default-holder-rung";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /** The real offer for a SYSTEM-homed job, as a super admin sees it. The answer
  *  for everybody is that job's own default (there is no global rung — aidream 1041). */
@@ -89,7 +90,7 @@ const SYSTEM_DEFAULT_OFFER = defaultHolderRungOffer({
 const SYSTEM_DEFAULT_LABEL = SYSTEM_DEFAULT_OFFER.label;
 
 const JOB = {
-  mandateKey: "research_client.output_slides",
+  mandateKey: storedMandateKey("research_client.output_slides"),
   label: "Research Output: Slides",
   outputKind: "presentation_deck",
   offeredCount: 0,

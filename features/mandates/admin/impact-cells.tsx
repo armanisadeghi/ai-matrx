@@ -62,6 +62,7 @@ import {
 } from "./impact";
 import type { ImpactWriteBusy } from "./impact-advance";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Why a row carries no verdict — each is a different fact. */
 export type UngradedReason = "loading" | "read_failed" | "no_agent" | "not_returned";
@@ -163,7 +164,7 @@ export function ImpactGradeCell({
   bindingVerdicts,
   ungraded,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   defaultVerdict: ImpactVerdict | null;
   bindingVerdicts: ImpactVerdict[];
   ungraded: UngradedReason | null;
@@ -303,8 +304,8 @@ export function ImpactBlockerCell({
           title={meta.remedy}
           onClick={() =>
             openMandateWindow({
-              initialMandateKey: verdict.mandate_key,
-              mandateKeys: [verdict.mandate_key],
+              initialMandateKey: storedMandateKey(verdict.mandate_key),
+              mandateKeys: [storedMandateKey(verdict.mandate_key)],
               initialView: "admin",
               surfaceName: "administration-mandates",
             })

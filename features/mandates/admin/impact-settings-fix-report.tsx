@@ -21,10 +21,11 @@ import {
   type WriteContext,
 } from "./impact";
 import type { SettingsFixOutcome } from "./impact-settings-fix";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface SettingsFixRowBefore {
   rungId: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   tier: BatchTier;
   versions: string;
 }

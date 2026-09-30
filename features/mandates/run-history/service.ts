@@ -16,6 +16,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { MandateDoorError } from "../door-error";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type RunHistoryView = "mine" | "org" | "platform";
 export type RunStatus = "succeeded" | "failed" | "stopped" | "waiting" | "running";
@@ -70,7 +71,7 @@ export interface MandateRunPage {
 }
 
 export interface MandateRunQuery {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   view: RunHistoryView;
   organizationId?: string | null;
   userId?: string | null;

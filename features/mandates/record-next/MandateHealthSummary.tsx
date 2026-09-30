@@ -26,6 +26,7 @@ import {
 } from "@/features/mandates/code-references/health";
 import { plainFailureReason } from "@/lib/entity-list/failure";
 import { asClause } from "@/lib/text/asClause";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const SEVERITY_CLASS: Record<HealthFinding["severity"], string> = {
   high: "border-red-500/40 text-red-700 dark:text-red-400",
@@ -38,7 +39,7 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; findings: HealthFinding[]; failed: string[] };
 
-export function MandateHealthSummary({ mandateKey }: { mandateKey: string }) {
+export function MandateHealthSummary({ mandateKey }: { mandateKey: AnyMandateKey }) {
   const dispatch = useAppDispatch();
   const [state, setState] = useState<State>({ status: "loading" });
 

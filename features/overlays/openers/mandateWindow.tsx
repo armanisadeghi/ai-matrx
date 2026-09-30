@@ -16,6 +16,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 const OVERLAY_ID = "mandateWindow" as const;
 
 /**
@@ -28,9 +29,9 @@ export type MandateWindowView = "yours" | "admin";
 
 export interface OpenMandateWindowOptions {
   /** The mandate to select on open. */
-  initialMandateKey?: string;
+  initialMandateKey?: AnyMandateKey;
   /** The mandates in scope — fixed jobs this surface actually runs. */
-  mandateKeys?: string[];
+  mandateKeys?: AnyMandateKey[];
   /** The surface the window was opened from. Stamped onto notes written there. */
   surfaceName?: string | null;
   /** Which pane opens first. Defaults to "yours" (works for every user). */

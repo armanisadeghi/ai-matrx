@@ -71,6 +71,7 @@ jest.mock("@/features/organizations/components/OrganizationPickerPanel", () => (
 
 import { MandateReferenceBoardView } from "../MandateReferenceBoardView";
 import { MandateSourceUsage } from "../MandateSourceUsage";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 async function mount(node: React.ReactElement) {
   const container = document.createElement("div");
@@ -165,7 +166,7 @@ describe.each(SURFACES)("%s and the organization question", (_name, render) => {
 describe("a key's source usage never waits on the organization", () => {
   const usage = () => (
     <MandateSourceUsage
-      mandateKey="test.key"
+      mandateKey={storedMandateKey("test.key")}
       fallback={{ declaration: null, importFailed: false }}
     />
   );

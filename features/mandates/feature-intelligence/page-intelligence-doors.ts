@@ -2,11 +2,12 @@
 
 import { useSyncExternalStore } from "react";
 import type { IntelligenceContext } from "./types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface PageIntelligenceDoor {
   feature: string;
   context?: IntelligenceContext;
-  mandateKeys?: readonly string[];
+  mandateKeys?: readonly AnyMandateKey[];
 }
 
 const doors = new Map<symbol, PageIntelligenceDoor>();

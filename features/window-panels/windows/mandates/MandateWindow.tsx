@@ -67,17 +67,18 @@ import { cn } from "@/lib/utils";
 import type { MandateWindowView } from "@/features/overlays/openers/mandateWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface MandateWindowProps {
   isOpen?: boolean;
   onClose?: () => void;
   /** The mandate to select on open. */
-  initialMandateKey?: string;
+  initialMandateKey?: AnyMandateKey;
   /**
    * The mandates in scope — normally fixed jobs this surface actually runs.
    * Empty or omitted loads every mandate (the Tools-grid entry point).
    */
-  mandateKeys?: string[];
+  mandateKeys?: AnyMandateKey[];
   /** Where this was opened from. Stamped on notes; shown as the window's context. */
   surfaceName?: string;
   initialView?: MandateWindowView;
@@ -123,7 +124,8 @@ function MandateWindowInner({
   );
 
   const load = useCallback(() => {
-    const keys = scopeKey ? scopeKey.split("|") : [];
+    // The keys were typed on the way in; the join is only the memo's stable identity.
+    const keys = scopeKey ? (scopeKey.split("|") as AnyMandateKey[]) : [];
     fetchMandateConsoleData(keys.length > 0 ? { mandateKeys: keys } : {})
       .then((next) => {
         setData(next);

@@ -17,10 +17,13 @@ import { useTopicContext } from "../../context/ResearchContext";
 import { AGENT_CONFIG_KEYS } from "../../admin/types";
 import { getTopic, removeTopicAgentChoice } from "../../service";
 import { ROLE_MANDATE_KEYS } from "../agents/constants";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export default function TopicIntelligencePage() {
   const { topic, topicId, refresh } = useTopicContext();
-  const focus = useSearchParams().get("mandate");
+  // The page boundary: the one place the URL's `mandate=` enters the typed world.
+  const focusParam = useSearchParams().get("mandate");
+  const focus = focusParam ? storedMandateKey(focusParam) : null;
   const dispatch = useAppDispatch();
   const agents = useAppSelector(selectAllAgentsArray);
   const [removedChoices, setRemovedChoices] = useState<Record<string, string>>({});
@@ -82,7 +85,7 @@ export default function TopicIntelligencePage() {
     };
   }
 
-  const clearRunOverride = async (mandateKey: string) => {
+  const clearRunOverride = async (mandateKey: AnyMandateKey) => {
     const key = AGENT_CONFIG_KEYS.find((candidate) => ROLE_MANDATE_KEYS[candidate] === mandateKey);
     if (!key) throw new Error("This job has no topic-level agent choice to remove.");
     const expectedId = runOverrides[mandateKey]?.holderId;

@@ -16,6 +16,7 @@
 
 import type { DistillationApproach } from "./approaches";
 import { approachState, startableApproaches } from "./approaches";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 function approach(over: Partial<DistillationApproach> = {}): DistillationApproach {
   return {
@@ -25,7 +26,7 @@ function approach(over: Partial<DistillationApproach> = {}): DistillationApproac
     blurb: "blurb",
     whatItNeeds: "needs",
     costTimeShape: "minutes",
-    mandateKey: "masterwork.example",
+    mandateKey: storedMandateKey("masterwork.example"),
     intakeQuery: { ingest: "source" },
     sortOrder: 10,
     enabled: true,

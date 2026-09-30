@@ -20,6 +20,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface WorkflowStarterResult {
   workflow_id: string;
@@ -50,12 +51,12 @@ export function workflowStudioHref(studioPath: string): string {
 export function useStartMandateWorkflow(): {
   starting: boolean;
   /** Returns the new workflow, or null when it was not created. */
-  startWorkflow: (mandateKey: string) => Promise<WorkflowStarterResult | null>;
+  startWorkflow: (mandateKey: AnyMandateKey) => Promise<WorkflowStarterResult | null>;
 } {
   const dispatch = useAppDispatch();
   const [starting, setStarting] = useState(false);
 
-  const startWorkflow = async (mandateKey: string) => {
+  const startWorkflow = async (mandateKey: AnyMandateKey) => {
     // Opened on the click itself, so the browser does not treat the studio
     // tab as an unrequested popup once the create call returns.
     const studio = typeof window !== "undefined" ? window.open("", "_blank") : null;

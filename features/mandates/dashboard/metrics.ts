@@ -30,6 +30,7 @@ import type {
 } from "@/features/mandates/admin/service";
 import type { MandateReferenceBoard } from "@/features/mandates/admin/references";
 import type { WorkflowImpactReport } from "@/features/mandates/admin/workflow-impact";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface FeatureCount {
   feature: string;
@@ -70,8 +71,8 @@ export interface BindingMetrics {
  * console's `system` home) — never the server's whole-registry totals, so a
  * tile and the filtered list behind it always agree.
  */
-export function systemKeys(data: MandateConsoleData | null): string[] | null {
-  return data ? data.mandates.map((row) => row.mandate_key) : null;
+export function systemKeys(data: MandateConsoleData | null): AnyMandateKey[] | null {
+  return data ? data.mandates.map((row) => storedMandateKey(row.mandate_key)) : null;
 }
 
 export function definitionMetrics(
@@ -99,7 +100,10 @@ export function definitionMetrics(
     else if (row.default_holder_version_id) defaultsPinned += 1;
     else defaultsLatest += 1;
     // The list's own Feature label, so a feature row filters to exactly its rows.
-    const feature = featureLabelOf(row.mandate_key, moduleByKey.get(row.mandate_key));
+    const feature = featureLabelOf(
+      storedMandateKey(row.mandate_key),
+      moduleByKey.get(row.mandate_key),
+    );
     const entry = byFeature.get(feature) ?? { feature, total: 0, codeBacked: 0 };
     entry.total += 1;
     if (isCode) entry.codeBacked += 1;
@@ -287,7 +291,7 @@ export function scanMetrics(
 
 export function coverageCounts(
   coverage: MandateCoverageResponse | null,
-  keys: readonly string[] | null,
+  keys: readonly AnyMandateKey[] | null,
 ): Record<MandateCoverageBucket, number> | null {
   if (!coverage || !keys) return null;
   return scopedCoverageOf(buildCoverageIndex(coverage), keys).counts;

@@ -16,18 +16,19 @@ import {
 } from "@/features/mandates/record-next/record-tabs";
 import { MandateOverridesSimple } from "./MandateOverridesSimple";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export function OverridesPreviewPage({
   mandateKey,
   systemOnly = false,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** The Intelligence management route: system mandates only (Arman, 2026-09-26). */
   systemOnly?: boolean;
 }) {
   const { data, loading, error, failure, refresh } =
     useMandateWorkspaceData(mandateKey, { systemOnly });
-  const resolvedKey = data ? data.mandate.mandate_key : mandateKey;
+  const resolvedKey = data ? storedMandateKey(data.mandate.mandate_key) : mandateKey;
   const name = useMandateDisplayName(resolvedKey, data?.mandate.label);
   // The new pages this one sits beside — the list preview and the record
   // preview — never the old ones.

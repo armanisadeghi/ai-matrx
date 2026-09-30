@@ -26,6 +26,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * What the page knows about the typed key. `unknown` is a first-class answer:
@@ -75,6 +76,6 @@ export async function probeMandateKey(
     status: "taken",
     mandateKey: data.mandate_key,
     label: data.label?.trim() || data.mandate_key,
-    href: adminMandateRecordHref(data.mandate_key),
+    href: adminMandateRecordHref(storedMandateKey(data.mandate_key)),
   };
 }

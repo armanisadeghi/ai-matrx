@@ -122,6 +122,7 @@ import {
   type MandateTestBatchResponse,
   type MandateVariableResolution,
 } from "../service";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 function makeDispatch() {
   // Same dev-check posture as the production makeStore (lib/redux/store.ts).
@@ -291,7 +292,7 @@ describe("mandate owner bench service", () => {
           result("newer", "2026-08-09T11:00:00Z", "provider failed"),
         ],
       },
-      { mandateKey: "seo.classify", exemplarId: "exemplar-1" },
+      { mandateKey: storedMandateKey("seo.classify"), exemplarId: storedMandateKey("exemplar-1") },
     );
 
     expect(parsed.map((entry) => entry.id)).toEqual(["newer", "older"]);
@@ -345,7 +346,7 @@ describe("mandate owner bench service", () => {
     mockTransport.api = { data: BATCH_RESPONSE };
 
     await expect(
-      runMandateTests(makeDispatch(), "seo.classify", BATCH_REQUEST),
+      runMandateTests(makeDispatch(), storedMandateKey("seo.classify"), BATCH_REQUEST),
     ).resolves.toEqual(BATCH_RESPONSE);
 
     expect(mockApiConfigs).toEqual([
@@ -386,7 +387,7 @@ describe("mandate owner bench service", () => {
     };
 
     await expect(
-      runMandateTests(makeDispatch(), "seo.classify", BATCH_REQUEST),
+      runMandateTests(makeDispatch(), storedMandateKey("seo.classify"), BATCH_REQUEST),
     ).rejects.toThrow("Agent mandate bench returned an invalid batch response.");
   });
 
@@ -400,7 +401,7 @@ describe("mandate owner bench service", () => {
     };
 
     await expect(
-      runMandateTests(makeDispatch(), "seo.classify", BATCH_REQUEST),
+      runMandateTests(makeDispatch(), storedMandateKey("seo.classify"), BATCH_REQUEST),
     ).rejects.toThrow("Mandate seo.classify has no exemplars");
   });
 
@@ -450,9 +451,9 @@ describe("mandate owner bench service", () => {
     await expect(
       fetchMandateConsoleData({
         mandateKeys: [
-          "seo.classify",
+          storedMandateKey("seo.classify"),
           "podcast.deep_research",
-          "seo.classify",
+          storedMandateKey("seo.classify"),
         ],
       }),
     ).resolves.toEqual({
@@ -490,7 +491,7 @@ describe("mandate owner bench service", () => {
     mockTransport.respond = () => ({ data: null, error: refusal });
 
     await expect(
-      fetchMandateConsoleData({ mandateKeys: ["seo.classify"] }),
+      fetchMandateConsoleData({ mandateKeys: [storedMandateKey("seo.classify")] }),
     ).rejects.toEqual(refusal);
   });
 

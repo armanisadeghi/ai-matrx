@@ -23,6 +23,7 @@ import {
   resolveEndpointPath,
   type EndpointOverrideConfig,
 } from "@/lib/api/resolve-endpoint-path";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export const AGENT_START_PATH_TEMPLATE = "/ai/agents/{agent_id}" as const;
 export const MANDATE_START_PATH_TEMPLATE = "/ai/mandates/{mandate_key}" as const;
@@ -33,7 +34,7 @@ export interface StartPathInput {
   /** Frozen `agx_version` id when the launch pinned one. */
   pinnedVersionId?: string | null;
   /** The conversation's mandate key, when it is mandate-driven. */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /** Active endpoint override layers (API version, per-path overrides). */
   overrideConfig?: EndpointOverrideConfig;
 }

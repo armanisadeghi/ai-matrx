@@ -5,7 +5,7 @@
 // features/mandates/feature-intelligence/__tests__/declared-places.test.ts,
 // which also follows the feature's key maps listed in `aliases`.
 
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/types";
 import { ASSESSMENT_MANDATES } from "./assessment/data/mandates";
 import { CONVERT_MANDATES } from "./convert/mandates";
@@ -19,7 +19,7 @@ import { EDU_TUTOR_MANDATES, TUTOR_MANDATE_KEY } from "./tutor/mandates";
 const K = MANDATE_KEYS;
 
 /** The page assistant's per-section jobs — every `education.*_guidance` key. */
-const GUIDANCE = (Object.values(MANDATE_KEYS) as string[]).filter(
+const GUIDANCE = (Object.values(MANDATE_KEYS) as MandateKey[]).filter(
   (key) => key.startsWith("education.") && key.endsWith("_guidance"),
 );
 

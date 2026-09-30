@@ -55,6 +55,7 @@ import {
   type MandateDefinitionRow,
   type MandateDefinitionUpdate,
 } from "@/lib/supabase/mandateStorage";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 
 const MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS = 60_000;
@@ -190,7 +191,7 @@ export interface FetchMandateConsoleDataOptions {
    * platform's 409 and their bindings. Omitted or empty = the whole corpus of
    * the requested HOME.
    */
-  mandateKeys?: readonly string[];
+  mandateKeys?: readonly AnyMandateKey[];
   /**
    * The ids of those same mandates, when the caller already holds them (a
    * server-paged list does). Lets the bindings read start at once, beside the
@@ -487,7 +488,7 @@ export async function updateMandateDefinition(
   // consumer — the mandates console, useMandate resolvers, pickers — refreshes
   // no matter which surface performed the rebind (console buttons, the pin
   // editor, or the Linked Agent Sync window).
-  invalidateMandateCache(data.mandate_key);
+  invalidateMandateCache(storedMandateKey(data.mandate_key));
   return data;
 }
 
@@ -863,7 +864,7 @@ export async function softDeleteMandate(mandateId: string): Promise<void> {
       "This job was not removed — either it is already removed, or your account is not allowed to remove it. Nothing changed.",
     );
   }
-  invalidateMandateCache(data.mandate_key);
+  invalidateMandateCache(storedMandateKey(data.mandate_key));
 }
 
 export async function deleteMandateExemplar(id: string): Promise<void> {
@@ -1060,7 +1061,7 @@ export async function fetchMandateVariableVerdicts(
  * backend, diagnostics, and the generated request contract. */
 export async function runMandateTests(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   request: MandateTestBatchRequest,
 ): Promise<MandateTestBatchResponse> {
   const response = await dispatch(
@@ -1107,7 +1108,7 @@ function isMandateTestBatchResponse(
 }
 
 export interface MandateTestHistoryContext {
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   exemplarId?: string;
 }
 

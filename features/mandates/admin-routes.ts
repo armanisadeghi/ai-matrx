@@ -1,3 +1,4 @@
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 // features/mandates/admin-routes.ts
 //
 // THE admin addresses of the mandate pages. Mandates are a Feature of the
@@ -12,12 +13,12 @@
 export const ADMIN_MANDATES_HOME = "/administration/intelligence/mandates";
 
 /** ONE mandate on the new record page. */
-export function adminMandateRecordHref(mandateKey: string): string {
+export function adminMandateRecordHref(mandateKey: AnyMandateKey): string {
   return `${ADMIN_MANDATES_HOME}/${encodeURIComponent(mandateKey)}`;
 }
 
 /** The simple Overrides page for one mandate, at the system level. */
-export function adminMandateOverridesHref(mandateKey: string): string {
+export function adminMandateOverridesHref(mandateKey: AnyMandateKey): string {
   return `${adminMandateRecordHref(mandateKey)}/overrides`;
 }
 

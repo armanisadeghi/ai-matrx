@@ -67,6 +67,7 @@ import {
   type MandateBindingRow,
   type MandateDefinitionRow,
 } from "@/lib/supabase/mandateStorage";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type { MandateBindingRow, MandateDefinitionRow };
 
@@ -194,7 +195,7 @@ export interface MandatePickerData {
 }
 
 export async function fetchMandatePickerData(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   userId: string,
 ): Promise<MandatePickerData> {
   const supabase = createClient();
@@ -513,7 +514,7 @@ export function parseBindingWriteReport(raw: unknown): BindingWriteReport {
  * see `BindingWriteReport`; a caller with nowhere to print it may ignore it. */
 export async function putMandateBinding(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   principal: MandateBindingPrincipalInput,
   input: MandateBindingInput & { isEnabled?: boolean },
 ): Promise<BindingWriteReport> {
@@ -724,7 +725,7 @@ export function parseDefaultHolderResult(
  */
 export async function putMandateDefaultHolder(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   input: MandateDefaultHolderInput,
   settings?: MandateDefaultSettingsInput,
 ): Promise<DefaultHolderWriteReport> {
@@ -777,7 +778,7 @@ export async function putMandateDefaultHolder(
  * system default). Idempotent. */
 export async function removeMandateBinding(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   principal: MandateBindingPrincipalInput,
 ): Promise<void> {
   const scope = await bindingScope(principal);

@@ -80,6 +80,7 @@ import type { HolderDraft } from "./ScopeHolderBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ArchivedHolderNotice } from "./ArchivedHolderNotice";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
 export const LATEST_VERSION_VALUE = "latest";
@@ -100,7 +101,7 @@ export interface HolderAssignmentProps {
    */
   holderName?: string | null;
   /** Identity for the dropdown's consumer slot. */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** What may hold this job here — enforced on the list, not warned about. */
   agentTabs?: {
     visibleTabs?: readonly AgentTab[];

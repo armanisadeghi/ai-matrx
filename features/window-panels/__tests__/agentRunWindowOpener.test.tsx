@@ -11,6 +11,7 @@ import {
   useOpenAgentRunWindow,
   type AgentRunWindowHandle,
 } from "@/features/overlays/openers/agentRunWindow";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * The opener stamps the window with WHO is running it and WHICH workspace the
@@ -68,7 +69,7 @@ describe("agentRunWindow opener", () => {
             handle = open({
               instanceId: "goal-writer:research_client.output_slides",
               initialAgentId: "holder-under-test",
-              mandateKey: "mandate.goal_writer",
+              mandateKey: storedMandateKey("mandate.goal_writer"),
               surfaceName: "matrx-admin/mandate-workspace",
               initialVariableValues: { task_overview: "Job: x" },
               initialAutoRun: true,

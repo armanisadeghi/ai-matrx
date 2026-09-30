@@ -14,6 +14,7 @@ import {
   judgeDeclaredFlattening,
   judgeHarvestedFlattening,
 } from "../structured-output-flattening";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 describe("isStructuredOutputKind", () => {
   it("treats undeclared and prose kinds as prose", () => {
@@ -35,7 +36,7 @@ describe("judgeDeclaredFlattening (signal 1 — the mandate declares a shape)", 
   it("screams when a text run targets a mandate declaring a structured kind", () => {
     const verdict = judgeDeclaredFlattening({
       expect: "text",
-      mandateKey: "mandate.goal_writer",
+      mandateKey: storedMandateKey("mandate.goal_writer"),
       outputKind: "agent_mandate_specification",
       surfaceKey: "mandate:mandate.goal_writer",
     });
@@ -48,7 +49,7 @@ describe("judgeDeclaredFlattening (signal 1 — the mandate declares a shape)", 
 
   it("stays quiet for json runs, prose jobs, undeclared jobs and agent-id runs", () => {
     const base = {
-      mandateKey: "x.y",
+      mandateKey: storedMandateKey("x.y"),
       surfaceKey: "s",
     } as const;
     expect(

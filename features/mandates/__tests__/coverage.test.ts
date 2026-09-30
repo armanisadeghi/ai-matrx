@@ -15,6 +15,7 @@ import {
   coverageBucketOf,
   type MandateCoverageResponse,
 } from "../coverage";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const report = (
   overrides: Partial<MandateCoverageResponse> = {},
@@ -69,7 +70,7 @@ describe("buildCoverageIndex", () => {
         red: [{ mandate_key: "x.both", reason: "nothing assigned" }],
       }),
     );
-    expect(coverageBucketOf(index, "x.both")).toBe("red");
+    expect(coverageBucketOf(index, storedMandateKey("x.both"))).toBe("red");
   });
 });
 
@@ -82,8 +83,8 @@ describe("coverageBucketOf", () => {
       }),
     );
     expect(coverageBucketOf(index, "podcast.multihost_script")).toBe("green");
-    expect(coverageBucketOf(index, "a.orange")).toBe("orange");
-    expect(coverageBucketOf(index, "a.red")).toBe("red");
+    expect(coverageBucketOf(index, storedMandateKey("a.orange"))).toBe("orange");
+    expect(coverageBucketOf(index, storedMandateKey("a.red"))).toBe("red");
   });
 
   it("folds every named row into the buckets the counts claim", () => {
@@ -96,7 +97,7 @@ describe("coverageBucketOf", () => {
       red: [{ mandate_key: "r.one", reason: "r" }],
     });
     const index = buildCoverageIndex(live);
-    const keys = ["g.a", "g.b", "g.c", "o.one", "o.two", "r.one"];
+    const keys = ["g.a", "g.b", "g.c", "o.one", "o.two", "r.one"].map(storedMandateKey);
     const tally = { green: 0, orange: 0, red: 0 };
     for (const key of keys) tally[coverageBucketOf(index, key)] += 1;
     expect(tally).toEqual(live.counts);

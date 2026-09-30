@@ -173,6 +173,7 @@ import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import { bindingAccessTarget } from "./access-target";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind
@@ -703,7 +704,7 @@ function BindingDraft({
   // the one place that knows every declaration, so it answers when there is no
   // code provision. Never re-derived here.
   const surfaceState = useMandateInputSurface(
-    data.provisionKey ? null : data.mandate.mandate_key,
+    data.provisionKey ? null : storedMandateKey(data.mandate.mandate_key),
   );
   const describedOffer: ProvisionOffer | null = useMemo(() => {
     if (data.provisionKey) return null;
@@ -711,7 +712,7 @@ function BindingDraft({
     // The derivation is SHARED with batch mode — one rule for what a job
     // offers, whichever mode is asking (`described-offer.ts`).
     return describedOfferFrom({
-      mandateKey: data.mandate.mandate_key,
+      mandateKey: storedMandateKey(data.mandate.mandate_key),
       label: data.mandate.label,
       draftInputs: (data.mandate as { draft_inputs?: unknown }).draft_inputs,
       surface: surfaceState.surface,
@@ -974,7 +975,7 @@ function BindingDraft({
         throw new Error("Select an organization to read inherited model settings");
       }
       const ladder = rung === "org" || rung === "user"
-        ? await fetchMandateLadder(data.mandate.mandate_key, inheritanceOrganizationId)
+        ? await fetchMandateLadder(storedMandateKey(data.mandate.mandate_key), inheritanceOrganizationId)
         : [];
       if (cancelled) return;
       if ((rung === "org" || rung === "user") && !ladder.some((row) => row.rung === "system")) {
@@ -1281,7 +1282,7 @@ function BindingDraft({
       const writingAgentId = overriding ? bindAgentId : agentId;
       const result = await putMandateDefaultHolder(
         dispatch,
-        data.mandate.mandate_key,
+        storedMandateKey(data.mandate.mandate_key),
         holder.kind === "workflow"
           ? {
               holderType: "workflow",
@@ -1361,7 +1362,7 @@ function BindingDraft({
     // this screen that describes the row that now exists rather than the draft.
     const report = await putMandateBinding(
       dispatch,
-      data.mandate.mandate_key,
+      storedMandateKey(data.mandate.mandate_key),
       // Only two rungs are bindings: "everybody" is the job's own default,
       // written above (aidream 1037).
       rung === "org"
@@ -1538,7 +1539,7 @@ function BindingDraft({
     try {
       await removeMandateBinding(
         dispatch,
-        data.mandate.mandate_key,
+        storedMandateKey(data.mandate.mandate_key),
         rung === "org"
           ? { principalType: "org", organizationId: organizationId as string }
           : { principalType: "user" },
@@ -2056,7 +2057,7 @@ function BindingDraft({
             null
           }
           job={{
-            mandateKey: data.mandate.mandate_key,
+            mandateKey: storedMandateKey(data.mandate.mandate_key),
             label: data.mandate.label ?? data.mandate.mandate_key,
             outputKind: data.mandate.output_kind,
             offeredCount:
@@ -2124,7 +2125,7 @@ function BindingDraft({
                 : null
             }
             holderInputs={holderInputs}
-            currentMandateKey={data.mandate.mandate_key}
+            currentMandateKey={storedMandateKey(data.mandate.mandate_key)}
             disabled={disabled}
             onChanged={onBatchWrote}
           />

@@ -255,10 +255,10 @@ function OneMandateRecordBody({
   // a code-backed or platform one is not, and a pencil that would 403 is
   // never shown.
   const rights = useDefinitionRights(
-    !authoring && data && !readOnly ? data.mandate.mandate_key : null,
+    !authoring && data && !readOnly ? storedMandateKey(data.mandate.mandate_key) : null,
   );
   const ownerCanEdit = Boolean(rights?.can_edit);
-  const ladderKey = data ? data.mandate.mandate_key : "";
+  const ladderKey = data ? storedMandateKey(data.mandate.mandate_key) : "";
   const personLadderOrgId = displayResolutionOrgId({
     pageOrgFilter,
     homeOrganizationId: data?.mandate.organization_id,
@@ -353,7 +353,7 @@ function OneMandateRecordBody({
         )
       : null;
   // The list's and dashboard's own feature words ("SEO", "Shortcuts").
-  const feature = featureLabelOf(data.mandate.mandate_key, null);
+  const feature = featureLabelOf(storedMandateKey(data.mandate.mandate_key), null);
   // The export menu speaks the workspace's tab ids; the simple Overrides tab
   // is this page's addition, so it exports as the Overrides tab it mirrors.
   const tabIds = (tabs ?? visibleRecordTabs(showAdmin))
@@ -405,14 +405,14 @@ function OneMandateRecordBody({
       {renderChrome?.({
         // The same name every mandate surface shows (label, else the key's
         // last segment in words) — the window, the list and the dashboard.
-        name: mandateDisplayName(data.mandate.mandate_key, data.mandate.label),
+        name: mandateDisplayName(storedMandateKey(data.mandate.mandate_key), data.mandate.label),
         data,
         exportMenu,
         refresh,
       })}
       <MandateCoverageAlert
         className="mb-3"
-        mandateKey={data.mandate.mandate_key}
+        mandateKey={storedMandateKey(data.mandate.mandate_key)}
         // A read-only seat gets the verdict without a button it cannot use.
         onAssignHolder={readOnly ? undefined : () => onTabChange("holder")}
         resolvedHolder={resolvedHolderForBannerOf(
@@ -464,7 +464,7 @@ function OneMandateRecordBody({
             host={host}
           />
         </div>
-        <MandateProvenancePanel mandateKey={data.mandate.mandate_key} />
+        <MandateProvenancePanel mandateKey={storedMandateKey(data.mandate.mandate_key)} />
       </div>
       {perspective !== "system" ? (
         <div
@@ -513,7 +513,7 @@ function OneMandateRecordBody({
                 action: "Change binding",
                 resource: {
                   kind: "Mandate",
-                  name: mandateDisplayName(data.mandate.mandate_key, data.mandate.label),
+                  name: mandateDisplayName(storedMandateKey(data.mandate.mandate_key), data.mandate.label),
                   type: "mandate",
                   id: data.mandate.id,
                 },
@@ -560,7 +560,7 @@ function OneMandateRecordBody({
         >
           {activeTab === "test" ? (
             <MandateTryPanel
-              mandateKey={data.mandate.mandate_key}
+              mandateKey={storedMandateKey(data.mandate.mandate_key)}
               outputKind={data.mandate.output_kind ?? null}
               organizationId={principal.kind === "org" ? principal.orgId : null}
             />
@@ -569,7 +569,7 @@ function OneMandateRecordBody({
       ) : null}
       {showAdmin ? (
         <RecordAdminPanels
-          mandateKey={data.mandate.mandate_key}
+          mandateKey={storedMandateKey(data.mandate.mandate_key)}
           activeTab={activeTab}
         />
       ) : null}
@@ -613,7 +613,7 @@ function OneMandateRecordBody({
         >
           {activeTab === "runs" ? (
             <MandateRunHistory
-              mandateKey={data.mandate.mandate_key}
+              mandateKey={storedMandateKey(data.mandate.mandate_key)}
               view={principal.kind === "org" && !readOnly ? "org" : "mine"}
               organizationId={principal.kind === "org" ? principal.orgId : null}
             />
@@ -629,7 +629,7 @@ function OneMandateRecordBody({
         <Section title="Notes">
           <MandateNotesPanel
             mandateId={data.mandate.id}
-            mandateKey={data.mandate.mandate_key}
+            mandateKey={storedMandateKey(data.mandate.mandate_key)}
             surfaceName={
               host === "window"
                 ? undefined

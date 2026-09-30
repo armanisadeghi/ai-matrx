@@ -10,6 +10,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { declaredPlacesFor, declaredPlacesForTarget } from "./registry";
 import type { IntelligenceContext, ResolvedPlace } from "./types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export { declaredPlacesFor };
 
@@ -104,7 +105,7 @@ async function placesFromRoles(
     if (existing) {
       grouped.set(role.surface_name, {
         ...existing,
-        mandateKeys: [...new Set([...existing.mandateKeys, role.mandate_key])],
+        mandateKeys: [...new Set([...existing.mandateKeys, storedMandateKey(role.mandate_key)])],
         trigger: existing.trigger.includes(role.label ?? "")
           ? existing.trigger
           : [existing.trigger, role.label].filter(Boolean).join(", "),
@@ -117,7 +118,7 @@ async function placesFromRoles(
       trigger: role.label ?? "",
       href: fillUrlPattern(surface?.url_pattern, context),
       urlPattern: surface?.url_pattern ?? null,
-      mandateKeys: [role.mandate_key],
+      mandateKeys: [storedMandateKey(role.mandate_key)],
       origin: "registered",
     });
   }

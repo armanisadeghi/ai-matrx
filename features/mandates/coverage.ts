@@ -37,6 +37,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@/types/python-generated/api-types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type MandateCoverageResponse =
   components["schemas"]["MandateCoverageResponse"];
@@ -139,7 +140,7 @@ export function buildCoverageIndex(
 
 export function coverageBucketOf(
   index: MandateCoverageIndex,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): MandateCoverageBucket {
   return index[mandateKey]?.bucket ?? "green";
 }
@@ -152,7 +153,7 @@ export function coverageBucketOf(
  * One named row on a coverage strip: the mandate, and why it is in its bucket.
  */
 export interface MandateCoverageNamedRow {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** The Holder carrying it (orange) or the reason nothing does (red). */
   detail: string;
 }
@@ -184,7 +185,7 @@ export interface ScopedMandateCoverage {
  */
 export function scopedCoverageOf(
   index: MandateCoverageIndex,
-  mandateKeys: readonly string[],
+  mandateKeys: readonly AnyMandateKey[],
 ): ScopedMandateCoverage {
   const counts: Record<MandateCoverageBucket, number> = {
     green: 0,

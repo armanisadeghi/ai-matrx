@@ -23,6 +23,7 @@ import { invalidateMandateCache } from "@/features/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 type Mandate = MandateWorkspaceData["mandate"];
 
@@ -58,12 +59,12 @@ export function MandateVisibilityControl({
           onClose={() => {
             setOpen(false);
             // Sharing or publishing may have changed inside the dialog; the row and its cache re-read.
-            invalidateMandateCache(mandate.mandate_key);
+            invalidateMandateCache(storedMandateKey(mandate.mandate_key));
             onChanged();
           }}
           resourceType="mandate"
           resourceId={mandate.id}
-          resourceName={mandateDisplayName(mandate.mandate_key, mandate.label)}
+          resourceName={mandateDisplayName(storedMandateKey(mandate.mandate_key), mandate.label)}
           resourceNoun="mandate"
         />
       ) : null}

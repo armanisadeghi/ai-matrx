@@ -22,10 +22,11 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface MandateAncestor {
   id: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string;
 }
 
@@ -85,7 +86,7 @@ export async function fetchMandateLineage(
     source: ancestor.data
       ? {
           id: ancestor.data.id,
-          mandateKey: ancestor.data.mandate_key,
+          mandateKey: storedMandateKey(ancestor.data.mandate_key),
           label: ancestor.data.label,
         }
       : null,

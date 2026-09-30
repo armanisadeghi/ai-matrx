@@ -37,6 +37,7 @@ import {
   type MandateDefinitionRow,
 } from "./service";
 import { contractOfMandate } from "@/lib/supabase/mandateStorage";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export interface RebindRequest {
   /** The agent to bind. */
@@ -117,7 +118,7 @@ export function useGuardedRebind({
         // verbatim, because `putMandateDefaultHolder` throws `bindGateMessage`.
         await putMandateDefaultHolder(
           dispatch,
-          mandate.mandate_key,
+          storedMandateKey(mandate.mandate_key),
           agentDefaultHolder(
             request.agentId,
             request.useLatest === false ? (request.versionId ?? null) : null,
@@ -213,7 +214,7 @@ export function useGuardedRebind({
             <div className="flex flex-wrap items-center gap-2">
               <CopyButton
                 content={buildRebindFixBrief({
-                  mandateKey: mandate.mandate_key,
+                  mandateKey: storedMandateKey(mandate.mandate_key),
                   candidateName: pending.request.agentName,
                   impact: pending.impact,
                   codeTruth: codeTruth ?? undefined,

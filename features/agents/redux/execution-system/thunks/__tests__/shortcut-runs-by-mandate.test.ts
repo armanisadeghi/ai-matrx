@@ -24,6 +24,7 @@ jest.mock("@/lib/supabase/shortcutStorage", () => ({
 import { createInstanceFromShortcut } from "../create-instance.thunk";
 import { resolveStartPath } from "../../utils/resolve-start-path";
 import { fetchShortcutMandateKey } from "@/lib/supabase/shortcutStorage";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const SHORTCUT_ID = "11111111-1111-4111-8111-111111111111";
 const AGENT_ID = "22222222-2222-4222-8222-222222222222";
@@ -77,7 +78,7 @@ describe("a shortcut launch runs through its mandate", () => {
     const door = resolveStartPath({
       agentId: created!.agentId as string,
       pinnedVersionId: (created!.initialAgentVersionId as string | null) ?? null,
-      mandateKey: created!.mandateKey as string,
+      mandateKey: created!.mandateKey as AnyMandateKey | null,
     });
     expect(door.door).toBe("mandate");
     expect(door.path).toContain("/ai/mandates/shortcut.summarize_content");

@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "../../admin/types";
 import type { AgentConfigKey } from "../../admin/types";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * The system agents that drive the research pipeline, one AGENT MANDATE per
@@ -28,7 +29,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
  * `suggest` is intentionally NOT keyed under AGENT_CONFIG_KEYS — it's
  * pre-topic (no `rs_topic.agent_config` entry) and surfaced read-only.
  */
-export const ROLE_MANDATE_KEYS: Record<AgentConfigKey, string> = {
+export const ROLE_MANDATE_KEYS: Record<AgentConfigKey, MandateKey> = {
   page_summary_agent_id: MANDATE_KEYS.research__structured_page_summary,
   keyword_synthesis_agent_id: MANDATE_KEYS.research__keyword_synthesis,
   research_report_agent_id: MANDATE_KEYS.research__report,
@@ -44,7 +45,7 @@ export interface AgentRoleDefinition {
   /** JSONB key in `rs_topic.agent_config`. `null` for system-only roles. */
   configKey: AgentConfigKey | null;
   /** The mandate backing this role (`agent.mandate.mandate_key`). */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string;
   description: string;
   usedBy: string;
@@ -64,7 +65,7 @@ export interface AgentRoleDefinition {
 /** Static role metadata; ids come from the mandate registry at render time. */
 export interface AgentRoleTemplate {
   configKey: AgentConfigKey | null;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string;
   description: string;
   usedBy: string;

@@ -30,6 +30,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
 import type { components } from "@/types/python-generated/api-types";
 import { usableServerNotes } from "@/components/official/ServerNotes";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Bench transport shapes — aidream's generated OpenAPI contract. */
 export type MandateTestCandidate = components["schemas"]["MandateCandidate"];
@@ -295,7 +296,7 @@ export function isMandateTestResult(
  */
 export async function runMandateAdHocTest(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   input: {
     variables: JsonObject;
     userInput?: string | null;

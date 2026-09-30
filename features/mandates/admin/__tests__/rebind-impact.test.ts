@@ -13,6 +13,7 @@ import {
   computeRebindImpact,
 } from "../rebind-impact";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const v = (
   name: string,
@@ -170,7 +171,7 @@ describe("buildRebindFixBrief", () => {
     };
     const impact = codeTruthRebindImpact(codeTruth);
     const brief = buildRebindFixBrief({
-      mandateKey: codeTruth.mandate_key,
+      mandateKey: storedMandateKey(codeTruth.mandate_key),
       candidateName: codeTruth.bound_agent.name,
       impact,
       codeTruth,

@@ -46,6 +46,7 @@ import {
   type MandateProvenanceReport,
 } from "@/features/mandates/provenance";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** A link that opens a surface, in the panel's own small type. */
 function SurfaceLink({ href, children }: { href: string; children: string }) {
@@ -65,7 +66,7 @@ function SurfaceLink({ href, children }: { href: string; children: string }) {
 export function MandateProvenancePanel({
   mandateKey,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
 }) {
   const { report, loading, error } = useMandateProvenance(mandateKey);
   useMandateAlchemyTabCapture("definition", loading && !report && !error

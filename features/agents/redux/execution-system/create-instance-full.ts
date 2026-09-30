@@ -34,6 +34,7 @@ import type {
   SourceFeature,
 } from "@/features/agents/types/instance.types";
 import type { InitInstanceUIStatePayload } from "./instance-ui-state/instance-ui-state.slice";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface CreateInstanceFullPayload {
   // ── Conversation record (conversations slice) ───────────────────────────────
@@ -48,7 +49,7 @@ export interface CreateInstanceFullPayload {
    * THE MANDATE DOOR — when set, turn 1 POSTs `/ai/mandates/{mandateKey}` and
    * the SERVER resolves which agent runs. `agentId` is display identity only.
    */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   isEphemeral?: boolean;
 
   /**

@@ -62,6 +62,7 @@ import {
 } from "@/features/mandates/coverage";
 import { useMandateCoverageStates } from "@/features/mandates/browse/CoverageBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * WHAT THE BANNER SAYS, as a value. Every one of these is a way to get honesty
@@ -155,7 +156,7 @@ export function MandateCoverageAlert({
   className,
   resolvedHolder,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /**
    * Where a Holder is actually chosen. Omitted by a host that has no such
    * control — and then no control is drawn, because a button that goes nowhere

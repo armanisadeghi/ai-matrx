@@ -25,6 +25,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@/features/mandates/service";
 import type { CreateMandateInput, DraftInput } from "@/features/mandates/authoring/service";
 import type { MandateListLevel } from "@/features/mandates/member-list/types";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface CreateSoftMandateInput extends CreateMandateInput {
   level: MandateListLevel;
@@ -33,7 +34,7 @@ export interface CreateSoftMandateInput extends CreateMandateInput {
 }
 
 export interface CreatedSoftMandate {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   mandateId: string;
   organizationId: string;
 }
@@ -102,9 +103,9 @@ export async function createSoftMandate(
     mandate_id: string;
     organization_id: string;
   };
-  invalidateMandateCache(data.mandate_key);
+  invalidateMandateCache(storedMandateKey(data.mandate_key));
   return {
-    mandateKey: data.mandate_key,
+    mandateKey: storedMandateKey(data.mandate_key),
     mandateId: data.mandate_id,
     organizationId: data.organization_id,
   };

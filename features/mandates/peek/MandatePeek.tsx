@@ -50,12 +50,13 @@ import {
   PEEK_CONTENT_PROPS,
   useTransientPeek,
 } from "@/features/organizations/peek/useTransientPeek";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface MandateFacts {
   id: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   label: string;
   description: string | null;
   outputKind: string | null;
@@ -96,7 +97,7 @@ function useMandateFacts(idOrKey: string, active: boolean): FactsState {
         status: "ready",
         facts: {
           id: data.id,
-          mandateKey: data.mandate_key,
+          mandateKey: storedMandateKey(data.mandate_key),
           label: data.label,
           description: data.description,
           outputKind: data.output_kind ?? null,
@@ -149,7 +150,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function Inputs({ mandateKey }: { mandateKey: string }) {
+function Inputs({ mandateKey }: { mandateKey: AnyMandateKey }) {
   const state = useMandateInputSurface(mandateKey);
   if (state.status === "loading") {
     return <div className="h-6 w-48 animate-pulse rounded bg-muted" aria-label="Reading inputs" />;

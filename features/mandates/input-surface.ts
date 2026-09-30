@@ -39,6 +39,7 @@ import {
   parseServedInput,
   type ServedInput,
 } from "@/features/workflow-runtime/served-form/served-input";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Where the served declaration came from. `none` is the ONLY value that
  * licenses the words "user text only". */
@@ -49,7 +50,7 @@ export type MandateSurfaceSource =
   | "none";
 
 export interface MandateInputSurface {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   provisionKey: string | null;
   surfaceSource: MandateSurfaceSource;
   /** The agent (or holder) whose declarations informed the surface. */
@@ -79,7 +80,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /** Parse the served payload. Pure — unit-testable without a browser. */
 export function parseMandateInputSurface(
   raw: unknown,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): MandateInputSurface {
   const record = isRecord(raw) ? raw : {};
   const inputs = Array.isArray(record.inputs)
@@ -94,7 +95,9 @@ export function parseMandateInputSurface(
       : "none";
   return {
     mandateKey:
-      typeof record.mandate_key === "string" ? record.mandate_key : mandateKey,
+      typeof record.mandate_key === "string"
+        ? storedMandateKey(record.mandate_key)
+        : mandateKey,
     provisionKey:
       typeof record.provision_key === "string" ? record.provision_key : null,
     // A surface that served entries is never "none", whatever the label says —
@@ -181,7 +184,7 @@ export function describeInputSurfaceFailure(
 /** `GET /mandates/{mandate_key}/input-surface`, resolved for the caller (their
  * own override's Holder is the one that informs the form). */
 export function useMandateInputSurface(
-  mandateKey: string | null,
+  mandateKey: AnyMandateKey | null,
   /**
    * The organization the page is ABOUT (an organization's own mandate page).
    * Access follows the object: that page answers for its organization's rung

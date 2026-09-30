@@ -59,6 +59,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { BackendApiError } from "@/lib/api/errors";
 import { keyFromName, softMandateNamespace } from "./soft-key";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export interface NewSoftMandatePageProps {
   level: MandateListLevel;
@@ -218,7 +219,8 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
   // A taken key's door opens the mandate on THIS seat, not the admin route.
   const takenHref =
     keyState.status === "taken"
-      ? memberMandateRecordHref(level, keyState.mandateKey, orgId)
+      ? // Taken means a row holds it: from here on it is a stored key.
+        memberMandateRecordHref(level, storedMandateKey(keyState.mandateKey), orgId)
       : null;
 
   /**

@@ -31,6 +31,7 @@ import type {
   MandateConsoleData,
   MandateDefinitionRow,
 } from "./service";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Mandate health, worst-first. Drives the Health column + the drawer banner. */
 export type MandateHealth =
@@ -100,7 +101,7 @@ export function agentHref(
 export interface MandateRow {
   mandate: MandateDefinitionRow;
   id: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** First segment of the canonical `<feature>.<mandate>` key. */
   feature: string;
   /** Everything after the first dot; later dots remain part of the mandate. */
@@ -427,7 +428,7 @@ export function buildRow(
   return {
     mandate,
     id: mandate.id,
-    mandateKey: mandate.mandate_key,
+    mandateKey: storedMandateKey(mandate.mandate_key),
     feature: mandateKeyParts.feature,
     mandateName: mandateKeyParts.mandate,
     label: mandate.label,

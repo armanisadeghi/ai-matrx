@@ -23,6 +23,7 @@ import type {
   IntakeAssetRow,
   PipelineState,
 } from "@/features/commerce-intake/types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Gate-1 value buckets (live CHECK `intake_asset_bucket_chk`). */
 export type ValueBucket =
@@ -191,7 +192,7 @@ export interface TriageItem {
   aiConfidence: number | null;
   aiReasoning: string | null;
   valuationResultId: string | null;
-  valuationMandateKey: string | null;
+  valuationMandateKey: AnyMandateKey | null;
   /** Photo file_ids in capture order (first = the card image). */
   photoFileIds: string[];
   createdAt: string;
@@ -205,7 +206,7 @@ export interface DraftItem {
   notes: string;
   /** The live (non-superseded, succeeded) listing_draft result. */
   draftResultId: string | null;
-  draftMandateKey: string | null;
+  draftMandateKey: AnyMandateKey | null;
   confidence: number | null;
   reasoning: string | null;
   /** The draft's fields, flattened to editable strings. */

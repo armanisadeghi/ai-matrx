@@ -325,8 +325,7 @@ export const buildAgentShortcutMenu = createAsyncThunk<
 
           // The mandate this shortcut IS — every run goes through its key
           // (aidream 1042 serves it on every menu item).
-          mandateKey:
-            (item as { mandate_key?: string | null }).mandate_key ?? null,
+          mandateKey: mandateKeyOfMenuItem(item),
 
           agentName: item.agent?.name ?? null,
           variableDefinitions: parsedVariableDefinitions,
@@ -1599,6 +1598,7 @@ import {
   mandateIdOfShortcutRow,
   mandateKeyOfShortcutRow,
 } from "@/lib/supabase/shortcutStorage";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // Content-block CRUD moved to the canonical skl thunks
 // (features/agent-connections/redux/skl/thunks.ts —
@@ -1609,3 +1609,9 @@ export type { UpdateCategoryInput } from "../agent-shortcut-categories/thunks";
 // mergePartialCategory is re-exported so the unified-menu consumer can seed
 // the slice with partial data outside of a full fetch.
 export { mergePartialCategory };
+
+/** The mandate a served menu item IS — a key the platform wrote on the row. */
+function mandateKeyOfMenuItem(item: unknown): AnyMandateKey | null {
+  const key = (item as { mandate_key?: string | null }).mandate_key ?? null;
+  return key ? storedMandateKey(key) : null;
+}

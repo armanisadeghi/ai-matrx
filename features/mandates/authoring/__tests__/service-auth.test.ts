@@ -7,6 +7,7 @@ import {
   patchMandateDraftInputs,
   patchMandateGoal,
 } from "../service";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 jest.mock("@/lib/api/call-api", () => ({
   callApi: jest.fn((config: unknown) => config),
@@ -55,7 +56,7 @@ describe("mandate authoring authentication boundary", () => {
       () =>
         patchMandateGoal(
           dispatch as unknown as AppDispatch,
-          "feature.job",
+          storedMandateKey("feature.job"),
           "New goal",
         ),
     ],
@@ -64,7 +65,7 @@ describe("mandate authoring authentication boundary", () => {
       () =>
         patchMandateDraftInputs(
           dispatch as unknown as AppDispatch,
-          "feature.job",
+          storedMandateKey("feature.job"),
           [],
         ),
     ],

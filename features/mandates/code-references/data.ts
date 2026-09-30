@@ -21,6 +21,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface LatestReference {
   identity_hash: string;
@@ -311,7 +312,7 @@ export const FLAG_WORDS: Record<
 
 export interface ReferenceFinding {
   id: string;
-  mandateKey: string;
+  mandateKey: AnyMandateKey | "";
   /** Scanner flag, or "absent" for a reference the latest scan no longer finds. */
   flag: string;
   /** True for AI calls running outside any mandate (the scan's bypass sites). */
@@ -338,7 +339,7 @@ export async function fetchReferenceFindings(): Promise<ReferenceFinding[]> {
   const bypassId = ids.get("bypass");
   return rows.map((row) => ({
     id: row.identity_hash,
-    mandateKey: row.mandate_key ?? "",
+    mandateKey: row.mandate_key ? storedMandateKey(row.mandate_key) : "",
     flag: row.flag && row.flag !== "ok" ? row.flag : "absent",
     outsideMandate: row.reference_type_id === bypassId,
     repo: row.repo_slug ?? "",
@@ -355,7 +356,7 @@ export async function fetchReferenceFindings(): Promise<ReferenceFinding[]> {
 const DECLARATION_TYPES = new Set(["declaration", "family_declaration"]);
 
 export interface MandateSourceFacts {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Repos holding a declaration of this mandate, sorted. */
   declaredIn: string[];
   /** Repos holding a call site (anything not a declaration), sorted. */
@@ -389,8 +390,9 @@ export async function fetchMandateSourceFacts(
   const out = new Map<string, MandateSourceFacts>();
   const sets = new Map<string, { declared: Set<string>; called: Set<string>; langs: Set<string> }>();
   for (const row of rows) {
-    const key = row.mandate_key?.trim();
-    if (!key) continue;
+    const trimmed = row.mandate_key?.trim();
+    if (!trimmed) continue;
+    const key = storedMandateKey(trimmed);
     let facts = out.get(key);
     let set = sets.get(key);
     if (!facts || !set) {

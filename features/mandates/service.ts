@@ -95,6 +95,7 @@ import {
   parseTreatmentConfig,
   type BindingPresentation,
 } from "@/features/bindings/treatment-shape";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export interface ResolvedMandate {
   mandateKey: AnyMandateKey;
@@ -315,7 +316,7 @@ const cache = new Map<string, { at: number; value: ResolvedMandate }>();
 function mandateCacheKey(
   userId: string,
   organizationId: string,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): string {
   return `${userId}:${organizationId}:${mandateKey}`;
 }
@@ -336,11 +337,11 @@ export function dropMandateCacheForOrgSwitch(): void {
  * (binding saved/removed) — how a mounted picker/consumer refreshes without
  * prop-drilling a reload. `mandateKey === undefined` means "all mandates". */
 const invalidationListeners = new Set<
-  (mandateKey: string | undefined) => void
+  (mandateKey: AnyMandateKey | undefined) => void
 >();
 
 export function onMandateCacheInvalidated(
-  listener: (mandateKey: string | undefined) => void,
+  listener: (mandateKey: AnyMandateKey | undefined) => void,
 ): () => void {
   invalidationListeners.add(listener);
   return () => invalidationListeners.delete(listener);
@@ -359,7 +360,7 @@ export function onMandateCacheInvalidated(
  *   · `provisionCache` (`./provisions`) — provision OFFERS; carries no goal, so
  *     a goal write leaves it alone. A provision write clears it itself.
  */
-export function invalidateMandateCache(mandateKey?: string): void {
+export function invalidateMandateCache(mandateKey?: AnyMandateKey): void {
   // The goal and the rest of the declaration live in the catalogue, which is
   // cached for the page's life. Any mandate write can make it a lie.
   invalidateMandateCatalogueCache();
@@ -390,7 +391,7 @@ type MandateResolutionResponse =
  */
 export class MandateOrganizationUnresolvedError extends Error {
   readonly code = "mandate_organization_unresolved";
-  constructor(readonly mandateKey: string, readonly admission: Exclude<OrganizationAdmission, "ready"> = "unresolved") {
+  constructor(readonly mandateKey: AnyMandateKey, readonly admission: Exclude<OrganizationAdmission, "ready"> = "unresolved") {
     super(admission === "timed-out"
       ? `mandate "${mandateKey}" cannot resolve yet: workspace initialization timed out. Wait for initialization or reload if it remains stuck; no workspace was chosen for you.`
       : admission === "unavailable"
@@ -761,7 +762,7 @@ export async function resolveMandateHolder(
  * it answers "what is the system default", not "what runs for me".
  */
 export interface MandatePin {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Master agent row id (always backfilled on mandate rows; loud if missing). */
   agentId: string;
   /** Pinned agx_version id — null for floating (use_latest) mandates. */
@@ -784,7 +785,7 @@ const pinCache = new Map<string, { at: number; value: MandatePin }>();
 
 /** Fetch the system default pins for a set of mandates in one query. */
 export async function fetchMandatePins(
-  mandateKeys: readonly string[],
+  mandateKeys: readonly AnyMandateKey[],
 ): Promise<Record<string, MandatePin>> {
   const out: Record<string, MandatePin> = {};
   const missing: string[] = [];
@@ -816,7 +817,7 @@ export async function fetchMandatePins(
       continue;
     }
     const value: MandatePin = {
-      mandateKey: row.mandate_key,
+      mandateKey: storedMandateKey(row.mandate_key),
       agentId: holder.holderId,
       versionId: holder.versionId,
       useLatest: isFloatingMandate(row),
@@ -851,7 +852,7 @@ export async function fetchMandatePins(
  * database does not have is a wiring defect worth seeing.
  */
 export interface MandateIdentity {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   mandateId: string;
   label: string;
   description: string | null;
@@ -860,7 +861,7 @@ export interface MandateIdentity {
 }
 
 export async function fetchMandateIdentities(
-  mandateKeys: readonly string[],
+  mandateKeys: readonly AnyMandateKey[],
 ): Promise<Record<string, MandateIdentity>> {
   const keys = [...new Set(mandateKeys)].filter(Boolean);
   const out: Record<string, MandateIdentity> = {};
@@ -876,7 +877,7 @@ export async function fetchMandateIdentities(
 
   for (const row of data ?? []) {
     out[row.mandate_key] = {
-      mandateKey: row.mandate_key,
+      mandateKey: storedMandateKey(row.mandate_key),
       mandateId: row.id,
       label: row.label,
       description: row.description,
@@ -899,7 +900,7 @@ export async function fetchMandateIdentities(
 
 /** Fetch the platform-default Holder identities for a small set of mandates. */
 export async function fetchMandateAssignments(
-  mandateKeys: readonly string[],
+  mandateKeys: readonly AnyMandateKey[],
 ): Promise<Record<string, MandateAssignment>> {
   const pins = await fetchMandatePins(mandateKeys);
   const agentIds = [...new Set(Object.values(pins).map((pin) => pin.agentId))];

@@ -39,6 +39,7 @@ import { registryDomain } from "./taxonomy";
 import { keyInFeature, shortMandateName } from "./service";
 import type { IntelligenceContext } from "./types";
 import { registerPageIntelligenceDoor } from "./page-intelligence-doors";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface IntelligenceIndicatorProps {
   /**
@@ -49,7 +50,7 @@ export interface IntelligenceIndicatorProps {
    */
   feature?: string;
   /** The jobs behind this spot. Omit to use what the page registered. */
-  mandateKeys?: readonly string[];
+  mandateKeys?: readonly AnyMandateKey[];
   /** Values the intelligence page's links need (`topicId`, `setId`, …). */
   context?: IntelligenceContext;
   /** What the jobs are for here, when the host has better words than "this page". */
@@ -81,7 +82,7 @@ export function routeMatchesPattern(pathname: string, pattern: string): boolean 
 }
 
 /** The jobs declared for exactly this route, across every feature's places map. */
-export function declaredKeysForRoute(pathname: string): string[] {
+export function declaredKeysForRoute(pathname: string): AnyMandateKey[] {
   const matched = DECLARED_FEATURES.flatMap((feature) =>
     feature.places.filter(
       (place) => place.urlPattern && routeMatchesPattern(pathname, place.urlPattern),
@@ -92,7 +93,7 @@ export function declaredKeysForRoute(pathname: string): string[] {
   const isStatic = (pattern: string) => !pattern.includes("[");
   const anyStatic = matched.some((place) => isStatic(place.urlPattern!));
   const places = anyStatic ? matched.filter((place) => isStatic(place.urlPattern!)) : matched;
-  return [...new Set(places.flatMap((place) => place.mandateKeys as readonly string[]))];
+  return [...new Set(places.flatMap((place) => place.mandateKeys))];
 }
 
 export function IntelligenceIndicator({
@@ -109,18 +110,18 @@ export function IntelligenceIndicator({
   const pathname = usePathname() ?? "";
   const routeScoped = scope === "route" && !mandateKeys;
   const resolvedFeature = feature ?? (mandateKeys?.[0] ? targetForKey(mandateKeys[0]) : null);
-  const belongs = (key: string) =>
+  const belongs = (key: AnyMandateKey) =>
     !resolvedFeature ||
     keyInFeature(key, resolvedFeature) ||
     targetForKey(key) === resolvedFeature;
   const registered = mandateKeys
     ? [...mandateKeys]
-    : live.map((ref) => ref.mandateKey as string).filter(belongs);
+    : live.map((ref) => ref.mandateKey).filter(belongs);
   // A door on a page that has not registered its jobs yet (the growth loop
   // before it starts) still lists the feature's jobs from its places map,
   // never an empty list under "the AI jobs behind this".
   const keys = routeScoped
-    ? [...new Set([...live.map((ref) => ref.mandateKey as string), ...declaredKeysForRoute(pathname)])]
+    ? [...new Set([...live.map((ref) => ref.mandateKey), ...declaredKeysForRoute(pathname)])]
     : registered.length > 0 || !resolvedFeature
       ? registered
       : [
@@ -130,7 +131,7 @@ export function IntelligenceIndicator({
             ),
           ),
         ];
-  const does = new Map(live.map((ref) => [ref.mandateKey as string, ref.does]));
+  const does = new Map(live.map((ref) => [ref.mandateKey, ref.does]));
 
   const [open, setOpen] = useState(false);
   const [identities, setIdentities] = useState<Record<string, MandateIdentity>>({});
@@ -148,7 +149,8 @@ export function IntelligenceIndicator({
   useEffect(() => {
     if (!open || !keyList) return;
     let cancelled = false;
-    fetchMandateIdentities(keyList.split("|"))
+    // The keys were typed on the way in; the join is only the effect's stable identity.
+    fetchMandateIdentities(keyList.split("|") as AnyMandateKey[])
       .then((next) => {
         if (cancelled) return;
         setIdentities(next);

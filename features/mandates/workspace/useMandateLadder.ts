@@ -28,6 +28,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
 import { onMandateCacheInvalidated } from "../service";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** A rung of the one ladder. `run` never appears here — it is not stored. */
 export type MandateRung = "system" | "org" | "user";
@@ -110,7 +111,7 @@ function toMandateLadderRow(row: GeneratedLadderRow): MandateLadderRow {
 }
 
 export async function fetchMandateLadder(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   organizationId: string | null,
 ): Promise<MandateLadderRow[]> {
   const args = organizationId
@@ -141,7 +142,7 @@ export interface MandateLadderState {
  * saving an override on this very page updates the rungs beneath it.
  */
 export function useMandateLadder(
-  mandateKey: string,
+  mandateKey: AnyMandateKey | "",
   organizationId: string | null,
 ): MandateLadderState {
   const enabled = mandateKey.trim().length > 0;
@@ -169,7 +170,7 @@ export function useMandateLadder(
   );
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !mandateKey) return;
     let cancelled = false;
     fetchMandateLadder(mandateKey, organizationId)
       .then((rows) => {

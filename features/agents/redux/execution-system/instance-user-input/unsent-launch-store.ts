@@ -30,6 +30,7 @@
 
 import { DRAFT_TTL_MS } from "@/lib/drafts/useTextDraft";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const PREFIX = "matrx.unsent-launch.";
 
@@ -37,7 +38,7 @@ export interface UnsentLaunchRecipe {
   v: 1;
   savedAt: number;
   agentId: string;
-  mandateKey: string | null;
+  mandateKey: AnyMandateKey | null;
   sourceFeature: string | null;
   surfaceKey: string | null;
   /** The page surface the run was bound to; `null` = the explicit opt-out. */

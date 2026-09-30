@@ -8,6 +8,7 @@ import { keyInFeature, lanesFor, shortMandateName } from "../service";
 import { featureIntelligenceHref, featureOfMandateKey } from "../hrefs";
 import { effectiveRunOverride } from "../run-override";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "../types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const place = (over: Partial<ResolvedPlace>): ResolvedPlace => ({
   id: "p",
@@ -38,18 +39,18 @@ describe("feature intelligence — places", () => {
 
   it("merges a registered screen into the declared place at the same route", () => {
     const merged = mergePlaces(
-      [place({ id: "deck", urlPattern: "/x/[id]", mandateKeys: ["a.one"] })],
+      [place({ id: "deck", urlPattern: "/x/[id]", mandateKeys: [storedMandateKey("a.one")] })],
       [
         place({
           id: "r1",
           urlPattern: "/x/[id]",
-          mandateKeys: ["a.two"],
+          mandateKeys: [storedMandateKey("a.two")],
           origin: "registered",
         }),
         place({
           id: "r2",
           urlPattern: "/y",
-          mandateKeys: ["a.three"],
+          mandateKeys: [storedMandateKey("a.three")],
           origin: "registered",
         }),
       ],
@@ -150,10 +151,10 @@ describe("feature intelligence — registered places", () => {
       [
         place({
           id: "a",
-          mandateKeys: ["seo.x", "seo.hidden"],
+          mandateKeys: [storedMandateKey("seo.x"), storedMandateKey("seo.hidden")],
           origin: "registered",
         }),
-        place({ id: "b", mandateKeys: ["seo.hidden"], origin: "registered" }),
+        place({ id: "b", mandateKeys: [storedMandateKey("seo.hidden")], origin: "registered" }),
       ],
       new Set(["seo.x"]),
     );

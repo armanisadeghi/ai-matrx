@@ -44,10 +44,11 @@ import type {
   MandateDefaultState,
   MandateServes,
 } from "./types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** One place a mandate is served from, read from its own table. */
 export interface MandateServeLink {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   kind: Exclude<MandateServes, "Feature code" | "Nothing found">;
   detail: string;
 }
@@ -106,7 +107,7 @@ export function prettySegment(segment: string): string {
  * (`aidream.services.seo.ai_visibility`) the sub-area is added.
  */
 export function featureLabelOf(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   sourceModule: string | null | undefined,
 ): string {
   const { feature } = splitMandateKey(mandateKey);
@@ -129,7 +130,7 @@ export function featureLabelOf(
  *      declaration exists in aidream even when the class inspection misses it.
  */
 export function declaredInOf(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   truth: MandateCodeTruth | undefined,
 ): {
   declaredIn: string | null;

@@ -19,20 +19,22 @@ import {
   targetLabel,
 } from "./placement";
 import { registryDomain } from "./taxonomy";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type RouteQuery = Record<string, string | string[] | undefined>;
 
 /** `?mandate=` focuses one job; `?q=` is the search; every other value fills place links. */
 export function splitQuery(query: RouteQuery): {
-  focus: string | null;
+  focus: AnyMandateKey | null;
   context: Record<string, string>;
 } {
   const context: Record<string, string> = {};
-  let focus: string | null = null;
+  let focus: AnyMandateKey | null = null;
   for (const [name, raw] of Object.entries(query)) {
     const value = Array.isArray(raw) ? raw[0] : raw;
     if (!value) continue;
-    if (name === "mandate") focus = value;
+    // The page boundary: the one place a URL's `mandate=` enters the typed world.
+    if (name === "mandate") focus = storedMandateKey(value);
     // The search box's own query (IntelligenceSearch) — never a place value.
     else if (name === "q") continue;
     else context[name] = value;

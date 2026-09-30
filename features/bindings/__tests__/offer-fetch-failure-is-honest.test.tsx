@@ -42,6 +42,7 @@ import {
   useMandateInputSurface,
   type MandateInputSurfaceState,
 } from "@/features/mandates/input-surface";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -84,7 +85,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   },
 }));
 
-const MANDATE_KEY = "signal_scale_podcast.episode_notes";
+const MANDATE_KEY = storedMandateKey("signal_scale_podcast.episode_notes");
 
 /** The bare transport code that reached a person's screen. */
 const BARE = /HTTP\s*\d{3}/;

@@ -23,6 +23,7 @@ import {
   parseMandateInputSurface,
   userTextSentence,
 } from "../input-surface";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const TRIAD = join(process.cwd(), "features/mandates/workspace/TriadSections.tsx");
 const ADMIN_PANEL = join(
@@ -38,7 +39,7 @@ describe("the user-text sentence comes from the served surface", () => {
   it("says accepted when the surface says accepted", () => {
     const surface = parseMandateInputSurface(
       { mandate_key: "zzz.scratch_job", accepts_user_input: true, inputs: [] },
-      "zzz.scratch_job",
+      storedMandateKey("zzz.scratch_job"),
     );
     expect(userTextSentence(surface)).toContain("accepted");
     expect(userTextSentence(surface)).not.toContain("not accepted");
@@ -47,7 +48,7 @@ describe("the user-text sentence comes from the served surface", () => {
   it("says NOT accepted when the surface says so — and never 'platform default'", () => {
     const surface = parseMandateInputSurface(
       { mandate_key: "zzz.scratch_job", accepts_user_input: false, inputs: [] },
-      "zzz.scratch_job",
+      storedMandateKey("zzz.scratch_job"),
     );
     expect(userTextSentence(surface)).toContain("not accepted");
     // The old user-host copy asserted a default it had never read.
@@ -57,7 +58,7 @@ describe("the user-text sentence comes from the served surface", () => {
   it("a missing flag is NOT read as acceptance", () => {
     const surface = parseMandateInputSurface(
       { mandate_key: "zzz.scratch_job", inputs: [] },
-      "zzz.scratch_job",
+      storedMandateKey("zzz.scratch_job"),
     );
     expect(surface.acceptsUserInput).toBe(false);
   });

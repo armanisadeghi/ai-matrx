@@ -25,13 +25,15 @@ import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdva
 import { agentHref } from "@/features/mandates/admin/mandate-health";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import type { UnifiedUsageRow } from "./unified-rows";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const CONTROL_CLASS =
   "flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground " +
   "transition-colors hover:bg-accent hover:text-foreground";
 
 /** Where a mandate opens in a new tab — its admin page for admins, the personal page otherwise. */
-export function mandateHref(mandateKey: string, superAdmin: boolean): string {
+export function mandateHref(mandateKey: AnyMandateKey, superAdmin: boolean): string {
   return superAdmin
     ? adminMandateRecordHref(mandateKey)
     : `/mandates/${encodeURIComponent(mandateKey)}`;
@@ -51,7 +53,7 @@ export function UsageNameCell({ row }: { row: UnifiedUsageRow }) {
   const openAgentWindow = useOpenAgentContentWindow();
 
   if (row.kind === "mandate" && row.verdict) {
-    const key = row.verdict.mandate_key;
+    const key = storedMandateKey(row.verdict.mandate_key);
     const href = mandateHref(key, isSuperAdmin);
     return (
       <div className="flex min-w-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>

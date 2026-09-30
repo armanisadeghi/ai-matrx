@@ -104,6 +104,7 @@ import {
   VerdictDetail,
 } from "./impact-cells";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type ImpactBatchMode = "dry_run" | "post_batch";
 
@@ -161,7 +162,7 @@ interface BatchRow {
   verdict: ImpactVerdict;
   tier: BatchTier;
   grade: ImpactGrade;
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   agentName: string;
   rungLabel: string;
   ownerUserId: string | null;
@@ -376,7 +377,7 @@ export function ImpactBatchPanel({
         verdict,
         tier: batchTierOf(verdict, { dryRun: mode === "dry_run", context: writeContext }),
         grade: verdict.grade,
-        mandateKey: verdict.mandate_key,
+        mandateKey: storedMandateKey(verdict.mandate_key),
         agentName: verdict.agent_name,
         rungLabel:
           verdict.holder_kind === "binding"

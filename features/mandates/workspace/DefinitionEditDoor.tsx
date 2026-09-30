@@ -7,6 +7,7 @@ import { crossDeploymentHref } from "@/lib/deployment/surfaces";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 // features/mandates/workspace/DefinitionEditDoor.tsx
 //
@@ -25,7 +26,7 @@ export function DefinitionEditDoor({
   section: "Goal" | "Provision" | "Output";
 }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  const key = data.mandate.mandate_key;
+  const key = storedMandateKey(data.mandate.mandate_key);
   const action = `Edit ${section.toLowerCase()}`;
 
   if (isSuperAdmin) {

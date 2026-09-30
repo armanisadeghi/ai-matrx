@@ -58,11 +58,12 @@ import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface MandateWindowNextProps {
   isOpen?: boolean;
   onClose?: () => void;
-  initialMandateKey?: string | null;
+  initialMandateKey?: AnyMandateKey | null;
   initialTab?: string | null;
 }
 
@@ -176,8 +177,8 @@ function MandateWindowNextInner({
       .filter((row) => {
         if (!query) return true;
         return [
-          mandateDisplayName(row.mandate_key, row.label),
-          featureLabelOf(row.mandate_key, null),
+          mandateDisplayName(storedMandateKey(row.mandate_key), row.label),
+          featureLabelOf(storedMandateKey(row.mandate_key), null),
           row.mandate_key,
         ]
           .join(" ")
@@ -185,8 +186,8 @@ function MandateWindowNextInner({
           .includes(query);
       })
       .sort((a, b) =>
-        mandateDisplayName(a.mandate_key, a.label).localeCompare(
-          mandateDisplayName(b.mandate_key, b.label),
+        mandateDisplayName(storedMandateKey(a.mandate_key), a.label).localeCompare(
+          mandateDisplayName(storedMandateKey(b.mandate_key), b.label),
         ),
       );
 
@@ -194,11 +195,13 @@ function MandateWindowNextInner({
   // reloads of the list never move it — see ./window-selection.ts.
   const selection = windowSelectionOf(rows, selectedKey);
   const selected = selection.status === "found" ? selection.row : null;
+  // The row's key once the list answers; until then the key this window was
+  // opened with (handed in typed, trimmed by the selection).
   const openKey =
     selection.status === "found"
-      ? selection.row.mandate_key
+      ? storedMandateKey(selection.row.mandate_key)
       : selection.status === "pending"
-        ? selection.key
+        ? storedMandateKey(selection.key)
         : null;
   const derivedName = useMandateDisplayName(openKey ?? "", selected?.label);
   const selectedName =
@@ -263,7 +266,7 @@ function MandateWindowNextInner({
           />
         ) : null}
         {visible.map((row) => {
-          const feature = featureLabelOf(row.mandate_key, null);
+          const feature = featureLabelOf(storedMandateKey(row.mandate_key), null);
           const bucket = scopeOf(row, userId);
           const active = row.id === selected?.id;
           return (
@@ -282,7 +285,7 @@ function MandateWindowNextInner({
             >
               <span className="flex min-w-0 items-center gap-1">
                 <span className="truncate text-xs font-medium">
-                  {mandateDisplayName(row.mandate_key, row.label)}
+                  {mandateDisplayName(storedMandateKey(row.mandate_key), row.label)}
                 </span>
                 {/* A draft or disabled job says so in the list itself; an
                     active one stays quiet so the exceptions stand out. */}

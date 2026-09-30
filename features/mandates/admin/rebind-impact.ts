@@ -29,6 +29,7 @@
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 type MandateCodeTruth = components["schemas"]["MandateCodeTruth"];
 
@@ -184,7 +185,7 @@ export function buildRebindFixBrief({
   impact,
   codeTruth,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   candidateName: string;
   impact: RebindImpact;
   codeTruth?: MandateCodeTruth;

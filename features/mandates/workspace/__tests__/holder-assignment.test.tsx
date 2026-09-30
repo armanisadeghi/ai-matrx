@@ -72,11 +72,12 @@ import {
   type MandateLadderRow,
 } from "../useMandateLadder";
 import { homeScopePhrase, systemRungHealth } from "../system-rung-health";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..", "..");
 
 const JOB = {
-  mandateKey: "research_client.output_slides",
+  mandateKey: storedMandateKey("research_client.output_slides"),
   label: "Research Output: Slides",
   outputKind: "presentation_deck",
   offeredCount: 3,

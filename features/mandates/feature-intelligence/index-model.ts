@@ -22,10 +22,11 @@ import {
 } from "./placement";
 import { REGISTRY_DOMAINS, registryDomain } from "./taxonomy";
 import { shortMandateName } from "./service";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** One job as the directory needs it. */
 export interface DirectoryJob {
-  key: string;
+  key: AnyMandateKey;
   /** Name without the feature or domain label the card already shows. */
   name: string;
   description: string | null;
@@ -73,7 +74,7 @@ export interface DirectoryDefinition {
 
 /** The member-list facts the directory adds to a job. */
 export interface DirectoryHolder {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   holderName: string;
   holderType: string | null;
   status: MandateStatus;
@@ -135,14 +136,14 @@ export function buildDomains(
   // not one of their jobs, and the card never promises more than the page holds.
   const seated = holders.length > 0 ? byKey : null;
   for (const def of defs) {
-    if (seated && !seated.has(def.mandate_key)) continue;
-    const target = placementForKey(def.mandate_key).fixture
+    if (seated && !seated.has(storedMandateKey(def.mandate_key))) continue;
+    const target = placementForKey(storedMandateKey(def.mandate_key)).fixture
       ? FIXTURES
-      : targetForKey(def.mandate_key);
+      : targetForKey(storedMandateKey(def.mandate_key));
     const domainName = registryDomain(targetDomain(target) ?? "")?.name ?? "";
-    const holder = byKey.get(def.mandate_key);
+    const holder = byKey.get(storedMandateKey(def.mandate_key));
     const job: DirectoryJob = {
-      key: def.mandate_key,
+      key: storedMandateKey(def.mandate_key),
       name: def.label
         ? shortMandateName(
             shortMandateName(def.label, cardLabel(target)),

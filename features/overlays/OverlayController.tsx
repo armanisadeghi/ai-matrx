@@ -3640,16 +3640,18 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "mandateWindow" }))
             }
+            // The overlay store holds the opener's typed keys as plain JSON;
+            // they re-enter the typed world here, unchanged.
             initialMandateKey={
               typeof data?.initialMandateKey === "string"
-                ? data.initialMandateKey
+                ? storedMandateKey(data.initialMandateKey)
                 : undefined
             }
             mandateKeys={
               Array.isArray(data?.mandateKeys)
-                ? (data.mandateKeys as unknown[]).filter(
-                    (key): key is string => typeof key === "string",
-                  )
+                ? (data.mandateKeys as unknown[])
+                    .filter((key): key is string => typeof key === "string")
+                    .map(storedMandateKey)
                 : undefined
             }
             surfaceName={
@@ -3680,7 +3682,7 @@ export default function OverlayController() {
             }
             initialMandateKey={
               typeof data?.initialMandateKey === "string"
-                ? data.initialMandateKey
+                ? storedMandateKey(data.initialMandateKey)
                 : null
             }
             initialTab={

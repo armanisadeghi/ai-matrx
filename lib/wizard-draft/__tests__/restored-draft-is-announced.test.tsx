@@ -74,7 +74,7 @@ function approach(
     blurb: `${label} blurb`,
     whatItNeeds: "a few minutes",
     costTimeShape: "start now",
-    mandateKey: `masterwork.${key}`,
+    mandateKey: storedMandateKey(`masterwork.${key}`),
     intakeQuery: { interview: "1" },
     sortOrder,
     enabled: true,
@@ -133,6 +133,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => {
 });
 
 import { NewRulebookFlow } from "@/features/masterwork/intake/NewRulebookFlow";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const GOAL =
   "An assistant that decides, exactly the way I do, which incoming pallets of e-waste need a manual sort";

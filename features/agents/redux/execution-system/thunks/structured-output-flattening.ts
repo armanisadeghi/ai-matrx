@@ -1,3 +1,4 @@
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 /**
  * THE FLATTENING DISEASE — detection, in one place.
  *
@@ -76,7 +77,7 @@ export const FLATTENING_REMEDY =
  */
 export function judgeDeclaredFlattening(args: {
   expect: "json" | "text";
-  mandateKey: string | null | undefined;
+  mandateKey: AnyMandateKey | null | undefined;
   outputKind: string | null | undefined;
   surfaceKey: string;
 }): FlatteningVerdict | null {

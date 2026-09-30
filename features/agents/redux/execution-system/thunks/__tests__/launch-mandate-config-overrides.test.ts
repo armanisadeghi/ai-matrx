@@ -71,7 +71,7 @@ jest.mock("@/features/mandates/service", () => ({
     );
     if (missing.length > 0) {
       throw new Error(
-        contract.missingVariablesMessage(mandate.mandateKey, missing),
+        contract.missingVariablesMessage(storedMandateKey(mandate.mandateKey), missing),
       );
     }
   },
@@ -106,6 +106,7 @@ import { editorStateReducer } from "@/features/code-editor/redux/editor-state.sl
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import overlayReducer from "@/lib/redux/slices/overlaySlice";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 // Fully-loaded agent record: Step 0.5's readiness check passes so the thunk
 // never reaches the network. `_loadedFields` mirrors the FieldFlags shape.

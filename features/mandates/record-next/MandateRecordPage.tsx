@@ -51,6 +51,7 @@ import { MandateVisibilityControl } from "./MandateVisibilityControl";
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * Which seat opens the record. `system` (the default) is the admin route,
@@ -59,7 +60,7 @@ import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
  * decides the tabs, the principal, and which header actions exist.
  */
 export interface MandateRecordPageProps {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   level?: RecordLevel;
   /** Organization level: the route's organization id. */
   orgId?: string | null;
@@ -305,7 +306,7 @@ function RecordHeader({
                 showLabel: true,
                 disabled: starting,
                 onPress: () =>
-                  void startWorkflow(data.mandate.mandate_key).then((created) => {
+                  void startWorkflow(storedMandateKey(data.mandate.mandate_key)).then((created) => {
                     if (created) onTabChange("holder");
                   }),
               },

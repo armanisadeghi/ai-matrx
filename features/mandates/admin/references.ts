@@ -29,6 +29,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
 import { currentCostUnit } from "@/components/cost/costUnit";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type MandateReferenceRow =
   components["schemas"]["MandateReferenceRow"];
@@ -95,7 +96,7 @@ export function isMandateReferenceBoard(
 
 export async function fetchMandateReferences(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): Promise<MandateReferenceReport> {
   // `callApi` obtains its bearer token independently. Establish the browser
   // session first so a transient guest state never reaches aidream as a 401.

@@ -14,7 +14,7 @@
  * rather than assumed.
  */
 import type { MandateKey } from "@ai-matrx/agents/mandates";
-import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * The DB-authored key this button is wired to (origin='user', so no generated
@@ -189,7 +189,7 @@ describe("AutomationButton — the key resolves to nothing", () => {
   });
 
   it("keeps an intentionally absent optional mandate out of system errors", () => {
-    notifyMissingAutomationMandate("mandates.kind_converter");
+    notifyMissingAutomationMandate(storedMandateKey("mandates.kind_converter"));
     expect(toast.info).toHaveBeenCalledWith(
       'Not yet — this needs the mandate "mandates.kind_converter", which does not exist. Create it and this runs.',
     );

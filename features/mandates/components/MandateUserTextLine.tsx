@@ -24,9 +24,10 @@ import {
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { useMandateInputSurface, userTextSentence } from "../input-surface";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface MandateUserTextLineProps {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Extra classes for the host's own type scale. */
   className?: string;
   /** The triad shows the icon; the admin fact grid does not. */

@@ -18,6 +18,7 @@ import type { MandateMemberRow } from "../member-list/types";
 import { featurePrefixes } from "./registry";
 import { keyInTarget, targetPrefixes } from "./placement";
 import type { FeatureIntelligenceRow, IntelligenceLevel } from "./types";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface FeatureIntelligenceQuery {
   /** The registry target (`seo`, `education/unassigned`) — see `placement.ts`. */
@@ -33,7 +34,7 @@ export interface FeatureIntelligenceQuery {
 const PAGE = 200;
 
 /** A key belongs to a CODE feature (`podcast`) when its first segment is one of its prefixes. */
-export function keyInFeature(mandateKey: string, feature: string): boolean {
+export function keyInFeature(mandateKey: AnyMandateKey, feature: string): boolean {
   return featurePrefixes(feature).some((prefix) => mandateKey.startsWith(`${prefix}.`));
 }
 
@@ -55,7 +56,7 @@ export function shortMandateName(name: string, featureLabel: string): string {
 async function pageOf(
   query: FeatureIntelligenceQuery,
   scope: string,
-  mandateKeys: readonly string[],
+  mandateKeys: readonly AnyMandateKey[],
 ): Promise<MandateMemberRow[]> {
   const orgLevel = query.level === "organization";
   const rows: MandateMemberRow[] = [];
@@ -129,7 +130,7 @@ export async function fetchFeatureIntelligence(
     ),
     resolveSystemOrgId(),
   ]);
-  const featureDefs = defsAll.filter((row) => keyInTarget(row.mandate_key, query.feature));
+  const featureDefs = defsAll.filter((row) => keyInTarget(storedMandateKey(row.mandate_key), query.feature));
   if (featureDefs.length === 0) return [];
   const defs = new Map(
     featureDefs.map((row) => [
@@ -138,7 +139,7 @@ export async function fetchFeatureIntelligence(
     ]),
   );
 
-  const featureKeys = featureDefs.map((row) => row.mandate_key);
+  const featureKeys = featureDefs.map((row) => storedMandateKey(row.mandate_key));
   const pages = await Promise.all(
     lanesFor(featureDefs, systemOrgId, query.userId, query.level)
       .map((lane) => pageOf(query, lane, featureKeys)),

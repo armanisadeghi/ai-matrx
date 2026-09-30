@@ -9,6 +9,7 @@ jest.mock("@/lib/knobs/featureKnobs", () => ({
 import { describeSettingsChanges, describeThunkFailure } from "../impact-settings-fix";
 import { settleSettingsFix, type SettingsFixReport } from "../impact-settings-fix-report";
 import { ADMIN_WRITE_CONTEXT, type ImpactVerdict } from "../impact";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 function verdict(overrides: Partial<ImpactVerdict> = {}): ImpactVerdict {
   const base: ImpactVerdict = {
@@ -63,7 +64,7 @@ describe("settleSettingsFix — before → after from the read that followed the
       changes: ["sets reasoning_effort from high to medium"],
     },
     settleEpoch: 2,
-    before: [{ rungId: "mandate_default:row-1", mandateKey: "probe.alpha", tier: "drift", versions: "v29 → v31" }],
+    before: [{ rungId: "mandate_default:row-1", mandateKey: storedMandateKey("probe.alpha"), tier: "drift", versions: "v29 → v31" }],
   };
   const options = { dryRun: false, context: ADMIN_WRITE_CONTEXT };
 
@@ -98,7 +99,7 @@ describe("settleSettingsFix — before → after from the read that followed the
       ...fix,
       before: [
         ...fix.before,
-        { rungId: "mandate_default:row-9", mandateKey: "app.other", tier: "blocked", versions: "latest → v31" },
+        { rungId: "mandate_default:row-9", mandateKey: storedMandateKey("app.other"), tier: "blocked", versions: "latest → v31" },
       ],
     };
     const after = settleSettingsFix(

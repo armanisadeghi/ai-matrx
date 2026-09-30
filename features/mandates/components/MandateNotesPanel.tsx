@@ -38,12 +38,13 @@ import {
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface MandateNotesPanelProps {
   /** The mandate the notes hang off. */
   mandateId: string;
   /** Internal subject identity retained for host compatibility; never rendered. */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Where the note is being written — recorded on the row. */
   surfaceName?: string | null;
   /** The agent currently holding the mandate, when the host knows it. */

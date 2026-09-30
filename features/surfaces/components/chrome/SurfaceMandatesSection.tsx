@@ -56,6 +56,7 @@ import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface SurfaceMandatesSectionProps {
   /** The surface the user is standing on. */
@@ -67,14 +68,14 @@ export interface SurfaceMandatesSectionProps {
 }
 
 interface MandateRow {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** What it does HERE — the role's label, or the page's own wording. */
   does: string;
 }
 
 function collectRows(
   primarySurfaceName: string | null,
-  live: readonly { mandateKey: string; does: string }[],
+  live: readonly { mandateKey: AnyMandateKey; does: string }[],
 ): MandateRow[] {
   const byKey = new Map<string, MandateRow>();
 
@@ -129,7 +130,8 @@ export function SurfaceMandatesSection({
 
   const keyList = rows.map((row) => row.mandateKey).join("|");
   useEffect(() => {
-    const keys = keyList ? keyList.split("|") : [];
+    // The keys were typed on the way in; the join is only the effect's stable identity.
+    const keys = keyList ? (keyList.split("|") as AnyMandateKey[]) : [];
     if (keys.length === 0) return;
     let cancelled = false;
     // ONE batched read for every key in the menu — never one per row.

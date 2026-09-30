@@ -36,7 +36,7 @@ import {
   type AutonomyMode,
   type SettingsScope,
 } from "./data";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 import { useAgentAddressViewer } from "@/features/agents/addressing/useAgentHref";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -72,7 +72,7 @@ const MODES: Array<{ value: AutonomyMode; label: string; hint: string }> = [
  * Stable code-to-mandate connections. The Holder behind each key stays in the
  * database and is resolved below; agent ids and names never live here.
  */
-const CAPABILITY_MANDATES: Readonly<Record<string, readonly string[]>> = {
+const CAPABILITY_MANDATES: Readonly<Record<string, readonly MandateKey[]>> = {
   keyword_classifier: [MANDATE_KEYS.seo__keyword_classifier],
   topic_assigner: [MANDATE_KEYS.seo__topic_assigner],
 };

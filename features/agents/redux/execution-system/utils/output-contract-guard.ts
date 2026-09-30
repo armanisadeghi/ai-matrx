@@ -48,12 +48,13 @@ import { peekMandateCatalogueEntry } from "@/features/mandates/catalogue";
 import { fetchAgentOutputSchemas } from "@/features/mandates/output-contract";
 import { SURFACE_WRITE_TOOL_NAME } from "@/features/surfaces/runtime/surface-writeback";
 import { isJsonObject } from "@/types/json";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface OutputContractVerdict {
   agentId: string;
   /** Display name when the slice knows it — never fetched just to log. */
   agentName: string | null;
-  mandateKey: string | null;
+  mandateKey: AnyMandateKey | null;
   /** WHICH declaration proved the contract. */
   evidence:
     | "agent.output_schema"

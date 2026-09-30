@@ -75,6 +75,7 @@ import {
   type ReportOutputFacts,
   type ReportSource,
 } from "./report-output-offer-values";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the
@@ -1171,7 +1172,7 @@ function OutputCardShell({
   /** The mandate that writes this output — renders the "which agent runs
    *  this" picker in the header, so swapping in your own agent is one click
    *  from where the output is generated. */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   children: React.ReactNode;
 }) {
   return (

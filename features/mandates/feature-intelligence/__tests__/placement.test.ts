@@ -11,6 +11,7 @@ import {
 import { REGISTRY_DOMAINS, registryDomain, registryFeature } from "../taxonomy";
 import { DECLARED_FEATURES } from "../registry";
 import { LIVE_MANDATE_KEYS_2026_09_26 } from "./live-keys.fixture";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /** Custom jobs an organization or a person wrote under their own prefix. */
 const OWNER_AUTHORED = new Set([
@@ -83,7 +84,7 @@ describe("registry placement", () => {
     );
     expect(targetForKey("voice.owner_beta")).toBe("voice-calls");
     expect(targetForKey("voice.intro")).toBe("voice");
-    expect(targetForKey("organization.referral_letter_drafter")).toBe(
+    expect(targetForKey(storedMandateKey("organization.referral_letter_drafter"))).toBe(
       "unassigned",
     );
   });

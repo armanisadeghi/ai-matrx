@@ -73,6 +73,7 @@ import {
   ScopeHolderBar,
   type ScopeHolderBarProps,
 } from "@/features/bindings/ScopeHolderBar";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * Every field of `job`, each a sentinel no other copy on this bar can produce.
@@ -80,7 +81,7 @@ import {
  * breaks the BUILD here before it can be silently dropped at run time.
  */
 const JOB: ScopeHolderBarProps["job"] = {
-  mandateKey: "guard.job_key",
+  mandateKey: storedMandateKey("guard.job_key"),
   label: "Guard Job Display Name",
   outputKind: "guard_output_kind",
   offeredCount: 7,

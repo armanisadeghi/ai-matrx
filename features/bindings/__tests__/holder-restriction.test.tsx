@@ -89,9 +89,10 @@ import {
   type DefaultHolderRungOffer,
 } from "../default-holder-rung";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 const JOB = {
-  mandateKey: "mandate.guard_probe",
+  mandateKey: storedMandateKey("mandate.guard_probe"),
   label: "Guard probe",
   outputKind: null,
   offeredCount: 0,

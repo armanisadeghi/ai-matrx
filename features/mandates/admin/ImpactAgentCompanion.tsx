@@ -32,6 +32,7 @@ import {
 } from "./service";
 import { versionLabel, type ImpactVerdict } from "./impact";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type CompanionSection = "history" | "test";
 
@@ -40,7 +41,7 @@ export interface VersionPair {
   pinned: number;
   latest: number;
   /** Mandate keys pinned at this version — the tab's tooltip. */
-  mandateKeys: string[];
+  mandateKeys: AnyMandateKey[];
 }
 
 /**
@@ -59,19 +60,19 @@ export function versionPairsOf(
     const latest = verdict.latest_version_number;
     if (pinned == null || latest == null || pinned === latest) continue;
     const entry = byPin.get(pinned) ?? { pinned, latest, mandateKeys: [] };
-    if (!entry.mandateKeys.includes(verdict.mandate_key)) {
-      entry.mandateKeys.push(verdict.mandate_key);
-    }
+    const key = storedMandateKey(verdict.mandate_key);
+    if (!entry.mandateKeys.includes(key)) entry.mandateKeys.push(key);
     byPin.set(pinned, entry);
   }
   return Array.from(byPin.values()).sort((a, b) => a.pinned - b.pinned);
 }
 
 /** The mandate keys a person can test here — every reached job, once, in order. */
-export function testableMandateKeys(verdicts: readonly ImpactVerdict[]): string[] {
-  const keys: string[] = [];
+export function testableMandateKeys(verdicts: readonly ImpactVerdict[]): AnyMandateKey[] {
+  const keys: AnyMandateKey[] = [];
   for (const verdict of verdicts) {
-    if (!keys.includes(verdict.mandate_key)) keys.push(verdict.mandate_key);
+    const key = storedMandateKey(verdict.mandate_key);
+    if (!keys.includes(key)) keys.push(key);
   }
   return keys;
 }
@@ -199,8 +200,8 @@ function VersionHistory({
   );
 }
 
-function QuickTest({ mandateKeys }: { mandateKeys: string[] }) {
-  const [activeKey, setActiveKey] = useState<string>(mandateKeys[0] ?? "");
+function QuickTest({ mandateKeys }: { mandateKeys: AnyMandateKey[] }) {
+  const [activeKey, setActiveKey] = useState<AnyMandateKey | "">(mandateKeys[0] ?? "");
   const [loaded, setLoaded] = useState<{
     key: string;
     mandate: MandateDefinitionRow;

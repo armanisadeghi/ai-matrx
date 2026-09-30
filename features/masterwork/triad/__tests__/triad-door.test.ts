@@ -26,6 +26,7 @@ import {
 } from "../../browse/approaches";
 import { resolveApproachLane } from "../../browse/approachLane";
 import { parseDeck } from "../types";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /** The live `platform.approach` row, as `enable_triad_game.py` leaves it. */
 const TRIAD_ROW: DistillationApproach = {
@@ -37,7 +38,7 @@ const TRIAD_ROW: DistillationApproach = {
     "which is the odd one out, and why?",
   whatItNeeds: "Nothing but your reactions. We bring the cases.",
   costTimeShape: "About fifteen seconds per triad — play it in a queue.",
-  mandateKey: "masterwork.triad_game",
+  mandateKey: storedMandateKey("masterwork.triad_game"),
   intakeQuery: { triad: "1" },
   sortOrder: 80,
   enabled: true,

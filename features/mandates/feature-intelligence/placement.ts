@@ -12,6 +12,7 @@
 // given an invented name). A key no rule matches has no Domain yet.
 
 import { registryDomain, registryFeature } from "./taxonomy";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface PlacementRule {
   pattern: string;
@@ -386,7 +387,7 @@ export interface Placement {
   fixture: boolean;
 }
 
-export function placementForKey(mandateKey: string): Placement {
+export function placementForKey(mandateKey: AnyMandateKey): Placement {
   let best: PlacementRule | null = null;
   for (const candidate of PLACEMENT_RULES) {
     if (!matches(candidate.pattern, mandateKey)) continue;
@@ -421,7 +422,7 @@ export function unassignedTarget(domain: string): string {
   return `${domain}/unassigned`;
 }
 
-export function targetForKey(mandateKey: string): string {
+export function targetForKey(mandateKey: AnyMandateKey): string {
   const placed = placementForKey(mandateKey);
   if (placed.feature) return placed.feature;
   if (placed.domain && DOMAINS_HOLDING_OWN_JOBS.has(placed.domain))
@@ -430,7 +431,7 @@ export function targetForKey(mandateKey: string): string {
   return NO_DOMAIN_TARGET;
 }
 
-export function keyInTarget(mandateKey: string, target: string): boolean {
+export function keyInTarget(mandateKey: AnyMandateKey, target: string): boolean {
   return targetForKey(mandateKey) === target;
 }
 

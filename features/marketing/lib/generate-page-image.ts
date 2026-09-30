@@ -405,7 +405,7 @@ export function generatePageImage(args: GeneratePageImageArgs) {
 export type PageImageResult =
   | { ok: true; fileId: string }
   | { ok: false; step: "prompt" | "image"; message: string }
-  | { ok: false; step: "mandate"; mandateKey: string; message: string };
+  | { ok: false; step: "mandate"; mandateKey: AnyMandateKey; message: string };
 
 /**
  * Gate for a path that must refuse LOUDLY when its mandate has no agent

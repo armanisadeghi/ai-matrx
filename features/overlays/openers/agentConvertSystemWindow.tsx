@@ -14,6 +14,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const OVERLAY_ID = "agentConvertSystemWindow" as const;
 
@@ -22,7 +23,7 @@ export interface OpenAgentConvertSystemWindowOptions {
   /** Optional agent-mandate context (admin mandates console) — serializable only.
    * When set, the sync window names the mandate and offers an in-diff rebind. */
   mandateId?: string | null;
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   mandateLabel?: string | null;
 }
 

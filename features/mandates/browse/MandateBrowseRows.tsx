@@ -18,6 +18,7 @@ import {
 } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 import { MandateHomeBadge } from "./MandateHome";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export function MandateBrowseRows({
   rows,
@@ -78,7 +79,7 @@ export function MandateBrowseRows({
                 >
                   {layer.label}
                 </Badge>
-                <MandateCoverageBadge mandateKey={row.mandate_key} />
+                <MandateCoverageBadge mandateKey={storedMandateKey(row.mandate_key)} />
                 {row.health !== "ok" ? (
                   <Badge
                     variant="outline"

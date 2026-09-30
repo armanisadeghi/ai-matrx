@@ -46,6 +46,7 @@ import { MandateHealthSummary } from "./MandateHealthSummary";
 import { usePathname } from "next/navigation";
 import { isAdminLanePath } from "@/utils/supabase/adminLane";
 import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
 
@@ -82,7 +83,7 @@ export function RecordAdminPanels({
   mandateKey,
   activeTab,
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   activeTab: RecordTabId;
 }) {
   const dispatch = useAppDispatch();
@@ -214,7 +215,7 @@ export function RecordAdminPanels({
       {section === "diagnostics" ? (
         <div className="mb-3">
           {/* key-is-the-subject: a key handed to the health summary's key prop, never rendered as a name */}
-          <MandateHealthSummary mandateKey={mandate?.mandate_key ?? mandateKey} />
+          <MandateHealthSummary mandateKey={(mandate ? storedMandateKey(mandate.mandate_key) : undefined) ?? mandateKey} />
         </div>
       ) : null}
       {/* RUN HISTORY — inside Health (the ten tabs are protected; no new tab
@@ -222,7 +223,7 @@ export function RecordAdminPanels({
           organization or person, with no personal lane. */}
       {section === "diagnostics" ? (
         <MandateRunHistory
-          mandateKey={mandate?.mandate_key ?? mandateKey} // key-is-the-subject: a prop handed to the run-history query, never rendered as a name
+          mandateKey={(mandate ? storedMandateKey(mandate.mandate_key) : undefined) ?? mandateKey} // key-is-the-subject: a prop handed to the run-history query, never rendered as a name
           view={onAdminSeat ? "platform" : "mine"}
           audience={onAdminSeat ? "admin" : "product"}
           className="mb-4"

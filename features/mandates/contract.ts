@@ -22,6 +22,7 @@
 
 import type { Json } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export interface MandateContract {
   requiredVariables: string[];
@@ -83,7 +84,7 @@ export function missingRequiredVariables(
 
 /** The one refusal message, so every surface says the same thing. */
 export function missingVariablesMessage(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   missing: string[],
 ): string {
   return (

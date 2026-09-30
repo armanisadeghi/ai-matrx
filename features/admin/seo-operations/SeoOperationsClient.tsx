@@ -60,6 +60,7 @@ import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 // ── Automations panel ───────────────────────────────────────────────────────
 
@@ -308,7 +309,7 @@ function MandatesPanel() {
         cell: (row) => (
           <Button size="sm" variant="ghost" asChild>
             <AppLink
-              href={adminMandateRecordHref(row.mandate_key)}
+              href={adminMandateRecordHref(storedMandateKey(row.mandate_key))}
             >
               Open
             </AppLink>
@@ -369,7 +370,7 @@ function MandatesPanel() {
                 label: "Open mandate page",
                 icon: ArrowUpRight,
                 href: clickedMandate
-                  ? adminMandateRecordHref(clickedMandate.mandate_key)
+                  ? adminMandateRecordHref(storedMandateKey(clickedMandate.mandate_key))
                   : "#",
                 disabled: !clickedMandate,
               },

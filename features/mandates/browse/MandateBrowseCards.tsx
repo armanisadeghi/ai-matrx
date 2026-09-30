@@ -18,6 +18,7 @@ import {
 } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 import { MandateHomeBadge } from "./MandateHome";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export function MandateBrowseCards({
   rows,
@@ -96,7 +97,7 @@ export function MandateBrowseCards({
               >
                 {layer.label}
               </Badge>
-              <MandateCoverageBadge mandateKey={row.mandate_key} />
+              <MandateCoverageBadge mandateKey={storedMandateKey(row.mandate_key)} />
               {row.resolved_agent_name ? (
                 <span className="inline-flex min-w-0 items-center gap-1 text-[11.5px] text-muted-foreground">
                   <ArrowDownUp className="h-3 w-3 shrink-0" />

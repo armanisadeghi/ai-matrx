@@ -35,13 +35,14 @@ import {
   type MandateTestResponse,
 } from "@/features/mandates/test-run";
 import type { JsonObject } from "@/types/json";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type MandateDefinitionRights = components["schemas"]["DefinitionRights"];
 export type MandateTryCandidate = components["schemas"]["MemberTryCandidate"];
 
 export async function fetchDefinitionRights(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): Promise<MandateDefinitionRights> {
   const result = await dispatch(
     callApi({
@@ -63,7 +64,7 @@ export interface OwnerDefinitionPatch {
 
 export async function patchOwnerDefinition(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   patch: OwnerDefinitionPatch,
   /** Organization seat: the route organization — a write needs one, and on
    * that seat it is the page's own, never whatever the header last held. */
@@ -101,7 +102,7 @@ export async function patchOwnerDefinition(
  */
 export async function runMandateTry(
   dispatch: AppDispatch,
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   input: {
     variables: JsonObject;
     userInput: string | null;

@@ -446,7 +446,7 @@ function OneMandateWorkspace({
    * about the platform's own answer, which is this host's entire subject. No
    * other row is read here, and no organization is passed.
    */
-  const ladderKey = data ? data.mandate.mandate_key : "";
+  const ladderKey = data ? storedMandateKey(data.mandate.mandate_key) : "";
   const personLadderOrgId = displayResolutionOrgId({
     pageOrgFilter,
     homeOrganizationId: data?.mandate.organization_id,
@@ -606,7 +606,7 @@ function OneMandateWorkspace({
             ./MandateCoverageAlert.tsx. */}
         <MandateCoverageAlert
           className="mb-4"
-          mandateKey={data.mandate.mandate_key}
+          mandateKey={storedMandateKey(data.mandate.mandate_key)}
           onAssignHolder={() => setActiveTab("holder")}
           resolvedHolder={resolvedHolderForBannerOf(
             perspective,
@@ -726,7 +726,7 @@ function OneMandateWorkspace({
                 rungs carry it — the four facts that used to need an engineer
                 and a database session (2026-09-11). See
                 ./MandateProvenancePanel.tsx. */}
-            <MandateProvenancePanel mandateKey={data.mandate.mandate_key} />
+            <MandateProvenancePanel mandateKey={storedMandateKey(data.mandate.mandate_key)} />
           </div>
           {perspective !== "system" ? (
             <div
@@ -818,7 +818,7 @@ function OneMandateWorkspace({
             <Section title="Notes">
               <MandateNotesPanel
                 mandateId={data.mandate.id}
-                mandateKey={data.mandate.mandate_key}
+                mandateKey={storedMandateKey(data.mandate.mandate_key)}
                 surfaceName={
                   host === "window"
                     ? undefined
