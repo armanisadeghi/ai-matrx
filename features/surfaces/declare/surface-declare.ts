@@ -50,9 +50,8 @@ export const SYNC_SCHEMA: SyncSchema = {
 };
 
 import { SURFACE_BRIEF_MAX_VALUES } from "@/features/surfaces/runtime/surface-brief";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLE_KINDS = new Set(["single", "multi"]);
 const AUTO_RUN = new Set(["always", "never", "user-choice"]);
 const TOOL_MODES = new Set(["draft", "entity", "ui"]);
@@ -90,7 +89,7 @@ export const agentRolesExtension: DeclarationExtension<Manifest> = {
         out.push(issue(s, at, `Surface "${s}" agent role "${r.name}" has invalid kind "${r.kind}" (expected "single" | "multi").`, "Use single or multi."));
       if (r.maxAgents !== undefined && (typeof r.maxAgents !== "number" || r.maxAgents < 1))
         out.push(issue(s, at, `Surface "${s}" agent role "${r.name}" has invalid maxAgents (must be >= 1).`, "Use a number of at least 1."));
-      if (r.defaultAgentId !== null && (typeof r.defaultAgentId !== "string" || !UUID_RE.test(r.defaultAgentId)))
+      if (r.defaultAgentId !== null && (typeof r.defaultAgentId !== "string" || !isUuidShape(r.defaultAgentId)))
         out.push(issue(s, at, `Surface "${s}" agent role "${r.name}" has invalid defaultAgentId (must be a UUID or null).`, "Use null; roles name a mandate."));
       if (r.mandateKey != null && !/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(r.mandateKey))
         out.push(issue(s, at, `Surface "${s}" agent role "${r.name}" has invalid mandateKey "${r.mandateKey}" (expected dotted lower_snake, e.g. "masterwork.scout").`, "Name a declared mandate key."));

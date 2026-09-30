@@ -10,6 +10,7 @@
 //
 // Records are NOT a new syntax: a record mention IS a wikilink, so every
 // surface rendering comment text through <RichContent> opens it.
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type MentionToken =
   | { type: "text"; text: string }
@@ -17,7 +18,6 @@ export type MentionToken =
   | { type: "date"; label: string; iso: string };
 
 const MENTION_RE = /@\[([^\]\n]{1,120})\]\((user|date):([^)\s]{1,64})\)/g;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function tokenizeMentions(body: string): MentionToken[] {
@@ -25,7 +25,7 @@ export function tokenizeMentions(body: string): MentionToken[] {
   let last = 0;
   for (const m of body.matchAll(MENTION_RE)) {
     const [whole, label, kind, value] = m;
-    const valid = kind === "user" ? UUID_RE.test(value) : ISO_RE.test(value);
+    const valid = kind === "user" ? isUuidShape(value) : ISO_RE.test(value);
     if (!valid) continue;
     const at = m.index ?? 0;
     if (at > last) out.push({ type: "text", text: body.slice(last, at) });

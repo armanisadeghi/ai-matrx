@@ -38,6 +38,7 @@ import type {
   ScopeTypeNode,
 } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 // ─── the doors' answers (the store's words) ─────────────────────────────────────────────────────
 
@@ -321,7 +322,6 @@ export function contextItemRowFromStore(row: StoreItemRow): ContextItemRow {
   return item as unknown as ContextItemRow;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/;
 const FENCE = /^\s*```matrx\b/;
@@ -376,7 +376,7 @@ export function contextValueFromStore(row: StoreValueRow): ContextItemValue & { 
     const list = Array.isArray(v) ? v : v == null ? [] : [v];
     const refs: Array<{ id: string; type: string; label?: string }> = [];
     for (const el of list) {
-      if (typeof el === "string" && UUID.test(el)) {
+      if (typeof el === "string" && isUuidShape(el)) {
         refs.push({ id: el, type: row.field?.relation_target === FILE_KERNEL_ID ? "file" : "scope" });
       } else if (el && typeof el === "object" && typeof (el as { id?: unknown }).id === "string") {
         const token = String((el as { token?: unknown }).token ?? "");

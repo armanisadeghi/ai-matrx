@@ -15,9 +15,7 @@ import { supabase } from "@/utils/supabase/client";
 
 import { getItemConfig } from "./registry";
 import type { EnrichedItem, EnrichmentStatus, ItemType } from "./types";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export function useEnrichItem(
   type: ItemType | null | undefined,
@@ -31,7 +29,7 @@ export function useEnrichItem(
   useEffect(() => {
     const { config, recognized } = getItemConfig(type);
     // Only fetch for recognized, enrichable types with a real UUID id.
-    if (!recognized || !config.enrich || !id || !UUID_RE.test(id)) {
+    if (!recognized || !config.enrich || !id || !isUuidShape(id)) {
       return undefined;
     }
 

@@ -24,14 +24,12 @@ import {
   setConversationForks,
 } from "./slice";
 import type { ConversationBattleFork } from "../types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 interface ThunkApi {
   dispatch: AppDispatch;
   state: RootState;
 }
-
-const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface PersistedForkMeta {
   label: string;
@@ -45,9 +43,9 @@ interface ConversationSetMetadata {
 /** The agent a fork answers with: its own record, else the source's. */
 function forkAgentId(state: RootState, conversationId: string): string | null {
   const own = state.conversations.byConversationId[conversationId]?.agentId;
-  if (own && UUID.test(own)) return own;
+  if (own && isUuidShape(own)) return own;
   const fallback = state.agentComparisonConversation.source?.agentId;
-  return fallback && UUID.test(fallback) ? fallback : null;
+  return fallback && isUuidShape(fallback) ? fallback : null;
 }
 
 function buildEntries(state: RootState): UpsertEntryInput[] {

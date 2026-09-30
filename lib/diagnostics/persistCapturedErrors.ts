@@ -28,9 +28,8 @@ import {
 } from "@/lib/diagnostics/errorCaptureStore";
 import { sourceFeatureForRoute } from "@/lib/diagnostics/errorSourceFeature";
 import type { Json } from "@/types/database.types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FLUSH_DELAY_MS = 1500;
 // A zero-row read starts life as `record-unavailable (...unknown)` and is
 // reconciled asynchronously by AccessGate. The ordinary 1.5s flush can beat
@@ -261,7 +260,7 @@ async function flush(): Promise<void> {
           p_route: e.route || undefined,
           p_request_id: e.requestId ?? undefined,
           p_conversation_id:
-            e.conversationId && UUID_RE.test(e.conversationId)
+            e.conversationId && isUuidShape(e.conversationId)
               ? e.conversationId
               : undefined,
           p_stack: e.stack ?? e.callSite ?? undefined,

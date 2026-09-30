@@ -9,6 +9,7 @@ import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import type { PublicAgentApp } from "@/features/agent-apps/types";
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 // A PUBLISHED APP IS A LINK SOMEBODY SENT (page-pass 2026-09-27). It lives in
 // the `(link)` group, not `(public)`: a stranger opening a shared app gets the
@@ -18,9 +19,7 @@ import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
 export const revalidate = 3600;
 
 function isUUID(str: string): boolean {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
+  return isUuidShape(str);
 }
 
 type AgentAppMetadata = {

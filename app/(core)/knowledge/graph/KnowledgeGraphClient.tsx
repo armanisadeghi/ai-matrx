@@ -16,9 +16,7 @@ import { Loader2 } from "lucide-react";
 import { KgGraphCanvas } from "@/features/kg-graph/components/KgGraphCanvas";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export function KnowledgeGraphClient({
   orgParam,
@@ -46,7 +44,7 @@ export function KnowledgeGraphClient({
       setResolving(false);
       return undefined;
     }
-    if (UUID_RE.test(orgParam)) {
+    if (isUuidShape(orgParam)) {
       setResolvedOrgId(orgParam);
       setResolving(false);
       return undefined;

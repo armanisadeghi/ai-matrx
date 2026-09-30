@@ -417,6 +417,23 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       },
     },
     {
+      key: "other_contacts",
+      name: "Other Contacts",
+      promise:
+        "Review and import one suggested contact. We never change Google.",
+      group: WORKSPACE_GROUP,
+      icon: Contact,
+      capabilityKeys: ["other_contacts"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.contactsOtherReadonly],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "reviewing Other Contacts from this Google account",
+      firstAction: {
+        kind: "route",
+        label: "Review Other Contacts",
+        href: "/google-other-contacts-review",
+      },
+    },
+    {
       key: "tasks",
       name: "Tasks",
       promise:

@@ -4,6 +4,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { Check, ChevronRight, CircleAlert, Loader2, RefreshCw, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,6 @@ function valueText(value: string | string[] | null): string {
   if (value === null) return "No value";
   return Array.isArray(value) ? value.join(", ") : value || "No value";
 }
-
 function targetText(review: OtherContactsReviewPending): string {
   if (review.target.create_new) return "Create a new Person";
   return review.target.person_name ?? "The matched Person";
@@ -70,7 +70,7 @@ function importOutcomeSentence(result: ContactImportResultPending): string {
 /**
  * The screen is unlinked and a dedicated server admission result gates the UI.
  * Aidream independently authorizes every preview, review, and import; this
- * component never offers consent or creates a connection.
+ * component delegates consent to the canonical Google connector surface.
  */
 export function OtherContactsReview() {
   const organization = useOrganizationRequired();
@@ -218,9 +218,6 @@ export function OtherContactsReview() {
           <Badge variant="secondary">Read-only toward Google</Badge>
         </div>
         <h1 className="text-2xl font-semibold">Review Google Other Contacts</h1>
-        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-          Preview one bounded page from the account you choose. Review the CRM match and field mapping, then import one selected contact. This screen never changes Google Other Contacts and cannot connect a new account.
-        </p>
       </header>
 
       <Card>
@@ -228,7 +225,12 @@ export function OtherContactsReview() {
         <CardContent className="space-y-3">
           {inventory.isLoading ? <p className="text-sm text-muted-foreground">Checking connected Google accounts…</p> : null}
           {!inventory.isLoading && connections.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No connected Google account has the separate Other Contacts permission. This internal test cannot request or add it.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-muted-foreground">No Google account is ready for Other Contacts.</p>
+              <Button asChild variant="outline">
+                <Link href="/user-settings/integrations">Connect a Google account</Link>
+              </Button>
+            </div>
           ) : null}
           {connections.length ? (
             <div className="flex flex-wrap items-end gap-3">

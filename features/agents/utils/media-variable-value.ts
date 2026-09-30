@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * features/agents/utils/media-variable-value.ts
  *
@@ -15,11 +17,8 @@
  */
 
 // 36-char canonical UUID — what cld_files file_ids look like.
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export function isMediaFileId(value: string): boolean {
-  return UUID_PATTERN.test(value);
+  return isUuidShape(value);
 }
 
 /** Coerce a media variable's raw value (string or MediaRef-shaped object) to its stored string form. */

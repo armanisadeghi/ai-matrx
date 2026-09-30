@@ -3,7 +3,6 @@ import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
-import { filterToolsByOrgKnobs } from "@/lib/knobs/toolKnobGating";
 
 type WithTools = {
   tools: { tools: DatabaseTool[]; status: string };
@@ -42,18 +41,11 @@ export const fetchAvailableTools = createAsyncThunk<
 
   if (error) throw pgErrorToError(error);
 
-  // ELIGIBILITY. Almost every tool is platform-wide and flows straight through. A tool
-  // whose usefulness depends on an organization switch (`records`, whose every action
-  // answers "the custom data store is switched off" when the store is closed) is shown
-  // only where that organization actually has it — see lib/knobs/toolKnobGating.ts. A
-  // control that is present and can only refuse is the dead-control shape the platform
-  // forbids; absent is the honest form.
-  const state = getState();
-  return await filterToolsByOrgKnobs(
-    data ?? [],
-    state.appContext?.organization_id ?? null,
-    state.userAuth?.id ?? null,
-  );
+  // THE CATALOGUE IS A READ: every tool the person can pick, never narrowed by the ACTIVE
+  // organization (active-org-is-never-a-list-filter). Whether a gated tool (`records`) is
+  // available depends on the organization the AGENT runs in, so the picker MARKS it per agent
+  // (lib/knobs/toolKnobGating.ts `toolsWithheldInOrganization`) — it never hides it here.
+  return data ?? [];
 });
 
 /**

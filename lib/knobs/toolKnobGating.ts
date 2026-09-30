@@ -93,3 +93,23 @@ export async function filterToolsByOrgKnobs<T extends NamedTool>(
     (tool) => !isOrgKnobGatedTool(tool?.name) || allowed.get(String(tool.name)) === true,
   );
 }
+
+/**
+ * The names of the tools in `tools` that are NOT available in `organizationId` — the organization
+ * an agent RUNS in (the agent's own, never the active one). A picker shows every tool and marks
+ * these; it does not hide them. Same resolution (and same fail-closed reading of an unreadable
+ * knob) as `filterToolsByOrgKnobs`.
+ */
+export async function toolsWithheldInOrganization<T extends NamedTool>(
+  tools: readonly T[],
+  organizationId: string | null | undefined,
+  userId: string | null | undefined,
+): Promise<Set<string>> {
+  const offered = await filterToolsByOrgKnobs(tools, organizationId, userId);
+  const offeredNames = new Set(offered.map((tool) => String(tool.name)));
+  return new Set(
+    tools
+      .filter((tool) => isOrgKnobGatedTool(tool?.name) && !offeredNames.has(String(tool.name)))
+      .map((tool) => String(tool.name)),
+  );
+}

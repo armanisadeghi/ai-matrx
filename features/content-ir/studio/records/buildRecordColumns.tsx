@@ -19,6 +19,7 @@ import { shapeInstancePermalink } from "@/features/content-ir/studio/constants";
 import { ConfirmationBadge } from "@/features/content-ir/records/ConfirmationBadge";
 import type { KindRecordRow } from "./types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** One property of the kind's emitted schema, as a column needs to see it. */
 export interface SchemaField {
@@ -144,13 +145,11 @@ export interface RecordColumnContext {
  * and the honest answer for a machine-written row is the same one the WRITTEN
  * BY filter already gives — "An agent".
  */
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The system's name as a person reads it, or null when it is not a name. */
 export function systemDisplayName(raw: string | null): string | null {
   const value = raw?.trim();
-  if (!value || UUID_RE.test(value)) return null;
+  if (!value || isUuidShape(value)) return null;
   // `chat_kind_emission` → `Chat kind emission`. A registered system name is a
   // slug by convention; a person reads a sentence.
   const words = value.replace(/[_-]+/g, " ").trim();

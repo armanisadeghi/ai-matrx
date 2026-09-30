@@ -2,9 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { ScopesRouteHeader } from "@/features/scope-system/components/ScopesRouteHeader";
 import { ScopeAddressCanonicalizer } from "@/features/scope-system/components/ScopeAddressCanonicalizer";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export async function generateMetadata({
   params,
@@ -20,7 +18,7 @@ export async function generateMetadata({
       .schema("iam")
       .from("organizations")
       .select("name, abbreviation, description");
-    const { data } = UUID_RE.test(orgId)
+    const { data } = isUuidShape(orgId)
       ? await query.eq("id", orgId).maybeSingle()
       : await query.eq("slug", orgId).maybeSingle();
 

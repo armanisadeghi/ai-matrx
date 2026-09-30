@@ -25,6 +25,7 @@ import type {
 import { makeAssertData } from "@/utils/errors";
 import { writeOne, writeOneRow } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -33,14 +34,11 @@ async function seoDb() {
 
 const assertData = makeAssertData("reach your keyword classification rules");
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function listClassRules(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<KeywordClassRuleRow[]> {
-  if (!UUID_RE.test(siteId)) throw new Error(`Invalid site id: ${siteId}`);
+  if (!isUuidShape(siteId)) throw new Error(`Invalid site id: ${siteId}`);
   const response = await (await seoDb())
     .from("keyword_class_rule")
     .select("*")

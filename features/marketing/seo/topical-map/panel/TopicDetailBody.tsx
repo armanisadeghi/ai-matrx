@@ -316,7 +316,6 @@ function TopicDetailBodyInner({
                 pages={split.pages}
                 intentColors={knobs.intent_colors}
                 paging={data.paging("web_page")}
-                total={topic.pages}
               />
             ) : (
               <PanelSection title="Pages" count={split.pages.length}>

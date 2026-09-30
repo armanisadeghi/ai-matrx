@@ -121,11 +121,6 @@
       "owner": "agents",
       "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact call // org-filter: server-call <reason>. Lines 266,315; sites: fetch()"
     },
-    "features/agents/redux/tools/tools.thunks.ts": {
-      "class": "write-target",
-      "owner": "agents",
-      "note": "call-site/wider-source rule (2026-09-30), auto-classified — fix lane confirms: annotate the exact source line // org-filter: <class> <reason> or drop the active org from the read. Lines 54; sites: FILE"
-    },
     "features/agents/runtime-reconnect/reconnect-server-operation.thunk.ts": {
       "class": "silent-filter",
       "owner": "agents",

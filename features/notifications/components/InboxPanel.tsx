@@ -16,7 +16,14 @@
  *
  * Honesty rules (Law 4): a read failure is a red row with a retry, never an
  * empty "all caught up"; a notice with no deep link is still a row (it can be
- * marked read), and a notice's link opens in place.
+ * marked read).
+ *
+ * 🚨 A NOTICE NEVER MOVES THE PAGE (../openNoticeLink.ts): a link carrying a
+ * `?panels=` window token opens that window IN PLACE through its registered
+ * hydrator — never `router.push`. Every row with a link also carries an
+ * "Open in new tab" control, where the same `?panels=` link hydrates the
+ * window on that page's first load. A key with no hydrator falls back to
+ * navigating and announces it.
  */
 
 import { startTransition, useState } from "react";
@@ -39,8 +46,15 @@ import { Button } from "@/components/ui/button";
 import AppLink from "@/components/navigation/AppLink";
 import { useOpenMessagesWindow } from "@/features/overlays/openers/messagesWindow";
 import { useOpenApprovalsWindow } from "@/features/overlays/openers/approvalsWindow";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { useInboxCounts, useInboxList } from "../useInbox";
 import type { InboxNotification } from "../types";
+import {
+  classifyNoticeLink,
+  isInternalLink,
+  newTabHref,
+  panelsParamOf,
+} from "../openNoticeLink";
 import { NotificationBody } from "./NotificationBody";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -52,10 +66,6 @@ interface InboxPanelProps {
   /** Called after a row navigates, so a popover host can close. */
   onNavigate?: () => void;
   className?: string;
-}
-
-function isInternalLink(link: string): boolean {
-  return link.startsWith("/") && !link.startsWith("//");
 }
 
 function relative(iso: string): string {
@@ -96,50 +106,77 @@ function PinnedRow({
 function NotificationRow({
   row,
   onOpen,
+  onOpenedInNewTab,
 }: {
   row: InboxNotification;
   onOpen: (row: InboxNotification) => void;
+  onOpenedInNewTab: (row: InboxNotification) => void;
 }) {
   const unread = row.read_at === null;
   const title = row.subject?.trim() || row.event_key.replaceAll(".", " › ");
   const external = row.deep_link !== null && !isInternalLink(row.deep_link);
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(row)}
-      aria-label={`${unread ? "Unread: " : ""}${title}`}
+    <div
       className={cn(
-        "flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
+        "group flex w-full items-start rounded-lg transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
         unread ? "bg-primary/5" : undefined,
       )}
+      data-notice-id={row.id}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "mt-2 h-2 w-2 shrink-0 rounded-full",
-          unread ? "bg-primary" : "bg-transparent",
-        )}
-      />
-      <span className="min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={() => onOpen(row)}
+        aria-label={`${unread ? "Unread: " : ""}${title}`}
+        className="flex min-w-0 flex-1 items-start gap-3 rounded-lg px-3 py-2 text-left"
+      >
         <span
+          aria-hidden
           className={cn(
-            "block truncate text-sm text-foreground",
-            unread ? "font-semibold" : "font-medium",
+            "mt-2 h-2 w-2 shrink-0 rounded-full",
+            unread ? "bg-primary" : "bg-transparent",
           )}
-        >
-          {title}
-        </span>
-        {row.body ? (
-          <NotificationBody body={row.body} className="block line-clamp-2 text-xs text-muted-foreground" />
-        ) : null}
-        <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-          {relative(row.created_at)}
-          {external ? (
-            <ExternalLink className="h-3 w-3" aria-label="Opens outside the app" />
+        />
+        <span className="min-w-0 flex-1">
+          <span
+            className={cn(
+              "block truncate text-sm text-foreground",
+              unread ? "font-semibold" : "font-medium",
+            )}
+          >
+            {title}
+          </span>
+          {row.body ? (
+            <NotificationBody
+              body={row.body}
+              className="block line-clamp-2 text-xs text-muted-foreground"
+            />
           ) : null}
+          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            {relative(row.created_at)}
+            {external ? (
+              <ExternalLink
+                className="h-3 w-3"
+                aria-label="Opens outside the app"
+              />
+            ) : null}
+          </span>
         </span>
-      </span>
-    </button>
+      </button>
+      {row.deep_link !== null && row.deep_link !== "" ? (
+        <a
+          href={newTabHref(row.deep_link)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => onOpenedInNewTab(row)}
+          aria-label={`Open in new tab: ${title}`}
+          title="Open in new tab"
+          data-notice-new-tab
+          className="mr-1 mt-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      ) : null}
+    </div>
   );
 }
 
@@ -149,30 +186,67 @@ export function InboxPanel({
   className,
 }: InboxPanelProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const counts = useInboxCounts();
   const list = useInboxList(true);
   const openMessages = useOpenMessagesWindow();
   const openApprovals = useOpenApprovalsWindow();
   const [clearing, setClearing] = useState(false);
 
-  const openRow = (row: InboxNotification) => {
-    if (row.read_at === null) {
-      void list.markRead(row.id).catch((error: unknown) => {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "We couldn't mark the notification read.",
-        );
-      });
-    }
-    if (row.deep_link === null) return;
-    if (isInternalLink(row.deep_link)) {
-      const href = row.deep_link;
-      startTransition(() => router.push(href));
-    } else {
-      window.open(row.deep_link, "_blank", "noopener,noreferrer");
-    }
+  const markOpened = (row: InboxNotification) => {
+    if (row.read_at !== null) return;
+    void list.markRead(row.id).catch((error: unknown) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "We couldn't mark the notification read.",
+      );
+    });
+  };
+
+  const navigateTo = (href: string) => {
+    startTransition(() => router.push(href));
     onNavigate?.();
+  };
+
+  const openRow = (row: InboxNotification) => {
+    markOpened(row);
+    const link = row.deep_link;
+    switch (classifyNoticeLink(link)) {
+      case "none":
+        return;
+      case "external":
+        window.open(link as string, "_blank", "noopener,noreferrer");
+        onNavigate?.();
+        return;
+      case "route":
+        navigateTo(link as string);
+        return;
+      case "panels": {
+        // In place: the window opens over THIS page through its own hydrator.
+        // Loaded on demand — the hydrator table imports every window family.
+        const href = link as string;
+        const panelsParam = panelsParamOf(href) as string;
+        void import("../openPanelsInPlace")
+          .then(({ openPanelsInPlace, announceInPlaceFallback }) => {
+            const result = openPanelsInPlace(dispatch, panelsParam);
+            if (result.opened) {
+              onNavigate?.();
+              return;
+            }
+            announceInPlaceFallback(href, result.missingKeys, row.event_key);
+            navigateTo(href);
+          })
+          .catch((error: unknown) => {
+            console.error(
+              "[Inbox] The window opener failed to load; navigating to the notice's link instead.",
+              error,
+            );
+            navigateTo(href);
+          });
+        return;
+      }
+    }
   };
 
   const clearAll = async () => {
@@ -227,9 +301,7 @@ export function InboxPanel({
           onClick={() => void clearAll()}
           disabled={clearing || !hasUnread}
           title={
-            hasUnread
-              ? "Mark every notification read"
-              : "Nothing is unread"
+            hasUnread ? "Mark every notification read" : "Nothing is unread"
           }
         >
           {clearing ? (
@@ -327,7 +399,12 @@ export function InboxPanel({
           </div>
         ) : (
           list.rows.map((row) => (
-            <NotificationRow key={row.id} row={row} onOpen={openRow} />
+            <NotificationRow
+              key={row.id}
+              row={row}
+              onOpen={openRow}
+              onOpenedInNewTab={markOpened}
+            />
           ))
         )}
       </div>

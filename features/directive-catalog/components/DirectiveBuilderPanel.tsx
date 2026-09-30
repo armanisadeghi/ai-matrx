@@ -71,9 +71,7 @@ import {
 } from "@/features/directive-catalog/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const RECEIPT_PILL: Record<DirectiveReceipt["status"], string> = {
   applied: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -292,7 +290,7 @@ export function DirectiveBuilderPanel({
     const raw = fields[f.key];
     const v = raw === undefined ? "" : raw.trim();
     if (v.length === 0) return false;
-    if (f.uuid && !UUID_RE.test(v)) return false;
+    if (f.uuid && !isUuidShape(v)) return false;
     return true;
   });
   const canLiveRender =
@@ -395,7 +393,7 @@ export function DirectiveBuilderPanel({
               : null;
             const selectedLabel = selectedLabels[f.key];
             const invalid =
-              f.uuid && value.trim().length > 0 && !UUID_RE.test(value.trim());
+              f.uuid && value.trim().length > 0 && !isUuidShape(value.trim());
             return (
               <div key={f.key} className="flex flex-col gap-1">
                 <label className="text-xs text-muted-foreground">

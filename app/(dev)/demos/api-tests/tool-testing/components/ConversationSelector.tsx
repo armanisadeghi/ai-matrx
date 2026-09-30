@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Loader2, Plus, ClipboardPaste, Check, AlertCircle, MessageSquare, Cookie } from 'lucide-react';
 import { toast } from "@/lib/toast";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 interface ConversationSelectorProps {
   conversationId: string | null;
@@ -57,8 +58,7 @@ export function ConversationSelector({
   const handleApplyExisting = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(trimmed)) {
+    if (!isUuidShape(trimmed)) {
       toast.error('Invalid conversation ID', { description: 'Must be a valid UUID.' });
       return;
     }

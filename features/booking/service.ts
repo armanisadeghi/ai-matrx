@@ -34,6 +34,7 @@ import "server-only";
 import { cache } from "react";
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Schema `custom` is deliberately not in `types/database.types.ts`: the record
@@ -106,7 +107,6 @@ export interface PublicBooking {
   message: string | null;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REF = /^[0-9a-f]{32}$/i;
 
 /**
@@ -118,7 +118,7 @@ const REF = /^[0-9a-f]{32}$/i;
  */
 export const publicBooking = cache(
   async (formId: string, days?: number): Promise<PublicBooking | null> => {
-    if (!UUID.test(formId)) return null;
+    if (!isUuidShape(formId)) return null;
     const { data, error } = await storeDoors().rpc("booking_public", {
       p_form_id: formId,
       p_days: days ?? null,

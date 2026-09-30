@@ -25,6 +25,7 @@ import {
   type PendingPrompt,
 } from "@/features/surfaces/utils/value-mapping-resolver";
 import { assertNativeContextValue } from "@/features/surfaces/utils/context-value-contract";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export type { ApplicationScope } from "@/features/agents/types/scope.types";
 export type { PendingPrompt } from "@/features/surfaces/utils/value-mapping-resolver";
@@ -219,7 +220,7 @@ export function mapScopeToInstanceWithSurface(
   // slice for non-full scopes; remove only redundant ad-hoc fallthrough.
   const hasFileReference =
     typeof applicationScope.file_id === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    isUuidShape(
       applicationScope.file_id.trim(),
     );
   if (hasFileReference) {

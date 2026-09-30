@@ -43,6 +43,7 @@ import {
   surfaceGuideSlug,
 } from "@/features/surfaces/utils/surface-guide";
 import type { SurfaceManifest } from "@/features/surfaces/types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const REPO_ROOT = resolve(__dirname, "..");
 
@@ -123,9 +124,6 @@ function currentGitSha(): string | null {
   }
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export interface EmitSurfaceSyncSqlOptions {
   surfaceNames?: readonly string[];
   organizationId: string;
@@ -154,7 +152,7 @@ export function emitSurfaceSyncSql({
   surfaceNames = [],
   organizationId,
 }: EmitSurfaceSyncSqlOptions): string {
-  if (!UUID_RE.test(organizationId)) {
+  if (!isUuidShape(organizationId)) {
     throw new Error("--organization-id must be a UUID");
   }
   const manifests = selectedManifests([...new Set(surfaceNames)]);

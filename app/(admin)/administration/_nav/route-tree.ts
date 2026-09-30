@@ -10,6 +10,7 @@
 import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import type { ModulePageIcon } from "@/components/matrx/navigation/types";
 import { MODULE_HOME, MODULE_NAME, filteredPages } from "../config";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface AdminTreeNode {
   /** Single URL segment, e.g. "system-agents". */
@@ -37,15 +38,13 @@ const WORD_REPLACEMENTS: Record<string, string> = {
   ts: "TS",
 };
 
-const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * A crumb for a record's own address whose name the page has not published (yet):
  * the record's KIND, from the list it sits under — "Organization" under
  * "Organizations" — never its uuid title-cased ("884d1ce8 7b49 4fba …", VERIFIER-25).
  */
 export function identifierCrumbLabel(segment: string, parentLabel: string | undefined): string | null {
-  if (!UUID_SEGMENT.test(segment)) return null;
+  if (!isUuidShape(segment)) return null;
   const parent = (parentLabel ?? "").trim();
   if (/ies$/i.test(parent)) return `${parent.slice(0, -3)}y`;
   if (/s$/i.test(parent) && !/ss$/i.test(parent)) return parent.slice(0, -1);

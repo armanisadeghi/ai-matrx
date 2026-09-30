@@ -34,6 +34,7 @@ import { cache } from "react";
 
 import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * THE STORE'S SCHEMA IS NOT IN `types/database.types.ts`, AND THAT IS CORRECT.
@@ -110,7 +111,7 @@ export interface PublicForm {
  * page itself both want it and a public link should cost one round trip.
  */
 export const publicForm = cache(async (formId: string): Promise<PublicForm | null> => {
-  if (!UUID.test(formId)) return null;
+  if (!isUuidShape(formId)) return null;
   const { data, error } = await storeDoors().rpc("form_public", { p_form_id: formId });
   if (error) {
     // NOTHING FAILS SILENTLY. A door that refused is not an absent form: a 404
@@ -184,7 +185,7 @@ export interface PublicAsk {
  * `publicForm`'s null: missing, unpublished, closed or switched off.
  */
 export async function publicFormAsks(formId: string, values: Record<string, unknown>): Promise<PublicAsk[]> {
-  if (!UUID.test(formId)) return [];
+  if (!isUuidShape(formId)) return [];
   const { data, error } = await storeDoors().rpc("form_public_asks", {
     p_form_id: formId,
     p_values: values,
@@ -284,7 +285,7 @@ export interface DraftRead {
 
 /** WHERE WAS I. The saved place behind a secret, with the store's sentence when it is gone. */
 export async function readFormDraft(formId: string, secret: string): Promise<DraftRead | null> {
-  if (!UUID.test(formId) || secret.trim() === "") return null;
+  if (!isUuidShape(formId) || secret.trim() === "") return null;
   const { data, error } = await storeDoors().rpc("form_draft_read", { p_form_id: formId, p_secret: secret });
   if (error) {
     const err = new Error(error.message) as Error & { hint?: string };
@@ -295,4 +296,3 @@ export async function readFormDraft(formId: string, secret: string): Promise<Dra
   return (row as DraftRead | undefined) ?? null;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

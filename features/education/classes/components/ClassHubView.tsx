@@ -71,6 +71,7 @@ import { ClassProgressPanel } from "./ClassProgressPanel";
 import { AssignedToYouPanel } from "./AssignedToYouPanel";
 import { daysUntil } from "../settings";
 import type { StudyClass } from "../types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Surface `matrx-user/education-class` for a hub state with no class data
@@ -100,9 +101,6 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 interface ClassHubViewProps {
   /** The route param — a class scope id OR slug. */
   classParam: string;
@@ -122,11 +120,11 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
   // link (the URL the owner copies from their own address bar) must resolve
   // too, so joined classes (edu_my_classes, cross-org) are the slug fallback.
   const { joined: myClasses, loading: myClassesLoading } = useMyClasses();
-  const joinedMatch = UUID_RE.test(classParam)
+  const joinedMatch = isUuidShape(classParam)
     ? undefined
     : myClasses.find((c) => c.slug === classParam || c.classId === classParam);
   const resolvedId =
-    cls?.id ?? joinedMatch?.classId ?? (UUID_RE.test(classParam) ? classParam : null);
+    cls?.id ?? joinedMatch?.classId ?? (isUuidShape(classParam) ? classParam : null);
   const access = useClassAccess(resolvedId);
 
   // Owned classes come from every organization's scope tree the person is in,

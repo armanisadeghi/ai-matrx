@@ -73,9 +73,6 @@ import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 // Tasks + projects have their own surfaces; don't double-count them as "resources".
 const EXCLUDE_FROM_RESOURCES = new Set(["task", "project"]);
 
@@ -84,6 +81,7 @@ const EXCLUDE_FROM_RESOURCES = new Set(["task", "project"]);
 // The hero is a read-only identity/overview region → NonEditableContextMenu
 // (the description editor below mounts its own editable Pro "…" menu).
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * The /projects/[projectId] route: resolves the project by UUID or slug, owns
@@ -109,7 +107,7 @@ export function ProjectWorkspace() {
       setProjectReadError(null);
       let resolved: Project | null = null;
       try {
-        if (UUID_RE.test(projectParam)) {
+        if (isUuidShape(projectParam)) {
           resolved = await getProject(projectParam);
         } else {
           // Slug fallback (slugs aren't globally unique; take first match).

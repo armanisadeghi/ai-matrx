@@ -65,6 +65,7 @@ import {
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentTools,
+  selectAgentById,
   selectAgentCustomTools,
   selectAgentMcpServers,
   selectAgentAutoToolsDisabled,
@@ -120,6 +121,12 @@ import {
 } from "@/features/agents/redux/tools/tools.selectors";
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import {
+  isOrgKnobGatedTool,
+  toolsWithheldInOrganization,
+} from "@/lib/knobs/toolKnobGating";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supportsTools } from "@/features/agents/hooks/useModelControls";
@@ -902,6 +909,35 @@ function ServerToolsTab({
     return toolsList?.items || [];
   }, [isEnabledTab, metadata, activeSet, toolsList, debouncedSearch]);
 
+  // A GATED TOOL IS MARKED, NEVER HIDDEN. Whether `records` (and any future gated tool) is
+  // available depends on the organization THIS AGENT runs in — its own, not the active one — so
+  // the card names that organization when the tool would refuse there.
+  const agentOrganizationId = useAppSelector(
+    (state) => selectAgentById(state, agentId)?.organizationId ?? null,
+  );
+  const gateUserId = useAppSelector(selectUserId);
+  const { organizations: gateOrganizations } = useUserOrganizations();
+  const agentOrganizationName =
+    gateOrganizations.find((org) => org.id === agentOrganizationId)?.name ??
+    "this agent's organization";
+  const [withheldTools, setWithheldTools] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let cancelled = false;
+    const gated = visibleTools.filter((t: any) => isOrgKnobGatedTool(t?.name));
+    if (gated.length === 0) {
+      setWithheldTools(new Set());
+      return;
+    }
+    void toolsWithheldInOrganization(gated, agentOrganizationId, gateUserId).then(
+      (names) => {
+        if (!cancelled) setWithheldTools(names);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [visibleTools, agentOrganizationId, gateUserId]);
+
   const allVisibleSelected =
     visibleTools.length > 0 &&
     visibleTools.every((t: any) => activeSet.has(t.id));
@@ -1438,6 +1474,11 @@ function ServerToolsTab({
                           )
                         }
                         dupBundles={dupBundlesByToolId.get(tool.id)}
+                        unavailableIn={
+                          withheldTools.has(String(tool.name))
+                            ? agentOrganizationName
+                            : null
+                        }
                         addDisabled={!isActive && !modelSupportsTools}
                         executors={
                           toolRuntimes
@@ -3968,6 +4009,7 @@ function ToolCard({
   onToggle,
   onExpand,
   dupBundles,
+  unavailableIn = null,
   addDisabled = false,
   executors = null,
 }: {
@@ -3979,6 +4021,8 @@ function ToolCard({
   /** Names of enabled bundles that also provide this tool — when set, the tool
    * is redundant with a bundle and the card shows a gentle yellow nudge. */
   dupBundles?: string[];
+  /** The organization this agent runs in, when the tool's organization switch is off there. */
+  unavailableIn?: string | null;
   /** Model can't use tools — block selecting this (unselected) card. */
   addDisabled?: boolean;
   /** Active executor names from tool.binding — drives the availability matrix.
@@ -4093,6 +4137,15 @@ function ToolCard({
             <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
               <Plug className="w-3 h-3 shrink-0" />
               <span>{runtime.clientOnlyNote}</span>
+            </div>
+          )}
+          {unavailableIn && (
+            <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400">
+              <Info className="w-3 h-3 shrink-0" />
+              <span>
+                Not available in {unavailableIn}: its organization switch for this
+                tool is off, so the tool will refuse there.
+              </span>
             </div>
           )}
           {isDup && (

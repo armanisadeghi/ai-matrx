@@ -13,6 +13,7 @@
  * 4. Try a draft → the same enforce loop the drafting jobs run ("Fix voice").
  */
 
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Loader2, Search, ShieldAlert, Wand2 } from "lucide-react";
@@ -136,7 +137,8 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
   const org = async (): Promise<string> => {
     if (organizationId) return organizationId;
     if (resolveOrganization) return resolveOrganization();
-    throw new Error("Pick an organization to file this voice in.");
+    // No organization known and no resolver: hold and ask (the person picks), never a refusal of our own.
+    return ensureOrgId(null);
   };
 
   const current = rows?.[0] ?? null;

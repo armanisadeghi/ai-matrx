@@ -7,9 +7,7 @@ import { VARIABLE_COMPONENT_TYPES } from "@/features/agents/types/agent-definiti
 import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
 import type { ToolIndex } from "./import-types";
 import { parsePasted } from "./agent-import-parse";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const VALID_AGENT_TYPES = new Set(["user", "builtin"]);
 const VALID_MESSAGE_ROLES = new Set(["system", "user", "assistant"]);
@@ -603,7 +601,7 @@ function analyzeTools(
   tools.forEach((t, i) => {
     const path = `tools[${i}]`;
     if (typeof t === "string") {
-      if (UUID_RE.test(t)) return;
+      if (isUuidShape(t)) return;
       const resolved = toolIndex.get(t.toLowerCase());
       if (!resolved) {
         unresolvedToolCount += 1;
@@ -712,7 +710,7 @@ function analyzeTopLevelShape(
           "`model_id` is an empty string — import will fail against the database.",
         fixAction: { kind: "pick-model" },
       });
-    } else if (typeof modelRaw === "string" && !UUID_RE.test(modelRaw.trim())) {
+    } else if (typeof modelRaw === "string" && !isUuidShape(modelRaw.trim())) {
       pushIssue(issues, {
         severity: "error",
         path: "model_id",

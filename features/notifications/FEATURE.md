@@ -60,8 +60,19 @@ decertify the table. Verified live as `admin@admin.com` through role
 - **Read is a fact the person made.** A row is marked read when opened, or by
   Mark all read — never on delivery (the `in_app` adapter says the same on its
   side).
-- **Every row opens.** `deep_link` opens in place (internal) or a new tab
-  (external); a row with no link still opens as "read". Never a dead row.
+- **Every row opens.** A row with no link still opens as "read". Never a dead row.
+- 🚨 **A notice never moves the page** (Arman, 2026-09-30: *"I want to get a window panel and a
+  link to open whatever I need in a new tab. never disrupt the page we're on."*). An internal
+  `deep_link` carrying `?panels=<key>:<id>:<args>` opens that window IN PLACE through its
+  registered hydrator (`openPanelsInPlace.ts`, loaded on the click; the real `UrlPanelRegistry` +
+  `parseParams`) — never `router.push`. Any key with no hydrator: nothing dispatched, the link is
+  navigated to as before, and it is announced (`console.error` + `captureError` source
+  `url-panel-unopened`, code `notice-no-hydrator`). A plain internal link navigates; an external
+  one opens a new tab. Classification: `openNoticeLink.ts`. Every row with a link carries an
+  **Open in new tab** anchor (`target=_blank`, absolute URL, marks read) where the same `?panels=`
+  link hydrates on first load. Guard: `__tests__/notice-opens-window-in-place.test.tsx` (red on the
+  pre-change panel: 3 of 5). Producers: point a notice at a window by declaring a
+  `deep_link_template` with a `?panels=` token — the declared template wins over `notify(deep_link=)`.
 
 ## Freshness — and the named follow-on
 
@@ -98,6 +109,10 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
    on the clone.
 
 ## Change log
+
+- **2026-09-30** — Mandate Candidates F1: `?panels=` notice links open their window in place;
+  every linked row gets Open in new tab; unknown window keys fall back loudly. Proven on the clone
+  preview as admin@admin.com (evidence: `common-docs/projects/mandate-candidates/lanes/F1.md`).
 
 - **2026-09-29** — `custom.inbox_counts` rewritten set-based (follow-up 6). Proven identical on the
   nightly clone for all 1,398 users + 176 explicit (user, organization) calls + 8 rolled-back

@@ -1,3 +1,5 @@
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+
 /**
  * features/agents/addressing/agentAddress.ts
  *
@@ -144,16 +146,13 @@ export function userShellPathForSystemAgentPath(pathname: string): string | null
   const prefix = `${SYSTEM_AGENT_BASE_PATH}/`;
   if (!pathname.startsWith(prefix)) return null;
   const [id, ...rest] = pathname.slice(prefix.length).split("/");
-  if (!id || !UUID_SHAPE.test(id)) return null;
+  if (!id || !isUuidShape(id)) return null;
   const sub =
     rest.length && rest[0] && !ADMIN_ONLY_AGENT_SUBROUTES.has(rest[0])
       ? `/${rest.join("/")}`
       : "";
   return `${AGENT_BASE_PATH}/${id}${sub}`;
 }
-
-const UUID_SHAPE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * THE function. Everything that links to an agent ends up here.

@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { webDb } from "@/utils/supabase/webDb";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * Canonical entry for a page by its id alone: /marketing/pages/[pageId].
@@ -27,8 +28,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  *    they were never given — defeating page-level sharing. Pattern copied
  *    from /marketing/snapshots/[snapshotId].
  */
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function MarketingPageShortLink({
   params,
@@ -38,7 +37,7 @@ export default async function MarketingPageShortLink({
   const { pageId } = await params;
   // A malformed id would reach Postgres as a uuid parse error (500) — reject
   // it as a plain 404 instead.
-  if (!UUID_RE.test(pageId)) notFound();
+  if (!isUuidShape(pageId)) notFound();
   const supabase = await createClient();
   // web.* has no anonymous grants — an anon query errors (42501) rather than
   // returning empty. Send signed-out visitors to login and back here.

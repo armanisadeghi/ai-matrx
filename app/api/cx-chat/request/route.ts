@@ -7,9 +7,7 @@ import {
     loadFullConversation,
 } from '@/features/public-chat/services/cx-chat';
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-
-// Basic UUID v4 pattern
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * GET /api/cx-chat/request?id=xxx
@@ -28,7 +26,7 @@ export async function GET(request: Request) {
             );
         }
 
-        if (!UUID_RE.test(conversationId)) {
+        if (!isUuidShape(conversationId)) {
             return NextResponse.json(
                 { success: false, error: 'Invalid conversation ID format' },
                 { status: 400 },

@@ -68,6 +68,7 @@ import { ActivityRail } from "./ActivityRail";
 import { Delivered, PromiseStrip } from "./Delivered";
 import { Intake } from "./Intake";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 type Loaded =
   | { state: "loading" }
@@ -110,7 +111,7 @@ export default function SharpRunPage({ id }: { id: string }) {
     // the cast (22P02) and the read THROWS. Reporting that as "try again in a
     // moment" would promise a retry that can never succeed, so a malformed
     // link is answered as what it is: nothing at this address.
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    if (!isUuidShape(id)) {
       setLoaded({ state: "missing", gateId: id });
       return;
     }

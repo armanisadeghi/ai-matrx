@@ -64,6 +64,7 @@ import {
 // the renderer's whole graph — framer-motion included — across all of them.
 // Method B (`code-splitting` skill): id → chunk; never a static value import.
 import dynamic from "next/dynamic";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const CreateProjectWithTasksRenderer = dynamic(
   () =>
@@ -82,9 +83,6 @@ const PlanNodePatchRenderer = dynamic(
   { ssr: false, loading: () => null },
 );
 // ── Built-in renderers ───────────────────────────────────────────────────────
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Per-reference-type chip icon. Falls back to a generic link glyph. */
 function chipIcon(type: string): ComponentType<{ className?: string }> {
@@ -182,7 +180,7 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   const openId = resolver?.openId(ref);
   const openType = resolver?.openItemType;
   const canOpen =
-    isExternalUrl || (!!openId && !!openType && UUID_RE.test(openId));
+    isExternalUrl || (!!openId && !!openType && isUuidShape(openId));
 
   const handleClick = () => {
     if (isExternalUrl) {
