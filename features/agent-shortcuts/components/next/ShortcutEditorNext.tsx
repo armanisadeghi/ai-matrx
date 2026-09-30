@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
+import { useUserOrganizations } from "@/features/agent-context/hooks/useHierarchy";
 import { AlertTriangle, Loader2, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -61,6 +61,8 @@ import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { takeShortcutDraftSeed } from "@/features/agent-shortcuts/draft-seed";
 import { cn } from "@/lib/utils";
+
+const EMPTY_ORGS: { id: string; name: string }[] = [];
 const DEFAULT_SURFACE_NAME = "matrx-default/default";
 
 /**
@@ -146,7 +148,7 @@ export function ShortcutEditorNext({
   // Every organization the person belongs to — never just the header's
   // selected one (access-by-person law): a category in any of their
   // organizations is theirs to pick.
-  const memberOrgs = useAppSelector(selectAllOrgs);
+  const memberOrgs = useUserOrganizations().data ?? EMPTY_ORGS;
   const memberOrgIds = useMemo(() => memberOrgs.map((o) => o.id), [memberOrgs]);
 
   useEffect(() => {

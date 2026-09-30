@@ -17,7 +17,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
+import { useUserOrganizations } from "@/features/agent-context/hooks/useHierarchy";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   archiveTermList,
@@ -39,6 +39,8 @@ import { TermEntriesTable } from "./TermEntriesTable";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+
+const EMPTY_ORGS: { id: string; name: string }[] = [];
 
 function draftOf(list: TermList): TermListDraft {
   return {
@@ -70,7 +72,7 @@ export function TermListsWorkspace() {
   // The rail's read failure, said in the rail — never "No term lists yet".
   const [listsError, setListsError] = useState<unknown>(null);
   const [creating, setCreating] = useState(false);
-  const memberOrgs = useAppSelector(selectAllOrgs);
+  const memberOrgs = useUserOrganizations().data ?? EMPTY_ORGS;
   const orgNames = useMemo(
     () => new Map(memberOrgs.map((o) => [o.id, o.name] as const)),
     [memberOrgs],

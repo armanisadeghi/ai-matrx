@@ -27,7 +27,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
+import { useUserOrganizations } from "@/features/agent-context/hooks/useHierarchy";
 import { supabase } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { BLOCKED_COLUMNS, CONNECTED_COLUMNS, HAVE_COLUMNS } from "./columns";
@@ -36,6 +36,8 @@ import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigati
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 import { HUB_LIBRARIES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+
+const EMPTY_ORGS: { id: string; name: string }[] = [];
 
 const EMPTY: ConsoleData = {
   have: [],
@@ -80,7 +82,7 @@ function Section({
 export function AcquisitionConsolePage() {
   // The organization is an ON-PAGE filter (`?org=`), default "All organizations"
   // — never the header's selected organization (access belongs to the person).
-  const memberOrgs = useAppSelector(selectAllOrgs);
+  const memberOrgs = useUserOrganizations().data ?? EMPTY_ORGS;
   const router = useRouter();
   const params = useSearchParams();
   const rulebookId = params.get("rulebook");
@@ -227,11 +229,10 @@ export function AcquisitionConsolePage() {
           !loading &&
           !failure &&
           data.have.length === 0 &&
-          data.connected.length === 0 &&
           data.blocked.length === 0 && (
             <div className="flex max-w-prose items-center gap-3 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground">
               <span>
-                Nothing in {memberOrgs.find((o) => o.id === organizationId)?.name ?? "this organization"}.
+                No sources or blocks in {memberOrgs.find((o) => o.id === organizationId)?.name ?? "this organization"}.
               </span>
               <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setOrganization("all")}>
                 View all organizations

@@ -3,7 +3,7 @@
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
+import { useUserOrganizations } from "@/features/agent-context/hooks/useHierarchy";
 import {
   CheckCircle2,
   Layers,
@@ -74,6 +74,8 @@ import {
   STANDARD_DEFAULTS,
 } from "./batchModel";
 
+const EMPTY_ORGS: { id: string; name: string }[] = [];
+
 const STANDARD = "standard";
 
 function parseKey(key: string): { kind: "create" | "update"; id: string } {
@@ -101,7 +103,7 @@ export function BatchShortcutsEditor({
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
   // Every organization the person belongs to — never just the header's
   // selected one (access-by-person law).
-  const memberOrgs = useAppSelector(selectAllOrgs);
+  const memberOrgs = useUserOrganizations().data ?? EMPTY_ORGS;
   const memberOrgIds = useMemo(() => memberOrgs.map((o) => o.id), [memberOrgs]);
 
   useEffect(() => {

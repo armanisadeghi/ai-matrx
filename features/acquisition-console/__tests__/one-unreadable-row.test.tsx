@@ -74,6 +74,10 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 
+jest.mock("@/features/agent-context/hooks/useHierarchy", () => ({
+  useUserOrganizations: () => ({ data: [] }),
+}));
+
 jest.mock("@/lib/redux/hooks", () => ({
   // The page reads the person's organizations for its on-page filter; none = "All organizations".
   useAppSelector: () => [],
