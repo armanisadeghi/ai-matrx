@@ -201,6 +201,7 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-30` — V4-F copy + count: the segmented progress line is one plain line, "Making 5 cards — 3 ready" (`components/create/cardProgressLine.ts`, shared by Create deck and Add more cards); "Section n of m — N cards so far" and "Last done: Part (7/10)" are gone, and the count can never pass the request (THE COUNT LAW on progress, `convert/segmentedGenerate.ts progressItemCount`). Study sidebar metrics read "Tries / Right / Streak / Known" (not Att/Cor/Str/Mst) and are absent before the first review. Deck page: Class picker is one self-labelled select ("No class"), the row control reads "Default" with a "Shown to" menu heading.
 - `2026-09-29` — /education/flashcards opens on **Mine** through its own landing knob `lists.landing_tab/fc_set`; a new deck's "Shown to" default stays **everyone** (`access.shown_to_default/fc_set`), so it is visible to the organization and appears in Mine. The two used to be one knob, which is why a lane had set decks to "only me" (reverted by the chair). Same for `/education/quizzes` (`assessment`).
 - `2026-09-29` — V3-C copy: progress second line "Last done: <part>" / "Cards appear below."; waiting-for-clean one line; Add more cards description one line ("This deck's material. Existing cards stay."); depth "Exam-level" blurb "Fine detail & tricky cases" (no longer restates its label); MadeFromSource "Open the kit" → "Everything made from it".
 
