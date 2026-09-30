@@ -31,7 +31,8 @@ import { pageIntentTone, selectPageIntent } from "../../redux/selectors";
 import { IntentDot } from "../../ui/IntentDot";
 import type { PageAssociation } from "../associationGroups";
 import { cmsPageHref, useCmsPairings } from "../useCmsPairings";
-import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { PanelEmptyLine, PanelSection, ShowMoreRow, pagedCount } from "../PanelSection";
+import type { KindPaging } from "../useTopicAssociationPages";
 
 export interface PagesSectionProps {
   mapId: string;
@@ -39,16 +40,28 @@ export interface PagesSectionProps {
   siteId: string | null;
   pages: readonly PageAssociation[];
   intentColors: MapIntentColors;
+  /** "Show more" for this kind — the panel reads only the rows it shows. */
+  paging: KindPaging;
+  /** The tree's own total for this kind, printed while more rows exist. */
+  total?: number;
 }
 
-export function PagesSection({ mapId, slug, siteId, pages, intentColors }: PagesSectionProps) {
+export function PagesSection({
+  mapId,
+  slug,
+  siteId,
+  pages,
+  intentColors,
+  paging,
+  total,
+}: PagesSectionProps) {
   const pairings = useCmsPairings(siteId);
   const windowDays = pages[0]?.item.performance_window_days;
 
   return (
     <PanelSection
       title="Pages"
-      count={pages.length}
+      count={pagedCount(pages.length, paging, total)}
       action={
         windowDays !== undefined ? (
           <span className="text-[11px] text-muted-foreground">
@@ -77,6 +90,7 @@ export function PagesSection({ mapId, slug, siteId, pages, intentColors }: Pages
           ))}
         </ul>
       )}
+      <ShowMoreRow paging={paging} shown={pages.length} total={total} noun="pages" />
     </PanelSection>
   );
 }

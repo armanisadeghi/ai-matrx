@@ -94,3 +94,43 @@ export function splitAssociations(rows: readonly MapTopicAssociation[]): SplitAs
 export function itemLabel(row: MapTopicAssociationResolved): string {
   return row.item.label ?? row.item.slug ?? row.item.url ?? row.item.id;
 }
+
+/**
+ * One kind's slice of a PAGED `seo.map_topic_associations` read.
+ *
+ * The panel asks for `pageSize + 1` rows per kind. A kind that came back with
+ * more than `pageSize` has more: the extra row is dropped and the last SHOWN
+ * row's cursor is where "Show more" continues. The server never counts rows
+ * it did not resolve, so "has more" is the only honest thing a page can say —
+ * a total comes from the tree's own counts, never from here.
+ */
+export interface KindPage {
+  rows: MapTopicAssociation[];
+  /** The cursor to continue from, or null when this kind is complete. */
+  next: string | null;
+}
+
+/** Split a paged read into its kinds, in the order the server returned them. */
+export function pageByKind(
+  rows: readonly MapTopicAssociation[],
+  pageSize: number,
+): Map<string, KindPage> {
+  const byKind = new Map<string, MapTopicAssociation[]>();
+  for (const row of rows) {
+    const kind = row.association.kind;
+    const list = byKind.get(kind);
+    if (list) list.push(row);
+    else byKind.set(kind, [row]);
+  }
+  const out = new Map<string, KindPage>();
+  for (const [kind, list] of byKind) {
+    const shown = list.slice(0, pageSize);
+    const last = shown[shown.length - 1];
+    const next =
+      list.length > pageSize && last && !isHiddenMapTopicAssociation(last)
+        ? (last.association.cursor ?? null)
+        : null;
+    out.set(kind, { rows: shown, next });
+  }
+  return out;
+}

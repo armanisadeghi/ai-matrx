@@ -35,7 +35,8 @@ import { useMapDiagnostics } from "../../hooks";
 import type { MapTopicAssociationResolved } from "../../types";
 import { itemLabel } from "../associationGroups";
 import { makePlannedPage } from "../plannedPage";
-import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { PanelEmptyLine, PanelSection, ShowMoreRow, pagedCount } from "../PanelSection";
+import type { KindPaging } from "../useTopicAssociationPages";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface PlannedPagesSectionProps {
@@ -49,6 +50,10 @@ export interface PlannedPagesSectionProps {
   readOnly: boolean;
   /** Refetch the associations after a page is made, so the new node appears. */
   onMade: () => void;
+  /** "Show more" for this kind — the panel reads only the rows it shows. */
+  paging: KindPaging;
+  /** The tree's own total for this kind, printed while more rows exist. */
+  total?: number;
 }
 
 export function PlannedPagesSection({
@@ -60,6 +65,8 @@ export function PlannedPagesSection({
   planned,
   readOnly,
   onMade,
+  paging,
+  total,
 }: PlannedPagesSectionProps) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -97,7 +104,7 @@ export function PlannedPagesSection({
   return (
     <PanelSection
       title="Planned pages"
-      count={planned.length}
+      count={pagedCount(planned.length, paging, total)}
       action={
         canWrite ? (
           <button
@@ -131,6 +138,7 @@ export function PlannedPagesSection({
           ))}
         </ul>
       )}
+      <ShowMoreRow paging={paging} shown={planned.length} total={total} noun="planned pages" />
       {refusal ? (
         <ErrorNotice size="inline" className="mt-1 whitespace-pre-wrap text-xs" message={refusal} />
       ) : null}

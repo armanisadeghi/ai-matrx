@@ -29,7 +29,8 @@ import type { MapTopicAssociationResolved } from "../../types";
 import type { AssociationGroup } from "../associationGroups";
 import { itemLabel } from "../associationGroups";
 import { attachToTopic, detachFromTopic } from "../associationWrites";
-import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { PanelEmptyLine, PanelSection, ShowMoreRow } from "../PanelSection";
+import type { KindPaging } from "../useTopicAssociationPages";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface AssociationsSectionProps {
@@ -42,6 +43,8 @@ export interface AssociationsSectionProps {
   attachedKeys: ReadonlySet<string>;
   readOnly: boolean;
   onChanged: () => void;
+  /** "Show more" for one kind — the panel reads only the rows it shows. */
+  paging: (kind: string) => KindPaging;
 }
 
 export function AssociationsSection({
@@ -52,6 +55,7 @@ export function AssociationsSection({
   attachedKeys,
   readOnly,
   onChanged,
+  paging,
 }: AssociationsSectionProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -78,7 +82,7 @@ export function AssociationsSection({
   return (
     <PanelSection
       title="Attached"
-      count={total}
+      count={groups.some((group) => paging(group.kind).hasMore) ? undefined : total}
       action={
         canWrite ? (
           <button
@@ -104,7 +108,10 @@ export function AssociationsSection({
                 <p className="mb-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                   {Icon ? <Icon className="h-3 w-3" aria-hidden /> : null}
                   <span>{info?.labelPlural ?? group.kind}</span>
-                  <span className="tabular-nums">{group.rows.length}</span>
+                  <span className="tabular-nums">
+                    {group.rows.length}
+                    {paging(group.kind).hasMore ? "+" : ""}
+                  </span>
                   {group.hidden > 0 ? (
                     <span title="Edges whose other end you cannot open. They are counted, never listed.">
                       · {group.hidden} you cannot open
@@ -145,6 +152,11 @@ export function AssociationsSection({
                     </li>
                   ))}
                 </ul>
+                <ShowMoreRow
+                  paging={paging(group.kind)}
+                  shown={group.rows.length}
+                  noun={(info?.labelPlural ?? group.kind).toLowerCase()}
+                />
               </div>
             );
           })}

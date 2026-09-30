@@ -11,7 +11,12 @@
 
 import type { ReactNode } from "react";
 
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { cn } from "@/lib/utils";
+
+import { topicalMapErrorText } from "../errors";
+import type { KindPaging } from "./useTopicAssociationPages";
 
 export interface PanelSectionProps {
   title: string;
@@ -49,4 +54,59 @@ export function PanelSection({ title, count, action, className, children }: Pane
 /** A one-line, honest empty state for a section — never a blank gap. */
 export function PanelEmptyLine({ children }: { children: ReactNode }) {
   return <p className="text-xs text-muted-foreground">{children}</p>;
+}
+
+/**
+ * The count a paged section prints: every row when it has them all, else the
+ * tree's own total for that kind (the same number the tree row shows) — and
+ * nothing when neither is known, because absent is not zero. Pass a total
+ * ONLY when the tree counts exactly the rows the section lists: the tree's
+ * `pages` counts `covers` edges alone, while the pages section lists every
+ * page edge, so the pages section passes none (2,159 vs 3,779 on All Green).
+ */
+export function pagedCount(loaded: number, paging: KindPaging, total: number | undefined): number | undefined {
+  return paging.hasMore ? total : loaded;
+}
+
+/**
+ * "Show more" under a paged section: the section reads only the rows it
+ * shows, and this continues ITS kind from the last one. Loading and a failed
+ * read say so in place; the rows already shown stay.
+ */
+export function ShowMoreRow({
+  paging,
+  shown,
+  total,
+  noun,
+}: {
+  paging: KindPaging;
+  shown: number;
+  total?: number;
+  noun: string;
+}) {
+  if (!paging.hasMore) return null;
+  if (paging.loading) {
+    return <SuspenseLoader centered={false} message={`Loading more ${noun}…`} />;
+  }
+  return (
+    <div className="mt-1 flex flex-col gap-1">
+      {paging.error ? (
+        <ErrorNotice
+          size="inline"
+          className="text-xs"
+          message={`Could not load more ${noun}: ${topicalMapErrorText(paging.error)}`}
+        />
+      ) : null}
+      <button
+        type="button"
+        onClick={paging.loadMore}
+        className="self-start rounded-sm px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        {paging.error ? "Try again" : `Show more ${noun}`}
+        <span className="ml-1 tabular-nums">
+          ({total !== undefined ? `${shown} of ${total}` : `${shown} shown`})
+        </span>
+      </button>
+    </div>
+  );
 }
