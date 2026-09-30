@@ -89,6 +89,42 @@ export function validate(units, lines, readFile) {
   return problems;
 }
 
+/** Review output (`{"batches":[…]}`): every replacement a reviewer writes obeys the same budgets. */
+export function validateReview(units, review) {
+  const problems = [];
+  const byId = new Map(units.map((u) => [u.id, u]));
+  const ACTIONS = new Set(["replace", "delete", "tooltip", "replace+tooltip", "keep"]);
+  const fileBatch = new Map();
+  for (const b of review.batches ?? []) {
+    if ((b.files ?? []).length > 15) problems.push(`${b.id}: ${b.files.length} files — a batch holds at most 15`);
+    for (const f of b.files ?? []) { if (fileBatch.has(f)) problems.push(`${f}: in batches ${fileBatch.get(f)} and ${b.id}`); fileBatch.set(f, b.id); }
+    for (const it of b.items ?? []) {
+      const id = it.id ?? `${it.file}:${it.line}`;
+      if (!ACTIONS.has(it.action)) problems.push(`${id}: action "${it.action}"`);
+      const u = byId.get(id);
+      const slot = u?.slot ?? "secondary";
+      const budget = BUDGET[slot] ?? 60;
+      if (it.new_text && /replace/.test(it.action)) {
+        const t = it.new_text.trim();
+        if (t.length > budget && !/\$\{|\{/.test(t)) problems.push(`${id}: new_text is ${t.length} chars; the ${slot} budget is ${budget}`);
+        const n = (t.match(/[.!?](?=\s+[A-Z(]|\s*$)/g) ?? []).length;
+        const max = slot === "consequence" || slot === "body" ? 2 : 1;
+        if (n > max) problems.push(`${id}: new_text has ${n} sentences; a ${slot} slot holds ${max}`);
+      }
+      if (it.tooltip && it.tooltip.trim().length > 140) problems.push(`${id}: tooltip over 140 chars`);
+    }
+  }
+  return problems;
+}
+
+if (process.argv[1] && process.argv[1].endsWith("validate-discover.mjs") && discoverPath?.endsWith(".json")) {
+  const units = JSON.parse(readFileSync(unitsPath, "utf8")).units;
+  const problems = validateReview(units, JSON.parse(readFileSync(discoverPath, "utf8")));
+  if (problems.length) { for (const p of problems) console.log(p); console.log(`\n${problems.length} problem(s) — Review is NOT done.`); process.exit(1); }
+  console.log("valid — every replacement fits its slot.");
+  process.exit(0);
+}
+
 if (process.argv[1] && process.argv[1].endsWith("validate-discover.mjs")) {
   if (!unitsPath || !discoverPath) { console.error("usage: validate-discover.mjs <units.json> <discover.jsonl> [--root=<repo>]"); process.exit(2); }
   const units = JSON.parse(readFileSync(unitsPath, "utf8")).units;
