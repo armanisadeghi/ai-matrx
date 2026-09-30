@@ -8,6 +8,7 @@
 
 import { formatDistanceStrict } from "date-fns";
 import type { DatedChange, DatedChangeAttention } from "./service";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export const DATED_CHANGES_PAGE_HREF = "/administration/automation/scheduling/dated-changes";
 export const OFFERINGS_PAGE_HREF = "/administration/ai/ai-models/offerings";
@@ -24,7 +25,7 @@ function money(value: unknown): string | null {
 
 function tokens(n: unknown): string {
   if (typeof n !== "number") return "";
-  return n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
+  return formatCount(n, { style: "compact" });
 }
 
 /** `$0.75 in / $3.75 out / $0.075 cached` — one tier, or each tier with its ceiling. */

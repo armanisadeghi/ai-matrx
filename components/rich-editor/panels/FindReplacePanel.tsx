@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CaseSensitive, ChevronDown, ChevronUp, Regex, ShieldAlert, WholeWord, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Toggle } from "@ai-matrx/design-system";
 import type { FindOptions } from "../core/find-replace";
 import type { ViewFindState } from "../visual/VisualEditor";
 
@@ -21,20 +22,8 @@ export interface FindReplacePanelProps {
   onClose: () => void;
 }
 
-function Toggle({ on, onClick, label, children }: { on: boolean; onClick: () => void; label: string; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      aria-pressed={on}
-      onClick={onClick}
-      className={cn("flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted", on && "bg-primary/15 text-primary")}
-    >
-      {children}
-    </button>
-  );
-}
+/** A search option is a pressed-state button — the package Toggle, sized for this bar. */
+const OPTION_TOGGLE = "h-7 w-7 min-w-7 px-0 text-muted-foreground data-[state=on]:bg-primary/15 data-[state=on]:text-primary";
 
 export function FindReplacePanel({ showReplace, onFind, onReplace, onReplaceAll, onClose }: FindReplacePanelProps) {
   const [query, setQuery] = useState("");
@@ -90,16 +79,16 @@ export function FindReplacePanel({ showReplace, onFind, onReplace, onReplaceAll,
         <span className={cn("shrink-0 text-xs text-muted-foreground sm:w-24", state.error && "text-destructive")} aria-live="polite">
           {summary}
         </span>
-        <Toggle on={Boolean(options.caseSensitive)} onClick={() => toggle("caseSensitive")} label="Match case">
+        <Toggle size="sm" className={OPTION_TOGGLE} pressed={Boolean(options.caseSensitive)} onPressedChange={() => toggle("caseSensitive")} title="Match case" aria-label="Match case">
           <CaseSensitive className="h-4 w-4" />
         </Toggle>
-        <Toggle on={Boolean(options.wholeWord)} onClick={() => toggle("wholeWord")} label="Whole words">
+        <Toggle size="sm" className={OPTION_TOGGLE} pressed={Boolean(options.wholeWord)} onPressedChange={() => toggle("wholeWord")} title="Whole words" aria-label="Whole words">
           <WholeWord className="h-4 w-4" />
         </Toggle>
-        <Toggle on={Boolean(options.regex)} onClick={() => toggle("regex")} label="Regular expression">
+        <Toggle size="sm" className={OPTION_TOGGLE} pressed={Boolean(options.regex)} onPressedChange={() => toggle("regex")} title="Regular expression" aria-label="Regular expression">
           <Regex className="h-4 w-4" />
         </Toggle>
-        <Toggle on={Boolean(options.includeProtected)} onClick={() => toggle("includeProtected")} label="Include protected content (kinds, code, variables…)">
+        <Toggle size="sm" className={OPTION_TOGGLE} pressed={Boolean(options.includeProtected)} onPressedChange={() => toggle("includeProtected")} title="Include protected content (kinds, code, variables…)" aria-label="Include protected content (kinds, code, variables…)">
           <ShieldAlert className="h-4 w-4" />
         </Toggle>
         <button type="button" className="flex h-7 w-7 items-center justify-center rounded hover:bg-muted" onClick={() => step(-1)} aria-label="Previous match">

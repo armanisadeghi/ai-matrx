@@ -38,7 +38,7 @@ import {
   Skeleton,
   type ArchiveFilterValue,
 } from "@ai-matrx/design-system";
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatFileSize } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -102,10 +102,7 @@ function when(iso: string | null): string {
 }
 
 function size(bytes: number | null): string | null {
-  if (bytes === null) return null;
-  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-  if (bytes >= 1e6) return `${Math.round(bytes / 1e6)} MB`;
-  return `${Math.max(1, Math.round(bytes / 1e3))} KB`;
+  return bytes === null ? null : formatFileSize(bytes);
 }
 
 const FIRST_PLAY = { ms: 0, nonce: 1 };

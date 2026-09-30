@@ -10,6 +10,7 @@
  */
 
 import { parseYouTubeUrl } from "@/lib/media/youtube";
+import { fileNameFromUrl } from "@ai-matrx/data/files";
 
 // Normalize a URL by prepending https:// if no protocol is present
 export function normalizeUrl(url: string): string {
@@ -146,13 +147,10 @@ export async function validateImageUrl(
 /** The failure a person sees when an image link cannot become a file. */
 export class ImageLinkError extends Error {}
 
-function fileNameFromUrl(url: string, mime: string): string {
-  try {
-    const last = new URL(url).pathname.split("/").filter(Boolean).pop();
-    if (last && /\.[a-z0-9]{2,5}$/i.test(last)) return decodeURIComponent(last);
-  } catch {
-    /* fall through to a generic name */
-  }
+/** The link's own file name when it carries one, else a generic name typed by the MIME. */
+function imageFileName(url: string, mime: string): string {
+  const named = fileNameFromUrl(url);
+  if (named) return named;
   const ext = mime.split("/")[1]?.replace("svg+xml", "svg") || "jpg";
   return `image.${ext}`;
 }
@@ -179,5 +177,5 @@ export async function imageLinkToFile(
   const blob = await res.blob();
   const mime = blob.type || res.headers.get("content-type")?.split(";")[0] || "";
   if (!mime.startsWith("image/")) throw new ImageLinkError("That link did not return an image.");
-  return new File([blob], fileNameFromUrl(url, mime), { type: mime });
+  return new File([blob], imageFileName(url, mime), { type: mime });
 }

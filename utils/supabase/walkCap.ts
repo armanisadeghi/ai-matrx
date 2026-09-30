@@ -1,3 +1,4 @@
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 // utils/supabase/walkCap.ts — THE LIVE-DATABASE WALK CAP (development only).
 //
 // WHY (2026-09-26): the live database ran out of memory, and 70% of its time
@@ -215,12 +216,6 @@ export function createWalkKnobReader(
       });
     return inFlight;
   };
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) =>
-    c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : c === '"' ? "&quot;" : "&#39;",
-  );
 }
 
 function ago(ms: number): string {

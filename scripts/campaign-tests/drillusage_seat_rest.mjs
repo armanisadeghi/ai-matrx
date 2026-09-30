@@ -11,6 +11,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
+import { formatUsd } from "@ai-matrx/kit/format";
 
 const env = Object.fromEntries(
   readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
@@ -87,7 +88,7 @@ for (const [name, q] of screens) {
   }
   const bad = addsUp(got.data);
   const groups = got.data.filter((r) => r.kind === "group").length;
-  check(name, !bad && groups > 0, bad ?? `${groups} groups, total $${Number(total(got.data)?.measures?.cost ?? 0).toFixed(2)}, ${got.ms} ms`);
+  check(name, !bad && groups > 0, bad ?? `${groups} groups, total ${formatUsd(total(got.data)?.measures?.cost)}, ${got.ms} ms`);
 }
 const refused = await ask(outside.c, { by: ["person"], show: ["cost"] });
 check("the same admin OUTSIDE the admin apps is refused", refused.error?.code === "42501", refused.error?.message ?? "answered");

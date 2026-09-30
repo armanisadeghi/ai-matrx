@@ -87,6 +87,7 @@ import {
   type StoreChoice,
   type StoreHandOrder,
 } from "./record-store-shape";
+import { readAllRows } from "@ai-matrx/data/db";
 
 /**
  * One page of a read that genuinely needs every row (export, the column filter's values): the
@@ -268,28 +269,40 @@ function readRecordsPage(
  * export, the column filter's values, the table profile) — through the page door, a store page at
  * a time, sorted and searched by the store. No ceiling: a table is read to its end.
  */
-async function readAllRows(
+async function readEveryRow(
   home: RecordStoreHome,
   snap: Snapshot,
   args: { sortField?: string | null; sortDirection?: "asc" | "desc"; searchTerm?: string | null },
 ): Promise<ServiceResult<GridRow[]>> {
-  const out: GridRow[] = [];
   const sort = pageSort(snap.columns, args.sortField, args.sortDirection);
-  for (let offset = 0; ; ) {
-    const page = await readRecordsPage(home, {
-      tableId: snap.table.id,
-      search: args.searchTerm ?? null,
-      sort,
-      viewId: sort.length === 0 ? snap.handViewId : null,
-      limit: READ_PAGE,
-      offset,
-    });
-    if (!page.ok) return refused(page.error);
-    out.push(...gridRowsOf(page.data.rows, snap));
-    offset += page.data.rows.length;
-    if (page.data.rows.length === 0 || offset >= page.data.total) break;
+  // The package pages to the store's declared total and THROWS when it cannot prove it has every
+  // row; the store's own refusal is kept so the caller still sees the structured reason.
+  const failed: { refusal: RecordsError | null } = { refusal: null };
+  try {
+    const rows = await readAllRows<ReadRow>(
+      async ({ from, to }) => {
+        const page = await readRecordsPage(home, {
+          tableId: snap.table.id,
+          search: args.searchTerm ?? null,
+          sort,
+          viewId: sort.length === 0 ? snap.handViewId : null,
+          limit: to - from + 1,
+          offset: from,
+        });
+        if (!page.ok) {
+          failed.refusal = page.error;
+          return { data: null, error: { message: page.error.message }, count: null };
+        }
+        return { data: [...page.data.rows], error: null, count: page.data.total };
+      },
+      // No ceiling: a table is read to its end.
+      { label: `records page door (table ${snap.table.id})`, pageSize: READ_PAGE, maxRows: Number.POSITIVE_INFINITY },
+    );
+    return { success: true, data: gridRowsOf(rows, snap) };
+  } catch (error) {
+    if (failed.refusal) return refused(failed.refusal);
+    return plainFailure(error instanceof Error ? error.message : String(error));
   }
-  return { success: true, data: out };
 }
 
 // ─── G13 + ORDER-FIX: the hand-set row order ─────────────────────────────────
@@ -547,7 +560,7 @@ export async function getCompleteTable(
 > {
   const snap = await snapshot(home, args.tableId, true);
   if (!snap.success) return snap;
-  const rows = await readAllRows(home, snap.data, { sortField: args.sortField, sortDirection: args.sortDirection });
+  const rows = await readEveryRow(home, snap.data, { sortField: args.sortField, sortDirection: args.sortDirection });
   if (!rows.success) return rows;
   return {
     success: true,
@@ -611,7 +624,7 @@ export async function getColumnFacets(
   }
   const limit = Math.min(Math.max(args.limit ?? 50, 1), 500);
   // Every row this person may see that the search matches — searched by the store.
-  const read = await readAllRows(home, snap.data, { searchTerm: args.searchTerm ?? null });
+  const read = await readEveryRow(home, snap.data, { searchTerm: args.searchTerm ?? null });
   if (!read.success) return read;
   const rows = read.data;
   const counts = new Map<string, number>();
@@ -1397,7 +1410,7 @@ export async function getTableProfile(
 ): Promise<ServiceResult<{ table_id: string; total_rows: number; columns: unknown[] }>> {
   const snap = await snapshot(home, args.tableId);
   if (!snap.success) return snap;
-  const read = await readAllRows(home, snap.data, {});
+  const read = await readEveryRow(home, snap.data, {});
   if (!read.success) return read;
   const allRows = read.data;
   const columns: unknown[] = [];

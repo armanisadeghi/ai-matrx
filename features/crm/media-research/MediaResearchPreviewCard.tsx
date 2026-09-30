@@ -12,7 +12,8 @@ import { Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PitchAdvisoryPanel } from "@/features/crm/pitch-advisories/PitchAdvisoryPanel";
 import type { AdvisoryOffer, PitchAdvisory } from "@/features/crm/pitch-advisories/service";
-import { formatUsd, type MediaResearchPreview } from "./service";
+import type { MediaResearchPreview } from "./service";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 
 export interface MediaResearchPreviewCardProps {
   preview: MediaResearchPreview;
@@ -64,7 +65,7 @@ export function MediaResearchPreviewCard({
         <div className="flex items-baseline justify-between">
           <h4 className="text-xs font-semibold text-foreground">The research brief</h4>
           <span className="text-[11px] tabular-nums text-muted-foreground">
-            {preview.brief_chars.toLocaleString()} / {preview.brief_max_chars.toLocaleString()} characters
+            {formatCount(preview.brief_chars)} / {formatCount(preview.brief_max_chars)} characters
           </span>
         </div>
         <pre

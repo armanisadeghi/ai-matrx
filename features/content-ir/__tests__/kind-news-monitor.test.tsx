@@ -24,7 +24,7 @@ import {
 import { SYSTEM_KIND_DEFINITIONS } from "../registry/system-kinds";
 
 jest.mock("@/components/cost/useCostDisplay", () => ({
-  useCostDisplay: () => ({ format: (usd: number) => `$${usd.toFixed(2)}` }),
+  useCostDisplay: () => ({ format: (usd: number) => jest.requireActual("@ai-matrx/kit/format").formatUsd(usd) }),
 }));
 
 /** Trimmed from a live run (workflow run 225b81d6, All Green Recycling test monitor). */

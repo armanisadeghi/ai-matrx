@@ -71,7 +71,7 @@ function stripComments(text: string, shell: boolean): string {
   return text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
 }
 
-function toMs(n: string, unit: string | undefined, bareIsMs = true): number {
+function pgTimeoutToMs(n: string, unit: string | undefined, bareIsMs = true): number {
   const v = Number(n.replace(/_/g, ""));
   switch ((unit ?? (bareIsMs ? "ms" : "s")).toLowerCase()) {
     case "s":
@@ -94,16 +94,16 @@ export function timeoutsIn(text: string): Array<{ ms: number; at: string }> {
   const consts = new Map<string, string>();
   for (const m of text.matchAll(/\bconst\s+([A-Z][A-Z0-9_]*)\s*=\s*([\d_]+)\s*;/g)) consts.set(m[1]!, m[2]!);
   const patterns: Array<[RegExp, (m: RegExpMatchArray) => number]> = [
-    [/statement_timeout\s*(?:=|\bto\b)\s*'?\s*(\d[\d_.]*)\s*(ms|s|min|h)?\s*'?/gi, (m) => toMs(m[1]!, m[2])],
-    [/set_config\s*\(\s*'statement_timeout'\s*,\s*'(\d[\d.]*)\s*(ms|s|min|h)?'/gi, (m) => toMs(m[1]!, m[2])],
-    [/statementTimeoutMs\s*:\s*(\d[\d_]*)/g, (m) => toMs(m[1]!, "ms")],
-    [/statement_timeout\s*:\s*(\d[\d_]*)/g, (m) => toMs(m[1]!, "ms")],
-    [/statement_timeout=(\d+)/g, (m) => toMs(m[1]!, "ms")],
+    [/statement_timeout\s*(?:=|\bto\b)\s*'?\s*(\d[\d_.]*)\s*(ms|s|min|h)?\s*'?/gi, (m) => pgTimeoutToMs(m[1]!, m[2])],
+    [/set_config\s*\(\s*'statement_timeout'\s*,\s*'(\d[\d.]*)\s*(ms|s|min|h)?'/gi, (m) => pgTimeoutToMs(m[1]!, m[2])],
+    [/statementTimeoutMs\s*:\s*(\d[\d_]*)/g, (m) => pgTimeoutToMs(m[1]!, "ms")],
+    [/statement_timeout\s*:\s*(\d[\d_]*)/g, (m) => pgTimeoutToMs(m[1]!, "ms")],
+    [/statement_timeout=(\d+)/g, (m) => pgTimeoutToMs(m[1]!, "ms")],
   ];
   for (const [re, ms] of patterns) for (const m of text.matchAll(re)) push(ms(m), m[0]);
   for (const m of text.matchAll(/statementTimeoutMs\s*:\s*([A-Z][A-Z0-9_]*)\b/g)) {
     const v = consts.get(m[1]!);
-    if (v) push(toMs(v, "ms"), `${m[0]} (= ${v})`);
+    if (v) push(pgTimeoutToMs(v, "ms"), `${m[0]} (= ${v})`);
   }
   return out;
 }

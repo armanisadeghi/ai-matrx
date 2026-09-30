@@ -126,7 +126,8 @@ function setConfigRe(guc: string): RegExp {
   return new RegExp(String.raw`set_config\s*\(\s*'${guc}'\s*,\s*${VALUE}\s*,\s*true\s*\)`, "gi");
 }
 
-export function toMs(n: string, unit: string | undefined): number {
+/** A Postgres timeout setting's value (`5000`, `'30s'`, `'2min'`) in milliseconds. */
+export function pgTimeoutToMs(n: string, unit: string | undefined): number {
   const v = Number(n);
   switch ((unit ?? "ms").toLowerCase()) {
     case "s":
@@ -178,7 +179,7 @@ export function refusalFor(sql: string, ceilingMs: number): string | null {
   for (const [guc, ceiling, remedy] of ceilings) {
     for (const re of [localSetRe(guc), setConfigRe(guc)]) {
       for (const m of text.matchAll(re)) {
-        const ms = toMs(m[1]!, m[2]);
+        const ms = pgTimeoutToMs(m[1]!, m[2]);
         if (ms === 0 || ms > ceiling) {
           return `${guc} ${ms === 0 ? "0 (no limit)" : `${ms} ms`} is above this gate's ceiling of ${ceiling} ms. ${remedy}`;
         }

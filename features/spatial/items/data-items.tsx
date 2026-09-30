@@ -191,7 +191,7 @@ function TableRecordBody({ id, source, title, onSource }: ItemBodyProps & { id: 
   );
 }
 
-function TableBody(props: ItemBodyProps) {
+function TableItemBody(props: ItemBodyProps) {
   const id = tableIdOf(props.source);
   return id ? <TableRecordBody key={id} id={id} {...props} /> : <TableDraftBody {...props} />;
 }
@@ -287,7 +287,7 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
     group: "work",
     defaultSize: { w: 960, h: 620 },
     matches: (s) => s.kind === "entity" && s.entity === TABLE_ENTITY,
-    Body: TableBody,
+    Body: TableItemBody,
     startNew: { label: "New table", create: () => ({ title: "New table", source: tableSource(null) }) },
     bringIn: { label: "Table", Picker: TablePicker },
     href: (s) => {

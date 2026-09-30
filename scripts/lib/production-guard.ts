@@ -27,7 +27,7 @@
  * Mirror of aidream `db/production_guard.py`.
  */
 import { isLiveConnection } from "./direct-db-env";
-import { governTransactions, stripSqlComments, toMs, type QueryFn } from "./gate-db";
+import { governTransactions, stripSqlComments, pgTimeoutToMs, type QueryFn } from "./gate-db";
 
 export const PRODUCTION_LIMITS_MS = {
   statement_timeout: 30_000,
@@ -72,7 +72,7 @@ function loosens(guc: Guc, value: string): string | null {
   if (raw.toLowerCase() === "default") return `${guc} = DEFAULT (a pooled backend's default can be uncapped)`;
   const m = DURATION.exec(raw);
   if (!m) return null;
-  const ms = toMs(m[1]!, m[2]);
+  const ms = pgTimeoutToMs(m[1]!, m[2]);
   if (ms === 0) return `${guc} = 0 (no limit)`;
   if (ms > PRODUCTION_LIMITS_MS[guc]) return `${guc} = ${raw} (production limit ${PRODUCTION_LIMITS_MS[guc]} ms)`;
   return null;

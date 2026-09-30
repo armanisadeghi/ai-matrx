@@ -136,7 +136,3 @@ export const CONTACT_LABEL: Record<NonNullable<MediaResearchRow["contact_state"]
   quarantined: "Quarantined",
   unresolved: "Unresolved",
 };
-
-export function formatUsd(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
