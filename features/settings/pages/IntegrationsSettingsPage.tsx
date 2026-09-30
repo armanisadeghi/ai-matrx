@@ -99,6 +99,7 @@ import type { MicrosoftConnection } from "@/features/microsoft-integration/types
 import { listStorageConnections } from "@/features/storage-connections/service";
 import type { StorageConnection } from "@/features/storage-connections/types";
 import { IntegrationDirectory } from "@/features/connectors/IntegrationDirectory";
+import { useSettingsTabNavigate } from "@/features/settings/components/SettingsPresentationContext";
 import {
   DEFAULT_DIRECTORY_FILTERS,
   directoryDetailFromParams,
@@ -218,6 +219,9 @@ export function connectionsSummaryLabel(
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
+/** The directory card that opens Settings → API keys (personal keys). */
+const API_KEYS_ITEM_ID = "native:api-keys";
+
 export function IntegrationsWorkspace({
   embedded = false,
 }: { embedded?: boolean } = {}) {
@@ -239,6 +243,7 @@ export function IntegrationsWorkspace({
     DEFAULT_DIRECTORY_FILTERS,
   );
   const params = useSearchParams();
+  const openSettingsTab = useSettingsTabNavigate();
   const returnTarget = !embedded && params ? directoryDetailFromParams(params) : null;
   const [selectedDetail, setSelectedDetail] = useState<string | null>(
     returnTarget,
@@ -309,6 +314,15 @@ export function IntegrationsWorkspace({
     setRefreshVersion((value) => value + 1);
   };
   const selectDetail = (id: string | null) => {
+    // API keys are not a connection to open here: they live on their own
+    // settings tab, so the card goes there (in place inside the settings
+    // shell, by URL everywhere else).
+    if (id === API_KEYS_ITEM_ID) {
+      openSettingsTab("integrations.apiKeys", {
+        fallbackHref: "/user-settings/integrations/api-keys",
+      });
+      return;
+    }
     // Detail actions can change inventories owned by their existing panels.
     // Refresh when returning so the list never retains an old saved-state claim.
     if (selectedDetail && !id) refresh();
@@ -408,6 +422,16 @@ export function IntegrationsWorkspace({
       "developer",
       "https://github.com/favicon.ico",
       githubSummary,
+    ),
+    nativeItem(
+      "api-keys",
+      "API keys",
+      "Let your own programs and AI apps work with your tables as you.",
+      "AI Matrx",
+      "developer",
+      null,
+      savedAccountSummary([], false, false),
+      "api key token developer personal key bearer programmatic",
     ),
     ...(["dropbox", "box"] as const).map((provider) =>
       nativeItem(
