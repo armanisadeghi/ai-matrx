@@ -137,7 +137,6 @@ export function FindingEffectivenessPanel({
               searchPlaceholder: "Search units and levers…",
               refresh: { onRefresh: () => void effectiveness.refetch() },
             }}
-            copy={false}
             detail={{ enabled: false }}
             coverage={FINDING_EFFECTIVENESS_COVERAGE}
             cellClassName={(row, columnId) =>

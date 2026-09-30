@@ -182,7 +182,6 @@ function UsageTable({
         columns={columns}
         getRowId={(row) => `${row.task_id ?? row.conversation_id ?? row.id ?? row.label ?? labelFor(row, "Unnamed activity")}-${row.model ?? ""}-${row.effort ?? ""}`}
         density="condensed"
-        copy={false}
         detail={{ enabled: false }}
         rowClassName={(row) => selected?.(row) ? "bg-primary/5" : undefined}
         emptyState={{ title: empty }}
