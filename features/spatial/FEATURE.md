@@ -295,6 +295,12 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-09-30 — Browser verification of every item type (note, file, chat, table, record, task, project) and
+  the bridge. Two fixes: the board's key guard (`isTyping`, `components/SpatialViewport.tsx`) now treats
+  an EditContext host (Monaco, the file tile's editor) and `role="textbox"` as typing — Space-to-pan was
+  eating every space typed into a file (`__tests__/typing-target.test.ts`); the File tile adopts the file's
+  current name as its title, so a rename no longer leaves the board and `board_items` on the old name.
+
 - 2026-09-30 — The gaps, closed as one class: `onResize` is required on `SpatialTile` and wired on
   every `useBoard` host (War Room opts out explicitly), guarded by `resize-wiring.test.ts`; a finger
   on a tile body scrolls its content instead of dragging the tile or panning the board

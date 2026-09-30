@@ -422,10 +422,21 @@ function toolCursor(tool: string): string {
   return "crosshair";
 }
 
-function isTyping(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-  if (!el) return false;
-  return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
+/**
+ * True when the key belongs to a text field, so the board must not act on it (Space pans, letters
+ * pick tools). A field is not only an input or a contenteditable: Monaco (the file tile's editor)
+ * types into an EditContext host — a plain div with `editContext` set — and ARIA editors expose
+ * `role="textbox"`. Missing those ate every space typed into a file.
+ */
+export function isTyping(target: EventTarget | null): boolean {
+  const el = target as (HTMLElement & { editContext?: unknown }) | null;
+  if (!el || typeof el.getAttribute !== "function") return false;
+  return (
+    el.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) ||
+    el.editContext != null ||
+    el.getAttribute("role") === "textbox"
+  );
 }
 
 /** True when some scroll container between the pointer and the tile has room
