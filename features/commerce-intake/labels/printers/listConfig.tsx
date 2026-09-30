@@ -38,7 +38,6 @@ function selectFilter(query: EntityListQuery, id: string): string[] | undefined 
 }
 
 function argsFor(
-  organizationId: string,
   query: EntityListQuery,
   page: number,
   pageSize: number,
@@ -46,7 +45,8 @@ function argsFor(
   ascending: boolean,
 ) {
   return {
-    organizationId,
+    // The on-page scope control's organization — never the header's.
+    organizationId: query.scope.kind === "orgs" ? query.scope.organizationId : null,
     search: query.search,
     page,
     pageSize,
@@ -62,9 +62,7 @@ function argsFor(
   };
 }
 
-export function buildCertifiedPrinterListConfig(
-  organizationId: string,
-): EntityListConfig<CertifiedPrinterListRow> {
+export function buildCertifiedPrinterListConfig(): EntityListConfig<CertifiedPrinterListRow> {
   return {
     surfaceKey: "commerce-certified-printers",
     entityLabel: { singular: "certified printer", plural: "certified printers" },
@@ -79,7 +77,6 @@ export function buildCertifiedPrinterListConfig(
       ): Promise<EntityListPage<CertifiedPrinterListRow>> =>
         fetchCertifiedPrinterPage(
           argsFor(
-            organizationId,
             query,
             query.page,
             sort.pageSize,
@@ -91,7 +88,7 @@ export function buildCertifiedPrinterListConfig(
         query: EntityListQuery,
       ): Promise<EntityScopeCounts> => {
         const page = await fetchCertifiedPrinterPage(
-          argsFor(organizationId, query, 1, 1, "created_at", false),
+          argsFor(query, 1, 1, "created_at", false),
         );
         return { byKind: { orgs: page.total }, narrow: {} };
       },

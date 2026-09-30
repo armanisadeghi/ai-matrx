@@ -126,30 +126,32 @@ export async function resolveKindDefinitionId(
 }
 
 // ---------------------------------------------------------------------------
-// Counting a kind's records in the viewer's organization
+// Counting a kind's records the viewer can reach
 // ---------------------------------------------------------------------------
 
 /**
- * How many records of `kind` this organization holds — ACTIVE only (archived
+ * How many records of `kind` the viewer can reach, across every organization
+ * (an optional `organizationId` narrows to one) — ACTIVE only (archived
  * and deleted excluded), because the number stands next to a link labelled
  * "All N <plural>" and a count that includes rows the destination hides is a
  * false sentence.
  */
 export async function countKindRecords(args: {
   kind: string;
-  organizationId: string;
+  organizationId?: string | null;
 }): Promise<RecordResult<number>> {
   const definition = await resolveKindDefinitionId(args.kind);
   if (!definition.ok) return definition;
   try {
-    const { count, error } = await supabase
+    let query = supabase
       .schema("content_ir")
       .from("kind_instance")
       .select("id", { count: "exact", head: true })
       .eq("kind_definition_id", definition.value)
-      .eq("organization_id", args.organizationId)
       .is("deleted_at", null)
       .is("archived_at", null);
+    if (args.organizationId) query = query.eq("organization_id", args.organizationId);
+    const { count, error } = await query;
     if (error) return fail(`countKindRecords(${args.kind})`, error);
     return { ok: true, value: count ?? 0 };
   } catch (error) {

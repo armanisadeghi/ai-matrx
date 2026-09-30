@@ -164,7 +164,8 @@ function widestFloor(buckets: string[]): string | null {
 }
 
 export interface CertifiedPrinterPageArgs {
-  organizationId: string;
+  /** Optional explicit filter (the on-page scope control). None = every organization the person can reach. */
+  organizationId?: string | null;
   search: string;
   page: number;
   pageSize: number;
@@ -185,8 +186,8 @@ export async function fetchCertifiedPrinterPage(
   let q = db()
     .from("certified_printer")
     .select(COLUMNS, { count: "exact" })
-    .eq("organization_id", args.organizationId)
     .is("deleted_at", null);
+  if (args.organizationId) q = q.eq("organization_id", args.organizationId);
 
   const like = (value: string) => `%${value.replace(/[%_,()]/g, " ").trim()}%`;
 

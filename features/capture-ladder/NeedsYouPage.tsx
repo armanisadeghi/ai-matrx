@@ -23,16 +23,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectOrganizationName,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { NeedsYouList } from "@/features/capture-ladder/NeedsYouList";
 import { useNeedsYou } from "@/features/capture-ladder/useNeedsYou";
-import {
-  countNeedsYouElsewhere,
-  elsewhereSentence as describeElsewhere,
-} from "@/features/capture-ladder/captureHandoffTable";
 import { EXTENSION_SETUP_ROUTE } from "@/features/capture-ladder/needsYouAssist";
 import {
   handToOwnBrowser,
@@ -154,21 +147,6 @@ export function NeedsYouPage() {
     droppedSentence,
   } = useNeedsYou();
   const organizationId = useAppSelector(selectOrganizationId);
-  const organizationName = useAppSelector(selectOrganizationName);
-  const [elsewhere, setElsewhere] = useState<string | null>(null);
-
-  // Only worth asking once the queue here is known. It is a second round trip
-  // and its whole job is to stop an empty list from being ambiguous.
-  useEffect(() => {
-    if (state.kind !== "ready") return;
-    let alive = true;
-    void countNeedsYouElsewhere(organizationId).then((result) => {
-      if (alive) setElsewhere(describeElsewhere(result));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [state.kind, organizationId, handoffs.length]);
 
   return (
     <>
@@ -203,18 +181,9 @@ export function NeedsYouPage() {
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <div className="h-full overflow-y-auto px-3 py-4">
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
-            {handoffs.length > 0 && organizationName && (
-              // 🚨 A list that does not name its workspace is half a sentence.
-              // The rows here are ONE workspace's; the notice below says what
-              // is waiting in the others. Without this line the person cannot
-              // tell which half they are reading (found on an independent walk).
-              <p className="text-xs text-muted-foreground">
-                Waiting in <span className="font-medium text-foreground">{organizationName}</span>
-              </p>
-            )}
             {handoffs.length > 0 && (
               <NeedsYouAction
-                organizationId={organizationId}
+                organizationId={handoffs[0]?.organization_id ?? organizationId}
                 firstHandoffId={handoffs[0]?.id}
                 firstUrl={handoffs[0]?.url}
                 onDone={refresh}
@@ -225,8 +194,6 @@ export function NeedsYouPage() {
               handoffs={handoffs}
               livenessSentence={livenessSentence}
               droppedSentence={droppedSentence}
-              elsewhereSentence={elsewhere}
-              organizationName={organizationName}
             />
           </div>
         </div>

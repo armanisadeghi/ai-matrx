@@ -233,6 +233,8 @@ export interface AttentionItem {
   /** recall_audit.id or asset_unknown.id. */
   id: string;
   assetId: string | null;
+  /** The organization the row belongs to (queues read across all of them). */
+  organizationId: string;
   title: string;
   detail: string;
   createdAt: string;

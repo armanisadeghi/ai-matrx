@@ -33,13 +33,17 @@ function stateFilterValues(query: EntityListQuery): string[] | null {
   return null;
 }
 
+/** The organization the on-page scope control names — never the header's. */
+function scopedOrganizationId(query: EntityListQuery): string | null {
+  return query.scope.kind === "orgs" ? query.scope.organizationId : null;
+}
+
 async function fetchPage(
-  organizationId: string,
   query: EntityListQuery,
   sort: EntityListSort,
 ): Promise<EntityListPage<LabelBatchListRow>> {
   return fetchLabelBatchPage({
-    organizationId,
+    organizationId: scopedOrganizationId(query),
     search: query.search,
     page: query.page,
     pageSize: sort.pageSize,
@@ -49,9 +53,7 @@ async function fetchPage(
   });
 }
 
-export function buildLabelBatchListConfig(
-  organizationId: string,
-): EntityListConfig<LabelBatchListRow> {
+export function buildLabelBatchListConfig(): EntityListConfig<LabelBatchListRow> {
   return {
     surfaceKey: "commerce-label-batches",
     entityLabel: { singular: "label batch", plural: "label batches" },
@@ -60,12 +62,12 @@ export function buildLabelBatchListConfig(
     sourceFeature: "product_capture_intake",
     scopes: LABEL_BATCH_LIST_SCOPES,
     service: {
-      fetchPage: (query, sort) => fetchPage(organizationId, query, sort),
+      fetchPage: (query, sort) => fetchPage(query, sort),
       fetchCounts: async (
         query: EntityListQuery,
       ): Promise<EntityScopeCounts> => {
         const page = await fetchLabelBatchPage({
-          organizationId,
+          organizationId: scopedOrganizationId(query),
           search: query.search,
           page: 1,
           pageSize: 1,

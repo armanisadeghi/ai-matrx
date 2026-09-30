@@ -76,7 +76,7 @@ export function kindHasRecordChrome(kind: string | null | undefined): boolean {
 
 interface LoadState {
   status: "loading" | "ready" | "error";
-  /** The org-wide ACTIVE count of this kind's records. */
+  /** The ACTIVE count of this kind's records across every organization the person can reach. */
   count: number | null;
   /** Records this message produced of this kind. */
   records: KindRecord[];
@@ -120,9 +120,9 @@ export function KindRecordChrome({
   className?: string;
 }) {
   const disposition = resolveKindRecordDisposition(kind);
-  // The EXPLICIT active org. With none, the count says so on the strip and a
-  // Save refuses through `saveKindInstance` with the same sentence — never a
-  // record quietly filed into the user's own organization.
+  // The EXPLICIT active org — the DESTINATION of a Save only. With none, a Save
+  // refuses through `saveKindInstance` with its own sentence — never a record
+  // quietly filed into the user's own organization. The count reads no org.
   const organizationId = useAppSelector(selectOrganizationId);
   const [state, setState] = useState<LoadState>(INITIAL);
   const [busy, setBusy] = useState(false);
@@ -145,13 +145,9 @@ export function KindRecordChrome({
     setState(INITIAL);
     void (async () => {
       const [countResult, recordsResult] = await Promise.all([
-        organizationId
-          ? countKindRecords({ kind, organizationId })
-          : Promise.resolve({
-              ok: false as const,
-              message:
-                "No organization is active, so these records cannot be counted. Pick an organization from the header and try again.",
-            }),
+        // Every organization the person can reach — the selected one is only
+        // the DESTINATION of a Save below, never what the count reads.
+        countKindRecords({ kind }),
         messageId
           ? fetchRecordsProducedByMessage({ kind, messageId })
           : Promise.resolve({ ok: true as const, value: [] as KindRecord[] }),
@@ -192,7 +188,7 @@ export function KindRecordChrome({
     return () => {
       cancelled = true;
     };
-  }, [disposition, kind, messageId, organizationId, reloadKey]);
+  }, [disposition, kind, messageId, reloadKey]);
 
   const reload = () => setReloadKey((n) => n + 1);
 

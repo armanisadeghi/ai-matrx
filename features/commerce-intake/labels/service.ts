@@ -173,9 +173,10 @@ export async function loadLabelBatch(
   return data ? toBatch(data as BatchRow) : null;
 }
 
-/** The org's batches, newest first — one page for the entity-list shell. */
+/** Every batch the person can reach, newest first — one page for the entity-list shell. */
 export async function fetchLabelBatchPage(args: {
-  organizationId: string;
+  /** Optional explicit filter (the on-page scope control). None = every organization the person can reach. */
+  organizationId?: string | null;
   search: string;
   page: number;
   pageSize: number;
@@ -194,8 +195,8 @@ export async function fetchLabelBatchPage(args: {
   let q = labelsDb()
     .from("label_batch")
     .select(BATCH_COLUMNS, { count: "exact" })
-    .eq("organization_id", args.organizationId)
     .is("deleted_at", null);
+  if (args.organizationId) q = q.eq("organization_id", args.organizationId);
   if (args.states && args.states.length > 0) q = q.in("state", args.states);
   const search = args.search.trim();
   if (search) {

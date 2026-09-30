@@ -425,18 +425,31 @@ export async function loadAsset(assetId: string): Promise<IntakeAsset | null> {
   return toAsset(data as AssetRow, primary?.value ?? null);
 }
 
-/** EVERY asset of the org, newest first — the list page's read. Complete by
+/** Apply an explicit, optional organization filter. No id = no narrowing. */
+function orgFilter<Q>(query: Q, organizationId: string | null | undefined): Q {
+  // `.eq` on a PostgREST filter builder returns the same builder type.
+  return organizationId
+    ? (query as unknown as { eq: (c: string, v: string) => Q }).eq(
+        "organization_id",
+        organizationId,
+      )
+    : query;
+}
+
+/** EVERY asset the person can reach, newest first — the list page's read. Complete by
  *  contract (`readAllRows`): the list drives decisions, and a silent
  *  1000-row cap would hide real assets. */
 export async function listAllAssets(
-  organizationId: string,
+  organizationId?: string | null,
 ): Promise<IntakeAsset[]> {
+  // `organizationId` is an OPTIONAL explicit filter; none = every organization
+  // the person can reach (access decides, never the header's selected org).
   const rows = await readAllRows<AssetRow>(
     ({ from, to }) =>
-      db()
-        .from("intake_asset")
-        .select(ASSET_COLUMNS, { count: "exact" })
-        .eq("organization_id", organizationId)
+      orgFilter(
+        db().from("intake_asset").select(ASSET_COLUMNS, { count: "exact" }),
+        organizationId,
+      )
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .order("id", { ascending: true })
@@ -860,14 +873,14 @@ export async function listPrimaryQrForAssets(
  *  proved: `skip_count ASC, priority DESC, created_at ASC` — skipped
  *  questions genuinely sink. Open = unanswered and not deferred. */
 export async function listOpenQuestions(
-  organizationId: string,
+  organizationId?: string | null,
 ): Promise<AssetQuestion[]> {
   const rows = await readAllRows<QuestionRow>(
     ({ from, to }) =>
-      db()
-        .from("asset_unknown")
-        .select(QUESTION_COLUMNS, { count: "exact" })
-        .eq("organization_id", organizationId)
+      orgFilter(
+        db().from("asset_unknown").select(QUESTION_COLUMNS, { count: "exact" }),
+        organizationId,
+      )
         .is("answered_at", null)
         .is("deferred_at", null)
         .order("skip_count", { ascending: true })

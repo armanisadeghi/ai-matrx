@@ -17,9 +17,7 @@ import { Camera, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 import {
   selectAccessToken,
   selectAuthReady,
@@ -48,30 +46,13 @@ export function intakeAssetsLoadKey(input: {
   authReady: boolean;
   userId: string | null;
   accessToken: string | null;
-  organizationId: string | null;
 }): string | null {
-  const { authReady, userId, accessToken, organizationId } = input;
-  if (!authReady || !userId || !accessToken || !organizationId) return null;
-  return `${userId}:${organizationId}`;
+  const { authReady, userId, accessToken } = input;
+  if (!authReady || !userId || !accessToken) return null;
+  return userId;
 }
 
 export function AssetsList() {
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE. This read the
-  // personal-org fallback, so with no organization selected the list quietly
-  // showed the PERSONAL workspace's assets as if they were the org's.
-  const organizationId = useAppSelector(selectOrganizationId);
-  // "No org yet" is not "still reading": `rows` starts null and null renders
-  // the spinner, so the load effect's early return would spin forever. Before
-  // the bootstrap resolves, loading is the truth; after it, the absence is a
-  // settled fact and it is said, with the remedy.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
@@ -79,7 +60,6 @@ export function AssetsList() {
     authReady,
     userId,
     accessToken,
-    organizationId,
   });
   const router = useRouter();
   const [rows, setRows] = useState<ListRow[] | null>(null);
@@ -92,11 +72,11 @@ export function AssetsList() {
   };
 
   useEffect(() => {
-    if (!loadKey || !organizationId) return;
+    if (!loadKey) return;
     let cancelled = false;
     void (async () => {
       try {
-        const assets = await listAllAssets(organizationId);
+        const assets = await listAllAssets();
         const ids = assets.map((a) => a.id);
         const [artifactsByAsset, qrByAsset] = await Promise.all([
           listArtifactsForAssets(ids),
@@ -129,18 +109,7 @@ export function AssetsList() {
     return () => {
       cancelled = true;
     };
-  }, [loadKey, organizationId, loadAttempt]);
-
-  if (organizationUnanswered) {
-    // The canonical honest state — the refusal carries the picker and the
-    // failed read carries Retry, so neither is a dead end.
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        what="Intake assets"
-      />
-    );
-  }
+  }, [loadKey, loadAttempt]);
 
   if (loadError && (rows === null || rows.length === 0)) {
     return (
@@ -211,6 +180,7 @@ export function AssetsList() {
                 {asset.pipelineState.replace(/_/g, " ")} · {artifactCount}{" "}
                 file{artifactCount === 1 ? "" : "s"}
               </p>
+              <OrganizationTag organizationId={asset.organizationId} />
             </div>
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Link>

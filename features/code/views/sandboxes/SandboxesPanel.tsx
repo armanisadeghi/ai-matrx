@@ -180,7 +180,6 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
     // is scoped to the request's organization, so the new scope is usable
     // immediately while an old completion cannot clear a newer create.
     const invalidatedGeneration = ++createRequestGenerationRef.current;
-    refreshGenerationRef.current += 1;
     queueMicrotask(() => {
       setCreatingRequest((current) =>
         current && current.generation <= invalidatedGeneration ? null : current,
@@ -188,10 +187,18 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
     });
   }, [authReady, organizationId, userId]);
 
+  // The sandbox LIST is the person's own (`GET /api/sandbox` takes no
+  // organization), so a change of the header's organization neither re-reads nor
+  // discards it — only a change of sign-in does. The selected organization is
+  // the DESTINATION of a NEW sandbox (`creating` above), nothing more.
+  useEffect(() => {
+    refreshGenerationRef.current += 1;
+  }, [authReady, userId]);
+
   const refresh = useCallback(async () => {
     if (!mountedRef.current) return;
     const generation = refreshGenerationRef.current;
-    const scope = { authReady, organizationId, userId };
+    const scope = { authReady, userId };
     setLoading(true);
     setError(null);
     try {
@@ -199,7 +206,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       if (!resp.ok)
         throw new Error(`Failed to list sandboxes (${resp.status})`);
       const data: SandboxListResponse = await resp.json();
-      if (mountedRef.current && refreshGenerationRef.current === generation && currentAuthReadyRef.current === scope.authReady && currentOrganizationIdRef.current === scope.organizationId && currentUserIdRef.current === scope.userId) {
+      if (mountedRef.current && refreshGenerationRef.current === generation && currentAuthReadyRef.current === scope.authReady && currentUserIdRef.current === scope.userId) {
         setInstances(data.instances ?? []);
         setListFailed(false);
       }
@@ -211,8 +218,8 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
     } finally {
       if (mountedRef.current && refreshGenerationRef.current === generation) setLoading(false);
     }
-  }, [authReady, organizationId, userId]);
-  useSandboxLifecycleTerminalInvalidation(() => refresh(), () => mountedRef.current && currentAuthReadyRef.current === authReady && currentOrganizationIdRef.current === organizationId && currentUserIdRef.current === userId);
+  }, [authReady, userId]);
+  useSandboxLifecycleTerminalInvalidation(() => refresh(), () => mountedRef.current && currentAuthReadyRef.current === authReady && currentUserIdRef.current === userId);
 
   // First mount only: ask the orchestrator which of our "active" rows still
   // exist. Anything orphaned gets marked `destroyed` server-side and falls

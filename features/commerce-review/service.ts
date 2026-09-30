@@ -98,18 +98,32 @@ type ResultRow = Pick<
 
 // ── Shared reads ────────────────────────────────────────────────────────────
 
+/** Apply an explicit, optional organization filter. No id = no narrowing. */
+function orgFilter<Q>(query: Q, organizationId: string | null | undefined): Q {
+  // `.eq` on a PostgREST filter builder returns the same builder type.
+  return organizationId
+    ? (query as unknown as { eq: (c: string, v: string) => Q }).eq(
+        "organization_id",
+        organizationId,
+      )
+    : query;
+}
+
 /** Assets in one pipeline state, oldest first (queues drain FIFO). Complete
  *  by contract — a silently capped queue would hide real work. */
 async function listAssetsInState(
-  organizationId: string,
+  organizationId: string | null | undefined,
   state: PipelineState,
 ): Promise<AssetRow[]> {
+  // `organizationId` is an OPTIONAL explicit filter — null/undefined reads every
+  // organization the person can reach (access decides, never the header's
+  // selected org). Each row carries its own `organization_id`.
   return readAllRows<AssetRow>(
     ({ from, to }) =>
-      db()
-        .from("intake_asset")
-        .select(ASSET_COLUMNS, { count: "exact" })
-        .eq("organization_id", organizationId)
+      orgFilter(
+        db().from("intake_asset").select(ASSET_COLUMNS, { count: "exact" }),
+        organizationId,
+      )
         .eq("pipeline_state", state)
         .is("deleted_at", null)
         .order("created_at", { ascending: true })
@@ -165,7 +179,7 @@ async function photoIdsByAsset(
 // ── Gate 1 — warehouse triage ───────────────────────────────────────────────
 
 export async function listTriageQueue(
-  organizationId: string,
+  organizationId?: string | null,
 ): Promise<TriageItem[]> {
   const assets = await listAssetsInState(organizationId, "awaiting_triage");
   const ids = assets.map((a) => a.id);
@@ -283,7 +297,7 @@ export function toDraftFields(output: Json): DraftField[] {
 }
 
 export async function listDraftQueue(
-  organizationId: string,
+  organizationId?: string | null,
 ): Promise<DraftItem[]> {
   const assets = await listAssetsInState(organizationId, "in_review");
   const ids = assets.map((a) => a.id);
@@ -372,15 +386,17 @@ const RECALL_COLUMNS =
 /** Open disagreements + escalations + high-impact unknowns, one list,
  *  newest-escalated first. Complete reads — this queue IS the safety net. */
 export async function listAttentionQueue(
-  organizationId: string,
+  organizationId?: string | null,
 ): Promise<AttentionItem[]> {
   const [recalls, unknowns] = await Promise.all([
     readAllRows<RecallAuditRow>(
       ({ from, to }) =>
-        db()
-          .from("recall_audit")
-          .select(RECALL_COLUMNS, { count: "exact" })
-          .eq("organization_id", organizationId)
+        orgFilter(
+          db()
+            .from("recall_audit")
+            .select(RECALL_COLUMNS, { count: "exact" }),
+          organizationId,
+        )
           .is("human_verdict", null)
           .or("is_disagreement.eq.true,escalated_at.not.is.null")
           .order("created_at", { ascending: false })
@@ -397,6 +413,7 @@ export async function listAttentionQueue(
       : ("recall_disagreement" as const),
     id: r.id,
     assetId: r.intake_asset_id,
+    organizationId: r.organization_id,
     title: r.escalated_at
       ? `Escalated ${r.audit_kind.replace(/_/g, " ")}`
       : `Skeptic disagrees: ${r.original_bucket ?? "?"} vs ${r.challenge_bucket ?? "?"}`,
@@ -414,6 +431,7 @@ export async function listAttentionQueue(
       kind: "high_impact_unknown",
       id: u.id,
       assetId: u.intake_asset_id,
+      organizationId: u.organization_id,
       title: "High-impact open question",
       detail: u.question,
       createdAt: u.created_at,
@@ -429,7 +447,7 @@ export async function listAttentionQueue(
   });
 }
 
-async function listHighImpactUnknowns(organizationId: string) {
+async function listHighImpactUnknowns(organizationId: string | null | undefined) {
   // asset_unknown is W4's table; this read is attention-specific (impact
   // filter) so it lives here rather than widening W4's queue reader.
   const client = createClient() as unknown as SupabaseClient<
@@ -465,19 +483,22 @@ async function listHighImpactUnknowns(organizationId: string) {
     intake_asset_id: string;
     question: string;
     value_impact: string | null;
+    organization_id: string;
     created_at: string;
   };
   // Complete by contract (the attention queue IS the safety net) — a bare
   // .select() silently caps at 1000 rows.
   return readAllRows<UnknownRow>(
     ({ from, to }) =>
-      client
-        .schema("commerce")
-        .from("asset_unknown")
-        .select("id, intake_asset_id, question, value_impact, created_at", {
-          count: "exact",
-        })
-        .eq("organization_id", organizationId)
+      orgFilter(
+        client
+          .schema("commerce")
+          .from("asset_unknown")
+          .select("id, intake_asset_id, question, value_impact, organization_id, created_at", {
+            count: "exact",
+          }),
+        organizationId,
+      )
         .eq("value_impact", "high")
         .is("answered_at", null)
         .is("deferred_at", null)

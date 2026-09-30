@@ -36,10 +36,6 @@ import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { transcribeAudioFile } from "@/features/audio/services/speechApi";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { VoiceNoteButton } from "@/features/product-capture/components/VoiceNoteButton";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { toast } from "@/lib/toast";
 
 import type { AssetQuestion, IntakeAsset } from "../types";
@@ -61,25 +57,9 @@ interface QueueEntry {
 }
 
 export function IntakeAnswerQueue() {
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
-  // `organization_id ?? the person's own organization id`, so with no organization
-  // selected the queue answered the OWN organization's questions.
-  const organizationId = useAppSelector(selectOrganizationId);
+  // The queue is the PERSON's — every organization they can reach. The selected
+  // organization never narrows it; each question's asset carries its own.
   const [queue, setQueue] = useState<QueueEntry[] | null>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
-  // useMandateInputSurface already fixed. `queue` starts null and null renders the
-  // spinner, so with no organization the load effect's early return left it
-  // spinning FOREVER with no remedy. Before the bootstrap resolves, loading is
-  // the truth; once it has resolved with no organization, that is a settled
-  // fact and it is said, with the action that fixes it.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [answeredCount, setAnsweredCount] = useState(0);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -88,9 +68,8 @@ export function IntakeAnswerQueue() {
   const [loadError, setLoadError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
-    if (!organizationId) return;
     try {
-      const open = await listOpenQuestions(organizationId);
+      const open = await listOpenQuestions();
       const assetIds = [...new Set(open.map((q) => q.assetId))];
       const [assetsById, artifactsByAsset, qrByAsset] = await Promise.all([
         listAssetsByIds(assetIds),
@@ -124,13 +103,12 @@ export function IntakeAnswerQueue() {
       console.error("[commerce-intake] answer queue load failed", err);
       setLoadError(err ?? true);
     }
-  }, [organizationId]);
+  }, []);
 
   useEffect(() => {
-    if (!organizationId) return;
     const timer = setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);
-  }, [organizationId, load]);
+  }, [load]);
 
   const current = queue?.[0] ?? null;
   const total = (queue?.length ?? 0) + answeredCount;
@@ -215,17 +193,6 @@ export function IntakeAnswerQueue() {
       }
     })();
   }, []);
-
-  if (organizationUnanswered) {
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        compact
-        className="px-6 py-16"
-        description="No organization is selected, so the question queue cannot be read — choose one from the organization picker in the header and this fills in."
-      />
-    );
-  }
 
   if (loadError && !current) {
     return (

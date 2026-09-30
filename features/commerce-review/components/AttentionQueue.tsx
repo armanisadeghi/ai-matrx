@@ -14,10 +14,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationTag } from "./OrganizationTag";
 import { toast } from "@/lib/toast";
 
 import type { AttentionItem, RecallVerdict } from "../types";
@@ -25,31 +22,16 @@ import { listAttentionQueue, recordRecallVerdict } from "../service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AttentionQueue() {
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
-  // personal-org fallback, so an unselected picker silently reviewed the
-  // PERSONAL workspace's rows (and wrote verdicts against them).
-  const organizationId = useAppSelector(selectOrganizationId);
-  // "No org yet" is not "no org": until the bootstrap resolves, loading is the
-  // truth and the picker must not flash over a screen that is about to fill.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [items, setItems] = useState<AttentionItem[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (!organizationId) return;
     let cancelled = false;
     // Fresh load (org change / retry): drop stale rows and any prior error.
     setItems(null);
     setLoadError(null);
-    listAttentionQueue(organizationId)
+    listAttentionQueue()
       .then((rows) => {
         if (!cancelled) {
           setItems(rows);
@@ -65,7 +47,7 @@ export function AttentionQueue() {
     return () => {
       cancelled = true;
     };
-  }, [organizationId, reloadKey]);
+  }, [reloadKey]);
 
   const retryLoad = () => {
     setItems(null);
@@ -83,15 +65,6 @@ export function AttentionQueue() {
     }
   };
 
-  if (organizationUnanswered)
-    // The canonical honest state — the refusal carries the picker and the
-    // failed read carries Retry, so neither is a dead end.
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        title="The attention queue needs an organization"
-      />
-    );
   if (loadError)
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
@@ -136,6 +109,7 @@ export function AttentionQueue() {
                 <HelpCircle className="h-3 w-3" /> Open question
               </Badge>
             )}
+            <OrganizationTag organizationId={item.organizationId} />
             <span className="text-sm font-medium text-foreground">{item.title}</span>
           </div>
           {item.detail && (

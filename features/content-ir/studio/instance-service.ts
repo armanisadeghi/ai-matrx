@@ -436,41 +436,56 @@ export async function listKindInstances(
   const listScope = await defaultListFilter("content_ir_kind_instance", { userId, requested: scope });
 
   const home = await whereKindRecordsLive(homeOrganizationId ?? activeOrganizationId, userId);
+  // The selected organization decides only WHICH STORE its own records are read
+  // from — never which organizations' records the person sees. When it keeps them
+  // in the record store, the person's rows in every OTHER organization (still in
+  // today's table) are listed beside them, each tagged with its own home.
+  const fromOlderTable = async (excludeOrganizationId: string | null) => {
+    let query = supabase
+      .schema("content_ir")
+      .from("kind_instance")
+      .select("id,title,validation_status,kind_version,updated_at,data,archived_at")
+      .eq("kind_definition_id", kindDefinitionId)
+      .is("deleted_at", null);
+    if (homeOrganizationId) query = query.eq("organization_id", homeOrganizationId);
+    else query = listScope.apply(query);
+    if (excludeOrganizationId) query = query.neq("organization_id", excludeOrganizationId);
+    // THE ARCHIVED-ITEMS LAW: a request the tab's own control sets, never a
+    // literal — the default hides archived rows and one click reveals them.
+    if (archiveFilter === "active") query = query.is("archived_at", null);
+    else if (archiveFilter === "archived") query = query.not("archived_at", "is", null);
+
+    const { data, error } = await query.order("updated_at", { ascending: false });
+    if (error) {
+      throw new Error(`Failed to list instances: ${error.message}`);
+    }
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      validationStatus: row.validation_status,
+      kindVersion: row.kind_version,
+      updatedAt: row.updated_at,
+      data: row.data,
+      archivedAt: row.archived_at,
+    }));
+  };
+
   if (home.store === "record") {
-    return listFromRecordStore(
+    const inStore = await listFromRecordStore(
       home,
       kindDefinitionId,
       archiveFilter,
       !homeOrganizationId && listScope.ownerOnly ? userId : null,
     );
+    // The admin door (`homeOrganizationId`) reads exactly one organization's store.
+    if (homeOrganizationId) return inStore;
+    const elsewhere = await fromOlderTable(home.organizationId);
+    return [...inStore, ...elsewhere].sort((a, b) =>
+      a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0,
+    );
   }
 
-  let query = supabase
-    .schema("content_ir")
-    .from("kind_instance")
-    .select("id,title,validation_status,kind_version,updated_at,data,archived_at")
-    .eq("kind_definition_id", kindDefinitionId)
-    .is("deleted_at", null);
-  if (homeOrganizationId) query = query.eq("organization_id", homeOrganizationId);
-  else query = listScope.apply(query);
-  // THE ARCHIVED-ITEMS LAW: a request the tab's own control sets, never a
-  // literal — the default hides archived rows and one click reveals them.
-  if (archiveFilter === "active") query = query.is("archived_at", null);
-  else if (archiveFilter === "archived") query = query.not("archived_at", "is", null);
-
-  const { data, error } = await query.order("updated_at", { ascending: false });
-  if (error) {
-    throw new Error(`Failed to list instances: ${error.message}`);
-  }
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    title: row.title,
-    validationStatus: row.validation_status,
-    kindVersion: row.kind_version,
-    updatedAt: row.updated_at,
-    data: row.data,
-    archivedAt: row.archived_at,
-  }));
+  return fromOlderTable(null);
 }
 
 export interface UpdateKindInstanceArgs {

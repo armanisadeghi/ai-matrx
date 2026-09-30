@@ -42,7 +42,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { defineChannelNamespace } from "@ai-matrx/realtime";
 import { useChannel } from "@ai-matrx/realtime/react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   CAPTURE_HANDOFF_SCHEMA,
   CAPTURE_HANDOFF_TABLE,
@@ -54,9 +54,9 @@ import type { CaptureHandoff } from "@/features/capture-ladder/types";
 /** One place names this channel — a second, different declaration throws. */
 const needsYouChannel = defineChannelNamespace({
   namespace: "capture-handoff-needs-you",
-  parts: ["organizationId"],
+  parts: ["userId"],
   description:
-    "media.capture_handoff rows for one organization — the pages waiting for a person's own browser",
+    "media.capture_handoff rows the person can reach, across every organization — the pages waiting for their own browser",
 });
 
 /** A burst of row events deserves ONE re-read. */
@@ -77,7 +77,6 @@ export type NeedsYouLiveness = "live" | "polling" | "degraded";
 
 export type NeedsYouState =
   /** No organization selected yet — nothing to read, and not an error. */
-  | { kind: "no_organization" }
   | { kind: "loading" }
   | {
       kind: "ready";
@@ -120,21 +119,17 @@ export function livenessSentenceFor(liveness: NeedsYouLiveness): string | null {
 }
 
 export function useNeedsYou(): UseNeedsYouResult {
-  const organizationId = useAppSelector(selectOrganizationId);
-  const [state, setState] = useState<NeedsYouState>(
-    organizationId ? { kind: "loading" } : { kind: "no_organization" },
-  );
+  // The queue is the PERSON's — every organization they can reach, never the
+  // header's selected one. Rows carry their own organization.
+  const userId = useAppSelector(selectUserId);
+  const [state, setState] = useState<NeedsYouState>({ kind: "loading" });
 
-  // Guards a read's result against landing after the org changed underneath it.
+  // Guards a read's result against landing after a newer read started.
   const readToken = useRef(0);
 
   const load = useCallback(async () => {
-    if (!organizationId) {
-      setState({ kind: "no_organization" });
-      return;
-    }
     const token = ++readToken.current;
-    const result = await fetchNeedsYouHandoffs(organizationId);
+    const result = await fetchNeedsYouHandoffs();
     if (readToken.current !== token) return;
     if (result.kind === "ok") {
       setState({
@@ -145,7 +140,7 @@ export function useNeedsYou(): UseNeedsYouResult {
       return;
     }
     setState(result);
-  }, [organizationId]);
+  }, []);
 
   // ── The debounced re-read every liveness path funnels through ──────────────
   const loadRef = useRef(load);
@@ -171,26 +166,24 @@ export function useNeedsYou(): UseNeedsYouResult {
 
   // ── The poll floor ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!organizationId) return;
     const tick = () => {
       if (typeof document !== "undefined" && document.hidden) return;
       void loadRef.current();
     };
     const id = setInterval(tick, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [organizationId]);
+  }, []);
 
   // ── Postgres Changes ──────────────────────────────────────────────────────
   const { status: channelStatus } = useChannel(
-    organizationId
+    userId
       ? {
-          topic: needsYouChannel.topic({ organizationId }),
+          topic: needsYouChannel.topic({ userId }),
           postgresChanges: [
             {
               event: "*",
               schema: CAPTURE_HANDOFF_SCHEMA,
               table: CAPTURE_HANDOFF_TABLE,
-              filter: `organization_id=eq.${organizationId}`,
               rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
               onChange: () => scheduleReload(),
             },
@@ -209,7 +202,7 @@ export function useNeedsYou(): UseNeedsYouResult {
   // SUBSCRIBED channel on an unpublished table delivers nothing while looking
   // perfectly healthy — see the header — so "connected" alone never buys the
   // word.
-  const liveness: NeedsYouLiveness = !organizationId
+  const liveness: NeedsYouLiveness = !userId
     ? "polling"
     : channelStatus === "connected"
       ? REALTIME_PUBLISHED

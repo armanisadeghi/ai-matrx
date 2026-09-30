@@ -31,6 +31,7 @@
  * this file never invents an explanation for a page.
  */
 
+import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 import {
   AlertTriangle,
   ExternalLink,
@@ -104,6 +105,7 @@ export function NeedsYouRow({ handoff }: { handoff: CaptureHandoff }) {
               {noun}
             </span>
           )}
+          <OrganizationTag organizationId={handoff.organization_id} />
         </div>
 
         {/* Only rows that need the PERSON carry a sentence. A row the browser
@@ -165,9 +167,7 @@ export interface NeedsYouListProps {
    * person's rows were spread across three of his workspaces and every surface
    * showed a serene zero for the one it happened to be on.
    */
-  elsewhereSentence?: string | null;
   /** The workspace this list is about, so "empty" is never ambiguous. */
-  organizationName?: string | null;
   className?: string;
 }
 
@@ -205,8 +205,6 @@ export function NeedsYouList({
   handoffs,
   livenessSentence = null,
   droppedSentence = null,
-  elsewhereSentence = null,
-  organizationName = null,
   className,
 }: NeedsYouListProps) {
   if (state.kind === "loading") {
@@ -219,15 +217,6 @@ export function NeedsYouList({
       >
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
         Looking for pages that need your browser…
-      </p>
-    );
-  }
-
-  if (state.kind === "no_organization") {
-    return (
-      <p className={cn("text-sm text-muted-foreground", className)}>
-        Pick a workspace and this list will show the pages waiting for your
-        browser in it.
       </p>
     );
   }
@@ -249,9 +238,7 @@ export function NeedsYouList({
     return (
       <div className={cn("flex flex-col gap-1.5", className)}>
         <p className="text-sm text-muted-foreground">
-          {organizationName
-            ? `Nothing needs your browser in ${organizationName} right now.`
-            : "Nothing needs your browser right now."}{" "}
+          Nothing needs your browser right now.{" "}
           {/* What LANDS here, stated for the queue as it actually is: pages
               behind a sign-in AND videos whose subtitles a server cannot get.
               Naming only the page case taught the person the list was smaller
@@ -259,10 +246,6 @@ export function NeedsYouList({
           When a site will show something to your own browser but not to our
           servers, it lands here.
         </p>
-        {/* An empty list has to say WHERE it looked and HOW it knows. */}
-        {elsewhereSentence ? (
-          <Notice sentence={elsewhereSentence} tone="warn" />
-        ) : null}
         {livenessSentence ? (
           <Notice sentence={livenessSentence} tone="quiet" />
         ) : null}
@@ -281,9 +264,6 @@ export function NeedsYouList({
           <NeedsYouRow key={handoff.id} handoff={handoff} />
         ))}
       </ul>
-      {elsewhereSentence ? (
-        <Notice sentence={elsewhereSentence} tone="warn" />
-      ) : null}
       {livenessSentence ? (
         <Notice sentence={livenessSentence} tone="quiet" />
       ) : null}

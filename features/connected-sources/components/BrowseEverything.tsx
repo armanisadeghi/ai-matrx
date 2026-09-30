@@ -152,8 +152,9 @@ function reportLine(report: ConnectedBrowseReport): string {
 export function BrowseEverything() {
   const dispatch = useAppDispatch();
   // A person's own connected accounts need no organization (the server declares
-  // these reads organization-free); the selection is still re-read when it
-  // changes, so switching organizations in the header refreshes the page.
+  // these reads organization-free), so the account list is NOT re-asked when the
+  // header organization changes. The selected organization is only handed to a
+  // source that itself works inside one (its `needs_organization` hold below).
   const organizationId = useAppSelector(selectOrganizationId);
   const [adapters, setAdapters] = useState<ConnectedAdapterRow[] | null>(null);
   const [loadError, setLoadError] = useState<unknown>(null);
@@ -171,7 +172,7 @@ export function BrowseEverything() {
   } | null>(null);
   const [readResult, setReadResult] = useState<ConnectedReadDialogState | null>(null);
 
-  // Re-asked when the header organization changes and on Try again.
+  // Asked once, and again on Try again.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -189,7 +190,7 @@ export function BrowseEverything() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, organizationId, attempt]);
+  }, [dispatch, attempt]);
 
   const retry = () => {
     setLoadError(null);

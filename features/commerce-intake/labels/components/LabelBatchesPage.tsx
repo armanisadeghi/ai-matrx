@@ -14,35 +14,20 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 import { buildLabelBatchListConfig } from "../listConfig";
 import { CreateLabelBatchDialog } from "./CreateLabelBatchDialog";
 import { ImportIdentifiersDialog } from "./ImportIdentifiersDialog";
 
 export function LabelBatchesPage() {
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
-  // personal-org fallback, so an unselected picker listed (and created batches
-  // in) the PERSONAL workspace with nothing on screen saying so.
+  // The list reads every organization the person can reach (the on-page scope
+  // control narrows it). The SELECTED organization is only the DESTINATION of a
+  // NEW batch / import, so the create controls appear only when one is selected.
   const organizationId = useAppSelector(selectOrganizationId);
-  // Without an org there is no list to build: say so rather than render a
-  // header over an empty page that looks broken.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
 
-  const config = useMemo(
-    () => (organizationId ? buildLabelBatchListConfig(organizationId) : null),
-    [organizationId],
-  );
+  const config = useMemo(() => buildLabelBatchListConfig(), []);
 
   const actions = (
     <div className="flex gap-2">
@@ -52,23 +37,27 @@ export function LabelBatchesPage() {
           <span className="max-sm:sr-only">Printers</span>
         </Link>
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-11 lg:h-7"
-        onClick={() => setImporting(true)}
-      >
-        <FileUp className="h-4 w-4" />
-        <span className="max-sm:sr-only">Import IDs</span>
-      </Button>
-      <Button
-        size="sm"
-        className="h-11 lg:h-7"
-        onClick={() => setCreating(true)}
-      >
-        <Plus className="h-4 w-4" />
-        <span className="max-sm:sr-only">New batch</span>
-      </Button>
+      {organizationId && (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-11 lg:h-7"
+            onClick={() => setImporting(true)}
+          >
+            <FileUp className="h-4 w-4" />
+            <span className="max-sm:sr-only">Import IDs</span>
+          </Button>
+          <Button
+            size="sm"
+            className="h-11 lg:h-7"
+            onClick={() => setCreating(true)}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="max-sm:sr-only">New batch</span>
+          </Button>
+        </>
+      )}
     </div>
   );
 
@@ -91,16 +80,10 @@ export function LabelBatchesPage() {
           </Link>
         </div>
       </PageHeader>
-      {organizationUnanswered && (
-        <OrganizationContextNotice
-          state={organizationState}
-          what="Label batches"
-        />
-      )}
       {config && (
         <EntityListPage
           config={config}
-          defaultScope={{ kind: "orgs", organizationId }}
+          defaultScope={{ kind: "orgs", organizationId: null }}
           headerActions={actions}
           emptyAction={actions}
         />

@@ -14,36 +14,13 @@ import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 import { buildCertifiedPrinterListConfig } from "../listConfig";
 import { certifyPrinterHref } from "../types";
 
 export function CertifiedPrintersPage() {
   const router = useRouter();
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
-  // personal-org fallback, so an unselected picker listed the PERSONAL
-  // workspace's printers as if they were the organization's.
-  const organizationId = useAppSelector(selectOrganizationId);
-  // Without an org there is no list to build: say so rather than render a
-  // header over an empty page that looks broken.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
-
-  const config = useMemo(
-    () =>
-      organizationId ? buildCertifiedPrinterListConfig(organizationId) : null,
-    [organizationId],
-  );
+  const config = useMemo(() => buildCertifiedPrinterListConfig(), []);
 
   const actions = (
     <Button size="sm" className="h-11 lg:h-7" asChild>
@@ -79,16 +56,10 @@ export function CertifiedPrintersPage() {
           </Link>
         }
       />
-      {organizationUnanswered && (
-        <OrganizationContextNotice
-          state={organizationState}
-          what="Certified printers"
-        />
-      )}
       {config && (
         <EntityListPage
           config={config}
-          defaultScope={{ kind: "orgs", organizationId }}
+          defaultScope={{ kind: "orgs", organizationId: null }}
           headerActions={actions}
           emptyAction={actions}
         />

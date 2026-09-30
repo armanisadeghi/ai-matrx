@@ -26,10 +26,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationTag } from "./OrganizationTag";
 import { toast } from "@/lib/toast";
 
 import type { TriageItem, ValueBucket } from "../types";
@@ -47,20 +44,6 @@ const BUCKET_LABELS: Record<ValueBucket, string> = {
 };
 
 export function TriageQueue() {
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
-  // personal-org fallback, so an unselected picker silently reviewed the
-  // PERSONAL workspace's rows (and wrote verdicts against them).
-  const organizationId = useAppSelector(selectOrganizationId);
-  // "No org yet" is not "no org": until the bootstrap resolves, loading is the
-  // truth and the picker must not flash over a screen that is about to fill.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [items, setItems] = useState<TriageItem[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -69,12 +52,11 @@ export function TriageQueue() {
   const busyRef = useRef(false);
 
   useEffect(() => {
-    if (!organizationId) return;
     let cancelled = false;
     // Fresh load (org change / retry): drop stale rows and any prior error.
     setItems(null);
     setLoadError(null);
-    listTriageQueue(organizationId)
+    listTriageQueue()
       .then((rows) => {
         if (!cancelled) {
           setItems(rows);
@@ -90,7 +72,7 @@ export function TriageQueue() {
     return () => {
       cancelled = true;
     };
-  }, [organizationId, reloadKey]);
+  }, [reloadKey]);
 
   const retryLoad = () => {
     setItems(null);
@@ -140,15 +122,6 @@ export function TriageQueue() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  if (organizationUnanswered)
-    // The canonical honest state — the refusal carries the picker and the
-    // failed read carries Retry, so neither is a dead end.
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        title="The triage queue needs an organization"
-      />
-    );
   if (loadError)
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
@@ -218,6 +191,7 @@ export function TriageQueue() {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          <OrganizationTag organizationId={item.organizationId} />
           {item.isGemCandidate && (
             <Badge className="gap-1" variant="secondary">
               <Gem className="h-3 w-3" /> Gem candidate
