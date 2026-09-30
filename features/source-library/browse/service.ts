@@ -169,12 +169,16 @@ export function createLibraryListService(
             // reading "Mine 33" that turns into eleven rows the moment it is
             // pressed is the same "the tile says 0 while the list says 5" defect
             // this surface has already been bitten by, with the numbers swapped.
-            const lanes = Object.keys(SCOPE_TO_VISIBILITY) as (keyof typeof SCOPE_TO_VISIBILITY)[];
+            // ALL is the same call with no visibility narrowing — every Library
+            // the person can see, which is what the All lane lists.
+            const lanes = ["all", ...Object.keys(SCOPE_TO_VISIBILITY)];
             const adapters = adaptersForQuery(query.filters);
             const results = await Promise.allSettled(
                 lanes.map((kind) =>
                     listLibraries(dispatch, {
-                        visibility: [SCOPE_TO_VISIBILITY[kind]],
+                        ...(SCOPE_TO_VISIBILITY[kind]
+                            ? { visibility: [SCOPE_TO_VISIBILITY[kind]] }
+                            : {}),
                         ...(adapters.length ? { adapter: adapters } : {}),
                         ...(query.search ? { q: query.search } : {}),
                         limit: 1,
