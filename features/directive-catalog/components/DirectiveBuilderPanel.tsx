@@ -30,6 +30,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
 import {
   Select,
   SelectContent,
@@ -83,6 +84,13 @@ import {
   type NounDirectives,
 } from "@/features/directive-catalog/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeBackendError, stripTerminalCodes } from "@/utils/errors";
+import {
+  defaultNounFor,
+  nounHint,
+  nounLabel,
+  nounOptionGroups,
+} from "@/features/directive-catalog/nounOptions";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
@@ -92,6 +100,47 @@ const RECEIPT_PILL: Record<DirectiveReceipt["status"], string> = {
   not_implemented: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   failed: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
+
+/** A cell state as words a person reads in a sentence. */
+const STATE_WORDS: Record<DirectiveState, string> = {
+  yes: "wired",
+  planned: "planned",
+  no: "not available",
+};
+
+/**
+ * Error text as it arrives from the server can carry terminal colour codes and
+ * a full ORM dump. Show the readable sentence; keep the cleaned full text one
+ * click away and in the ErrorAlchemyMenu.
+ */
+function PanelError({ raw }: { raw: string }) {
+  const clean = stripTerminalCodes(raw).trim();
+  const headline = humanizeBackendError(clean) ?? clean;
+  const hasDetail = clean.length > 0 && clean !== headline;
+  return (
+    <div
+      role="alert"
+      className="flex min-w-0 flex-col gap-1 rounded-md border border-red-500/30 bg-red-500/5 px-2 py-1.5 text-xs"
+    >
+      <div className="flex items-start gap-1.5">
+        <span className="min-w-0 flex-1 break-words text-red-600 dark:text-red-400">
+          {headline}
+        </span>
+        <ErrorAlchemyMenu error={clean} size="xs" />
+      </div>
+      {hasDetail && (
+        <details className="min-w-0">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+            Technical detail
+          </summary>
+          <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-background/80 p-1.5 font-mono text-[11px] text-muted-foreground">
+            {clean}
+          </pre>
+        </details>
+      )}
+    </div>
+  );
+}
 
 function StatusPill({ status }: { status: DirectiveReceipt["status"] }) {
   return (
@@ -106,21 +155,36 @@ function StatusPill({ status }: { status: DirectiveReceipt["status"] }) {
   );
 }
 
+/** A request from outside (the grid) to load one noun into the builder. */
+export interface DirectiveBuilderPick {
+  noun: string;
+  verb?: DirectiveVerb;
+  /** Bumped per request so picking the same noun twice still applies. */
+  nonce: number;
+}
+
 export function DirectiveBuilderPanel({
   catalog,
+  pick = null,
 }: {
   catalog: DirectiveCatalog;
+  pick?: DirectiveBuilderPick | null;
 }) {
   const verbs = DIRECTIVE_VERBS.filter(isDirectiveVerb);
-  const nouns = useMemo(
-    () => [...catalog.nouns].sort((a, b) => a.noun.localeCompare(b.noun)),
-    [catalog.nouns],
+  const nouns = catalog.nouns;
+  const nounByToken = useMemo(
+    () => new Map(nouns.map((n) => [n.noun, n] as const)),
+    [nouns],
   );
 
-  const [verb, setVerb] = useState<DirectiveVerb>(verbs[0] ?? "reference");
-  const initialNoun = nouns[0]?.noun;
-  const [nounName, setNounName] = useState<string>(
-    initialNoun === undefined ? "" : initialNoun,
+  const initialVerb: DirectiveVerb = verbs[0] ?? "reference";
+  const [verb, setVerb] = useState<DirectiveVerb>(initialVerb);
+  const [nounName, setNounName] = useState<string>(() =>
+    defaultNounFor(nouns, initialVerb),
+  );
+  const nounGroups = useMemo(
+    () => nounOptionGroups(nouns, verb),
+    [nouns, verb],
   );
   const [fields, setFields] = useState<Record<string, string>>({});
   const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>(
@@ -146,10 +210,7 @@ export function DirectiveBuilderPanel({
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const openReferencePicker = useOpenDirectiveReferencePickerWindow();
 
-  const noun: NounDirectives | undefined = useMemo(
-    () => nouns.find((n) => n.noun === nounName),
-    [nouns, nounName],
-  );
+  const noun: NounDirectives | undefined = nounByToken.get(nounName);
 
   const state: DirectiveState | null = noun ? cellState(noun, verb) : null;
   const isReference = isReferenceVerb(verb);
@@ -168,7 +229,7 @@ export function DirectiveBuilderPanel({
   const writePayloadPlaceholder = useMemo(() => {
     const schema = noun?.schemas?.[verb];
     if (!isJsonSchema(schema)) {
-      return JSON.stringify({ [`<${verb}:${nounName}>`]: "…" }, null, 2);
+      return '{\n  "field": "value"\n}';
     }
     return JSON.stringify(buildSchemaExample(schema, "minimum"), null, 2);
   }, [noun, verb, nounName]);
@@ -280,6 +341,8 @@ export function DirectiveBuilderPanel({
     });
   };
 
+  // A new noun or verb is a new schema: the generated form is the default
+  // editor again (a JSON view chosen for the previous one never carries over).
   const handleNounChange = (nextNoun: string) => {
     setNounName(nextNoun);
     setFields({});
@@ -289,6 +352,7 @@ export function DirectiveBuilderPanel({
     setExecError(null);
     setWritePayload("");
     setPayloadValues({});
+    setPayloadView("fields");
     setViewNote(null);
   };
 
@@ -299,8 +363,18 @@ export function DirectiveBuilderPanel({
     setExecError(null);
     setWritePayload("");
     setPayloadValues({});
+    setPayloadView("fields");
     setViewNote(null);
   };
+
+  // The grid asked for a noun: apply it once per request (render-time state
+  // adjustment, no effect).
+  const [appliedPickNonce, setAppliedPickNonce] = useState<number | null>(null);
+  if (pick && pick.nonce !== appliedPickNonce && nounByToken.has(pick.noun)) {
+    setAppliedPickNonce(pick.nonce);
+    if (pick.verb && pick.verb !== verb) handleVerbChange(pick.verb);
+    if (pick.noun !== nounName) handleNounChange(pick.noun);
+  }
 
   const chooseIdentity = async (
     fieldKey: string,
@@ -347,7 +421,7 @@ export function DirectiveBuilderPanel({
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Execute failed";
       setExecError(msg);
-      toast.error(msg);
+      toast.error(humanizeBackendError(stripTerminalCodes(msg)) ?? msg);
     } finally {
       setExecuting(false);
     }
@@ -388,8 +462,8 @@ export function DirectiveBuilderPanel({
       </div>
 
       {/* The two dimensions */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="flex flex-col gap-1">
+      <div className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-2">
+        <div className="flex min-w-0 flex-col gap-1">
           <label className="text-xs text-muted-foreground">Verb</label>
           <Select
             value={verb}
@@ -398,7 +472,7 @@ export function DirectiveBuilderPanel({
             }}
           >
             <SelectTrigger
-              className="h-11 text-base lg:h-8 lg:text-sm"
+              className="h-11 text-base capitalize lg:h-8 lg:text-sm"
               aria-label="Directive verb"
             >
               <SelectValue />
@@ -412,37 +486,39 @@ export function DirectiveBuilderPanel({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <label className="text-xs text-muted-foreground">Noun</label>
-          <Select value={nounName} onValueChange={handleNounChange}>
-            <SelectTrigger
-              className="h-11 text-base lg:h-8 lg:text-sm"
-              aria-label="Directive noun"
-            >
-              <SelectValue placeholder="Select a noun" />
-            </SelectTrigger>
-            <SelectContent>
-              {nouns.map((n) => (
-                <SelectItem key={n.noun} value={n.noun}>
-                  {n.noun}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <OptionCombobox
+            value={nounName}
+            onChange={handleNounChange}
+            groups={nounGroups}
+            getLabel={(token) => {
+              const n = nounByToken.get(token);
+              return n ? nounLabel(n) : token;
+            }}
+            getHint={(token) => {
+              const n = nounByToken.get(token);
+              return n ? nounHint(n) : null;
+            }}
+            placeholder="Choose a noun"
+            searchPlaceholder={`Search ${nouns.length} nouns by name or token…`}
+            ariaLabel="Directive noun"
+            className="h-11 text-base lg:h-8 lg:text-sm"
+          />
         </div>
       </div>
 
       {/* Prominent availability read-out */}
       {noun && state && (
-        <div className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2">
-          <div className="flex flex-col">
-            <span className="text-sm text-foreground">
+        <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2">
+          <div className="flex min-w-0 flex-col">
+            <span className="min-w-0 break-words text-sm text-foreground">
               <span className="font-semibold capitalize">{verb}</span>{" "}
               <span className="text-muted-foreground">·</span>{" "}
-              <span className="font-semibold">{noun.noun}</span>
+              <span className="font-semibold">{nounLabel(noun)}</span>
             </span>
-            <span className="font-mono text-xs text-muted-foreground">
-              {noun.table}
+            <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+              {noun.noun} · {noun.table}
             </span>
           </div>
           <StateBadge state={state} />
@@ -468,13 +544,16 @@ export function DirectiveBuilderPanel({
               <div key={f.key} className="flex flex-col gap-1">
                 <label className="text-xs text-muted-foreground">
                   {f.label}
-                  {f.uuid ? " (UUID)" : ""}
                 </label>
                 <div className="flex items-center gap-1.5">
                   <Input
                     value={value}
                     onChange={(e) => setField(f.key, e.target.value)}
-                    placeholder={`Select or enter ${nounName}.${f.key}`}
+                    placeholder={
+                      picker
+                        ? `Choose ${picker.label.toLowerCase()} or paste its id`
+                        : "Paste the record's id"
+                    }
                     className={cn(
                       "h-11 min-w-0 flex-1 font-mono text-base lg:h-8 lg:text-sm",
                       invalid && "border-red-500 focus-visible:ring-red-500",
@@ -483,7 +562,7 @@ export function DirectiveBuilderPanel({
                   {picker ? (
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       className="h-11 shrink-0 gap-1 px-3 lg:h-8 lg:px-2"
                       onClick={() => void chooseIdentity(f.key, picker)}
@@ -553,15 +632,17 @@ export function DirectiveBuilderPanel({
           </Button>
           {state !== "yes" && (
             <p className="text-xs text-muted-foreground">
-              This reference is <span className="font-medium">{state}</span> —
-              live resolution is only available for wired (&quot;Yes&quot;)
-              references.
+              This {verb} is{" "}
+              <span className="font-medium">
+                {state ? STATE_WORDS[state] : "unknown"}
+              </span>{" "}
+              — only wired nouns render live. Pick one from &quot;Ready to{" "}
+              {verb}&quot; in the noun list.
             </p>
           )}
           {state === "yes" && !requiredFilled && (
             <p className="text-xs text-muted-foreground">
-              Enter the identity ids above (valid UUIDs) to render the live
-              chip.
+              Choose the record above to render it live.
             </p>
           )}
           {canLiveRender && renderNonce > 0 && envelope && (
@@ -576,13 +657,20 @@ export function DirectiveBuilderPanel({
             </div>
           )}
         </div>
+      ) : state === "no" ? (
+        // Nothing to fill in and nothing to run — no dead editor, no dead button.
+        <p className="text-xs text-muted-foreground">
+          {noun ? nounLabel(noun) : "This noun"} can&apos;t be{" "}
+          {verb === "delete" ? "deleted" : `${verb}d`} through a directive. Pick
+          one from &quot;Ready to {verb}&quot; in the noun list.
+        </p>
       ) : (
         <div className="flex flex-col gap-3">
           {/* Payload — the row's fields (shape mirrors the table). */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground">
-                Payload — the row&apos;s fields
+                The record&apos;s fields
               </span>
               {writeFields.length > 0 && (
                 <div
@@ -610,6 +698,13 @@ export function DirectiveBuilderPanel({
                 </div>
               )}
             </div>
+            {writeFields.length === 0 && noun && (
+              <p className="text-xs text-muted-foreground">
+                The server publishes no field list for{" "}
+                <span className="font-medium">{nounLabel(noun)}</span> {verb}{" "}
+                yet, so this one is written as JSON.
+              </p>
+            )}
             {viewNote && (
               <p className="text-xs text-amber-700 dark:text-amber-300">
                 {viewNote}
@@ -637,9 +732,7 @@ export function DirectiveBuilderPanel({
                   )}
                   placeholder={writePayloadPlaceholder}
                 />
-                {payloadError && (
-                  <p className="text-xs text-red-500">{payloadError} <ErrorAlchemyMenu error={payloadError} /></p>
-                )}
+                {payloadError && <PanelError raw={payloadError} />}
               </>
             )}
           </div>
@@ -675,24 +768,20 @@ export function DirectiveBuilderPanel({
             </Button>
             {verb === "delete" && state === "yes" && (
               <span className="text-xs text-muted-foreground">
-                delete is a soft delete (the row is flagged, never destroyed).
+                Soft delete — the record goes to trash, never destroyed.
               </span>
             )}
           </div>
 
-          {state === "no" && (
-            <p className="text-xs text-muted-foreground">
-              Not a writable row — this noun has no create/update/delete path.
-            </p>
-          )}
           {state === "planned" && (
             <p className="text-xs text-muted-foreground">
-              This write is <span className="font-medium">planned</span> — only
-              wired (&quot;Yes&quot;) nouns execute today.
+              This {verb} is <span className="font-medium">planned</span>, not
+              wired yet — you can build and copy the envelope, but Execute runs
+              only for nouns under &quot;Ready to {verb}&quot;.
             </p>
           )}
 
-          {execError && <p className="text-xs text-red-500">{execError} <ErrorAlchemyMenu error={execError} /></p>}
+          {execError && <PanelError raw={execError} />}
 
           {result && (
             <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
@@ -714,12 +803,30 @@ export function DirectiveBuilderPanel({
                     <span className="text-foreground">{r.summary}</span>
                   )}
                   {r.resource_ids !== undefined &&
-                    r.resource_ids.length > 0 && (
-                      <span className="font-mono text-muted-foreground">
-                        id: {r.resource_ids.join(", ")}
-                      </span>
-                    )}
-                  {r.error && <span className="text-red-500">{r.error} <ErrorAlchemyMenu error={r.error} /></span>}
+                    r.resource_ids.length > 0 &&
+                    (() => {
+                      // A written record opens — never a bare id.
+                      const info = payloadFieldEntityInfo("id", r.noun);
+                      const ids = r.resource_ids;
+                      return info ? (
+                        <div className="flex flex-wrap gap-1">
+                          {ids.map((id) => (
+                            <EntityRef
+                              key={id}
+                              token={info.token}
+                              id={id}
+                              openInNewTab
+                              className="text-xs"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="break-all font-mono text-muted-foreground">
+                          id: {ids.join(", ")}
+                        </span>
+                      );
+                    })()}
+                  {r.error && <PanelError raw={r.error} />}
                 </div>
               ))}
             </div>

@@ -95,9 +95,8 @@ jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/components/cost/Cost", () => ({
   Cost: ({ usd }: { usd: number | null }) => <span>{usd == null ? "—" : String(usd)}</span>,
 }));
-jest.mock("@/components/markdown", () => ({
-  __esModule: true,
-  default: ({ content }: { content: string }) => <div data-testid="md">{content}</div>,
+jest.mock("@/features/mandates/admin/bench-output-preview", () => ({
+  OutputPreview: ({ output }: { output: string }) => <div data-testid="md">{output}</div>,
 }));
 const openDiff = jest.fn();
 jest.mock("@/features/overlays/openers/diffViewerWindow", () => ({

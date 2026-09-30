@@ -32,8 +32,8 @@ jest.mock("@ai-matrx/detail/react", () => ({
 jest.mock("@/features/overlays/openers/agentRunWindow", () => ({
   useOpenAgentRunWindow: () => jest.fn(),
 }));
-jest.mock("@/features/overlays/openers/noteInfoWindow", () => ({
-  useOpenNoteInfoWindow: () => jest.fn(),
+jest.mock("@/features/overlays/openers/notesWindow", () => ({
+  useOpenNotesWindow: () => jest.fn(),
 }));
 jest.mock("@/features/overlays/openers/filePreviewWindow", () => ({
   useOpenFilePreviewWindow: () => jest.fn(),

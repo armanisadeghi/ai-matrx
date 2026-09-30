@@ -28,13 +28,15 @@ import "../messages-native.css";
  */
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { MessagesConversationHeader } from "./MessagesConversationHeader";
 import {
   ConversationView,
   useConversation,
   useConversations,
 } from "@ai-matrx/messaging/react";
 import { asConversationId, type Message } from "@ai-matrx/messaging";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { MessagesComposerInput } from "./MessagesComposerInput";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -51,6 +53,7 @@ import { useMessagingAiDemand } from "@/features/messaging/lib/messagingAiDemand
 export interface ConversationPaneProps {
   conversationId: string;
   onBack?: () => void;
+  onSelectConversation?: (id: string) => void;
   getApplicationScope?: () => SurfaceScopePayload;
   className?: string;
   surfaceName?: string;
@@ -61,12 +64,14 @@ export interface ConversationPaneProps {
 export function ConversationPane({
   conversationId,
   onBack,
+  onSelectConversation,
   getApplicationScope,
   className,
   surfaceName = MESSAGES_SURFACE_NAME,
   showHeader = true,
   showAi = true,
 }: ConversationPaneProps) {
+  const router = useRouter();
   // Declare that this surface renders the conversation AI bar, so the four
   // `messaging.*` mandates resolve. Ref-counted: it releases on unmount.
   useMessagingAiDemand(showAi);
@@ -118,30 +123,25 @@ export function ConversationPane({
           className,
         )}
       >
+        {showHeader && (
+          <MessagesConversationHeader
+            conversationId={conversationId}
+            onBack={onBack}
+            onSelect={
+              onSelectConversation ?? ((id) => router.push(`/messages/${id}`))
+            }
+          />
+        )}
         <ConversationView
           conversationId={id}
           className="min-h-0 flex-1"
-          showHeader={showHeader}
+          showHeader={false}
           showAi={showAi}
           renderComposerInput={(input) => (
-            <ProTextarea
-              value={input.value}
-              onChange={(event) => input.onChange(event.target.value)}
-              onKeyDown={input.onKeyDown}
-              onSubmit={input.onSubmit}
-              disabled={input.disabled}
-              submitDisabled={!input.canSend}
-              submitLabel="Send reply"
-              placeholder={input.placeholder}
-              aria-label="Reply to conversation"
-              autoGrow
-              minHeight={44}
-              rows={1}
-              maxHeight={220}
-              enableTextStats={false}
+            <MessagesComposerInput
+              input={input}
               surfaceName={surfaceName}
-              {...(getApplicationScope ? { getApplicationScope } : {})}
-              wrapperClassName="messages-composer w-full"
+              getApplicationScope={getApplicationScope}
             />
           )}
           {...(onBack ? { onBack } : {})}

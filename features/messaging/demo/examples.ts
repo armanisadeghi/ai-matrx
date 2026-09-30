@@ -126,7 +126,7 @@ export const MESSAGE_EXAMPLES: MessageExample[] = [
           },
         ],
       },
-      "The current bubble does not render attachment payloads. This sample exposes that gap for the content-renderer work.",
+      "Sample attachment — demo media.",
     ),
   ),
   example("Platform reference", "Rich content", "Here is the project brief.", {
@@ -163,7 +163,7 @@ export const MESSAGE_EXAMPLES: MessageExample[] = [
     "States",
     "Yes, the second version.",
     { replyToId: asMessageId(id) },
-    "Reply targeting is stored, but the current bubble does not draw a quoted parent message.",
+    "Quoted replies preserve the original message context.",
   ),
   ...(
     [

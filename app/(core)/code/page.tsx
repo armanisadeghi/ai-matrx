@@ -6,9 +6,7 @@ import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createClient } from "@/utils/supabase/server";
 import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
 import type { SandboxInstance } from "@/types/sandbox";
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
 
 export default async function CodeWorkspacePage({
   searchParams,
@@ -27,7 +25,7 @@ export default async function CodeWorkspacePage({
   let sandboxLinkError: string | null = null;
 
   if (hasSandboxParam) {
-    if (!sandboxId || !UUID_PATTERN.test(sandboxId)) {
+    if (!sandboxId || !isRfc9562Uuid(sandboxId)) {
       sandboxLinkError = "This sandbox link is invalid. Open a sandbox from the Compute menu instead.";
     } else if (!user) {
       sandboxLinkError = "Your session expired before this sandbox could be opened. Sign in and try the link again.";

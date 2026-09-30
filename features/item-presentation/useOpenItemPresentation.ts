@@ -3,8 +3,8 @@
 /**
  * Maps an item-presentation type to its window-panel opener.
  *
- * Four bespoke openers stay bespoke (agent run, note info, file preview,
- * structured-list manager); everything else goes to the Detail primitive
+ * Bespoke openers stay bespoke (agent run, the Notes window, file preview,
+ * structured-list manager, site quick view); everything else goes to the Detail primitive
  * (`lib/detail`, `useOpenDetail`), which yields window / docked / page from
  * the item registry's one entry per type.
  *
@@ -24,7 +24,7 @@ import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
+import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
@@ -41,7 +41,7 @@ export interface ItemOpenSeed {
 
 export function useOpenItemPresentation() {
   const openAgent = useOpenAgentRunWindow();
-  const openNote = useOpenNoteInfoWindow();
+  const openNote = useOpenNotesWindow();
   const openFile = useOpenFilePreviewWindow();
   const openPicklist = useOpenStructuredListManagerV2Window();
   const openSite = useOpenSiteQuickViewWindow();
@@ -75,7 +75,11 @@ export function useOpenItemPresentation() {
           openAgent({ initialAgentId: id, initialAgentName: seed?.name ?? null });
           return true;
         case "note":
-          openNote({ noteId: id, title: seed?.name ?? null });
+          // A reference is a LINK: opening a note opens the NOTE — the Notes
+          // window on it, in an editable tab — never the Note-info stats
+          // panel (that one is the tab's "i" button, and opened here it read
+          // as "0 words" for a note it had not loaded; 2026-09-30).
+          openNote({ initialNoteId: id });
           return true;
         case "conversation":
           // The floating Chat window, opened ON this conversation. The window

@@ -28,9 +28,7 @@ import type { LucideIcon } from "lucide-react";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { codeSpanText, findCodeRanges } from "@ai-matrx/content-ir/source";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
 
 /**
  * True when a value is a real uuid — the guard a surface needs BEFORE handing an
@@ -52,7 +50,7 @@ const UUID_RE =
  * rule is right.
  */
 export function isUuidValue(value: unknown): value is string {
-  return typeof value === "string" && UUID_RE.test(value.trim());
+  return typeof value === "string" && isRfc9562Uuid(value.trim());
 }
 
 /**

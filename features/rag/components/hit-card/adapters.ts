@@ -1,6 +1,7 @@
 import type { RagSearchHit } from "@/features/rag/api/search";
 import type { DiagnoseHit } from "@/features/rag/api/search-lab";
 import type { RagHitView } from "./types";
+import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
 
 /**
  * Adapt the search API's `RagSearchHit` and the diagnose lab's `DiagnoseHit`
@@ -41,8 +42,6 @@ function pagesFromMeta(meta: Record<string, unknown>): {
   };
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const UUID_FRAGMENT_RE = /^#?[0-9a-f]{8}(?:…[0-9a-f]{4})?$/i;
 
 /**
@@ -60,7 +59,7 @@ export function normalizeSourceName(
 
   const withoutHash = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
   if (
-    UUID_RE.test(withoutHash) ||
+    isRfc9562Uuid(withoutHash) ||
     UUID_FRAGMENT_RE.test(trimmed) ||
     (sourceId &&
       (withoutHash.toLowerCase() === sourceId.toLowerCase() ||

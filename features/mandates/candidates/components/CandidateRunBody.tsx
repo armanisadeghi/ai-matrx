@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react";
 import { Columns2, MessagesSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 
-import MarkdownStream from "@/components/markdown";
+import { OutputPreview } from "@/features/mandates/admin/bench-output-preview";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
@@ -71,18 +71,24 @@ function answerText(output: unknown): string | null {
   return null;
 }
 
-/** JSON answers go through the ONE pipeline as a fence, so a `__kind` renders as its kind. */
-function asMarkdown(text: string): string {
+/**
+ * An answer recorded as JSON text is handed to the canonical answer view as the
+ * STRUCTURE it is, so a `__kind` renders through its own component (or the
+ * structured floor), never as a dump and never as a markdown code fence — the
+ * fence path turned an unregistered kind into a warning card squeezed into the
+ * half-width column (seen on the clone 2026-09-30).
+ */
+function parsedStructure(text: string): Record<string, unknown> | unknown[] | null {
   const trimmed = text.trim();
-  if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
-    try {
-      JSON.parse(trimmed);
-      return "```json\n" + trimmed + "\n```";
-    } catch {
-      return text;
-    }
+  if (!((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]")))) {
+    return null;
   }
-  return text;
+  try {
+    const value = JSON.parse(trimmed) as unknown;
+    return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 function errorMessage(error: unknown): string | null {
@@ -390,6 +396,7 @@ function AnswersBlock({
           agentId={candidate?.holder_type === "agent" ? candidate.holder_id : null}
           withheld={!payload}
           pending={run.status === "queued" || run.status === "running"}
+          stopped={run.status === "stopped"}
         />
       </div>
     </section>
@@ -410,6 +417,7 @@ function AnswerColumn(props: {
   agentId: string | null;
   withheld: boolean;
   pending?: boolean;
+  stopped?: boolean;
 }) {
   const text = answerText(props.output);
   const error = errorMessage(props.error) ?? props.errorCode;
@@ -431,11 +439,11 @@ function AnswerColumn(props: {
         {props.withheld ? null : props.pending ? (
           <StateLine>Still running.</StateLine>
         ) : text ? (
-          <div className="max-h-80 overflow-auto rounded-md bg-muted/30 p-2 text-sm">
-            <MarkdownStream imagePolicy="ai" content={asMarkdown(text)} />
-          </div>
+          <AnswerText output={props.output} title={`${props.title} answer`} />
+        ) : props.stopped ? (
+          <StateLine tone="warn">Stopped at a write before answering.</StateLine>
         ) : error ? (
-          <ErrorNotice size="inline" message={error} error={props.error ?? props.errorCode} />
+          <ErrorNotice size="compact" message={error} error={props.error ?? props.errorCode} />
         ) : (
           <StateLine>No answer was recorded.</StateLine>
         )}
@@ -448,6 +456,14 @@ function AnswerColumn(props: {
       />
     </div>
   );
+}
+
+/** The canonical bounded answer view (the bench's), with its Open-in-window door. */
+function AnswerText({ output, title }: { output: unknown; title: string }) {
+  const record = obj(output);
+  const text = str(record ? record.text : output) ?? "";
+  const artifact = record?.artifact ?? parsedStructure(text);
+  return <OutputPreview output={text} artifact={artifact ?? null} title={title} />;
 }
 
 /** P13 — exactly which version ran, by its version number when readable. */

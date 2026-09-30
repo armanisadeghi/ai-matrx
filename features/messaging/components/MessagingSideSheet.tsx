@@ -9,11 +9,11 @@
  * second copy that can disagree with the route.
  */
 
+import { asConversationId } from "@ai-matrx/messaging";
 import React, { useCallback } from "react";
 import Link from "next/link";
 import { ChevronLeft, Maximize2 } from "lucide-react";
 import {
-  useConversations,
   useMessagingHost,
   useMessagingSnapshot,
 } from "@ai-matrx/messaging/react";
@@ -37,14 +37,8 @@ export function MessagingSideSheet() {
   const sheetWidth = useAppSelector(selectMessagingSheetWidth);
   const host = useMessagingHost();
   const snapshot = useMessagingSnapshot();
-  const { conversations } = useConversations();
 
   const currentConversationId = snapshot?.activeConversationId ?? null;
-  const currentConversation =
-    conversations.find(
-      (item) => item.conversation.id === currentConversationId,
-    ) ?? null;
-
   const handleResizeStart = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
@@ -102,9 +96,7 @@ export function MessagingSideSheet() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-          <h2 className="text-sm font-semibold">
-            {currentConversation?.displayName ?? "Messages"}
-          </h2>
+          <h2 className="text-sm font-semibold">Messages</h2>
         </div>
 
         <Link
@@ -123,7 +115,13 @@ export function MessagingSideSheet() {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {currentConversationId ? (
-          <ConversationPane conversationId={currentConversationId} className="flex-1" />
+          <ConversationPane
+            conversationId={currentConversationId}
+            className="flex-1"
+            onSelectConversation={(id) =>
+              void host?.engine.openConversation(asConversationId(id))
+            }
+          />
         ) : (
           <ConversationListPane className="flex-1" />
         )}

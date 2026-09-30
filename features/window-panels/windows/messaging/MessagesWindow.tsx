@@ -119,6 +119,7 @@ export default function MessagesWindow({
       {activeConversationId ? (
         <ConversationPane
           conversationId={activeConversationId}
+          onSelectConversation={handleSelect}
           className="h-full"
           getApplicationScope={getScope}
         />

@@ -105,7 +105,18 @@ export { extractErrorMessage };
 
 
 // eslint-disable-next-line no-control-regex -- stripping the raw control char is the point
-const ANSI_ESCAPE = /\u001b\[[0-9;]*m/g;
+const ANSI_ESCAPE = /\u001b\[[0-?]*[ -/]*[@-~]/g;
+
+/**
+ * Terminal colour/cursor codes out of text that is about to be SHOWN — a
+ * server or ORM message logged for a terminal arrives with `ESC[31m…ESC[0m`
+ * wrapped around it, and some transports drop the ESC byte and leave `[31m`.
+ * Keeps every other character (newlines included); returns "" for empty input.
+ */
+export function stripTerminalCodes(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return raw.replace(ANSI_ESCAPE, "").replace(/\[\d{1,3}(?:;\d{1,3})*m/g, "");
+}
 
 /**
  * A BACKEND failure as a PERSON should read it.
@@ -160,9 +171,7 @@ export function humanizeBackendError(
   fallback = "It failed. The full technical detail is in the logs.",
 ): string | null {
   if (!raw) return null;
-  const clean = raw
-    .replace(ANSI_ESCAPE, "")
-    .replace(/\[\d{1,3}m/g, "")
+  const clean = stripTerminalCodes(raw)
     .replace(/-{6,}/g, " ")
     .replace(/\s+/g, " ")
     .trim();

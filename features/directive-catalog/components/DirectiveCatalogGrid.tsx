@@ -33,6 +33,7 @@ import {
   type NounDirectives,
 } from "@/features/directive-catalog/types";
 import type { DirectiveShapeSelection } from "@/features/directive-catalog/components/DirectiveShapePanel";
+import { nounLabel } from "@/features/directive-catalog/nounOptions";
 
 const ALL_FAMILIES = "__all__";
 
@@ -47,11 +48,14 @@ export function DirectiveCatalogGrid({
   busyToggle,
   onToggleWritable,
   onInspect,
+  onPickNoun,
 }: {
   catalog: DirectiveCatalog;
   busyToggle: string | null;
   onToggleWritable: (noun: NounDirectives, enabled: boolean) => void;
   onInspect: (selection: DirectiveShapeSelection) => void;
+  /** Load this noun into the build & test panel. */
+  onPickNoun?: (noun: NounDirectives) => void;
 }) {
   const [familyFilter, setFamilyFilter] = useState<string>(ALL_FAMILIES);
   const [query, setQuery] = useState("");
@@ -71,7 +75,7 @@ export function DirectiveCatalogGrid({
       if (writableOnly && !isWritable(noun)) return false;
       return (
         !normalizedQuery ||
-        `${noun.noun} ${noun.table} ${noun.family}`
+        `${noun.noun} ${nounLabel(noun)} ${noun.table} ${noun.family}`
           .toLowerCase()
           .includes(normalizedQuery)
       );
@@ -85,9 +89,31 @@ export function DirectiveCatalogGrid({
         accessorKey: "noun",
         header: "Noun",
         label: "Noun",
-        width: 180,
+        width: 200,
         frozen: true,
-        cell: (noun) => <span className="font-medium">{noun.noun}</span>,
+        cell: (noun) => {
+          const body = (
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate font-medium">{nounLabel(noun)}</span>
+              <span className="truncate font-mono text-[11px] text-muted-foreground">
+                {noun.noun}
+              </span>
+            </span>
+          );
+          return onPickNoun ? (
+            <button
+              type="button"
+              onClick={() => onPickNoun(noun)}
+              title="Try it in the builder"
+              aria-label={`Try ${nounLabel(noun)} in the builder`}
+              className="flex w-full min-w-0 rounded text-left hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {body}
+            </button>
+          ) : (
+            body
+          );
+        },
       },
       {
         id: "table",
@@ -130,7 +156,7 @@ export function DirectiveCatalogGrid({
       });
     }
     return matrixColumns;
-  }, [busyToggle, onInspect, onToggleWritable]);
+  }, [busyToggle, onInspect, onToggleWritable, onPickNoun]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -164,7 +190,7 @@ export function DirectiveCatalogGrid({
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search noun / table…"
+                placeholder="Search name, token or table…"
                 aria-label="Search directive nouns and tables"
                 className="h-11 w-full text-base sm:w-56 lg:h-8 lg:text-sm"
               />

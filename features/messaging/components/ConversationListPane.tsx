@@ -16,6 +16,7 @@ import "../messages-native.css";
  */
 
 import { useRef, useState } from "react";
+import { useMessagePins } from "../lib/useMessagePins";
 import { ConversationList, useConversations } from "@ai-matrx/messaging/react";
 import type { ConversationSummary } from "@ai-matrx/messaging/react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function ConversationListPane({
   className,
 }: ConversationListPaneProps) {
   const { conversations } = useConversations();
+  const { pins, toggle } = useMessagePins();
   const [menuConversation, setMenuConversation] =
     useState<ConversationSummary | null>(null);
   const menuRef = useRef<ConversationSummary | null>(null);
@@ -81,6 +83,10 @@ export function ConversationListPane({
       extraSections={[
         buildConversationMenuSection({
           conversation: menuConversation,
+          isPinned: menuConversation
+            ? pins.includes(menuConversation.conversation.id)
+            : false,
+          onTogglePin: toggle,
           ...(onSelect ? { onOpen: onSelect } : {}),
         }),
       ]}
@@ -88,6 +94,7 @@ export function ConversationListPane({
       {/* `asChild` needs a real DOM element to hang the handler on. */}
       <div className={cn("messages-native flex min-h-0 flex-col", className)}>
         <ConversationList
+          pinnedConversationIds={pins}
           className="min-h-0 flex-1"
           {...(onSelect ? { onSelect } : {})}
           onNewConversation={

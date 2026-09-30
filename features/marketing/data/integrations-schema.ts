@@ -1,4 +1,5 @@
 import type { Json } from "@/types/database.types";
+import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
 
 export const credentialAuthorities = [
   "user_secret",
@@ -112,8 +113,6 @@ export class IntegrationProviderConflictError extends Error {
   }
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROVIDER_KEY_PATTERN = /^[a-z][a-z0-9._-]{1,63}$/;
 const DOMAIN_PATTERN =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
@@ -397,7 +396,7 @@ function validateCredential(
       message: `${label} has a credential reference but no authority.`,
     });
   }
-  if (reference && !UUID_PATTERN.test(reference)) {
+  if (reference && !isRfc9562Uuid(reference)) {
     issues.push({
       field: `${field}.credentialRef`,
       message: `${label} must reference a stable credential UUID, never a token or secret.`,
@@ -611,7 +610,7 @@ export function providerReferenceStatus(
   if (
     (requiresCredential &&
       (!provider.credentialAuthority ||
-        !UUID_PATTERN.test(provider.credentialRef.trim()))) ||
+        !isRfc9562Uuid(provider.credentialRef.trim()))) ||
     (requiresResource && !provider.resourceRef.trim())
   ) {
     return "needs_reference";

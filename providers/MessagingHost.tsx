@@ -49,6 +49,7 @@
 
 "use client";
 
+import { MessagingAttachment } from "@/features/messaging/components/MessagingAttachment";
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -280,6 +281,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         wrapMessage={MessagingMessageChrome}
         wrapConversationRow={MessagingConversationRowChrome}
         renderFence={MessagingFence}
+      renderAttachment={MessagingAttachment}
         onOpenReference={onOpenReference}
         onIncomingMessage={onIncomingMessage}
         onDiagnostic={onDiagnostic}

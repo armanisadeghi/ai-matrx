@@ -473,7 +473,7 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
         data-hr-pick-organization=""
         className="pb-2 text-sm font-medium text-foreground"
       >
-        Pick an organization to open this.
+        Open one employer below to continue.
       </p>
       <HrEmployerChoices
         employers={choosable}

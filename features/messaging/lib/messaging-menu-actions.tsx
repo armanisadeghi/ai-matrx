@@ -20,7 +20,14 @@
  * none.
  */
 
-import { Copy, CornerUpLeft, ExternalLink, Link2 } from "lucide-react";
+import {
+  Copy,
+  CornerUpLeft,
+  ExternalLink,
+  Link2,
+  Pin,
+  PinOff,
+} from "lucide-react";
 
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
@@ -151,11 +158,26 @@ async function copyOrShow(text: string, label: string, title: string) {
 export function buildConversationMenuSection(args: {
   conversation: ConversationSummary | null;
   onOpen?: (conversationId: string) => void;
+  isPinned?: boolean;
+  onTogglePin?: (conversationId: string) => void;
 }): ContextMenuExtraSection {
   const { conversation, onOpen } = args;
-  const href = conversation ? conversationHref(conversation.conversation.id) : null;
+  const href = conversation
+    ? conversationHref(conversation.conversation.id)
+    : null;
 
   const items: ContextMenuExtraItem[] = [
+    ...(conversation && args.onTogglePin
+      ? [
+          {
+            kind: "item" as const,
+            id: "dm-pin",
+            label: args.isPinned ? "Unpin conversation" : "Pin conversation",
+            icon: args.isPinned ? PinOff : Pin,
+            onSelect: () => args.onTogglePin?.(conversation.conversation.id),
+          },
+        ]
+      : []),
     ...(conversation && onOpen
       ? [
           {

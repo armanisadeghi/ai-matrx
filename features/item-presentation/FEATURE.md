@@ -164,6 +164,9 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 
 ## Change log
 
+- `2026-09-30` — **Mandate Candidates F3:** `mandate_candidate_run` and `mandate_candidate`
+  registered (`features/mandates/candidates/itemTypes.ts`, `refineDetail`), loaded from the aidream
+  live-candidate doors; see `features/mandates/candidates/FEATURE.md`.
 - `2026-09-18` — **F-104 (V-23, NEW-6): a record whose token has a door gets a
   door — `hrefFor` is the second leg of the refusal (ruling R35).** A Google
   result row stamped `record_table: "media.source_library"` rendered NO control

@@ -38,7 +38,9 @@ import {
   selectNoteContent,
   selectNoteTags,
   selectFolderReferences,
+  selectNoteFetchStatus,
 } from "../redux/selectors";
+import { noteContentIsKnown } from "../utils/noteStats";
 import type { FolderReference } from "../types";
 import { cn } from "@/lib/utils";
 import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
@@ -178,15 +180,20 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   const tags = useAppSelector(selectNoteTags(noteId));
   const folderReferences = useAppSelector(selectFolderReferences);
 
-  // Self-hydrate: this panel is opened from surfaces that never load the
-  // notes list (a reference chip in a direct message, a search hit), so the
-  // note is usually absent from Redux. `fetchNoteContent` has its own
-  // already-loaded guard, making this a no-op on the /notes route.
+  // Self-hydrate the FULL note. The panel is opened from surfaces that never
+  // load the notes list (a reference chip, a search hit) AND from surfaces
+  // that loaded only the list — whose rows carry no `content`. Gating this on
+  // `!note` (the old code) left a list-only note at zero words and zero
+  // characters forever: a lie on screen for a note with real content.
+  // `fetchNoteContent` has its own already-full guard, so this is free once
+  // the note is loaded.
+  const fetchStatus = useAppSelector(selectNoteFetchStatus(noteId));
+  const contentKnown = noteContentIsKnown(note, fetchStatus);
   useEffect(() => {
-    if (!note && noteId) {
+    if (noteId && !contentKnown) {
       void dispatch(fetchNoteContent(noteId));
     }
-  }, [dispatch, note, noteId]);
+  }, [dispatch, contentKnown, noteId]);
 
   const [folderOpen, setFolderOpen] = useState(false);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
@@ -213,7 +220,8 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
     [dispatch, noteId],
   );
 
-  if (!note) {
+  // Never print stats computed from content we have not read.
+  if (!note || !contentKnown) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
         Loading note…

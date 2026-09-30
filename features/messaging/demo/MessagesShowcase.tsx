@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DemoAttachment } from "./DemoAttachment";
 import { useState } from "react";
 import {
   Avatar,
@@ -216,6 +217,16 @@ export default function MessagesShowcase() {
                       >
                         <div className="mx-msg__group-body">
                           <MessageBubble
+                            renderAttachment={DemoAttachment}
+                            replyTo={
+                              example.message.replyToId
+                                ? {
+                                    ...example.message,
+                                    content: "Which version should we use?",
+                                    replyToId: null,
+                                  }
+                                : undefined
+                            }
                             message={{
                               ...example.message,
                               senderId: isMine

@@ -40,7 +40,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
-import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
+import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenTaskQuickCreateWindow } from "@/features/overlays/openers/taskQuickCreateWindow";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { createNote, fetchNotesByIds } from "@/features/notes/service/notesService";
@@ -134,7 +134,7 @@ function CaptureObservationsDialog({
 }) {
   const queryClient = useQueryClient();
   const openFilePreview = useOpenFilePreviewWindow();
-  const openNoteInfo = useOpenNoteInfoWindow();
+  const openNote = useOpenNotesWindow();
   const openTaskWindow = useOpenTaskQuickCreateWindow();
 
   const [draft, setDraft] = useState("");
@@ -370,10 +370,7 @@ function CaptureObservationsDialog({
                               title="Open note"
                               aria-label="Open note"
                               onClick={() =>
-                                openNoteInfo({
-                                  noteId: note.id,
-                                  title: note.label,
-                                })
+                                openNote({ initialNoteId: note.id })
                               }
                               className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
                             >

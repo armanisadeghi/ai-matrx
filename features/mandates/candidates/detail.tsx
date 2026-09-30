@@ -28,7 +28,7 @@ import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { fetchCandidate, fetchCandidateRun } from "./api";
 import type { CandidateRunRow } from "./components/CandidateRunBody";
 import type { CandidateSummaryRow } from "./components/CandidateSummaryBody";
-import { CANDIDATE_STATUS_WORD, doorWord, runOutcomeWord } from "./words";
+import { doorWord } from "./words";
 
 const CandidateRecordBody = lazy(() => import("./components/CandidateRecordBody"));
 
@@ -91,7 +91,6 @@ function runFields(row: CandidateRunRow): DetailField[] {
   const { run, candidate } = row;
   const fields: DetailField[] = [];
   if (candidate) fields.push({ key: "mandate", label: "Mandate", text: mandateName(candidate.mandate_key) });
-  fields.push({ key: "outcome", label: "Outcome", text: runOutcomeWord(run) });
   fields.push({ key: "door", label: "Started from", text: doorWord(run.door) });
   fields.push({ key: "when", label: "Ran", text: formatWhen(run.created_at) });
   return fields;
@@ -101,7 +100,6 @@ function summaryFields(row: CandidateSummaryRow): DetailField[] {
   const { candidate } = row;
   return [
     { key: "mandate", label: "Mandate", text: mandateName(candidate.mandate_key) },
-    { key: "status", label: "Status", text: CANDIDATE_STATUS_WORD[candidate.status] },
     { key: "set", label: "Set", text: formatWhen(candidate.created_at) },
   ];
 }

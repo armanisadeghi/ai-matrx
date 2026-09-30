@@ -21,7 +21,10 @@ import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
 import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
 import { DirectiveCatalogGrid } from "@/features/directive-catalog/components/DirectiveCatalogGrid";
-import { DirectiveBuilderPanel } from "@/features/directive-catalog/components/DirectiveBuilderPanel";
+import {
+  DirectiveBuilderPanel,
+  type DirectiveBuilderPick,
+} from "@/features/directive-catalog/components/DirectiveBuilderPanel";
 import {
   DirectiveShapePanel,
   type DirectiveShapeSelection,
@@ -53,6 +56,9 @@ export function DirectiveCatalogClient() {
     null,
   );
   const [busyToggle, setBusyToggle] = useState<string | null>(null);
+  const [builderPick, setBuilderPick] = useState<DirectiveBuilderPick | null>(
+    null,
+  );
 
   async function toggleWritable(noun: NounDirectives, enabled: boolean) {
     setBusyToggle(noun.noun);
@@ -165,10 +171,16 @@ export function DirectiveCatalogClient() {
                   void toggleWritable(noun, enabled)
                 }
                 onInspect={setSelection}
+                onPickNoun={(noun) =>
+                  setBuilderPick((prev) => ({
+                    noun: noun.noun,
+                    nonce: (prev?.nonce ?? 0) + 1,
+                  }))
+                }
               />
             </div>
             <div className="min-h-0">
-              <DirectiveBuilderPanel catalog={catalog} />
+              <DirectiveBuilderPanel catalog={catalog} pick={builderPick} />
             </div>
           </div>
         ) : null}

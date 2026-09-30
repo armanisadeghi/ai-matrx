@@ -1,5 +1,6 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ThunkAction } from "redux-thunk";
+import { isRfc9562Uuid } from "@ai-matrx/kit/uuid";
 import { toast } from "@/lib/toast";
 
 import { fetchConversationPendingCallsStrict } from "@/features/agents/api/fetch-pending-calls";
@@ -73,11 +74,8 @@ function allCallIds(state: WatchState): string[] {
   );
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 function asServerUserRequestId(value: string | undefined): string | undefined {
-  return value && UUID_PATTERN.test(value) ? value : undefined;
+  return value && isRfc9562Uuid(value) ? value : undefined;
 }
 
 export interface WatchDesktopDelegationArgs {

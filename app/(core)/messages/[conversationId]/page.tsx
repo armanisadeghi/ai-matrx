@@ -13,13 +13,8 @@
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { asConversationId } from "@ai-matrx/messaging";
-import {
-  useConversation,
-  useConversations,
-  useOnlineUserIds,
-} from "@ai-matrx/messaging/react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useConversation } from "@ai-matrx/messaging/react";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeMessaging } from "@/features/messaging/redux/messagingUiSlice";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { MessagesThreadHeader } from "@/features/messaging/components/shell/MessagesThreadHeader";
@@ -34,25 +29,12 @@ export default function ConversationPage() {
   const conversationId = params.conversationId as string;
   const id = asConversationId(conversationId);
 
-  const userId = useAppSelector(selectUserId);
   const getScope = useMessagesSurfaceScope(conversationId);
 
   // Opens the thread and its channel, and keeps them open while this route is
   // mounted. The read receipt rides it — no separate "mark as read" call, and
   // no chance of marking a conversation read that never opened.
   const thread = useConversation(id);
-  const { conversations } = useConversations();
-  const online = useOnlineUserIds(id);
-
-  const conversation =
-    conversations.find((item) => item.conversation.id === conversationId) ?? null;
-  const otherParticipant =
-    conversation?.conversation.type === "direct"
-      ? (conversation.participants.find(
-          (participant) => participant.userId !== userId,
-        ) ?? null)
-      : null;
-
   useEffect(() => {
     dispatch(closeMessaging());
   }, [dispatch]);
@@ -80,17 +62,9 @@ export default function ConversationPage() {
       isEditable={false}
     >
       {/* Header injected into the shell's header center zone */}
-      <MessagesThreadHeader
-        title={conversation?.displayName ?? "Chat"}
-        avatarUrl={conversation?.displayImageUrl ?? undefined}
-        isOnline={
-          otherParticipant !== null
-            ? online.has(otherParticipant.userId)
-            : undefined
-        }
-      />
+      <MessagesThreadHeader />
 
-      <div className="flex h-full flex-col overflow-hidden bg-background">
+      <div className="flex h-full flex-col overflow-hidden bg-background pt-[var(--shell-header-h)]">
         <ConversationPane
           conversationId={conversationId}
           className="flex-1"
