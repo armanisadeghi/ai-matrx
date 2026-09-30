@@ -41,6 +41,16 @@ system's `MatrxDrillAnswerTable`, which this screen also renders.
 - `DrillFindings.tsx` — describe `findings`, each answered through `drill_ask` in the explorer's window;
   nothing found reads "none"; a row drills. A control in the toolbar row, rendered only when declared.
 - `DrillRecords.tsx` — "See these records" through `drill_rows` when describe declares `records`.
+- `DrillExplainButton.tsx` + `explainPayload.ts` — **Explain this** (header row, present only while a
+  grouped answer is on screen): the question (trail by name, grouping, window with its moments, Measures
+  with units, comparison, sort, any carried `conditions`) and the answer exactly as the table draws it
+  (`buildDrillTree`: same order, same words, printed value + raw number, change vs the prior window,
+  every "Other" rest, total, coverage, counted-through, the door's sentences, the address) as ONE `json`
+  Payload + AI envelope (`kind: "drill-answer"`) handed to `openAlchemySession` (intent `prepare`,
+  `forDestination`). The person picks the destination (new chat / assistant / tools), the agent and the
+  question in Alchemy; nothing is sent from here, no agent or prompt is chosen in code, and the answer
+  rides as an attached resource — never `user_input`. No content_ir kind fits (searched 2026-09-30:
+  `aggregate_result` lacks question/window/trail/Other), so the Alchemy structured form is used.
 - `grain.ts` — the grain a window reads best at (a time group asked with no grain).
 - `types.ts` — the ONE place the contract additions (`views`, `findings`, `records`, `having`,
   `as_of`, `stale_after_knob`) are typed and read defensively until `@ai-matrx/records` publishes them.
@@ -62,6 +72,11 @@ Mounts: `features/admin/usage-drill/UsageExplorer.tsx` (`/administration/usage`)
 
 ## Tests
 
+- `__tests__/drill-explain.test.ts` — the Explain this payload: absent until answered, the question's
+  parts, groups in the table's order with names, change, Other, total, coverage, nesting (5).
+- Walk: `scripts/drill-explain-walk.mjs` (shared preview, admin@admin.com; drills a person, presses
+  Explain this, reads the workspace's Copy for AI back, checks the Continue-with-AI destinations are
+  offered, never presses one).
 - `__tests__/drill-explorer-contract.test.ts` — optional contract fields, declared → address question,
   auto grain, finding window, the Saved-view save path (7).
 - Walk: `scripts/drill-explorer-walk.mjs` (`PART=app` on the shared preview; `PART=package` on the
@@ -71,3 +86,6 @@ Mounts: `features/admin/usage-drill/UsageExplorer.tsx` (`/administration/usage`)
 
 - `2026-09-30` — Created (lane DRILL-EXPLORER): generalized from the usage page's explorer; built-in
   views, findings and records rendered when describe returns them; answers tied to their question.
+- `2026-09-30` — Explain this (lane DRILL-EXPLAIN, program DRILL-FINISH decision 22): the question and its
+  answer as one Alchemy payload; the Alchemy host now works in the admin seat's organization so the
+  workspace on `/administration/*` offers Continue with AI (`components/agent-copy/alchemy-organization.ts`).
