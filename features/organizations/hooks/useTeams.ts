@@ -126,17 +126,20 @@ export function useMyTeams(
   const key = organizationId ?? "*";
   const [loaded, setLoaded] = useState<{ key: string; rows: MyTeam[] } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Keyed like the rows: a failure for another organization (or a tab visited
+  // earlier) is never shown for this one, not even for the frame before the
+  // effect re-asks.
+  const [failed, setFailed] = useState<{ key: string; message: string } | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!enabled) return;
     let live = true;
     setLoading(true);
-    setError(null);
+    setFailed(null);
     listMyTeams(organizationId)
       .then((rows) => live && setLoaded({ key, rows }))
-      .catch((e: unknown) => live && setError(messageOf(e)))
+      .catch((e: unknown) => live && setFailed({ key, message: messageOf(e) }))
       .finally(() => live && setLoading(false));
     return () => {
       live = false;
@@ -147,7 +150,7 @@ export function useMyTeams(
   return {
     data: current ?? [],
     loading,
-    error,
+    error: enabled && failed?.key === key ? failed.message : null,
     settled: current !== null,
     refresh: () => setTick((t) => t + 1),
   };

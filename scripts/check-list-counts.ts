@@ -12,6 +12,11 @@
  *   team_reach_empty_without_team  iam.my_team_reach is EMPTY where the person is on no live team (it
  *                                  used to hold the person alone, so My team was a copy of Mine:
  *                                  quizzes 27 = 27, flashcards 186 = 186), and holds them where they are.
+ *   my_teams_answers_every_person  public.my_teams (the My team tab's own read) answers every sampled
+ *                                  person, across all organizations and for one they are not in, and
+ *                                  shows each on-team person their team. RED on the old body
+ *                                  (2026-09-30, clone, rolled back): 17 of 18 people refused with 42501
+ *                                  because iam.team_ids_of ran on every team before the org narrowing.
  *
  * RED on the old definitions (run in a rolled-back transaction, 2026-09-28): counts_delegate_to_list
  * 2 offenders, team_reach_empty_without_team 18 offenders. GREEN after.
@@ -41,6 +46,7 @@ const EXPECTED_CHECKS = [
   "counts_delegate_to_list",
   "education_counts_equal_list",
   "team_reach_empty_without_team",
+  "my_teams_answers_every_person",
 ] as const;
 
 const C = {

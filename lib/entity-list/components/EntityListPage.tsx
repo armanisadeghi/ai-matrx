@@ -457,6 +457,7 @@ export function EntityListPage<TRow>({
   const teamScope = list.query.scope.kind === "team" ? list.query.scope : null;
   const teamOrgId = teamScope ? list.query.orgId : null;
   const myTeams = useMyTeams(teamOrgId, teamScope !== null);
+  const teamsError = teamScope ? myTeams.error : null;
   // The team narrow rows list only organizations where the viewer HAS teammates,
   // so the name is looked up in both lists; an unnamed organization is still
   // one organization, never "any of your organizations".
@@ -1011,7 +1012,7 @@ export function EntityListPage<TRow>({
           (a refresh re-asks all three reads). Never shown while the rows
           themselves failed — the slot above already speaks for the list.
         */}
-        {!list.error && (list.countsError || list.facetsError) && (
+        {!list.error && (list.countsError || list.facetsError || teamsError) && (
           <EntitySourceFailures
             operation={`Load ${plural}`}
             failures={[
@@ -1021,15 +1022,27 @@ export function EntityListPage<TRow>({
               ...(list.facetsError
                 ? [{ label: "The filter options", error: list.facetsError }]
                 : []),
+              // My team's own read (whose teams it shows). It used to fail with
+              // nobody told: the tab fell back to a generic empty state.
+              ...(teamsError ? [{ label: "Your teams", error: teamsError }] : []),
             ]}
-            consequence={`${
-              list.countsError && list.facetsError
-                ? "The tabs show no number and the filters offer no options"
-                : list.countsError
-                  ? "The tabs show no number"
-                  : "The filters offer no options"
-            } until they load; the list itself is unaffected.`}
-            onRetry={list.refresh}
+            consequence={`${[
+              list.countsError ? "The tabs show no number" : null,
+              list.facetsError ? "the filters offer no options" : null,
+              teamsError ? "My team cannot say whose items it shows" : null,
+            ]
+              .filter(Boolean)
+              .join(", ")
+              .replace(/, ([^,]*)$/, " and $1")
+              .replace(/^./, (c) => c.toUpperCase())} until ${
+              [list.countsError, list.facetsError, teamsError].filter(Boolean).length === 1
+                ? "it loads"
+                : "they load"
+            }; the list itself is unaffected.`}
+            onRetry={() => {
+              list.refresh();
+              if (teamsError) myTeams.refresh();
+            }}
           />
         )}
 
