@@ -239,9 +239,15 @@ export function useIntakeSession(
     // W39 class: WAIT for the workspace rather than refusing with "try again
     // in a moment" — the bootstrap is usually milliseconds away, and when it
     // is not, the message names the remedy instead of promising an arrival.
-    const workspace = organizationId
-      ? ({ status: "ready", organizationId } as const)
-      : await awaitEffectiveOrganizationId();
+    // A session that already holds a batch (e.g. a scan opened another organization's asset and
+    // loaded its batch) keeps working in THAT batch's organization; only a session with no batch
+    // yet starts new work in the active organization.
+    const heldOrganizationId = batchRef.current?.organizationId ?? null;
+    const workspace = heldOrganizationId
+      ? ({ status: "ready", organizationId: heldOrganizationId } as const)
+      : organizationId
+        ? ({ status: "ready", organizationId } as const)
+        : await awaitEffectiveOrganizationId();
     if (workspace.status !== "ready") throw new Error(workspace.reason);
     const workspaceId = workspace.organizationId;
     const create = (async () => {
@@ -405,12 +411,11 @@ export function useIntakeSession(
       const create = start
         .then(async () => {
           const b = await ensureBatch();
-          if (!organizationId) {
-            throw new Error("No organization resolved yet.");
-          }
+          // THE BATCH'S OWN ORGANIZATION, never the active one: after a scan opened another
+          // org's asset, every later write in this session belongs to that record's org.
           const asset = await createAsset({
             batchId: b.id,
-            organizationId,
+            organizationId: b.organizationId,
             qrCode: requestedSeed,
           });
           adoptAsset(asset, []);
@@ -426,7 +431,7 @@ export function useIntakeSession(
       ensureAssetSeedRef.current = requestedSeed;
       return create;
     },
-    [ensureBatch, organizationId, adoptAsset],
+    [ensureBatch, adoptAsset],
   );
 
   /**
@@ -688,21 +693,22 @@ export function useIntakeSession(
       if (!trimmed) return "assigned";
 
       let resolution: ScanResolution = { type: "unknown" };
-      if (organizationId) {
-        try {
-          // Lookup spans every organization the person can see — the active
-          // org only decides where NEW work is saved, never what a scan finds.
-          resolution = await resolveScannedValue(null, trimmed);
-        } catch (err) {
-          // Lookup failure degrades to legacy behavior — safe, because the
-          // DB's unique index still refuses a duplicate identifier write.
-          console.error("[commerce-intake] scan lookup failed", err);
-        }
+      // The organization this session works in: the held batch's own (a scan may have opened
+      // another organization's asset), else the active one for new work.
+      const sessionOrganizationId = batchRef.current?.organizationId ?? organizationId;
+      try {
+        // Lookup spans every organization the person can see — the active
+        // org only decides where NEW work is saved, never what a scan finds.
+        resolution = await resolveScannedValue(null, trimmed);
+      } catch (err) {
+        // Lookup failure degrades to legacy behavior — safe, because the
+        // DB's unique index still refuses a duplicate identifier write.
+        console.error("[commerce-intake] scan lookup failed", err);
       }
       if (
         resolution.type === "pooled" &&
-        organizationId &&
-        resolution.code.organizationId !== organizationId
+        sessionOrganizationId &&
+        resolution.code.organizationId !== sessionOrganizationId
       ) {
         // A pooled code can only be claimed inside its own organization.
         toast.error(
@@ -751,10 +757,11 @@ export function useIntakeSession(
         if (!(isCurrentAssetEmpty() && (!asset || !asset.qrCode))) return false;
         if (!asset) {
           await ensureAsset({ qrCode: trimmed });
-        } else if (organizationId) {
+        } else {
           await addIdentifier({
             assetId: asset.id,
-            organizationId,
+            // The ASSET's own organization (it may have been opened from another org by a scan).
+            organizationId: asset.organizationId,
             kind: "our_qr",
             value: trimmed,
             isPrimary: true,
@@ -816,10 +823,10 @@ export function useIntakeSession(
       void (async () => {
         try {
           const asset = await ensureAsset();
-          if (!organizationId) return;
           await addIdentifier({
             assetId: asset.id,
-            organizationId,
+            // The asset's own organization, never the active one.
+            organizationId: asset.organizationId,
             kind: "manufacturer_serial",
             value: trimmed,
           });
@@ -830,7 +837,7 @@ export function useIntakeSession(
         }
       })();
     },
-    [ensureAsset, organizationId],
+    [ensureAsset],
   );
 
   // ── Artifacts ─────────────────────────────────────────────────────────────
@@ -871,7 +878,6 @@ export function useIntakeSession(
         );
         throw err;
       }
-      if (!organizationId) throw new Error("No organization resolved yet.");
       if (opts.previewUrl) previewUrlsRef.current.set(localId, opts.previewUrl);
       sequenceRef.current += 1;
       const sequenceIndex = sequenceRef.current;
@@ -888,7 +894,8 @@ export function useIntakeSession(
       ]);
       try {
         const { artifact } = await uploadIntakeArtifact({
-          organizationId,
+          // The batch's own organization: uploads belong where the record lives.
+          organizationId: b.organizationId,
           batchId: b.id,
           assetId: asset?.id ?? null,
           folderLeaf: asset?.id ?? b.id,
@@ -941,7 +948,7 @@ export function useIntakeSession(
         throw err;
       }
     },
-    [ensureAsset, ensureBatch, organizationId, patchArtifact],
+    [ensureAsset, ensureBatch, patchArtifact],
   );
 
   const addPhoto = useCallback(
