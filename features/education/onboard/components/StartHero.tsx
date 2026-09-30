@@ -271,7 +271,9 @@ export function StartHero({
   const showWorkspaceNotice =
     organizationState !== "ready" &&
     organizationState !== "resolving" &&
-    (heldForWorkspace || organizationState === "required");
+    (heldForWorkspace ||
+      organizationState === "required" ||
+      organizationState === "unavailable");
 
   // The board goes up the INSTANT the run starts — ingest included. Hiding it
   // until generation began is what left a multi-minute upload+extract behind a
