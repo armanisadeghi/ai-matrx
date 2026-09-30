@@ -370,6 +370,7 @@ export function WebhooksManager() {
   const [orgWide, setOrgWide] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  // org-filter: write-target only the Org-wide checkbox files a new webhook in the working organization; the table list reads every organization
   const organizationId = useAppSelector(selectOrganizationId);
   const organizationName = useAppSelector(selectOrganizationName);
   const [justCreatedSecret, setJustCreatedSecret] = useState<string | null>(

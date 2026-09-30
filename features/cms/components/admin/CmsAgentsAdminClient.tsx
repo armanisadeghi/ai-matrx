@@ -25,6 +25,7 @@ export default function CmsAgentsAdminClient() {
     // The approvals queue is addressed to a PERSON in an organization — the same
     // scope `/approvals` mounts, so this tab and that page agree row for row.
     const userId = useAppSelector(selectUserId);
+    // org-filter: server-call the approval queue lists by person (queryAssists); this org only addresses its page-size and review-window knob reads and the approve/reject calls
     const organizationId = useAppSelector(selectActiveOrganizationId);
 
     const fetchSites = useCallback(async () => {

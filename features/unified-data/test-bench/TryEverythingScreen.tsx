@@ -314,6 +314,7 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
     const router = useRouter();
     const userId = useAppSelector(selectUserId);
     const organizationName = useAppSelector(selectActiveOrganizationName);
+    // org-filter: write-target the try-everything bench creates its disposable table and exercises every write in the organization the person works in
     const { organizationId, organizationState } = useOrganizationRequired();
 
     // ONE SWITCH, the same one `/data-v2` reads: does THIS organization keep

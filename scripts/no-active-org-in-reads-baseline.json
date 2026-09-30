@@ -106,11 +106,6 @@
       "owner": "bindings",
       "note": "active org only pre-selects the org rung for a new binding and the inheritance read; org list has a picker"
     },
-    "features/cms/components/admin/CmsAgentsAdminClient.tsx": {
-      "class": "silent-filter",
-      "owner": "cms",
-      "note": "selectActiveOrganizationId → ApprovalQueue scope organizationId; no org control (CMS admin tab)"
-    },
     "features/commerce-intake/hooks/useIntakeSession.ts": {
       "class": "write-target",
       "owner": "commerce-intake",
@@ -165,11 +160,6 @@
       "class": "not-a-list",
       "owner": "files",
       "note": "organizationId → fetchPlanStatus plan name; no list"
-    },
-    "features/files/webhooks/components/WebhooksManager.tsx": {
-      "class": "silent-filter",
-      "owner": "files",
-      "note": "selectOrganizationId → listTablesEverywhere({organizationId}) fills the Listen-to table picker; no org control (minor, create form)"
     },
     "features/google-workspace/GoogleAgentToolsSection.tsx": {
       "class": "not-a-list",
@@ -285,11 +275,6 @@
       "class": "write-target",
       "owner": "tasks",
       "note": "appOrgId fallback only for createTaskThunk destination; list uses its own org filter picker (default All)"
-    },
-    "features/unified-data/test-bench/TryEverythingScreen.tsx": {
-      "class": "silent-filter",
-      "owner": "unified-data",
-      "note": "useOrganizationRequired → work_inbox, getOrganizationMembers, savedViews for the org; dev test bench, org name shown but no control"
     },
     "features/window-panels/lite-window/LiteWindowExamples.tsx": {
       "class": "write-target",
