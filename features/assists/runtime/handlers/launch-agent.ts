@@ -6,6 +6,7 @@
  */
 
 import { resolveMandate } from "@/features/mandates/service";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   registerAssistAction,
   type AssistActionResult,
@@ -19,7 +20,8 @@ registerAssistAction({
     if (assist.action.kind !== "launch_agent") {
       return { ok: false, error: "launch_agent: wrong action payload" };
     }
-    const { agentId, mandateKey, agentName, draftText, variableValues } = assist.action;
+    const { agentId, agentName, draftText, variableValues } = assist.action;
+    const mandateKey: AnyMandateKey | undefined = assist.action.mandateKey;
     let resolvedAgentId = agentId ?? null;
     if (!resolvedAgentId && mandateKey) {
       // Resolution refuses in words — an unknown job, a version-pinned winner,

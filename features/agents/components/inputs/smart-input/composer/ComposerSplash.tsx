@@ -106,10 +106,10 @@ export function ComposerQuickActions({
     (state) => state.appContext?.organization_id ?? null,
   );
   const actions = parseQuickActions(knob);
-  const mandates = useMandateSet(
-    actions.map((a) => a.mandateKey),
-    { enabled: Boolean(organizationId) },
-  );
+  const quickActionKeys: MandateKey[] = actions.map((a) => a.mandateKey);
+  const mandates = useMandateSet(quickActionKeys, {
+    enabled: Boolean(organizationId),
+  });
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScroll, setCanScroll] = useState(false);
 

@@ -176,7 +176,10 @@ export function SmartCodeEditor({
   const { launchMandate } = useAgentLauncher();
 
   // ── Mandate resolution (which agent runs each job — the DB decides) ───────
-  const mandateKeys = useMemo(() => agents.map((a) => a.mandateKey), [agents]);
+  const mandateKeys: MandateKey[] = useMemo(
+    () => agents.map((a) => a.mandateKey),
+    [agents],
+  );
   const mandateSet = useMandateSet(mandateKeys);
   const mandatesLoading = mandateKeys.some(
     (key) => mandateSet[key]?.loading ?? true,

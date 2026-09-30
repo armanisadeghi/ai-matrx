@@ -290,7 +290,8 @@ export function ProTextareaAgentPanel({
   }, []);
 
   // By mandate only while the person has not chosen an agent themselves.
-  const activeMandateKey = agentId === null ? mandateKey : null;
+  const activeMandateKey: AnyMandateKey | null =
+    agentId === null ? mandateKey : null;
   const mandateState = useMandate(activeMandateKey ?? "");
   const mandateName = useMandateDisplayName(activeMandateKey ?? "");
   const runAgentId =

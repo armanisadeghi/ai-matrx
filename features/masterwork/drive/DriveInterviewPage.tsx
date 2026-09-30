@@ -43,6 +43,7 @@ import { Mic, MicOff, Square, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useMandate } from "@/features/mandates/useMandate";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -116,7 +117,7 @@ export function DriveInterviewPage({
   );
 
   // Which interviewer conducts a drive is a SETTING, never a literal here.
-  const interviewerKey =
+  const interviewerKey: AnyMandateKey | "" =
     driveSettings.state === "ready" ? driveSettings.interviewerMandateKey : "";
   const interviewer = useMandate(interviewerKey);
   const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);

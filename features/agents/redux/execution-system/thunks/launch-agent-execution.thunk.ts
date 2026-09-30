@@ -34,6 +34,7 @@ import {
   assertMandateVariables,
   type ResolvedMandate,
 } from "@/features/mandates/service";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
@@ -249,7 +250,8 @@ export const launchAgentExecution = createAsyncThunk<
         organizationId ??
         selectedOrganizationId ??
         (await (await import("@/lib/organizations/ensureOrgId")).ensureOrgId(null));
-      const resolved = await resolveMandate(mandateKey, { organizationId: questionOrganizationId });
+      const displayKey: AnyMandateKey = mandateKey;
+      const resolved = await resolveMandate(displayKey, { organizationId: questionOrganizationId });
       resolvedMandate = resolved;
       agentId = resolved.agentId;
     }

@@ -361,7 +361,7 @@ function screamIfDeclaredFlattening(
   agentRef: string,
 ): void {
   if ((opts.expect ?? "json") !== "text" || !opts.mandateKey) return;
-  const mandateKey = opts.mandateKey;
+  const mandateKey: AnyMandateKey = opts.mandateKey;
   void resolveMandate(mandateKey)
     .then((resolved) => {
       const verdict = judgeDeclaredFlattening({
@@ -424,6 +424,7 @@ export async function failWarnedOutputMissingKeys(
   result: HeadlessAgentJsonResult,
 ): Promise<HeadlessAgentJsonResult> {
   if (!opts.mandateKey || (opts.expect ?? "json") === "text") return result;
+  const mandateKey: AnyMandateKey = opts.mandateKey;
   const data = result.data;
   const isRecord = typeof data === "object" && data !== null && !Array.isArray(data);
   // Judged: a finished run with an object (keys checked), a finished run with
@@ -434,7 +435,7 @@ export async function failWarnedOutputMissingKeys(
   if (!judged) return result;
   let resolved: Awaited<ReturnType<typeof resolveMandate>>;
   try {
-    resolved = await resolveMandate(opts.mandateKey);
+    resolved = await resolveMandate(mandateKey);
   } catch {
     return result;
   }

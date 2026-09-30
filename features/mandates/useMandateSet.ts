@@ -112,7 +112,7 @@ export function useMandateSet(
       : [];
     if (listed.length === 0) return undefined;
     let cancelled = false;
-    void Promise.allSettled(listed.map((key) => resolveMandate(key))).then(
+    void Promise.allSettled(listed.map((key: AnyMandateKey) => resolveMandate(key))).then(
       (results) => {
         if (cancelled) return;
         const next: Record<string, MandateState> = {};

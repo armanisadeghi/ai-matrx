@@ -8,6 +8,7 @@ import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input
 import {
   ambientAssistantMandateChain,
   ambientPageGuidanceValues,
+  type AmbientAssistantMandateChain,
 } from "./ambientAssistantMandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useMandateChain } from "@/features/mandates/useMandateChain";
@@ -76,9 +77,15 @@ function AuthenticatedAmbientAssistant({
 }: ScrollAssistantLauncherImplProps & { onRetry: () => void }) {
   const pathname = usePathname();
   const runtime = useSurfaceRuntime();
-  const chain = ambientAssistantMandateChain(pathname);
+  const chain: AmbientAssistantMandateChain =
+    ambientAssistantMandateChain(pathname);
+  // Rung by rung, so each key's type is visible where it is handed over.
   const { mandate, mandateKey, loading, error, organizationPending } =
-    useMandateChain(chain);
+    useMandateChain({
+      system: chain.system,
+      module: chain.module,
+      page: chain.page,
+    });
   const organizationId = useAppSelector(selectOrganizationId);
   // Pending on an organization says which of the states it is: still
   // resolving, none chosen, or the read failed — never "choose" during a race.

@@ -8,7 +8,7 @@
 // in words and nothing pretends to run. Never a dead button.
 
 import { useState } from "react";
-import { isMandateKey } from "@ai-matrx/agents/mandates";
+import { isMandateKey, type MandateKey } from "@ai-matrx/agents/mandates";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { resolveMandate } from "@/features/mandates/service";
@@ -35,9 +35,10 @@ export function MandateOffer({
       );
       return;
     }
+    const declaredKey: MandateKey = key;
     setState("checking");
     try {
-      const resolved = await resolveMandate(key, { optional: true });
+      const resolved = await resolveMandate(declaredKey, { optional: true });
       if (!resolved) {
         setState("unavailable");
         setNote(
@@ -47,7 +48,7 @@ export function MandateOffer({
       }
       setState("idle");
       setNote(null);
-      openMandateWindow({ initialMandateKey: key, mandateKeys: [key], surfaceName });
+      openMandateWindow({ initialMandateKey: declaredKey, mandateKeys: [declaredKey], surfaceName });
     } catch (failure) {
       setState("unavailable");
       setNote(

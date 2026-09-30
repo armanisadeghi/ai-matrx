@@ -8,6 +8,7 @@ import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input
 import {
   ambientAssistantMandateChain,
   ambientPageGuidanceValues,
+  type AmbientAssistantMandateChain,
   type AmbientPageGuidanceValues,
 } from "./ambientAssistantMandates";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
@@ -433,8 +434,14 @@ function AuthenticatedAmbientVoiceAssistant({
   /** Resolve the assistant again (remounts this component). */
   onRetry: () => void;
 }) {
-  const chain = ambientAssistantMandateChain(pathname);
-  const primary = useMandateChain(chain);
+  const chain: AmbientAssistantMandateChain =
+    ambientAssistantMandateChain(pathname);
+  // Rung by rung, so each key's type is visible where it is handed over.
+  const primary = useMandateChain({
+    system: chain.system,
+    module: chain.module,
+    page: chain.page,
+  });
   const runtime = useSurfaceRuntime();
   const organizationId = useAppSelector(selectOrganizationId);
   const guidanceValues = ambientPageGuidanceValues({
