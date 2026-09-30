@@ -21,8 +21,8 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { displayResolutionOrgId, usePageOrgFilter } from "../display-org";
 import { AGENT_ICON, INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { NewTabLink } from "@/components/official/entity-ref/NewTabLink";
@@ -62,6 +62,7 @@ interface MandateFacts {
   isEnabled: boolean;
   deletedAt: string | null;
   hasOwnHolder: boolean;
+  homeOrganizationId: string | null;
 }
 
 type FactsState =
@@ -79,7 +80,7 @@ function useMandateFacts(idOrKey: string, active: boolean): FactsState {
     void (async () => {
       const { data, error } = await mandateDefinitions(createClient())
         .select(
-          `id, mandate_key, label, description, output_kind, is_enabled, deleted_at, ${MANDATE_HOLDER_COLUMNS}` as const,
+          `id, mandate_key, label, description, output_kind, is_enabled, deleted_at, organization_id, ${MANDATE_HOLDER_COLUMNS}` as const,
         )
         .eq(isUuidShape(idOrKey) ? "id" : "mandate_key", idOrKey)
         .maybeSingle();
@@ -103,6 +104,7 @@ function useMandateFacts(idOrKey: string, active: boolean): FactsState {
           isEnabled: data.is_enabled ?? true,
           deletedAt: data.deleted_at ?? null,
           hasOwnHolder: Boolean(holderOfMandate(data).holderId),
+          homeOrganizationId: data.organization_id ?? null,
         },
       });
     })();
@@ -265,9 +267,16 @@ export function MandatePeekModal({ mandate, isOpen, onClose, href }: MandatePeek
   const facts = useMandateFacts(mandate, isOpen);
   useTransientPeek(isOpen, onClose);
   const override = usePeekHrefOverride();
-  const organizationId = useAppSelector(selectOrganizationId);
+  const { organizations } = useUserOrganizations();
+  const pageOrgFilter = usePageOrgFilter();
   const ready = facts.status === "ready" ? facts.facts : null;
-  const ladder = useMandateLadder(ready?.mandateKey ?? "", organizationId);
+  // Display ruling: page org filter, else the mandate's own home org - never the active org.
+  const ladderOrgId = displayResolutionOrgId({
+    pageOrgFilter,
+    homeOrganizationId: ready?.homeOrganizationId,
+    memberOrganizationIds: organizations.map((o) => o.id),
+  });
+  const ladder = useMandateLadder(ready?.mandateKey ?? "", ladderOrgId);
 
   const pageHref =
     href !== undefined

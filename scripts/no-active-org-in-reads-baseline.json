@@ -176,11 +176,6 @@
       "owner": "mandates",
       "note": "active org only a readiness gate; fetchMandateCoverageStates takes the passed organizationId"
     },
-    "features/mandates/peek/MandatePeek.tsx": {
-      "class": "not-a-list",
-      "owner": "mandates",
-      "note": "organizationId → useMandateLadder for one mandate's ladder resolution"
-    },
     "features/marketing/seo/dataforseo/DataForSeoLab.tsx": {
       "class": "write-target",
       "owner": "marketing",
