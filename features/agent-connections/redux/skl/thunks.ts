@@ -27,29 +27,20 @@ interface ScopedQueryArgs {
 }
 
 /**
- * Apply scope filter to a Supabase select query against platform.categories.
+ * The scope filter on a Supabase select against platform.categories / skill.render_definition.
  *
- * After the May 2026 migration to platform.categories, only organization_id
- * survives as a top-level scope column. user_id / project_id / task_id moved
- * into the metadata jsonb and cannot be used in PostgREST eq() filters without
- * a generated column or RPC.
- *
- * - user scope: no explicit filter — RLS + dimension='shortcut' is sufficient;
- *   platform-level shortcut categories are org/system-scoped, not user-scoped.
- * - organization scope: filter organization_id = scopeId (still a real column)
- * - project / task scope: no explicit filter — these scopes don't apply to
- *   platform.categories; rely on RLS.
+ * READS IGNORE THE ACTIVE ORGANIZATION (law: common-docs/policies/active-org-is-never-a-list-filter.md).
+ * The window's "Organization" view scope resolves to the ACTIVE organization for WRITES
+ * (`stampScopeForWrite` — where a new block is filed); it must never narrow what is listed, or
+ * definitions in the person's other organizations vanish. So no scope narrows a read: RLS plus
+ * `deleted_at IS NULL` / dimension='shortcut' are the whole boundary, exactly as for every list.
+ * (user_id / project_id / task_id live in the metadata jsonb and were never filterable here.)
  */
 function applyScopeFilter<Q extends { eq: Function; is: Function }>(
   query: Q,
-  args: ScopedQueryArgs,
+  _args: ScopedQueryArgs,
   _userId: string | null,
 ): Q {
-  if (args.scope === "organization" && args.scopeId) {
-    return query.eq("organization_id", args.scopeId) as Q;
-  }
-  // user / project / task scopes: no top-level column available on
-  // platform.categories — RLS covers the authorization boundary.
   return query;
 }
 

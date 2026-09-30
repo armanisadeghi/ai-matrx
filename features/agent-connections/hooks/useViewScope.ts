@@ -24,6 +24,7 @@ export interface ViewScopeResult {
  */
 export function useViewScope(): ViewScopeResult {
   const scope = useAppSelector(selectViewScope);
+  // org-filter: write-target the "Organization" view scope names where a NEW block is filed; reads never narrow by it
   const organizationId = useAppSelector(selectOrganizationId);
   const projectId = useAppSelector(selectProjectId);
   const taskId = useAppSelector(selectTaskId);
