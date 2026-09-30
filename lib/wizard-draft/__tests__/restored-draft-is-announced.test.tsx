@@ -232,7 +232,10 @@ it("says on screen that it put the abandoned goal back", async () => {
   expect(goalField().value).toBe(GOAL);
   // ...and the page SAYS SO, in words a non-technical Expert reads once.
   const text = container.textContent ?? "";
-  expect(text).toContain("We put back what you started writing here last time");
+  expect(text).toContain("Restored from last time");
+  expect(container.querySelector('[role="status"]')?.getAttribute("aria-label")).toBe(
+    "We put back what you started writing from last time",
+  );
   expect(buttonWith("Start fresh")).toBeDefined();
   unmount();
 });
@@ -253,7 +256,7 @@ it("'Start fresh' empties the field and the draft does not come back", async () 
   // The words are gone from the field — a notice that leaves the old sentence
   // in place is not a remedy — and the notice itself is gone with them.
   expect(goalField().value).toBe("");
-  expect(container.textContent ?? "").not.toContain("We put back what you");
+  expect(container.textContent ?? "").not.toContain("Restored from last time");
   // And the saved draft is gone, so nothing puts it back on the next visit.
   const after = store.getState() as { wizardDraft: WizardDraftState };
   expect(after.wizardDraft.drafts["masterwork-new"]).toBeUndefined();
@@ -273,6 +276,8 @@ it("every wizard that restores a persisted draft renders the notice", () => {
     "features/masterwork/teach-back/TeachBack.tsx",
     "features/masterwork/intake/NewRulebookFlow.tsx",
     "features/research/components/init/ResearchInitForm.tsx",
+    // Create deck (flashcards) — renders the notice; added to the census 2026-09-30.
+    "features/flashcards/components/create/CreateDeckPage.tsx",
   ];
   const {
     execFileSync,

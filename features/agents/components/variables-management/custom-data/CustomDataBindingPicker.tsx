@@ -12,8 +12,10 @@
  *
  * THE TABLE LIST IS THE DATA HOME'S (lane ORG-FILTER-CLASS, Arman 2026-09-30): every table the
  * person can see across ALL her organizations (`useTablesEverywhere` → custom.data_home_tables),
- * with the same organization filter as the data home in the Table row (default All Orgs, saved
- * per person). It used to list only the ACTIVE organization's tables — a silent filter. The chosen
+ * with the shell's organization filter (`EntityOrgFilter`) on the Table row — All organizations
+ * on every open, never remembered, never the active organization (law:
+ * common-docs/policies/active-org-is-never-a-list-filter.md). It used to list only the ACTIVE
+ * organization's tables — a silent filter. The chosen
  * Table's details are read in the organization the Table lives in (`CustomDataRecordsScope`).
  * Contract: `common-docs/projects/data-kits/PLAN.md` § P1.
  */
@@ -60,11 +62,11 @@ import {
 import { CustomDataBindingPreview } from "./CustomDataBindingPreview";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
-  useDataOrganizationFilter,
+  countsByOrganization,
+  inOrganization,
   useTablesEverywhere,
 } from "@/features/unified-data/hub/useTablesEverywhere";
-import { OrganizationFilterSelect } from "@/features/unified-data/hub/OrganizationFilterSelect";
-import { ALL_ORGANIZATIONS } from "@/features/unified-data/hub/dataHomeScope";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
 import { CustomDataRecordsScope } from "./CustomDataRecordsScope";
 
@@ -93,11 +95,10 @@ export function CustomDataBindingPicker({
   readonly,
   variableName,
 }: CustomDataBindingPickerProps) {
-  const organization = useDataOrganizationFilter();
-  const tables = useTablesEverywhere(
-    organization.organizationId,
-    organization.ready,
-  );
+  const tables = useTablesEverywhere();
+  // THE ORGANIZATION FILTER: All organizations (null) every time the picker opens — a filter on
+  // this list only, never remembered, never the active organization.
+  const [orgFilter, setOrgFilter] = useState<string | null>(null);
   const tableId = binding.table_id || null;
   const shape = binding.semantic_type;
   // Tables the app keeps for itself (choice lists, ledgers) are out of sight
@@ -120,7 +121,7 @@ export function CustomDataBindingPicker({
     });
   };
 
-  const allTables = tables.rows;
+  const allTables = inOrganization(tables.rows, orgFilter);
   const appKeptCount = allTables.filter((t) => t.kept_by_the_app).length;
   // ONE FLAT LIST, never grouped by organization: each row names its organization in its hint,
   // and the search reads it too.
@@ -134,11 +135,14 @@ export function CustomDataBindingPicker({
       hint: tableHint(t),
       keywords: `${t.organization_name} ${t.kind}`,
     }));
-  const chosenRow = allTables.find((t) => t.table_id === tableId) ?? null;
+  // Looked up in the COMPLETE answer: a table outside the filter still knows its organization.
+  const chosenRow = tables.rows.find((t) => t.table_id === tableId) ?? null;
 
   const storedTableMissing =
     Boolean(tableId) && !tables.loading && !tables.error && chosenRow === null;
-  const filteredToOne = organization.organizationFilter !== ALL_ORGANIZATIONS;
+  const filteredOut =
+    chosenRow !== null && orgFilter !== null && chosenRow.organization_id !== orgFilter;
+  const filteredToOne = orgFilter !== null;
 
   return (
     <div className="space-y-2">
@@ -146,12 +150,12 @@ export function CustomDataBindingPicker({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <Label className="text-xs text-muted-foreground">Table</Label>
-          {/* THE ORGANIZATION FILTER — the data home's own, on the row it filters (default All Orgs). */}
-          <OrganizationFilterSelect
-            value={organization.organizationFilter}
-            choices={organization.choices}
-            onChange={organization.choose}
-            disabled={readonly || !organization.ready}
+          {/* THE SHELL'S ORGANIZATION FILTER, on the row it filters (default All organizations). */}
+          <EntityOrgFilter
+            orgId={orgFilter}
+            onChange={setOrgFilter}
+            counts={{ byKind: {}, narrow: { all: countsByOrganization(tables.rows) } }}
+            countsLoading={tables.loading}
           />
         </div>
         <CreatablePicker
@@ -165,7 +169,7 @@ export function CustomDataBindingPicker({
                 ? "Your tables could not be read"
                 : tableOptions.length === 0
                   ? filteredToOne
-                    ? "No tables in this organization — choose All Orgs"
+                    ? "No tables in this organization — choose All organizations"
                     : "No tables yet — make one in Data"
                   : "Choose a table…"
           }
@@ -205,23 +209,25 @@ export function CustomDataBindingPicker({
             <ErrorAlchemyMenu error={tables.error.message} />
           </p>
         )}
+        {filteredOut && (
+          <p className="text-[11px] text-muted-foreground">
+            The bound table ({chosenRow?.table_name}) is in{" "}
+            {chosenRow?.organization_name}, outside the organization chosen
+            above.{" "}
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={() => setOrgFilter(null)}
+            >
+              Show all organizations
+            </button>
+          </p>
+        )}
         {storedTableMissing && (
           <p className="text-[11px] text-warning">
-            {filteredToOne ? (
-              <>
-                The table this variable is bound to is not in the organization
-                chosen above.{" "}
-                <button
-                  type="button"
-                  className="underline underline-offset-2"
-                  onClick={() => organization.choose(ALL_ORGANIZATIONS)}
-                >
-                  Show All Orgs
-                </button>
-              </>
-            ) : (
-              "The table this variable is bound to is not one you can open — it was removed, or it is no longer shared with you. Pick a table here to rebind it. The binding is unchanged until you do."
-            )}
+            The table this variable is bound to is not one you can open — it
+            was removed, or it is no longer shared with you. Pick a table here
+            to rebind it. The binding is unchanged until you do.
           </p>
         )}
       </div>

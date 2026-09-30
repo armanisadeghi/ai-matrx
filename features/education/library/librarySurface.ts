@@ -205,8 +205,11 @@ const FILTER_FOR = {
   kinds: "kind",
   formats: "subtype",
   statuses: "status",
-  visibilities: "visibility",
+  visibilities: "shown",
 } as const;
+
+/** The facet payload key a filter id is offered under, where it differs. */
+const FACET_FOR: Record<string, string> = { shown: "visibility" };
 
 export interface LibraryViewChange {
   search?: string;
@@ -271,7 +274,7 @@ export function parseLibraryViewValue(
       continue;
     }
     const allowed =
-      facet === "kind" ? [...KINDS] : (vocab[facet] ?? []);
+      facet === "kind" ? [...KINDS] : (vocab[FACET_FOR[facet] ?? facet] ?? []);
     const values = (raw as string[]).map((v) => v.trim());
     const bad = values.filter((v) => !allowed.includes(v));
     if (bad.length) {

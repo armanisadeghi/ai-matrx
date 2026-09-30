@@ -47,7 +47,7 @@ export const EDUCATION_LIBRARY_SORT_FIELDS = [
   "kind",
   "subtype",
   "status",
-  "visibility",
+  "shown",
   "organization_name",
   "owner_email",
 ] as const;
@@ -178,7 +178,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_filters",
     label: "Filters",
     description:
-      'The filter panel\'s active filters, keyed by filter: { kind?: string[], subtype?: string[], status?: string[], visibility?: string[], … } (a text filter is a string). {} when nothing is filtered. Always present.',
+      'The filter panel\'s active filters, keyed by filter: { kind?: string[], subtype?: string[], status?: string[], shown?: string[], … } (a text filter is a string). {} when nothing is filtered. Always present.',
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 60,
@@ -213,7 +213,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "library_view",
     label: "Library view",
     description:
-      'Changes what the library list shows — the same controls as the search box, the tabs, the filter panel, the sort and the pager. NOTHING is saved or changed on any study item. Value is a JSON OBJECT with ONLY the keys you want to change: { search_query?: string ("" clears it), tab?: "mine" | "shared" | "public", kinds?: string[] ("fc_set" | "assessment" | "study_media" | "note"), formats?: string[] (e.g. "quiz", "flashcards", "summary"), statuses?: string[], visibilities?: string[], sort_by?: "updated" | "created" | "title" | "kind" | "subtype" | "status" | "visibility" | "organization_name" | "owner_email", sort_direction?: "asc" | "desc", page?: number (1 or more) }. Each array REPLACES that filter; [] clears it. formats, statuses and visibilities must come from filter_options. A change of tab, search or filter goes back to page 1 unless you send page. An unknown key or value refuses the whole change. Example: { "tab": "mine", "kinds": ["assessment"], "sort_by": "title", "sort_direction": "asc" }.',
+      'Changes what the library list shows — the same controls as the search box, the tabs, the filter panel, the sort and the pager. NOTHING is saved or changed on any study item. Value is a JSON OBJECT with ONLY the keys you want to change: { search_query?: string ("" clears it), tab?: "mine" | "shared" | "public", kinds?: string[] ("fc_set" | "assessment" | "study_media" | "note"), formats?: string[] (e.g. "quiz", "flashcards", "summary"), statuses?: string[], visibilities?: string[], sort_by?: "updated" | "created" | "title" | "kind" | "subtype" | "status" | "shown" | "organization_name" | "owner_email", sort_direction?: "asc" | "desc", page?: number (1 or more) }. Each array REPLACES that filter; [] clears it. formats, statuses and visibilities must come from filter_options. A change of tab, search or filter goes back to page 1 unless you send page. An unknown key or value refuses the whole change. Example: { "tab": "mine", "kinds": ["assessment"], "sort_by": "title", "sort_direction": "asc" }.',
     valueType: "object",
     updatesValue: "active_filters",
     mode: "ui",

@@ -225,9 +225,10 @@ export interface DrillExplorerProps {
   /** Grains the door's periods may not be cut into here (the usage rollup's `hour`). */
   hideGrains?: readonly string[] | undefined;
   /**
-   * PLAIN WORDS for code-valued Dimensions (an origin's `child_agent` → "An agent it started"), per
-   * Dimension key. A Dimension with neither a resolver nor words shows its values as the definition
-   * says them — so every code-valued Dimension of a definition belongs here (VERIFIER-32 F5).
+   * PLAIN WORDS for code-valued Dimensions whose definition declares no `choices` yet (an origin's
+   * `child_agent` → "An agent it started"), per Dimension key. The definition's own `choices` and the
+   * door's relation `labels` come first (`dimensionWords.ts`, lane DRILL-GAPS): a mount of a definition
+   * that declares its words passes none.
    */
   words?: Record<string, (value: string) => string> | undefined;
   /**
@@ -241,6 +242,12 @@ export interface DrillExplorerProps {
    * its oracle over the same stated window, and the header says where it starts (VERIFIER-32 F1).
    */
   windowAlign?: "hour" | undefined;
+  /**
+   * The mine lane's scope in words, said in the header whenever the lane is `mine` — the door counts a
+   * person's own rows across ALL her organizations (VERIFY-DRILL-LEDGER-RECORDS F4). Default "Your
+   * <rowNoun>s across all your organizations" (the usage page: "Your usage across all your organizations").
+   */
+  mineScope?: string | undefined;
   /** More controls for the header row (an "Old usage page" link). */
   headerExtras?: ReactNode;
   /** A data attribute on the root, so a host's walk can find its mount. */

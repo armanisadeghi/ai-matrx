@@ -1,0 +1,365 @@
+{
+  "_about": "check:no-active-org-in-reads baseline (lane ORG-FILTER-CLASS, 2026-09-30). Shrink-only: fix a file (or annotate a write/server-call read with // org-filter: <class> <reason>) and delete its row. Classes from the census: silent-filter and labelled-active-default are defects under policies/active-org-is-never-a-list-filter.md rule 1; write-target / default-for-new / not-a-list / admin-platform need only the line annotation (or the heuristic tightened).",
+  "files": {
+    "app/(admin)/administration/automation/scheduling/system-jobs/page.tsx": {
+      "class": "admin-platform",
+      "owner": "scheduling",
+      "note": "useOrganizationRequired only gates canLoad/reload; listDbJobs and the job list take no org id"
+    },
+    "app/(core)/cms/page.tsx": {
+      "class": "write-target",
+      "owner": "cms",
+      "note": "selectOrganizationId → ensureOrganizationContext for Create Site only; site list read takes no org"
+    },
+    "app/(core)/data-v2/page.tsx": {
+      "class": "labelled-active-default",
+      "owner": "data",
+      "note": "active org only feeds knob default and fallback; list narrowed by an on-page organization dropdown (All Orgs default)"
+    },
+    "app/(core)/documents/page.tsx": {
+      "class": "write-target",
+      "owner": "documents",
+      "note": "selectOrganizationId → ensureOrganizationContext → createDocument; reload takes no org"
+    },
+    "app/(core)/lists/v3/page.tsx": {
+      "class": "silent-filter",
+      "owner": "data",
+      "note": "useOrganizationRequired → RecordsMount/PicklistsIndex organizationId; only a name label, no org control"
+    },
+    "app/(core)/workbooks/page.tsx": {
+      "class": "write-target",
+      "owner": "workbooks",
+      "note": "selectOrganizationId → ensureOrganizationContext for create/import only"
+    },
+    "app/(dev)/demos/context-menu/lab/page.dev.tsx": {
+      "class": "not-a-list",
+      "owner": "dev-demos",
+      "note": "orgId feeds EntityRef chip and a scope id for a demo; no list read"
+    },
+    "app/(dev)/demos/scopes/context-lab/page.dev.tsx": {
+      "class": "not-a-list",
+      "owner": "dev-demos",
+      "note": "activeOrgId feeds hasContext display and a target_id; no list read"
+    },
+    "components/agent-copy/AlchemyHost.tsx": {
+      "class": "not-a-list",
+      "owner": "agent-copy",
+      "note": "orgId gates alchemy capabilities (ai/email/actions) and identity key; no list read"
+    },
+    "components/agent-copy/alchemy-host-ports.ts": {
+      "class": "not-a-list",
+      "owner": "agent-copy",
+      "note": "org in identity port; used for knob reads (knobPrincipal, defaultRecipe); no list"
+    },
+    "components/official/TableSavedViews.tsx": {
+      "class": "write-target",
+      "owner": "tables",
+      "note": "org only reaches createPersonalTableView (saved_view_save); listPersonalTableViews filters by user, not org"
+    },
+    "components/official/drill-explorer/DrillSavedViews.tsx": {
+      "class": "write-target",
+      "owner": "drill-explorer",
+      "note": "active org only used for saveDrillView; saved_view read is not org-filtered unless a homeOrganizationId is named"
+    },
+    "features/agent-apps/components/CreateAgentAppFormWrapper.tsx": {
+      "class": "write-target",
+      "owner": "agent-apps",
+      "note": "selectedOrganizationId → POST /api/agent-apps org header for create"
+    },
+    "features/agents/components/chat/SandboxPanel.tsx": {
+      "class": "write-target",
+      "owner": "agents",
+      "note": "organizationId → createInstance organization_id for claiming a sandbox"
+    },
+    "features/agents/components/samples/LoadFromLibraryDialog.tsx": {
+      "class": "not-a-list",
+      "owner": "agents",
+      "note": "organizationId → ensureEffectiveKnob page-size knob; library/video reads take no org"
+    },
+    "features/agents/components/scope-batch-import/ScopeBatchImportBody.tsx": {
+      "class": "labelled-active-default",
+      "owner": "agents",
+      "note": "activeOrgId default for scope-type list; an Organization select on the same form changes it"
+    },
+    "features/agents/components/tools-management/AgentToolsManager.tsx": {
+      "class": "not-a-list",
+      "owner": "agents",
+      "note": "organizationId → fetchAvailability (MCP connection health per org) and connect URLs; tool catalog not narrowed"
+    },
+    "features/agents/hooks/useBoundVariableScope.ts": {
+      "class": "not-a-list",
+      "owner": "agents",
+      "note": "orgId → selectScopeTypeLabelMap to label bound variables; display labels, not a list the person browses"
+    },
+    "features/agents/redux/agent-definition/thunks.ts": {
+      "class": "write-target",
+      "owner": "agents",
+      "note": "selectOrganizationId → tool-assignment update .eq(organization_id) and agx_duplicate_agent copy home"
+    },
+    "features/agents/redux/conversation-list/conversation-trash.thunks.ts": {
+      "class": "not-a-list",
+      "owner": "agents",
+      "note": "active org → ensureEffectiveKnob trash page-size; fetchTrashed list itself is by viewer"
+    },
+    "features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks.ts": {
+      "class": "write-target",
+      "owner": "agents",
+      "note": "getActiveOrgId fallback stamps a new working document's org"
+    },
+    "features/agents/redux/execution-system/instance-working-document/scratchpad.thunks.ts": {
+      "class": "write-target",
+      "owner": "agents",
+      "note": "getActiveOrgId fallback is org for scratchpad attach edges (write)"
+    },
+    "features/ai-work/compose/components/AiWorkComposer.tsx": {
+      "class": "not-a-list",
+      "owner": "ai-work",
+      "note": "organizationId only a dependency re-running bridge/local capability reads; no list"
+    },
+    "features/bindings/OneBindingWorkspace.tsx": {
+      "class": "default-for-new",
+      "owner": "bindings",
+      "note": "active org only pre-selects the org rung for a new binding and the inheritance read; org list has a picker"
+    },
+    "features/cms/components/admin/CmsAgentsAdminClient.tsx": {
+      "class": "silent-filter",
+      "owner": "cms",
+      "note": "selectActiveOrganizationId → ApprovalQueue scope organizationId; no org control (CMS admin tab)"
+    },
+    "features/commerce-intake/hooks/useIntakeSession.ts": {
+      "class": "write-target",
+      "owner": "commerce-intake",
+      "note": "organizationId → ensureOpenBatch (create batch) and localStorage resume key"
+    },
+    "features/connected-sources/components/BrowseEverything.tsx": {
+      "class": "not-a-list",
+      "owner": "connected-sources",
+      "note": "org only a cache key and hold for needs_organization adapters; browse is an org-free read of own accounts"
+    },
+    "features/connectors/import/GoogleTasksImportPanel.tsx": {
+      "class": "not-a-list",
+      "owner": "connectors",
+      "note": "org is the request address for listGoogleTasks/importGoogleTasks of the person's own account"
+    },
+    "features/content-ir/studio/components/ShapeInstancesTab.tsx": {
+      "class": "not-a-list",
+      "owner": "content-ir",
+      "note": "active org only tells listKindInstances where kind records live; list spans all the person's orgs and names them"
+    },
+    "features/crm/components/CrmListPage.tsx": {
+      "class": "default-for-new",
+      "owner": "crm",
+      "note": "activeOrgId falls back only for openCreateParty, Google import and saved-view org; list scope has its own orgs control"
+    },
+    "features/crm/components/deals/DealsPage.tsx": {
+      "class": "default-for-new",
+      "owner": "crm",
+      "note": "activeOrgId → effectiveOrgId for create-deal dialog and Save view only"
+    },
+    "features/education/creators/components/CreatorDashboard.tsx": {
+      "class": "write-target",
+      "owner": "education",
+      "note": "activeOrganizationId → claimHandle and surface scope telemetry"
+    },
+    "features/education/engage/components/lobby/HostSetupImpl.tsx": {
+      "class": "write-target",
+      "owner": "education",
+      "note": "activeOrganizationId → gameService.createRoom"
+    },
+    "features/education/notes/EduNotesHome.tsx": {
+      "class": "write-target",
+      "owner": "education",
+      "note": "selectOrganizationId → ensureOrganizationContext for NotesAPI.create"
+    },
+    "features/education/onboard/components/StartHero.tsx": {
+      "class": "write-target",
+      "owner": "education",
+      "note": "useOrganizationRequired gates and supplies runOrgId for launching a generate run"
+    },
+    "features/files/hooks/useStorageQuota.ts": {
+      "class": "not-a-list",
+      "owner": "files",
+      "note": "organizationId → fetchPlanStatus plan name; no list"
+    },
+    "features/files/webhooks/components/WebhooksManager.tsx": {
+      "class": "silent-filter",
+      "owner": "files",
+      "note": "selectOrganizationId → listTablesEverywhere({organizationId}) fills the Listen-to table picker; no org control (minor, create form)"
+    },
+    "features/google-workspace/GoogleAgentToolsSection.tsx": {
+      "class": "not-a-list",
+      "owner": "google-workspace",
+      "note": "org only part of a remount key"
+    },
+    "features/knowledge/hub/components/KnowledgeHubPage.tsx": {
+      "class": "labelled-active-default",
+      "owner": "knowledge",
+      "note": "org narrows results only when the Search reach menu says Only <org>; default is every organization"
+    },
+    "features/mandates/admin/ImpactBatchPanel.tsx": {
+      "class": "admin-platform",
+      "owner": "mandates",
+      "note": "useOrganizationRequired gates and notices only; admin impact report"
+    },
+    "features/mandates/admin/TryItNowPanel.tsx": {
+      "class": "admin-platform",
+      "owner": "mandates",
+      "note": "viewerOrgId is principal of a test run in the admin try-it panel"
+    },
+    "features/mandates/browse/CoverageBadge.tsx": {
+      "class": "not-a-list",
+      "owner": "mandates",
+      "note": "active org only a readiness gate; fetchMandateCoverageStates takes the passed organizationId"
+    },
+    "features/mandates/browse/MandatesBrowsePage.tsx": {
+      "class": "labelled-active-default",
+      "owner": "mandates",
+      "note": "activeOrganizationId only orders homes; list has Organization/System scope control defaulting to all orgs"
+    },
+    "features/mandates/feature-intelligence/useIntelligenceDirectory.ts": {
+      "class": "not-a-list",
+      "owner": "mandates",
+      "note": "activeOrgId → p_resolve_org_id to resolve holders from this seat; directory defs are not narrowed"
+    },
+    "features/mandates/peek/MandatePeek.tsx": {
+      "class": "not-a-list",
+      "owner": "mandates",
+      "note": "organizationId → useMandateLadder for one mandate's ladder resolution"
+    },
+    "features/marketing/seo/dataforseo/DataForSeoLab.tsx": {
+      "class": "write-target",
+      "owner": "marketing",
+      "note": "organizationId sent as organization_id on the run request"
+    },
+    "features/masterwork/components/detail/ScoutInterviewPanel.tsx": {
+      "class": "not-a-list",
+      "owner": "masterwork",
+      "note": "useOrganizationRequired only gates canLoad and notice; history read by rulebookId"
+    },
+    "features/masterwork/encore/EncoreRunPage.tsx": {
+      "class": "not-a-list",
+      "owner": "masterwork",
+      "note": "useOrganizationRequired only gates canLoad and notice"
+    },
+    "features/matrx-envelope/referenceResolvers.ts": {
+      "class": "not-a-list",
+      "owner": "matrx-envelope",
+      "note": "getActiveOrgId → locateTable for a single table id"
+    },
+    "features/notes/components/NoteSidebar.tsx": {
+      "class": "write-target",
+      "owner": "notes",
+      "note": "activeOrgId → ensureOrganizationContext for folder create and draft reset; note list not passed the org"
+    },
+    "features/notes/hooks/useNotePicker.ts": {
+      "class": "not-a-list",
+      "owner": "notes",
+      "note": "organizationId → useEffectiveKnob for picker settings"
+    },
+    "features/print/order/PrintOrderWorkspace.tsx": {
+      "class": "not-a-list",
+      "owner": "print",
+      "note": "organizationId only a refetch dependency of the Lulu catalog fetch"
+    },
+    "features/product-capture/components/ItemsSheet.tsx": {
+      "class": "not-a-list",
+      "owner": "product-capture",
+      "note": "useOrganizationRequired gives notice state only; listRecentItems uses the organizationId prop from the session hook"
+    },
+    "features/product-capture/hooks/useProductCaptureSession.ts": {
+      "class": "write-target",
+      "owner": "product-capture",
+      "note": "organizationId → new capture item creation and resume key"
+    },
+    "features/residential-egress/components/ConnectComputerPage.tsx": {
+      "class": "not-a-list",
+      "owner": "residential-egress",
+      "note": "organizationId → useScopedKnobs download URL knob"
+    },
+    "features/scheduling/hooks/useDuplicateSchedules.ts": {
+      "class": "not-a-list",
+      "owner": "scheduling",
+      "note": "org only a retry fallback address for the organization-free duplicates check"
+    },
+    "features/scope-system/components/ContextItemPicker.tsx": {
+      "class": "labelled-active-default",
+      "owner": "scope-system",
+      "note": "activeOrgId default for scope-type list; an organization selector on the picker changes it"
+    },
+    "features/scopes/components/active-context/ActiveContextLayersPanel.tsx": {
+      "class": "not-a-list",
+      "owner": "scopes",
+      "note": "orgId only finds the org name to display"
+    },
+    "features/scopes/components/active-context/ActiveContextPanel.tsx": {
+      "class": "not-a-list",
+      "owner": "scopes",
+      "note": "orgId is initialSelection of ContextAssignmentField, the control that sets the active context"
+    },
+    "features/secrets/components/VaultItemDetail.tsx": {
+      "class": "not-a-list",
+      "owner": "secrets",
+      "note": "currentOrganizationId only part of a draft-context key"
+    },
+    "features/secrets/components/VaultPasswordGenerator.tsx": {
+      "class": "not-a-list",
+      "owner": "secrets",
+      "note": "organizationId → fetchVaultGeneratorLimits (limits knob)"
+    },
+    "features/secrets/hooks/use-authenticator.ts": {
+      "class": "not-a-list",
+      "owner": "secrets",
+      "note": "org/useOrganizationRequired only gates; fetchAuthenticators takes no org"
+    },
+    "features/settings/pages/IntegrationsSettingsPage.tsx": {
+      "class": "write-target",
+      "owner": "settings",
+      "note": "organizationId → githubConnectUrl for connect flow"
+    },
+    "features/settings/universal/UniversalSettingsContext.tsx": {
+      "class": "not-a-list",
+      "owner": "settings",
+      "note": "active org selects which org's knobs/overrides are read; settings pane names the org"
+    },
+    "features/spatial/items/data-items.tsx": {
+      "class": "silent-filter",
+      "owner": "spatial",
+      "note": "useOrganizationRequired → RecordsMount/TablesHome picker of tables in the active org; only a context notice, no org control"
+    },
+    "features/structured-lists/StructuredListManagerV1.tsx": {
+      "class": "write-target",
+      "owner": "structured-lists",
+      "note": "activeOrganizationId → whereANewTableIsBorn / create picklist only"
+    },
+    "features/structured-lists/useStructuredLists.ts": {
+      "class": "write-target",
+      "owner": "structured-lists",
+      "note": "organizationId only for createList p_organization_id; list read on udt_structured_lists has no org filter"
+    },
+    "features/tasks/components/QuickTasksWorkspace.tsx": {
+      "class": "write-target",
+      "owner": "tasks",
+      "note": "appOrgId fallback only for createTaskThunk destination; list uses its own org filter picker (default All)"
+    },
+    "features/tool-registry/mcp-admin/components/McpServersAdminPage.tsx": {
+      "class": "write-target",
+      "owner": "tool-registry",
+      "note": "organizationId only passed to AddMcpServerDialog; listServers takes no org"
+    },
+    "features/unified-data/test-bench/TryEverythingScreen.tsx": {
+      "class": "silent-filter",
+      "owner": "unified-data",
+      "note": "useOrganizationRequired → work_inbox, getOrganizationMembers, savedViews for the org; dev test bench, org name shown but no control"
+    },
+    "features/window-panels/lite-window/LiteWindowExamples.tsx": {
+      "class": "write-target",
+      "owner": "window-panels",
+      "note": "org used for scope-type demo and examples write into active org; demo page"
+    },
+    "hooks/sandbox/use-sandbox.ts": {
+      "class": "write-target",
+      "owner": "sandbox",
+      "note": "organizationId → createInstance explicit org; list not narrowed by it"
+    }
+  }
+}

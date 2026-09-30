@@ -36,8 +36,11 @@ import {
   type SourceListRow,
 } from "@/features/sources/sourceRows";
 
-export type SourcesScope =
-  { kind: "mine" } | { kind: "orgs"; organizationId: string };
+/** `organizationId` is the page's org FILTER (null = All organizations), never the active org. */
+export type SourcesScope = {
+  kind: "mine" | "orgs";
+  organizationId: string | null;
+};
 
 export interface UseSourcesResult {
   rows: SourceListRow[];
@@ -212,7 +215,7 @@ export function useSourcesCounts(
     failed: false,
   });
   const key = scope
-    ? `${scope.kind === "mine" ? "mine" : `orgs:${scope.organizationId}`}|${userId}`
+    ? `${scope.kind}:${scope.organizationId ?? "all"}|${userId}`
     : "none";
   useEffect(() => {
     if (!scope || !userId) return undefined;
@@ -261,9 +264,7 @@ export function useSources(
     loadingMore: false,
   });
   const scopeKey = scope
-    ? scope.kind === "mine"
-      ? "mine"
-      : `orgs:${scope.organizationId}`
+    ? `${scope.kind}:${scope.organizationId ?? "all"}`
     : "none";
   const listKey = `${scopeKey}|${userId}|${refreshKey}|${options.saved}|${options.search.trim()}`;
   const generation = useRef(0);

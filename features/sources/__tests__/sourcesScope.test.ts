@@ -27,4 +27,16 @@ describe("the Sources scope is who captured it, never privacy", () => {
     applySourcesScope(q, { kind: "orgs", organizationId: "org-1" }, "me");
     expect(calls).toEqual(["eq organization_id=org-1"]);
   });
+
+  it("with no organization filter the organization view spans every organization", () => {
+    const { q, calls } = recorder();
+    applySourcesScope(q, { kind: "orgs", organizationId: null }, "me");
+    expect(calls).toEqual([]);
+  });
+
+  it("the organization filter narrows the captured-by-me lane too", () => {
+    const { q, calls } = recorder();
+    applySourcesScope(q, { kind: "mine", organizationId: "org-1" }, "me");
+    expect(calls).toEqual(["eq created_by=me", "eq organization_id=org-1"]);
+  });
 });

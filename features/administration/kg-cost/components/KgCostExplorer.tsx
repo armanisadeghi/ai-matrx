@@ -23,44 +23,19 @@ export const KG_COST_SOURCE: DrillSource = { kind: "entity", token: "kg_cost" };
 /** The first screen: the old section's table — the last 30 days by source kind, costliest first. */
 export const KG_COST_FIRST_QUESTION: MatrxDrillQuestion = {
   by: ["source_kind"],
-  // the old table's money columns; "What a successful run costs" (a built-in view) holds p50 / max /
-  // cost per character, which the old section counted over successful runs only
-  show: ["runs", "cost", "embedding_cost", "extraction_cost", "enrichment_cost"],
+  // the old table's money columns and its unit economics: the projection, the cache-hit rate and the
+  // enrichment multiplier; "What a successful run costs" (a built-in view) holds p50 / p90 / max / cost
+  // per 1,000 characters, which the old section counted over successful runs only
+  show: ["runs", "cost", "embedding_cost", "extraction_cost", "enrichment_cost", "cache_hit_rate", "enrichment_multiplier"],
   where: [],
   sort: { key: "cost", direction: "desc" },
   window: "30d",
 };
 
-// KEYS NEVER REACH A PERSON: the codes in plain words (the definition's own choice labels; the
-// explorer does not read describe's choices yet — PROGRESS-DRILL-CONVERSIONS).
-const SOURCE_KIND_WORDS: Record<string, string> = {
-  note: "Note",
-  transcript: "Transcript",
-  scrape_parsed_page: "Scraped page",
-  web_page: "Web page",
-  cld_file: "File",
-  processed_document: "Processed document",
-  inline: "Inline text",
-};
-const STATUS_WORDS: Record<string, string> = {
-  success: "Succeeded",
-  skipped: "Skipped",
-  error: "Errored",
-  partial: "Partly done",
-  running: "Still running",
-};
-const TRIGGER_WORDS: Record<string, string> = {
-  save_hook: "Saved by a person",
-  landing: "Landed from a source",
-  source_intelligence: "Source intelligence",
-  backfill: "Backfill",
-  manual: "Started by hand",
-};
-const URGENCY_WORDS: Record<string, string> = { batch: "Batch (cheaper, later)", auto: "Automatic", live: "Live" };
-
-function wordsOf(map: Record<string, string>, empty: string): (value: string) => string {
-  return (value) => (value ? map[value] ?? "Another value" : empty);
-}
+// WORDS COME FROM THE DEFINITION AND THE DOOR (lane DRILL-GAPS): the source kinds, statuses, "started
+// by" and urgency codes read as kg_cost's declared choices, an organization as the door's own label.
+// A person's name is the one thing the door does not carry (the person registry has no title a member
+// may read), so it comes from the platform's names door.
 
 export function KgCostExplorer() {
   return (
@@ -71,18 +46,8 @@ export function KgCostExplorer() {
       title="Knowledge ingestion cost"
       rootLabel="Every ingest run"
       firstQuestion={KG_COST_FIRST_QUESTION}
-      names={{
-        organization: usageNameResolver(SYSTEM_ORGANIZATION_ID, "organization"),
-        person: usageNameResolver(SYSTEM_ORGANIZATION_ID, "person"),
-      }}
-      words={{
-        source_kind: wordsOf(SOURCE_KIND_WORDS, "No source kind"),
-        status: wordsOf(STATUS_WORDS, "No status"),
-        triggered_by: wordsOf(TRIGGER_WORDS, "Not known"),
-        urgency: wordsOf(URGENCY_WORDS, "Not known"),
-        embedding_model: (value) => (value ? value : "No embedding (nothing new to embed)"),
-      }}
-      headline={{ measure: "cost", also: ["runs"] }}
+      names={{ person: usageNameResolver(SYSTEM_ORGANIZATION_ID, "person") }}
+      headline={{ measure: "cost", also: ["runs", "monthly_projection", "monthly_projection_10x", "embedding_saved"] }}
       rowNoun="run"
       countMeasure="runs"
       dataAttributes={{ "data-kg-cost-explorer": "" }}

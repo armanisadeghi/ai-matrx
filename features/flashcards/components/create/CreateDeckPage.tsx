@@ -95,6 +95,7 @@ import { saveDeckSourceSet, sourceNamesOf } from "../../data/deckSourceSet";
 import { useSuppressAmbientAssistant } from "@/features/agents/components/ambient-assistant/ambientAssistantSuppression";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
+import { cardProgressLine } from "./cardProgressLine";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { DeckFileImport } from "./DeckFileImport";
 
@@ -637,15 +638,12 @@ export function CreateDeckPage() {
                               ? isNavigating
                                 ? "Opening your deck…"
                                 : "Saving your deck…"
-                              : progress && progress.total > 1
-                                ? `Section ${Math.min(progress.done + 1, progress.total)} of ${progress.total} — ${progress.items} cards so far`
-                                : `Making ${safeCount} cards${hasSources ? " from your sources" : ` about “${topic}”`}`}
+                              : (cardProgressLine(progress, safeCount) ??
+                                `Making ${safeCount} cards${hasSources ? " from your sources" : ` about “${topic}”`}`)}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {progress && progress.total > 1
-                            ? `Last done: ${progress.label}`
-                            : "Cards appear below."}
-                        </p>
+                        {progress && progress.total > 1 ? null : (
+                          <p className="text-xs text-muted-foreground">Cards appear below.</p>
+                        )}
                       </div>
                     </div>
                     {notes.length ? (

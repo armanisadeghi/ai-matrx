@@ -7,7 +7,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Filter as FilterIcon, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   clearFilterScopes,
   selectFilterScopeIds,
@@ -17,7 +16,7 @@ import {
   toggleFilterScopeId,
 } from "@/features/tasks/redux/taskUiSlice";
 import { ContextAssignmentField } from "@/features/scopes/components/context-assignment/ContextAssignmentField";
-import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tree";
+import { selectAllScopeTypesFlat } from "@/features/scopes/redux/selectors/tree";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,6 @@ interface TaskScopeFilterProps {
 export default function TaskScopeFilter({ className }: TaskScopeFilterProps) {
   const dispatch = useAppDispatch();
   useScopeTree();
-  const orgId = useAppSelector(selectActiveOrganizationId);
   const filterScopeIds = useAppSelector(selectFilterScopeIds);
   const matchAll = useAppSelector(selectFilterScopeMatchAll);
   const [filterResetKey, setFilterResetKey] = useState(0);
@@ -47,8 +45,6 @@ export default function TaskScopeFilter({ className }: TaskScopeFilterProps) {
     dispatch(clearFilterScopes());
     setFilterResetKey((k) => k + 1);
   }, [dispatch]);
-
-  if (!orgId) return null;
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -82,11 +78,10 @@ export default function TaskScopeFilter({ className }: TaskScopeFilterProps) {
       )}
 
       <ContextAssignmentField
-        key={`${orgId}:${filterResetKey}`}
+        key={filterResetKey}
         mode="filter"
         writeMode="live"
         dimensions={["scopes"]}
-        defaultOrganizationId={orgId}
         initialSelection={{ scopeIds: filterScopeIds }}
         onSelectionChange={handleSelectionChange}
         hideSubject
@@ -104,12 +99,12 @@ export default function TaskScopeFilter({ className }: TaskScopeFilterProps) {
  */
 export function ActiveScopeFilterChips({ className }: { className?: string }) {
   const dispatch = useAppDispatch();
-  const orgId = useAppSelector(selectActiveOrganizationId);
   const filterScopeIds = useAppSelector(selectFilterScopeIds);
   const matchAll = useAppSelector(selectFilterScopeMatchAll);
 
-  const selectScopeTypesForOrg = useMemo(makeSelectScopeTypesForOrg, []);
-  const scopeTypes = useAppSelector((s) => selectScopeTypesForOrg(s, orgId));
+  // Labels resolve across every organization the person belongs to — a chip for
+  // a scope in any org must render (active-org-never-a-list-filter, AO-032).
+  const scopeTypes = useAppSelector(selectAllScopeTypesFlat);
 
   const flat = useMemo(() => {
     const m = new Map<string, { label: string; color: string }>();

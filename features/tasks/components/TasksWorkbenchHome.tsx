@@ -24,6 +24,7 @@ import {
   selectSmartViewCounts,
 } from "@/features/tasks/redux/selectors";
 import {
+  selectFilterOrgId,
   selectSmartView,
   selectSearchQuery,
   setSelectedTaskId,
@@ -41,10 +42,7 @@ import {
   useAppSelector,
   useDispatchThunk,
 } from "@/lib/redux/hooks";
-import {
-  selectOrganizationId,
-  selectScopeSelectionsContext,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectScopeSelectionsContext } from "@/lib/redux/slices/appContextSlice";
 import { cn } from "@/utils/cn";
 
 /** Root-only composition for the empty desktop editor pane. */
@@ -56,7 +54,9 @@ export function TasksWorkbenchHome() {
   const hierarchyError = useAppSelector(selectFullContextError);
   const smartView = useAppSelector(selectSmartView);
   const smartViewCounts = useAppSelector(selectSmartViewCounts);
-  const orgId = useAppSelector(selectOrganizationId);
+  // The label names the PAGE's organization filter (default All), never the
+  // active organization — the list is not narrowed by the active org.
+  const orgId = useAppSelector(selectFilterOrgId);
   const organizations = useAppSelector(selectOrganizationsList);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const scopeTypes = useAppSelector(selectAllScopeTypesFlat);

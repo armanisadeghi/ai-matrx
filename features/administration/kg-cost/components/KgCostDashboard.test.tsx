@@ -33,7 +33,13 @@ jest.mock("../service/kgCostService", () => ({
   listOrgCosts: jest.fn(() => new Promise(() => {})),
   getOrgCostDetail: jest.fn(() => new Promise(() => {})),
   listPendingBatches: jest.fn(() => new Promise(() => {})),
-  fetchUnitEconomics: jest.fn(() => new Promise(() => {})),
+}));
+
+// THE UNIT ECONOMICS SECTION IS A MOUNT OF THE ONE DRILL EXPLORER (lane DRILL-GAPS): stood in here by a
+// marker, so these tests prove the dashboard mounts it — its numbers are the door's, proven on the
+// nightly copy (scripts/campaign-tests/drillgaps_green.sql).
+jest.mock("./KgCostExplorer", () => ({
+  KgCostExplorer: () => <div data-kg-cost-explorer-stand-in="" />,
 }));
 
 function table(id: string): MatrxDataTableProps<unknown> {
@@ -58,12 +64,10 @@ describe("KgCostDashboard canonical tables", () => {
     host.remove();
   });
 
-  it("keeps all four bounded dashboard grids canonical and honestly scoped", () => {
+  it("keeps both bounded operations grids canonical and honestly scoped", () => {
     act(() => root.render(<KgCostDashboard />));
 
     for (const [id, title, answeredBy] of [
-      ["administration/kg-cost/by-source-kind", "By source kind", "source"],
-      ["administration/kg-cost/recent-runs", "Recent runs", "client"],
       ["administration/kg-cost/organizations", "Organizations", "source"],
       ["administration/kg-cost/pending-batches", "In-flight batches", "source"],
     ]) {
@@ -80,63 +84,15 @@ describe("KgCostDashboard canonical tables", () => {
     }
   });
 
-  it("keeps separately filterable run totals, chunks, cost stages, and exactness", () => {
+  it("shows unit economics through the drill explorer mount, not a second copy of its tables", () => {
     act(() => root.render(<KgCostDashboard />));
 
-    const sourceKindColumns = table(
-      "administration/kg-cost/by-source-kind",
-    ).columns;
-    expect(sourceKindColumns.map((column) => column.id ?? column.accessorKey)).toEqual(
-      expect.arrayContaining([
-        "runs",
-        "successes",
-        "errors",
-        "skips",
-        "embedding_cost_usd",
-        "extraction_cost_usd",
-        "cleanup_cost_usd",
-        "enrichment_cost_usd",
-      ]),
-    );
-    expect(
-      sourceKindColumns
-        .filter((column) =>
-          ["runs", "successes", "errors", "skips"].includes(
-            column.accessorKey ?? "",
-          ),
-        )
-        .every((column) => column.filter === "number"),
-    ).toBe(true);
-
-    const runColumns = table("administration/kg-cost/recent-runs").columns;
-    expect(table("administration/kg-cost/recent-runs").coverage).toMatchObject({
-      cap: 50,
-    });
-    expect(
-      table("administration/kg-cost/organizations").coverage,
-    ).toMatchObject({ cap: 200 });
-    expect(
-      table("administration/kg-cost/pending-batches").coverage,
-    ).toMatchObject({ cap: 100 });
-    expect(runColumns.map((column) => column.id ?? column.accessorKey)).toEqual(
-      expect.arrayContaining([
-        "source_kind",
-        "chunks_written",
-        "chunks_reused",
-        "cost_is_exact",
-        "embedding_cost_usd",
-        "extraction_cost_usd",
-        "cleanup_cost_usd",
-        "enrichment_cost_usd",
-      ]),
-    );
-    expect(
-      runColumns.find((column) => column.accessorKey === "cost_is_exact")
-        ?.filter,
-    ).toBe("boolean");
-    expect(runColumns.find((column) => column.id === "source_id")?.filter).toBe(
-      "text",
-    );
+    const section = host.querySelector("[data-kg-cost-unit-economics]");
+    expect(section?.querySelector("[data-kg-cost-explorer-stand-in]")).not.toBeNull();
+    expect(tables.has("administration/kg-cost/by-source-kind")).toBe(false);
+    expect(tables.has("administration/kg-cost/recent-runs")).toBe(false);
+    expect(table("administration/kg-cost/organizations").coverage).toMatchObject({ cap: 200 });
+    expect(table("administration/kg-cost/pending-batches").coverage).toMatchObject({ cap: 100 });
   });
 
   it("preserves the organization and batch inspectors as row-open actions", () => {

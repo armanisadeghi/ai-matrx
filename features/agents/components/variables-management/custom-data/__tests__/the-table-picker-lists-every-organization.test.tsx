@@ -11,8 +11,9 @@
 //   1. the picker lists the data home's own rows (custom.data_home_tables) — every table she can
 //      see across ALL her organizations, a table shared in from outside included, each naming
 //      its organization; one flat list, never grouped by organization;
-//   2. the organization filter sits on the Table row, starts on All Orgs, is honoured in the door
-//      (the door is asked for the one organization chosen) and is saved to her account;
+//   2. the organization filter is the SHELL'S (`EntityOrgFilter`) on the Table row: it starts on
+//      All organizations every time, narrows the list to the one organization chosen, and is never
+//      remembered (law: common-docs/policies/active-org-is-never-a-list-filter.md);
 //   3. the active organization is not an input: switching it changes nothing here.
 //
 // RED on HEAD: the picker read `useTables()` of a provider bound to the active organization.
@@ -54,8 +55,6 @@ const EVERY_ROW = [
 
 /** Which organization each call to custom.data_home_tables named (null = every organization). */
 const doorAskedFor: Array<string | null> = [];
-const saved: unknown[] = [];
-let savedPick: string | null = null;
 
 jest.mock("@/features/unified-data/hub/doors", () => ({
   dataHomeTables: jest.fn(async (_ds: unknown, org: string | null = null) => {
@@ -131,21 +130,22 @@ jest.mock("@/components/ui/select", () => {
 jest.mock("../CustomDataBindingPreview", () => ({ CustomDataBindingPreview: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: () => unknown) => selector(),
-  useAppDispatch: () => (action: unknown) => {
-    saved.push(action);
-  },
-}));
-jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd" }));
-jest.mock("@/lib/redux/preferences/userPreferenceSelectors", () => ({
-  selectDataHomeOrganizationPick: () => savedPick,
-  selectPreferencesLoadStatus: () => "loaded",
-}));
-jest.mock("@/lib/redux/preferences/userPreferencesSlice", () => ({
-  setModulePreferences: (payload: unknown) => ({ type: "setModulePreferences", payload }),
-}));
-jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({ useEffectiveKnob: () => "all" }));
+// The shell's dropdown, as plain buttons: the menu mechanics are not what this suite is about.
+jest.mock("@/components/ui/dropdown-menu", () => {
+  const Pass = ({ children }: { children?: unknown }) => <>{children as never}</>;
+  return {
+    DropdownMenu: Pass,
+    DropdownMenuTrigger: Pass,
+    DropdownMenuContent: Pass,
+    DropdownMenuLabel: Pass,
+    DropdownMenuSeparator: () => null,
+    DropdownMenuItem: ({ children, onSelect }: { children?: unknown; onSelect?: () => void }) => (
+      <button type="button" data-org-choice onClick={() => onSelect?.()}>
+        {children as never}
+      </button>
+    ),
+  };
+});
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({
     loading: false,
@@ -191,8 +191,6 @@ function offered(): string[] {
 
 beforeEach(() => {
   doorAskedFor.length = 0;
-  saved.length = 0;
-  savedPick = null;
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
@@ -231,29 +229,37 @@ it("keeps the old picker's fold for tables the app keeps, counted across every o
   expect(offered().join("\n")).toContain("Status choices — Rincon Plumbing Co · list · kept by the app");
 });
 
-it("shows the organization filter on the Table row, starting on All Orgs, and saves a pick", async () => {
+it("shows the shell's organization filter on the Table row, starting on All organizations", async () => {
   await render();
-  const filter = host.querySelector<HTMLSelectElement>("select[aria-label='Organization']");
-  expect(filter).not.toBeNull();
-  expect(filter!.value).toBe("all");
-  expect([...filter!.options].map((o) => o.textContent)).toEqual([
-    "All Orgs",
-    "Harbor Dental Group",
-    "Rincon Plumbing Co",
-  ]);
-  await act(async () => {
-    filter!.value = HARBOR;
-    filter!.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-  expect(saved).toEqual([
-    { type: "setModulePreferences", payload: { module: "lists", preferences: { dataHomeOrganizationId: HARBOR } } },
-  ]);
+  const trigger = host.querySelector<HTMLButtonElement>("[data-entity-org-filter]");
+  expect(trigger?.textContent).toContain("All organizations");
+  const choices = [...host.querySelectorAll<HTMLButtonElement>("[data-org-choice]")].map((b) => b.textContent);
+  // All organizations first; each organization with its count from the complete answer.
+  expect(choices[0]).toContain("All organizations");
+  expect(choices.join("|")).toContain("Harbor Dental Group1");
+  expect(choices.join("|")).toContain("Rincon Plumbing Co2");
 });
 
-it("honours a saved pick IN THE DOOR — only that organization's tables", async () => {
-  savedPick = HARBOR;
+it("narrows to the organization chosen — and the door is asked once, for every organization", async () => {
   await render();
-  expect(doorAskedFor).toEqual([HARBOR]);
+  const harbor = [...host.querySelectorAll<HTMLButtonElement>("[data-org-choice]")].find((b) =>
+    b.textContent?.includes("Harbor Dental Group"),
+  );
+  await act(async () => harbor!.click());
   expect(offered().join("\n")).toContain("Patient recall list");
   expect(offered().join("\n")).not.toContain("Service calls");
+  expect(doorAskedFor).toEqual([null]);
+});
+
+it("is never remembered: a fresh picker starts on All organizations again", async () => {
+  await render();
+  const harbor = [...host.querySelectorAll<HTMLButtonElement>("[data-org-choice]")].find((b) =>
+    b.textContent?.includes("Harbor Dental Group"),
+  );
+  await act(async () => harbor!.click());
+  act(() => root.unmount());
+  root = createRoot(host);
+  await render();
+  expect(host.querySelector("[data-entity-org-filter]")?.textContent).toContain("All organizations");
+  expect(offered().join("\n")).toContain("Service calls");
 });

@@ -52,9 +52,12 @@ export function shownToChoices(publishedToWeb: boolean): readonly ShownTo[] {
     : SHOWN_TO_VALUES.filter((v) => v !== "everyone_on_ai_matrx");
 }
 
-/** "Only me" etc.; null = the type's "Shown to by default" knob decides, named as such. */
+/**
+ * "Only me" etc.; null = the type's "Shown to by default" knob decides, named plainly "Default"
+ * (copy law R9, 2026-09-30 — "Default for this type" was machinery a person never needs).
+ */
 export function shownToLabel(value: ShownTo | string | null | undefined): string {
-  if (!value) return "Default for this type";
+  if (!value) return "Default";
   return SHOWN_TO_LABELS[value as ShownTo] ?? value;
 }
 

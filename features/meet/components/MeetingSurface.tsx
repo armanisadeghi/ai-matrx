@@ -164,10 +164,24 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
   // organization; when the person belongs to it, the room is scoped to it.
   // Latched: once chosen, a later org switch never rebuilds a live call.
   const [scoped, setScoped] = useState(false);
+  // An EXISTING record runs in ITS OWN organization, never the active one
+  // (law: active-org-is-never-a-list-filter, rule 5). So the room is scoped to
+  // the meeting's organization whenever the app-wide host is inert OR is bound
+  // to a DIFFERENT organization than the meeting's.
+  const hostOrganizationId = host?.identity.organizationId ?? null;
   useEffect(() => {
-    if (!scoped && host === null && activeOrganizationId === null && memberOfMeetingOrg)
+    if (scoped || !memberOfMeetingOrg) return;
+    if (host === null && activeOrganizationId === null) setScoped(true);
+    else if (host !== null && hostOrganizationId !== meeting.organizationId)
       setScoped(true);
-  }, [scoped, host, activeOrganizationId, memberOfMeetingOrg]);
+  }, [
+    scoped,
+    host,
+    activeOrganizationId,
+    hostOrganizationId,
+    memberOfMeetingOrg,
+    meeting.organizationId,
+  ]);
   const [gaveUp, setGaveUp] = useState(false);
 
   useEffect(() => {

@@ -3,13 +3,14 @@
 import { useState, type ReactNode } from "react";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { Copy } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   createTaskThunk,
   deleteTaskThunk,
   toggleTaskCompleteThunk,
 } from "@/features/tasks/redux/thunks";
 import { setSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
+import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -49,7 +50,8 @@ export function TasksListContextMenu({
   children,
 }: TasksListContextMenuProps) {
   const dispatch = useAppDispatch();
-  const organizationId = useAppSelector(selectOrganizationId);
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const store = useAppStore();
   const [menuTarget, setMenuTarget] = useState<TaskWithProject | null>(null);
 
   const resolveMenuTarget = (target: HTMLElement | null) => {
@@ -98,6 +100,12 @@ export function TasksListContextMenu({
   };
 
   const handleDuplicateTask = async (task: TaskWithProject) => {
+    // A copy of an existing record files in that record's own organization (so
+    // it still points at its project's org); the active org only covers a
+    // source with no org of its own.
+    const organizationId =
+      selectTaskById(store.getState(), task.id)?.organization_id ??
+      activeOrganizationId;
     try {
       const newId = await dispatch(
         createTaskThunk({

@@ -4,7 +4,7 @@
  *   F2  a grouping that starts with time asks the door with no Measure sort, so it keeps the LATEST periods
  *   F3  a declared question survives whole: what the address cannot say is carried, asked, said and saved
  *   F4  the records table reads the declared column words and resolves ids through the Dimension they feed
- *   F5  one rounding rule: the coverage line's whole reads exactly as the header's total
+ *   F5  one value, one reading: every value is formatted on its own by its unit (owner ruling 2026-09-30)
  *   F9  the Cost column's unit word is the one its cells print
  * RED on HEAD: the modules below did not exist, explorerQuestionOf dropped list filters, ranges,
  * ad hoc Measures, limits, thresholds and times of day, and recordsOf dropped `labels`.
@@ -18,9 +18,8 @@ import type { DrillDefinition } from "@ai-matrx/records";
 jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: jest.fn() } }));
 
 import { formatAdminPoints } from "@/components/cost/formatAdminCost";
-import { POINTS_PER_USD } from "@ai-matrx/kit/format";
 
-import { roundMoneyRow } from "../apportion";
+import { drillUnitFormatter } from "../measureFormat";
 import { DrillExplorerHeadline, costColumnLabel } from "../DrillExplorerHeadline";
 import { carriedWords, doorQuestionOf, explorerQuestionParts, splitExplorerQuestion } from "../questionParts";
 import { recordsCellName, recordsColumnHeader } from "../recordsColumns";
@@ -139,16 +138,13 @@ describe("F4 · the records table's words", () => {
   });
 });
 
-describe("F5 · one rounding rule", () => {
-  it("the coverage line's whole reads exactly as the header's total", () => {
+describe("F5 · one value, one reading (owner ruling 2026-09-30: every value rounded on its own)", () => {
+  it("the header's total, a cell and the coverage line's whole print the same number the same way", () => {
     const usd = 2394.24896491; // 47,884,979.3 points
-    const toUnits = (v: number) => v * POINTS_PER_USD;
-    const fromUnits = (u: number) => u / POINTS_PER_USD;
-    const header = formatAdminPoints(fromUnits(Math.round(toUnits(usd)))); // how apportionAnswers rounds the total
-    const whole = roundMoneyRow({ groups: {}, measures: { cost: usd, requests: 6247 }, row_count: 6247 }, ["cost"], toUnits, fromUnits);
-    expect(header).toBe("47,884,979 points");
-    expect(formatAdminPoints(whole.measures.cost)).toBe(header);
-    expect(whole.measures.requests).toBe(6247);
+    const money = drillUnitFormatter("usd", "points");
+    // every place the explorer prints this Measure goes through the one formatter of its unit
+    expect(money(usd)).toBe(formatAdminPoints(usd));
+    expect(money(usd)).toBe(money(Number(String(usd))));
   });
 });
 

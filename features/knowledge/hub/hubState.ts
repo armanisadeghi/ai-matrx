@@ -307,7 +307,9 @@ export function normalizeQuery(q: KnowledgeQuery): KnowledgeQuery {
   if (q.origin?.length) out.origin = [...q.origin];
   if (q.date) out.date = { ...q.date };
   if (q.state?.length) out.state = q.state.filter((s) => STATES.includes(s));
-  if (q.organizations?.length) out.organizations = [...q.organizations];
+  // "active" was the retired follow-the-header word; old links and saved views may still carry it.
+  const orgIds = (q.organizations ?? []).filter((o) => o && o !== "active");
+  if (orgIds.length) out.organizations = [...new Set(orgIds)];
   if (q.sort && SORTS.includes(q.sort)) out.sort = q.sort;
   return out;
 }
@@ -331,7 +333,7 @@ export function hubStateToParams(s: HubState): URLSearchParams {
   set("origin", list(q.origin));
   if (q.date) p.set("date", dateToParam(q.date));
   set("state", list(q.state));
-  set("orgs", list(q.organizations));
+  set(ORG_FILTER_PARAM, list(q.organizations));
   if (q.sort) p.set("sort", q.sort);
   if (s.layout !== "list") p.set("layout", s.layout);
   if (s.peek) p.set("peek", `${s.peek.entity}:${s.peek.id}`);
@@ -372,7 +374,7 @@ export function hubStateFromParams(p: URLSearchParams | ReadonlyURLSearchParamsL
     origin: unlist(get("origin")),
     date: dateFromParam(get("date")),
     state,
-    organizations: unlist(get("orgs")),
+    organizations: unlist(get(ORG_FILTER_PARAM)),
     sort: (SORTS as readonly string[]).includes(sort ?? "") ? (sort as KnowledgeSort) : undefined,
   });
   const layoutParam = get("layout");
@@ -413,29 +415,18 @@ export function hubHref(s: HubState): string {
   return qs ? `/knowledge/hub?${qs}` : "/knowledge/hub";
 }
 
-// ─── Organization reach ─────────────────────────────────────────────────────
+// ─── Organization filter ────────────────────────────────────────────────────
 
 /**
- * "Only the organization I am working in" — kept in the URL and in saved views
- * as this word, never as an id, and resolved against the ONE active
- * organization (Redux `appContext.organization_id`, set by the shell header)
- * every time the query runs. So the hub never holds an organization of its
- * own: change the header's organization and the results follow. With no
- * organization chosen, it reaches every organization the person belongs to —
- * the hub's default (reach is ALL unless the person narrows it).
+ * The hub's ORGANIZATION FILTER (Arman 2026-09-30, policies/active-org-is-never-a-list-filter.md).
+ * `query.organizations` holds organization ids the person picked in the toolbar dropdown, kept in
+ * the URL as `?org_filter=<id>` and in saved views as ids. Empty = All organizations, the default on
+ * every load. It is NEVER derived from the header's active organization: that one only says where
+ * new things are saved. (The retired word "active" is dropped wherever an old link or view carries it.)
  */
-export const ACTIVE_ORGANIZATION = "active";
+export const ORG_FILTER_PARAM = "org_filter";
 
-export function resolveOrganizationReach(q: KnowledgeQuery, activeOrgId: string | null | undefined): KnowledgeQuery {
-  if (!q.organizations?.includes(ACTIVE_ORGANIZATION)) return q;
-  const rest = q.organizations.filter((o) => o !== ACTIVE_ORGANIZATION);
-  const ids = activeOrgId ? [...new Set([...rest, activeOrgId])] : rest;
-  const { organizations: _drop, ...others } = q;
-  return ids.length ? { ...others, organizations: ids } : others;
-}
-
-/** all · active (follows the header) · pinned (specific ids a link or older view carried). */
-export function organizationReachOf(q: KnowledgeQuery): "all" | "active" | "pinned" {
-  if (!q.organizations?.length) return "all";
-  return q.organizations.includes(ACTIVE_ORGANIZATION) ? "active" : "pinned";
+/** The filter's single organization id (the dropdown picks one), or null = All organizations. */
+export function orgFilterOf(q: KnowledgeQuery): string | null {
+  return q.organizations?.length === 1 ? q.organizations[0] : null;
 }

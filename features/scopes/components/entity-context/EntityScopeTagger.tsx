@@ -29,9 +29,10 @@ import {
   X,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   makeSelectScopeTypesForOrg,
+  selectAllScopeTypesFlat,
+  selectOrganizations,
   selectTreeStatus,
 } from "@/features/scopes/redux/selectors/tree";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
@@ -42,7 +43,6 @@ import type {
 } from "@/features/scopes/types";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -63,7 +63,12 @@ type CommonProps = {
    * `dropdown` = one single-select dropdown per scope type (best for forms / when a
    * type has many scopes — pick at most one per type). */
   variant?: "sidebar" | "compact" | "dropdown";
-  /** Optional org override — defaults to the active org. Useful for cross-org views. */
+  /**
+   * The org whose scope types are offered. Uncontrolled (write) mode: the
+   * RECORD'S OWN org, required. Controlled (filter) mode: optional — omitted
+   * means every organization the person belongs to (the active org never
+   * narrows a read; active-org-is-never-a-list-filter law).
+   */
   organizationId?: string | null;
   /** Limit visible scope types (by scope_type_id). Empty/undefined = all. */
   scopeTypeAllowlist?: string[];
@@ -75,7 +80,9 @@ type CommonProps = {
   allowMultiPerType?: boolean;
 };
 
-type UncontrolledProps = CommonProps & {
+type UncontrolledProps = Omit<CommonProps, "organizationId"> & {
+  /** The entity's own organization — where the write is recorded. */
+  organizationId: string | null;
   /** Entity being tagged. */
   entityType: EntityType;
   entityId: string;
@@ -111,14 +118,27 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   // ensures the tree slice is populated (no-op if already)
   const { error: treeError, refresh: refreshTree } = useScopeTree();
   const treeStatus = useAppSelector(selectTreeStatus);
-  const activeOrgId = useAppSelector(selectActiveOrganizationId);
-  const orgId = orgIdProp ?? activeOrgId;
+  // The org is the record's own (uncontrolled) or the caller's explicit pick.
+  // No org = every org's scope types (controlled filter mode) — never the
+  // active org.
+  const orgId = orgIdProp ?? null;
 
   const selectScopeTypesForOrg = useMemo(
     () => makeSelectScopeTypesForOrg(),
     [],
   );
-  const scopeTypesAll = useAppSelector((s) => selectScopeTypesForOrg(s, orgId));
+  const scopeTypesOfOrg = useAppSelector((s) =>
+    selectScopeTypesForOrg(s, orgId),
+  );
+  const scopeTypesEveryOrg = useAppSelector(selectAllScopeTypesFlat);
+  const orgsById = useAppSelector(selectOrganizations);
+  const allOrgs = orgId === null && "value" in props && props.value !== undefined;
+  const scopeTypesAll = allOrgs ? scopeTypesEveryOrg : scopeTypesOfOrg;
+  // With several orgs' types on screen the org is a label, never a heading.
+  const showOrgLabel =
+    allOrgs && new Set(scopeTypesEveryOrg.map((t) => t.organization_id)).size > 1;
+  const orgLabelOf = (type: ScopeTypeNode): string | null =>
+    showOrgLabel ? (orgsById[type.organization_id]?.name ?? null) : null;
 
   const scopeTypes = useMemo(() => {
     if (!scopeTypeAllowlist || scopeTypeAllowlist.length === 0) {
@@ -279,10 +299,10 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   const toggleCollapsed = (typeId: string) =>
     setCollapsed((prev) => ({ ...prev, [typeId]: !prev[typeId] }));
 
-  if (!orgId) {
+  if (!orgId && !allOrgs) {
     return (
       <div className={cn("text-xs text-muted-foreground px-3 py-2", className)}>
-        Select an organization to tag scopes.
+        This record has no organization yet, so its scopes cannot be tagged.
       </div>
     );
   }
@@ -311,7 +331,9 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   if (scopeTypes.length === 0) {
     return (
       <div className={cn("text-xs text-muted-foreground px-3 py-2", className)}>
-        No scopes defined for this organization.
+        {allOrgs
+          ? "No scopes defined in any of your organizations."
+          : "No scopes defined for this organization."}
       </div>
     );
   }
@@ -331,7 +353,10 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
 
   return (
     <div className={cn("space-y-2", className)}>
-      {showHeader && (
+      {/* The dropdown variant is one self-labelled select per type ("No class"
+          / "Biology 101"): a header over it only restated the type's name in
+          capitals (copy law R9, V4-F 2026-09-30). */}
+      {showHeader && variant !== "dropdown" && (
         <div className="flex items-center justify-between px-3">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
             <FilterIcon size={12} />
@@ -349,38 +374,41 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
       )}
 
       {variant === "dropdown" ? (
-        <div className="space-y-3 px-3">
+        <div className="flex flex-wrap items-center gap-2">
           {scopeTypes.map((type) => {
             const current = type.scopes.find((s) => selectedSet.has(s.id));
             return (
-              <div key={type.id} className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              <Select
+                key={type.id}
+                value={current?.id ?? "none"}
+                onValueChange={(v) => setTypeScope(type.id, v)}
+              >
+                <SelectTrigger
+                  className="h-9 w-auto min-w-36 gap-1.5"
+                  aria-label={
+                    orgLabelOf(type)
+                      ? `${type.label_singular} (${orgLabelOf(type)})`
+                      : type.label_singular
+                  }
+                >
                   <DynamicIcon
                     name={type.icon}
                     color={type.color}
-                    className="h-3.5 w-3.5"
+                    className="h-3.5 w-3.5 shrink-0"
                   />
-                  {type.label_singular}
-                </Label>
-                <Select
-                  value={current?.id ?? "none"}
-                  onValueChange={(v) => setTypeScope(type.id, v)}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue
-                      placeholder={`Select ${type.label_singular.toLowerCase()}…`}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {type.scopes.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    No {type.label_singular.toLowerCase()}
+                  </SelectItem>
+                  {type.scopes.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             );
           })}
         </div>
@@ -392,6 +420,7 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
                 key={scope.id}
                 type={type}
                 scope={scope}
+                orgLabel={orgLabelOf(type)}
                 isSelected={selectedSet.has(scope.id)}
                 onClick={() => handleToggle(scope.id, type.id)}
               />
@@ -425,6 +454,11 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
                       className="h-3.5 w-3.5"
                     />
                     <span>{type.label_plural}</span>
+                    {orgLabelOf(type) && (
+                      <span className="text-muted-foreground font-normal">
+                        {orgLabelOf(type)}
+                      </span>
+                    )}
                   </span>
                   {selectedCount > 0 && (
                     <Badge
@@ -466,11 +500,13 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
 function ScopeChip({
   type,
   scope,
+  orgLabel,
   isSelected,
   onClick,
 }: {
   type: ScopeTypeNode;
   scope: ScopeTypeNode["scopes"][number];
+  orgLabel?: string | null;
   isSelected: boolean;
   onClick: () => void;
 }) {
@@ -487,6 +523,7 @@ function ScopeChip({
           : { color: type.color, borderColor: type.color }
       }
       onClick={onClick}
+      title={orgLabel ? `${type.label_singular} · ${orgLabel}` : undefined}
     >
       <span className="inline-flex items-center gap-1">
         <span>{scope.name}</span>

@@ -3,9 +3,12 @@
 // more than was asked — nor two cards that teach the same thing.
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { planCoverage } from "../coverage";
-import { isNearDuplicateQA, mergeSectionItems } from "../segmentedGenerate";
+import { runAgentExtraction } from "../runAgentExtraction";
+import { isNearDuplicateQA, mergeSectionItems, segmentedGenerate } from "../segmentedGenerate";
+import type { ConvertContext, ConvertProgress } from "../types";
 
 jest.mock("@/lib/knobs/featureKnobs", () => ({ knobInt: jest.fn() }));
+jest.mock("../runAgentExtraction", () => ({ runAgentExtraction: jest.fn() }));
 
 const VALUES: Record<string, number> = {
   segment_target_chars: 100,
@@ -13,6 +16,7 @@ const VALUES: Record<string, number> = {
   max_items_total: 50,
   min_items_total: 2,
   items_per_segment_deck: 2,
+  segment_concurrency: 1,
 };
 
 beforeEach(() => {
@@ -105,5 +109,41 @@ describe("the count law", () => {
         { question: "What is a cell membrane made of?", answer: "A phospholipid bilayer." },
       ),
     ).toBe(false);
+  });
+});
+
+// V4-F (2026-09-30): the live progress line read "Section 5 of 5 — 8 cards so
+// far" on a 5-card request — every section's spare (and over-delivery) was
+// counted. The running count a person watches obeys THE COUNT LAW too.
+describe("the count law on the progress line", () => {
+  it("never reports more cards than were asked for, and ends on exactly that many", async () => {
+    let call = 0;
+    // Every section over-delivers: its share plus the spare plus one more.
+    jest.mocked(runAgentExtraction).mockImplementation(async () => {
+      call += 1;
+      const n = call;
+      return {
+        value: [0, 1, 2].map((i) => ({ q: `section ${n} distinct question ${i} topic${n}x${i}` })),
+        conversationId: null,
+      } as never;
+    });
+    const seen: ConvertProgress[] = [];
+    const ctx = { dispatch: jest.fn(), store: {}, orgId: "org", onProgress: (p: ConvertProgress) => seen.push(p) } as unknown as ConvertContext;
+    const result = await segmentedGenerate<{ q: string }>({
+      ctx,
+      source: { text: TEN_SECTIONS } as never,
+      targetKind: "deck",
+      options: { count: 5 } as never,
+      mandateKey: "education.flashcards" as never,
+      surfaceKey: "test",
+      sourceFeature: "flashcards" as never,
+      variables: () => ({}),
+      extract: (v) => v as { q: string }[],
+      identity: (x) => x.q,
+    });
+    expect(seen.length).toBeGreaterThan(1);
+    for (const p of seen) expect(p.items).toBeLessThanOrEqual(5);
+    expect(seen[seen.length - 1].items).toBe(5);
+    expect(result.items).toHaveLength(5);
   });
 });

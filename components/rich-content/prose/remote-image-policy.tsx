@@ -187,9 +187,12 @@ export function RemoteImageGate({
               setTrusting("That choice could not be saved. Show image still works for this one.");
             }
           }}
+          title={`Always show images from ${host}`}
           className="shrink-0 rounded px-1 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
         >
-          {trusting === "saving" ? "Saving…" : `Always show from ${host}`}
+          {/* The placeholder already names the site; saying it again made every
+              line wrap (copy law R9, V4-F 2026-09-30). The host rides the tooltip. */}
+          {trusting === "saving" ? "Saving…" : "Always show"}
         </button>
       ) : null}
       <a

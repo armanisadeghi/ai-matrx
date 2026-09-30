@@ -275,12 +275,13 @@ export const EDUCATION_LIBRARY_COLUMNS: EntityColumnSpec<EducationLibraryRow>[] 
       },
     },
     {
-      id: "visibility",
+      id: "shown",
       label: "Visibility",
       defaultHidden: true,
       facet: "visibility",
       column: {
-        id: "visibility",
+        // `shown` is the filter/sort key `edu_library_list_scoped` accepts; the row field is still `visibility`.
+        id: "shown",
         accessorKey: "visibility",
         header: "Visibility",
         filter: "select",

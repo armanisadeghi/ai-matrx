@@ -7,8 +7,8 @@
 // workflow_runs.drill.ts) asked through the one read door, in one of two lanes:
 //   platform — every run on the platform (/administration/automation/workflow-runs, admin apps only)
 //   mine     — the runs the person started (/workflows/runs/analyze, beside her runs list, which stays)
-// What only this mount adds: the words for workflow, person and organization ids, the words for the
-// status and "how it started" codes, and the way back to the runs list, where every run opens.
+// What only this mount adds: a person's name (the platform's names door; "You" in the mine lane) and
+// the way back to the runs list, where every run opens. Every other word is the definition's or the door's.
 
 import AppLink from "@/components/navigation/AppLink";
 import type { DrillSource } from "@ai-matrx/records";
@@ -20,9 +20,6 @@ import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { usageNameResolver } from "@/features/admin/usage-drill/useUsageDrill";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { supabase } from "@/utils/supabase/client";
-
-import { fetchWorkflowFacts } from "../discovery/service";
 
 export const WORKFLOW_RUNS_SOURCE: DrillSource = { kind: "entity", token: "workflow_runs" };
 
@@ -35,65 +32,11 @@ export const WORKFLOW_RUNS_FIRST_QUESTION: MatrxDrillQuestion = {
   window: "30d",
 };
 
-// KEYS NEVER REACH A PERSON: the status and "how it started" codes in plain words (the definition's
-// own choice labels; the explorer does not read describe's choices yet — PROGRESS-DRILL-CONVERSIONS).
-const STATUS_WORDS: Record<string, string> = {
-  completed: "Completed",
-  errored: "Errored",
-  failed: "Failed",
-  cancelled: "Cancelled",
-  interrupted: "Interrupted",
-  awaiting_input: "Waiting for input",
-  paused: "Paused",
-  pausing: "Pausing",
-  cancelling: "Cancelling",
-  running: "Running",
-  pending: "Pending",
-};
-const HOW_STARTED_WORDS: Record<string, string> = {
-  direct: "Started directly",
-  trigger: "Fired by a trigger",
-  mandate: "Run by a mandate",
-  child: "Started by another run",
-};
-
-function wordsOf(map: Record<string, string>, empty: string): (value: string) => string {
-  return (value) => (value ? map[value] ?? "Another value" : empty);
-}
-
-/**
- * A workflow's name, read as the person. Every id asked comes back with words — its name, or "A
- * workflow you cannot open" — so `missingLabel` is only ever the reading beat, never a verdict.
- */
-const workflowNames: DrillNameResolver = {
-  emptyLabel: "No workflow",
-  missingLabel: "Reading the name…",
-  resolve: async (ids) => {
-    try {
-      const names: Record<string, string> = Object.fromEntries(ids.map((id) => [id, "A workflow you cannot open"]));
-      // bounded: the door shows at most one page of groups; read them 100 at a time
-      for (let i = 0; i < ids.length; i += 100) {
-        const facts = await fetchWorkflowFacts(ids.slice(i, i + 100));
-        for (const [id, fact] of facts) names[id] = fact.name?.trim() || "A workflow with no name";
-      }
-      return { ok: true, names };
-    } catch (error) {
-      return { ok: false, message: `The workflows' names could not be read (${error instanceof Error ? error.message : "unknown error"}).` };
-    }
-  },
-};
-
-/** The organizations a member belongs to, read as her through their own row security. */
-const memberOrganizationNames: DrillNameResolver = {
-  emptyLabel: "No organization",
-  missingLabel: "Reading the name…",
-  resolve: async (ids) => {
-    const { data, error } = await supabase.schema("iam").from("organizations").select("id,name").in("id", ids.slice(0, 1000));
-    if (error) return { ok: false, message: `The organizations' names could not be read (${error.message}).` };
-    const found = new Map((data ?? []).map((o) => [o.id, o.name ?? "An organization with no name"]));
-    return { ok: true, names: Object.fromEntries(ids.map((id) => [id, found.get(id) ?? "An organization you are not in"])) };
-  },
-};
+// WORDS COME FROM THE DEFINITION AND THE DOOR (lane DRILL-GAPS): a status and "how it started" read as
+// workflow_runs' declared choices; a workflow and an organization as the door's own labels (read as
+// the seat — a workflow or an organization she cannot open reads as one whose name she cannot read).
+// A person's name is the one thing the door does not carry, so it comes from the platform's names door
+// (and in the mine lane every run is her own).
 
 /** In the mine lane every run is the person's own. */
 const yourself: DrillNameResolver = {
@@ -116,13 +59,7 @@ export function WorkflowRunsExplorer({ lane }: { lane: "platform" | "mine" }) {
     );
   }
   const names: Record<string, DrillNameResolver> =
-    lane === "platform"
-      ? {
-          workflow: workflowNames,
-          person: usageNameResolver(SYSTEM_ORGANIZATION_ID, "person"),
-          organization: usageNameResolver(SYSTEM_ORGANIZATION_ID, "organization"),
-        }
-      : { workflow: workflowNames, person: yourself, organization: memberOrganizationNames };
+    lane === "platform" ? { person: usageNameResolver(SYSTEM_ORGANIZATION_ID, "person") } : { person: yourself };
   return (
     <DrillExplorer
       source={WORKFLOW_RUNS_SOURCE}
@@ -132,7 +69,6 @@ export function WorkflowRunsExplorer({ lane }: { lane: "platform" | "mine" }) {
       rootLabel={lane === "platform" ? "Every run" : "Runs you started"}
       firstQuestion={WORKFLOW_RUNS_FIRST_QUESTION}
       names={names}
-      words={{ status: wordsOf(STATUS_WORDS, "No status"), trigger: wordsOf(HOW_STARTED_WORDS, "Not known") }}
       headline={{ measure: "runs", also: ["failures", "runs_with_requests"] }}
       rowNoun="run"
       countMeasure="runs"

@@ -115,12 +115,17 @@ export function applySourcesScope<
   Q extends { eq: (column: string, value: string) => Q },
 >(
   q: Q,
-  scope: { kind: "mine" } | { kind: "orgs"; organizationId: string },
+  scope: {
+    kind: "mine" | "orgs";
+    /** The page's ORGANIZATION FILTER (`?org_filter=`); null/absent = All organizations. Never the active org. */
+    organizationId?: string | null;
+  },
   userId: string,
 ): Q {
-  return scope.kind === "mine"
-    ? q.eq("created_by", userId)
-    : q.eq("organization_id", scope.organizationId);
+  const lane = scope.kind === "mine" ? q.eq("created_by", userId) : q;
+  return scope.organizationId
+    ? lane.eq("organization_id", scope.organizationId)
+    : lane;
 }
 
 export interface SourceAttachment {

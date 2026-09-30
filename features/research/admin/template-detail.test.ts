@@ -93,7 +93,7 @@ describe("researchTemplateDetailFields — labelled settings, never a JSON block
   it("unpacks metadata the same way, and reads the human words for kind, autonomy and the row controls", () => {
     const fields = researchTemplateDetailFields(ROW);
     expect(field(fields, "published_to_web")?.text).toBe("Yes");
-    expect(field(fields, "shown_to")?.text).toBe("Default for this type");
+    expect(field(fields, "shown_to")?.text).toBe("Default");
     expect(field(fields, "metadata:template_type")?.text).toBe("company");
     expect(field(fields, "is_system")?.text).toBe("Built into the platform");
     expect(field(fields, "autonomy_level")?.text).toBe("Semi-automatic");

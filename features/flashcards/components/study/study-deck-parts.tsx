@@ -357,22 +357,17 @@ function FlashcardStudySidebarStats({
           )}
         </div>
 
-        <div className="grid grid-cols-4 gap-0.5">
-          <SidebarMetric
-            label="Att"
-            value={hasHistory ? mastery.attempt_count : "—"}
-          />
-          <SidebarMetric
-            label="Cor"
-            value={hasHistory ? mastery.correct_count : "—"}
-            accent={hasHistory ? "green" : undefined}
-          />
-          <SidebarMetric
-            label="Str"
-            value={hasHistory ? mastery.streak : "—"}
-          />
-          <SidebarMetric label="Mst" value={masteryPct ?? "—"} />
-        </div>
+        {/* Plain words, never "Att/Cor/Str/Mst" (copy law R9, V4-F 2026-09-30);
+            and before the first review there is nothing to count, so the
+            "No review history" line below says it once instead of four dashes. */}
+        {hasHistory ? (
+          <div className="grid grid-cols-4 gap-0.5">
+            <SidebarMetric label="Tries" value={mastery.attempt_count} />
+            <SidebarMetric label="Right" value={mastery.correct_count} accent="green" />
+            <SidebarMetric label="Streak" value={mastery.streak} />
+            <SidebarMetric label="Known" value={masteryPct ?? "—"} />
+          </div>
+        ) : null}
 
         <div className="flex min-h-4 items-center justify-between gap-1 text-[10px] leading-none">
           {metaParts.length > 0 ? (
@@ -420,7 +415,7 @@ function SidebarMetric({
       >
         {value}
       </div>
-      <div className="text-[8px] uppercase tracking-wide text-muted-foreground">
+      <div className="truncate text-[9px] leading-tight text-muted-foreground">
         {label}
       </div>
     </div>

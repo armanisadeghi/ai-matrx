@@ -215,7 +215,12 @@ export async function segmentedGenerate<T>({
       }
       const items = extract(extracted.value, segment);
       settled += 1;
-      itemCount += items.length;
+      // THE COUNT LAW reaches the progress line too (V4-F, 2026-09-30): a run
+      // asked for 5 said "8 cards so far" because each section's spare (and any
+      // over-delivery) was counted. With an explicit count a section adds at
+      // most its own share, and the running total never passes the request —
+      // the merge below keeps exactly that many.
+      itemCount = progressItemCount(itemCount, items.length, segment.items, options?.count ? plan.total : undefined);
       ctx.onProgress?.({
         done: settled,
         total: plan.segments.length,
@@ -256,6 +261,23 @@ export async function segmentedGenerate<T>({
     gapNote: describeGaps(missed),
     missedCount: missed.length,
   };
+}
+
+/**
+ * The running item count a progress line shows after one more section settles.
+ * Without a requested total it is simply everything written. With one (THE
+ * COUNT LAW) a section adds at most its own share — its spare and any
+ * over-delivery are not cards the person will get — and the total is capped at
+ * the request, so the line can never read "8 so far" on a 5-card run.
+ */
+export function progressItemCount(
+  before: number,
+  produced: number,
+  share: number,
+  requested?: number,
+): number {
+  if (requested === undefined) return before + produced;
+  return Math.min(requested, before + Math.min(produced, share));
 }
 
 /**

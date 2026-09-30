@@ -13,16 +13,18 @@
 // `prefix + whole sentence + suffix` as its goal.
 //
 // This is the one notice that goes with `useWizardDraft`'s `applyOnce`.
-// Plain English for someone who has never used software like this: what
-// happened, and the two things they can do about it.
+// Two words say what happened ("Restored from last time"); the "Start fresh"
+// button and the dismiss are the two things they can do about it. The longer
+// sentence (what was put back) is the accessible name, never a visible line —
+// copy law R9, 2026-09-30: a sentence that restates its own button is noise.
 
 import { RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface WizardDraftRestoredProps {
   /**
-   * What was put back, in the person's words — completes "We put back
-   * <what> from last time." Keep it concrete ("what you started writing").
+   * What was put back, in the person's words — the notice's accessible name
+   * ("We put back <what> from last time"). Keep it concrete.
    */
   what?: string;
   /** Empty the form and drop the saved draft. */
@@ -41,11 +43,12 @@ export function WizardDraftRestored({
   return (
     <div
       role="status"
+      aria-label={`We put back ${what} from last time`}
       className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-muted/50 px-4 py-3"
     >
       <RotateCcw className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-      <p className="min-w-[12rem] flex-1 text-sm text-foreground">
-        We put back {what} here last time. Change it, or start fresh.
+      <p className="min-w-0 flex-1 truncate text-sm text-foreground">
+        Restored from last time
       </p>
       <Button
         type="button"

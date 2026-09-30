@@ -280,9 +280,10 @@ function BudgetSummary({
   const v = VERDICT[plan.verdict];
   const pct = Math.round(plan.share * 100);
   const onDemand = plan.entries.filter((e) => e.status === "on_demand").length;
-  // One line, value only (R9): the verdict and how full the AI's reading room is.
+  // One line, value only (R9): the verdict and how much of the AI's limit this
+  // uses — the number always names its noun ("0% full" of what? V4-F 2026-09-30).
   // Sizes a person understands (characters, pages); tokens only in the tooltip.
-  const size = `${pct}% full${plan.windowIsFallback ? "" : modelLabel ? ` · ${modelLabel}` : ""}`;
+  const size = `${pct}% of the AI's limit${plan.windowIsFallback ? "" : modelLabel ? ` · ${modelLabel}` : ""}`;
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">

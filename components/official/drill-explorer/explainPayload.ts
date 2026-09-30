@@ -58,7 +58,7 @@ export interface DrillExplainInput {
   measureUnits: Readonly<Record<string, string | undefined>>;
   /** The question the table draws (auto grain applied). */
   question: MatrxDrillQuestion;
-  /** The answers the table draws (money already apportioned to the shown total). */
+  /** The answers the table draws (every value as the door counted it; the screen formats each on its own). */
   answers: MatrxDrillAnswers;
   /** The window without the trail, for the coverage line. */
   whole: MatrxDrillAnswerRow | null;

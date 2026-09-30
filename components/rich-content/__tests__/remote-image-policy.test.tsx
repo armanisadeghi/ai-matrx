@@ -129,7 +129,7 @@ describe("client levels, by who wrote the text", () => {
     principals.organizationId = "org-1";
     principals.userId = "user-1";
     await render(<RichContentInline source={`Photo: ![valve](${SUPPLIER}) here.`} imagePolicy="other" />);
-    const always = [...container.querySelectorAll("button")].find((b) => b.textContent === "Always show from supplier.example.com")!;
+    const always = [...container.querySelectorAll("button")].find((b) => b.textContent === "Always show" && b.title === "Always show images from supplier.example.com")!;
     expect(always).toBeTruthy();
     await act(async () => always.click());
     expect(setUserKnobMapEntry).toHaveBeenCalledWith(expect.objectContaining({

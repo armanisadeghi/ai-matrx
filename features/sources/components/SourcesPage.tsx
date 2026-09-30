@@ -79,9 +79,10 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   selectOrganizationId,
-  selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { writeOne } from "@/utils/supabase/writeOne";
@@ -350,8 +351,8 @@ function AttachedCell({
 export function SourcesPage() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
+  // The ACTIVE org is only where new Sources are saved — it never narrows this list.
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const activeOrgName = useAppSelector(selectOrganizationName);
   const [scopeChoice, setScopeChoice] = useState<ScopeChoice>("mine");
   // `?show=all` / `?show=saved` opens the page on that view (the Knowledge
   // home's count cards link here with it).
@@ -391,12 +392,28 @@ export function SourcesPage() {
     reset: resetScrape,
   } = useScraperApi();
 
-  const scope: SourcesScope | null =
-    scopeChoice === "mine"
-      ? { kind: "mine" }
-      : activeOrgId
-        ? { kind: "orgs", organizationId: activeOrgId }
-        : null;
+  // The page's organization filter: `?org_filter=`, default All organizations,
+  // never seeded from the active org and never remembered.
+  const [orgFilter, setOrgFilter] = useState<string | null>(
+    () => searchParams?.get("org_filter") || null,
+  );
+  const changeOrgFilter = (id: string | null) => {
+    setSelectedIds([]);
+    setOrgFilter(id);
+    const next = new URLSearchParams(window.location.search);
+    if (id) next.set("org_filter", id);
+    else next.delete("org_filter");
+    const qs = next.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
+  };
+  const scope: SourcesScope = {
+    kind: scopeChoice === "mine" ? "mine" : "orgs",
+    organizationId: orgFilter,
+  };
   const {
     rows,
     facts,
@@ -879,9 +896,7 @@ export function SourcesPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  const scopeLabel = activeOrgName
-    ? `Anyone in ${activeOrgName}`
-    : "Anyone in my organization";
+  const scopeLabel = "My Orgs";
 
   return (
     <SurfaceRuntimeProvider
@@ -982,12 +997,13 @@ export function SourcesPage() {
             onRetry={refresh}
           />
         ) : null}
-        {scopeChoice === "org" && !activeOrgId ? (
-          <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
-            Choose an organization in the organization picker to see its
-            Sources.
-          </p>
-        ) : null}
+        <div className="flex justify-end">
+          <EntityOrgFilter
+            orgId={orgFilter}
+            onChange={changeOrgFilter}
+            counts={EMPTY_SCOPE_COUNTS}
+          />
+        </div>
 
         {error && rows.length === 0 ? (
           // The list read failed: say so — the table's "No Sources yet." would be a lie.

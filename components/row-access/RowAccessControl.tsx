@@ -101,14 +101,20 @@ export function RowAccessControl({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size={size} disabled={saving} className="gap-1.5">
+        <Button
+          variant="outline"
+          size={size}
+          disabled={saving}
+          className="gap-1.5"
+          title={value.publishedToWeb ? undefined : SHOWN_TO_LABEL}
+        >
           <TriggerIcon className="h-3.5 w-3.5" />
           {value.publishedToWeb ? PUBLISHED_TO_WEB_LABEL : shownToLabel(value.shownTo)}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuLabel className="text-xs text-muted-foreground">
-          {SHOWN_TO_LABEL} — which lists show it
+          {SHOWN_TO_LABEL}
         </DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={value.shownTo ?? ""}

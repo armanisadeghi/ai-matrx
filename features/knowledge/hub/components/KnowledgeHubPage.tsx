@@ -75,17 +75,17 @@ import {
   presentOrganizationRefusal,
 } from "@/lib/organizations/organizationRefusalToast";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { trashConfirmSentence } from "@/features/trash/archiveCopy";
 import { keepSource, sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import type { EntityRef, FiledRef, KnowledgeHit, KnowledgeQuery } from "@/features/knowledge/api/knowledgeSearch";
 import {
-  ACTIVE_ORGANIZATION,
   HUB_KINDS,
   isHubPresetViewKey,
   normalizeQuery,
-  organizationReachOf,
-  resolveOrganizationReach,
+  orgFilterOf,
   selectionQuery,
   type HubLayout,
   type HubState,
@@ -367,13 +367,10 @@ export function KnowledgeHubPage({
     return row?.definition ?? (code ? presetDefinition(code) : null);
   };
   const presetPending = Boolean(presetKey && presetDef && appliedPreset.current !== presetKey);
-  // The ONE active organization (the shell header's). The hub keeps none of its own: "Only my
-  // organization" is stored as a word and resolved here on every run.
+  // The active organization (the shell header's) is only where NEW things are saved (writes below);
+  // no read narrows by it. The list's organization filter is `query.organizations` (?org_filter=).
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const effectiveQuery = resolveOrganizationReach(
-    presetPending && presetDef ? mergePresetQuery(presetDef.query, state.query) : state.query,
-    activeOrgId,
-  );
+  const effectiveQuery = presetPending && presetDef ? mergePresetQuery(presetDef.query, state.query) : state.query;
   // `library:*` (the Libraries preset) → every library this person can see.
   const expanded = expandAnyContainers(effectiveQuery, idsByType);
   // Ask (H4) answers over the same filter in a docked panel; the results keep listing it.
@@ -392,7 +389,7 @@ export function KnowledgeHubPage({
     .filter((v) => v.definition)
     .slice(0, 40)
     .flatMap((v) => {
-      const x = expandAnyContainers(resolveOrganizationReach(v.definition!.query, activeOrgId), idsByType);
+      const x = expandAnyContainers(v.definition!.query, idsByType);
       return x.status === "pending" ? [] : [{ id: v.id, query: x.query }];
     });
   const { counts: viewCounts, refresh: refreshCounts } = useSavedViewCounts(
@@ -1817,6 +1814,15 @@ export function KnowledgeHubPage({
         </div>
         {/* Trash lists trashed Sources only: views, layouts and search reach do not apply there. */}
         <div className={trashView ? "hidden" : "order-3 flex shrink-0 items-center gap-1 @lg:order-1"}>
+          {/* The ORGANIZATION FILTER: All organizations first and default, in the URL (?org_filter=),
+              never the header's active organization. It narrows every section and count. */}
+          <EntityOrgFilter
+            orgId={orgFilterOf(state.query) ?? null}
+            onChange={(id) =>
+              write({ query: normalizeQuery({ ...state.query, organizations: id ? [id] : undefined }) })
+            }
+            counts={EMPTY_SCOPE_COUNTS}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Search settings" title="Search settings">
@@ -1824,29 +1830,6 @@ export function KnowledgeHubPage({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Search reach</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={organizationReachOf(state.query)}
-                onValueChange={(v) =>
-                  write({
-                    query: normalizeQuery({
-                      ...state.query,
-                      organizations: v === "active" ? [ACTIVE_ORGANIZATION] : undefined,
-                    }),
-                  })
-                }
-              >
-                <DropdownMenuRadioItem value="all">Every organization I belong to</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="active" disabled={!activeOrgId}>
-                  {activeOrgName ? `Only ${activeOrgName}` : "Only my current organization"}
-                </DropdownMenuRadioItem>
-                {organizationReachOf(state.query) === "pinned" ? (
-                  <DropdownMenuRadioItem value="pinned" disabled>
-                    The organizations this link names
-                  </DropdownMenuRadioItem>
-                ) : null}
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
               <DropdownMenuLabel>Rerank results</DropdownMenuLabel>
               <DropdownMenuRadioGroup
                 value={rerank === undefined ? "org" : rerank ? "on" : "off"}
@@ -1904,29 +1887,10 @@ export function KnowledgeHubPage({
           </Button>
           {layoutSwitch}
         </div>
-        {!trashView && (transcriptsView || resultCount || organizationReachOf(state.query) === "active") ? (
+        {!trashView && (transcriptsView || resultCount) ? (
           <>
             {/* Row break on a wide pane: facets and the count start their own line. */}
             <div className="order-2 hidden h-0 basis-full @lg:block" aria-hidden />
-            {/* The reach, when narrowed, is a filter like any other: it says which organization and
-                carries its own × (the header's organization is where "Only" points). */}
-            {organizationReachOf(state.query) === "active" ? (
-              <div className="order-2 inline-flex h-8 shrink-0 items-center rounded-md border border-primary/30 bg-primary/10 text-xs">
-                <span className="px-2.5">
-                  <span className="text-muted-foreground">Only </span>
-                  <span className="font-medium">{activeOrgName ?? "my current organization"}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => write({ query: normalizeQuery({ ...state.query, organizations: undefined }) })}
-                  className="inline-flex h-full items-center rounded-r-md border-l border-primary/20 px-1.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
-                  aria-label="Search every organization I belong to"
-                  title="Every organization I belong to"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : null}
             {transcriptsView ? (
               <div className="order-2 min-w-0 basis-full @lg:basis-0 @lg:flex-1">
               <TranscriptFacetBar

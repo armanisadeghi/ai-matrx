@@ -58,6 +58,9 @@ export interface EngagementPickerProps {
   /** In-place create of a project, task or scope. Default on. */
   allowCreate?: boolean;
   className?: string;
+  /** What the trigger reads while nothing is held — a list filter passes
+   *  "All organizations" so the empty state is a visible, honest choice. */
+  emptyLabel?: string;
   /** Inline presentation: the columns' own class (height, width). */
   columnsClassName?: string;
 }
@@ -87,6 +90,7 @@ export function EngagementPicker({
   requireProject = false,
   allowCreate = true,
   className,
+  emptyLabel,
   columnsClassName,
 }: EngagementPickerProps) {
   const base = useUniverse();
@@ -255,7 +259,9 @@ export function EngagementPicker({
           <span className="flex min-w-0 items-center gap-1.5">
             <LeadIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span className="truncate">
-              {chain.length > 0 ? chain.join(" › ") : placeholderFor(rungs)}
+              {chain.length > 0
+                ? chain.join(" › ")
+                : (emptyLabel ?? placeholderFor(rungs))}
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-1.5">

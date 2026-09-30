@@ -9,7 +9,7 @@
 // while the trail narrows — the same question without the trail, so the coverage line can say
 // what part of the whole window the slice is. The definition (Dimensions, Measures, paths, and —
 // when the contract carries them — built-in views, findings, records) is `platform.drill_describe`.
-// Id-valued Dimensions read their words through the host's name resolvers.
+// Id-valued Dimensions read their words from the door's own labels, then the host's name resolvers.
 
 import { useEffect, useState } from "react";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
@@ -29,6 +29,7 @@ import { supabase } from "@/utils/supabase/client";
 import { withAutoGrain } from "./grain";
 import { asOfAnswer, doorWhere, type DrillNameResolver } from "./types";
 import { carriedAsk, type DrillCarried } from "./questionParts";
+import { drillDoorLabels } from "./dimensionWords";
 
 const clients = new Map<string, RecordsClient>();
 /** One records client per organization and person (the door needs both). */
@@ -173,8 +174,10 @@ export function useDrillExplorer(args: {
   windowAlign?: "hour" | undefined;
   /** What the open view asks beyond the address (list/range filters, a group limit, thresholds): asked with every request. */
   carried?: DrillCarried | null | undefined;
+  /** Measures the header says beside the total (asked on the total only, never as table columns). */
+  headlineAlso?: readonly string[] | undefined;
 }): DrillExplorerData {
-  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried } = args;
+  const { source, lane, organizationId, userId, question, names: resolvers, version = 0, countMeasure, windowAlign, carried, headlineAlso } = args;
   const client = organizationId ? drillClientFor(organizationId, userId) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
@@ -202,6 +205,7 @@ export function useDrillExplorer(args: {
 
   const askKey = JSON.stringify({ by: question.by, across: question.across ?? null, show: question.show, where: question.where, window: question.window ?? null, compare: question.compare ?? null, sort: question.sort ?? null, carried: carried ?? null });
   const resolverKeys = Object.keys(resolvers ?? {}).sort().join(",");
+  const alsoKey = (headlineAlso ?? []).join(",");
 
   // THE ANSWERS — every request the table needs, plus the whole (no trail) for coverage.
   useEffect(() => {
@@ -212,9 +216,16 @@ export function useDrillExplorer(args: {
     const asked = withAutoGrain(def, parsed);
     const windowPart = doorWindow(asked, windowAlign);
     if (windowPart.window && door?.windowKey) windowPart.window = { ...windowPart.window, key: door.windowKey };
-    const doorShow = countMeasure && !asked.show.includes(countMeasure) ? [...asked.show, countMeasure] : asked.show;
+    // A RUN RATE NEEDS A WINDOW WITH A START (the door refuses one without, 22023): with "all time" it is
+    // left out of the ask and said, never a failed answer (lane DRILL-GAPS)
+    const rates = new Set(def.measures.filter((m) => (m.op as string) === "rate").map((m) => m.key));
+    const noStart = !windowPart.window;
+    const askable = (keys: readonly string[]) => (noStart ? keys.filter((k) => !rates.has(k)) : [...keys]);
+    const leftOut = noStart ? [...asked.show, ...(headlineAlso ?? [])].filter((k) => rates.has(k)) : [];
+    const doorShow = askable(countMeasure && !asked.show.includes(countMeasure) ? [...asked.show, countMeasure] : asked.show);
+    const totalShow = [...doorShow, ...askable((headlineAlso ?? []).filter((k) => !doorShow.includes(k) && def.measures.some((m) => m.key === k)))];
     const where = doorWhere(asked);
-    const sortKey = asked.sort && asked.show.includes(asked.sort.key) ? asked.sort.key : asked.show[0];
+    const sortKey = asked.sort && doorShow.includes(asked.sort.key) ? asked.sort.key : doorShow[0];
     const requests = drillRequests(asked);
     const answeredFor = `${askKey}#${version}`;
     const src = JSON.parse(sourceKey) as DrillSource;
@@ -227,7 +238,7 @@ export function useDrillExplorer(args: {
         source: src,
         question: {
           by,
-          show: doorShow,
+          show: by.length === 0 ? totalShow : doorShow,
           // the open view's own filters (lists, ranges) narrow every number, the trail's crumbs on top
           where: { ...(door?.where ?? {}), ...w },
           lane,
@@ -247,10 +258,15 @@ export function useDrillExplorer(args: {
         return;
       }
       const out: Record<string, MatrxDrillAnswerRow[]> = {};
-      const sentences: string[] = [];
+      const sentences: string[] = leftOut.length > 0
+        ? [`${[...new Set(leftOut)].map((k) => def.measures.find((m) => m.key === k)?.label ?? k).join(", ")} ${leftOut.length === 1 ? "is a run rate, counted" : "are run rates, counted"} over a window with a start — pick a window to see ${leftOut.length === 1 ? "it" : "them"}.`]
+        : [];
       let wholeRow: MatrxDrillAnswerRow | null = null;
       let counted: string | null = null;
       const ids: Record<string, Set<string>> = {};
+      // THE DOOR'S OWN WORDS (lane DRILL-GAPS): a relation group arrives with its label, read as the
+      // seat through the target's row security — no host lookup for what the door already named.
+      const doorLabels: Record<string, Record<string, string>> = {};
       const named = new Set(resolverKeys ? resolverKeys.split(",") : []);
       const note = (dim: string, value: unknown) => {
         const key = parseDimensionRef(dim).key;
@@ -280,16 +296,25 @@ export function useDrillExplorer(args: {
           rows.sort((a, b) => String(b.groups[across] ?? "").localeCompare(String(a.groups[across] ?? "")));
         }
         out[r.key] = rows;
+        for (const [key, map] of Object.entries(drillDoorLabels(answer.rows))) doorLabels[key] = { ...(doorLabels[key] ?? {}), ...map };
         for (const row of answer.rows) for (const [dim, value] of Object.entries(row.groups ?? {})) note(dim, value);
       }
       for (const w of asked.where) note(w.dim, w.value);
+      if (Object.keys(doorLabels).length > 0) {
+        setNames((held) => {
+          const next = { ...held };
+          for (const [key, map] of Object.entries(doorLabels)) next[key] = { ...(held[key] ?? {}), ...map };
+          return next;
+        });
+      }
       setAnswered({ key: answeredFor, answers: out, whole: wholeRow });
       setSays(sentences);
       setAsOf(counted);
       for (const [key, set] of Object.entries(ids)) {
         const resolver = resolvers?.[key];
-        if (!resolver || set.size === 0) continue;
-        void resolver.resolve([...set]).then((got) => {
+        const unnamed = [...set].filter((id) => !doorLabels[key]?.[id]);
+        if (!resolver || unnamed.length === 0) continue;
+        void resolver.resolve(unnamed).then((got) => {
           if (cancelled) return;
           if (!got.ok) {
             setSays((s) => (s.includes(got.message) ? s : [...s, got.message]));
@@ -304,7 +329,7 @@ export function useDrillExplorer(args: {
     };
     // `resolvers` is read through `resolverKeys` (a host passes a fresh object each render).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, def, askKey, version, lane, sourceKey, resolverKeys, countMeasure, windowAlign]);
+  }, [client, def, askKey, version, lane, sourceKey, resolverKeys, countMeasure, windowAlign, alsoKey]);
 
   const current = answered.key === `${askKey}#${version}`;
   return { def, answers: current ? answered.answers : NO_ANSWERS, whole: current ? answered.whole : null, names, says, error, asOf, client };

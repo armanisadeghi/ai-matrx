@@ -21,6 +21,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback.
 
+import { cardProgressLine } from "@/features/flashcards/components/create/cardProgressLine";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -241,11 +242,7 @@ function AddMoreCardsDialog({
           store,
           orgId,
           onProgress: (p: ConvertProgress) =>
-            setStatus(
-              p.total > 1
-                ? `Section ${Math.min(p.done + 1, p.total)} of ${p.total} — ${p.items} cards so far`
-                : `Making ${safeCount} new cards…`,
-            ),
+            setStatus(cardProgressLine(p, safeCount, "new cards") ?? `Making ${safeCount} new cards…`),
         },
       });
       if (made.cards.length === 0) {

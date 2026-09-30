@@ -185,6 +185,7 @@ export function QuickTasksSidebar() {
       <div className="px-2 py-2 border-b shrink-0 bg-muted/10">
         <EngagementPicker
           rungs={["organization", "project", "task"]}
+          emptyLabel="All organizations"
           value={{
             ...EMPTY_ENGAGEMENT_SELECTION,
             organizationId: selectedOrgId,

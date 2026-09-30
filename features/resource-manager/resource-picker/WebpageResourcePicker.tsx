@@ -652,8 +652,11 @@ export function WebpageResourcePickerCore({
               <div className="flex-shrink-0 px-6 py-3 border-t border-border bg-muted/50">
                 <div className="flex items-center gap-3">
                   <Scissors className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
-                  <span className="text-[10px] text-muted-foreground flex-shrink-0 w-16">
-                    Limit chars
+                  {/* Plain words, one line (copy law R9, V4-F 2026-09-30): "Keep  All",
+                      "Keep  12K" — never "Limit chars 105,447 / 105,447" wrapped
+                      onto two lines; the exact count lives in the footer. */}
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                    Keep
                   </span>
                   <Slider
                     min={100}
@@ -665,9 +668,10 @@ export function WebpageResourcePickerCore({
                     }}
                     className="flex-1"
                   />
-                  <span className="text-[10px] font-mono text-foreground flex-shrink-0 w-20 text-right">
-                    {effectiveContent.length.toLocaleString()} /{" "}
-                    {editedContent.length.toLocaleString()}
+                  <span className="text-[10px] tabular-nums text-foreground flex-shrink-0 whitespace-nowrap text-right">
+                    {charLimit > 0
+                      ? formatCount(effectiveContent.length, { style: "compact" })
+                      : "All"}
                   </span>
                   {charLimit > 0 && (
                     <button
@@ -699,7 +703,7 @@ export function WebpageResourcePickerCore({
                     was a character count wearing a byte formatter's units.
                   */}
                   <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                    {formatCount(effectiveContent.length)} chars
+                    {formatCount(effectiveContent.length)} characters
                   </span>
                   {editedContent !== data.textContent && (
                     <span className="text-[10px] text-orange-600 dark:text-orange-500 flex-shrink-0">

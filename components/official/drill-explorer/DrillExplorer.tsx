@@ -18,12 +18,16 @@
 //                definition declares them, else the host's link to where they live
 //
 // Money: every Measure with unit "usd" is stored in dollars and shown in CREDITS — a system admin
-// may switch to dollars (Arman, 2026-09-27) with the platform's one switch, offered here too.
+// may switch to dollars (Arman, 2026-09-27) with the platform's one switch, offered here too. Every
+// other unit the contract carries (tokens, count, ms, share, times…) is formatted by its unit
+// (`measureFormat.ts`), and every value is rounded on its own — a value reads the same wherever it
+// appears (owner ruling, 2026-09-30). Codes and ids read as the definition's and the door's words
+// (`dimensionWords.ts`), never a mount's copy of them.
 // Usage, CX usage, KG cost and workflow runs are mounts of this screen.
 
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { POINTS_PER_USD, formatCount } from "@ai-matrx/kit/format";
+import { formatCount } from "@ai-matrx/kit/format";
 import {
   MatrxDrillAnswerTable,
   MatrxDrillGroupByMenu,
@@ -41,7 +45,6 @@ import {
 
 import AppLink from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
-import { formatAdminPoints, formatAdminUsd } from "@/components/cost/formatAdminCost";
 import { selectCanToggleCostUnit, selectCostUnit } from "@/components/cost/costUnit";
 import { knobNumber } from "@/lib/knobs/featureKnobs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -56,7 +59,8 @@ import { drillSavedViewSurface } from "./savedViews";
 import { explorerWindowLabel, explorerWindowRange, useDrillExplorer } from "./useDrillExplorer";
 import { DrillExplorerHeadline, costColumnLabel } from "./DrillExplorerHeadline";
 import { carriedWords, splitExplorerQuestion, type DrillCarried, type ExplorerQuestion } from "./questionParts";
-import { apportionAnswers, roundMoneyRow } from "./apportion";
+import { drillUnitAdds, drillUnitFormatter } from "./measureFormat";
+import { drillDimensionLabelFor } from "./dimensionWords";
 import { drillExplorerAutoGrain, withAutoGrain } from "./grain";
 import {
   builtInViewsOf,
@@ -127,6 +131,7 @@ export function DrillExplorer({
   words,
   countMeasure,
   windowAlign,
+  mineScope,
 }: DrillExplorerProps) {
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
@@ -145,7 +150,7 @@ export function DrillExplorer({
   };
 
   // The hook asks exactly what the table draws: the address question with the auto grain applied.
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried });
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, version: freshness?.version, countMeasure, windowAlign, carried, headlineAlso: headline?.also });
   const { def, answers: rawAnswers, whole: rawWhole, names, says, error, asOf, client } = drill;
   if (!firstQuestion && def && !definitionDefault) {
     const { question: q, door } = splitExplorerQuestion(explorerQuestionOf(def.default));
@@ -159,34 +164,27 @@ export function DrillExplorer({
   const timeKeys = new Set((def?.dimensions ?? []).filter((d) => d.kind === "time").map((d) => d.key));
   const grainWasChosen = [...asked.by, ...(asked.across ? [asked.across] : [])].some((ref) => timeKeys.has(ref));
 
-  const money = (v: number | null) => (v === null ? "—" : unit === "usd" ? formatAdminUsd(v) : formatAdminPoints(v));
-  const compact = (v: number | null) => formatCount(v, { style: "compact" });
 
   const dimensions: MatrxDrillDimension[] = (def?.dimensions ?? []).map((d) => {
     const dim: MatrxDrillDimension = { key: d.key, label: d.label, kind: d.kind };
     if (d.cardinality) dim.cardinality = d.cardinality;
     if (d.grains) dim.grains = d.grains.filter((g): g is NonNullable<MatrxDrillDimension["grains"]>[number] => g !== "hour" && !hideGrains.includes(g));
-    // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as its name (or the resolver's words
-    // while it is read), a code as the host's plain words — never the id or the code itself.
-    const resolver = resolvers?.[d.key];
-    const said = words?.[d.key];
-    if (resolver) {
-      const map = names[d.key] ?? {};
-      dim.labelFor = (value) =>
-        value === null || value === "" ? (resolver.emptyLabel ?? "None") : map[value] ?? (said ? said(value) : (resolver.missingLabel ?? "Reading the name…"));
-    } else if (said) {
-      dim.labelFor = (value) => (value === null || value === "" ? said("") : said(value));
-    }
+    // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as the door's label or the resolver's
+    // name, a code as the definition's choice label — never the id or the code itself.
+    const labelFor = drillDimensionLabelFor(d, { names: names[d.key], resolver: resolvers?.[d.key], hostWords: words?.[d.key] });
+    if (labelFor) dim.labelFor = labelFor;
     return dim;
   });
 
   const measures: MatrxDrillMeasure[] = (def?.measures ?? []).map((m) => ({
     key: m.key,
     // The column's unit word is the one its cells print (VERIFY-DRILL-WAVE1 F9): the platform's cost
-    // formatter says "points" today, so the column does too.
+    // formatter says "points" today, so the column does too. Every other unit is said by its cells.
     label: m.unit === "usd" ? costColumnLabel(m.label, unit) : m.label,
-    additive: m.additive ?? true,
-    ...(m.unit === "usd" ? { format: money, lowerIsBetter: true } : m.unit === "tokens" ? { format: compact } : {}),
+    // a ratio, a percentile, a run rate or an average is recomputed per group, never added up
+    additive: m.additive ?? (["count", "sum", "filled", "empty"].includes(m.op) && drillUnitAdds(m.unit)),
+    format: drillUnitFormatter(m.unit, unit),
+    ...(m.unit === "usd" ? { lowerIsBetter: true } : {}),
   }));
   const hasMoney = (def?.measures ?? []).some((m) => m.unit === "usd");
   const headlineKey = headline?.measure ?? (def?.measures ?? []).find((m) => m.unit === "usd")?.key ?? question.show[0] ?? null;
@@ -197,17 +195,11 @@ export function DrillExplorer({
     return m?.format ? m.format(v) : formatCount(v);
   };
 
-  // ROWS ADD UP TO THE TOTAL SHOWN (VERIFIER-32 F6): money is rounded once, at the total, and every
-  // level splits its parent's rounded amount by largest remainder.
-  const toUnits = (usd: number) => (unit === "usd" ? usd * 100 : usd * POINTS_PER_USD);
-  const fromUnits = (u: number) => (unit === "usd" ? u / 100 : u / POINTS_PER_USD);
-  const moneyKeys = (def?.measures ?? []).filter((m) => m.unit === "usd").map((m) => m.key);
-  const answers = moneyKeys
-    .filter((key) => question.show.includes(key))
-    .reduce((held, key) => apportionAnswers(held, question, key, toUnits, fromUnits), rawAnswers);
-  // ONE ROUNDING RULE (VERIFY-DRILL-WAVE1 F5): the whole the coverage line names is rounded exactly
-  // as the header's total is (to the nearest whole credit or cent), never by the formatter's ceiling.
-  const whole = rawWhole ? roundMoneyRow(rawWhole, moneyKeys, toUnits, fromUnits) : null;
+  // ONE VALUE, ONE READING (owner ruling 2026-09-30, replacing VERIFIER-32 F6's apportioning): every
+  // value is formatted on its own by its unit, so the header's total, a group's cell, the coverage
+  // line's whole and the same group's drilled total read the same wherever the number appears.
+  const answers = rawAnswers;
+  const whole = rawWhole;
   const total = answers["∅"]?.[0] ?? null;
   const range = explorerWindowRange(question.window ?? null, windowAlign);
   const paths = (def?.paths ?? []).map((p) => p.levels);
@@ -254,9 +246,18 @@ export function DrillExplorer({
             ...(headline?.also ?? []).flatMap((key) => {
               const v = total?.measures[key];
               if (v === null || v === undefined) return [];
-              const label = (def?.measures ?? []).find((m) => m.key === key)?.label.toLowerCase() ?? key;
-              return [{ key: `also:${key}`, content: `${formatCount(v)} ${label}` }];
+              const m = (def?.measures ?? []).find((x) => x.key === key);
+              const label = m?.label ?? key;
+              // a count reads "1,204 runs"; any other unit names itself first ("Projected monthly cost 3,578 points")
+              const counted = !m?.unit || m.unit === "count" || m.unit === "tokens" || m.unit === "characters";
+              return [{ key: `also:${key}`, content: counted ? `${fmt(key, v)} ${label.toLowerCase()}` : `${label} ${fmt(key, v)}` }];
             }),
+            // THE MINE LANE IS EVERY ORGANIZATION'S (VERIFY-DRILL-LEDGER-RECORDS F4): the door narrows
+            // the mine lane by the person alone (platform._drill_compile), so its numbers are hers
+            // across all her organizations, whichever organization the screen asks in — said.
+            ...(lane === "mine"
+              ? [{ key: "scope", attrs: { "data-drill-explorer-scope": "mine" }, content: mineScope ?? `Your ${rowNoun}s across all your organizations` }]
+              : []),
           ]}
         />
         <div className="ml-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -349,7 +350,7 @@ export function DrillExplorer({
       <div className="min-h-0 flex-1 overflow-auto">
         {question.by.length === 0 ? (
           def && records ? (
-            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} names={names} formatUsd={money} rowNoun={rowNoun} carried={carried} />
+            <DrillRecords client={client} source={source} lane={lane} def={def} records={records} question={question} dimensions={dimensions} measures={measures} rowNoun={rowNoun} carried={carried} resolvers={resolvers} />
           ) : (
             <p className="p-6 text-sm text-muted-foreground">
               Pick a way to group (Group by, on the right){dimensionWords.length > 0 ? ` — by ${dimensionWords.slice(0, -1).join(", ")}${dimensionWords.length > 1 ? ", or " : ""}${dimensionWords.at(-1)}` : ""}.

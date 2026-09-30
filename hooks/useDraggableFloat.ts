@@ -20,7 +20,13 @@
  * surface off-screen, and `reset()` always brings it back to its anchor.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface DraggableFloatPosition {
   x: number;
@@ -43,9 +49,8 @@ interface UseDraggableFloatOptions {
     centerX?: boolean;
   };
   /**
-   * Fixed controls a person must still be able to use. A dragged surface is
-   * moved to the nearest clear position when it would cover one of these.
-   * Anchored surfaces keep their CSS-owned placement.
+   * Fixed controls a person must still be able to use. The surface moves to
+   * the nearest clear position while retaining its anchor or saved coordinate.
    */
   exclusion?: {
     selector: string;
@@ -60,7 +65,9 @@ function overlaps(
   a: { left: number; top: number; right: number; bottom: number },
   b: { left: number; top: number; right: number; bottom: number },
 ): boolean {
-  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  return (
+    a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+  );
 }
 
 function readStored(storageKey: string): DraggableFloatPosition | null {
@@ -68,14 +75,18 @@ function readStored(storageKey: string): DraggableFloatPosition | null {
     const raw = window.localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<DraggableFloatPosition>;
-    if (typeof parsed?.x !== "number" || typeof parsed?.y !== "number") return null;
+    if (typeof parsed?.x !== "number" || typeof parsed?.y !== "number")
+      return null;
     return { x: parsed.x, y: parsed.y };
   } catch {
     return null;
   }
 }
 
-function writeStored(storageKey: string, value: DraggableFloatPosition | null): void {
+function writeStored(
+  storageKey: string,
+  value: DraggableFloatPosition | null,
+): void {
   try {
     if (value) window.localStorage.setItem(storageKey, JSON.stringify(value));
     else window.localStorage.removeItem(storageKey);
@@ -89,11 +100,20 @@ function writeStored(storageKey: string, value: DraggableFloatPosition | null): 
  * words and its own controls — the close button included — which is how a
  * movable notice turns back into an unclosable one.
  */
-function clamp(pos: DraggableFloatPosition, el: HTMLElement | null): DraggableFloatPosition {
+function clamp(
+  pos: DraggableFloatPosition,
+  el: HTMLElement | null,
+): DraggableFloatPosition {
   const width = el?.offsetWidth ?? 0;
   const height = el?.offsetHeight ?? 0;
-  const maxX = Math.max(EDGE_MARGIN_PX, window.innerWidth - width - EDGE_MARGIN_PX);
-  const maxY = Math.max(EDGE_MARGIN_PX, window.innerHeight - height - EDGE_MARGIN_PX);
+  const maxX = Math.max(
+    EDGE_MARGIN_PX,
+    window.innerWidth - width - EDGE_MARGIN_PX,
+  );
+  const maxY = Math.max(
+    EDGE_MARGIN_PX,
+    window.innerHeight - height - EDGE_MARGIN_PX,
+  );
   return {
     x: Math.min(Math.max(pos.x, EDGE_MARGIN_PX), maxX),
     y: Math.min(Math.max(pos.y, EDGE_MARGIN_PX), maxY),
@@ -101,7 +121,7 @@ function clamp(pos: DraggableFloatPosition, el: HTMLElement | null): DraggableFl
 }
 
 /**
- * Keep an explicitly dragged card off a declared fixed control without
+ * Keep a floating card off a declared fixed control without
  * reserving page space. The nearest clear candidate wins, so a safe saved
  * coordinate remains untouched and an unsafe one moves only as far as needed.
  */
@@ -116,7 +136,9 @@ function avoidExclusions(
   const width = el.offsetWidth;
   const height = el.offsetHeight;
   const gap = exclusion.gap ?? EDGE_MARGIN_PX;
-  const excluded = [...document.querySelectorAll<HTMLElement>(exclusion.selector)]
+  const excluded = [
+    ...document.querySelectorAll<HTMLElement>(exclusion.selector),
+  ]
     .map((target) => target.getBoundingClientRect())
     .filter((rect) => rect.width > 0 && rect.height > 0);
   const rectFor = (candidate: DraggableFloatPosition) => ({
@@ -142,13 +164,22 @@ function avoidExclusions(
   if (clearCandidates.length === 0) return bounded;
 
   return clearCandidates.reduce((nearest, candidate) => {
-    const nearestDistance = Math.hypot(nearest.x - bounded.x, nearest.y - bounded.y);
-    const candidateDistance = Math.hypot(candidate.x - bounded.x, candidate.y - bounded.y);
+    const nearestDistance = Math.hypot(
+      nearest.x - bounded.x,
+      nearest.y - bounded.y,
+    );
+    const candidateDistance = Math.hypot(
+      candidate.x - bounded.x,
+      candidate.y - bounded.y,
+    );
     return candidateDistance < nearestDistance ? candidate : nearest;
   });
 }
 
-function samePosition(a: DraggableFloatPosition, b: DraggableFloatPosition): boolean {
+function samePosition(
+  a: DraggableFloatPosition,
+  b: DraggableFloatPosition,
+): boolean {
   return a.x === b.x && a.y === b.y;
 }
 
@@ -159,6 +190,10 @@ export function useDraggableFloat({
   exclusion,
 }: UseDraggableFloatOptions) {
   const [position, setPosition] = useState<DraggableFloatPosition | null>(null);
+  const [anchorOffset, setAnchorOffset] =
+    useState<DraggableFloatPosition | null>(null);
+  const [anchorResetEpoch, setAnchorResetEpoch] = useState(0);
+  const anchorOffsetRef = useRef<DraggableFloatPosition | null>(null);
   const [dragging, setDragging] = useState(false);
   const grabRef = useRef<{ dx: number; dy: number } | null>(null);
   /** The person's chosen coordinate, before any temporary collision adjustment. */
@@ -198,9 +233,33 @@ export function useDraggableFloat({
 
     const reconcilePosition = () => {
       const preferred = preferredPositionRef.current;
-      if (!preferred) return;
-      const next = avoidExclusions(preferred, element, exclusion);
-      setPosition((current) => (current && samePosition(current, next) ? current : next));
+      if (preferred) {
+        const next = avoidExclusions(preferred, element, exclusion);
+        setPosition((current) =>
+          current && samePosition(current, next) ? current : next,
+        );
+        return;
+      }
+
+      // A default-anchored surface can cover a fixed footer too. CSS still
+      // owns its anchor; translate only the temporary collision clearance.
+      // Remove the previous translation from the measured rectangle so each
+      // geometry event starts at the same CSS anchor instead of drifting.
+      const rect = element.getBoundingClientRect();
+      const base = {
+        x: rect.left - (anchorOffsetRef.current?.x ?? 0),
+        y: rect.top - (anchorOffsetRef.current?.y ?? 0),
+      };
+      const clear = avoidExclusions(base, element, exclusion);
+      const next = { x: clear.x - base.x, y: clear.y - base.y };
+      const offset = next.x === 0 && next.y === 0 ? null : next;
+      anchorOffsetRef.current = offset;
+      setAnchorOffset((current) =>
+        (current === null && offset === null) ||
+        (current && offset && samePosition(current, offset))
+          ? current
+          : offset,
+      );
     };
     const scheduleReconcile = () => {
       if (geometryFrameRef.current !== null) return;
@@ -212,7 +271,9 @@ export function useDraggableFloat({
 
     reconcilePosition();
     const observer =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleReconcile);
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleReconcile);
     observer?.observe(element);
     const observeExclusions = () => {
       if (!exclusion) return;
@@ -236,29 +297,39 @@ export function useDraggableFloat({
       mutations?.disconnect();
       window.removeEventListener("resize", scheduleReconcile);
       window.removeEventListener("scroll", scheduleReconcile, true);
-      if (geometryFrameRef.current !== null) window.cancelAnimationFrame(geometryFrameRef.current);
+      if (geometryFrameRef.current !== null)
+        window.cancelAnimationFrame(geometryFrameRef.current);
       geometryFrameRef.current = null;
     };
-  }, [element, exclusion]);
+  }, [element, exclusion, anchorResetEpoch]);
 
-  const onPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    if (event.button !== 0) return;
-    const el = element;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    grabRef.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
-    draggedRef.current = false;
-    setDragging(true);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    event.preventDefault();
-  }, [element, exclusion]);
+  const onPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      if (event.button !== 0) return;
+      const el = element;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      grabRef.current = {
+        dx: event.clientX - rect.left,
+        dy: event.clientY - rect.top,
+      };
+      draggedRef.current = false;
+      setDragging(true);
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    },
+    [element, exclusion],
+  );
 
   useEffect(() => {
     if (!dragging) return;
     const onMove = (event: PointerEvent) => {
       const grab = grabRef.current;
       if (!grab) return;
-      const preferred = { x: event.clientX - grab.dx, y: event.clientY - grab.dy };
+      const preferred = {
+        x: event.clientX - grab.dx,
+        y: event.clientY - grab.dy,
+      };
       preferredPositionRef.current = preferred;
       draggedRef.current = true;
       setPosition(avoidExclusions(preferred, element, exclusion));
@@ -266,7 +337,8 @@ export function useDraggableFloat({
     const onUp = () => {
       setDragging(false);
       grabRef.current = null;
-      if (draggedRef.current) writeStored(storageKey, preferredPositionRef.current);
+      if (draggedRef.current)
+        writeStored(storageKey, preferredPositionRef.current);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -281,18 +353,35 @@ export function useDraggableFloat({
   const reset = useCallback(() => {
     preferredPositionRef.current = null;
     setPosition(null);
+    anchorOffsetRef.current = null;
+    setAnchorOffset(null);
+    setAnchorResetEpoch((epoch) => epoch + 1);
     writeStored(storageKey, null);
   }, [storageKey]);
 
   const style: React.CSSProperties = position
-    ? { position: "fixed", left: position.x, top: position.y, right: "auto", bottom: "auto" }
+    ? {
+        position: "fixed",
+        left: position.x,
+        top: position.y,
+        right: "auto",
+        bottom: "auto",
+      }
     : {
         position: "fixed",
         top: anchor.top,
         bottom: anchor.bottom,
         left: anchor.centerX ? "50%" : anchor.left,
         right: anchor.right,
-        transform: anchor.centerX ? "translateX(-50%)" : undefined,
+        transform:
+          [
+            anchor.centerX ? "translateX(-50%)" : null,
+            anchorOffset
+              ? `translate(${anchorOffset.x}px, ${anchorOffset.y}px)`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined,
       };
 
   return {
@@ -301,7 +390,10 @@ export function useDraggableFloat({
     /** Spread onto the drag handle. */
     dragHandleProps: {
       onPointerDown,
-      style: { cursor: dragging ? "grabbing" : "grab", touchAction: "none" } as React.CSSProperties,
+      style: {
+        cursor: dragging ? "grabbing" : "grab",
+        touchAction: "none",
+      } as React.CSSProperties,
     },
     dragging,
     moved: position !== null,

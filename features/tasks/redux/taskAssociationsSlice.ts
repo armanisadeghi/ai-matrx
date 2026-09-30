@@ -3,6 +3,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   upsertTaskWithLevel,
   type TaskRecord,
@@ -387,10 +388,13 @@ export const createTasksBulk = createAsyncThunk<
   },
   { dispatch: ThunkDispatch<object, unknown, UnknownAction> }
 >("taskAssociations/createTasksBulk", async (input, { dispatch }) => {
+  // Every save carries an organization: the caller's (the active one for new
+  // work), else the person is asked. Never left for the RPC/DB to pick.
+  const organizationId = await ensureOrgId(input.organization_id);
   const { data, error } = await supabase.rpc("create_tasks_bulk", {
     p_items: input.items.map((x, i) => ({ ...x, index: i })),
     p_project_id: input.project_id ?? undefined,
-    p_organization_id: input.organization_id ?? undefined,
+    p_organization_id: organizationId,
     p_scope_ids: input.scope_ids ?? [],
     p_entity_type: input.entity_type ?? undefined,
     p_entity_id: input.entity_id ?? undefined,

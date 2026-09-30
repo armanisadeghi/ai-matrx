@@ -187,7 +187,12 @@ export function MeetingDetail({
   const repository = actions.repository;
   const isMobile = useIsMobile();
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const templates = useMeetTemplates(actions.organizationId, actions.userId);
+  // An existing meeting's templates live in the MEETING's own organization,
+  // never the header's (active-org law, rule 5).
+  const templates = useMeetTemplates(
+    loaded?.meeting.organizationId ?? null,
+    actions.userId,
+  );
   const brief = useMeetPrepStream(
     `meet-brief:${meetingId}`,
     "Preparing the brief",

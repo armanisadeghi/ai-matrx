@@ -1,38 +1,37 @@
 /**
- * check:no-silent-org-filter — THE ORGANIZATION IS A FILTER, NEVER A SILENT SCOPE (lane
- * ORG-FILTER-CLASS, Arman 2026-09-30).
+ * check:no-active-org-in-reads — THE ACTIVE ORGANIZATION IS NEVER A LIST FILTER.
+ * Law (Arman, 2026-09-30): common-docs/policies/active-org-is-never-a-list-filter.md.
  *
- * THE DEFECT THAT OPENED THE CLASS. The agent builder's "Fill automatically → From my data" table
- * picker listed the tables of a records provider bound to the ACTIVE organization — one
- * organization's tables, with nothing on the screen saying so — while the data home lists every
- * table the person can see across all her organizations. "The two lists aren't identical."
+ * THE DEFECT THAT OPENED THE CLASS (lane ORG-FILTER-CLASS). The agent builder's "Fill
+ * automatically → From my data" table picker listed the tables of a records provider bound to the
+ * ACTIVE organization — one organization's tables, silently — while the data home lists every table
+ * the person can see across all her organizations.
  *
- * THE RULE. The default for any person is everything they can see across ALL their organizations.
- * A list may narrow to one organization only through a VISIBLE filter on the same surface (the
- * one control: `OrganizationFilterSelect`, the data home's saved pick via
- * `useDataOrganizationFilter`). Reading the active organization is legitimate for exactly three
- * things, each said on the line:
- *   - `visible`         the surface shows which organization it lists and lets the person change it;
- *   - `write-target`    an organization is needed to CREATE or WRITE something (the new row's home);
- *   - `default-for-new` the person's own default for new things (pre-selects a creation control).
+ * THE RULE. Reads ignore the active organization: no list, search, count, picker, sidebar,
+ * dashboard or record page narrows by it — not by default, not "for now", not with a label. A page
+ * that offers an organization filter uses the shell's control (`EntityOrgFilter`, URL
+ * `?org_filter=`, default All organizations, passed as `p_org_id`). The active organization is only
+ * for writes and server calls, and each such read says so on its line:
+ *   - `write-target`    the organization a create / save / upload / run writes into;
+ *   - `server-call`     the organization an API or server call runs in;
+ *   - `default-for-new` pre-selecting where a "Create" puts the new thing.
  *
- * WHAT IS SCANNED. Every tracked .ts/.tsx under app/ features/ components/ lib/ hooks/ (tests and
- * scripts excluded) that BOTH reads the active organization (useOrganizationRequired,
+ * WHAT IS SCANNED. Every tracked .ts/.tsx under app/ features/ components/ lib/ hooks/ (tests
+ * excluded) that BOTH reads the active organization (useOrganizationRequired,
  * selectOrganizationId, selectActiveOrganizationId, useActiveOrganizationId, getActiveOrgId) AND
  * performs a list read (useTables / tableList / list*() / use*List() / fetch*s() / rpc('list_…') /
  * .from(…).select( / <RecordsProvider / RecordsMount).
  *
- * WHAT PASSES. A file that draws the visible filter (`OrganizationFilterSelect`,
- * `useDataOrganizationFilter`, `data-hub-organization`), or whose every active-organization read
- * carries, on its line or the line above,
- *     // org-filter: <visible|write-target|default-for-new> <reason of 12+ characters>
- * A reasonless or unknown-class annotation fails.
+ * WHAT PASSES. A file whose every active-organization read carries, on its line or the line above,
+ *     // org-filter: <write-target|server-call|default-for-new> <reason of 12+ characters>
+ * A reasonless or unknown-class annotation fails (there is no "visible" class: a label does not
+ * make an active-organization read of a list legal).
  *
- * THE BASELINE (`scripts/no-silent-org-filter-baseline.json`) holds what this lane could not fix,
- * each with its class from the census and its owner. It only SHRINKS: a baseline entry whose file
- * no longer trips the guard fails until its row is removed, and a new file that trips fails.
+ * THE BASELINE (`scripts/no-active-org-in-reads-baseline.json`) holds what is not fixed yet, each
+ * with its census class and owner. It only SHRINKS: a baseline row whose file no longer trips the
+ * guard fails until the row is removed, and a new file that trips fails.
  *
- * `--self-test` proves both directions on planted fixtures.
+ * `--self-test` proves both directions on planted fixtures. `--list` prints every offender.
  */
 
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -41,7 +40,7 @@ import { dirname, join } from "node:path";
 
 import { REPO_ROOT, repoFiles } from "./lib/repo-files";
 
-const BASELINE = "scripts/no-silent-org-filter-baseline.json";
+const BASELINE = "scripts/no-active-org-in-reads-baseline.json";
 
 const ACTIVE_ORG: readonly RegExp[] = [
   /\buseOrganizationRequired\s*\(/,
@@ -63,9 +62,8 @@ const LIST_READS: readonly RegExp[] = [
   /\bRecordsMount\b/,
 ];
 
-const VISIBLE_FILTER = /\bOrganizationFilterSelect\b|\buseDataOrganizationFilter\b|data-hub-organization/;
 const ANNOTATION = /\/\/\s*org-filter:\s*(\S+)\s*(.*)$/;
-const CLASSES = new Set(["visible", "write-target", "default-for-new"]);
+const CLASSES = new Set(["write-target", "server-call", "default-for-new"]);
 
 export interface Finding {
   file: string;
@@ -92,7 +90,6 @@ export function scanText(file: string, text: string): Finding[] {
   const code = codeOf(text);
   if (!ACTIVE_ORG.some((re) => re.test(code))) return [];
   if (!LIST_READS.some((re) => re.test(code))) return [];
-  if (VISIBLE_FILTER.test(code)) return [];
   const raw = text.split("\n");
   const lines = code.split("\n");
   const findings: Finding[] = [];
@@ -107,7 +104,7 @@ export function scanText(file: string, text: string): Finding[] {
         file,
         line: i + 1,
         text: (raw[i] ?? "").trim(),
-        why: `org-filter annotation must name visible | write-target | default-for-new and a reason of 12+ characters (got "${cls}")`,
+        why: `org-filter annotation must name write-target | server-call | default-for-new and a reason of 12+ characters (got "${cls}")`,
       });
       return;
     }
@@ -115,7 +112,7 @@ export function scanText(file: string, text: string): Finding[] {
       file,
       line: i + 1,
       text: (raw[i] ?? "").trim(),
-      why: "reads the ACTIVE organization in a file that lists things, with no visible organization filter — a silent filter. Use OrganizationFilterSelect / useDataOrganizationFilter (default All Orgs), or say why on the line: // org-filter: write-target|default-for-new|visible <reason>",
+      why: "reads the ACTIVE organization in a file that lists things — reads ignore the active organization (policies/active-org-is-never-a-list-filter.md). Narrow with the shell's EntityOrgFilter (?org_filter=, default All organizations), or, when this read only addresses a write or server call, say so: // org-filter: write-target|server-call|default-for-new <reason>",
     });
   });
   return findings;
@@ -162,13 +159,13 @@ export function judge(found: Map<string, Finding[]>, baseline: Record<string, Ba
     log(`[FAIL] ${f} is in ${BASELINE} but no longer trips the guard — remove its row (the baseline only shrinks).`);
   }
   log(
-    `${fresh.length === 0 && stale.length === 0 ? "[ OK ]" : "[FAIL]"} check:no-silent-org-filter — ${found.size} file(s) read the active organization in a list without a visible filter; ${found.size - fresh.length} known (baseline, with owners), ${fresh.length} new, ${stale.length} stale baseline row(s).`,
+    `${fresh.length === 0 && stale.length === 0 ? "[ OK ]" : "[FAIL]"} check:no-active-org-in-reads — ${found.size} file(s) read the active organization where they list things; ${found.size - fresh.length} known (baseline, with owners), ${fresh.length} new, ${stale.length} stale baseline row(s).`,
   );
   return fresh.length === 0 && stale.length === 0 ? 0 : 1;
 }
 
 function selfTest(): number {
-  const dir = mkdtempSync(join(tmpdir(), "no-silent-org-filter-"));
+  const dir = mkdtempSync(join(tmpdir(), "no-active-org-in-reads-"));
   const plant = (rel: string, body: string) => {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
     writeFileSync(join(dir, rel), body);
@@ -184,12 +181,12 @@ function selfTest(): number {
       expectFindings: true,
     },
     {
-      name: "GREEN: the same list with the visible organization filter",
+      name: "RED: a label or control beside it does not excuse an active-organization list read",
       file: plant(
         "features/b/Picker.tsx",
-        `import { OrganizationFilterSelect } from "@/features/unified-data/hub/OrganizationFilterSelect";\nexport function P() { const { organizationId } = useOrganizationRequired(); const rows = listThings(organizationId); return <OrganizationFilterSelect value="all" choices={[]} />; }\n`,
+        `import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";\nexport function P() { const { organizationId } = useOrganizationRequired(); const rows = listThings(organizationId); return <EntityOrgFilter orgId={null} onChange={() => {}} counts={{ byKind: {}, narrow: {} }} />; }\n`,
       ),
-      expectFindings: false,
+      expectFindings: true,
     },
     {
       name: "GREEN: a reasoned write-target annotation",
@@ -208,10 +205,10 @@ function selfTest(): number {
       expectFindings: true,
     },
     {
-      name: "RED: an unknown class",
+      name: "RED: \"visible\" is not a class — a label never legalises it",
       file: plant(
         "features/e/List.tsx",
-        `export function C() {\n  // org-filter: scoped because the list is about the active organization only\n  const id = useAppSelector(selectOrganizationId);\n  const rows = useThingsList(id);\n  return null;\n}\n`,
+        `export function C() {\n  // org-filter: visible the list shows which organization it is filtering\n  const id = useAppSelector(selectOrganizationId);\n  const rows = useThingsList(id);\n  return null;\n}\n`,
       ),
       expectFindings: true,
     },
@@ -242,6 +239,15 @@ function selfTest(): number {
   // The baseline arms: a new offender fails, a stale row fails, a known offender passes.
   const found = scan(dir, ["features/a/Picker.tsx"]);
   const quiet = () => {};
+  const serverCall = scan(dir, [
+    plant(
+      "features/h/Run.tsx",
+      `export function R() {\n  // org-filter: server-call the agent run executes in the organization the person is working in\n  const { organizationId } = useOrganizationRequired();\n  const rows = listAgents();\n  return null;\n}\n`,
+    ),
+  ]);
+  const scOk = serverCall.size === 0;
+  if (!scOk) failures += 1;
+  console.log(`${scOk ? "[ OK ]" : "[FAIL]"} GREEN: a reasoned server-call annotation`);
   const arms: Array<[string, number, number]> = [
     ["RED: a new offender not in the baseline", judge(found, {}, quiet), 1],
     [

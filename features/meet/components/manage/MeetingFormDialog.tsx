@@ -653,7 +653,9 @@ export function MeetingFormDialog({
                   <GuestPicker
                     guests={draft.invitees}
                     onChange={(invitees) => set({ invitees })}
-                    organizationId={actions.organizationId}
+                    organizationId={
+                      editing?.meeting.organizationId ?? actions.organizationId
+                    }
                     hostUserId={editing?.meeting.hostUserId ?? actions.userId}
                   />
                 </section>

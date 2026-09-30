@@ -95,7 +95,9 @@ export const educationLibraryListConfig: EntityListConfig<EducationLibraryRow> =
       },
       {
         facet: "visibility",
-        filterId: "visibility",
+        // The filter/sort key is `shown`; `visibility` stays the facet payload's
+        // key and the row field only (T-13 keeps the retired word out of keys).
+        filterId: "shown",
         label: "Visibility",
         noneLabel: "No visibility",
         countInLabel: false,
