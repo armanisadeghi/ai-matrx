@@ -1470,17 +1470,19 @@ try {
     // BREAKER-4 B4-01: from the table page's header, can a person reach Settings, Archive, Import,
     // Export, Forms and Dashboards — on the Grid and on the Sheet?
     const found = {};
+    const width = Number(process.env.WIDTH ?? 1600);
+    await page.setViewportSize({ width, height: width < 700 ? 844 : 900 });
     for (const view of ["grid", "sheet"]) {
       await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=${view}`, { waitUntil: "domcontentloaded", timeout: 300000 });
       await until(`the ${view}`, async () => (await page.locator("tbody tr").count()) > 0, 240000);
       await sleep(5000);
-      const triggers = await page.locator('[data-table-menu], button[aria-label="Table menu"]').count();
+      const triggers = await page.locator('[data-table-menu]:visible, button[aria-label="Table menu"]:visible').count();
       let items = [];
       if (triggers) {
-        await page.locator('[data-table-menu], button[aria-label="Table menu"]').first().click();
+        await page.locator('[data-table-menu]:visible, button[aria-label="Table menu"]:visible').first().click();
         await sleep(1500);
         items = (await page.locator("[data-table-menu-content] [role^=menuitem]").allInnerTexts()).map((t) => t.trim());
-        await shot(`b401-${view}-menu`);
+        await shot(`b401-${view}-${width}-menu`);
         await page.keyboard.press("Escape");
         await sleep(800);
       }
