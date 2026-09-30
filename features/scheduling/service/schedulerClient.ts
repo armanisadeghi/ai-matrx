@@ -8,7 +8,6 @@
 // see cross-user rows via /scheduler/tasks or /scheduler/runs — those
 // remain on direct Supabase via lib/services/scheduling-admin-service.ts.
 
-import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { serverMessageFromBody, WriteRefusedError } from "@/lib/errors/writeFailure";
 import { supabase } from "@/utils/supabase/client";
 import type {
@@ -161,22 +160,11 @@ export function createTask(
  * (THE SCHEDULER DUPLICATE GUARD). Paused and trigger-less schedules are
  * excluded server-side: they cannot fire, so they cost nothing.
  */
-export async function listDuplicateSchedules(
-  workingOrganizationId?: string | null,
-): Promise<DuplicateScheduleResponse> {
-  const path = "/scheduler/tasks/duplicates";
-  try {
-    return await request<DuplicateScheduleResponse>(path, { method: "GET" });
-  } catch (error) {
-    // 2026-09-29 TEMPORARY FALLBACK: aidream declared this route organization-free but the
-    // deployed server may still answer 400 organization_required. Retry ONCE with the working
-    // organization so the check works before and after that deploy. Remove this catch once the
-    // server change is live (verify: the first call above succeeds with no X-Organization-Id).
-    if (workingOrganizationId && isOrganizationRequiredError(error)) {
-      return request<DuplicateScheduleResponse>(path, { method: "GET" }, workingOrganizationId);
-    }
-    throw error;
-  }
+export function listDuplicateSchedules(): Promise<DuplicateScheduleResponse> {
+  // A read: decided by access alone, never carries the active organization.
+  return request<DuplicateScheduleResponse>("/scheduler/tasks/duplicates", {
+    method: "GET",
+  });
 }
 
 export function listTasks(

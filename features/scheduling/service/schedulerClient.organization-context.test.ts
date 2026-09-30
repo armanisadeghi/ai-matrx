@@ -180,31 +180,17 @@ describe("scheduler client organization admission", () => {
     expect(openPicker).not.toHaveBeenCalled();
   });
 
-  it("the duplicate check goes out organization-free, and retries ONCE with the working organization only if the server still demands one", async () => {
-    const ORG = "22222222-2222-4222-8222-222222222222";
-    const fetchMock = jest
-      .fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ code: "organization_required", message: "send the org" }),
-      })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ groups: [] }) });
+  it("the duplicate check goes out organization-free and is never retried with the active organization", async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ code: "organization_required", message: "send the org" }),
+    }));
     global.fetch = fetchMock as unknown as typeof fetch;
-
-    await expect(listDuplicateSchedules(ORG)).resolves.toEqual({ groups: [] });
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    const first = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    const second = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
-    expect(new Headers(first[1].headers).get("X-Organization-Id")).toBeNull();
-    expect(new Headers(second[1].headers).get("X-Organization-Id")).toBe(ORG);
-  });
-
-  it("an organization-free duplicate check that succeeds is not retried", async () => {
-    const fetchMock = jest.fn(async () => ({ ok: true, json: async () => ({ groups: [] }) }));
-    global.fetch = fetchMock as unknown as typeof fetch;
-    await listDuplicateSchedules("22222222-2222-4222-8222-222222222222");
+    await expect(listDuplicateSchedules()).rejects.toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    const first = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(new Headers(first[1].headers).get("X-Organization-Id")).toBeNull();
   });
+
 });

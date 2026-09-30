@@ -4,8 +4,6 @@
 
 import { useEffect, useState } from "react";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { useAppStore } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { listDuplicateSchedules } from "../service/schedulerClient";
 import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
 
@@ -24,7 +22,6 @@ import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
  * retryable warning while the failure is also captured by Error Inspector.
  */
 export function useDuplicateSchedules(refreshToken?: unknown) {
-  const store = useAppStore();
   const [groups, setGroups] = useState<DuplicateScheduleGroup[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -34,9 +31,7 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
 
     const load = async () => {
       try {
-        const res = await listDuplicateSchedules(
-          selectOrganizationId(store.getState()),
-        );
+        const res = await listDuplicateSchedules();
         if (cancelled) return;
         setGroups(res.groups ?? []);
         setError(null);
@@ -64,7 +59,7 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
     };
     // refreshToken lets a caller re-check after it changes a schedule (pausing
     // one of a pair resolves its group, and the banner must then disappear).
-  }, [store, refreshToken, refreshVersion]);
+  }, [refreshToken, refreshVersion]);
 
   // A group whose extras are all paused costs nothing and is already resolved.
   const liveGroups = groups.filter((g) => g.enabled_count > 1);

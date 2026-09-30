@@ -16,26 +16,13 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 
 const listDuplicatesMock = jest.mocked(listDuplicateSchedules);
 const captureErrorMock = jest.mocked(captureError);
-let selectedOrganizationId: string | null =
-  "11111111-1111-4111-8111-111111111111";
-
-const mockStore = { getState: () => ({}) };
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppStore: () => mockStore,
-}));
-
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => selectedOrganizationId,
-}));
 
 describe("useDuplicateSchedules", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    selectedOrganizationId = "11111111-1111-4111-8111-111111111111";
   });
 
-  it("checks duplicates without waiting for a selected organization, and hands the hook's working organization to the fallback", async () => {
-    selectedOrganizationId = null;
+  it("checks duplicates without waiting for a selected organization, and never hands the active organization to the read", async () => {
     listDuplicatesMock.mockResolvedValue({ groups: [] });
 
     const hook = await renderHook(() => useDuplicateSchedules());
@@ -44,7 +31,7 @@ describe("useDuplicateSchedules", () => {
       () => listDuplicatesMock.mock.calls.length === 1,
       "the duplicate check with no organization selected",
     );
-    expect(listDuplicatesMock).toHaveBeenCalledWith(null);
+    expect(listDuplicatesMock).toHaveBeenCalledWith();
 
     expect(captureErrorMock).not.toHaveBeenCalled();
     await hook.unmount();
