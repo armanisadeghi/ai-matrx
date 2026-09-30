@@ -192,7 +192,10 @@ function directText(el) {
       s += lits.length ? lits[0] : " … ";
     } else if (ts.isJsxElement(c)) {
       const t = tagName(c);
-      if (/^(strong|em|b|i|code|span|a|AppLink|Link|kbd)$/.test(t ?? "")) s += directText(c);
+      // Inline children read as one sentence inside text elements; inside a <div> they are separate
+      // items (a flex row of status spans) — round-2 confirm caught a row of short spans summed as one.
+      const inlineParent = tagName(el) !== "div";
+      if (inlineParent && /^(strong|em|b|i|code|span|a|AppLink|Link|kbd)$/.test(t ?? "")) s += directText(c);
       else s += " ";
     } else s += " ";
   }
