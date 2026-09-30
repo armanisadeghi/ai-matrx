@@ -101,18 +101,40 @@ hardware with a production build before tuning further.
 ## Input, focus, gestures
 
 - **A tile has three states (`SpatialTile`, store `editing`):** *idle* → click = *selected* (drag
-  from anywhere on it moves it; the wheel still zooms the board) → double-click, or a press on a
-  control (input, button, link, editor) = *interacting* (native input: typing, text selection, its
-  own scrolling, "Interacting · Esc" pill). Esc steps back one state; the header always drags.
-  While a tile is interacting only Esc reaches the board's keys.
+  from anywhere on it moves it) → double-click, or a press on a control (input, button, link,
+  editor) = *interacting* (native input: typing, text selection, "Interacting · Esc" pill). Esc
+  steps back one state; the header always drags. While a tile is interacting only Esc reaches the
+  board's keys.
+- **Frame gestures every item type inherits (`engine/tile-gestures.ts`, drawn by `SpatialTile`; a host
+  opts in by passing `onResize`):**
+  - *Resize:* four edge + four corner handles, a 12px SCREEN hit area at any zoom (world size
+    `px / --spatial-z`), mostly outside the edge so it never covers a scrollbar; min 160×96; Shift keeps
+    the aspect ratio (corner: the axis that moved most leads; edge: the other axis scales about its
+    centre); left/top handles move the origin. Pointer capture + a page-wide shield portalled to
+    `body`, so an iframe or editor in the tile can never steal the drag, even while interacting.
+    `useBoard.resizeTile` coalesces a resize into ONE undo step, like a move; `/board` persists it
+    through the board document. Wired on `/board` only (the demo, meeting and workflow boards pass
+    `onMove` but not yet `onResize`; War Room refuses resize by design).
+  - *Double-click (`doubleClickAction`):* on the header / chrome → fly to the tile and make it live
+    (select + `fitItem`, the state `board_focus` "fly" produces); on the body of a tile you are NOT
+    working in → fly and start interacting (tldraw: double-click enters a shape); inside content you
+    ARE working in, or on a control → native (word selection, cell edit). A header press captures the
+    pointer, so the browser fires the dblclick at the tile — the rule reads the press's real target.
 - **Scrolling (`engine/wheel-input.ts`, knob `WheelMode`, per-viewer):** `auto` (default) — a mouse
   wheel zooms at the cursor, a trackpad swipe pans, a pinch zooms; `zoom`; `pan`. One decision per
   gesture burst so an inertia tail never flips device. Drag empty space / space+drag / middle-drag
-  pans. **The one exception:** the INTERACTING tile, under the pointer, with room to scroll that way,
-  scrolls itself.
-- **Focus (`FocusLayer`):** Enter, F, the tile's expand button or the menu → the tile's live card
-  portals into the focus layer and fills the board area (not browser fullscreen), growing out of its
-  on-board rect. ←/→ step in reading order; Esc returns to the exact camera. Double-click = fly to.
+  pans. **Over a tile a plain wheel or trackpad scroll NEVER moves the board** (`routeWheel`), whether
+  the tile is idle, selected or interacting: content with room to scroll that way scrolls, otherwise
+  the event is swallowed so nothing chains out (the card is also `overscroll-contain`). **Pinch and
+  ctrl/⌘+wheel zoom the board everywhere, tiles included** (Figma). Menus and popovers opened from a
+  tile portal to `body`, outside the board, so the board never hears their wheel.
+- **Full screen (`FocusLayer`):** Enter, F, the tile's expand button or the menu → the tile's live
+  card portals into the focus layer, which is itself portalled to `body` and fixed to the VIEWPORT
+  (`fixed inset-0 h-dvh`, z-50) — never sized from the tile, the camera or the board pane, so nothing
+  the content does can move the way out. The exit bar (Close, ←/→ in reading order) is a fixed row
+  above the content with a 44px button on phones. **Escape always exits**, even from inside a
+  composer or editor (a capture-phase listener runs before the content); only an open menu, popover
+  or listbox (`aMenuOrPopoverIsOpen`) keeps the key. Leaving returns to the exact camera.
 - **Throws (`engine/throw.ts`):** a header drag released at ≥ 1.1 px/ms after ≥ 70px travel, on a
   dominant axis. Defaults (`DEFAULT_THROW_ACTIONS`, a knob): → park on the shelf · ↑ save to Notes
   and close · ↓ delete from the board after a consequence-naming confirm · ← unassigned. The action
@@ -239,9 +261,34 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   Meeting → `MeetingDetail chrome="embedded"` (sections and actions in a strip; it mounts
   `MeetingSurfaceHost`, `matrx-user/meeting`); Workflow run → `RunStage` under
   `WorkflowRunSurfaceHost` (`matrx-user/workflow-run`).
+- **A document tile is `/documents/[id]`'s own component** (`items/document-items.tsx`, key `udt_document`):
+  `DocumentRecord` (features/data-tables) — rename, Copy reference, Share, the Rulebook notice, the Univer
+  editor with its save status, snapshot and History — which mounts `matrx-user/documents` itself, so the
+  item declares `surface: { name }` with no `Host`. An agent reads and writes the name, the description AND
+  the body text (`document_body_text` / `document_body`, applied through Univer's command service). "New
+  document" places a draft tile that creates the document only on its Create click (org gate +
+  `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
+  `{ kind: "document" }` source renders through the same item and is saved in the entity form.
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-30 — Documents on the Board (`udt_document`): the tile renders `DocumentRecord`, the one
+  component `/documents/[id]` now renders too, with the `matrx-user/documents` surface — which gained the
+  body text (read + ask-first write through Univer's command service). Create happens on the tile's
+  Create click; bring in via `DocumentsResourcePicker`; legacy `{kind:"document"}` tiles render.
+  Tests: `items/__tests__/document-items.test.tsx`.
+- 2026-09-30 — Board interaction musts (Arman, from real use): every `/board` tile resizes from
+  eight handles (constant screen hit area, min size, Shift aspect, drag shield, one undo step,
+  persisted); a wheel over any tile never pans or zooms the board (pinch / ctrl-wheel still zoom);
+  double-click the header flies to a tile and makes it live (the header fly had never fired —
+  pointer capture retargeted the dblclick); full screen is viewport-fixed with an always-visible
+  Close and an Escape that works from inside a chat composer. The full-screen trap, reproduced on
+  a chat tile: the board read Escape inside any field of a tile as "leave the field" (blur and
+  stop) BEFORE "leave full screen", and the chat composer keeps its focus, so every Escape was
+  eaten (two presses, still full screen, focus still in the composer); and the layer was sized
+  from the board pane, so it moved and resized with the workspace around it. Pure rules + tests:
+  `engine/tile-gestures.ts`, `routeWheel`, `__tests__/tile-gestures.test.ts`.
 
 - 2026-09-28 — Custom data: Table tile (`data-table`) renders `/data-v2`'s own table (`UnifiedTable`, shared
   with the route) and carries `matrx-user/data-tables` via `RecordStoreTableSurface`; Record tile renders
