@@ -150,6 +150,17 @@ const OPTIONS_WINDOW = 8;
  * A backslash in front (`\$`) is a REGEX escape and never money.
  */
 const TEMPLATE_DOLLAR_RE = /(?<![$\\])\$\$\{/;
+
+/**
+ * A DELIMITER PAIR, not money (2026-09-30). An interpolation that CLOSES
+ * straight into another `$` is wrapped, not priced: inline LaTeX math
+ * (`` `$${tex}$` ``, beside the `$$…$$` display form every markdown renderer in
+ * @ai-matrx/print builds) and a Postgres dollar-quoted literal
+ * (`` `$drill$${text}$drill$` ``). A money body never puts a dollar AFTER the
+ * amount. Stripped before the bound-dollar test, so a real `$${amount}` on the
+ * same line still fires.
+ */
+const DOLLAR_DELIMITED_RE = /\$\$\{[^{}`]*\}\$/g;
 const CONCAT_DOLLAR_RE = /["'`]\s*\$\s*["'`]\s*\+|\+\s*["'`]\s*\$\s*["'`]/;
 
 /**
@@ -260,7 +271,8 @@ export function moneyShapeIn(source) {
     const raw = withoutComments(line);
 
     if (
-      (TEMPLATE_DOLLAR_RE.test(raw) || CONCAT_DOLLAR_RE.test(raw)) &&
+      (TEMPLATE_DOLLAR_RE.test(raw.replace(DOLLAR_DELIMITED_RE, "")) ||
+        CONCAT_DOLLAR_RE.test(raw)) &&
       !SQL_PLACEHOLDER_RE.test(raw)
     ) {
       report(i);
@@ -452,6 +464,28 @@ export function selfTestMoneyShape() {
       why: `LaTeX display math (\`$$…$$\` around an interpolation) was reported as money — money is EXACTLY two dollars (${latexHits
         .map((h) => h.text)
         .join(" | ")})`,
+    };
+  }
+  // A DELIMITER PAIR: inline LaTeX math and a Postgres dollar-quoted literal.
+  // The interpolation closes straight into a `$`, which money never does.
+  const delimited = [
+    "return n.display ? `$$${n.tex}$$` : `$${n.tex}$`;",
+    "return `$drill$${text}$drill$::jsonb`;",
+  ].join("\n");
+  const delimitedHits = moneyShapeIn(delimited);
+  if (delimitedHits.length !== 0) {
+    return {
+      ok: false,
+      why: `a \`$…$\` delimiter pair (inline LaTeX / Postgres dollar-quoting) was reported as money (${delimitedHits
+        .map((h) => h.text)
+        .join(" | ")})`,
+    };
+  }
+  // …and stripping the pair never hides a real price on the same line.
+  if (moneyShapeIn("const s = `$${tex}$ costs $${amount}`;").length !== 1) {
+    return {
+      ok: false,
+      why: "a real `$${amount}` beside a `$…$` delimiter pair was NOT reported — the delimiter strip is hiding money",
     };
   }
   // A POSTGRES POSITIONAL PARAMETER. `$1`, `$2` — two dollars, an

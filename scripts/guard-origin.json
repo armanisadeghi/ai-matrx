@@ -8,7 +8,7 @@
     ]
   },
   "twinsGuard": {
-    "commit": "a7504e5a2adec7da9dcf22196f490742561e7ddc",
+    "commit": "fd7cb5e85708f3ea7952ee4230e4dfecf63773fa",
     "files": [
       "check-package-twins.mjs",
       "byte-size-shape.mjs",
@@ -20,7 +20,7 @@
     ]
   },
   "twinsCatalog": {
-    "commit": "78d2e7a242a39d6f1b8abb587ce90d586f08694d",
+    "commit": "c570ad1e4bac39ca567d58a1a853c3e2f215950d",
     "file": "package-twins.json"
   }
 }

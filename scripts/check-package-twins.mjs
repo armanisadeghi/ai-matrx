@@ -203,6 +203,32 @@ export function catalogFloorBreach(rowCount, floor) {
   );
 }
 
+/**
+ * EVERY PACKAGE HAS AN OWNER ENTRY (2026-09-30). Six packages — alchemy, chat,
+ * coding-sessions, detail, records, records-ui — were published for weeks with
+ * no `ownedBy` line, because nothing compared the map to the directory. A
+ * missing entry is silent until the day a row names that package, and then the
+ * package's OWN source is reported as a twin of itself. So in a root that
+ * carries `ownedBy`, every tracked top-level `<dir>/package.json` naming an
+ * `@ai-matrx/*` package must have an entry, and every entry's prefix must still
+ * hold tracked files. Returns one sentence per gap.
+ */
+export function ownerMapGaps(ownedBy, packages, files) {
+  const gaps = [];
+  for (const { dir, name } of packages) {
+    if (!name?.startsWith("@ai-matrx/")) continue;
+    if (!(name in ownedBy)) {
+      gaps.push(`${name} (${dir}/package.json) has no \`ownedBy\` entry — add "${name}": "<the directory its published source lives in>/"`);
+    }
+  }
+  for (const [name, prefix] of Object.entries(ownedBy)) {
+    if (!files.some((f) => f.startsWith(prefix))) {
+      gaps.push(`\`ownedBy\` entry ${name} → "${prefix}" names a directory with no tracked source`);
+    }
+  }
+  return gaps;
+}
+
 /** `"@ai-matrx/kit/format"` → the owning package's source prefix, or null. */
 function ownerPrefixFor(packageSpecifier) {
   const scoped = /^(@[^/]+\/[^/]+)/.exec(packageSpecifier ?? "");
@@ -341,6 +367,77 @@ const DISTRIBUTED_GUARDS = new Set([
   "scripts/check-matrx-packages.mjs",
   "check-matrx-packages.mjs",
 ]);
+
+/**
+ * VENDORED THIRD-PARTY DISTRIBUTIONS (2026-09-30). matrx-frontend 87f7dc3eea
+ * vendored the official SheetJS 0.20.3 build into `vendor/xlsx/` because the
+ * current release is not on npm. Its minified bundles are someone else's
+ * code: they carry dozens of byte-size, duration and count "bodies" that are
+ * SheetJS's own internals, which we will never edit and could not collapse onto
+ * @ai-matrx/kit if we wanted to. Reporting them buries our own twins under
+ * noise nobody can act on.
+ *
+ * THE EXCLUSION IS NARROW BY CONSTRUCTION, because a skip list is the easiest
+ * place in any guard for a real twin to hide:
+ *   - it is an explicit, per-root register list (`vendored`), never a glob and
+ *     never built in: a repo with no such list skips nothing;
+ *   - every `path` is a directory prefix that names ONE distribution under a
+ *     `vendor/` segment (`vendor/xlsx/`) — `vendor/` alone, `src/`, and any
+ *     `*`, `?`, `[`, `{` or `..` are refused;
+ *   - every entry names its provenance `record` (the file that says which
+ *     upstream release it is and how to remove it), and that record must be a
+ *     tracked file inside the path;
+ *   - an entry whose path holds no tracked file is STALE and fails, the same
+ *     ratchet the census lists carry — a leftover prefix is a hole waiting for
+ *     someone to put hand-written code under it.
+ * A hand-written helper that happens to live NEXT to vendored code (a wrapper
+ * in `lib/xlsx/`) is ours and is scanned like everything else.
+ */
+const VENDOR_PATH_FORBIDDEN = /[*?[\]{}!]|(^|\/)\.\.?(\/|$)|^\//;
+
+/**
+ * Validate a register's `vendored` list against the tracked files. Returns the
+ * accepted prefixes and one sentence per rejected or stale entry. Exported so
+ * the self-test can plant every failure it guards against.
+ */
+export function vendoredPrefixes(entries, files) {
+  const prefixes = [];
+  const errors = [];
+  for (const entry of entries ?? []) {
+    const path = entry?.path;
+    const label = JSON.stringify(path ?? entry);
+    if (typeof path !== "string" || !path.endsWith("/") || VENDOR_PATH_FORBIDDEN.test(path)) {
+      errors.push(`${label}: a vendored path is a plain directory prefix ending in "/" — no glob, no "..", no leading "/"`);
+      continue;
+    }
+    const segments = path.split("/").filter(Boolean);
+    const at = segments.indexOf("vendor");
+    if (at === -1 || at === segments.length - 1) {
+      errors.push(`${label}: must name ONE distribution under a \`vendor/\` segment (e.g. "vendor/xlsx/"), never \`vendor/\` itself or a non-vendor directory`);
+      continue;
+    }
+    if (typeof entry.why !== "string" || entry.why.trim() === "") {
+      errors.push(`${label}: has no \`why\``);
+      continue;
+    }
+    const under = files.filter((f) => f.startsWith(path));
+    if (under.length === 0) {
+      errors.push(`${label}: STALE — no tracked file lives under it any more; delete the entry`);
+      continue;
+    }
+    if (typeof entry.record !== "string" || !entry.record.startsWith(path) || !files.includes(entry.record)) {
+      errors.push(`${label}: its provenance \`record\` must be a tracked file inside the path (e.g. "${path}INTEGRITY.md")`);
+      continue;
+    }
+    prefixes.push(path);
+  }
+  return { prefixes, errors };
+}
+
+/** Is `file` inside one of the accepted vendored prefixes? */
+export function isVendored(prefixes, file) {
+  return prefixes.some((p) => file.startsWith(p));
+}
 
 /**
  * Top-level (column-zero) value definitions only. An inner helper inside a
@@ -783,6 +880,80 @@ if (SELF_TEST) {
     );
     process.exit(1);
   }
+  // ── THE OWNER MAP must cover every package (added 2026-09-30) ──
+  {
+    const pkgs = [{ dir: "kit", name: "@ai-matrx/kit" }, { dir: "records-ui", name: "@ai-matrx/records-ui" }];
+    const files = ["kit/src/format.ts", "records-ui/src/ViewSwitcher.tsx"];
+    const missing = ownerMapGaps({ "@ai-matrx/kit": "kit/src/" }, pkgs, files);
+    const whole = ownerMapGaps({ "@ai-matrx/kit": "kit/src/", "@ai-matrx/records-ui": "records-ui/src/" }, pkgs, files);
+    const deadPrefix = ownerMapGaps(
+      { "@ai-matrx/kit": "kit/src/", "@ai-matrx/records-ui": "records-ui/lib/" },
+      pkgs,
+      files,
+    );
+    if (missing.length !== 1 || whole.length !== 0 || deadPrefix.length !== 1) {
+      console.error(
+        "SELF-TEST FAILED: the `ownedBy` completeness check did not report a package with no entry, " +
+          "or an entry whose prefix holds no source — or it reported a complete map.",
+      );
+      process.exit(1);
+    }
+  }
+  // ── THE VENDORED EXCLUSION must stay narrow (added 2026-09-30) ──
+  // Every leg is planted: the one legitimate entry is accepted and skips ONLY
+  // its own files; a hand-written file beside it is still scanned; and each
+  // broad or unprovable form is refused rather than silently widening the skip.
+  {
+    const files = [
+      "vendor/xlsx/INTEGRITY.md",
+      "vendor/xlsx/dist/xlsx.full.min.js",
+      "lib/xlsx/formatBytes.ts",
+      "src/vendorish.ts",
+    ];
+    const good = vendoredPrefixes(
+      [{ path: "vendor/xlsx/", why: "self-test", record: "vendor/xlsx/INTEGRITY.md" }],
+      files,
+    );
+    if (good.errors.length !== 0 || !isVendored(good.prefixes, "vendor/xlsx/dist/xlsx.full.min.js")) {
+      console.error("SELF-TEST FAILED: a well-formed `vendored` entry was refused or did not exempt its own files.");
+      process.exit(1);
+    }
+    if (isVendored(good.prefixes, "lib/xlsx/formatBytes.ts") || isVendored(good.prefixes, "src/vendorish.ts")) {
+      console.error("SELF-TEST FAILED: the `vendored` exclusion exempted a hand-written file OUTSIDE its prefix.");
+      process.exit(1);
+    }
+    const broad = [
+      { path: "vendor/", why: "x", record: "vendor/xlsx/INTEGRITY.md" },
+      { path: "src/", why: "x", record: "src/vendorish.ts" },
+      { path: "**/vendor/xlsx/", why: "x", record: "vendor/xlsx/INTEGRITY.md" },
+      { path: "vendor/xlsx", why: "x", record: "vendor/xlsx/INTEGRITY.md" },
+      { path: "vendor/../src/", why: "x", record: "src/vendorish.ts" },
+      { path: "vendor/xlsx/", why: "", record: "vendor/xlsx/INTEGRITY.md" },
+      { path: "vendor/xlsx/", why: "x" },
+      { path: "vendor/xlsx/", why: "x", record: "src/vendorish.ts", expect: "provenance" },
+      { path: "vendor/gone/", why: "x", record: "vendor/gone/INTEGRITY.md", expect: "STALE" },
+    ];
+    for (const entry of broad) {
+      const v = vendoredPrefixes([entry], files);
+      if (
+        v.prefixes.length !== 0 ||
+        v.errors.length !== 1 ||
+        (entry.expect && !v.errors[0].includes(entry.expect))
+      ) {
+        console.error(
+          `SELF-TEST FAILED: the \`vendored\` entry ${JSON.stringify(entry)} was ACCEPTED — ` +
+            "a broad, unprovable or stale skip must be refused, never widen what the guard ignores.",
+        );
+        process.exit(1);
+      }
+    }
+    // A real hand-written body next to the vendored tree still fires.
+    const body = "export function fmt(bytes: number) {\n  return `${(bytes / 1024).toFixed(1)} KB`;\n}\n";
+    if (isVendored(good.prefixes, "lib/xlsx/formatBytes.ts") || byteShapeIn(body).length === 0) {
+      console.error("SELF-TEST FAILED: a hand-written byte body beside a vendored tree was not reported.");
+      process.exit(1);
+    }
+  }
   // ── THE NAME CENSUS RATCHET must be able to fail (added 2026-09-12) ──
   // Mutation G8 — `if (!nameCensusHit.has(...))` → `if (false)` — left this
   // self-test PASSED. The ratchet WAS real (a planted stale entry exits 1), but
@@ -1156,7 +1327,33 @@ const findings = [];
 const nameCensusHit = new Set();
 const nameCensusFindings = [];
 let scanned = 0;
-for (const file of trackedFiles()) {
+const TRACKED = trackedFiles();
+/** The register's `vendored` list, validated against what is actually tracked. */
+const TRACKED_ALL = execFileSync("git", ["ls-files"], {
+  cwd: ROOT,
+  encoding: "utf8",
+  maxBuffer: 64 * 1024 * 1024,
+}).split("\n").filter(Boolean);
+const VENDORED = vendoredPrefixes(register.vendored, TRACKED_ALL);
+let vendoredSkipped = 0;
+const OWNER_GAPS = register.ownedBy
+  ? ownerMapGaps(
+      OWNED_BY,
+      TRACKED_ALL.filter((f) => /^[^/]+\/package\.json$/.test(f)).flatMap((f) => {
+        try {
+          return [{ dir: f.split("/")[0], name: JSON.parse(readFileSync(resolve(ROOT, f), "utf8")).name }];
+        } catch {
+          return [];
+        }
+      }),
+      TRACKED_ALL,
+    )
+  : [];
+for (const file of TRACKED) {
+  if (isVendored(VENDORED.prefixes, file)) {
+    vendoredSkipped++;
+    continue;
+  }
   if (file.startsWith("scripts/package-twins.json")) continue;
   if (file === "scripts/check-package-twins.mjs") continue;
   if (SHAPE_MODULES.has(file)) continue;
@@ -1319,8 +1516,36 @@ function advisoryNote(count) {
   );
 }
 
+if (VENDORED.errors.length > 0) {
+  console.error(
+    `check:package-twins: ${VENDORED.errors.length} \`vendored\` entr(ies) in ` +
+      `scripts/package-twins.json refused — the exclusion must name ONE ` +
+      `third-party distribution, with its provenance record, that is still tracked:\n`,
+  );
+  for (const e of VENDORED.errors) console.error(`  ${e}`);
+  console.error("");
+}
+if (OWNER_GAPS.length > 0) {
+  console.error(
+    `check:package-twins: the \`ownedBy\` map is incomplete — ${OWNER_GAPS.length} gap(s). ` +
+      `A package with no entry has its OWN source reported as a twin the day a row names it:\n`,
+  );
+  for (const g of OWNER_GAPS) console.error(`  ${g}`);
+  console.error("");
+}
+if (VENDORED.prefixes.length > 0) {
+  console.log(
+    `check:package-twins: ${vendoredSkipped} tracked file(s) skipped as vendored ` +
+      `third-party code under ${VENDORED.prefixes.join(", ")} (register \`vendored\`).`,
+  );
+}
+
 const clean =
-  findings.length === 0 && shapeFailures === 0 && nameCensusFailures === 0;
+  findings.length === 0 &&
+  shapeFailures === 0 &&
+  nameCensusFailures === 0 &&
+  VENDORED.errors.length === 0 &&
+  OWNER_GAPS.length === 0;
 
 if (clean) {
   const censusTotal =
@@ -1355,7 +1580,7 @@ if (clean) {
       );
     }
   }
-  advisoryNote(findings.length + shapeFailures + nameCensusFailures);
+  advisoryNote(findings.length + shapeFailures + nameCensusFailures + VENDORED.errors.length + OWNER_GAPS.length);
 }
 
 /**
