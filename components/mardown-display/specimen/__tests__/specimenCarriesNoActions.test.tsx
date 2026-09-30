@@ -28,7 +28,8 @@ import { SpecimenProvider } from "@/components/mardown-display/specimen/Specimen
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
-  useAppSelector: () => undefined,
+  // Signed in: Save to / Edit are absent for a guest (table-viewer.ts canWrite).
+  useAppSelector: () => true,
 }));
 jest.mock("@/hooks/useToastManager", () => ({
   __esModule: true,
@@ -117,8 +118,8 @@ describe("a declared specimen carries no actions", () => {
     const labels = buttonLabels().join(" | ");
     // If this half ever fails, the suppression half below proves nothing.
     expect(labels).toContain("Export");
-    expect(labels).toContain("Workbook");
-    expect(labels).toContain("Google Sheet");
+    // Workbook / Google Sheet now live inside the "Save to" menu (TableSaveToMenu).
+    expect(labels).toContain("Save to");
     expect(labels).toContain("Edit");
   });
 
