@@ -2394,6 +2394,9 @@ declare
   v_says text;
   m      jsonb;
   v_d    numeric;
+  v_end  timestamptz;
+  v_min  numeric;
+  v_lag  text;
 begin
   perform custom.assert_client_may_reach(p_organization_id, case when p_kind = 'rows' then 'platform.drill_rows' else 'platform.drill_ask' end);
   if p_kind not in ('ask', 'count', 'rows') then
@@ -2467,7 +2470,23 @@ begin
   v_plan := platform._drill_compile(p_organization_id, v_def, p_question, 'ask');
   execute format('select coalesce(jsonb_agg(to_jsonb(x) order by x.ord), ''[]''::jsonb) from (%s) x', v_plan ->> 'sql')
     into v_rows using v_plan -> 'params';
-  return (v_plan - 'sql' - 'params') || jsonb_build_object('rows', v_rows, 'def', v_def - '_c', 'mode', 'definer', 'as_of', v_asof);
+  -- A LAGGING COUNT IS SAID: when the summary counted through a moment older than the definition's
+  -- stale line and the window asked reaches past it, the answer says how much of the window is not
+  -- counted yet — never a silent short number (the rebuild schedule is behind, or has not run).
+  if v_asof is not null and v_def ->> 'stale_after_knob' is not null then
+    v_end := least(coalesce((v_plan -> 'params' ->> 'wt')::timestamptz, now()), now());
+    v_min := platform.drill_knob(p_organization_id, v_def ->> 'stale_after_knob');
+    if v_end - v_asof > make_interval(mins => v_min::integer) then
+      v_lag := format('Counted through %s UTC; the last %s of this window are not counted yet (the rebuild is more than %s minutes behind).',
+                      to_char(v_asof at time zone 'UTC', 'YYYY-MM-DD HH24:MI'),
+                      case when v_end - v_asof < interval '2 hours' then round(extract(epoch from v_end - v_asof) / 60) || ' minutes'
+                           when v_end - v_asof < interval '2 days' then round(extract(epoch from v_end - v_asof) / 3600) || ' hours'
+                           else round(extract(epoch from v_end - v_asof) / 86400) || ' days' end,
+                      v_min);
+    end if;
+  end if;
+  return (v_plan - 'sql' - 'params') || jsonb_build_object('rows', v_rows, 'def', v_def - '_c', 'mode', 'definer', 'as_of', v_asof)
+         || case when v_lag is not null then jsonb_build_object('lag_says', v_lag) else '{}'::jsonb end;
 end
 $function$;
 
@@ -2585,6 +2604,10 @@ begin
   v_cap := (v_plan ->> 'cap')::integer;
   select max((x ->> 'distinct_groups')::bigint), max((x ->> 'distinct_across')::bigint), max((x ->> 'distinct_all')::bigint) into v_n, v_na, v_nall
     from jsonb_array_elements(v_rows) x;
+  -- a summary counted through a moment older than its stale line says what is not counted yet
+  if v_plan ->> 'lag_says' is not null then
+    v_says := v_says || (v_plan ->> 'lag_says');
+  end if;
   -- thresholds (having): how many groups met them, in words; the rest are in Other
   if v_plan ->> 'having_says' is not null then
     if coalesce(v_n, 0) = 0 then

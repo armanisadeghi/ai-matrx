@@ -57,7 +57,26 @@ end $$;
 -- The window: the last 30 whole UTC hours × 24 before the current hour, aligned to hours.
 create temp table duw on commit drop as
   select date_trunc('hour', now(), 'UTC') - interval '30 days' as w0, date_trunc('hour', now(), 'UTC') as w1;
-select runtime.ai_usage_hourly_refresh((select w0 from duw), (select w1 from duw));
+-- THE SAME INSTANT ON BOTH SIDES (lane DRILL-LEDGER-RECORDS, 2026-09-30): the oracle counts every
+-- execution before w1; the rollup counts up to its watermark (covered_to) and a rebuild that does not
+-- reach now never counts past it, so the number never holds a row its as_of does not cover. So the
+-- window is rebuilt UP TO NOW first — a rebuild that reaches now moves the watermark past w1 — and a
+-- lagging watermark is SAID (a notice and the T1 detail), never compared at two different instants.
+create temp table dulag on commit drop as
+  select w.covered_to as was_counted_to,
+         (select count(*) from runtime.global_execution e, duw where e.created_at >= w.covered_to and e.created_at < duw.w1) as rows_after
+    from (select max(covered_to) as covered_to from runtime._ai_usage_hourly_watermark) w;
+do $lag$
+declare r record;
+begin
+  select * into r from pg_temp.dulag;
+  if r.was_counted_to is null or r.was_counted_to < (select w1 from pg_temp.duw) then
+    raise warning 'The rollup was counted only through % (% ledger row(s) of the window after it); it is rebuilt up to now before the comparison.',
+      coalesce(r.was_counted_to::text, 'never'), r.rows_after;
+  end if;
+end
+$lag$;
+select runtime.ai_usage_hourly_refresh((select w0 from duw), now());
 
 -- THE ORACLE, as admin@admin.com with the admin lane open.
 create temp table dus (j jsonb) on commit drop;
@@ -75,7 +94,9 @@ create temp table dur_roll on commit drop as
 -- T. Totals.
 select pg_temp.chk('T1 cost: rollup = oracle to the cent',
   (select sum(cost) from dur_roll) = (select (j -> 'totals' ->> 'cost')::numeric from dus),
-  format('rollup %s oracle %s', (select sum(cost) from dur_roll), (select j -> 'totals' ->> 'cost' from dus)));
+  format('rollup %s oracle %s; the watermark stood at %s with %s ledger row(s) of the window after it before the rebuild to now',
+         (select sum(cost) from dur_roll), (select j -> 'totals' ->> 'cost' from dus),
+         (select coalesce(was_counted_to::text, 'never') from dulag), (select rows_after from dulag)));
 select pg_temp.chk('T2 executions: rollup calls = oracle executions',
   (select sum(calls) from dur_roll) = (select (j -> 'totals' ->> 'executions')::bigint from dus),
   format('rollup %s oracle %s', (select sum(calls) from dur_roll), (select j -> 'totals' ->> 'executions' from dus)));

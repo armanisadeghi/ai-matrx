@@ -6,10 +6,10 @@
 -- based-on: platform._drill_resolve(uuid, text) 5a9327b2ba6e7011f76429fbe0b7fefb8e9de301ed894e23b20d9eb39385ff02
 -- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) f6ee645888fd482c37020e4266669e3f8adba4cfc9997de40ed5dd919b257899
 -- based-on: platform._drill_plan(uuid, jsonb, jsonb, text) 651664cdd4b9c597b5f2fd7eb5e747bd12af4f4ab0b9c29c5a864c92980be11b
--- based-on: platform._drill_run_declared(uuid, text, jsonb, text) a3406e6a9d6bac4e9cea0af5942d930c107b17514968925a6f5d5e2039b1dc63
+-- based-on: platform._drill_run_declared(uuid, text, jsonb, text) 57becdf618dbe3b3f1a5c6524ef8aeeb194f58215db5c52446cf7417ab18f608
 -- based-on: platform.drill_rows(uuid, jsonb, jsonb) ff18fab5ce3c5f83e2821854d3d12799a9019da5994be7989201c75bc0673dae
 -- based-on: platform.drill_describe(uuid, jsonb) c2e182c3fcb092dacb76915c5cf6d36946aef384d118818fe97b9926192bb495
--- based-on: platform.drill_ask(uuid, jsonb, jsonb) a75549710db822316bd9f0caef3e989528f389b8151f5a150f725bde5d91f02b
+-- based-on: platform.drill_ask(uuid, jsonb, jsonb) 42072560970056efb3fdd134cc49711045410777c9aee481000d25121d0a1fa9
 
 CREATE OR REPLACE FUNCTION runtime.ai_usage_hourly_refresh(p_from timestamp with time zone, p_to timestamp with time zone)
  RETURNS bigint

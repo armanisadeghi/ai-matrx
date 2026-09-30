@@ -564,6 +564,27 @@ begin
     format('before %s after the recount %s', (select ask from pg_temp.dll where step = 'before'), (select ask from pg_temp.dll where step = 'recounted')));
 end $$;
 
+-- L4. A lagging count is SAID: fresh, the answer says nothing about it; with the watermark three
+--     hours behind (a stopped schedule) the total row says what of the window is not counted yet.
+do $$
+declare v_fresh text; v_lag text;
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', '87a6e699-3622-4869-8843-d0867456c0dd', 'role', 'authenticated')::text, true);
+  perform set_config('request.headers', '{"x-matrx-admin-lane":"1"}', true);
+  execute 'set local role authenticated';
+  select a.says into v_fresh from platform.drill_ask('5dc930e9-bd65-44a1-8369-af773f6e1a5b', '{"kind":"entity","token":"ai_usage"}',
+    '{"lane":"platform","show":["cost"],"window":{"key":"at","preset":"24h"}}') a where a.kind = 'total';
+  execute 'reset role';
+  update runtime._ai_usage_hourly_watermark set covered_to = now() - interval '3 hours';
+  execute 'set local role authenticated';
+  select a.says into v_lag from platform.drill_ask('5dc930e9-bd65-44a1-8369-af773f6e1a5b', '{"kind":"entity","token":"ai_usage"}',
+    '{"lane":"platform","show":["cost"],"window":{"key":"at","preset":"24h"}}') a where a.kind = 'total';
+  execute 'reset role';
+  perform pg_temp.chk('L4 a count behind its stale line is said ("Counted through … the last 3 hours of this window are not counted yet"); a fresh one says nothing of it',
+    coalesce(v_fresh, '') !~ 'Counted through' and v_lag ~ '^Counted through [0-9-]+ [0-9:]+ UTC; the last 3 hours of this window are not counted yet',
+    v_lag);
+end $$;
+
 -- ════════════════════════════════════════════════════════════════════════════════════════════
 -- G. No client reaches the two text helpers (VERIFY-DRILL-LEDGER-RECORDS F3).
 -- ════════════════════════════════════════════════════════════════════════════════════════════
