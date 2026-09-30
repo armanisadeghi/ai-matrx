@@ -164,12 +164,15 @@ begin
     from platform.drill_ask(c_org, v_src, jsonb_build_object('by', '["provider","at:month"]'::jsonb, 'show', '["cost"]'::jsonb, 'lane', 'platform')) a
    where kind = 'group';
   perform pg_temp.chk('A3 provider × month over all time answers (the oracle is capped at 92 days and has neither)', v_n > 0, format('%s groups', v_n));
-  -- the records behind a number are refused in words, never a permission error
+  -- the records behind a number (lane DRILL-LEDGER-RECORDS): refused in words without a window,
+  -- and with one they add up to the number (the ledger's own executions, the same lane rule)
   begin
     perform platform.drill_rows(c_org, v_src, jsonb_build_object('lane', 'platform'));
-    perform pg_temp.chk('A4 see these records refuses in words', false, 'answered');
-  exception when sqlstate '0A000' then
-    perform pg_temp.chk('A4 see these records refuses in words (0A000)', true, sqlerrm);
+    perform pg_temp.chk('A4 see these records refuses in words without a window', false, 'answered');
+  exception when sqlstate '22023' then
+    perform pg_temp.chk('A4 see these records: refused in words without a window (22023), and with the window its sums = the door''s total',
+      (platform.drill_rows(c_org, v_src, jsonb_build_object('lane', 'platform', 'window', v_w, 'limit', 1)) -> 'measures' ->> 'cost')::numeric = v_total,
+      sqlerrm);
   end;
   -- the names door
   perform pg_temp.chk('A5 names door answers the admin',
