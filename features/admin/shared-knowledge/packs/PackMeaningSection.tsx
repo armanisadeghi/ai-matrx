@@ -242,7 +242,7 @@ function MeaningEditor({
         <p className="mb-1.5 text-[11px] font-medium text-foreground">
           Phrases that spot it{" "}
           <span className="font-normal text-muted-foreground">
-            — leave empty if the classifier already detects it
+            — skip if the classifier detects it
           </span>
         </p>
         {d.matchers.length > 0 ? (

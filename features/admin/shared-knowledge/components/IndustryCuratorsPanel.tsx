@@ -95,14 +95,16 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
 
   return (
     <div className="mt-5 space-y-2">
-      <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+      <div
+        className="flex items-center gap-1.5 text-sm font-medium text-foreground"
+        title="Curators author and propose packs; only platform admins ratify or publish."
+      >
         <ShieldCheck
           className="h-3.5 w-3.5 text-muted-foreground"
           aria-hidden
         />
         Curators of “{industry.name}”
       </div>
-      {/* Curators author and propose packs; only platform admins ratify or publish. */}
       <div className="flex gap-2">
         <UserSearchField
           value={email}
