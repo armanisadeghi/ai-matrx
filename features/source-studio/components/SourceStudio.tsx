@@ -79,9 +79,9 @@ import { PaneHeader } from "@/features/pdf-extractor/studio/PdfStudioReader";
 import { useCurrentVersion } from "@/features/sources/hooks/useCurrentVersion";
 import { useSourceKept } from "@/features/sources/hooks/useSourceKept";
 import { viewedDocumentId } from "@/features/sources/currentVersion";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
   PORTION_KIND_WORD,
-  formatMs,
   portionKindOf,
   portionLabel,
 } from "@/features/sources/portionLocator";
@@ -263,7 +263,7 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
     if (idx == null) return null;
     const p = portions.find((x) => x.pageIndex === idx);
     const ms = portionStartMs(p?.locator);
-    if (canSeek && ms != null) return `Play from ${formatMs(ms)}`;
+    if (canSeek && ms != null) return `Play from ${formatDurationMs(ms)}`;
     return p ? `Go to ${nameOf(p)}` : null;
   };
   const goToEntity = (entity: SourceEntity) => {
