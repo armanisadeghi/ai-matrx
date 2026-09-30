@@ -94,14 +94,8 @@ export function StorageSourcePickerWindow({
   );
   const knownPageSize = typeof rawPageSize === "number" ? rawPageSize : null;
   const resolvePageSize = useCallback(async (): Promise<number> => {
-    if (!organizationId) {
-      throw new Error(
-        "This picker cannot tell how many files to list at a time because no organization is " +
-          "active yet. Reopen it once your workspace has finished loading.",
-      );
-    }
     const raw = await ensureEffectiveKnob(
-      organizationId,
+      organizationId ?? null,
       userId,
       STORAGE_BROWSE_PAGE_SIZE_KNOB,
     );

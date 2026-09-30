@@ -122,11 +122,11 @@ function scopeAddr(scopes: readonly KnobScope[] | undefined): string {
  * in two organizations gets two snapshots, never one blended answer.
  */
 function snapshotAddr(
-  organizationId: string,
+  organizationId: string | null,
   userId: string | null,
   scopes?: readonly KnobScope[],
 ): string {
-  return `${organizationId}|${userId ?? ""}|${scopeAddr(scopes)}`;
+  return `${organizationId ?? "~no-organization~"}|${userId ?? ""}|${scopeAddr(scopes)}`;
 }
 
 /**
@@ -210,20 +210,26 @@ export function peekEffectiveKnob(
   ref: KnobRef,
   scopes?: readonly KnobScope[],
 ): unknown {
-  if (!organizationId) return undefined;
-  const snapshot = snapshots.get(snapshotAddr(organizationId, userId ?? null, scopes));
+  const snapshot = snapshots.get(snapshotAddr(organizationId ?? null, userId ?? null, scopes));
   if (!snapshot) return undefined;
   return snapshot.resolved[fullKeyOf(ref)];
 }
 
 /**
+ * 🚨 KNOB RESOLUTION NEVER BLOCKS A READ (Arman, 2026-09-29: filters and
+ * settings, never permissions). `organizationId` may be `null`: the server
+ * (`platform.knob_snapshot`, `p_organization_id` null) then resolves user
+ * override → platform default and simply skips the organization layer. A page
+ * size or any other knob is therefore always answerable, with or without a
+ * selected organization; when one IS selected its override still wins.
+ *
  * Fetch (once) the whole resolved register for this person in this
  * organization, then answer from it. Concurrent callers — the five knobs one
  * surface reads on mount, and every other surface mounted beside it — share
  * the ONE call.
  */
 export function ensureEffectiveKnob(
-  organizationId: string,
+  organizationId: string | null,
   userId: string | null,
   ref: KnobRef,
   scopes?: readonly KnobScope[],
@@ -253,7 +259,7 @@ export function ensureEffectiveKnob(
 /** ONE round trip. No caching, no races — the caller owns both. */
 async function fetchKnobSnapshot(
   supabase: ReturnType<typeof createClient>,
-  organizationId: string,
+  organizationId: string | null,
   userId: string | null,
   scopes: readonly KnobScope[] | undefined,
   deviceId: string | null,
@@ -274,7 +280,7 @@ async function fetchKnobSnapshot(
       ) => Promise<{ data: unknown; error: { message: string } | null }>;
     }
   ).rpc("knob_snapshot", {
-    p_organization_id: organizationId,
+    p_organization_id: organizationId ?? undefined,
     p_user_id: userId ?? undefined,
     p_scopes: buildScopes(deviceId, scopes),
   });
@@ -301,7 +307,7 @@ async function fetchKnobSnapshot(
  * wire (guard: `pnpm check:knob-snapshot-adoption`).
  */
 export function ensureKnobSnapshot(
-  organizationId: string,
+  organizationId: string | null,
   userId: string | null,
   scopes?: readonly KnobScope[],
 ): Promise<Snapshot> {
@@ -442,8 +448,8 @@ export function useEffectiveKnob(
     () => 0,
   );
   useEffect(() => {
-    if (!organizationId || value !== undefined) return;
-    void ensureEffectiveKnob(organizationId, userId ?? null, ref, scopes).catch(
+    if (value !== undefined) return;
+    void ensureEffectiveKnob(organizationId ?? null, userId ?? null, ref, scopes).catch(
       (error: unknown) => {
         // 🚨 IT SCREAMS (law 4). The old comment here said "the caller's screen
         // reports the failure" — no caller did, and a knob whose RPC raised on

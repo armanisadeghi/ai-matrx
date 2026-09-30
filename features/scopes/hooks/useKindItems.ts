@@ -152,24 +152,6 @@ export function useKindItems(
       );
   }
 
-  // Nothing fails silently: with no organization to resolve the page-size knob against, the list
-  // says so instead of spinning forever.
-  const noKnobOrganization = Boolean(kind && scopeKey) && !knobOrganizationId;
-  if (noKnobOrganization) {
-    return {
-      items: [],
-      loading: false,
-      loadingMore: false,
-      hasMore: false,
-      loadMore,
-      error: new Error(
-        "No organization is active yet, so this list cannot tell how many items to load at a time. Pick an organization, then try again.",
-      ),
-      reload: () => setAttempt((n) => n + 1),
-      pageSize: null,
-    };
-  }
-
   return {
     items: current ? state.items : [],
     loading: listKey === "" ? Boolean(kind && scopeKey) : !current,
