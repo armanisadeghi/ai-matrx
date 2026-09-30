@@ -295,6 +295,13 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-09-30 — Keys and scroll belong to their owner: `engine/key-target.ts` (`isTyping`, `boardOwnsKey`)
+  is the one guard for every board key — a key inside a tile's content (grid cell, editor, Monaco
+  EditContext, textbox) is the content's, so Enter there never opens full screen and Backspace never
+  takes the tile off (`useBoardKeys` shares it). `engine/native-scroll.ts`: the board never scrolls
+  natively — the root is `overflow: clip`, and a `focus()`/`scrollIntoView()` scroll of the root, a
+  clipped ancestor pane or a tile card is reset at once; only the camera moves the board.
+
 - 2026-09-30 — Browser verification of every item type (note, file, chat, table, record, task, project) and
   the bridge. Two fixes: the board's key guard (`isTyping`, `components/SpatialViewport.tsx`) now treats
   an EditContext host (Monaco, the file tile's editor) and `role="textbox"` as typing — Space-to-pan was

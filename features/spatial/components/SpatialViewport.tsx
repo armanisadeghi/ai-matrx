@@ -36,6 +36,8 @@ import {
 import { type Insets, SpatialStore } from "../engine/spatial-store";
 import { type WheelMode, routeWheel } from "../engine/wheel-input";
 import { isCreationTool, toolForKey } from "../engine/tools";
+import { boardOwnsKey, isTyping } from "../engine/key-target";
+import { isAccidentalScroll } from "../engine/native-scroll";
 import { FocusHostContext, SpatialStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
 
@@ -168,6 +170,23 @@ export function SpatialViewport({
     };
   }, [store]);
 
+  // ── the board never scrolls natively (engine/native-scroll.ts) ──────────
+  // focus() / scrollIntoView() inside a tile can scroll the clipped board
+  // root, the pane it sits in, or a tile card; only the camera moves the
+  // board, so any such scroll is put straight back.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onScroll = (e: Event) => {
+      const el = e.target;
+      if (!(el instanceof Element) || !isAccidentalScroll(el, root)) return;
+      if (el.scrollLeft !== 0) el.scrollLeft = 0;
+      if (el.scrollTop !== 0) el.scrollTop = 0;
+    };
+    document.addEventListener("scroll", onScroll, true);
+    return () => document.removeEventListener("scroll", onScroll, true);
+  }, []);
+
   // ── wheel (non-passive: we own the gesture) ──────────────────────────────
   useEffect(() => {
     const root = rootRef.current;
@@ -215,7 +234,7 @@ export function SpatialViewport({
     let spaceDown = false;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !isTyping(e.target)) {
+      if (e.code === "Space" && boardOwnsKey(e.target)) {
         spaceDown = true;
         root.style.cursor = "grab";
         e.preventDefault();
@@ -327,6 +346,9 @@ export function SpatialViewport({
         }
         return;
       }
+      // A key inside a tile's content (a grid cell, an editor, a control)
+      // belongs to that content: Enter there never opens full screen.
+      if (e.key !== "Escape" && !boardOwnsKey(e.target)) return;
       if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
       // While a tile is interacting its content owns the keyboard (lists,
       // players, editors) — the board answers only Esc, which steps back out.
@@ -388,7 +410,7 @@ export function SpatialViewport({
       <div
         ref={rootRef}
         className={cn(
-          "relative h-full w-full touch-none select-none overflow-hidden bg-muted/40",
+          "relative h-full w-full touch-none select-none overflow-clip bg-muted/40",
           className,
         )}
         aria-label="Spatial view — drag to pan, pinch or ctrl+scroll to zoom, shift+1 to fit everything"
@@ -428,16 +450,6 @@ function toolCursor(tool: string): string {
  * types into an EditContext host — a plain div with `editContext` set — and ARIA editors expose
  * `role="textbox"`. Missing those ate every space typed into a file.
  */
-export function isTyping(target: EventTarget | null): boolean {
-  const el = target as (HTMLElement & { editContext?: unknown }) | null;
-  if (!el || typeof el.getAttribute !== "function") return false;
-  return (
-    el.isContentEditable ||
-    ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) ||
-    el.editContext != null ||
-    el.getAttribute("role") === "textbox"
-  );
-}
 
 /** True when some scroll container between the pointer and the tile has room
  * to scroll in the wheel's direction. Any scroll container counts — tile

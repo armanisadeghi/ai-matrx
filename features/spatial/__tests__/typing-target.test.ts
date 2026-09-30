@@ -1,4 +1,4 @@
-import { isTyping } from "../components/SpatialViewport";
+import { isTyping } from "../engine/key-target";
 
 /**
  * The board answers Space (pan) and single letters (tools) only when the key is NOT going into a

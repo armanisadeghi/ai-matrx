@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { boardOwnsKey } from "../engine/key-target";
 
 /** ⌘Z / ⇧⌘Z (and Ctrl on Windows) and Delete / Backspace on the board. */
 export function useBoardKeys({
@@ -20,13 +21,9 @@ export function useBoardKeys({
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (
-        el &&
-        (el.isContentEditable ||
-          ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))
-      )
-        return;
+      // Keys inside a tile's content (an editor, a grid, a field) are the
+      // content's — Backspace there never takes the tile off the board.
+      if (!boardOwnsKey(e.target)) return;
       if (!handlers.current.enabled()) return;
       const mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === "z") {
