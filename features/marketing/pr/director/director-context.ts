@@ -4,19 +4,18 @@
  *
  * THE MANDATE, NEVER AN AGENT ID. `seo.press_strategist` is resolved on the server (system default → org
  * binding → user binding), so rebinding the Director changes who answers with no client deploy. The key is
- * declared in aidream (`aidream/services/news/pr_mandates.py`) but the installed `@ai-matrx/agents` predates
- * it, so it reaches the typed carrier through `dbAuthoredMandateKey` and is listed, with that reason, in
- * `scripts/mandate-keys-allowlist.json`. When the package publishes it, swap to `MANDATE_KEYS`.
+ * declared in aidream (`aidream/services/news/pr_mandates.py`) and published in `@ai-matrx/agents`, so it
+ * is named through `MANDATE_KEYS` like every other declared job.
  *
  * THE CONTEXT. Every turn carries `pr_brand_context` as a LAZY SOURCE POINTER — `{source:{kind, id}}`, no
  * body. aidream's `news/pr_brand_context.py` resolver builds the body on the server, behind the brand's own
  * access check, fresh each turn.
  */
 
-import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { createClient } from "@/utils/supabase/client";
 
-export const PR_DIRECTOR_MANDATE_KEY = dbAuthoredMandateKey("seo.press_strategist");
+export const PR_DIRECTOR_MANDATE_KEY = MANDATE_KEYS.seo__press_strategist;
 
 export const PR_BRAND_CONTEXT_KEY = "pr_brand_context";
 
