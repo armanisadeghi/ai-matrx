@@ -249,7 +249,8 @@ export function KgSuggestionRowItem({
           open={scopeDialogOpen}
           onOpenChange={setScopeDialogOpen}
           row={row}
-          organizationId={organizationId}
+          // The suggestion's OWN org; the active org only when the row has none.
+          organizationId={row.organization_id ?? organizationId}
         />
       </div>
     );

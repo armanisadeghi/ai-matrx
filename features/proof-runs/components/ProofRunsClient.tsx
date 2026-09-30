@@ -414,7 +414,7 @@ export default function ProofRunsClient() {
       {orgRequired ? (
         <OrganizationRequiredNotice
           what="Proof runs"
-          description="Proof runs are listed per organization, and none is selected for this session. Pick one and this loads."
+          description="Every call to the proof-run server runs inside an organization, and none is set for this session. Pick one and this loads — the list itself shows every run, not just that organization's."
           onRetry={() => {
             void refresh();
           }}
