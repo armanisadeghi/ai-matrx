@@ -522,7 +522,6 @@ function EntitiesTab({
         pageSize={PAGE_SIZE}
         stickyHeader
         detail={{ enabled: false }}
-        copy={false}
         toolbar={{
           title: "Entities",
           search: true,
@@ -879,7 +878,6 @@ function EdgesTab({
         pageSize={0}
         stickyHeader
         detail={{ enabled: false }}
-        copy={false}
         toolbar={{
           title: "Top edges",
           search: false,

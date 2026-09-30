@@ -351,7 +351,6 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
           restore={restore}
         />
       )}
-      copy={false}
       emptyState={{ title: "No suggestions match these filters." }}
       className="min-w-[72rem]"
     />

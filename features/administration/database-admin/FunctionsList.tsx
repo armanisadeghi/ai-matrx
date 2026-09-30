@@ -121,7 +121,6 @@ export const FunctionsList = ({
         read={readOf({ loading, error }, { what: "the function catalog", onRetry: onRefresh })}
         density="condensed"
         stickyHeader
-        copy={false}
         toolbar={{
           title: "Database Functions",
           search: true,
