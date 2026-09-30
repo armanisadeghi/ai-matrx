@@ -8,6 +8,7 @@ import type { createClient } from "@/utils/supabase/server";
 // may be working in a different organization — the exact arrival TAILS-3 measured
 // landing on "Select an organization first". Never build `?org=` by hand here.
 import { linkCarriesItsOrganization } from "@/lib/organizations/linkCarriesItsOrganization";
+import { getResourceSharePath } from "@/utils/permissions/registry";
 
 export type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -137,6 +138,23 @@ export async function getResourceDetails(
         return data
           ? { title: data.title || "Meeting", url: `${siteUrl}/meet/${data.slug}` }
           : null;
+      }
+
+      case "assessment":
+      case "study_media":
+      case "fc_set": {
+        const path = getResourceSharePath(resourceType, resourceId);
+        if (!path) return null;
+        const { data } = resourceType === "assessment"
+          ? await supabase.schema("education").from("assessment").select("title, organization_id").eq("id", resourceId).maybeSingle()
+          : resourceType === "study_media"
+            ? await supabase.schema("education").from("study_media").select("title, organization_id").eq("id", resourceId).maybeSingle()
+            : await supabase.schema("education").from("fc_set").select("name, organization_id").eq("id", resourceId).maybeSingle();
+        if (!data) return null;
+        return {
+          title: ("title" in data ? data.title : data.name) || "Untitled study item",
+          url: await linkCarriesItsOrganization(`${siteUrl}${path}`, data.organization_id),
+        };
       }
 
       default:

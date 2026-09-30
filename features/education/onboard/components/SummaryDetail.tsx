@@ -30,6 +30,7 @@ import { ContentFindControl } from "@/features/rich-document/search/ContentFindC
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
 import { useAccess } from "@/utils/permissions/access";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -183,7 +184,7 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
   return (
     <SurfaceRuntimeProvider surfaceName="matrx-user/education-summaries" getScope={getScope} getWriteHandlers={getWriteHandlers}>
     <div className="mx-auto w-full max-w-2xl space-y-5 p-4 sm:p-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
@@ -192,7 +193,7 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-[1_1_12rem]">
           <h1 className="truncate text-lg font-semibold text-foreground">
             {row.title}
           </h1>
@@ -202,6 +203,7 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
           </div>
         </div>
         <ContentFindControl rootRef={contentRef} label="Find in summary" />
+        {(access.isOwner || access.level === "admin") ? <ShareButton resourceType="study_media" resourceId={row.id} resourceName={row.title} organizationId={row.organization_id} showStatus={false} size="sm" /> : null}
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="h-4 w-4" /> Markdown
         </Button>

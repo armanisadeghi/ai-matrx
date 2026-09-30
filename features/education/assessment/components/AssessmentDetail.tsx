@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAccess } from "@/utils/permissions/access";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { cn } from "@/lib/utils";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
@@ -356,6 +357,7 @@ export function AssessmentDetail({
 
           {/* Owner / editor actions */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
+            {(access.isOwner || access.level === "admin") && <ShareButton resourceType="assessment" resourceId={assessment.id} resourceName={assessment.title} organizationId={assessment.organization_id} showStatus={false} size="sm" />}
             {canEdit ? (
               <>
                 {/* Edit is another UI for THIS record, so it is an anchor —
