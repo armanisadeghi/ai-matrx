@@ -10,9 +10,11 @@
  * hub's tables drew with no values. And one response is capped at 1000 rows, so a large hub lost
  * cells even when the address fit.
  *
- * Guard: 640 scopes with 3 current values each (1920 rows) → every request names at most 100 scopes,
- * and every row comes back. Since lane SCOPES-READS-WEB the values come from the record store's
- * `custom.context_values` door, which refuses more than 200 scopes a call.
+ * Guard: 640 scopes with 3 current values each (1920 rows) → every row comes back. Since lane
+ * SCOPES-READS-WEB the values come from the record store's `custom.context_values` door, in the request
+ * body (no address to overflow), which refuses more than 200 scopes a call; since STORE-READ-PERF-5 each
+ * request carries as many as the door takes (a type page of up to 200 scopes is ONE call), so 640 scopes
+ * are 4 requests, none over 200.
  */
 const USER = "a3c1d2e4-5f60-4718-9a2b-3c4d5e6f7081";
 
@@ -65,10 +67,11 @@ import { __setScopesReadFromStoreForTests } from "@/features/scopes/service/scop
 beforeAll(() => __setScopesReadFromStoreForTests(true));
 afterAll(() => __setScopesReadFromStoreForTests(null));
 
-it("asks in batches of at most 100 scopes and brings back every current value", async () => {
+it("asks in the fewest batches the door takes (200 a call) and brings back every current value", async () => {
   const answer = await scopesService.listContextValuesForScopes(SCOPES);
   expect(answer.ok).toBe(true);
   if (!answer.ok) return;
   expect(answer.data.values).toHaveLength(VALUES.length);
-  expect(Math.max(...idsPerRequest)).toBeLessThanOrEqual(100);
+  expect(Math.max(...idsPerRequest)).toBeLessThanOrEqual(200);
+  expect(idsPerRequest).toHaveLength(Math.ceil(SCOPES.length / 200));
 });
