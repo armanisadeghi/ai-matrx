@@ -178,7 +178,7 @@ function ScopeAndHolderBar() {
           <p className="text-[11px] leading-snug text-muted-foreground">
             Tracks latest (
             <span className="font-medium text-foreground">{HOLDER.version}</span>
-            ); an edit to its inputs can break this job.
+            ); input edits can break this job.
           </p>
         </div>
 
@@ -628,8 +628,7 @@ function AiMapTab({ onAccept }: { onAccept: () => void }) {
       </div>
       <p className="flex items-start gap-1.5 text-[10px] leading-snug text-amber-600 dark:text-amber-500">
         <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-        Skipped 2 suggestions that named things this place or Mandate Holder does not
-        have: transcript_summary; speaker_notes.
+        Skipped 2 unknown names: transcript_summary, speaker_notes.
       </p>
       <div className="flex items-center gap-2">
         <button
@@ -747,7 +746,7 @@ function MapManyPlaces() {
         <span className="text-muted-foreground">2 add · 2 update</span>
         <span className="text-red-500">1 needs attention</span>
         <span className="flex-1" />
-        <Inert what="write every row in one batch">
+        <Inert what="write every row in one batch; refused while any red cell stands">
           <span className="rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-medium text-primary-foreground">
             Apply 4
           </span>

@@ -168,11 +168,10 @@ export default async function ShapeFindingCodePage({
         )}
         {!spec.measuredOnBoard && (
           <p className="mt-2 max-w-4xl rounded border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            CLI-only class — an empty list proves nothing. Run{" "}
+            Not measured here — run{" "}
             <code className="rounded bg-muted px-1 font-mono">
               {spec.command ?? "pnpm check:shapes"}
-            </code>{" "}
-            to check.
+            </code>
           </p>
         )}
       </header>
