@@ -151,7 +151,10 @@ for (const family of families) {
     }
 
     if (family.systemFamily) {
-      if (!/\bletter\s*:/.test(source)) {
+      // An `emoji` badge is the sanctioned alternative to letters for a page that
+      // does not reduce to two readable characters (Launchpad is 🚀) — it is an
+      // explicit, route-specific identity too.
+      if (!/\b(?:letter|emoji)\s*:/.test(source)) {
         findings.push({
           route,
           file: boundary,

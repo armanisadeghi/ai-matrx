@@ -278,9 +278,39 @@ return createDynamicRouteMetadata("/agents", {
 
 ---
 
-## Step 3: Sub-pages — No Action Required
+## Step 3: Sub-pages — inherit, UNLESS they are tabs
 
-Sub-pages (`page.tsx` inside `[id]/run/`, `[id]/build/`, etc.) inherit from the nearest layout that exports `metadata` or `generateMetadata`. Only add metadata at the sub-page level if the sub-page needs a distinct title (use `titlePrefix`).
+A genuinely single-purpose sub-page may inherit its section's title and badge from the nearest layout that exports `metadata` or `generateMetadata`.
+
+🚨 **A TAB never inherits.** When a layout is a tab shell — a tab bar, sub-nav or switcher over sibling routes a person moves between — every sibling names itself. On 2026-09-30 `/administration/users/agent-review` read "Users & Access": the shell exported one `metadata` and all fifteen tabs under it (Agent Review, Admins, Invitations, Usage…) inherited it, so fifteen open browser tabs were indistinguishable. The shell's own index page (`users/page.tsx`) keeps the section title — it is the front door, not a tab.
+
+**Static section title** — a metadata-only `layout.tsx` beside the tab's page (a page is often `"use client"` and cannot export metadata):
+
+```typescript
+// app/(admin)/administration/users/agent-review/layout.tsx
+export const metadata = createRouteMetadata("/administration", {
+  titlePrefix: "Agent Review",   // the tab's own name, as the tab bar says it
+  title: "Users & Access",       // the shell's name — category last
+  letter: "AE",                  // 2 chars, free within the colour family
+});
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return children;
+}
+```
+
+**Record shell** (the section title is the record's name, fetched by the shell's `generateMetadata` — `/research/topics/[topicId]/*`, `/organizations/[orgId]/*`) — use `createTabMetadata`. It reads the parent's ALREADY-RESOLVED title (Next's second `generateMetadata` argument) and puts the tab's name in front, so the record's name survives and nothing is fetched twice:
+
+```typescript
+// app/(core)/research/topics/[topicId]/sources/layout.tsx
+export const generateMetadata = createTabMetadata("/research", {
+  titlePrefix: "Sources",   // → "Sources | <topic name>"
+  letter: "SO",
+});
+```
+
+A module that titles itself from the request pathname through one resolver (Marketing's `getMarketingRouteMetadata`) adds the tab's identity to that resolver instead — never a second source of titles.
+
+Guard: `pnpm check:tab-shell-titles` (`:self-test` proves it red then green). It evaluates each sibling's real title — static helpers through the shipping `createRouteMetadata`, `createTabMetadata` against its resolved parent, pathname resolvers by calling them — and fails when two siblings of one shell resolve to the same title. Redirect-only pages own no tab and are skipped. A deliberate pair is marked in the shell with `// tab-shell-title-ok: <reason>`.
 
 ---
 

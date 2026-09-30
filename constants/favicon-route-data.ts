@@ -90,7 +90,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/data-v2", favicon: { color: SHEETS_COLOR, letter: "D2" } },
   { href: "/acquisition", favicon: { color: "#0f766e", letter: "AQ" } },
   { href: "/approvals", favicon: { color: "#d97706", letter: "AV" } },
-  { href: "/detail", favicon: { color: "#475569", letter: "DT" } },
+  { href: "/detail", favicon: { color: "#475569", letter: "DV" } },
   { href: "/notifications", favicon: { color: "#0284c7", letter: "NF" } },
   { href: "/voice", favicon: { color: "#be185d", letter: "V" } },
   {

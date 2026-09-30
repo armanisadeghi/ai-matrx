@@ -331,6 +331,8 @@
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
     "check:favicon-letters": "tsx scripts/check-favicon-letters.ts",
     "check:favicon-letters:self-test": "tsx scripts/check-favicon-letters.ts --self-test",
+    "check:tab-shell-titles": "tsx scripts/check-tab-shell-titles.ts",
+    "check:tab-shell-titles:self-test": "tsx scripts/check-tab-shell-titles.ts --self-test",
     "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
     "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
     "check:unwired": "tsx scripts/unwired/check-unwired.ts",

@@ -26,12 +26,18 @@
  * exports `metadata` or `generateMetadata`, exactly as Next.js picks the title.
  *   · A static `createRouteMetadata(path, {...})` / `createDynamicRouteMetadata`
  *     whose title fields are literals is EVALUATED through the shipping helper
- *     and its `.title` read back.
- *   · A literal `export const metadata = { title: "…" }` is read directly.
- *   · `generateMetadata` depends on params and data, so its identity is its
- *     owner file: two siblings owned by the SAME dynamic function collide; two
- *     with their own functions do not.
- *   · Anything else is keyed by its owner file, on the same rule.
+ *     and its `.title` read back. A literal `{ title: "…" }` is read directly.
+ *   · `createTabMetadata(path, { titlePrefix })` is "<prefix> | <its parent's
+ *     resolved title>" — so two tabs of one record shell differ exactly when
+ *     their prefixes do, and the record's name is never lost.
+ *   · A `generateMetadata` that titles the page from the request PATHNAME through
+ *     one imported resolver (Marketing) is evaluated by calling that resolver for
+ *     each child's URL — a resolver that sends several children to one fallback
+ *     is caught; one that names each child passes.
+ *   · Any other `generateMetadata` depends on params and data, so its identity is
+ *     its owner file: two siblings owned by the SAME function collide.
+ *   · A child whose page only redirects (`redirect`/`permanentRedirect`, no JSX)
+ *     owns no browser tab and is not counted.
  *
  * THE ESCAPE, for siblings that genuinely are the same page (an alias, a v2 of
  * the same tool being tried side by side):
