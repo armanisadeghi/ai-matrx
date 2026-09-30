@@ -643,6 +643,11 @@ export function OrganizationHub({
       <EntityScopeTabs
         scope={makeScope(scope)}
         scopes={[...DATA_HOME_SHELL_LANES]}
+        // No person can reach the platform's own tables from the data home today
+        // (custom.data_home_tables reads only orgs the viewer belongs to or holds a grant in, and
+        // the platform org has neither), so System could only ever read 0 — absent, not empty.
+        // Drop this the day the platform publishes tables to people.
+        lanes={{ system: false }}
         counts={laneCounts}
         countsLoading={everywhere.phase === "reading"}
         onChange={(next) => chooseScope(isDataHomeScope(next.kind) ? next.kind : "all")}
