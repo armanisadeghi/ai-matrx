@@ -14,10 +14,29 @@
  * the real builder, not a hand-shaped stub of it.
  */
 import { createClient } from "@supabase/supabase-js";
-import { tryWriteOne, writeOne, WriteDidNotLandError } from "../writeOne";
+import { tryWriteOne, writeOne, writeFailureStatus, WriteDidNotLandError } from "../writeOne";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";
 
 type FetchAnswer = { status: number; body: unknown };
+
+it("keeps PostgreSQL code, details and hint through the result-style writer", async () => {
+  const { client } = clientAnswering({ status: 403, body: {
+    code: "42501", message: "owner_only: private conversation",
+    details: "The signed-in recipient is not the sharing owner", hint: "Ask the owner to share",
+  } });
+  const result = await tryWriteOne(client.from("dm_conversation_participants")
+    .update({ last_read_at: "2026-09-30T21:44:00Z" }).eq("id", "participant-ada").select("id"),
+    { action: "update", noun: "read receipt" });
+  expect(result.row).toBeNull();
+  expect(result.error).toMatchObject({ code: "42501", details: "The signed-in recipient is not the sharing owner", hint: "Ask the owner to share" });
+  expect(writeFailureStatus(result.error)).toBe(403);
+});
+
+it.each([["23505",409],["PGRST116",404],["XX000",500]] as const)(
+  "keeps the HTTP meaning of %s distinct from unknown failures", (code, status) => {
+    expect(writeFailureStatus({ code, message: "Database refusal" })).toBe(status);
+  },
+);
 
 function clientAnswering(answer: FetchAnswer) {
   const calls: { url: string; method: string; prefer: string | null }[] = [];

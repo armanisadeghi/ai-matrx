@@ -182,6 +182,18 @@ export async function tryWriteOne<Row>(
     return { row: await writeOne(write, options), error: null };
   } catch (caught) {
     if (caught instanceof Error) return { row: null, error: caught };
+    // PostgREST responses can be plain objects. Keep their structured refusal
+    // intact instead of turning code/details/hint into an opaque Error cause.
+    if (caught && typeof caught === "object" && "code" in caught &&
+        typeof caught.code === "string" && "message" in caught &&
+        typeof caught.message === "string") {
+      return { row: null, error: new PostgrestError({
+        code: caught.code,
+        message: caught.message,
+        details: "details" in caught && typeof caught.details === "string" ? caught.details : "",
+        hint: "hint" in caught && typeof caught.hint === "string" ? caught.hint : "",
+      }) };
+    }
     const message =
       caught && typeof caught === "object" && "message" in caught && typeof caught.message === "string"
         ? caught.message
@@ -195,10 +207,17 @@ export async function tryWriteOne<Row>(
 /**
  * The HTTP status a route handler answers with for a failed write: the
  * refusal's own status (403 refused / 409 taken) for `WriteDidNotLandError`,
- * 500 for anything else. Server twin of the client's toast path.
+ * Database authorization/not-found/conflict codes retain their HTTP meaning;
+ * unknown failures remain 500. Server twin of the client's toast path.
  */
 export function writeFailureStatus(error: unknown): number {
-  return error instanceof WriteDidNotLandError ? error.status : 500;
+  if (error instanceof WriteDidNotLandError) return error.status;
+  if (error && typeof error === "object" && "code" in error) {
+    if (error.code === "42501" || error.code === "PGRST301" || error.code === "PGRST302") return 403;
+    if (error.code === "PGRST116") return 404;
+    if (error.code === "23505" || error.code === "40001" || error.code === "40P01") return 409;
+  }
+  return 500;
 }
 
 /**

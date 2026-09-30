@@ -93,7 +93,8 @@ import {
 } from "@/features/messaging/components/MessagingChrome";
 import { useIncomingMessageNotifier } from "@/features/messaging/lib/useIncomingMessageNotifier";
 import { unlockAudio } from "@/features/messaging/utils/notificationSound";
-import { toast } from "@/lib/toast";
+import { toastErrorAlreadyCaptured } from "@/lib/toast";
+import { captureMessagingError } from "@/lib/diagnostics/captureMessagingError";
 import { diagnosticToastCopy } from "@/lib/toast/diagnostic-copy";
 
 export interface MessagingHostProps {
@@ -164,11 +165,12 @@ export function MessagingHost({ children }: MessagingHostProps) {
       event.remedy !== undefined ? ` → ${event.remedy}` : ""
     }`;
     if (event.level === "error") {
-      console.error(line);
+      const copy = diagnosticToastCopy("messaging", event.message);
+      captureMessagingError(event, `${copy.title} — ${copy.description}`);
+      console.info(line);
       if (!shownRef.current.has(event.message)) {
         shownRef.current.add(event.message);
-        const copy = diagnosticToastCopy("messaging", event.message);
-        toast.error(copy.title, { description: copy.description });
+        toastErrorAlreadyCaptured(copy.title, { description: copy.description });
       }
       return;
     }

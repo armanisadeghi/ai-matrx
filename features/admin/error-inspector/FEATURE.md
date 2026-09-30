@@ -29,6 +29,13 @@ second symptom instead of deduping the incident.
 
 **Capture adapters (all → `captureError`):**
 
+- **Messaging operations** — `captureMessagingError.ts` consumes the package's
+  typed engine diagnostics. The Supabase proxy remembers capture identity through
+  error cause chains; the host enriches that incident with conversation identity
+  and user-facing handling. Failures without an earlier capture (including zero-row
+  writes) get a structured `messaging` capture. The toast uses the existing
+  already-captured presentation path; console output does not mirror an incident.
+
 - **Mandate fast paths** — `features/mandates/fast-path-guard.ts`
   (`verifyFastPathAgainstMandate`, and `<FastPathMandateGuard>` for Server
   Components). A hard-coded agent fast path (SSR seed fallback, manifest role
@@ -435,6 +442,10 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 - New downgrade → edit `DOWNGRADE_RULES` only.
 
 ## Change Log
+
+- 2026-09-30 — Messaging preserves one structured incident across PostgREST,
+  engine handling, and toast presentation, with the conversation ID and refusal
+  details retained. Failures remain red; no downgrade rule was added.
 
 - 2026-09-28 — **The inspector sees every page again.** The admin-lane ruling
   (2026-09-25) made `selectIsAdmin` / `selectIsSuperAdmin` false outside

@@ -46,6 +46,8 @@ export type CapturedErrorSource =
   | "unhandled-rejection"
   /** A `console.error(...)` call (noise-filtered). */
   | "console-error"
+  /** A messaging engine operation failed without a lower-level captured error. */
+  | "messaging"
   /** A shell navigation icon name was not present in the closed icon registry. */
   | "shell-navigation"
   /** A Python-backend call returned a non-2xx HTTP status. */
@@ -733,6 +735,9 @@ export function captureError(input: CaptureInput): string {
 }
 
 export interface CapturedErrorResolution {
+  conversationId?: string;
+  name?: string;
+  stack?: string;
   /** Replace the technical summary when a later resolver learned the truth. */
   message?: string;
   /** Replace the human sentence when the resolved state changes it. */
@@ -761,6 +766,9 @@ export function resolveCapturedError(
     message: resolution.message ?? existing.message,
     userMessage: resolution.userMessage ?? existing.userMessage,
     raw: resolution.raw ?? existing.raw,
+    conversationId: resolution.conversationId ?? existing.conversationId,
+    name: resolution.name ?? existing.name,
+    stack: resolution.stack ?? existing.stack,
   };
 
   try {
