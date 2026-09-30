@@ -31,6 +31,8 @@ import {
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { makeScope, withTeamScope, type ListScope } from "@/lib/list-scope/types";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { cn } from "@/lib/utils";
 import { CHASEBOX_ASSIST_SURFACE } from "../../inbox/constants";
 import { fetchChaseboxCounts, fetchChaseboxItems } from "../service";
@@ -63,7 +65,11 @@ export function ChaseboxPage() {
   const searchParams = useSearchParams();
   const requestedQueue = searchParams.get("queue");
 
-  const [scope, setScope] = useState<ListScope>(makeScope("mine"));
+  const [scope, setScope] = useState<ListScope>(makeScope("all"));
+  // The page's organization filter (?org_filter=, null = All organizations) — never the active organization.
+  const [orgId, setOrgId] = useOrgFilterParam();
+  // Counts nobody has measured for THIS filter show as nothing, never as the previous filter's numbers.
+  const [countsLoading, setCountsLoading] = useState(true);
   const [counts, setCounts] = useState<ChaseboxCounts | null>(null);
   // The queue counts are their own read: a failure shows "—" on the tabs, never a forever-skeleton.
   const [countsError, setCountsError] = useState<string | null>(null);
@@ -111,24 +117,28 @@ export function ChaseboxPage() {
   useEffect(() => {
     let cancelled = false;
     setError(null);
+    setCountsLoading(true);
     void Promise.all([
-      fetchChaseboxCounts(makeScope("mine")),
-      fetchChaseboxCounts(makeScope("team")),
-      fetchChaseboxCounts(makeScope("orgs")),
+      fetchChaseboxCounts(makeScope("mine"), orgId),
+      fetchChaseboxCounts(makeScope("team"), orgId),
+      fetchChaseboxCounts(makeScope("orgs"), orgId),
+      fetchChaseboxCounts(makeScope("all"), orgId),
     ])
-      .then(([mine, team, orgs]) => {
+      .then(([mine, team, orgs, all]) => {
         if (cancelled) return;
         const sum = (c: ChaseboxCounts) =>
           CHASEBOX_QUEUES.reduce((n, q) => n + c[q], 0);
         setScopeTotals({
-          byKind: { mine: sum(mine), team: sum(team), orgs: sum(orgs) },
+          byKind: { all: sum(all), mine: sum(mine), team: sum(team), orgs: sum(orgs) },
           narrow: {},
         });
-        setCounts(scope.kind === "orgs" ? orgs : scope.kind === "team" ? team : mine);
+        setCounts(scope.kind === "all" ? all : scope.kind === "orgs" ? orgs : scope.kind === "team" ? team : mine);
+        setCountsLoading(false);
         setCountsError(null);
       })
       .catch((loadError: unknown) => {
         if (cancelled) return;
+        setCountsLoading(false);
         setCountsError(
           loadError instanceof Error ? loadError.message : "Could not load the queue counts.",
         );
@@ -141,13 +151,13 @@ export function ChaseboxPage() {
     return () => {
       cancelled = true;
     };
-  }, [scope.kind, reloadToken]);
+  }, [scope.kind, orgId, reloadToken]);
 
   useEffect(() => {
     let cancelled = false;
     setRows(null);
     setError(null);
-    void fetchChaseboxItems({ queue, scope, page, pageSize: PAGE_SIZE })
+    void fetchChaseboxItems({ queue, scope, orgId, page, pageSize: PAGE_SIZE })
       .then((result) => {
         if (cancelled) return;
         setRows(result.rows);
@@ -166,7 +176,7 @@ export function ChaseboxPage() {
     return () => {
       cancelled = true;
     };
-  }, [queue, scope, page, reloadToken]);
+  }, [queue, scope, orgId, page, reloadToken]);
 
   const meta = CHASEBOX_QUEUE_META[queue];
 
@@ -203,13 +213,18 @@ export function ChaseboxPage() {
         <div className="flex min-w-0 items-center justify-between gap-2">
           <EntityScopeTabs
             scope={scope}
-            // crm_chasebox_* answers Mine / My team / My Orgs only — no All lane
-            // until that RPC learns it (the tabs would otherwise offer a lane it refuses).
             scopes={withTeamScope(CHASEBOX_SCOPES)}
-            exact
             counts={scopeTotals}
+            countsLoading={countsLoading}
             onChange={(next) => {
               setScope(next);
+              setPage(1);
+            }}
+          />
+          <EntityOrgFilter
+            orgId={orgId}
+            onChange={(next) => {
+              setOrgId(next);
               setPage(1);
             }}
           />
