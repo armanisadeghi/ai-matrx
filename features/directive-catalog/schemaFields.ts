@@ -81,6 +81,13 @@ export interface SchemaFieldWarning {
   /** The field the warning is about, or null for the whole payload. */
   key: string | null;
   message: string;
+  /**
+   * Where the offer belongs. `value`: a field the person filled in oddly — shown
+   * beside that field. `required` / `no-change`: about what is MISSING — shown
+   * beside the action button, where the decision is made, never as an alarm on a
+   * form nobody has touched yet.
+   */
+  kind: "value" | "required" | "no-change";
 }
 
 export interface BuiltSchemaPayload {
@@ -321,6 +328,7 @@ function coerce(
       if (!Number.isFinite(n)) {
         warnings.push({
           key: field.key,
+          kind: "value",
           message: `${field.label} is not a number — it will be sent exactly as typed.`,
         });
         return text;
@@ -328,6 +336,7 @@ function coerce(
       if (field.kind === "integer" && !Number.isInteger(n)) {
         warnings.push({
           key: field.key,
+          kind: "value",
           message: `${field.label} expects a whole number.`,
         });
       }
@@ -338,6 +347,7 @@ function coerce(
       if (Number.isNaN(d.getTime())) {
         warnings.push({
           key: field.key,
+          kind: "value",
           message: `${field.label} is not a valid date and time — it will be sent as typed.`,
         });
         return text;
@@ -350,6 +360,7 @@ function coerce(
       } catch {
         warnings.push({
           key: field.key,
+          kind: "value",
           message: `${field.label} is not valid JSON — it will be sent as plain text.`,
         });
         return text;
@@ -385,6 +396,7 @@ export function buildSchemaPayload(
       if (field.required && !(field.key in base)) {
         warnings.push({
           key: field.key,
+          kind: "required",
           message: `${field.label} is required — the button will fail when clicked without it.`,
         });
       }
@@ -399,6 +411,7 @@ export function buildSchemaPayload(
       } else if (field.required) {
         warnings.push({
           key: field.key,
+          kind: "required",
           message: `${field.label} is required — the button will fail when clicked without it.`,
         });
       }
@@ -413,6 +426,7 @@ export function buildSchemaPayload(
   if (mode === "update" && changed === 0) {
     warnings.push({
       key: null,
+      kind: "no-change",
       message: "No fields are set — this button would change nothing.",
     });
   }
@@ -452,6 +466,26 @@ export function valuesFromPayload(
     }
   }
   return values;
+}
+
+/**
+ * Where each warning is shown. A field the person touched owns its warnings;
+ * what is still MISSING (an untouched required field, an update that sets
+ * nothing) is said once, beside the action button — so an untouched form is
+ * calm and the offer sits exactly where the person decides.
+ */
+export function splitWarnings(
+  warnings: readonly SchemaFieldWarning[],
+  values: SchemaFieldValues,
+): { field: SchemaFieldWarning[]; action: string[] } {
+  const field: SchemaFieldWarning[] = [];
+  const action: string[] = [];
+  for (const w of warnings) {
+    const touched = w.key !== null && values[w.key]?.touched === true;
+    if (w.kind === "value" || (w.kind === "required" && touched)) field.push(w);
+    else action.push(w.message);
+  }
+  return { field, action };
 }
 
 /** Apply one control change; `null` returns the field to "not set / unchanged". */

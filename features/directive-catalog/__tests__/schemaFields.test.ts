@@ -11,6 +11,7 @@ import type { EntityTypeToken } from "@ai-matrx/associations";
 import {
   buildSchemaPayload,
   deriveSchemaFields,
+  splitWarnings,
   valuesFromPayload,
   type SchemaField,
   type SchemaFieldValue,
@@ -236,6 +237,20 @@ describe("buildSchemaPayload", () => {
     expect(payload.completed_at).toBe(new Date("2026-09-30T14:05").toISOString());
     expect(payload.metadata).toBe("{not json");
     expect(warnings.map((w) => w.key)).toEqual(["metadata"]);
+  });
+
+  it("an untouched form is calm: what is missing sits at the button, a bad value at its field", () => {
+    const pristine = buildSchemaPayload(createFields, {}, "create");
+    const calm = splitWarnings(pristine.warnings, {});
+    expect(calm.field).toEqual([]);
+    expect(calm.action).toEqual([expect.stringContaining("Title is required")]);
+
+    const values = { title: touched(""), metadata: touched("{bad") };
+    const typed = buildSchemaPayload(createFields, values, "create");
+    const split = splitWarnings(typed.warnings, values);
+    // Touched-and-emptied required, and a bad value, belong to their fields.
+    expect(split.field.map((w) => w.key).sort()).toEqual(["metadata", "title"]);
+    expect(split.action).toEqual([]);
   });
 
   it("round-trips through valuesFromPayload (the admin builder's JSON ⇄ fields switch)", () => {

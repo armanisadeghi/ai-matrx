@@ -59,6 +59,7 @@ import {
   applyFieldChange,
   buildSchemaPayload,
   deriveSchemaFields,
+  splitWarnings,
   type SchemaFieldValue,
 } from "@/features/directive-catalog/schemaFields";
 import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
@@ -800,7 +801,14 @@ function WriteStep({
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">{body}</div>
 
-      <div className="flex shrink-0 justify-end border-t border-border pt-3">
+      <div className="flex shrink-0 items-center gap-3 border-t border-border pt-3">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          {splitWarnings(built.warnings, values).action.map((m) => (
+            <p key={m} className="text-xs text-amber-700 dark:text-amber-300">
+              {m}
+            </p>
+          ))}
+        </div>
         <Button
           type="button"
           size="sm"

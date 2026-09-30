@@ -59,6 +59,7 @@ import {
   applyFieldChange,
   buildSchemaPayload,
   deriveSchemaFields,
+  splitWarnings,
   valuesFromPayload,
   type SchemaFieldValue,
 } from "@/features/directive-catalog/schemaFields";
@@ -651,6 +652,12 @@ export function DirectiveBuilderPanel({
             Force — bypass idempotency (apply a deliberate duplicate)
           </label>
 
+          {effectiveView === "fields" &&
+            splitWarnings(builtPayload.warnings, payloadValues).action.map((m) => (
+              <p key={m} className="text-xs text-amber-700 dark:text-amber-300">
+                {m}
+              </p>
+            ))}
           <div className="flex items-center gap-2">
             <Button
               type="button"

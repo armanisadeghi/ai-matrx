@@ -6,9 +6,10 @@
  * Renders the fields `deriveSchemaFields` produced: essential ones up front,
  * the rest behind "More fields". Controlled: the parent owns the answers
  * (`SchemaFieldValues`) and turns them into a payload with
- * `buildSchemaPayload`, whose warnings it passes back here to show beside each
- * field. Nothing in this form can stop the person's action — a warning is a
- * sentence next to a field, never a disabled button.
+ * `buildSchemaPayload`, whose warnings it passes back here. This form shows the
+ * ones a touched field owns; the caller shows `splitWarnings(...).action` beside
+ * its own button. Nothing here can stop the person's action — a warning is a
+ * sentence, never a disabled button.
  *
  * Id fields that point at a real record become a search (the same
  * `RecordReferencePicker` the reference picker uses), so nobody types an id.
@@ -36,12 +37,13 @@ import {
 import { cn } from "@/lib/utils";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RecordReferencePicker } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
-import type {
-  SchemaField,
-  SchemaFieldValue,
-  SchemaFieldValues,
-  SchemaFieldWarning,
-  SchemaFormMode,
+import {
+  splitWarnings,
+  type SchemaField,
+  type SchemaFieldValue,
+  type SchemaFieldValues,
+  type SchemaFieldWarning,
+  type SchemaFormMode,
 } from "@/features/directive-catalog/schemaFields";
 
 export interface SchemaFieldsFormProps {
@@ -76,8 +78,9 @@ export function SchemaFieldsForm({
   );
   const setInMore = more.filter((f) => values[f.key]?.touched).length;
 
+  const fieldWarnings = splitWarnings(warnings, values).field;
   const warningFor = (key: string) =>
-    warnings.filter((w) => w.key === key).map((w) => w.message);
+    fieldWarnings.filter((w) => w.key === key).map((w) => w.message);
 
   const renderField = (field: SchemaField) => (
     <FieldRow
@@ -116,16 +119,6 @@ export function SchemaFieldsForm({
         </div>
       )}
 
-      {warnings
-        .filter((w) => w.key === null)
-        .map((w) => (
-          <p
-            key={w.message}
-            className="text-xs text-amber-700 dark:text-amber-300"
-          >
-            {w.message}
-          </p>
-        ))}
     </div>
   );
 }
