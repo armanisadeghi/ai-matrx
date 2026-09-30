@@ -1,9 +1,8 @@
 import type { createClient } from "@/utils/supabase/server";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 type MainSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class ResearchLineageValidationError extends Error {
   constructor(message: string) {
@@ -24,7 +23,7 @@ function normalizeIds(value: unknown, label: string): string[] {
       `${label} cannot contain more than 100 items.`,
     );
   }
-  if (!ids.every((id) => UUID_RE.test(id))) {
+  if (!ids.every((id) => isUuidShape(id))) {
     throw new ResearchLineageValidationError(
       `${label} contains an invalid UUID.`,
     );

@@ -5,9 +5,8 @@ import { createClient } from "@/utils/supabase/server";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { PartyRecordPage } from "@/features/crm/components/record/PartyRecordPage";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** How long the tab-title read may take before the generic title is used. */
 const METADATA_READ_MS = 1500;
@@ -31,7 +30,7 @@ const readPartyHeading = cache(
   async (
     partyId: string,
   ): Promise<{ name: string; kind: string | null } | null> => {
-    if (!UUID_RE.test(partyId)) return null;
+    if (!isUuidShape(partyId)) return null;
     try {
       const supabase = await createClient();
       const { data } = await supabase

@@ -5,9 +5,8 @@ import { resolveLegacySiteAddress } from "@/features/marketing/lib/shim-resolve-
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Generic entity door → the owning site's canonical Changes workspace, which
@@ -20,7 +19,7 @@ export default async function MarketingChangeShortLink({
   params: Promise<{ changeId: string }>;
 }) {
   const { changeId } = await params;
-  if (!UUID_RE.test(changeId)) notFound();
+  if (!isUuidShape(changeId)) notFound();
   const supabase = await createClient();
   const { user, authUnavailable } = await getServerAuth();
   if (!user && authUnavailable) {

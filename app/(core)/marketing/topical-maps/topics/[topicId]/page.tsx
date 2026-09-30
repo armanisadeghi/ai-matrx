@@ -15,9 +15,8 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function TopicalMapTopicDoor({
   params,
@@ -25,7 +24,7 @@ export default async function TopicalMapTopicDoor({
   params: Promise<{ topicId: string }>;
 }) {
   const { topicId } = await params;
-  if (!UUID_RE.test(topicId)) notFound();
+  if (!isUuidShape(topicId)) notFound();
 
   const supabase = await createClient();
   const { user, authUnavailable } = await getServerAuth();

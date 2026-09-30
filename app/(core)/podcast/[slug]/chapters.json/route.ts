@@ -18,11 +18,12 @@ import {
   buildChaptersJson,
   CHAPTERS_JSON_MIME,
 } from "@/features/podcasts/chapters-json";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const revalidate = 3600;
 
 function isUUID(str: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+  return isUuidShape(
     str,
   );
 }

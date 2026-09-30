@@ -1,9 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Resolve a research-tag identity to its topic-scoped detail route. */
 export default async function ResearchTagShortLink({
@@ -12,7 +11,7 @@ export default async function ResearchTagShortLink({
   params: Promise<{ tagId: string }>;
 }) {
   const { tagId } = await params;
-  if (!UUID_RE.test(tagId)) notFound();
+  if (!isUuidShape(tagId)) notFound();
 
   const supabase = await createClient();
   const response = await supabase
