@@ -47,6 +47,11 @@ export interface EntityOrgFilterProps {
   /** Optional: a `*_scope_counts` result; its `all` narrow rows put a count beside each organization. */
   counts?: EntityScopeCounts;
   countsLoading?: boolean;
+  /**
+   * Optional: called when the menu opens. A surface whose per-organization counts cost a read per
+   * organization (the Knowledge hub) fetches them only once the menu is first opened.
+   */
+  onOpen?: () => void;
   className?: string;
 }
 
@@ -55,7 +60,7 @@ export interface EntityOrgFilterProps {
  * page outside the shell renders the same control (URL state:
  * `useOrgFilterParam` in ../orgFilterUrl.ts).
  */
-export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, className }: EntityOrgFilterProps) {
+export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen, className }: EntityOrgFilterProps) {
   const { organizations, loading } = useUserOrganizations();
   const [needle, setNeedle] = useState("");
   const perOrg = new Map(
@@ -81,7 +86,12 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, classN
     countsLoading ? undefined : perOrg.get(id);
 
   return (
-    <DropdownMenu onOpenChange={(open) => !open && setNeedle("")}>
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (open) onOpen?.();
+        else setNeedle("");
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <button
           type="button"

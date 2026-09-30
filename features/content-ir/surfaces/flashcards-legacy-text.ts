@@ -13,16 +13,16 @@
  *
  * Title: the flashcard_set schema REQUIRES `title` (verified against the
  * live content_ir.kind_definition row — the kind parser drops a title-less
- * set to raw), but the legacy text format carries none. The strategy emits
- * the family's established default "Flashcards" — the same fallback
- * flashcardsMarkdownFromValue and the component's own set label use — so the
- * converged value is schema-valid, not just bridge-tolerated.
+ * set to raw). The text's own `Title:` line is the set's title when it
+ * carries one; text without one gets the PLACEHOLDER, so the converged value
+ * is schema-valid. The placeholder is never a name: whatever names a record
+ * from this value runs it through `deriveFlashcardDeckName`
+ * (features/flashcards/utils/deckName.ts), which replaces it.
  */
 
 import { parseFlashcards } from "@/components/mardown-display/blocks/flashcards/flashcard-parser";
 import { KIND_KEY } from "@ai-matrx/content-ir";
-
-const DEFAULT_SET_TITLE = "Flashcards";
+import { GENERIC_FLASHCARD_TITLE } from "@/features/flashcards/utils/deckName";
 
 /** Opening tag with optional attributes, e.g. `<flashcards>` — host framing. */
 const OPENING_TAG_RE = /^\s*<flashcards(?:\s[^>]*)?>/i;
@@ -48,12 +48,12 @@ export function flashcardsLegacyTextToKindValue(
   const closeIdx = inner.indexOf(CLOSING_TAG);
   if (closeIdx !== -1) inner = inner.slice(0, closeIdx);
 
-  const { flashcards } = parseFlashcards(`${inner}\n${CLOSING_TAG}`);
+  const { flashcards, title } = parseFlashcards(`${inner}\n${CLOSING_TAG}`);
   if (flashcards.length === 0) return null;
 
   return {
     [KIND_KEY]: "flashcard_set",
-    title: DEFAULT_SET_TITLE,
+    title: title ?? GENERIC_FLASHCARD_TITLE,
     cards: flashcards.map((card) => ({
       [KIND_KEY]: "flashcard",
       front: card.front,

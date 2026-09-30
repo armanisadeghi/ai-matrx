@@ -53,10 +53,8 @@ export default function CrewCaptureRoute({
   const userId = useAppSelector(selectUserId);
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
   const sheet = useObjectOrganization(dataSource, sheetId);
-  const organizationId: string | null =
-    sheet.state === "found" ? sheet.organizationId : sheet.state === "stand-in" ? sheet.activeOrganizationId : null;
-  const organizationState: OrganizationState =
-    sheet.state === "stand-in" ? sheet.organizationState : organizationId ? "ready" : "resolving";
+  const organizationId: string | null = sheet.state === "found" ? sheet.organizationId : null;
+  const organizationState: OrganizationState = organizationId ? "ready" : "resolving";
   // ONE SWITCH, the same one every other unified-data screen reads: does THIS
   // organization keep its data in the record store? A crew member arriving on a link
   // from an organization that has not turned it on is told in one sentence, not shown a

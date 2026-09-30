@@ -11,8 +11,9 @@
 --      EVERY organization (answer or refusal); with custom/scope_readers_read_the_store ON (set in this
 --      transaction only): public.get_scope_tree for every organization (answer or refusal) and
 --      public.get_user_full_context for herself.
---   B. custom.seen_among = custom.levels_of's "s" for every scope of every live organization, for both
---      seats and every member of an organization that keeps a scope type.
+--   B. custom.seen_among = custom.levels_of's "s": both seats over every scope of every live
+--      organization; every other member of an organization that keeps a scope type over her own
+--      organizations' scopes.
 -- FIXTURES (rolled back with everything else), so the "shown to" context has something to get wrong:
 -- one scope test@test.com sees becomes shown_to = my_team (created by a teammate of hers, the
 -- teammates part is read), one becomes only_me (created by someone else), and an archived scope type
@@ -186,29 +187,37 @@ select 'A', count(*) filter (where o.payload is distinct from n.payload) = 0,
   from ans o join ans n on n.seat = o.seat and n.door = o.door and n.k is not distinct from o.k
                        and o.phase = 'old' and n.phase = 'new';
 
--- B: seen_among against levels_of's "s", every scope of every live organization, for both seats and
--- every member of an organization that keeps a scope type.
-create temp table oracle_people on commit drop as
-  select id from seats
-  union
-  select m.user_id from iam.organization_member m
-   where m.organization_id in (select org from ctx_tables);
-create temp table all_scopes on commit drop as
-  select array_agg(r.id) as ids
-    from ctx_tables t join iam.organizations o on o.id = t.org and o.archived_at is null
-    join custom.record r on r.organization_id = t.org and r.table_id = t.id and r.deleted_at is null;
+-- B: seen_among against levels_of's "s": both seats over every scope of every live organization, and
+-- every other member of an organization that keeps a scope type over the scopes of the organizations
+-- she belongs to (what get_scope_tree and get_user_full_context ask about her).
+create temp table oracle_asks on commit drop as
+  select s.id as person, array_agg(r.id) as ids
+    from seats s
+    cross join ctx_tables t
+    join iam.organizations o on o.id = t.org and o.archived_at is null
+    join custom.record r on r.organization_id = t.org and r.table_id = t.id and r.deleted_at is null
+   group by s.id
+  union all
+  select m.user_id, array_agg(r.id)
+    from (select distinct user_id, organization_id from iam.organization_member
+           where organization_id in (select org from ctx_tables)
+             and user_id not in (select id from seats)) m
+    join ctx_tables t on t.org = m.organization_id
+    join iam.organizations o on o.id = t.org and o.archived_at is null
+    join custom.record r on r.organization_id = t.org and r.table_id = t.id and r.deleted_at is null
+   group by m.user_id;
 create temp table oracle on commit drop as
-  select p.id as person,
+  select a.person, cardinality(a.ids) as asked,
          (select count(*) from unnest(sa.seen) x where not coalesce((l.lv -> x::text ->> 's')::boolean, false)) as extra,
          (select count(*) from jsonb_each(l.lv) e where (e.value ->> 's')::boolean and not (e.key::uuid = any (sa.seen))) as missing,
          (select count(*) from jsonb_each(l.lv) e where (e.value ->> 's')::boolean) as seen
-    from oracle_people p cross join all_scopes a
-    cross join lateral (select custom.levels_of(p.id, a.ids) as lv) l
-    cross join lateral (select custom.seen_among(p.id, a.ids) as seen) sa;
+    from oracle_asks a
+    cross join lateral (select custom.levels_of(a.person, a.ids) as lv) l
+    cross join lateral (select custom.seen_among(a.person, a.ids) as seen) sa;
 insert into verdict
 select 'B', coalesce(sum(extra + missing), 0) = 0,
-       format('%s people x %s scopes, %s (person, scope) pairs seen by levels_of, %s differ',
-              count(*), (select cardinality(ids) from all_scopes), sum(seen), sum(extra + missing))
+       format('%s people, %s (person, scope) pairs asked, %s seen by levels_of, %s differ',
+              count(*), sum(asked), sum(seen), sum(extra + missing))
   from oracle;
 
 select o.seat, o.door, o.k, left(o.payload, 300) as old_payload, left(n.payload, 300) as new_payload

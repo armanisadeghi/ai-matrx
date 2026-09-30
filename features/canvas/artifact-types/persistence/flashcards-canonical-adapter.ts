@@ -22,6 +22,10 @@ import { parseFlashcards } from "@/components/mardown-display/blocks/flashcards/
 import { readObjectKind } from "@ai-matrx/content-ir";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { fcService } from "@/features/flashcards/data/fcService";
+import {
+  deriveFlashcardDeckName,
+  isGenericFlashcardTitle,
+} from "@/features/flashcards/utils/deckName";
 import type { NewCardInput } from "@/features/flashcards/data/types";
 import type {
   ArtifactPersistenceAdapter,
@@ -133,6 +137,51 @@ async function firstUnclaimedSet(
   return candidateIds.find((id) => !claimed.has(id)) ?? null;
 }
 
+/**
+ * What the person typed to get these cards: the nearest user message before
+ * the chat message the set was materialized from. Read ONLY when the set
+ * carries no real title, so the deck can be named after what was asked for
+ * instead of the platform's placeholder. Best-effort — naming a deck must
+ * never be able to fail a deck.
+ */
+async function readPromptingRequest(messageId: string): Promise<string | null> {
+  try {
+    const { data: message } = await supabase
+      .schema("chat")
+      .from("message")
+      .select("conversation_id, position")
+      .eq("id", messageId)
+      .maybeSingle();
+    if (!message?.conversation_id || typeof message.position !== "number") {
+      return null;
+    }
+    const { data: asked } = await supabase
+      .schema("chat")
+      .from("message")
+      .select("content")
+      .eq("conversation_id", message.conversation_id)
+      .eq("role", "user")
+      .lt("position", message.position)
+      .order("position", { ascending: false })
+      .limit(1);
+    const content = asked?.[0]?.content;
+    if (!Array.isArray(content)) return null;
+    const text = content
+      .map((block) =>
+        isRecord(block) && block.type === "text" ? optionalString(block.text) : null,
+      )
+      .filter((part): part is string => part !== null)
+      .join("\n");
+    return text || null;
+  } catch (e) {
+    console.warn(
+      "[FLASHCARDS_CANONICAL_ADAPTER] could not read the request that asked for this set; naming it from its cards:",
+      e,
+    );
+    return null;
+  }
+}
+
 export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<FlashcardsCanonicalState> =
   {
     async onMaterialize(
@@ -236,12 +285,32 @@ export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<Flashcards
         );
       }
 
-      // 3) Create the canonical set + cards + member edges. Source identity is
+      // 3) Name the deck. A real title (the agent's or the person's) is kept
+      //    as written. The platform's placeholder ("Flashcards") is not a
+      //    name — a library of decks all called "Flashcards" is the defect —
+      //    so it is replaced by what the set and its request actually say.
+      const structuredTitle = structured
+        ? (optionalString(structured.title) ?? optionalString(structured.set_title))
+        : null;
+      const givenTitle = [info.title, structuredTitle].find(
+        (candidate) => candidate && !isGenericFlashcardTitle(candidate),
+      );
+      const request =
+        !givenTitle && info.source.system === "cx_message"
+          ? await readPromptingRequest(info.source.id)
+          : null;
+      const deckName = deriveFlashcardDeckName({
+        title: givenTitle ?? info.title,
+        cards,
+        request,
+      });
+
+      // 4) Create the canonical set + cards + member edges. Source identity is
       //    the dedupe key; source_message_id kept for chat rows so older
       //    readers/queries keep working.
       const res = await fcService.createSetWithCards(
         {
-          name: info.title || "Flashcards",
+          name: deckName.name,
           metadata: {
             source_system: info.source.system,
             source_id: info.source.id,

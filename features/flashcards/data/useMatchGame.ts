@@ -186,6 +186,8 @@ export function useMatchGame(
                   mode: MATCH_MODE,
                   sourceKind: "set",
                   sourceSetId: loadedSet.id,
+                  // Filed under the DECK's own organization, never the active one.
+                  orgId: loadedSet.organization_id,
                 })
             : null,
         );

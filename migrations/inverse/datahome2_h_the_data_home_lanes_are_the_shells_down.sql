@@ -1,6 +1,6 @@
 -- chair-step: this puts custom.data_home_tables(uuid) back to the body datahome2_g left (no team or system columns): the result loses columns, so the function is dropped and made again, its door row and grant kept; and it puts back the knob custom.data_home_default_organization as datahome2_b made it. No data row is touched.
 -- lane: DATA-HOME-2
--- based-on: custom.data_home_tables(uuid) PLACEHOLDER
+-- based-on: custom.data_home_tables(uuid) 1ce511c004a352659eaf4d8c6b433cadaa88c4dde6468e92c9aabbc40a4db76c
 
 drop function if exists custom.data_home_tables(uuid);
 

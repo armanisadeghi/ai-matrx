@@ -92,21 +92,9 @@ async function reachOrRefusal(objectId: string): Promise<
   if (own.state === "unavailable") {
     return { refused: `Could not ask the record store where this change lives, so nothing was done. ${own.why}` };
   }
-  if (own.state === "stand-in") {
-    return {
-      refused:
-        "The record store could not say which organization this change belongs to, so nothing was done. " +
-        "The active organization is never used in its place.",
-    };
-  }
   const organizationId = own.organizationId;
   if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
     return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
-  }
-  if (!organizationId) {
-    return {
-      refused: "No organization is active, so the record store cannot be reached.",
-    };
   }
   // THE DOOR IS CALLED DIRECTLY RATHER THAN THROUGH `createRecordsClient`, and
   // that is deliberate rather than a shortcut: the package checks every call

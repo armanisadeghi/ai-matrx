@@ -76,7 +76,7 @@ import {
 } from "@/lib/organizations/organizationRefusalToast";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
-import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { trashConfirmSentence } from "@/features/trash/archiveCopy";
 import { keepSource, sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
@@ -114,7 +114,16 @@ import {
   openFullHref,
   tokenLabel,
 } from "@/features/knowledge/hub/hubPresentation";
-import { useTranscriptList } from "@/features/knowledge/hub/transcripts/useTranscriptList";
+import {
+  transcriptScopeOf,
+  transcriptServerFilters,
+  useTranscriptList,
+} from "@/features/knowledge/hub/transcripts/useTranscriptList";
+import {
+  knowledgeOrgCounter,
+  transcriptOrgCounter,
+  useHubOrgCounts,
+} from "@/features/knowledge/hub/hooks/useHubOrgCounts";
 import { hubToTranscriptsHref } from "@/features/knowledge/hub/legacyRoutes";
 import { listRestoreKey, useListRestore } from "@/features/knowledge/hub/hooks/useListRestore";
 import {
@@ -226,8 +235,10 @@ import {
   facetSelectionFromGroup,
   facetSelectionToGroup,
   hasFacetSelection,
+  isTrashable,
   isTranscriptHit,
   narrowByTranscriptFacets,
+  UNSORTED_NOT_TRASHABLE,
   transcriptFacetCounts,
   transcriptMenu,
   transcriptReferenceType,
@@ -289,7 +300,14 @@ function viewTitle(view: HubView, sidebar: HubSidebarData): string {
 }
 
 /** One short line; the way forward is a button beside it, never a paragraph. */
-function emptySentence(view: HubView, title: string, filtered: boolean): string {
+function emptySentence(
+  view: HubView,
+  title: string,
+  filtered: boolean,
+  /** The organization filter, when one is applied: the sentence names it; `only` = nothing else narrows the list. */
+  org?: { name: string; only: boolean } | null,
+): string {
+  if (org) return org.only ? `Nothing in ${org.name} matches.` : `Nothing in ${org.name} matches these filters.`;
   if (filtered) return "Nothing matches these filters.";
   switch (view.kind) {
     case "inbox":
@@ -477,6 +495,27 @@ export function KnowledgeHubPage({
     initialDepth: listRestore.saved?.depth,
   });
   const serverTranscripts = transcriptsView && !sample && !trashView;
+  // The number beside each organization in the filter: the list's own count for that organization,
+  // asked for every organization at once and never narrowed by the filter currently applied.
+  const orgFilterId = orgFilterOf(state.query) ?? null;
+  const { organizations: myOrgs } = useUserOrganizations();
+  const orgFilterName = myOrgs.find((o) => o.id === orgFilterId)?.name || "that organization";
+  // The per-organization numbers cost a read per organization, so they wait for the menu's first open.
+  const [orgMenuOpened, setOrgMenuOpened] = useState(false);
+  const orgCountEnabled = orgMenuOpened && !sample && !trashView && !triageView && state.view.kind !== "favorites";
+  const orgCounts = useHubOrgCounts({
+    enabled: orgCountEnabled,
+    countKey: serverTranscripts
+      ? JSON.stringify(["t", transcriptScopeOf(facetSel), transcriptServerFilters(facetSel), (state.query.text ?? "").trim()])
+      : JSON.stringify(["k", { ...expanded.query, organizations: undefined, cursors: undefined }]),
+    counter: serverTranscripts
+      ? transcriptOrgCounter({
+          scope: transcriptScopeOf(facetSel),
+          search: (state.query.text ?? "").trim(),
+          filters: transcriptServerFilters(facetSel),
+        })
+      : knowledgeOrgCounter(runnerFor(state.data), expanded.query),
+  });
   /** After a write, every list that could show the change reads again. */
   const refreshResults = () => {
     results.refresh();
@@ -953,7 +992,9 @@ export function KnowledgeHubPage({
           }]),
         ],
       },
-      { id: "trash", items: [{ id: "trash", label: "Move to Trash", icon: Trash2, destructive: true, onSelect: () => void doTrash([hit]) }] },
+      ...(isTrashable(actionTarget(hit))
+        ? [{ id: "trash", items: [{ id: "trash", label: "Move to Trash", icon: Trash2, destructive: true, onSelect: () => void doTrash([hit]) }] }]
+        : []),
     ];
     return <HubRowMenu title={hit.title} groups={groups} />;
   };
@@ -1255,10 +1296,20 @@ export function KnowledgeHubPage({
     });
   };
 
-  const doTrash = async (items: KnowledgeHit[]) => {
+  const doTrash = async (all: KnowledgeHit[]) => {
     if (sample) {
       toast.info(SAMPLE_WRITE_REFUSAL);
       return;
+    }
+    // Unsorted recordings are designed-absent from Trash (see isTrashable): say so, trash the rest.
+    const items = all.filter((h) => isTrashable(actionTarget(h)));
+    if (items.length < all.length) {
+      toast.info(
+        items.length
+          ? `${all.length - items.length} unsorted recording${all.length - items.length === 1 ? " was" : "s were"} left where ${all.length - items.length === 1 ? "it is" : "they are"}. ${UNSORTED_NOT_TRASHABLE}`
+          : UNSORTED_NOT_TRASHABLE,
+      );
+      if (!items.length) return;
     }
     const targets = uniqueTargets(items);
     const what = targets.length === 1 ? `"${targets[0].title}"` : `these ${targets.length} items`;
@@ -1822,7 +1873,9 @@ export function KnowledgeHubPage({
             onChange={(id) =>
               write({ query: normalizeQuery({ ...state.query, organizations: id ? [id] : undefined }) })
             }
-            counts={EMPTY_SCOPE_COUNTS}
+            counts={orgCounts.counts}
+            countsLoading={orgCounts.loading}
+            onOpen={() => setOrgMenuOpened(true)}
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -2032,6 +2085,16 @@ export function KnowledgeHubPage({
               title,
               // Facets and Stage narrow outside the query: they are filters too.
               viewFiltered || hasFacetSelection(facetSel) || state.stage.length > 0,
+              orgFilterId
+                ? {
+                    name: orgFilterName,
+                    only:
+                      !hasFacetSelection(facetSel) &&
+                      state.stage.length === 0 &&
+                      JSON.stringify(normalizeQuery({ ...state.query, organizations: viewBaseQuery.organizations })) ===
+                        JSON.stringify(normalizeQuery(viewBaseQuery)),
+                  }
+                : null,
             )}
             onShowMore={triageView ? triage.showMore : serverTranscripts ? () => transcriptList.showMore() : results.showMore}
             onRetry={triageView ? triage.refresh : serverTranscripts ? () => transcriptList.retry() : results.retry}
@@ -2044,12 +2107,14 @@ export function KnowledgeHubPage({
               onAnchor: (anchor) => listRestore.save({ anchor }),
             }}
             emptyExtra={
-              state.view.kind === "everything" && !sample ? (
-                <HubGettingStarted />
-              ) : viewFiltered || hasFacetSelection(facetSel) || state.stage.length ? (
+              // A narrowed list says how to widen it first — "Nothing in Acme matches" + Clear filters —
+              // even in Everything, where the empty library would otherwise show the getting-started kit.
+              viewFiltered || hasFacetSelection(facetSel) || state.stage.length ? (
                 <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={clearFilters}>
                   <X className="h-4 w-4" /> Clear filters
                 </Button>
+              ) : state.view.kind === "everything" && !sample ? (
+                <HubGettingStarted />
               ) : transcriptsView ? (
                 <Button asChild size="sm" className="h-8 gap-1.5">
                   <Link href="/transcripts/new">

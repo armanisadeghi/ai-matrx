@@ -36,7 +36,7 @@ import {
 
 export const TRANSCRIPT_PAGE = 40;
 
-/** The list's scopes (single choice). "orgs" with no organization = every organization I belong to. */
+/** The list's access lanes (single choice). "orgs" = every organization I belong to; the org filter narrows any lane. */
 export type TranscriptScope = "orgs" | "mine" | "shared" | "public";
 
 /** Hub facet → the server's filter key and facet kind. Scope is not a filter: it is the RPC's scope. */
@@ -107,7 +107,11 @@ interface Args {
   enabled: boolean;
   text: string;
   selection: TranscriptFacetSelection;
-  /** "Only my organization" — the resolved active organization, else every organization. */
+  /**
+   * The page's organization FILTER (`?org_filter=`), null = All organizations. It narrows every lane —
+   * rows, facet values and the Scope counts alike (active-org-is-never-a-list-filter, server contract).
+   * Never the header's active organization.
+   */
   orgId: string | null;
   sort: "updated" | "title";
   /** Rows to load on the first read (a return to the list restores its depth). */
@@ -140,7 +144,7 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
   const call = (offset: number, limit: number) =>
     supabase.rpc("trx_list_scoped", {
       p_scope: scope,
-      p_org_id: scope === "orgs" && orgId ? orgId : undefined,
+      p_org_id: orgId ?? undefined,
       p_search: search || undefined,
       p_deep: Boolean(search),
       p_sort: sort,
@@ -179,7 +183,7 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
       // view beside searched rows would be the wrong number.
       const { data, error: e } = await supabase.rpc("trx_list_facets", {
         p_scope: scope,
-        p_org_id: scope === "orgs" && orgId ? orgId : undefined,
+        p_org_id: orgId ?? undefined,
         p_search: undefined,
         p_deep: false,
       });
@@ -206,6 +210,7 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
           scopes.map(async (sc) => {
             const { data: r, error: re } = await supabase.rpc("trx_list_scoped", {
               p_scope: sc.value,
+              p_org_id: orgId ?? undefined,
               p_filters: {},
               p_limit: 1,
               p_offset: 0,

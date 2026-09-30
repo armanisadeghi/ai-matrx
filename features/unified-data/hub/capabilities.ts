@@ -210,7 +210,14 @@ function rowFacts(
     organizationName: row.organization_name,
     organizationId: row.organization_id,
     scope: table
-      ? { mine: table.mine, member: table.member, sharedWithMe: table.shared_with_me, visibility: table.visibility }
+      ? {
+          mine: table.mine,
+          team: table.team ?? false,
+          member: table.member,
+          sharedWithMe: table.shared_with_me,
+          visibility: table.visibility,
+          system: table.system ?? false,
+        }
       : { mine: false, member: true, sharedWithMe: false, visibility: null },
   };
 }
@@ -290,9 +297,11 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           kind: row.kind,
           scope: {
             mine: row.mine,
+            team: row.team ?? false,
             member: row.member,
             sharedWithMe: row.shared_with_me,
             visibility: row.visibility,
+            system: row.system ?? false,
           },
           facts: row.member ? [] : ["shared with you"],
           href: row.member ? `/data-v2/${row.table_id}` : `/data-v2/${row.table_id}?org=${row.organization_id}`,

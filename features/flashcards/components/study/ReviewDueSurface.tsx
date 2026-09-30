@@ -17,16 +17,12 @@ import { useDueReview } from "../../data/useDueReview";
 import { StudyDeck } from "./StudyDeck";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { getVoiceTestForCard } from "./voiceTestExtra";
-import {
-  StudyOrganizationGate,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
 
 const EDU_BASE = "/education/flashcards";
 
 export function ReviewDueSurface() {
   const router = useRouter();
-  const study = useDueReview({ enabled: useStudyOrganizationReady() });
+  const study = useDueReview();
 
   return (
     <>
@@ -34,7 +30,6 @@ export function ReviewDueSurface() {
         <StudyDeckHeader title="Review due" backHref={EDU_BASE} />
       </PageHeader>
       <div className="h-full overflow-hidden">
-        <StudyOrganizationGate what="Your review">
         <StudyDeck
           loading={study.loading}
           error={study.error}
@@ -63,7 +58,6 @@ export function ReviewDueSurface() {
             onClick: () => router.push(EDU_BASE),
           }}
         />
-        </StudyOrganizationGate>
       </div>
     </>
   );

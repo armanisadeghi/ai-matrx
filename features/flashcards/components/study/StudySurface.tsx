@@ -15,10 +15,6 @@ import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
-import {
-  StudyOrganizationGate,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
 import { StudyDeck } from "./StudyDeck";
 import { FlashcardStudyWindowDevTrigger } from "./FlashcardStudyWindowDevTrigger";
 import { OfflineDeckButton } from "../set-detail/OfflineDeckButton";
@@ -35,7 +31,6 @@ export function StudySurface({ setId }: { setId: string }) {
   const study = useFlashcardStudy({
     setId,
     withSession: true,
-    enabled: useStudyOrganizationReady(),
   });
   const title = study.set?.name ?? "Study";
 
@@ -64,7 +59,6 @@ export function StudySurface({ setId }: { setId: string }) {
           }
         />
       </PageHeader>
-      <StudyOrganizationGate what="Studying this set">
       <div className="h-full overflow-hidden">
         <StudyDeck
           loading={study.loading}
@@ -95,7 +89,6 @@ export function StudySurface({ setId }: { setId: string }) {
           }}
         />
       </div>
-      </StudyOrganizationGate>
     </>
   );
 }

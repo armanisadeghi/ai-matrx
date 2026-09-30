@@ -31,19 +31,13 @@
 // not exist" alike (the store will not tell a guessed id apart from a real one), and the page
 // says exactly that. "We could not ask" is a third answer and is never folded into either.
 //
-// THE ONE STAND-IN, AND IT ANNOUNCES ITSELF. Until the chair applies
-// `openbyid_one_address_opens_any_id.sql` to the main database, the door is absent there. Then — and only then — this module answers with the
-// organization the person is working in, which is exactly what every object page did before,
-// and says so in the console with the remedy. This file is the ONE place in the object
-// surfaces allowed to read the active organization, and only for that stand-in
+// NO STAND-IN. `custom.where_id_opens` is live on the database, so there is no fallback to the
+// organization the person is working in: a miss says so in a sentence ("unavailable", with the
+// remedy) and the page holds. The active organization is never read in this file
 // (`pnpm check:object-pages-read-the-objects-organization`).
 
 import { useEffect, useState } from "react";
 import type { RecordsDataSource } from "@ai-matrx/records";
-
-import { useOrganizationRequired, type OrganizationState } from "@/features/organizations/useOrganizationRequired";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
 
 /**
  * What kind of object the id is, as `custom.where_id_opens` names it: table, record, dashboard,
@@ -76,12 +70,7 @@ export type ObjectOrganizationAnswer =
   /** Not given to this person — or not there at all. The store does not say which, on purpose. */
   | { state: "not-given" }
   /** We could not ask. NOT an answer about the person's access. */
-  | { state: "unavailable"; why: string }
-  /**
-   * The door is not on this database yet (the chair has not applied it). The caller does what
-   * it did before this lane: it reads as the organization the person is working in.
-   */
-  | { state: "stand-in"; why: string };
+  | { state: "unavailable"; why: string };
 
 const DOOR = "where_id_opens";
 
@@ -91,17 +80,10 @@ function doorIsAbsent(error: { code?: string | null; message?: string | null }):
   return /could not find the function/i.test(error.message ?? "");
 }
 
-const STAND_IN_WHY =
-  "custom.where_id_opens is not on this database yet, so this page is reading as the " +
-  "organization you are working in, as it did before. Remedy: the chair applies " +
+const DOOR_ABSENT_WHY =
+  "custom.where_id_opens is missing from this database, so this page cannot tell which " +
+  "organization the record lives in and holds instead of guessing. Remedy: the chair applies " +
   "migrations/campaign/openbyid_one_address_opens_any_id.sql and openbyid_the_resolver_can_be_reached.sql.";
-
-let standInAnnounced = false;
-function announceStandIn(): void {
-  if (standInAnnounced) return;
-  standInAnnounced = true;
-  console.warn(`[objectOrganization] STAND-IN: ${STAND_IN_WHY}`);
-}
 
 /**
  * Ask the store which organization `id` lives in. The ONE call every object page makes before
@@ -122,8 +104,8 @@ export async function resolveObjectOrganization(
   }
   if (answered.error) {
     if (doorIsAbsent(answered.error)) {
-      announceStandIn();
-      return { state: "stand-in", why: STAND_IN_WHY };
+      console.warn(`[objectOrganization] ${DOOR_ABSENT_WHY}`);
+      return { state: "unavailable", why: DOOR_ABSENT_WHY };
     }
     return {
       state: "unavailable",
@@ -147,28 +129,10 @@ export async function resolveObjectOrganization(
 }
 
 /**
- * The stand-in's organization, for callers outside React. Null when none is picked — the
- * caller then says it could not ask, never guesses one.
- */
-export function standInOrganizationId(): string | null {
-  const state = getStoreSingleton()?.getState();
-  return state ? selectActiveOrganizationId(state) : null;
-}
-
-/**
  * An object's organization, for a page that opens that object. Re-asked when the id changes and
  * NEVER when the person switches organization: switching must not re-decide whether this opens.
  */
-export type ObjectOrganizationView =
-  | { state: "resolving" }
-  | Exclude<ObjectOrganizationAnswer, { state: "stand-in" }>
-  | {
-      state: "stand-in";
-      why: string;
-      /** The organization the person is working in — what the page read as before. */
-      activeOrganizationId: string | null;
-      organizationState: OrganizationState;
-    };
+export type ObjectOrganizationView = { state: "resolving" } | ObjectOrganizationAnswer;
 
 export function useObjectOrganization(
   dataSource: Pick<RecordsDataSource, "rpc">,
@@ -176,8 +140,6 @@ export function useObjectOrganization(
 ): ObjectOrganizationView & { retry: () => void } {
   const [answer, setAnswer] = useState<ObjectOrganizationAnswer | null>(null);
   const [attempt, setAttempt] = useState(0);
-  // Read ONLY for the stand-in. It is not a dependency of the ask below.
-  const { organizationId: activeOrganizationId, organizationState } = useOrganizationRequired();
 
   useEffect(() => {
     if (!id) return;
@@ -193,8 +155,5 @@ export function useObjectOrganization(
 
   const retry = () => setAttempt((n) => n + 1);
   if (!id || answer === null) return { state: "resolving", retry };
-  if (answer.state === "stand-in") {
-    return { state: "stand-in", why: answer.why, activeOrganizationId, organizationState, retry };
-  }
   return { ...answer, retry };
 }

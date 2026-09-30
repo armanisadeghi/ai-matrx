@@ -184,6 +184,9 @@ export function useWeakAreaDrill(
       }
       setCards(cardsRes.data ?? []);
       setResultsByCard({});
+      // A weak-area drill spans decks: it files under the organization of the
+      // first card (its own record), never the active organization.
+      const sessionOrgId = cardsRes.data?.[0]?.organization_id;
 
       // 4. Arm (never write) the weak_area session tagging every attempt —
       //    the first answer opens it, so opening and leaving writes nothing.
@@ -192,6 +195,7 @@ export function useWeakAreaDrill(
           studyService.createSession({
             mode: STUDY_MODE,
             sourceKind: "weak_area",
+            orgId: sessionOrgId,
             ...(topic ? { sourceQuery: { topic } } : {}),
           }),
         );

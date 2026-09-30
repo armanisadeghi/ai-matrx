@@ -18,10 +18,6 @@ import { StudyDeck } from "./StudyDeck";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { getVoiceTestForCard } from "./voiceTestExtra";
 import { topicLabel } from "@/features/education/study/utils/topicLabel";
-import {
-  StudyOrganizationGate,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -30,11 +26,8 @@ export function WeakAreaDrillSurface() {
   // `?topic=<raw topic>` drills one topic (the progress dashboard's topic
   // rows and the narrator's weak_area recommendations link it).
   const topic = useSearchParams().get("topic")?.trim() || null;
-  // A drill records a study session, filed under one organization. With none
-  // chosen yet, say so in place (with the picker) — never the blocking
-  // "Which workspace?" modal the session write would otherwise raise.
-  const orgReady = useStudyOrganizationReady();
-  const study = useWeakAreaDrill({ topic, enabled: orgReady });
+  // The drill's session files under the organization of its own cards.
+  const study = useWeakAreaDrill({ topic });
   const topicName = topic ? topicLabel(topic) : null;
 
   return (
@@ -46,9 +39,6 @@ export function WeakAreaDrillSurface() {
         />
       </PageHeader>
       <div className="h-full overflow-hidden">
-        <StudyOrganizationGate
-          what={topicName ? `Practicing ${topicName}` : "This drill"}
-        >
         <StudyDeck
           loading={study.loading}
           error={study.error}
@@ -68,7 +58,9 @@ export function WeakAreaDrillSurface() {
           sessionId={study.sessionId}
           errorTitle="Couldn't load your weak areas"
           emptyTitle={
-            topicName ? `No studied cards in ${topicName} yet` : "No weak areas right now"
+            topicName
+              ? `No studied cards in ${topicName} yet`
+              : "No weak areas right now"
           }
           emptyBody={
             topicName
@@ -87,7 +79,6 @@ export function WeakAreaDrillSurface() {
             onClick: () => router.push(EDU_BASE),
           }}
         />
-        </StudyOrganizationGate>
       </div>
     </>
   );

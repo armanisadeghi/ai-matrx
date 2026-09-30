@@ -52,11 +52,6 @@ import {
 } from "../drill-config";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
-import {
-  StudyOrganizationHoldNotice,
-  useHeldStudyStart,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import {
@@ -80,10 +75,7 @@ export function FastFireSetup() {
   // through a whole drill whose every grade is refused server-side.
   const coppa = useAiComplianceGate();
   const config = useAppSelector(selectFastFireConfig);
-  const orgReady = useStudyOrganizationReady();
-  const { start, starting, startError } = useFastFireLauncher({
-    enabled: orgReady,
-  });
+  const { start, starting, startError } = useFastFireLauncher();
   // FastFire grades every spoken answer with AI — meter the live_grade
   // capability once at session start (a per-card check would stall the timed
   // loop). The limit shows on the setup screen; a cap opens the paywall.
@@ -290,10 +282,6 @@ export function FastFireSetup() {
   }, [voicePossible, config.answerMode, dispatch]);
 
 
-  // The setup stays visible with no organization chosen; only Start holds. A
-  // drill writes a study session filed under one organization, so Start with
-  // none shows the organization notice at the button and the drill starts on
-  // its own once one is picked — nothing is written before.
   const launch = async (): Promise<void> => {
     if (!(await coppa.ensureAllowed())) return;
     await liveGrade.guard(async () => {
@@ -304,7 +292,6 @@ export function FastFireSetup() {
       if (started) await liveGrade.commit();
     });
   };
-  const heldStart = useHeldStudyStart(launch);
   return (
     <div className="matrx-touch-targets min-h-full w-full bg-textured">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
@@ -757,9 +744,6 @@ export function FastFireSetup() {
           </Alert>
         )}
 
-        {heldStart.held && (
-          <StudyOrganizationHoldNotice what="Starting Fast Fire" className="mb-3 rounded-lg border border-border bg-card" />
-        )}
         <div className="mb-2 flex justify-center">
           <coppa.Gate />
           <EntitlementMeter capability="education.live_grade" />
@@ -768,7 +752,7 @@ export function FastFireSetup() {
           size="lg"
           className="w-full gap-2"
           disabled={!selectedSet || starting || liveGrade.isChecking}
-          onClick={() => heldStart.start()}
+          onClick={() => void launch()}
         >
           {starting ? (
             <>

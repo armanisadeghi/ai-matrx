@@ -89,6 +89,20 @@ export function isTranscriptSourceHit(hit: Pick<KnowledgeHit, "entity" | "source
   return hit.entity === "processed_document" && hit.source_kind === "transcript";
 }
 
+/**
+ * Can this row be moved to Trash? An unsorted recording is a capture SEGMENT — a component of the
+ * Scribe pool (`platform.entity_types`: is_component, no `user_artifact_kind`, lifecycle = its own
+ * archived_at/detached_at flags), not a user artifact, so Trash (which lists only user-artifact
+ * kinds) has no kind to hold or restore it. By design it leaves through Scribe's own Unsorted pool,
+ * never through Trash; the hub says so instead of writing a delete Trash could not undo.
+ */
+export function isTrashable(hit: Pick<KnowledgeHit, "entity">): boolean {
+  return hit.entity !== UNSORTED_TOKEN;
+}
+
+export const UNSORTED_NOT_TRASHABLE =
+  "Unsorted recordings are not moved to Trash — they live in Scribe's Unsorted pool, where you can sort or archive them.";
+
 /** Is this hub row one the Transcripts list listed? (records, sessions, unsorted, transcript Sources) */
 export function isTranscriptHit(hit: Pick<KnowledgeHit, "entity" | "source_kind">): boolean {
   return (

@@ -190,13 +190,13 @@ export function RecordChangeApprovalCard({
     }),
   };
 
-  // The where-id-opens door is absent: the approval's own organization cannot be read, and
-  // the ACTIVE organization is never a substitute (it may not be the record's). Say so.
-  if (!objectOrganizationId && object.state === "stand-in") {
+  // The approval's own organization cannot be read, and the ACTIVE organization is never a
+  // substitute (it may not be the record's). Say so.
+  if (!objectOrganizationId && object.state === "unavailable") {
     return (
       <p className="text-xs leading-relaxed text-muted-foreground">
-        {wait.notDone} The record store could not say which organization this change belongs to,
-        so no decision is offered here. Reload once the store is updated.
+        {wait.notDone} The record store could not say which organization this change belongs to, so
+        no decision is offered here. {object.why}
       </p>
     );
   }

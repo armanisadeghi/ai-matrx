@@ -16,10 +16,6 @@ import FlashcardItem from "@/components/mardown-display/blocks/flashcards/Flashc
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { useFlashcardStudy } from "@/features/flashcards/data/useFlashcardStudy";
 import {
-  StudyOrganizationGate,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
-import {
   FlashcardStudySidebar,
   StudyCompletionSummary,
   StudyWindowFooter,
@@ -60,7 +56,6 @@ export function FlashcardStudyWindow({
   const study = useFlashcardStudy({
     setId,
     withSession: true,
-    enabled: useStudyOrganizationReady(),
   });
   const isMobile = useIsMobile();
   const [mobileDismissed, setMobileDismissed] = useState(false);
@@ -256,9 +251,7 @@ export function FlashcardStudyWindow({
       </>
     );
   })();
-  const body = (
-    <StudyOrganizationGate what="Studying this set">{deckBody}</StudyOrganizationGate>
-  );
+  const body = deckBody;
 
   return (
     <WindowPanel

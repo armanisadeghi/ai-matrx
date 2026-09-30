@@ -280,6 +280,10 @@ export interface DataHomeTableRow {
    * comment · dashboard · action · checklist · booking · workflow · kit · store · demo · app.
    */
   kind: string;
+  /** The Table's maker shares a live team with the person in its organization (My team). */
+  team?: boolean;
+  /** Its organization is one the platform keeps (System). */
+  system?: boolean;
 }
 
 /**

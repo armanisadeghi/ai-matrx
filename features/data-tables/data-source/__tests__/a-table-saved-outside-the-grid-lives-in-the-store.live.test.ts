@@ -235,7 +235,7 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     for (const row of (data ?? []) as Array<{ id: string; organization_id: string }>) {
       const born = await where.whereANewTableIsBorn(row.organization_id);
       if (!born.ok || born.store !== "older") continue;
-      const located = await where.locateTable(row.id, row.organization_id);
+      const located = await where.locateTable(row.id);
       if (!located.ok) continue; // not a member there: the store will not answer for it
       expect(born).toEqual({ ok: true, store: "older", organizationId: row.organization_id });
       expect(located).toEqual({ ok: true, store: "older" });

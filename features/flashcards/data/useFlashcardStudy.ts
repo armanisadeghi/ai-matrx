@@ -353,6 +353,8 @@ export function useFlashcardStudy(
                   mode,
                   sourceKind: "set", //  study_session.source_kind CHECK = set|dynamic_batch|adaptive
                   sourceSetId: loadedSet.id,
+                  // Filed under the DECK's own organization, never the active one.
+                  orgId: loadedSet.organization_id,
                 })
             : null,
         );

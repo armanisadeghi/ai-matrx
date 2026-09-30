@@ -60,10 +60,7 @@ export function CustomDataRecordsScope({ tableId, organizationId, children, fall
   const opens = useObjectOrganization(sharedDataSource(), organizationId ? null : tableId);
 
   let bound: string | null = organizationId ?? null;
-  if (!bound) {
-    if (opens.state === "found") bound = opens.organizationId;
-    else if (opens.state === "stand-in") bound = opens.activeOrganizationId; // announced by the module
-  }
+  if (!bound && opens.state === "found") bound = opens.organizationId;
 
   if (!bound) {
     const held: CustomDataScopeHeld =

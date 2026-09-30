@@ -3265,6 +3265,7 @@ export interface FlashcardItem {
 export interface FlashcardsBlockData {
   cards: FlashcardItem[];
   isComplete?: boolean;
+  title?: string | null;
 }
 
 export interface TranscriptSegment {

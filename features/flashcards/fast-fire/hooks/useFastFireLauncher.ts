@@ -199,6 +199,8 @@ export function useFastFireLauncher(
           // (the source TYPE, not the table) — a single-set run is `set`.
           sourceKind: "set",
           sourceSetId: set.id,
+          // Filed under the DECK's own organization, never the active one.
+          orgId: set.organization_id,
           status: "active",
           settings: {
             seconds_per_card: seconds,

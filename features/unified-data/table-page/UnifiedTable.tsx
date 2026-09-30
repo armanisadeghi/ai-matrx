@@ -33,7 +33,6 @@ import {
 } from "@/features/sharing/outside/PendingTableInvitation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
@@ -59,7 +58,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * WHAT THE PAGE IS ASKED TO OPEN ON — the route reads it from its address (`?view=`, `?record=`,
- * `?dashboard=`, `?rail=&item=`, `?group=`, `?from=`, `?filter=`, `?grid=merged`, `?org=`); a
+ * `?dashboard=`, `?rail=&item=`, `?group=`, `?from=`, `?filter=`, `?grid=merged`); a
  * tile opens with none of it. Every word is passed RAW to `TablePage`, which says on screen when
  * it does not know one.
  */
@@ -75,8 +74,6 @@ export interface TableAddress {
   filter: RecordFilter | null;
   /** `?grid=merged`: draw the merged grid whatever the knob says (a walk). */
   gridForced: boolean;
-  /** `?org=` — only consulted while `custom.where_id_opens` is absent (the stand-in). */
-  askedOrganizationId: string | null;
 }
 
 export const NO_ADDRESS: TableAddress = {
@@ -89,7 +86,6 @@ export const NO_ADDRESS: TableAddress = {
   from: null,
   filter: null,
   gridForced: false,
-  askedOrganizationId: null,
 };
 
 /**
@@ -129,18 +125,8 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
   const object = useObjectOrganization(dataSource, tableId);
   const { organizations: myOrganizations } = useUserOrganizations();
   /** A table another organization gave this person (see `useSharedTable`). */
-  const shareHint =
-    object.state === "found"
-      ? object.organizationId
-      : object.state === "stand-in"
-        ? address.askedOrganizationId
-        : null;
-  const shared = useSharedTable(
-    dataSource,
-    tableId,
-    shareHint,
-    object.state === "stand-in" ? object.activeOrganizationId : null,
-  );
+  const shareHint = object.state === "found" ? object.organizationId : null;
+  const shared = useSharedTable(dataSource, tableId, shareHint);
   /** A table shared with her from outside and not yet opened says so, rather than "not given". */
   const pendingInvitation = usePendingTableInvitation(tableId, object.state === "not-given");
   const knownOrganizationName =
@@ -149,16 +135,8 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
         (shared.state === "shared" ? shared.organizationName : null))
       : null;
   /** The organization this table reads as: the TABLE'S. */
-  const readingOrganizationId: string | null =
-    object.state === "found"
-      ? object.organizationId
-      : object.state === "stand-in"
-        ? shared.state === "shared"
-          ? shared.organizationId
-          : object.activeOrganizationId
-        : null;
-  const readingState: OrganizationState =
-    object.state === "stand-in" ? object.organizationState : readingOrganizationId ? "ready" : "resolving";
+  const readingOrganizationId: string | null = object.state === "found" ? object.organizationId : null;
+  const readingState: OrganizationState = readingOrganizationId ? "ready" : "resolving";
   /** She reads it as a member of its organization — known once the share door said it is not an outsider's. */
   const readsAsMember = shared.state === "none";
   // A shared viewer reads no organization's settings (lane HANDOVER): an outsider gets the platform's value.
@@ -275,18 +253,15 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
           ? "You have not been given this table."
           : object.state === "unavailable"
             ? `We could not find out where this table is. ${object.why}`
-            : object.state === "stand-in" && shared.state === "not-shared"
-              ? `This shared table cannot open right now. ${shared.why}`
-              : campaign.state !== "on"
-                ? `The record store is not on for this organization (${campaign.state}).`
-                : null;
+            : campaign.state !== "on"
+              ? `The record store is not on for this organization (${campaign.state}).`
+              : null;
 
   /** The table itself is on screen (the store answered, the switch is on). */
   const mountsTheTable =
     object.state !== "resolving" &&
     object.state !== "not-given" &&
     object.state !== "unavailable" &&
-    !(object.state === "stand-in" && (object.organizationState !== "ready" || shared.state !== "shared" && shared.state !== "none")) &&
     campaign.state === "on";
 
   /**
@@ -445,23 +420,6 @@ export function UnifiedTableBody({
         </p>
         <Button size="sm" variant="outline" onClick={object.retry}>
           Try again
-        </Button>
-      </div>
-    );
-  }
-  if (object.state === "stand-in" && object.organizationState !== "ready") {
-    return <OrganizationContextNotice state={object.organizationState} what="Data records" />;
-  }
-  if (object.state === "stand-in" && shared.state === "checking") {
-    return <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>;
-  }
-  if (object.state === "stand-in" && shared.state === "not-shared") {
-    return (
-      <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
-        <p className="text-sm font-medium">This shared table cannot open right now</p>
-        <p className="max-w-prose text-xs text-muted-foreground">{shared.why}</p>
-        <Button size="sm" variant="outline" onClick={() => router.push("/data-v2")}>
-          Back to your tables
         </Button>
       </div>
     );

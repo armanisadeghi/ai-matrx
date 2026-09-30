@@ -27,6 +27,11 @@ import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { usePrintOptions } from "@ai-matrx/print/react";
 import { useLinkedFlashcardSet } from "@/features/flashcards/data/useLinkedFlashcardSet";
 import { flashcardSetHref } from "@/features/flashcards/routes";
+import { parseFlashcards } from "./flashcard-parser";
+import {
+  GENERIC_FLASHCARD_TITLE,
+  isGenericFlashcardTitle,
+} from "@/features/flashcards/utils/deckName";
 
 export type LayoutMode = "grid" | "list";
 
@@ -105,9 +110,16 @@ export function useFlashcardsSet({
 
   const handleOpenInCanvas = () => {
     if (!rawPayload) return;
+    // The set's own title (kind value, or the text's `Title:` line). With
+    // neither, the placeholder goes in and the deck adapter names the deck
+    // from the request and the cards (features/flashcards/utils/deckName.ts).
+    const ownTitle = [
+      serverData?.title,
+      parseFlashcards(content ?? "").title,
+    ].find((candidate) => candidate && !isGenericFlashcardTitle(candidate));
     void openArtifact({
       canvasType: "flashcards",
-      title: "Flashcards",
+      title: ownTitle ?? GENERIC_FLASHCARD_TITLE,
       content: rawPayload,
       messageId,
       conversationId,
@@ -318,9 +330,15 @@ export function FlashcardsSetControls({
               size="sm"
               className="h-7 px-2 text-xs"
             >
-              <Link href={deckHref} onClick={(e) => e.stopPropagation()}>
+              <Link
+                href={deckHref}
+                aria-label="Open in Flashcards"
+                title="Open in Flashcards"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Library className="h-3 w-3" />
-                Open in Flashcards
+                {/* Phone widths: the bar has no room for the words. */}
+                <span className="hidden sm:inline">Open in Flashcards</span>
               </Link>
             </Button>
           )}

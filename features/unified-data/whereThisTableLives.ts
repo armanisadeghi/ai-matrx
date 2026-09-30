@@ -28,28 +28,20 @@ import { tableLivesIn } from "./tableLivesIn";
 export type OtherStore =
   /** The record store holds it, in `organizationId` — the TABLE'S organization, never the caller's. */
   | { kind: "record_store"; href: string; organizationId: string }
-  /**
-   * The record store HOLDS this table and this person has not been given it. The store says
-   * so itself (`custom.record_resolve` refuses 42501, "ask whoever holds it to share it with
-   * you"), which is the truth: not missing, not deleted — not shared with them.
-   */
-  | { kind: "no_access" }
   | { kind: "nowhere" }
   /** The store was not reachable, which is NOT the same as "not there". */
   | { kind: "unknown"; why: string };
 
 /**
- * Where `tableId` lives, for a person signed in and looking at `organizationId`.
+ * Where `tableId` lives, for the signed-in person. The table names its own organization
+ * (`custom.where_id_opens`); no caller-supplied or active organization is ever consulted.
  *
  * ASKED FIRST, BEFORE THE OLDER STORE IS READ (VERIFIER-16): a table the record store answers
  * for never reaches the older doors, which would otherwise answer a moved or unshared table
  * with a refusal (a 500 from `get_full_table`) and a sentence about deletion.
  *
- *   1. `custom.read_records_by_ids` over the Table kernel — the table, if this person may
- *      know it (the same ladder `/data-v2` uses). Found → `record_store`.
- *   2. `custom.record_resolve` — a 42501 refusal means the store holds that record and this
- *      person may not open it → `no_access`.
- *   3. Otherwise → `nowhere` (the caller then asks the older store).
+ *   1. `custom.where_id_opens` — the table, if this person may know it. Found → `record_store`.
+ *   2. Otherwise → `nowhere` (the caller then asks the older store).
  *
  * Returns `unknown` rather than `nowhere` on a transport failure, because telling somebody
  * their table does not exist when the truth is that we could not ask is the same lie in a
@@ -59,22 +51,13 @@ export type OtherStore =
  *    one answer, read from the organization's Data tables switch. "older" → `nowhere` (the caller
  *    reads and writes the older table), even when the record store holds a same-id copy: COPY
  *    mode keeps the older table the one in use until the owner presses the switch, and its copy
- *    is read-only. Steps 1–3 below only ever run for a table the switch says is the store's; they
- *    decide its organization and whether this person may open it, never which store it is in.
+ *    is read-only. Step 1 below only ever runs for a table the switch says is the store's; it
+ *    decides its organization and whether this person may open it, never which store it is in.
  */
 export async function whereThisTableLives(
   client: SupabaseClient,
-  /**
-   * ONLY the stand-in's organization (ACCESS-IS-PERSONAL): read solely while
-   * `custom.where_id_opens` is absent from this database. With the door present the
-   * table names its own organization and this argument is not consulted — "my active org has
-   * no impact on what I can see" (owner, 2026-09-23).
-   */
-  organizationId: string | null,
   tableId: string,
 ): Promise<OtherStore> {
-  const store = client.schema("custom" as never);
-
   const home = await tableLivesIn(client, tableId);
   if (!home.ok) return { kind: "unknown", why: home.why };
   if (home.livesIn === "older") return { kind: "nowhere" };
@@ -93,33 +76,5 @@ export async function whereThisTableLives(
     return { kind: "record_store", href: `/data-v2/${tableId}`, organizationId: own.organizationId };
   }
   if (own.state === "found" || own.state === "not-given") return { kind: "nowhere" };
-  if (own.state === "unavailable") return { kind: "unknown", why: own.why };
-  // own.state === "stand-in": the door is absent here — the older path below, as before.
-  if (!organizationId) {
-    return { kind: "unknown", why: "no organization is chosen, and this database cannot yet say which organization a table lives in" };
-  }
-
-  const kernel = await store.rpc("table_kernel_id" as never, {} as never);
-  if (kernel.error || typeof kernel.data !== "string") {
-    return { kind: "unknown", why: kernel.error?.message ?? "the record store did not name its Table table" };
-  }
-
-  const found = await store.rpc("read_records_by_ids" as never, {
-    p_organization_id: organizationId,
-    p_table_id: kernel.data,
-    p_record_ids: [tableId],
-  } as never);
-  if (found.error) return { kind: "unknown", why: found.error.message };
-  if (((found.data ?? []) as Array<{ id?: string }>).some((row) => row.id === tableId)) {
-    // No "it moved" flag on the address any more (lane DATA-V2-FACE): nothing redirects between
-    // the two systems, and the table page carries no banner about the older copy.
-    return { kind: "record_store", href: `/data-v2/${tableId}`, organizationId };
-  }
-
-  const resolved = await store.rpc("record_resolve" as never, {
-    p_organization_id: organizationId,
-    p_id: tableId,
-  } as never);
-  if (resolved.error?.code === "42501") return { kind: "no_access" };
-  return { kind: "nowhere" };
+  return { kind: "unknown", why: own.state === "unavailable" ? own.why : "the record store did not say where this table lives" };
 }

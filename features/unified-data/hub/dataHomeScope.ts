@@ -26,15 +26,24 @@
 
 import type { VisibilityLane } from "@ai-matrx/records-ui";
 
-export const DATA_HOME_SCOPES = ["all", "mine", "orgs", "shared", "public"] as const;
+// THE SHELL'S LANES (Arman, 2026-09-30, common-docs/policies/active-org-is-never-a-list-filter.md):
+// All | Mine | My team | My Orgs | Shared | Public | System — the same words, in the same order, as
+// every other list (`lib/list-scope` ListScopeKind; model /agents/all). All = Mine ∪ My team ∪ My Orgs
+// ∪ Shared; Public and System are discovery lanes, never folded into All.
+export const DATA_HOME_SCOPES = ["all", "mine", "team", "orgs", "shared", "public", "system"] as const;
 export type DataHomeScope = (typeof DATA_HOME_SCOPES)[number];
+
+/** The lanes the page declares to the shell's tab bar (it adds All and My team itself). */
+export const DATA_HOME_SHELL_LANES = ["mine", "orgs", "shared", "public", "system"] as const;
 
 export const DATA_HOME_SCOPE_TITLE: Record<DataHomeScope, string> = {
   all: "All",
   mine: "Mine",
+  team: "My team",
   orgs: "My Orgs",
   shared: "Shared",
   public: "Public",
+  system: "System",
 };
 
 /** The knob's one registry address. */
@@ -64,12 +73,16 @@ export function dataHomeScopeHref(pathname: string, current: URLSearchParams, sc
   return `${pathname}?${next.toString()}`;
 }
 
-/** The four facts a row carries, whatever it is (a table, a form, a booking page). */
+/** The facts a row carries, whatever it is (a table, a form, a booking page) — its Table's. */
 export interface ScopeFacts {
   mine: boolean;
+  /** The Table's maker shares a live team with her in its organization (custom.data_home_tables().team). */
+  team?: boolean | undefined;
   member: boolean;
   sharedWithMe: boolean;
   visibility: string | null;
+  /** Its organization is one the platform keeps (custom.data_home_tables().system). */
+  system?: boolean | undefined;
 }
 
 export function isPublicVisibility(visibility: string | null | undefined): boolean {
@@ -79,15 +92,20 @@ export function isPublicVisibility(visibility: string | null | undefined): boole
 export function inDataHomeScope(facts: ScopeFacts, scope: DataHomeScope): boolean {
   switch (scope) {
     case "all":
-      return true;
+      // Everything that is hers to see — never the discovery lanes on their own.
+      return facts.mine || Boolean(facts.team) || facts.member || facts.sharedWithMe;
     case "mine":
       return facts.mine;
+    case "team":
+      return Boolean(facts.team);
     case "orgs":
       return facts.member;
     case "shared":
       return facts.sharedWithMe;
     case "public":
       return isPublicVisibility(facts.visibility);
+    case "system":
+      return Boolean(facts.system);
   }
 }
 
@@ -102,9 +120,11 @@ export function visibilityOfLane(lane: VisibilityLane | null): string | null {
  */
 export const DATA_HOME_SCOPE_EMPTY: Record<Exclude<DataHomeScope, "all">, string> = {
   mine: "You have not made any here yet, in any of your organizations. What you make shows here.",
+  team: "Nobody you share a team with has made any of these yet.",
   orgs: "Nothing here belongs to an organization you are a member of yet.",
   shared: "Nobody has shared any of these with you yet. When someone does, it shows here.",
   public: "None of these that you can open is public. It shows here once its owner opens it to anyone with the link.",
+  system: "The platform keeps none of these for everyone yet.",
 };
 
 /** The same sentences when ONE organization is chosen in the organization dropdown (DATA-HOME-2). */
@@ -112,12 +132,16 @@ function scopeEmptyIn(scope: Exclude<DataHomeScope, "all">, organizationName: st
   switch (scope) {
     case "mine":
       return `You have not made any in ${organizationName} yet. What you make there shows here.`;
+    case "team":
+      return `Nobody you share a team with in ${organizationName} has made any of these yet.`;
     case "orgs":
       return `Nothing in ${organizationName} is here yet.`;
     case "shared":
       return `Nobody has shared any of ${organizationName}'s with you yet. When someone does, it shows here.`;
     case "public":
       return `None of ${organizationName}'s that you can open is public. It shows here once its owner opens it to anyone with the link.`;
+    case "system":
+      return `${organizationName} keeps none of these for everyone.`;
   }
 }
 
@@ -134,63 +158,50 @@ export function emptyInScope(
   return `No ${capabilityTitle.toLowerCase()} under ${DATA_HOME_SCOPE_TITLE[scope]}. ${why}`;
 }
 
-// ── THE ORGANIZATION DROPDOWN (lane DATA-HOME-2, Arman 2026-09-28 ~14:00 PT) ─────────────────────
+// ── THE ORGANIZATION FILTER (Arman, 2026-09-30, common-docs/policies/active-org-is-never-a-list-filter.md)
 //
-// "With titanium selected, the home still lists every organization." The only organization control
-// on the bar was the ACTIVE-organization picker ("Forms and pages from … · Change"): it governed the
-// forms and pages below, and the Tables listing — read from `custom.data_home_tables()`, which took no
-// organization — ignored it. A control shown and not honoured is a lie. The ruling:
-//
-//   1. the bar reads All · Mine · My Orgs · Shared · Public, then (after Kind) an organization
-//      dropdown at the END, starting on "All Orgs";
-//   2. the dropdown is honoured always, in every lane and kind, IN THE DOOR
-//      (`custom.data_home_tables(p_organization_id)`), not only in the browser;
-//   3. a person's pick is saved to THEIR ACCOUNT (userPreferences.lists.dataHomeOrganizationId —
-//      synced per person, never per organization) so the next visit lands on it; a person who never
-//      picked opens on the Feature Knob `custom.data_home_default_organization` (platform default
-//      "all", no organization or user rung: those rungs are keyed by the active organization); and
-//      switching the active organization elsewhere in the app never changes this filter.
-//
-// Order of precedence: the address (`?org=<id>|all`, what the person chose this visit, so Back
-// undoes it) → the saved pick → the knob → All Orgs. Only an organization the person belongs to is
-// honoured; any other id falls through to the next source.
+// Two organization concepts that never touch. The ACTIVE organization (the shell's switcher) is only
+// where a new table is made; the ORGANIZATION FILTER is this page's own control (the shell's
+// `EntityOrgFilter`, at the right end of the lane row), which starts at All organizations on EVERY
+// visit, lives only in the address (`?org_filter=<id>`), is never remembered and is never set from the
+// active organization. It narrows every lane and every listing — in the doors (`p_organization_id`).
+// Only an organization the person belongs to is honoured; any other id reads as All organizations.
+// (`?org=` is the link that SWITCHES the active organization — never this filter.)
 
 export const ALL_ORGANIZATIONS = "all" as const;
 export type DataHomeOrganization = string;
 
-export const DATA_HOME_DEFAULT_ORGANIZATION_KNOB = { feature: "custom", key: "data_home_default_organization" } as const;
-
-export const ALL_ORGANIZATIONS_TITLE = "All Orgs";
+/** The address word of the organization filter. */
+export const ORG_FILTER_PARAM = "org_filter";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Which organization the home shows. `memberIds` null = the person's memberships have not been
- * read yet: an id is then taken on trust (the page holds the list until they are read).
+ * Which organization the home shows: the address, or All organizations. `memberIds` null = the
+ * person's memberships have not been read yet: an id is then taken on trust (the page holds the
+ * list until they are read).
  */
 export function resolveDataHomeOrganization(
   fromAddress: string | null | undefined,
-  fromSaved: unknown,
-  fromKnob: unknown,
   memberIds: readonly string[] | null,
 ): DataHomeOrganization {
-  for (const candidate of [fromAddress, fromSaved, fromKnob]) {
-    if (candidate === ALL_ORGANIZATIONS) return ALL_ORGANIZATIONS;
-    if (typeof candidate === "string" && UUID.test(candidate) && (memberIds === null || memberIds.includes(candidate))) {
-      return candidate;
-    }
+  if (typeof fromAddress === "string" && UUID.test(fromAddress) && (memberIds === null || memberIds.includes(fromAddress))) {
+    return fromAddress;
   }
   return ALL_ORGANIZATIONS;
 }
 
+/** The address the organization filter lives at; All organizations is no parameter at all. */
 export function dataHomeOrganizationHref(
   pathname: string,
   current: URLSearchParams,
   organization: DataHomeOrganization,
 ): string {
   const next = new URLSearchParams(current.toString());
-  next.set("org", organization);
-  return `${pathname}?${next.toString()}`;
+  if (organization === ALL_ORGANIZATIONS) next.delete(ORG_FILTER_PARAM);
+  else next.set(ORG_FILTER_PARAM, organization);
+  const query = next.toString();
+  return query ? `${pathname}?${query}` : pathname;
 }
 
 // ── THE KIND FILTER (Arman, 2026-09-27 21:40 PT) ────────────────────────────────────────────────

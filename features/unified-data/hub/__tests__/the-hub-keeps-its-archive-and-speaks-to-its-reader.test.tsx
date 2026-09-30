@@ -78,6 +78,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 let role: string | null = "owner";
 jest.mock("@/features/organizations/hooks", () => ({
   useUserRole: () => ({ role, loading: false }),
+  useUserOrganizations: () => ({ organizations: [], loading: false }),
 }));
 jest.mock("@/features/organizations/components/OrganizationPickerPopover", () => ({
   OrganizationPickerPopover: () => null,

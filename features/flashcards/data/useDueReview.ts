@@ -145,6 +145,9 @@ export function useDueReview(
         return;
       }
       setCards(cardsRes.data ?? []);
+      // An adaptive review spans decks: it files under the organization of
+      // the first due card (its own record), never the active organization.
+      const sessionOrgId = cardsRes.data?.[0]?.organization_id;
 
       // CRITICAL: do NOT seed from prior results. Every due card has a prior
       // last_result (that's WHY due_at is set and it's in the queue) — counting
@@ -160,6 +163,7 @@ export function useDueReview(
           studyService.createSession({
             mode: STUDY_MODE,
             sourceKind: "adaptive",
+            orgId: sessionOrgId,
           }),
         );
         setLoading(false);

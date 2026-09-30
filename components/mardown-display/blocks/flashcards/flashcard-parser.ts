@@ -2,6 +2,12 @@
  * Parser for flashcard content
  * Handles both "Front/Back" and "Question/Answer" formats
  * Supports optional thematic breaks (---)
+ *
+ * Optional set title: a `Title: <name>` line BEFORE the first card names the
+ * set ("Title: Polyatomic Ions"). The format had no title slot, so every set
+ * written in it was named by the platform's placeholder — see
+ * features/flashcards/utils/deckName.ts. Mirrored by the server port
+ * (aidream packages/matrx-ai .../parsers/flashcard_parser.py).
  */
 
 export interface Flashcard {
@@ -20,6 +26,8 @@ export interface FlashcardParseResult {
     flashcards: Flashcard[];
     isComplete: boolean;
     partialCard: Partial<Flashcard> | null;
+    /** The set's own `Title:` line, or null when the text carries none. */
+    title: string | null;
 }
 
 /**
@@ -39,6 +47,8 @@ export const parseFlashcards = (content: string): FlashcardParseResult => {
     let isComplete = false;
     let collectingBack = false;
     let backLines: string[] = [];
+    let title: string | null = null;
+    let sawCard = false;
 
     isComplete = content.includes('</flashcards>');
 
@@ -76,8 +86,19 @@ export const parseFlashcards = (content: string): FlashcardParseResult => {
             continue;
         }
 
+        // The set title is only a title BEFORE the first card; afterwards a
+        // "Title:" line is card text like any other.
+        if (!sawCard && title === null) {
+            const titleMatch = line.match(/^Title:\s*(.+)/i);
+            if (titleMatch) {
+                title = titleMatch[1].trim() || null;
+                continue;
+            }
+        }
+
         const frontMatch = line.match(/^(?:Front|Question):\s*(.*)/i);
         if (frontMatch) {
+            sawCard = true;
             finalizeCard();
             currentCard.front = frontMatch[1].trim();
             collectingBack = false;
@@ -138,6 +159,7 @@ export const parseFlashcards = (content: string): FlashcardParseResult => {
         flashcards,
         isComplete,
         partialCard,
+        title,
     };
 };
 

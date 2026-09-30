@@ -24,17 +24,11 @@ import { recordStoreShare } from "@/features/sharing/components/RecordStoreShare
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
-  selectDataHomeOrganizationPick,
-  selectPreferencesLoadStatus,
-} from "@/lib/redux/preferences/userPreferenceSelectors";
-import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
-import {
   ALL_ORGANIZATIONS,
-  DATA_HOME_DEFAULT_ORGANIZATION_KNOB,
+  ORG_FILTER_PARAM,
   dataHomeOrganizationHref,
   resolveDataHomeOrganization,
 } from "@/features/unified-data/hub/dataHomeScope";
@@ -53,65 +47,48 @@ import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 export default function UnifiedDataPage() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
+  // org-filter: write-target the active organization is where New table lands (and the settings rung for the home's knobs); no read here narrows by it
   const active = useOrganizationRequired();
   /**
-   * THE ORGANIZATION THE HOME SHOWS — the dropdown at the end of the hub's bar (lane DATA-HOME-2,
-   * Arman 2026-09-28: "with titanium selected the home still lists every organization").
+   * TWO ORGANIZATION CONCEPTS THAT NEVER TOUCH (Arman, 2026-09-30,
+   * common-docs/policies/active-org-is-never-a-list-filter.md).
    *
-   * `?org=<id>|all` is what the person chose this visit (and the way back from a table that was
-   * just archived names its organization the same way, lane ACCESS-FIX-18); without it, their
-   * SAVED pick (userPreferences.lists.dataHomeOrganizationId — their account, every device); then
-   * the Feature Knob `custom.data_home_default_organization` (platform default All Orgs). Only an
-   * organization the person belongs to is honoured. One organization chosen, the mount — and so
-   * every listing — is bound to it and the door lists only its tables; All Orgs, the tables are
-   * every organization's and the forms and pages are the active organization's, said on the bar.
+   * THE ORGANIZATION FILTER is the page's own control (the shell's `EntityOrgFilter`, right end of
+   * the lane row). It lives only in the address — `?org_filter=<id>` — starts at All organizations
+   * on every visit, is never remembered and never set from the active organization. Only an
+   * organization the person belongs to is honoured; any other id reads as All organizations.
+   * One organization chosen, every listing's door is told it (`p_organization_id`); All, the mount
+   * carries no organization at all and the doors answer for the person.
    *
-   * 🚨 SWITCHING THE ACTIVE ORGANIZATION ELSEWHERE NEVER CHANGES THIS FILTER. The old "CHANGE MEANS
-   * CHANGE" effect dropped `?org=` whenever the active organization moved; it is gone, because the
-   * filter is the person's own choice on this page and nothing else may move it silently.
+   * THE ACTIVE ORGANIZATION (the shell's switcher) is only where a NEW table is made: the header's
+   * New table / Start from an example carry it (the hub binds its making controls to it), and with
+   * none set they are held until the person picks one. It never narrows a read here.
    */
   const searchParams = useSearchParams();
-  const dispatch = useAppDispatch();
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
-  const savedPick = useAppSelector(selectDataHomeOrganizationPick);
-  const preferencesLoad = useAppSelector(selectPreferencesLoadStatus);
-  const defaultOrganizationKnob = useEffectiveKnob(active.organizationId, userId, DATA_HOME_DEFAULT_ORGANIZATION_KNOB);
-  const addressPick = searchParams.get("org");
+  const addressPick = searchParams.get(ORG_FILTER_PARAM);
   const organizationFilter = resolveDataHomeOrganization(
     addressPick,
-    savedPick,
-    defaultOrganizationKnob,
     myOrganizationsLoading ? null : myOrganizations.map((org) => org.id),
   );
   const namedOrganization =
     organizationFilter === ALL_ORGANIZATIONS ? undefined : myOrganizations.find((org) => org.id === organizationFilter);
-  // ALL ORGS (the default) MOUNTS WITH NO ORGANIZATION AT ALL (Arman, 2026-09-25: access belongs to
-  // the person, not the header's selected organization). The home's doors answer for the person
-  // (`custom.data_home*`, NULL), so nothing here waits on, or is narrowed by, the selected
-  // organization; only the ONE organization the person chose in the on-page dropdown binds the mount.
   const acrossAll = organizationFilter === ALL_ORGANIZATIONS;
   const organizationId: string | null = namedOrganization ? namedOrganization.id : null;
-  // HELD, never guessed: until the person's memberships and saved pick are read, which
-  // organization the home shows is not known, and showing All Orgs for a moment would be a lie.
-  const pickUnread = !addressPick && preferencesLoad === "loading";
-  const organizationState: OrganizationState = namedOrganization
-    ? "ready"
-    : (!acrossAll && myOrganizationsLoading) || pickUnread
-      ? "resolving"
-      : acrossAll
-        ? "ready"
-        : active.organizationState;
-  const organizationChoices = [...myOrganizations]
-    .map((org) => ({ id: org.id, name: org.name }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // A named organization is held only until the person's memberships are read (then honoured or
+  // dropped to All); All organizations needs nothing to be ready.
+  const organizationState: OrganizationState =
+    namedOrganization || acrossAll ? "ready" : myOrganizationsLoading ? "resolving" : "ready";
   const chooseOrganization = useCallback(
-    (next: string) => {
-      // SAVED TO THE PERSON'S ACCOUNT (the synced preferences record), so the next visit lands here.
-      dispatch(setModulePreferences({ module: "lists", preferences: { dataHomeOrganizationId: next } }));
-      const href = dataHomeOrganizationHref("/data-v2", new URLSearchParams(searchParams.toString()), next);
+    (next: string | null) => {
+      const href = dataHomeOrganizationHref(
+        "/data-v2",
+        new URLSearchParams(searchParams.toString()),
+        next ?? ALL_ORGANIZATIONS,
+      );
       router.push(href, { scroll: false });
     },
-    [dispatch, router, searchParams],
+    [router, searchParams],
   );
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
@@ -167,9 +144,10 @@ export default function UnifiedDataPage() {
       <PageHeader>
         {/* MAKING A TABLE IS THE HEADER'S ACTION (merged-grid review 2, J6: "New table" sat ~1,700 px
             down the page, then as a row of its own). Offered once the store can take one. */}
+        {/* A NEW TABLE LANDS IN THE ACTIVE ORGANIZATION (the law's rule 4) — never the filter's. */}
         <HeaderStructured
           back={goBack}
-          {...(organizationState === "ready" && storeOn && (organizationId ?? active.organizationId)
+          {...(organizationState === "ready" && storeOn && active.organizationId
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => setMakeAsked((n) => ({ ...n, create: n.create + 1 })) },
@@ -230,7 +208,6 @@ export default function UnifiedDataPage() {
               organizationName={namedOrganization?.name ?? null}
               makeAsked={makeAsked}
               organizationFilter={organizationFilter}
-              organizationChoices={organizationChoices}
               onChooseOrganization={chooseOrganization}
               /* WHAT IS WAITING ON THIS PERSON — one inbox for what they were
                  assigned, what needs their approval and what an agent has

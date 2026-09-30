@@ -1046,6 +1046,7 @@ export function SetDetailView({
                     setId={setId}
                     existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
                     deckName={data.set.name}
+                    deckOrganizationId={data.set.organization_id}
                     onAdded={() => {
                       setReloadKey((k) => k + 1);
                       setLineageKey((k) => k + 1);
@@ -1323,6 +1324,7 @@ export function SetDetailView({
                 setId={setId}
                 existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
                     deckName={data.set.name}
+                deckOrganizationId={data.set.organization_id}
                 onAdded={() => {
                   setReloadKey((k) => k + 1);
                   setLineageKey((k) => k + 1);

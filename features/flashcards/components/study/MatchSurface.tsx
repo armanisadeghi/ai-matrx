@@ -24,10 +24,6 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useMatchGame } from "../../data/useMatchGame";
-import {
-  StudyOrganizationGate,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
@@ -41,7 +37,6 @@ export function MatchSurface({ setId }: { setId: string }) {
   const game = useMatchGame({
     setId,
     withSession: true,
-    enabled: useStudyOrganizationReady(),
   });
   const title = game.set?.name ?? "Match";
 
@@ -53,7 +48,6 @@ export function MatchSurface({ setId }: { setId: string }) {
           backHref={`${EDU_BASE}/${setId}`}
         />
       </PageHeader>
-      <StudyOrganizationGate what="This match game">
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
         <div className="mx-auto max-w-3xl px-2 pb-safe pt-14 sm:px-6">
           {game.loading ? (
@@ -93,7 +87,6 @@ export function MatchSurface({ setId }: { setId: string }) {
           )}
         </div>
       </div>
-      </StudyOrganizationGate>
     </>
   );
 }
@@ -170,11 +163,15 @@ function CompletionScreen({
       <div>
         <h2 className="text-lg font-semibold text-foreground">Board cleared</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Matched all {totalCards} pairs in {formatDurationMs(elapsedMs, { style: "clock" })}.
+          Matched all {totalCards} pairs in{" "}
+          {formatDurationMs(elapsedMs, { style: "clock" })}.
         </p>
       </div>
       <div className="grid w-full grid-cols-3 gap-2 text-center">
-        <Stat label="Time" value={formatDurationMs(elapsedMs, { style: "clock" })} />
+        <Stat
+          label="Time"
+          value={formatDurationMs(elapsedMs, { style: "clock" })}
+        />
         <Stat label="Attempts" value={`${attempts}`} />
         <Stat label="Accuracy" value={`${accuracy}%`} />
       </div>

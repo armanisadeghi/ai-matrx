@@ -51,6 +51,8 @@ const ROWS = [
     shared_with_me: false,
     kept_by_the_app: false,
     kind: "table",
+    // Made by Luis, who is on her dispatch team at Rincon Plumbing (iam.my_team_reach).
+    team: true,
   },
   {
     table_id: "a1000000-0000-4000-8000-000000000003",
@@ -78,6 +80,35 @@ const ROWS = [
     shared_with_me: false,
     kept_by_the_app: true,
     kind: "list",
+  },
+  {
+    // DISCOVERY LANES (the law's canonical header): a starter the platform keeps for everyone…
+    table_id: "a1000000-0000-4000-8000-000000000005",
+    table_name: "Service area zip codes",
+    organization_id: "39c38960-0000-4000-8000-000000000009",
+    organization_name: "Matrx System",
+    member: false,
+    visibility: "internal",
+    updated_at: "2026-09-20T09:00:00Z",
+    mine: false,
+    shared_with_me: false,
+    kept_by_the_app: false,
+    kind: "table",
+    system: true,
+  },
+  {
+    // …and a table another plumber published to anyone with the link. Neither is in All.
+    table_id: "a1000000-0000-4000-8000-000000000006",
+    table_name: "Water heater rebate list",
+    organization_id: "77aa0000-0000-4000-8000-000000000010",
+    organization_name: "Coastal Plumbing Supply",
+    member: false,
+    visibility: "public",
+    updated_at: "2026-09-19T09:00:00Z",
+    mine: false,
+    shared_with_me: false,
+    kept_by_the_app: false,
+    kind: "table",
   },
 ];
 
@@ -237,6 +268,14 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 jest.mock("@/features/organizations/hooks", () => ({
   useUserRole: () => ({ role: "owner", loading: false }),
+  // The shell's organization filter reads her memberships itself (EntityOrgFilter).
+  useUserOrganizations: () => ({
+    organizations: [
+      { id: HARBOR, name: "Harbor Dental Group" },
+      { id: RINCON, name: "Rincon Plumbing Co" },
+    ],
+    loading: false,
+  }),
 }));
 jest.mock("@/features/organizations/components/OrganizationPickerPopover", () => ({
   OrganizationPickerPopover: () => null,
@@ -349,6 +388,13 @@ function tableRows(): Array<{ title: string; organization: string; kind: string 
   }));
 }
 
+/** A lane tab of the shell's tab bar, by its words ("All", "My team" …), count pill aside. */
+function laneTab(label: string): HTMLButtonElement | undefined {
+  return [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+    (b) => (b.textContent ?? "").replace(/\d+$/, "").trim() === label,
+  );
+}
+
 function listingText(): string {
   return container.querySelector('[data-hub-listing="tables"]')?.textContent ?? "";
 }
@@ -369,7 +415,7 @@ afterEach(async () => {
 describe("the data home · default is everything", () => {
   it("opens on All — every organization's tables and every kind, one flat list, most recently updated first", async () => {
     await mount();
-    expect(container.querySelector('[data-hub-scope-choice="all"]')?.getAttribute("aria-selected")).toBe("true");
+    expect(laneTab("All")?.getAttribute("aria-selected")).toBe("true");
     // Status choices 15:41, Service calls 15:40 (27 Sep), Patient recall list (26 Sep), Backflow (25 Sep).
     expect(tableRows()).toEqual([
       { title: "Status choices", organization: "Rincon Plumbing Co", kind: "List" },
@@ -388,16 +434,35 @@ describe("the data home · default is everything", () => {
   it("opens on the filter the knob names when the address names none", async () => {
     defaultScopeKnob = "mine";
     await mount();
-    expect(container.querySelector('[data-hub-scope-choice="mine"]')?.getAttribute("aria-selected")).toBe("true");
+    expect(laneTab("Mine")?.getAttribute("aria-selected")).toBe("true");
     expect(tableRows().map((r) => r.title)).toEqual(["Patient recall list"]);
   });
 });
 
-describe("the data home · exactly five filters, each the store's fact", () => {
-  it("offers All · Mine · My Orgs · Shared · Public and nothing else", async () => {
+describe("the data home · the shell's lanes, each the store's fact", () => {
+  it("offers All · Mine · My team · My Orgs · Shared · Public · System — the shell's tab bar", async () => {
     await mount();
-    const choices = [...container.querySelectorAll("[data-hub-scope-choice]")].map((b) => b.textContent);
-    expect(choices).toEqual(["All", "Mine", "My Orgs", "Shared", "Public"]);
+    const lanes = [...container.querySelectorAll('[role="tablist"] [role="tab"]')].map((b) =>
+      (b.textContent ?? "").replace(/\d+$/, "").trim(),
+    );
+    expect(lanes).toEqual(["All", "Mine", "My team", "My Orgs", "Shared", "Public", "System"]);
+  });
+
+  it.each([
+    ["team", ["Service calls"]],
+    ["system", ["Service area zip codes"]],
+    ["public", ["Water heater rebate list"]],
+  ])("?scope=%s lists its own rows — and they are in All only when they are hers to see", async (scope, titles) => {
+    await mount(`scope=${scope}`);
+    expect(tableRows().map((r) => r.title)).toEqual(titles);
+  });
+
+  it("All is Mine ∪ My team ∪ My Orgs ∪ Shared: the discovery lanes' own rows wait in their lanes", async () => {
+    await mount();
+    const titles = tableRows().map((r) => r.title);
+    expect(titles).not.toContain("Service area zip codes");
+    expect(titles).not.toContain("Water heater rebate list");
+    expect(titles).toHaveLength(4);
   });
 
   it.each([
@@ -410,9 +475,9 @@ describe("the data home · exactly five filters, each the store's fact", () => {
   });
 
   it("an empty filter says why in one plain sentence", async () => {
-    await mount("scope=public");
+    await mount("scope=public", { filter: HARBOR });
     expect(tableRows()).toEqual([]);
-    expect(listingText()).toMatch(/No tables under Public\. None of these that you can open is public\./);
+    expect(listingText()).toMatch(/No tables under Public\. None of Harbor Dental Group's that you can open is public\./);
   });
 });
 
@@ -420,7 +485,7 @@ describe("the data home · Back returns", () => {
   it("choosing a filter pushes a history entry, never rewrites the address in place", async () => {
     await mount();
     await act(async () => {
-      (container.querySelector('[data-hub-scope-choice="mine"]') as HTMLButtonElement | null)?.click();
+      laneTab("Mine")?.click();
     });
     expect(ROUTER.push).toHaveBeenCalledWith("/data-v2?scope=mine", { scroll: false });
     expect(ROUTER.replace).not.toHaveBeenCalled();
@@ -469,16 +534,14 @@ describe("the data home · hides nothing, and a Kind filter narrows it", () => {
 // organization control was the active-organization picker, there was no organization dropdown, and
 // the door was asked for every organization whatever was chosen.
 describe("the data home · the organization dropdown", () => {
-  it("sits at the END of the bar, after All · Mine · My Orgs · Shared · Public, and starts on All Orgs", async () => {
+  it("the shell's organization filter sits at the END of the lane row, and reads All organizations", async () => {
     await mount();
     const bar = container.querySelector("[data-hub-scope]") as HTMLElement;
-    const controls = [...bar.querySelectorAll("[data-hub-scope-choice], [data-hub-kind], [data-hub-organization]")].map(
-      (el) => el.getAttribute("data-hub-scope-choice") ?? (el.hasAttribute("data-hub-kind") ? "kind" : "organization"),
+    const order = [...bar.querySelectorAll('[role="tablist"], [data-hub-kind], [data-entity-org-filter]')].map((el) =>
+      el.getAttribute("role") === "tablist" ? "lanes" : el.hasAttribute("data-hub-kind") ? "kind" : "organization",
     );
-    expect(controls).toEqual(["all", "mine", "orgs", "shared", "public", "kind", "organization"]);
-    const select = bar.querySelector("[data-hub-organization]") as HTMLSelectElement;
-    expect(select.value).toBe("all");
-    expect(select.options[0]?.textContent).toBe("All Orgs");
+    expect(order).toEqual(["lanes", "kind", "organization"]);
+    expect(bar.querySelector("[data-entity-org-filter]")?.textContent).toMatch(/All organizations/);
   });
 
   it.each([
@@ -520,16 +583,6 @@ describe("the data home · the organization dropdown", () => {
     expect(container.querySelector("[data-hub-scope]")?.textContent).not.toMatch(/Forms and pages/);
   });
 
-  it("picking an organization hands the pick to the page", async () => {
-    const onChoose = jest.fn();
-    await mount("", { filter: "all", onChoose });
-    const select = container.querySelector("[data-hub-organization]") as HTMLSelectElement;
-    await act(async () => {
-      select.value = HARBOR;
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    expect(onChoose).toHaveBeenCalledWith(HARBOR);
-  });
 });
 
 // ── DATA-HOME-2 TAIL (chair, 2026-09-28): under All Orgs the forms and booking pages still listed

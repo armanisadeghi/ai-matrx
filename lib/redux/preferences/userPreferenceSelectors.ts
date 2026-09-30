@@ -46,14 +46,6 @@ export const selectArchivedDefault = createSelector(
   (state): "active" | "all" => state.lists?.archivedDefault ?? "active",
 );
 
-/**
- * The data home's remembered organization pick (lane DATA-HOME-2): "all", an organization id, or
- * null when the person never picked (the knob `custom.data_home_default_organization` decides).
- */
-export const selectDataHomeOrganizationPick = createSelector(
-  selectUserPreferences,
-  (state): string | null => state.lists?.dataHomeOrganizationId ?? null,
-);
 
 export const selectDisplayPreferences = createSelector(
   selectUserPreferences,

@@ -41,7 +41,7 @@ import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core"
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { resolveObjectOrganization, standInOrganizationId } from "@/features/unified-data/objectOrganization";
+import { resolveObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   UNIFIED_DATA_CAMPAIGN,
@@ -215,8 +215,7 @@ async function recordsClientOrRefusal(tableId: string): Promise<{ client: Record
   const state = getStoreSingleton()?.getState();
   const userId = state ? selectUserId(state) : null;
   // ACCESS IS PERSONAL (owner, 2026-09-23). The TABLE names its organization; the one the
-  // person happens to be working in decides nothing. The active organization is read only by
-  // the announced stand-in while custom.where_id_opens is absent from a database.
+  // person happens to be working in decides nothing. The active organization is never used.
   const dataSource = recordsDataSource(createClient());
   const own = await resolveObjectOrganization(dataSource, tableId);
   if (own.state === "not-given") {
@@ -225,14 +224,9 @@ async function recordsClientOrRefusal(tableId: string): Promise<{ client: Record
   if (own.state === "unavailable") {
     return { refused: `Could not ask the record store where this table lives, so nothing was changed. ${own.why}` };
   }
-  const organizationId = own.state === "found" ? own.organizationId : standInOrganizationId();
+  const organizationId = own.organizationId;
   if (!(await unifiedDataCampaignOn(organizationId))) {
     return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
-  }
-  if (!organizationId) {
-    return {
-      refused: "No organization is active, so the record store cannot be reached.",
-    };
   }
   return {
     client: createRecordsClient({

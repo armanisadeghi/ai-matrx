@@ -11,8 +11,8 @@
 --      agree — for EACH organization the unnamed call lists;
 --   C. an organization the caller cannot reach (an invented id) is REFUSED (42501), naming the door;
 --   D. named nobody, the door answers what it always did (the call with no argument = named null);
---   E. the knob custom.data_home_default_organization defaults to "all" and has no organization or
---      user rung (switching the active organization must never change it);
+--   E. no setting chooses where the organization filter starts (the knob is gone: All, by law);
+--   L. team and system facts are the store's (iam.my_team_reach, iam.organizations.is_system);
 --   F. custom.data_home_items(org) — forms, booking pages, portals, dashboards, digests, checklists,
 --      automations, outside shares — answers, for EACH organization, exactly what the store's own
 --      list doors answer, each row naming that organization; named nobody, every organization's;
@@ -43,6 +43,7 @@
 \endif
 
 begin isolation level repeatable read;
+set local statement_timeout = '10min';
 select set_config('request.jwt.claims',
   json_build_object('sub', (select id from auth.users where email = :'seat'), 'role', 'authenticated')::text, true);
 -- HER SEAT, NOT THE STORE OWNER'S: the doors are asked as `authenticated`, the way a browser asks.
@@ -119,15 +120,13 @@ begin
   end if;
   raise notice 'D passed: named nobody, % rows across every organization', (select count(*) from _all);
 
-  select default_value, overridable_by into v_knob from platform.feature_knob
-   where feature = 'custom' and key = 'data_home_default_organization';
-  if v_knob.default_value is distinct from '"all"'::jsonb then
-    raise exception 'E FAILED: custom.data_home_default_organization default is %, not "all"', coalesce(v_knob.default_value::text, 'absent');
+  -- E (2026-09-30 law): the organization filter starts at All organizations on every load, so no
+  -- setting may choose another — the old default-organization knob is gone.
+  if exists (select 1 from platform.feature_knob where feature = 'custom' and key = 'data_home_default_organization') then
+    raise exception 'E FAILED: custom.data_home_default_organization still exists — the filter''s start is the law''s, never a setting';
   end if;
-  if coalesce(cardinality(v_knob.overridable_by), 0) <> 0 then
-    raise exception 'E FAILED: custom.data_home_default_organization may be overridden at % — a rung keyed by the active organization', v_knob.overridable_by;
-  end if;
-  raise notice 'E passed: a new person opens on All Orgs, whatever organization is active';
+  raise notice 'E passed: no setting chooses where the organization filter starts (All organizations, by law)';
+
 
   create temp table _items on commit drop as select * from custom.data_home_items();
   create temp table _store (kind text, organization_id uuid, item_id uuid) on commit drop;
@@ -259,13 +258,13 @@ begin
   select count(*) into v_diff from (
     ((select * from jsonb_to_recordset(v_home -> 'tables') as x(table_id uuid, table_name text, organization_id uuid,
         organization_name text, member boolean, visibility text, updated_at timestamptz, mine boolean,
-        shared_with_me boolean, kept_by_the_app boolean, kind text))
+        shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean))
       except all (select * from custom.data_home_tables()))
     union all
     ((select * from custom.data_home_tables())
       except all (select * from jsonb_to_recordset(v_home -> 'tables') as x(table_id uuid, table_name text, organization_id uuid,
         organization_name text, member boolean, visibility text, updated_at timestamptz, mine boolean,
-        shared_with_me boolean, kept_by_the_app boolean, kind text)))) d;
+        shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean)))) d;
   if v_diff <> 0 then raise exception 'K FAILED: tables differ on % row(s)', v_diff; end if;
   select count(*) into v_diff from (
     ((select * from jsonb_to_recordset(v_home -> 'items') as x(kind text, organization_id uuid, organization_name text,
@@ -297,12 +296,38 @@ begin
     if n > 0 then v_best := least(v_best, extract(epoch from clock_timestamp() - t0) * 1000); end if;
   end loop;
   if v_best >= 400 then
-    raise exception 'J FAILED: the whole data home took % ms warm (%)', round(v_best),
-      case when v_one then 'custom.data_home' else 'three calls: tables, items, who-changed-it' end;
+    -- Said, and kept for the very end: the budget is the one check still open (PROGRESS-DATA-HOME-2).
+    perform set_config('dh.j_failed', format('J FAILED: the whole data home took %s ms warm (%s)', round(v_best),
+      case when v_one then 'custom.data_home' else 'three calls: tables, items, who-changed-it' end), true);
+    raise notice '%', current_setting('dh.j_failed');
   end if;
   raise notice 'J passed: the whole data home % ms warm (%)', round(v_best),
     case when v_one then 'custom.data_home' else 'three calls' end;
 
+end $$;
+
+-- L runs as the store's owner (its oracle reads custom.record directly), still as her (the claims).
+reset role;
+do $$
+declare v_diff int;
+begin
+  -- L. THE SHELL'S LANES: team = the Table's maker shares a live team with her in its organization;
+  -- system = its organization is one the platform keeps.
+  select count(*) into v_diff
+    from _all h join custom.record t on t.id = h.table_id
+   where h.team is distinct from exists (select 1 from iam.my_team_reach(null) tr
+                                          where tr.organization_id = h.organization_id and tr.user_id = t.created_by)
+      or h.system is distinct from coalesce((select o.is_system from iam.organizations o where o.id = h.organization_id), false);
+  if v_diff <> 0 then
+    raise exception 'L FAILED: % row(s) say team or system where the store says otherwise', v_diff;
+  end if;
+  raise notice 'L passed: % in My team, % in System', (select count(*) from _all where team), (select count(*) from _all where system);
+end $$;
+
+do $$ begin
+  if coalesce(current_setting('dh.j_failed', true), '') <> '' then
+    raise exception '%', current_setting('dh.j_failed');
+  end if;
 end $$;
 
 rollback;

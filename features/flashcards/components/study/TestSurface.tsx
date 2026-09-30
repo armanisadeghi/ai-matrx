@@ -26,10 +26,6 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useQuizStudy } from "../../data/useQuizStudy";
-import {
-  StudyOrganizationGate,
-  useStudyOrganizationReady,
-} from "@/features/education/study/components/StudyOrganizationGate";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
@@ -45,7 +41,6 @@ export function TestSurface({ setId }: { setId: string }) {
   const study = useQuizStudy({
     setId,
     withSession: true,
-    enabled: useStudyOrganizationReady(),
   });
   const title = study.set?.name ?? "Test";
 
@@ -69,7 +64,6 @@ export function TestSurface({ setId }: { setId: string }) {
           backHref={`${EDU_BASE}/${setId}`}
         />
       </PageHeader>
-      <StudyOrganizationGate what="This test">
       <div className="h-full overflow-y-auto overscroll-contain bg-background">
         <div className="mx-auto max-w-2xl px-2 pb-safe pt-14 sm:px-6">
           {study.loading ? (
@@ -98,7 +92,6 @@ export function TestSurface({ setId }: { setId: string }) {
           )}
         </div>
       </div>
-      </StudyOrganizationGate>
     </>
   );
 }

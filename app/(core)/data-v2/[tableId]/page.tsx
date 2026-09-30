@@ -152,7 +152,6 @@ export default function UnifiedDataTableRoute({
     from: searchParams.get("from"),
     filter,
     gridForced: searchParams.get("grid") === "merged",
-    askedOrganizationId: searchParams.get("org"),
   };
   const mount = useUnifiedTable({ tableId, address });
   const { object, shared, knownOrganizationName, readingOrganizationId, allTablesHref, whereItLives } = mount;
@@ -217,7 +216,7 @@ export default function UnifiedDataTableRoute({
       },
       errors: [
         object.state === "not-given" && !pendingInvitation ? pageSays : null,
-        object.state === "unavailable" || (object.state === "stand-in" && shared.state === "not-shared") ? pageSays : null,
+        object.state === "unavailable" ? pageSays : null,
       ],
       sections: [
         {

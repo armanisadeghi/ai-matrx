@@ -68,12 +68,12 @@ import type { DataHomeItemRow, DataHomeTableRow, DoorFailure, TableFactRow } fro
 import {
   ALL_KINDS,
   ALL_ORGANIZATIONS,
-  ALL_ORGANIZATIONS_TITLE,
   DATA_HOME_DEFAULT_KIND_KNOB,
   DATA_HOME_DEFAULT_ORDER_KNOB,
   DATA_HOME_DEFAULT_SCOPE_KNOB,
   DATA_HOME_SCOPES,
-  DATA_HOME_SCOPE_TITLE,
+  DATA_HOME_SHELL_LANES,
+  isDataHomeScope,
   dataHomeScopeHref,
   inDataHomeScope,
   dataHomeKindHref,
@@ -87,6 +87,10 @@ import {
   type DataHomeScope,
 } from "./dataHomeScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import type { EntityScopeCounts } from "@/lib/entity-list/types";
+import { makeScope } from "@/lib/list-scope/types";
 
 
 export interface OrganizationHubProps {
@@ -134,28 +138,26 @@ export interface OrganizationHubProps {
   makeAsked?: { create: number; examples: number } | undefined;
   /**
    * THE ORGANIZATION DROPDOWN (lane DATA-HOME-2): "all", or the id of the one organization the
-   * person chose — resolved by the page (address → their saved pick → the knob → All Orgs). The
-   * Tables listing asks the door for that organization only; the page binds the mount (and so the
-   * forms, bookings and pages below) to it.
+   * person chose — resolved by the page from the address alone (`?org_filter=`), All organizations
+   * otherwise, never remembered and never the active organization. The doors are told it.
    */
   organizationFilter?: string | undefined;
-  /** The organizations the dropdown offers: the ones the person belongs to. */
-  organizationChoices?: ReadonlyArray<{ id: string; name: string }> | undefined;
-  /** Picking one: the page navigates (Back undoes it) and saves the pick to the person's account. */
-  onChooseOrganization?: ((next: string) => void) | undefined;
+  /** Picking one (null = All organizations): the page navigates, so Back undoes it. Nothing is saved. */
+  onChooseOrganization?: ((next: string | null) => void) | undefined;
 }
 
 export function OrganizationHub({
   organizationId,
-  knobOrganizationId,
+  knobOrganizationId: knobOrganizationIdProp,
   dataSource,
   inbox,
   organizationName: namedOrganizationName,
   makeAsked,
   organizationFilter = ALL_ORGANIZATIONS,
-  organizationChoices = [],
   onChooseOrganization,
 }: OrganizationHubProps) {
+  /** The ACTIVE organization (where a new table lands); a host that names none means the mount's. */
+  const knobOrganizationId = knobOrganizationIdProp === undefined ? organizationId : knobOrganizationIdProp;
   const oneOrganization = organizationFilter === ALL_ORGANIZATIONS ? null : organizationFilter;
   const router = useRouter();
   /**
@@ -565,7 +567,8 @@ export function OrganizationHub({
     return out;
   }, [states, tableIdsListed, organizationName, ownedTableIds, sharedWithMeIds]);
   const filtered = useMemo(() => {
-    if (scope === "all" && kind === ALL_KINDS) return labelled;
+    // Every lane filters, All included: All is Mine ∪ My team ∪ My Orgs ∪ Shared — a row that is
+    // only Public or only System waits in its own lane (the law's canonical header).
     const out: Record<string, HubListingState> = {};
     for (const [id, state] of Object.entries(labelled)) {
       out[id] =
@@ -574,7 +577,7 @@ export function OrganizationHub({
               phase: "read",
               items: state.items.filter(
                 (item) =>
-                  (scope === "all" || (item.scope && inDataHomeScope(item.scope, scope))) &&
+                  (!item.scope || inDataHomeScope(item.scope, scope)) &&
                   (kind === ALL_KINDS || id !== "tables" || item.kind === kind),
               ),
             }
@@ -583,6 +586,35 @@ export function OrganizationHub({
     return out;
   }, [labelled, scope, kind]);
   /** Every kind the store's rows carry, for the Kind filter — never a kind with nothing behind it. */
+  /**
+   * EACH LANE'S COUNT, and each organization's (the shell's counts shape): the Tables the store
+   * listed, counted under every lane the tab bar offers — never a number nobody measured.
+   */
+  const laneCounts = useMemo<EntityScopeCounts>(() => {
+    const rows = everywhere.phase === "read" ? everywhere.rows : [];
+    const facts = rows.map((r) => ({
+      org: r.organization_id,
+      name: r.organization_name,
+      f: {
+        mine: r.mine,
+        team: r.team ?? false,
+        member: r.member,
+        sharedWithMe: r.shared_with_me,
+        visibility: r.visibility,
+        system: r.system ?? false,
+      },
+    }));
+    const byKind: EntityScopeCounts["byKind"] = {};
+    for (const lane of DATA_HOME_SCOPES) byKind[lane] = facts.filter((x) => inDataHomeScope(x.f, lane)).length;
+    const perOrg = new Map<string, { id: string; label: string; count: number }>();
+    for (const x of facts) {
+      if (!inDataHomeScope(x.f, "all")) continue;
+      const cur = perOrg.get(x.org) ?? { id: x.org, label: x.name, count: 0 };
+      cur.count += 1;
+      perOrg.set(x.org, cur);
+    }
+    return { byKind, narrow: organizationFilter === ALL_ORGANIZATIONS ? { all: [...perOrg.values()] } : {} };
+  }, [everywhere, organizationFilter]);
   const kinds = useMemo(
     () => kindsOnOffer(everywhere.phase === "read" ? everywhere.rows.map((r) => r.kind) : [], kind),
     [everywhere, kind],
@@ -600,26 +632,15 @@ export function OrganizationHub({
       data-hub-scope={scope}
       className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs"
     >
-      <div role="tablist" aria-label="Show" className="flex flex-wrap items-center gap-1.5">
-        {DATA_HOME_SCOPES.map((candidate) => (
-          <button
-            key={candidate}
-            type="button"
-            role="tab"
-            aria-selected={scope === candidate}
-            data-hub-scope-choice={candidate}
-            onClick={() => chooseScope(candidate)}
-            className={cn(
-              "rounded-full border px-2 py-0.5 text-xs transition-colors",
-              scope === candidate
-                ? "border-foreground bg-foreground text-background"
-                : "border-border text-muted-foreground hover:bg-muted/50",
-            )}
-          >
-            {DATA_HOME_SCOPE_TITLE[candidate]}
-          </button>
-        ))}
-      </div>
+      {/* THE SHELL'S LANES (Arman, 2026-09-30; model /agents/all): All | Mine | My team | My Orgs |
+          Shared | Public | System, each with its count — the shell's own tab bar, never a private one. */}
+      <EntityScopeTabs
+        scope={makeScope(scope)}
+        scopes={[...DATA_HOME_SHELL_LANES]}
+        counts={laneCounts}
+        countsLoading={everywhere.phase === "reading"}
+        onChange={(next) => chooseScope(isDataHomeScope(next.kind) ? next.kind : "all")}
+      />
       {/* KIND — the store's own words, only kinds something here carries (more than four, so a
           select, never a row of pills). Arman 21:40 PT: one bar, no new rows. */}
       <label className="inline-flex items-center gap-1 text-muted-foreground">
@@ -638,27 +659,16 @@ export function OrganizationHub({
           ))}
         </select>
       </label>
-      {/* THE ORGANIZATION DROPDOWN, LAST ON THE BAR (DATA-HOME-2, Arman 2026-09-28): it starts on All
-          Orgs and is honoured by the doors in every lane and kind — tables, forms and booking pages
-          alike, and every other listing on the page. */}
-      <span className="ml-auto inline-flex items-center gap-x-2 whitespace-nowrap text-muted-foreground">
-        <label className="inline-flex items-center gap-1">
-          <span className="sr-only">Organization</span>
-          <select
-            data-hub-organization
-            aria-label="Organization"
-            value={organizationFilter}
-            onChange={(event) => onChooseOrganization?.(event.target.value)}
-            className="h-6 max-w-[14rem] truncate rounded-full border border-border bg-background px-2 text-xs text-foreground"
-          >
-            <option value={ALL_ORGANIZATIONS}>{ALL_ORGANIZATIONS_TITLE}</option>
-            {organizationChoices.map((org) => (
-              <option key={org.id} value={org.id}>
-                {org.name}
-              </option>
-            ))}
-          </select>
-        </label>
+      {/* THE ORGANIZATION FILTER, AT THE RIGHT END (the shell's own control): All organizations on
+          every visit, `?org_filter=` only, never the active organization — and honoured by the doors
+          in every lane and kind. */}
+      <span className="ml-auto inline-flex items-center">
+        <EntityOrgFilter
+          orgId={organizationFilter === ALL_ORGANIZATIONS ? null : organizationFilter}
+          onChange={(next) => onChooseOrganization?.(next)}
+          counts={laneCounts}
+          countsLoading={everywhere.phase === "reading"}
+        />
       </span>
       {facts.phase === "failed" ? (
         /* NEVER A LIE: without the organization's facts, which of its forms and pages are yours
@@ -683,11 +693,12 @@ export function OrganizationHub({
           keeps for itself behind Show everything; the package's home draws its own full lists
           unless told otherwise, so it is told `makingOnly` and one page never lists the same tables
           twice. */}
-      {/* MAKING A TABLE NEEDS AN ORGANIZATION — where a NEW record lands (the one legitimate use of
-          the selected organization). With ONE organization chosen in the dropdown the mount is
-          already bound to it; under All Orgs the creation controls are bound to the header's
-          selected organization, and with none selected the page says how to choose one. */}
-      {organizationId ? (
+      {/* MAKING A TABLE CARRIES THE ACTIVE ORGANIZATION — where a NEW record lands, and the only use
+          of it on this page (Arman, 2026-09-30: never the organization filter). When the filter
+          names that same organization the mount is already bound to it; otherwise the making
+          controls get their own provider bound to the active organization, and with none active
+          the page says how to choose one. */}
+      {organizationId && organizationId === knobOrganizationId ? (
         <TablesHome
           makingOnly
           {...(makeAsked ? { askedBy: makeAsked } : {})}

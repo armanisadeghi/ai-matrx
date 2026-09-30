@@ -478,13 +478,13 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         id: "object-organization",
         file: "features/unified-data/objectOrganization.ts",
         kind: "door_gated",
-        why: "ACCESS IS PERSONAL (lane ACCESS-IS-PERSONAL, owner's law 2026-09-23). The one resolver every object page asks before any other door: custom.where_id_opens(p_id) (lane ROUTE-RESOLVER's door, the one platform.resolve_id stands on) answers the organization an object lives in, read FROM THE OBJECT, only when the signed-in person could already open it. It takes no organization, so there is no organization whose switch it could ask; every caller then asks UNIFIED_DATA_CAMPAIGN of the organization it was told (the table page, the capture sheet, the approval card), and every door that follows reads custom/system_enabled itself. It writes nothing. While the door is absent from a database it answers a stand-in that says so in the console, and the caller does exactly what it did before.",
+        why: "ACCESS IS PERSONAL (lane ACCESS-IS-PERSONAL, owner's law 2026-09-23). The one resolver every object page asks before any other door: custom.where_id_opens(p_id) (lane ROUTE-RESOLVER's door, the one platform.resolve_id stands on) answers the organization an object lives in, read FROM THE OBJECT, only when the signed-in person could already open it. It takes no organization, so there is no organization whose switch it could ask; every caller then asks UNIFIED_DATA_CAMPAIGN of the organization it was told (the table page, the capture sheet, the approval card), and every door that follows reads custom/system_enabled itself. It writes nothing. While the door is absent from a database it answers `unavailable` with the remedy sentence; there is no stand-in and the active organization is never used.",
     },
     {
         id: "where-this-table-lives",
         file: "features/unified-data/whereThisTableLives.ts",
         kind: "door_gated",
-        why: "THE OTHER STORE'S ANSWER, asked only after the older /data/<id> viewer has already refused an id. It calls custom.table_kernel_id and custom.read_records as the signed-in person, through their own client doors, which read the switch themselves: with the campaign off those doors refuse and this returns `unknown` with the door's own sentence, never `nowhere`, so a switched-off store can never be reported to a person as a deleted table. It creates nothing, writes nothing and is reachable only from a failure path.",
+        why: "THE OTHER STORE'S ANSWER, asked only after the older /data/<id> viewer has already refused an id. It asks custom.where_id_opens as the signed-in person, through the store's own client door, which reads the switch itself: with the campaign off that door refuses and this returns `unknown` with the door's own sentence, never `nowhere`, so a switched-off store can never be reported to a person as a deleted table. It creates nothing, writes nothing and is reachable only from a failure path.",
     },
     {
         id: "data-id-sends-you-to-the-other-store",

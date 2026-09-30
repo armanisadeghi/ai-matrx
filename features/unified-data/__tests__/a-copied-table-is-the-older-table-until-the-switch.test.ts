@@ -44,20 +44,20 @@ function clientAnswering(livesIn: "older" | "record" | Error): { client: Supabas
 describe("a copied table is read and written where its organization's switch says", () => {
   it("switch off: the older table is the one in use, even though the store holds a same-id copy", async () => {
     const { client, asked } = clientAnswering("older");
-    const where = await whereThisTableLives(client, ADMIN_WORKSPACE, HEAT_PUMP);
+    const where = await whereThisTableLives(client, HEAT_PUMP);
     expect(where).toEqual({ kind: "nowhere" });
     expect(asked[0]).toBe("where_tables_live");
   });
 
   it("switch on: the copy is the table", async () => {
     const { client } = clientAnswering("record");
-    const where = await whereThisTableLives(client, ADMIN_WORKSPACE, HEAT_PUMP);
+    const where = await whereThisTableLives(client, HEAT_PUMP);
     expect(where).toEqual({ kind: "record_store", href: `/data-v2/${HEAT_PUMP}`, organizationId: ADMIN_WORKSPACE });
   });
 
   it("the switch could not be read: says so, never guesses a store", async () => {
     const { client } = clientAnswering(new Error("connection reset"));
-    const where = await whereThisTableLives(client, ADMIN_WORKSPACE, HEAT_PUMP);
+    const where = await whereThisTableLives(client, HEAT_PUMP);
     expect(where).toEqual({ kind: "unknown", why: "connection reset" });
   });
 });

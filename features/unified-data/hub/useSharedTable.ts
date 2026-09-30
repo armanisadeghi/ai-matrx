@@ -68,7 +68,6 @@ export function useSharedTable(
   dataSource: RecordsDataSource,
   tableId: string,
   askedOrganizationId: string | null,
-  activeOrganizationId: string | null,
 ): SharedTableContext {
   const [answer, setAnswer] = useState<SharedTableContext>(
     askedOrganizationId ? { state: "checking" } : { state: "none" },
@@ -138,7 +137,7 @@ export function useSharedTable(
     return () => {
       alive = false;
     };
-  }, [dataSource, tableId, askedOrganizationId, activeOrganizationId]);
+  }, [dataSource, tableId, askedOrganizationId]);
 
   return answer;
 }

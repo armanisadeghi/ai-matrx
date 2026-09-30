@@ -5,7 +5,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { whereThisTableLives } from "@/features/unified-data/whereThisTableLives";
-import { resolveObjectOrganization, standInOrganizationId } from "@/features/unified-data/objectOrganization";
+import { resolveObjectOrganization } from "@/features/unified-data/objectOrganization";
 
 import { placeTableInRecordStore, recordStoreHomeOf, type RecordStoreHome } from "./table-home";
 import { signedInUserId } from "./where-a-table-is-born";
@@ -20,25 +20,18 @@ export type Located =
  * seam's next call about it dispatches correctly. Idempotent: a table already placed answers
  * from the registry without a round trip.
  */
-export async function locateTable(tableId: string, organizationId?: string | null): Promise<Located> {
+export async function locateTable(tableId: string): Promise<Located> {
   const placed = recordStoreHomeOf(tableId);
   if (placed) return { ok: true, store: "record", home: placed };
   // ACCESS IS PERSONAL (owner, 2026-09-23). The table names its own organization
-  // (`custom.where_id_opens`, inside `whereThisTableLives`); the caller's organization —
-  // or, failing that, the one the person is working in — is read ONLY by the announced
-  // stand-in while that door is absent from a database. It is never held for: a table that
-  // exists has an organization, and asking the person to pick one is asking the wrong question.
-  const where = await whereThisTableLives(createClient(), organizationId ?? standInOrganizationId(), tableId);
+  // (`custom.where_id_opens`, inside `whereThisTableLives`). No organization is passed in and the
+  // active one is never used: a table that exists has an organization, and asking the person to
+  // pick one is asking the wrong question.
+  const where = await whereThisTableLives(createClient(), tableId);
   if (where.kind === "unknown") {
     return {
       ok: false,
       error: `Could not ask the record store where this table lives, so nothing was written to it. Try again. (${where.why})`,
-    };
-  }
-  if (where.kind === "no_access") {
-    return {
-      ok: false,
-      error: "This table lives in the record store and has not been shared with you. Ask whoever holds it to share it.",
     };
   }
   if (where.kind === "record_store") {

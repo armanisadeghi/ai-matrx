@@ -108,12 +108,15 @@ export function originToDraft(origin: ArtifactOrigin): SourceDraft | null {
 export function AddMoreCardsButton({
   setId,
   deckName,
+  deckOrganizationId,
   existingCards,
   onAdded,
 }: {
   setId: string;
   /** The deck's name — what the new cards' sections are titled after. */
   deckName?: string;
+  /** The deck's OWN organization — new cards, the agent run and lineage file under it, never the active org. */
+  deckOrganizationId?: string | null;
   /** Cards already in the deck — what a new card must not repeat. */
   existingCards: { front: string; back: string }[];
   onAdded?: () => void;
@@ -135,6 +138,7 @@ export function AddMoreCardsButton({
         <AddMoreCardsDialog
           setId={setId}
           deckName={deckName}
+          deckOrganizationId={deckOrganizationId}
           existingCards={existingCards}
           onClose={() => setOpen(false)}
           onAdded={onAdded}
@@ -147,12 +151,14 @@ export function AddMoreCardsButton({
 function AddMoreCardsDialog({
   setId,
   deckName,
+  deckOrganizationId,
   existingCards,
   onClose,
   onAdded,
 }: {
   setId: string;
   deckName?: string;
+  deckOrganizationId?: string | null;
   existingCards: { front: string; back: string }[];
   onClose: () => void;
   onAdded?: () => void;
@@ -217,7 +223,7 @@ function AddMoreCardsDialog({
     setError(null);
     setBusy(true);
     try {
-      const orgId = await ensureOrgId(undefined);
+      const orgId = await ensureOrgId(deckOrganizationId ?? undefined);
       setStatus(`Reading ${ready.length} ${ready.length === 1 ? "source" : "sources"}…`);
       const chosen = set.toSourceSet();
       const chosenNames = sourceNamesOf(set.sources);
