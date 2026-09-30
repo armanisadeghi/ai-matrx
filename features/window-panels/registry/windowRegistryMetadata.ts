@@ -376,6 +376,38 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Review walk ("Diagnose") ─────────────────────────────────────────────
+  // One window per walked unit — what the agent saw (what was sent, context
+  // the system added, the system prompt as sent, offered tools) and what it
+  // did (tool calls + results, the answer). The instance id is the opener's
+  // deterministic `review-walk|<unitKind>|<unitId>` (features/review-walk/
+  // address.ts), so re-opening a unit focuses it and a refresh restores it
+  // under the same id. Address: `?panels=review_walk:<unitKind>.<unitId>`.
+  // Restore needs the unit identity; the agent fields only power the receipt's
+  // door and restore as null when absent. The walk's hops / flags / draft
+  // report are deliberately NOT preserved — a restore re-opens the unit's root
+  // layer fresh, which is honest (the server re-reads the capture).
+  {
+    slug: "review-walk-window",
+    overlayId: "reviewWalkWindow",
+    kind: "window",
+    label: "Review Walk",
+    defaultData: {
+      unitKind: null,
+      unitId: null,
+      agentId: null,
+      agentName: null,
+      stackIndex: 0,
+    },
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+    urlSync: { key: "review_walk" },
+    preservation: {
+      dataKeys: ["unitKind", "unitId", "agentId", "agentName"],
+      requiredDataKeys: ["unitKind", "unitId"],
+    },
+  },
+
   // ── Quick Task Create ─────────────────────────────────────────────────────
   {
     slug: "task-quick-create-window",

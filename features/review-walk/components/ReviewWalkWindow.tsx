@@ -32,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { reviewWalkUrlId } from "@/features/review-walk/address";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
@@ -417,6 +418,14 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
       onClose={onClose}
       overlayId="reviewWalkWindow"
       overlayInstanceId={instanceId}
+      urlSyncId={reviewWalkUrlId({ unitKind, unitId })}
+      onCollectData={() => ({
+        unitKind,
+        unitId,
+        agentId,
+        agentName,
+        stackIndex,
+      })}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <div className="matrx-touch-targets flex h-full min-h-0 flex-col overflow-hidden bg-background">
