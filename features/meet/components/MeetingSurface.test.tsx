@@ -122,6 +122,29 @@ describe("MeetingSurface authentication hydration", () => {
     surface.unmount();
   });
 
+  it("🚨 a meeting in ANOTHER organization than the active one runs scoped to the MEETING's own organization (active-org law, rule 5)", async () => {
+    mockActiveOrganizationId = "org-other";
+    mockMeetHost = { identity: { organizationId: "org-other" } };
+    mockOrganizations = { "org-meeting": { id: "org-meeting" }, "org-other": { id: "org-other" } };
+    const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
+
+    // The ambient host is bound to the active org, so the room is wrapped in a
+    // provider scoped to the meeting's org (the mock renders it as a div).
+    expect(surface.container.querySelector('[data-testid="guest-provider"]')).not.toBeNull();
+    surface.unmount();
+  });
+
+  it("a meeting in the ACTIVE organization keeps the ambient host — no second provider", async () => {
+    mockActiveOrganizationId = "org-meeting";
+    mockMeetHost = { identity: { organizationId: "org-meeting" } };
+    mockOrganizations = { "org-meeting": { id: "org-meeting" } };
+    const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
+
+    expect(surface.container.querySelector('[data-testid="guest-provider"]')).toBeNull();
+    expect(surface.container.querySelector('[data-testid="member-room"]')).not.toBeNull();
+    surface.unmount();
+  });
+
   it("keeps the server guest lane while browser authentication is unresolved, then replaces it when Redux resolves a member", async () => {
     const surface = await renderSurface(false);
 

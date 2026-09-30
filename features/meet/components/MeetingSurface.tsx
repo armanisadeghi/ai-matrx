@@ -168,7 +168,7 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
   // (law: active-org-is-never-a-list-filter, rule 5). So the room is scoped to
   // the meeting's organization whenever the app-wide host is inert OR is bound
   // to a DIFFERENT organization than the meeting's.
-  const hostOrganizationId = host?.identity.organizationId ?? null;
+  const hostOrganizationId = host?.identity?.organizationId ?? null;
   useEffect(() => {
     if (scoped || !memberOfMeetingOrg) return;
     if (host === null && activeOrganizationId === null) setScoped(true);

@@ -61,6 +61,7 @@ import {
   RecordingSeekPlayer,
   type SeekRequest,
 } from "@/features/meet/components/record/RecordingSeekPlayer";
+import { MeetingOrgScope } from "@/features/meet/components/MeetingOrgScope";
 import { TranscriptPanel } from "@/features/meet/components/record/TranscriptPanel";
 import { ShareWithAudienceButton } from "@/features/sharing/audience/ShareWithAudience";
 
@@ -73,27 +74,47 @@ export function MeetingRecordWorkspace({
   meeting: MeetingRecord;
   canManage: boolean;
 }) {
+  // The record is read in the MEETING's own organization, not the active one.
+  return (
+    <MeetingOrgScope
+      organizationId={meeting.organizationId}
+      fallback={<ChooseOrganizationNotice />}
+    >
+      <MeetingRecordWorkspaceInner meeting={meeting} canManage={canManage} />
+    </MeetingOrgScope>
+  );
+}
+
+function ChooseOrganizationNotice() {
+  return (
+    <div className="mx-auto mt-8 max-w-md rounded-md border border-border p-4 text-sm">
+      <p className="font-medium">Choose an organization to open this record.</p>
+      <p className="mt-1 text-muted-foreground">
+        The recording, the chat and the recap are read through an organization
+        you belong to.
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="mt-3"
+        onClick={() => void ensureOrganizationContext().catch(() => undefined)}
+      >
+        Choose organization
+      </Button>
+    </div>
+  );
+}
+
+function MeetingRecordWorkspaceInner({
+  meeting,
+  canManage,
+}: {
+  meeting: MeetingRecord;
+  canManage: boolean;
+}) {
   const host = useMeetHost();
   const params = useSearchParams();
-  if (host === null) {
-    return (
-      <div className="mx-auto mt-8 max-w-md rounded-md border border-border p-4 text-sm">
-        <p className="font-medium">Choose an organization to open this record.</p>
-        <p className="mt-1 text-muted-foreground">
-          The recording, the chat and the recap are read through an
-          organization you belong to.
-        </p>
-        <Button
-          size="sm"
-          variant="outline"
-          className="mt-3"
-          onClick={() => void ensureOrganizationContext().catch(() => undefined)}
-        >
-          Choose organization
-        </Button>
-      </div>
-    );
-  }
+  if (host === null) return <ChooseOrganizationNotice />;
   return (
     <Workspace
       meeting={meeting}
