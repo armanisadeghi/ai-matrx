@@ -6,7 +6,6 @@ import {
   HUB_LIBRARIES_HREF,
   HUB_LIBRARY_CATALOG_HREF,
   HUB_SOURCES_HREF,
-  SEARCH_LAB_ADMIN_PATH,
 } from "@/features/knowledge/hub/legacyRoutes";
 
 export interface ComparePair {
@@ -38,14 +37,6 @@ export const COMPARE_PAIRS: ComparePair[] = [
     newHref: "/knowledge/flow",
     newLabel: "Knowledge flow",
     note: "The old address now redirects to /knowledge; the animation itself lives on at /knowledge/flow.",
-  },
-  {
-    name: "Search Lab",
-    oldAddress: "/knowledge/search",
-    oldHref: "/compare/old/search-lab",
-    newHref: "/knowledge",
-    newLabel: "Hub search",
-    extra: { href: SEARCH_LAB_ADMIN_PATH, label: "Admin Search Lab (developer tabs)" },
   },
   { name: "Data stores", oldAddress: "/knowledge/data-stores", oldHref: "/compare/old/data-stores", newHref: HUB_DATA_STORES_HREF, newLabel: "Hub · Data stores" },
   { name: "Library catalog", oldAddress: "/knowledge/library-catalog", oldHref: "/compare/old/library-catalog", newHref: HUB_LIBRARY_CATALOG_HREF, newLabel: "Hub · Library catalog" },

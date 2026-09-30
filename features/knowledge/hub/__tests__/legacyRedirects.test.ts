@@ -1,5 +1,5 @@
 /**
- * H6a: every retired Knowledge address lands in the hub with its filters
+ * H6a: every retired Knowledge address lands in the hub with its filters (the Search Lab is NOT retired)
  * (Linear: an old link keeps its filters). The real route modules run; only
  * `redirect` is a double (Next throws from it).
  */
@@ -7,12 +7,15 @@ const redirect = jest.fn((to: string) => {
   throw Object.assign(new Error("NEXT_REDIRECT"), { to });
 });
 jest.mock("next/navigation", () => ({ redirect: (to: string) => redirect(to) }));
+jest.mock("@/utils/supabase/sessionVerdict", () => ({ getSessionVerdict: async () => ({ isAuthenticated: true }) }));
+jest.mock("@/features/rag/components/search/RagSearchExperience", () => ({ RagSearchExperience: () => null }));
+jest.mock("@/features/auth/components/module-landing/landings/KnowledgeLanding", () => ({ __esModule: true, default: () => null }));
 
 import LibraryRoute from "@/app/(core)/knowledge/library/page";
 import SearchRoute from "@/app/(core)/knowledge/search/page";
 import VisualizationRoute from "@/app/(core)/knowledge/visualization/page";
 import { hubStateFromParams } from "@/features/knowledge/hub/hubState";
-import { HUB_SOURCES_HREF, libraryToHubHref, searchLabToHref } from "@/features/knowledge/hub/legacyRoutes";
+import { HUB_SOURCES_HREF, libraryToHubHref, SEARCH_LAB_ADMIN_PATH, SEARCH_LAB_PATH, searchLabHref } from "@/features/knowledge/hub/legacyRoutes";
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -48,17 +51,23 @@ describe("retired Sources page → the hub's Sources view", () => {
   });
 });
 
-describe("retired Search Lab", () => {
-  it("?q= and ?store_id= become the hub's search within that data store", async () => {
-    const s = stateOf(await land(SearchRoute as never, { q: "refund policy", store_id: "ds-1" }));
-    expect(s.query.text).toBe("refund policy");
-    expect(s.query.within).toEqual([{ type: "data_store", id: "ds-1" }]);
+describe("the Search Lab is a kept, live user page (Arman, 2026-09-29)", () => {
+  it("/knowledge/search renders the lab for a signed-in person — it never redirects", async () => {
+    redirect.mockClear();
+    const tree = await (SearchRoute as () => Promise<unknown>)();
+    expect(tree).toBeTruthy();
+    expect(redirect).not.toHaveBeenCalled();
   });
-  it("developer tabs land in the admin Search Lab with every param", () => {
-    const href = searchLabToHref({ tab: "diagnostics", q: "x", store_id: "ds-1" });
-    const u = new URL(href, "https://x");
-    expect(u.pathname).toBe("/administration/knowledge/search-lab");
-    expect(Object.fromEntries(u.searchParams)).toEqual({ tab: "diagnostics", q: "x", store_id: "ds-1" });
+  it("the hub links to it with the search and the single data store carried over", () => {
+    expect(searchLabHref({})).toBe("/knowledge/search");
+    const u = new URL(searchLabHref({ text: " refund policy ", within: [{ type: "data_store", id: "ds-1" }] }), "https://x");
+    expect(u.pathname).toBe(SEARCH_LAB_PATH);
+    expect(Object.fromEntries(u.searchParams)).toEqual({ q: "refund policy", store_id: "ds-1" });
+    // two stores (or a non-store scope) have no single ?store_id= — the search words still travel
+    expect(new URL(searchLabHref({ text: "x", within: [{ type: "tag", id: "t" }] }), "https://x").search).toBe("?q=x");
+  });
+  it("the admin lab keeps its own address", () => {
+    expect(SEARCH_LAB_ADMIN_PATH).toBe("/administration/knowledge/search-lab");
   });
 });
 

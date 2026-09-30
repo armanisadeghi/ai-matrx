@@ -61,7 +61,7 @@ import {
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
 import { AGENT_ICON_NAME, INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 import { USER_LAUNCHPAD_PATH } from "@/features/launchpad/constants";
-import { HUB_DATA_STORES_HREF, HUB_LIBRARIES_HREF, HUB_SOURCES_HREF } from "@/features/knowledge/hub/legacyRoutes";
+import { HUB_DATA_STORES_HREF, HUB_LIBRARIES_HREF, HUB_SOURCES_HREF, SEARCH_LAB_PATH } from "@/features/knowledge/hub/legacyRoutes";
 
 export type { ShellNavPanelActionId };
 export { NAV_WINDOW_PANEL_ICON };
@@ -922,6 +922,12 @@ export const primaryNavItems: ShellNavItem[] = [
         label: "Data Stores",
         href: HUB_DATA_STORES_HREF,
         iconName: "Database",
+        group: "Knowledge",
+      },
+      {
+        label: "Search Lab",
+        href: SEARCH_LAB_PATH,
+        iconName: "Search",
         group: "Knowledge",
       },
       {

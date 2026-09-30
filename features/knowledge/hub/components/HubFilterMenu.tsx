@@ -9,7 +9,8 @@
  * the total. Choosing a value toggles it on the ONE query (and the URL).
  */
 
-import { Check } from "lucide-react";
+import Link from "next/link";
+import { Check, FlaskConical } from "lucide-react";
 import {
   Popover,
   PopoverAnchor,
@@ -38,6 +39,7 @@ import {
 } from "@/features/knowledge/hub/hubPresentation";
 import { RELATIVE_DATE_LABEL } from "@/features/knowledge/api/knowledgeQueryText";
 import { hitTags } from "@/features/knowledge/hub/tags/tagActions";
+import { searchLabHref } from "@/features/knowledge/hub/legacyRoutes";
 import { HUB_STAGES, HUB_STAGE_LABEL, type HubStage } from "@/features/knowledge/hub/hubStage";
 
 interface HubFilterMenuProps {
@@ -294,6 +296,14 @@ export function HubFilterMenu({
               ))}
             </CommandGroup>
           </CommandList>
+          {/* The Search Lab is where a person sees HOW retrieval found and ranked results (Arman, 2026-09-29). */}
+          <Link
+            href={searchLabHref(query)}
+            className="flex items-center gap-2 border-t border-border px-3 py-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <FlaskConical className="h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0">Test retrieval — see how this search is found and ranked in the Search Lab</span>
+          </Link>
         </Command>
       </PopoverContent>
     </Popover>

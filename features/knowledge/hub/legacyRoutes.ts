@@ -6,10 +6,12 @@
  *   /knowledge/library  (and /rag/library)   → the Sources kind view
  *       ?show=saved → + state kept · ?show=all → every capture
  *       ?q= / ?search= → the search words
- *   /knowledge/search   (and /rag/search)    → the hub's search
- *       ?q= → q · ?store_id= → within that data store
- *       ?tab=agent-sim|agent-chat|diagnostics → the admin Search Lab (those
- *       developer tabs live there now), every param kept
+ *
+ * NOT retired: /knowledge/search is the Search Lab — a kept user page by Arman's
+ * ruling (2026-09-29: "the single most useful user UI for testing RAG"). It
+ * renders live for every signed-in user; /rag/search reaches it through the
+ * `/rag/:path*` config redirect with its query string intact. The admin lab
+ * (SEARCH_LAB_ADMIN_PATH) is the same component on the admin lane (ACL bypass).
  *   /knowledge/visualization (and /rag/visualization) → /knowledge
  *
  * H6b — the list pages whose job is now a hub container group
@@ -66,28 +68,20 @@ export function libraryToHubHref(params: LegacySearchParams): string {
   return hubHref(state);
 }
 
+/** The Search Lab — a live user page (Arman, 2026-09-29). */
+export const SEARCH_LAB_PATH = "/knowledge/search";
+/** The same lab on the admin lane (super-admin inventory/diagnose twins + ACL bypass). */
 export const SEARCH_LAB_ADMIN_PATH = "/administration/knowledge/search-lab";
-const DEV_TABS = new Set(["agent-sim", "agent-chat", "diagnostics"]);
 
-/** The Search Lab's address → the hub's search, or the admin lab for its developer tabs. */
-export function searchLabToHref(params: LegacySearchParams): string {
-  const tab = first(params, "tab");
-  if (tab && DEV_TABS.has(tab)) {
-    const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries(params)) {
-      const s = Array.isArray(v) ? v[0] : v;
-      if (typeof s === "string") qs.set(k, s);
-    }
-    return `${SEARCH_LAB_ADMIN_PATH}?${qs.toString()}`;
-  }
-  const text = first(params, "q");
-  const store = first(params, "store_id");
-  const query: KnowledgeQuery = {
-    mode: "find",
-    ...(text ? { text } : {}),
-    ...(store ? { within: [{ type: "data_store", id: store }] } : {}),
-  };
-  return hubHref({ ...DEFAULT_HUB_STATE, query });
+/** The Search Lab with a search carried over: `?q=` and, when one data store is the scope, `?store_id=`. */
+export function searchLabHref(query: Pick<KnowledgeQuery, "text" | "within">): string {
+  const qs = new URLSearchParams();
+  const text = query.text?.trim();
+  if (text) qs.set("q", text);
+  const stores = (query.within ?? []).flatMap((w) => (w.type === "data_store" && w.id ? [w.id] : []));
+  if (stores.length === 1) qs.set("store_id", stores[0]);
+  const out = qs.toString();
+  return out ? `${SEARCH_LAB_PATH}?${out}` : SEARCH_LAB_PATH;
 }
 
 // ─── H6b: list pages → container groups ─────────────────────────────────────

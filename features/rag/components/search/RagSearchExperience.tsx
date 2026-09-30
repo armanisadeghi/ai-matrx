@@ -814,9 +814,8 @@ function SearchTab({
   onReviewModeChange?: (active: boolean) => void;
 }) {
   const router = useRouter();
-  // The page this lab is mounted on (the admin Search Lab, or a review copy) —
-  // /knowledge/search itself now redirects into the Knowledge hub (H6a), so a
-  // submitted search must stay on the current page, never jump there.
+  // The page this lab is mounted on (/knowledge/search, or the admin Search
+  // Lab) — a submitted search stays on the current page and its lane.
   const pathname = usePathname() ?? "/administration/knowledge/search-lab";
   const params = useSearchParams();
   const initialQuery = params?.get("q") ?? "";
@@ -1250,7 +1249,7 @@ function SearchTab({
         </div>
       </header>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" viewportClassName="[&>div]:!block">
         {error && (
           <div className="m-4 flex items-center gap-2 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" /> {error}
@@ -2053,7 +2052,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
         </p>
       </header>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" viewportClassName="[&>div]:!block">
         <div className="p-4 space-y-4">
           <AgentToolPanel scope={scope} />
 
@@ -2570,7 +2569,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
         </Button>
       </header>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" viewportClassName="[&>div]:!block">
         <div className="p-4 space-y-4">
           {error && inv ? (
             <StaleDataNotice hasData what="the search inventory" detail={error} onRetry={() => void refresh()} />

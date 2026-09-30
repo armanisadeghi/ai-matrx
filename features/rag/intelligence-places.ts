@@ -20,7 +20,7 @@ export const RAG_PLACES: FeaturePlaces = {
       id: "search-pipeline",
       label: "Knowledge search",
       trigger: "Pipeline settings: HyDE expansion and multi-query",
-      urlPattern: "/administration/knowledge/search-lab",
+      urlPattern: "/knowledge/search",
       mandateKeys: [K.rag__hyde_generator, K.rag__query_expander],
       sources: ["features/rag/components/search/RagSearchExperience.tsx"],
     },

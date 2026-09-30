@@ -9,7 +9,7 @@ import { OldPageBanner } from "../_components/OldPageBanner";
 const FAMILY: { path: string; what: string; href?: string; status: string }[] = [
   { path: "/rag", what: "Knowledge home", href: "/compare/old/knowledge-home", status: "Restored copy" },
   { path: "/rag/library", what: "Sources", href: "/compare/old/sources", status: "Restored copy" },
-  { path: "/rag/search", what: "Search Lab", href: "/compare/old/search-lab", status: "Restored copy" },
+  { path: "/rag/search", what: "Search Lab", href: "/knowledge/search", status: "Live again — a kept user page" },
   { path: "/rag/visualization", what: "Graph demo (flow animation)", href: "/compare/old/graph-demo", status: "Restored copy" },
   { path: "/rag/data-stores", what: "Data stores", href: "/compare/old/data-stores", status: "Restored copy" },
   { path: "/rag/library-catalog", what: "Library catalog", href: "/compare/old/library-catalog", status: "Restored copy" },

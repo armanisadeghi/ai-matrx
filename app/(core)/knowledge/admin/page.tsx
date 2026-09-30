@@ -52,9 +52,9 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/knowledge/search",
-      label: "Search Lab (retired → hub / admin)",
+      label: "Search Lab",
       description:
-        "Retired 2026-09-27 (H6a): ?q= / ?store_id= land in the hub's search; ?tab=agent-sim|agent-chat|diagnostics land in /administration/knowledge/search-lab.",
+        "Live for every signed-in user (kept by Arman's ruling, 2026-09-29): Search, Agent Simulation, Agent Chat, Diagnostics. ?q= / ?store_id= / ?tab= deep-link. The admin-lane twin is /administration/knowledge/search-lab.",
       filePath: "app/(core)/knowledge/search/page.tsx",
       status: "Live",
     },
