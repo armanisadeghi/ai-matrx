@@ -395,7 +395,7 @@ export function UnifiedDataRampScreen() {
 
       {!organizationId && (
         <div className="rounded-md border border-border p-3 text-sm text-muted-foreground">
-          Choose an organization above to see its ramp.
+          Use the picker above to open an organization's ramp.
         </div>
       )}
 

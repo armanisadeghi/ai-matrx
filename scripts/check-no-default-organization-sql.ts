@@ -259,6 +259,42 @@ interface Violation {
   detail: string;
 }
 
+/**
+ * The 1-based line ranges, in `code` (already `executableSql`), of the bodies of
+ * functions whose EXACT schema-qualified name is listed in CENSUS_PRIMITIVES.
+ *
+ * A file that re-emits one of those functions (a sweep that rewrites a trigger's
+ * refusal words, say) necessarily names `default_organization_id` inside it — that
+ * is what the primitive IS. Rule 6 admits that body, and only that body: a
+ * `create function` header runs to the closing dollar-quote tag, and everything
+ * outside it in the same file is still read. A near name in another schema is not
+ * the primitive.
+ */
+function censusPrimitiveBodyRanges(code: string): { from: number; to: number }[] {
+  const ranges: { from: number; to: number }[] = [];
+  const header = /create\s+(?:or\s+replace\s+)?function\s+("?[A-Za-z_][\w$]*"?\s*\.\s*"?[A-Za-z_][\w$]*"?)\s*\(/gi;
+  for (const m of code.matchAll(header)) {
+    const qualified = m[1]!.replace(/["\s]/g, "").toLowerCase();
+    if (!CENSUS_PRIMITIVES[qualified]) continue;
+    const start = m.index!;
+    const afterHeader = start + m[0].length;
+    const open = /\$([A-Za-z_]\w*)?\$/.exec(code.slice(afterHeader));
+    let end: number;
+    if (open) {
+      const tag = open[0];
+      const bodyStart = afterHeader + open.index + tag.length;
+      const close = code.indexOf(tag, bodyStart);
+      end = close === -1 ? code.length : close + tag.length;
+    } else {
+      const semi = code.indexOf(";", afterHeader);
+      end = semi === -1 ? code.length : semi + 1;
+    }
+    const lineOf = (index: number) => code.slice(0, index).split("\n").length;
+    ranges.push({ from: lineOf(start), to: lineOf(end) });
+  }
+  return ranges;
+}
+
 export function scanSource(
   rel: string,
   source: string,
@@ -267,9 +303,13 @@ export function scanSource(
   const code = executableSql(source);
   const lines = code.split("\n");
   const found: Violation[] = [];
+  const primitiveBodies = censusPrimitiveBodyRanges(code);
   for (const rule of RULES) {
     for (let i = 0; i < lines.length; i++) {
       if (!rule.pattern.test(lines[i])) continue;
+      // RULE 6 ONLY: the body of a function the census itself names as the display
+      // preference (CENSUS_PRIMITIVES) may name the column — that is what it is.
+      if (rule.id === 6 && primitiveBodies.some((r) => i + 1 >= r.from && i + 1 <= r.to)) continue;
       // LEDGERED HISTORY ONLY: a file that already ran and merely RE-DEFINED one
       // of the retired RPCs (its own CREATE header, no call) is frozen history
       // from when the function existed. Anywhere else a CREATE of it is a
@@ -828,6 +868,16 @@ end $$;`,
 returns uuid language sql as $$
   select iam.personal_org_id((select auth.uid()));
 $$;`,
+  // A re-emit of a CENSUS_PRIMITIVES function (the display-preference constraint trigger): its
+  // body names default_organization_id to police it, and rule 6 admits exactly that body.
+  "__self_test_ok_primitive_body__.sql": `create or replace function iam._default_organization_is_a_membership()
+returns trigger language plpgsql as $$
+begin
+  if new.default_organization_id is null then
+    return new;
+  end if;
+  return new;
+end $$;`,
   // The deletion of the retired RPC itself, in an UNLEDGERED file (a drop is neither a call nor a re-creation).
   "__self_test_ok_drop_retired_rpc__.sql": `drop function public.current_personal_org_id();`,
 };
@@ -846,9 +896,36 @@ const CREATION_NEAR_MISSES: Record<string, number> = {
   // Declares creation and then reads somebody's STATED default (rule 6), which is
   // a different thing entirely and is never what provisioning needs.
   "__self_test_creation_reads_default__.sql": 6,
+  // The primitive's body is admitted, NOT the file: a non-primitive function in the same
+  // file that reads a stated default is still flagged.
+  "__self_test_primitive_plus_reader__.sql": 6,
+  // The exemption is the EXACT schema-qualified name: the same function name in another
+  // schema is not the primitive.
+  "__self_test_primitive_wrong_schema__.sql": 6,
 };
 
 const CREATION_NEAR_MISS_BODIES: Record<string, string> = {
+  "__self_test_primitive_plus_reader__.sql": `create or replace function iam._default_organization_is_a_membership()
+returns trigger language plpgsql as $$
+begin
+  if new.default_organization_id is null then
+    return new;
+  end if;
+  return new;
+end $$;
+
+create or replace function zz_selftest.routes_a_write()
+returns trigger language plpgsql as $$
+begin
+  new.organization_id := (select default_organization_id from users.user_preferences where user_id = new.created_by);
+  return new;
+end $$;`,
+  "__self_test_primitive_wrong_schema__.sql": `create or replace function zz_selftest._default_organization_is_a_membership()
+returns trigger language plpgsql as $$
+begin
+  new.organization_id := new.default_organization_id;
+  return new;
+end $$;`,
   "__self_test_creation_legacy_new__.sql": `-- personal-organization-creation: zz_selftest.provision_new — the retired spelling, written today.
 create or replace function zz_selftest.provision_new() returns trigger language plpgsql as $$
 begin
