@@ -82,7 +82,7 @@ Each phase is its own agent. Read **only the file for the phase you were given**
 
 | Phase | Lane | Read |
 |---|---|---|
-| Discover — run the detector on a slice, classify every candidate | `quick` (haiku or sonnet) | `discover.md` |
+| Discover — build units for a slice, classify each, propose the exact fix; the validator must pass | `quick` with **sonnet** (haiku mapped rules to verdicts without reading and cut rewrites mid-sentence — 2026-09-30) | `discover.md` |
 | Review — accept or correct the classifications, find primitive-level fixes, batch the work, pick what goes to Arman | `standard` (opus) | `review.md` |
 | Fix — apply a reviewed batch in its files | `quick` (sonnet) for mechanical batches, `standard` otherwise | `fix.md` |
 | Confirm — independent check of a fixed batch | `standard` (opus), never the fixer | `confirm.md` |

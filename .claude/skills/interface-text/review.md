@@ -23,6 +23,13 @@ Common Discover mistakes to look for:
 - `too-long` where the text is author-facing (a rewrite would keep a formula on screen).
 - A proposal that is still over budget, or that keeps a pipeline word ("server", "backend").
 - `asymmetric` fixed by adding text to every sibling when deleting the outlier is cleaner.
+- A warning, drift, or error banner deleted as "author-facing". It is **state**: keep one short
+  line naming the problem, with its remedy as a control (or a short command when the audience is
+  operators). Delete only the explanation around it.
+- A rewrite that met a 60-char budget by dropping a needed fact ("can be set once", "saving the
+  same key restores it") when the text is dialog/confirm copy with a 140-char consequence budget.
+- Descriptions on documentation surfaces (the component gallery, the feature-docs viewer) — their
+  text is the content; the detector exempts them.
 
 ## 2. Fix the class before the instances
 
@@ -32,6 +39,13 @@ with a tooltip, or replace it with the `components/official/*` primitive, then f
 A primitive change is a `standard`-lane batch and names every caller it affects.
 
 ## 3. Cut batches
+
+Write the batches as JSON the Fix agents consume directly:
+
+```json
+{"batches":[{"id":"r1-b1","lane":"quick","files":["…"],"items":[{"id":"file:line","file":"…","line":123,"action":"replace|delete|tooltip|replace+tooltip|keep","new_text":"…","tooltip":"…","comment":"…","note":"≤15 words"}]}],"overturns":["…"],"for_arman":[]}
+```
+
 
 - ≤ 15 files per batch, grouped by feature so one fixer sees whole rows and pages.
 - Each batch lists its findings with the reviewed verdict and exact replacement text.

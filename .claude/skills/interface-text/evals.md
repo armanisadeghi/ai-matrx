@@ -40,8 +40,23 @@ verbatim into SKILL.md § Rationalizations.
 **GREEN = 3/3 comply** on the visible-text rules. **REFACTOR:** reps 1 and 3 added a tooltip
 to every tile "so the row matches" and invented two definitions ("since midnight", "today's
 budget") the code does not prove. Fix: card rule 4 limits parity to visible slots; new rule 6
-(tooltips state only verified facts); a rationalization row and a red flag. Rerun of E1 after
-that edit: pending — next editor runs it.
+(tooltips state only verified facts); a rationalization row and a red flag.
+
+**Rerun after the edit — 3/3 comply, no invented definitions:** agent `a16d3730cb70b3314`
+checked every tooltip against `fn_kg_cost_summary` and found "Spend today" is a rolling 24h
+window (label fixed in the product); `aa12f0433634a8dd4` tooltips only on the two tiles that
+needed them; `a6c4d1dc30c1f46af` sourced its tooltip from the field's doc comment.
+
+## Scenario E2 — Discover phase on real admin code (P14 rounds 1–2, 2026-09-30)
+
+Slice: `app/(admin)`, `features/admin`, `features/administration` (855 candidates → 536 units).
+
+| Run | Lane | Transcript | Result |
+|---|---|---|---|
+| R1 slices 1–6 (~143 candidates each) | `quick` haiku | agents `abcd8aaeab5f689e7`, `a8a1ecef59d8ead03`, `a74fef81edc4f9a09`, `aeb955c7efa7c2a1b`, `aef6167881ce2c5aa`, `a498a391b5464d4b3` | **FAIL 6/6** — 10–15 tool calls for ~143 candidates: rule names copied as verdicts (an invented `implementation-leak` verdict), `proposed` placeholders ("rewrite shorter – target ≤60 chars"), duplicate lines per string. → units (`--units`), `validate-discover.mjs` (proof-of-reading `context`, exact text, budgets). |
+| R2 pilot batches 01, 07 (45 units) | `quick` haiku + validator | agents `a1dceea56d8e0e029`, `a8f474b69cbcfca08` | **FAIL** — 01 stopped with 17 validator problems; 07 passed the validator by cutting originals at 60 chars mid-sentence (36/45). → validator rejects prefixes and mid-phrase endings; Discover lane moved to sonnet. |
+
+| R2 batches 01–13 (536 units) | `quick` sonnet + validator | agents `a264af32600e9f707` (07 pilot), `a1a388554f398adb6`, `a346a561da343d97e`, `a63ce00bc39aa798d`, `abf7e05db2a19e89b`, `add110e771f8065de`, `a37b0756cf33cb60b`, `ae2a1fabfd3393afb`, `a92f29ea64b39f0c9`, `a7564615ce64c42b1`, `a1bbd2423ee78fc84`, `a510ce6151b481eea`, `a516e667c5d6617d1` | **PASS 13/13** validator exit 0; rewrites keep the point. Flagged by the agents themselves: dialog text scored against the 60 budget (→ detector `consequence` hosts), component-gallery docs (→ exempt). |
 
 ## Detector self-test
 

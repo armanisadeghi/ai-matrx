@@ -59,6 +59,10 @@ One line per unit, to the output path:
 - `proposed` is the **exact new string**, `(delete)`, `(delete; <where the fact goes>)`, or
   `(none)` for `legit`/`unsure`. Never an instruction ("rewrite shorter"). A rewrite fits the
   unit's `slot` budget; count it.
+- A rewrite says the point in fewer words — never the original cut short (the validator rejects
+  a prefix of the original and a proposal ending mid-phrase). When the useful point cannot fit
+  its slot, the verdict is usually `author-facing`, `restates-obvious` or
+  `definition-to-tooltip`, not `too-long`.
 - `tooltip` only when the verdict moves text there, and only a definition the code proves.
 - `context` is ≥20 characters copied verbatim from the file near the unit.
 - `why` ≤ 12 words.
