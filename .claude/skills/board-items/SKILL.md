@@ -13,9 +13,10 @@ whether an item is done:
    feature's own page renders, with every option, button and mode. A look-alike ("a simple note
    box", "just the preview") is a defect, however clean it looks. Arman: *"if they can't do their
    actual work, the entire thing breaks."*
-2. **An agent can do in the tile everything it can do on the feature's page.** The item declares the
-   feature's own surface (values, write targets, client tools) and mounts it for the tile's record.
-   A record item without its full surface is a defect.
+2. **An agent can do in the tile everything a PERSON can do on the feature's page.** The item declares
+   the feature's own surface (values, write targets, client tools) and mounts it for the tile's record.
+   A record item without its full surface is a defect, and so is a gap the page's surface already had
+   (e.g. an agent can't read or edit a document's body): closing it is part of this task.
 
 Mechanics live in `features/spatial/FEATURE.md` (The Board section). Read it once.
 
@@ -31,7 +32,7 @@ catalog) appears in every board's Add menu, Start panel and agent tools with no 
 | `matches(source)` | `source.kind === "entity" && source.entity === key` for records |
 | `Body` | The feature's canonical component for ONE record — never a new renderer |
 | `surface` | `{ name, Host? }` for every record item; `{ none: reason }` ONLY for board-only content (label, web page) |
-| `startNew` | One entry or a list (`startNewEntries()` reads both). Each is `create` — synchronous, returns the item to place NOW, the body creates the record through the feature's canonical create path (with the organization gate) — or a `Picker` (e.g. chat's "Chat with an agent" uses the one agent picker) |
+| `startNew` | One entry or a list (`startNewEntries()` reads both). Each is `create` — synchronous, returns the item to place NOW; the body creates the record through the feature's canonical create path (with the organization gate) on the person's FIRST ACTION (a Create click, or the first words typed), never in a mount effect (a remount or a removed tile would leave stray records; `NoteItemBody` only starts a client-side draft on mount) — or a `Picker` (e.g. chat's "Chat with an agent" uses the one agent picker) |
 | `bringIn` | A picker built from the feature's canonical picker |
 | `href` | The record's page — no dead ends |
 
@@ -101,6 +102,10 @@ not created yet. A body changes what the tile refers to only through `onSource`.
 - "The page's surface is page-level, so the tile gets none for now." → Extract the record-scoped host;
   that IS the task.
 - "I'll set `surface: { none }` until the surface exists." → `none` is for board-only content only.
+- "Agents can't do that on the page either, so it's a separate follow-up." → The page's gap is this
+  gap. Extend the feature's surface (`surface-authoring`) as part of the item.
+- "I'll create the record when the tile mounts, guarded against double-mount." → Create on the
+  person's first action; mounting is not intent.
 - "Agents can already move and arrange the tile, that's enough." → Arranging is the board's job; the
   item's job is the feature's own reads and writes.
 - "I'll add a board tool so agents can edit my item." → Declare it on the feature's surface; the
