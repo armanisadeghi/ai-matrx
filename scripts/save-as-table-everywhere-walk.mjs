@@ -415,6 +415,36 @@ if (STEP === "archive") {
   }
 }
 
+if (STEP === "read-select") {
+  // VERIFIER-30 #1: Read mode (annotated reading) — select a rendered table's rows; the selection
+  // bar's More offers Save to a table.
+  await newNote(NOTE_TABLE);
+  await page.getByRole("button", { name: /^Read$/ }).first().click().catch(() => {});
+  await sleep(5000);
+  const selected = await page.evaluate(() => {
+    const body = [...document.querySelectorAll("tbody")].find((t) => t.closest("[contenteditable='true']") === null);
+    if (!body) return false;
+    const range = document.createRange();
+    range.selectNodeContents(body);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const r = body.getBoundingClientRect();
+    body.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: r.left + 20, clientY: r.top + 10 }));
+    document.dispatchEvent(new Event("selectionchange"));
+    return true;
+  });
+  console.log("selected rendered rows:", selected);
+  await sleep(2500);
+  await shot("09-read-select-bar");
+  const more = page.getByRole("button", { name: /More/ }).last();
+  if (await more.isVisible().catch(() => false)) await more.click();
+  await sleep(1200);
+  await shot("09-read-select-more");
+  const item = page.getByRole("menuitem", { name: /Save to a table/ }).or(page.getByRole("button", { name: /Save to a table/ })).first();
+  console.log("save-to-table offered in Read mode:", await item.isVisible().catch(() => false));
+}
+
 if (STEP === "explore") {
   await goto(process.env.PATHNAME ?? "/notes");
   await sleep(8000);

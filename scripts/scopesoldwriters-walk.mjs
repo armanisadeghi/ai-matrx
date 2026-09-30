@@ -152,18 +152,18 @@ try {
   if (SEAT === "cleanup") {
     await page.goto(`${ORIGIN}/organizations/admin/scopes`, { waitUntil: "domcontentloaded" });
     await seen(TYPE.plural, 240000);
-    await page.getByRole("button", { name: `Edit ${TYPE.plural}` }).first().click();
-    const sheet = page.locator('[role="dialog"]:visible').last();
-    await sheet.waitFor({ timeout: 60000 });
-    await sleep(1500);
-    await shot("o4a-edit-sheet");
-    const labels = await sheet.getByRole("button").evaluateAll((els) => els.map((e) => (e.getAttribute("aria-label") || e.innerText || "").trim()));
-    step("edit sheet buttons", { labels });
-    await sheet.getByRole("button", { name: /archive|delete/i }).first().click();
+    const edit = page.getByRole("button", { name: `Edit ${TYPE.plural}` }).first();
+    await edit.scrollIntoViewIfNeeded();
+    await edit.click();
+    await sleep(2000);
+    await shot("o4a-edit-open");
+    await page.getByRole("button", { name: /^Delete$/ }).first().click();
     await sleep(1500);
     await shot("o4b-confirm");
     const confirm = page.locator('[role="alertdialog"]:visible, [role="dialog"]:visible').last();
-    await confirm.getByRole("button", { name: /archive|delete|confirm|yes/i }).last().click();
+    if (await confirm.count()) {
+      await confirm.getByRole("button", { name: /archive|delete|confirm|yes/i }).last().click();
+    }
     await sleep(4000);
     await page.reload({ waitUntil: "domcontentloaded" });
     await sleep(8000);
