@@ -86,8 +86,8 @@ const HEADER_COMPONENT = /(Page|Route|Section|Panel|Shell|Screen|Card)?Header$|^
 /** Promotional components — a signed-out pitch, where prose is allowed (module-landing-pages skill). */
 const PROMO_COMPONENTS = /^(ModuleLanding|ModuleSignInGate|MarketingHero|LandingHero)$/;
 
-/** Promotional surfaces — prose is allowed there. */
-const PROMO = [/^app\/\(public\)\//];
+/** Promotional surfaces and documentation surfaces (their text IS the content) — prose is allowed there. */
+const PROMO = [/^app\/\(public\)\//, /\/official-components\//, /\/documentation\/feature-docs\//];
 /** Developer demo pages — scanned only with --include-dev. */
 const DEV = [/^app\/\(dev\)\//, /\/demos?\//, /\.dev\.tsx$/, /\/lab\//, /\/test-bench\//, /\/bakeoff\//];
 const SKIP = [
