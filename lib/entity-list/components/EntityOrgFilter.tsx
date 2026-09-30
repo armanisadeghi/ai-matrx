@@ -89,7 +89,7 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, classN
           aria-label={`Organization filter: ${label}`}
           title="Filter this list by organization. This never changes your active organization."
           className={cn(
-            "inline-flex h-11 min-w-0 max-w-[11rem] items-center gap-1 rounded-md border px-2 text-xs font-medium transition-colors lg:h-7 lg:max-w-[16rem] lg:gap-1.5",
+            "inline-flex h-11 min-w-0 max-w-full items-center gap-1 rounded-md border px-2 text-xs font-medium transition-colors sm:max-w-[11rem] lg:h-7 lg:max-w-[16rem] lg:gap-1.5",
             orgId
               ? "border-primary/40 bg-primary/10 text-foreground"
               : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",

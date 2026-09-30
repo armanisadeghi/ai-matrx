@@ -523,7 +523,8 @@ describe("the header select-all, and the sentence under it", () => {
     expect(received[0].ids).toHaveLength(7);
     expect(received[0].rows).toHaveLength(7);
     expect(received[0].count).toBe(7);
-    expect(received[0].filter.scope).toEqual(DEFAULT_ENTITY_LIST_QUERY.scope);
+    // This surface declares one lane (Mine); the platform default All lands on it.
+    expect(received[0].filter.scope).toEqual({ kind: "mine" });
     expect(received[0].filter).not.toHaveProperty("page");
   });
 });

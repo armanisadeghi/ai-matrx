@@ -219,7 +219,7 @@ describe("board list service", () => {
     updated_at: updated,
     last_opened_at: null,
   });
-  const query = { scope: { kind: "mine" as const }, search: "", deep: false, archived: "active" as const, filters: {}, page: 1 };
+  const query = { scope: { kind: "mine" as const }, orgId: null, search: "", deep: false, archived: "active" as const, filters: {}, page: 1 };
   const sort = { sort: "tile_count", direction: "desc" as const, favoritesFirst: false, pageSize: 25 };
 
   it("page and counts asked together share ONE read; a refresh reads again (no stale list after rename/delete)", async () => {

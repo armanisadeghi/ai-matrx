@@ -3,7 +3,7 @@
 One `<EntityListPage config={...} />` per feature list page. The feature
 supplies a config (service triple, column registry, declared scopes, a
 row-actions hook, optional alternate views or phone-card renderer); the shell owns everything
-else: scope tabs with true server counts, search (+ optional deep toggle),
+else: lane tabs with true server counts, the organization filter, search (+ optional deep toggle),
 Filters & Sort panel, column picker, the controlled MatrxDataTable, view/
 density persistence, inline edit commit, and the error banner.
 
@@ -21,6 +21,40 @@ with a `kind` column) · `/work/conversations`
 test) · `features/masterwork/browse/` · marketing cross-site ranks ·
 `features/canvas/maps/`. CRM consumes `EntityScopeTabs` directly.
 
+## Two controls, two axes: the lane and the organization filter
+
+```
+All | Mine | My team | My Orgs | Shared | Public | System          [ All organizations v ]
+```
+
+Law: `common-docs/policies/active-org-is-never-a-list-filter.md`. Vocabulary and the RPC contract:
+`lib/list-scope/FEATURE.md` § Two axes.
+
+- **`query.scope`** is the lane (`?scope=`, default **All**). **`query.orgId`** is the organization
+  filter (`?org_filter=`, null = **All organizations**, the default on every load). They are separate
+  fields; a lane carries no organization id.
+- **The filter narrows every lane, the counts and the facets.** `useEntityList` hands `orgId` to all
+  three service calls; a service passes `p_org_id: listOrgParam(query)` to each RPC.
+- **It is never the active organization** — not its initial value, not synced, not written. No file
+  in this folder reads `selectOrganizationId` / `selectActiveOrganizationId` / `useActiveOrganization*`
+  (guard `pnpm check:no-active-org-in-reads`; test
+  `__tests__/org-filter-is-its-own-axis.test.tsx`).
+- **The shell renders both.** `EntityScopeTabs` (left) and `EntityOrgFilter` (right end of the same
+  row, before `headerActions`). The filter shows on a list with a personal lane when the knob
+  `lists.org_filter/<registryToken>` is not false and the person belongs to two or more
+  organizations; a `?org_filter=` the address carries always shows, so a narrowing is never invisible.
+  An admin page has no personal lane and never offers it.
+- **The default lane is a knob:** `lists.landing_tab/<registryToken>` (key `default` with no token),
+  then the host's `defaultScope`. A default the surface has no tab for lands on All, else its first lane
+  (`supportedScopes`).
+- **"Clear filters" clears the organization filter** back to All organizations.
+- **Outside the shell:** `<EntityScopeTabs scope scopes counts onChange />` and
+  `<EntityOrgFilter orgId onChange counts? />` are plain value/onChange controls;
+  `useOrgFilterParam()` (`orgFilterUrl.ts`) is the filter's URL state. `exact` on the tabs renders
+  exactly the lanes given.
+- **A panel "Organization" section** (`config.scopeSections` on `orgs` / `team`) writes `orgId` — the
+  same state as the filter, never a second one.
+
 ## The URL is the query (`config.urlState`)
 
 **On for every `EntityListPage` since 2026-09-26; `urlState: false` is the
@@ -29,7 +63,7 @@ opt-out** for a list that is not its page's own query. It was opt-in, and
 ignored, the late registry default (`registryToken`) flipped the untouched scope
 to My Orgs, and Back restored nothing. Guard:
 `__tests__/list-page-url-is-the-query.test.tsx`. On, `useEntityList` holds NO
-query state of its own: scope,
+query state of its own: scope, the organization filter,
 search, filters, archived, deep and page are parsed from the query string on
 every render (via `lib/url-state`'s `useUrlSearchParams`, a
 `useSyncExternalStore`), and every setter commits back through
@@ -289,7 +323,9 @@ names on one page.
 | `columns.tsx`                                                                                                   | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`)                                                                                                                                                                                 |
 | `useEntityList.ts`                                                                                              | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys                                                                                                                                                                       |
 | `components/EntityListPage.tsx`                                                                                 | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions`                                                                                                                                                        |
-| `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — the shared vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux. WHICH tabs render can be overridden per page (`scopes`) — a scope conditional on who is looking, like admin-only `system`, cannot live in a module-constant config |
+| `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — the shared vocabulary (lib/list-scope); All and My team are added here. Only a lane's own axis (industry, admin support lanes) narrows inside a tab, from the counts RPC; organizations are `EntityOrgFilter`'s. WHICH tabs render can be overridden per page (`scopes`) — a scope conditional on who is looking, like admin-only `system`, cannot live in a module-constant config |
+| `components/EntityOrgFilter.tsx` | THE ORGANIZATION FILTER — "All organizations" + the person's memberships (`useUserOrganizations`), counts from `counts.narrow.all` when the RPC gives them, a name search past eight organizations. Standalone: `orgId` / `onChange` |
+| `orgFilterUrl.ts` | The filter's URL codec for pages outside the shell: `useOrgFilterParam()`, `readOrgFilter`, `orgFilterPatch` (`?org_filter=`) |
 | `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces                                                                                                                                                                                                                                                          |
 | `selection.ts`                                                                                                  | Bulk-selection vocabulary — `EntityBulkAction`, `EntityBulkSelection`, `EntityBulkFilter`, and the pure `bulkSelectionMode` that decides which meaning of "all" is currently true                                                                                                   |
 | `useEntityListSelection.ts`                                                                                     | The selection state — local beside the query, never Redux; resolves "everything matching" by paging the surface's own service, cancellably                                                                                                                                          |
@@ -439,6 +475,8 @@ demoting the detail page — cheap, high value, not a redesign. This shell is
 how that savior page gets built.
 
 ## Change log
+
+- 2026-09-30 — **The lane and the organization filter are two axes.** `EntityListQuery.orgId` (`?org_filter=`, null = All organizations) narrows every lane, the counts and the facets; `EntityOrgFilter` renders it at the right end of the lane row and `setOrgId` sets it. New default lane `all`, added to every tab bar by `withStandardLanes`. The per-tab organization chevron on My Orgs / My team is gone. Both defaults are Feature Knobs (`lists.landing_tab`, `lists.org_filter`). `useOrgFilterParam` + `exact` make both controls usable outside the shell. Law: `common-docs/policies/active-org-is-never-a-list-filter.md`.
 
 - 2026-09-29 — **Where a list opens is its own knob, never its visibility.** `registryToken` now resolves the Feature Knob `lists.landing_tab/<token>` (`mine` | `organization`; organization and person may override) through `lib/list-scope` `resolveListScope` and the one knob snapshot; it no longer derives from `access.shown_to_default`. Each of the 580 rows was seeded once from the old derivation, so nothing moved except flashcard decks (`fc_set`) and quizzes/practice tests (`assessment`), which open on Mine while their visibility default stays "everyone" (Arman 2026-09-29: never tighten a visibility default to change a tab). A URL-carried or clicked scope still wins. Test: `lib/list-scope/__tests__/defaultListFilter.test.ts` (red on the old reader, green now).
 - 2026-09-29 (flashcards lane report: two just-made decks "not in the list") — **A miss in this lane names the lanes that hit:** an empty lane whose other lanes count matches under the same search/filters (the count IS the list) now says so ("No decks match in My Orgs … but 2 in Mine did") with a one-click door per lane that keeps the search. Cause: `/education/flashcards` opens on My Orgs (registry view for `fc_set`), which by definition holds only other people's records, and the generic miss copy named no lane. Every list on the shell inherits it (My team keeps its own empty copy). Guard `__tests__/a-miss-in-this-lane-names-the-lanes-that-hit.test.tsx` (red on HEAD 2/3).

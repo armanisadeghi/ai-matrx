@@ -47,6 +47,8 @@ import type { ArchivedFilter, EntityFilters, EntityListQuery } from "./types";
  */
 export interface EntityBulkFilter {
   scope: ListScope;
+  /** The organization filter the selection was taken under (null = All organizations). */
+  orgId: string | null;
   search: string;
   deep: boolean;
   archived: ArchivedFilter;
@@ -57,6 +59,7 @@ export interface EntityBulkFilter {
 export function bulkFilterFromQuery(query: EntityListQuery): EntityBulkFilter {
   return {
     scope: query.scope,
+    orgId: query.orgId,
     search: query.search,
     deep: query.deep,
     archived: query.archived,
@@ -72,6 +75,7 @@ export function bulkFilterFromQuery(query: EntityListQuery): EntityBulkFilter {
 export function bulkFilterKey(filter: EntityBulkFilter): string {
   return JSON.stringify([
     filter.scope,
+    filter.orgId,
     filter.search,
     filter.deep,
     filter.archived,

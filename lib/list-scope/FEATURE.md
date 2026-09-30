@@ -11,6 +11,26 @@ The scope tabs decide what a person SEES in a list, never who CAN open a
 record — that is the record's access level (law:
 `common-docs/policies/access-ladder.md`).
 
+## Two axes, never mixed — and never the active organization
+
+Law: `common-docs/policies/active-org-is-never-a-list-filter.md` (Arman, 2026-09-30).
+
+| Axis | Answers | State | URL | Sent as |
+|---|---|---|---|---|
+| **Lane** | HOW can I see it? | `EntityListQuery.scope` (`ListScope`) | `?scope=` | `p_scope` |
+| **Organization filter** | WHICH of my organizations? | `EntityListQuery.orgId` (`string \| null`, null = **All organizations**, the default on every load) | `?org_filter=` | `p_org_id: listOrgParam(query)` |
+
+- **A personal lane carries no organization id.** `{ kind: "orgs" }` / `{ kind: "team" }` — one
+  organization is the filter's job, and it narrows **every** lane and every count.
+- **The ACTIVE organization never reaches a read.** It is for writes and server calls only. The
+  filter never starts from it, syncs with it, or writes to it. `?org=` is NOT the filter: that param
+  switches the active organization (`LinkOrganizationWatcher`).
+- **Both are knobs, never literals:** where a list opens is `lists.landing_tab/<token>`
+  (`all` | `mine` | `organization`, platform value `all`); whether it offers the filter is
+  `lists.org_filter/<token>` (boolean, platform value true). Both take an organization and a person
+  override; a list with no registered type reads key `default` (`DEFAULT_LIST_KNOB_KEY`).
+- Guard: `pnpm check:no-active-org-in-reads` (inside `check:organization-context`).
+
 ## Shown to — the per-row list filter (access ladder T-11, 2026-09-27)
 
 - **Per row:** `shown_to` (`platform.shown_to`: `only_me` · `my_team` ·
@@ -20,7 +40,7 @@ record — that is the record's access level (law:
   refused on a child row); read with `platform.shown_to_state(type, id)`.
 - **Per type:** the knob `access.shown_to_default/<token>` (system →
   organization → person, `platform.feature_knob`) decides who a list SHOWS a row to. It does NOT
-  decide where a list opens: that is its own knob `lists.landing_tab/<token>` (`mine` |
+  decide where a list opens: that is its own knob `lists.landing_tab/<token>` (`all` | `mine` |
   `organization`, same ladder), read by `resolveListScope` from the one knob snapshot and, for SQL
   callers, by `platform.entity_default_list_scope` and the `platform.list_scope_registry` view
   (2026-09-29). New types get both rows from `platform.seed_shown_to_default_knob`.
@@ -39,7 +59,7 @@ record — that is the record's access level (law:
   belongs to (`shownToMyOrgsFilter`). `scopeToOwner` (a yes/no whose "no"
   applied no filter at all — 57 of a coworker's Only-me notes in the notes
   sidebar, T-11 verifier 2026-09-28) is gone. One picked organization:
-  `applyListScope(q, scope, { userId, shownTo })` with
+  `applyListScope(q, { kind: "orgs" }, { userId, organizationId, shownTo })` with
   `shownTo = await fetchShownToContext(token)`; blended lists over named
   organizations use `shownToBlendedFilter`. A new client org list over a table
   with `shown_to` MUST use one of these.
@@ -56,6 +76,7 @@ learns on one page must mean the same thing on every other page.
 
 | Scope              | The question it answers          | Reach                                                                                                 |
 | ------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **All**            | Everything that is mine to see   | Mine ∪ My team ∪ My Orgs ∪ Shared, one row per record. **The default lane.** Public and System are discovery lanes and are never folded in |
 | **Mine**           | What did I make?                 | `created_by = auth.uid()` (some tables use `user_id` — check)                                         |
 | **My team**        | What did my team make?           | the My Orgs rows whose (organization, creator) is in `iam.my_team_reach` — me and everyone sharing a live team with me there |
 | **My Orgs**        | What does my organization have?  | created by someone else, in an org I belong to, at a visibility that admits org-mates                 |
@@ -116,10 +137,12 @@ see `common-docs/systems/platform/access/FEATURE.md` §2.4).
 `practice_area`): `legal` → `workers-comp` → `ca-workers-comp`. Reach should
 respect `parent_id`, so attaching `workers-comp` sees `ca-workers-comp` content.
 
-### My team — added by one helper, never per page
+### All and My team — added by one helper, never per page
 
-`withTeamScope(scopes)` puts My team after Mine on every tab bar that offers My Orgs, and
-`EntityScopeTabs` applies it, so a surface never declares it. Its RPC answers `p_scope = 'team'`
+`withStandardLanes(scopes)` puts **All** first on every tab bar that offers two or more personal
+lanes (`withAllScope`) and My team after Mine on every one that offers My Orgs (`withTeamScope`).
+`EntityScopeTabs` and `EntityListPage` apply it, so a surface never declares either. A standalone
+host whose reader cannot answer them passes `exact` to `EntityScopeTabs`. Its RPC answers `p_scope = 'team'`
 (the orgs arm plus one `iam.my_team_reach` clause) and its counts RPC returns a `team` row plus a
 narrow row per organization where the caller shares a team with someone. A list that reads a table
 directly uses `teamReach.ts`. Canonical doc: common-docs `/systems/platform/teams/FEATURE.md`.
@@ -127,48 +150,40 @@ Counts rows are read only through `scopeCountsFromRows` (`lib/entity-list/types.
 
 ### UI shape
 
-`Mine · My team · My Orgs · Shared · Industry · Public` as fixed tabs, each showing a TRUE
-server count. **My team, My Orgs and Industry each render as ONE tab with a dropdown to
-narrow**, never one chip per org/industry — a person belongs to many organizations
-and may attach several industries, so a chip-per-entity tab bar has
-unbounded width and offers no blended view.
+```
+All | Mine | My team | My Orgs | Shared | Public | System          [ All organizations v ]
+```
 
-**Narrowing options come from the COUNTS QUERY, never from a Redux slice.**
-`agx_list_scope_counts` returns `(scope, narrow_id, label, total)` — names and
-counts together. This is load-bearing, not tidiness: the tabs originally read
-org names from the organizations slice, which is hydrated by
-`fetchFullContext` — a thunk that only runs on tasks / org-settings surfaces.
-On `/agents/all` that slice was empty, so the My Orgs dropdown silently never
-rendered for anyone. A tab bar must be self-sufficient from its own query.
+- **Lanes** are fixed tabs (`EntityScopeTabs`), each with a TRUE server count; on a phone five or
+  more become one select in the same slot.
+- **The organization filter** is `EntityOrgFilter`, at the right end of the lane row: "All
+  organizations" first and default, then every organization the person belongs to, read by
+  `useUserOrganizations` (a self-loading read — never a Redux slice, which is empty on `/agents/all`).
+  Its label always reads as a filter ("All organizations" / "Org: Acme"). A count sits beside an
+  organization when the counts RPC returns `all` narrow rows.
+- **Only a lane's OWN axis narrows inside its tab:** Industry (which industry) and the admin support
+  lanes (which organization / person). Those options come from the counts query.
+- **Outside the shell** the same two components take a value/onChange pair; the filter's URL state is
+  `useOrgFilterParam()` (`lib/entity-list/orgFilterUrl.ts`).
 
-> `components/official/ListScopeSwitcher.tsx` still implements the older
-> chip-per-org shape and knows nothing about Industry or Public. It loads its
-> organizations through `useUserOrganizations`, so it is self-sufficient on
-> routes that have not hydrated an organization Redux slice. The worked
-> implementation of the full five-scope model is
-> `lib/entity-list/components/EntityScopeTabs.tsx` (live at `/agents/all` and
-> `/transcripts`; also consumed by CRM). ListScopeSwitcher's one remaining
-> consumer is `TranscriptsSidebar` — it should absorb EntityScopeTabs rather
-> than the two diverging further.
+> `components/official/ListScopeSwitcher.tsx` is the older chip-per-org shape (Mine / Shared / one
+> chip per organization). An org chip is My Orgs plus the organization filter:
+> `onChange(scope, orgId)`. Its one consumer is `TranscriptsSidebar`.
 
 ## The primitive
 
-- `types.ts` — `ListScope` union + narrowing helpers (`isMineScope`,
-  `isOrgScope`, `isSharedScope`).
-- `applyListScope.ts` — `applyListScope(query, scope, { userId, ownerColumn?, orgColumn? })`.
-  Covers only the simple table-query cases. A surface with real scale (server
-  paging, per-column filtering, true counts) uses a dedicated
-  `*_list_scoped` RPC instead — see the template note below.
-  Applies `.eq(ownerColumn ?? "created_by", userId)` for "mine",
-  `.eq(orgColumn ?? "organization_id", scope.organizationId)` for "org",
-  and throws a descriptive error for "shared" (use the feature's own
-  shared-with-me fetcher instead).
-- `components/official/ListScopeSwitcher.tsx` — controlled segmented
-  control (Mine / Shared* / org chips). Loads orgs through
-  `useUserOrganizations` and still excludes `is_personal` organizations from
-  the chips — a live defect against the law (organizations are equal); it
-  goes with the flag. (The live `*_list_scope_counts` RPCs no longer do; checked
-  2026-09-27.)
+- `types.ts` — the `ListScope` union, `DEFAULT_LIST_SCOPE` (`all`), `withStandardLanes`,
+  `makeScope` / `scopeKey`, and **`listOrgParam(query)`** — the one expression every
+  `*_list_scoped` / `*_scope_counts` / facets call passes as `p_org_id` (the organization filter, or
+  an admin support lane's own narrowing).
+- `index.ts` — the landing-tab and org-filter knob families (`resolveListScope`,
+  `defaultListScopeFor`, `defaultListFilter`).
+- `applyListScope.ts` — `applyListScope(query, scope, { userId, organizationId?, shownTo? })` for
+  simple table queries. `mine` → the owner filter; `orgs` → needs `organizationId` (the organization
+  filter) and throws when blended; `organizationId` narrows `mine` too. `all`, `team`, `shared`,
+  `industry`, `public`, `system` throw with the reason — use the feature's RPC, or
+  `defaultListFilter` for a blended All / My Orgs read (worked example:
+  `features/transcripts/service/transcriptsService.ts` `scopeTranscripts`).
 
 ## Consumer rules
 
@@ -190,6 +205,14 @@ rendered for anyone. A tab bar must be self-sufficient from its own query.
 ## Scoped-list RPCs — hand-written from a template, not generated
 
 A list surface that pages server-side gets its own `<feature>_list_scoped` RPC.
+
+**The contract every family carries:** `p_scope` accepts `'all'` (rows deduped by id);
+`p_org_id` is the organization filter and narrows EVERY lane; `*_scope_counts` takes
+`p_org_id uuid DEFAULT NULL`, returns an `all` row, is `SECURITY INVOKER`, and derives every total
+from the list function (one call per lane with `p_org_id` NULL, grouped by organization) so a count
+can never exceed what the list shows. Its per-organization option rows ignore `p_org_id`, so every
+organization stays in the dropdown while one is chosen. Worked reference: `public.agx_list_scoped`
++ `public.agx_list_scope_counts` (live).
 
 > **Copy from the LIVE function, not the migration file (2026-09-27).** The
 > reference migration files predate the equal-organizations ruling and still
@@ -275,6 +298,13 @@ Invariants the template carries, all of them learned the hard way:
     which belongs to the access resolver, not to any one list.
 
 ## Change log
+
+- 2026-09-30 — **Two axes.** New lane `all` (the default; knob `lists.landing_tab` platform value `all`
+  on every type). The organization filter is its own axis: `EntityListQuery.orgId`, `?org_filter=`,
+  `p_org_id` on every lane and the counts; `orgs` / `team` no longer carry an organization id and
+  `scopeOrgId` is gone (`listOrgParam(query)` replaces it). Knob `lists.org_filter` decides whether a
+  list offers the filter. `agx_list_scoped` / `agx_list_scope_counts` converted; every `*_list_scoped`
+  client call migrated.
 
 - 2026-09-29 — **Where a list opens is its own knob, never its visibility.** `resolveListScope` (and so every `registryToken` list, `defaultListFilter`, `defaultListScopeFor`) now resolves the Feature Knob `lists.landing_tab/<token>` (`mine` | `organization`; organization and person may override) through `lib/list-scope` `resolveListScope` and the one knob snapshot; it no longer derives from `access.shown_to_default`. Each of the 580 rows was seeded once from the old derivation, so nothing moved except flashcard decks (`fc_set`) and quizzes/practice tests (`assessment`), which open on Mine while their visibility default stays "everyone" (Arman 2026-09-29: never tighten a visibility default to change a tab). A URL-carried or clicked scope still wins. Test: `lib/list-scope/__tests__/defaultListFilter.test.ts` (red on the old reader, green now).
 - 2026-09-28 — Invariants 10 and 11 (lane-only Shown-to context, cross-token

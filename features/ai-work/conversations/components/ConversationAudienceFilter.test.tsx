@@ -40,6 +40,7 @@ function makeList(
   return {
     query: {
       scope: { kind: "mine" },
+      orgId: null,
       search: "",
       deep: false,
       archived: "active",
@@ -59,6 +60,7 @@ function makeList(
     isFetching: false,
     error: null,
     setScope: jest.fn(),
+    setOrgId: jest.fn(),
     setFilters: jest.fn(),
     setSearch: jest.fn(),
     setDeep: jest.fn(),

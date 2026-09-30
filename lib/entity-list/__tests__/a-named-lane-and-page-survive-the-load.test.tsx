@@ -47,7 +47,7 @@ jest.mock("@/lib/list-scope", () => {
     ...actual,
     defaultListScopeFor: () =>
       new Promise((resolve) =>
-        setTimeout(() => resolve({ kind: "orgs", organizationId: null }), 120),
+        setTimeout(() => resolve({ kind: "orgs" }), 120),
       ),
   };
 });

@@ -40,6 +40,7 @@ function makeListController(): EntityListSurfaceController<AgentBrowseRow> {
       pageSize: 25,
     },
     setScope: jest.fn(),
+    setOrgId: jest.fn(),
     setFilters: jest.fn(),
     setSearch: jest.fn(),
     setDeep: jest.fn(),
@@ -83,7 +84,7 @@ describe("Agents Hub canonical list surface", () => {
 
     expect(list.patchQuery).toHaveBeenCalledWith({
       search: "planning",
-      scope: { kind: "orgs", organizationId: null },
+      scope: { kind: "orgs" },
       archived: "all",
       filters: {
         category: { kind: "select", values: ["Analysis"] },

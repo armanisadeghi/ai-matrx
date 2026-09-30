@@ -878,7 +878,10 @@ export function EntityListPage<TRow>({
           </div>
         )}
         <div className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
-          <div className="min-w-0 flex-1 sm:flex-none">
+          {/* On a phone the lane select keeps its words and the organization
+              filter takes what is left (it truncates); wider, the tabs take the
+              room and scroll sideways before the filter or the actions are cut. */}
+          <div className="min-w-0 max-sm:flex-none sm:flex-1">
             {scopeTabs && (
             <EntityScopeTabs
               scope={list.query.scope}
@@ -897,7 +900,7 @@ export function EntityListPage<TRow>({
           </div>
           {/* A narrowing the address carries is always visible and clearable, knob or not. */}
           {(orgFilterOffered || Boolean(list.query.orgId)) && (
-            <div className="flex shrink-0 items-center sm:ml-auto">
+            <div className="flex min-w-0 items-center max-sm:flex-1 sm:ml-auto sm:shrink-0">
               <EntityOrgFilter
                 orgId={list.query.orgId}
                 onChange={list.setOrgId}

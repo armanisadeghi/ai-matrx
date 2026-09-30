@@ -67,7 +67,7 @@ function render(
       <EntityFilterPanel
         query={{
           ...DEFAULT_ENTITY_LIST_QUERY,
-          scope: { kind: "orgs", organizationId: null },
+          scope: { kind: "orgs" },
         }}
         facets={EMPTY_FACETS}
         columns={[]}

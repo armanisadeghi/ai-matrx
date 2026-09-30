@@ -43,6 +43,7 @@ const ROWS: Row[] = Array.from({ length: 50 }, (_, i) => ({ id: `row-${i}` }));
 
 const QUERY: EntityListQuery = {
   scope: { kind: "mine" },
+  orgId: null,
   search: "",
   deep: false,
   archived: "active",

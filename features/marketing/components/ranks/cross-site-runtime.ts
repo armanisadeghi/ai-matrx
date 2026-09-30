@@ -11,6 +11,7 @@ let snapshot: RuntimeSnapshot = {
   total: 0,
   query: {
     scope: { kind: "mine" },
+    orgId: null,
     search: "",
     deep: false,
     archived: "active",
