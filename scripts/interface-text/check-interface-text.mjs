@@ -333,9 +333,18 @@ export function scanSource(file, source) {
   };
   visit(sf);
 
-  // Collapse duplicate (same line + rule) findings.
+  // Collapse duplicates: same line + rule, or the same text + rule within 3 lines (a string that
+  // wraps across source lines, or the same sentence as visible text and its title attribute —
+  // round-2 review counted 5 such double findings).
   const seen = new Set();
-  return findings.filter((f) => { const k = `${f.line}:${f.rule}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  const recent = [];
+  return findings.filter((f) => {
+    const k = `${f.line}:${f.rule}`;
+    if (seen.has(k)) return false;
+    if (recent.some((r) => r.rule === f.rule && r.text === f.text && Math.abs(r.line - f.line) <= 3)) return false;
+    seen.add(k); recent.push(f);
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------------------
