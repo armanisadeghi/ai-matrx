@@ -319,7 +319,7 @@ export async function loadLocalWindowWorkspace(
   });
   const idbRecord = await Promise.race([
     idbRead,
-    budget.expired.then(() => timeout),
+    budget.expired.then((): typeof timeout => timeout),
   ]);
   budget.cancel();
   if (idbRecord === timeout) {
