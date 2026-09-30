@@ -32,30 +32,6 @@
       "shapeAllow": [],
       "shapeCensus": [
         {
-          "file": "app/(core)/code/page.tsx",
-          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
-        },
-        {
-          "file": "components/official/entity-ref/doors.ts",
-          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
-        },
-        {
-          "file": "features/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
-          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
-        },
-        {
-          "file": "features/marketing/data/analysis-query.ts",
-          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
-        },
-        {
-          "file": "features/marketing/data/integrations-schema.ts",
-          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
-        },
-        {
-          "file": "features/rag/components/hit-card/adapters.ts",
-          "reason": "Contract NO kit export carries: version [1-8] + variant [89ab] (RFC 9562: accepts v6/v7/v8, rejects the nil UUID). isUuidShape would widen it (nil, any version) and isRfc4122Uuid would narrow it (rejects v6-v8). Blocked on a kit option for the RFC 9562 predicate; 8 sites across matrx-frontend and matrx-extend need it."
-        },
-        {
           "file": "app/(public)/free/uuid/generator/page.tsx",
           "reason": "Contract NO kit export carries: version 4 only + variant [89ab]. This is the public UUID-generator tool validating the v4 ids it just minted; isUuidShape would accept any version and isRfc4122Uuid any of v1-v5. Blocked on a kit version option; one site today."
         }
