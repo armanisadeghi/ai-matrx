@@ -48,6 +48,22 @@ const KIT_ARTIFACT_TYPES = [
   "note",
 ] as const;
 
+/** Entity types that can already be the anchor for a source-backed kit. */
+export const MANUAL_KIT_SOURCE_TYPES = [
+  "file",
+  "note",
+  "processed_document",
+  "fc_set",
+  "assessment",
+  "conversation",
+] as const;
+
+export type ManualKitSourceType = (typeof MANUAL_KIT_SOURCE_TYPES)[number];
+
+export function isManualKitSourceType(value: string): value is ManualKitSourceType {
+  return (MANUAL_KIT_SOURCE_TYPES as readonly string[]).includes(value);
+}
+
 /** Page size for the artifact scan. PostgREST caps a bare select at 1000, so
  *  this stays well under it and the read PAGES to exhaustion instead. */
 const KIT_SCAN_PAGE = 500;
@@ -558,20 +574,25 @@ export async function deleteKit(kit: StudyKit, expectedFingerprint = kitMembersh
   }
 }
 
-/** Attach existing library aids to one saved file, creating a manual kit without a new record type. */
+/** Attach existing library aids to a source-backed kit without a new record type. */
 export async function createManualKit(input: {
   sourceId: string;
+  sourceType?: ManualKitSourceType;
   title: string;
   artifacts: readonly EducationLibraryRow[];
   allowExisting?: boolean;
   expectedFingerprint?: string;
 }): Promise<void> {
   let sourceTitle = writableTitle(input.title);
-  if (!input.sourceId) throw new Error("Choose the saved file for this kit.");
+  const sourceType = input.sourceType ?? "file";
+  if (!input.sourceId) throw new Error("Choose the saved source for this kit.");
   if (!input.artifacts.length) throw new Error("Choose at least one saved study aid.");
-  await getFileMetadata(input.sourceId);
-  const existing = await readKit("file", input.sourceId);
-  if (existing && !input.allowExisting) throw new Error(`This file already has a study kit. Open ${kitHref("file", input.sourceId)} to add or manage its aids.`);
+  const existing = await readKit(sourceType, input.sourceId);
+  if (!existing && sourceType !== "file") {
+    throw new Error("Only a saved file can start a new manual study kit. Open an existing kit to add saved aids.");
+  }
+  if (sourceType === "file") await getFileMetadata(input.sourceId);
+  if (existing && !input.allowExisting) throw new Error(`This source already has a study kit. Open ${kitHref(sourceType, input.sourceId)} to add or manage its aids.`);
   if (input.allowExisting) {
     if (!existing) throw new Error("This kit is no longer available. Reload before adding saved aids.");
     if (!input.expectedFingerprint) throw new Error("This kit is still loading. Wait for its membership revision before adding aids.");
@@ -593,7 +614,7 @@ export async function createManualKit(input: {
     const result = await associationsService.add({
       sourceType: artifact.kind,
       sourceId: artifact.id,
-      targetType: "file",
+      targetType: sourceType,
       targetId: input.sourceId,
       // Manual grouping is membership, never generated-from provenance.
       metadata: { educationKit: true, targetKind, href: educationLibraryHref(artifact), kitTitle: sourceTitle },

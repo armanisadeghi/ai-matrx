@@ -395,12 +395,22 @@ export function KitHub({
             <p className="text-sm text-muted-foreground">
               This material has no study kit grouping yet.
             </p>
-            <Button asChild size="sm" className="gap-1.5">
-              <Link href="/education/kits/new" data-tap-target>
-                <AGENT_ICON className="h-4 w-4" />
-                Create a study kit
-              </Link>
-            </Button>
+            {sourceType === "file" ? (
+              <Button asChild size="sm" className="gap-1.5">
+                <Link href={`/education/kits/new?source=${encodeURIComponent(sourceId)}`} data-tap-target>
+                  <AGENT_ICON className="h-4 w-4" />
+                  Create a study kit from this material
+                </Link>
+              </Button>
+            ) : (
+              <MakeMoreFromKit
+                sourceType={sourceType}
+                sourceId={sourceId}
+                kitTitle=""
+                addTarget={addTarget}
+                onConverted={() => setRefreshKey((key) => key + 1)}
+              />
+            )}
           </div>
         </div>
       </>
@@ -515,7 +525,7 @@ export function KitHub({
             addTarget={addTarget}
             onConverted={() => setRefreshKey((key) => key + 1)}
           />
-          <Button asChild variant="outline" size="sm"><Link href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}`}>Add saved aid</Link></Button>
+          <Button asChild variant="outline" size="sm"><Link href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}&from=${encodeURIComponent(kit.sourceType)}`}>Add saved aid</Link></Button>
           <Button
             variant="outline"
             size="sm"

@@ -35,6 +35,7 @@ import type { GeneratedArtifact } from "@/features/education/convert/lineage";
 import type { EducationLibraryRow } from "@/features/education/library/types";
 import {
   createManualKit,
+  isManualKitSourceType,
   kitMembershipFingerprint,
   removeKitMember,
   renameKit,
@@ -124,6 +125,11 @@ describe("manual kit service writes", () => {
     mockRemove.mockResolvedValue({ ok: true, data: null });
   });
 
+  it("recognizes every supported source-backed kit anchor", () => {
+    expect(["file", "note", "processed_document", "fc_set", "assessment", "conversation"].every(isManualKitSourceType)).toBe(true);
+    expect(isManualKitSourceType("url")).toBe(false);
+  });
+
   it("creates manual membership without forging source lineage or artifact title metadata", async () => {
     await createManualKit({
       sourceId: "file-1",
@@ -159,6 +165,43 @@ describe("manual kit service writes", () => {
         artifacts: [libraryRow()],
       }),
     ).rejects.toThrow(/already has a study kit/);
+    expect(mockAdd).not.toHaveBeenCalled();
+  });
+
+  it("adds membership to an existing non-file kit without validating it as a file", async () => {
+    const existing = generatedArtifact({
+      edgeId: "note-source-edge",
+      sourceTitle: "Lecture notes kit",
+    });
+    mockListGeneratedFrom.mockResolvedValue([existing]);
+
+    await createManualKit({
+      sourceId: "note-1",
+      sourceType: "note",
+      title: "Ignored while adding aids",
+      artifacts: [libraryRow()],
+      allowExisting: true,
+      expectedFingerprint: kitMembershipFingerprint({ artifacts: [existing] }),
+    });
+
+    expect(mockGetFileMetadata).not.toHaveBeenCalled();
+    expect(mockAdd).toHaveBeenCalledWith(expect.objectContaining({
+      targetType: "note",
+      targetId: "note-1",
+      role: "member",
+      metadata: expect.objectContaining({ kitTitle: "Lecture notes kit" }),
+    }));
+  });
+
+  it("refuses a non-file source that does not already have a kit", async () => {
+    await expect(createManualKit({
+      sourceId: "note-1",
+      sourceType: "note",
+      title: "New note kit",
+      artifacts: [libraryRow()],
+    })).rejects.toThrow(/Only a saved file can start/);
+
+    expect(mockGetFileMetadata).not.toHaveBeenCalled();
     expect(mockAdd).not.toHaveBeenCalled();
   });
 
