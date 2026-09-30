@@ -199,13 +199,12 @@ create temp table all_scopes on commit drop as
     join custom.record r on r.organization_id = t.org and r.table_id = t.id and r.deleted_at is null;
 create temp table oracle on commit drop as
   select p.id as person,
-         (select count(*) from unnest(custom.seen_among(p.id, a.ids)) x
-           where not coalesce((l.lv -> x::text ->> 's')::boolean, false)) as extra,
-         (select count(*) from jsonb_each(l.lv) e
-           where (e.value ->> 's')::boolean and not (e.key::uuid = any (custom.seen_among(p.id, a.ids)))) as missing,
+         (select count(*) from unnest(sa.seen) x where not coalesce((l.lv -> x::text ->> 's')::boolean, false)) as extra,
+         (select count(*) from jsonb_each(l.lv) e where (e.value ->> 's')::boolean and not (e.key::uuid = any (sa.seen))) as missing,
          (select count(*) from jsonb_each(l.lv) e where (e.value ->> 's')::boolean) as seen
     from oracle_people p cross join all_scopes a
-    cross join lateral (select custom.levels_of(p.id, a.ids) as lv) l;
+    cross join lateral (select custom.levels_of(p.id, a.ids) as lv) l
+    cross join lateral (select custom.seen_among(p.id, a.ids) as seen) sa;
 insert into verdict
 select 'B', coalesce(sum(extra + missing), 0) = 0,
        format('%s people x %s scopes, %s (person, scope) pairs seen by levels_of, %s differ',
