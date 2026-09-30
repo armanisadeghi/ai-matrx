@@ -51,7 +51,10 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { Json } from "@/types/database.types";
 import type { ResearchTemplate, AutonomyLevel } from "../types";
@@ -128,7 +131,9 @@ export const RESEARCH_TEMPLATES_COVERAGE = {
  * five rows on screen, the strip said the total was unknown). No second
  * query, no client-side cap guess — just the length of what was already read.
  */
-export function researchTemplatesCoverage(templates: readonly ResearchTemplate[]) {
+export function researchTemplatesCoverage(
+  templates: readonly ResearchTemplate[],
+) {
   return { ...RESEARCH_TEMPLATES_COVERAGE, total: templates.length };
 }
 
@@ -152,7 +157,11 @@ export const RESEARCH_TEMPLATE_COLUMNS: MatrxColumnDef<ResearchTemplate>[] = [
     filter: "text",
     width: 220,
     cell: (template) => (
-      <EntityRef token="research_template" id={template.id} name={template.name} />
+      <EntityRef
+        token="research_template"
+        id={template.id}
+        name={template.name}
+      />
     ),
   },
   {
@@ -280,6 +289,31 @@ export const RESEARCH_TEMPLATE_COLUMNS: MatrxColumnDef<ResearchTemplate>[] = [
     hidden: true,
   },
 ];
+
+const researchTemplatesCopy: MatrxDataTableCopyConfig<ResearchTemplate> = {
+  label: "Research template",
+  listLabel: "Research templates (this view)",
+  location: "AI Matrx Admin — Research Templates",
+  rowKind: "research-template",
+  listKind: "research-templates",
+  rowDescription: "A single research template and its configured defaults.",
+  listDescription:
+    "Research templates currently shown after canonical table filters.",
+  humanRow: (template) =>
+    [
+      `Name: ${template.name}`,
+      `Description: ${template.description ?? "No description"}`,
+      `Type: ${template.is_system ? "System" : "Custom"}`,
+      `Autonomy: ${template.autonomy_level}`,
+      `Agent wiring: ${researchTemplateWiringCount(template)}/${AGENT_CONFIG_KEYS.length}`,
+    ].join("\n"),
+  agentRow: (template) => template,
+  rowAttributes: (template) => ({
+    id: template.id,
+    is_system: template.is_system,
+    autonomy_level: template.autonomy_level,
+  }),
+};
 
 function TemplateConfiguration({
   template,
@@ -909,12 +943,17 @@ export function TemplatesManager() {
                 />
               ),
             }}
-            copy={false}
+            copy={researchTemplatesCopy}
             detail={{ enabled: false }}
             window={{ enabled: false }}
             coverage={researchTemplatesCoverage(templates)}
-            read={readOf({ loading, error: loadError }, { what: "research templates", onRetry: () => void loadData() })}
-            emptyState={{ title: "No templates yet. Create one to get started." }}
+            read={readOf(
+              { loading, error: loadError },
+              { what: "research templates", onRetry: () => void loadData() },
+            )}
+            emptyState={{
+              title: "No templates yet. Create one to get started.",
+            }}
             rowActions={(template) => (
               <TemplateRowActions
                 template={template}
@@ -995,7 +1034,9 @@ export function TemplatesManager() {
               <AlertDialogTitle>Delete Template</AlertDialogTitle>
               <AlertDialogDescription>
                 {archiveConfirmSentence(
-                  deleteTarget?.name ? `\u201c${deleteTarget.name}\u201d` : "the template",
+                  deleteTarget?.name
+                    ? `\u201c${deleteTarget.name}\u201d`
+                    : "the template",
                 )}{" "}
                 Existing projects using this template will not be affected.
               </AlertDialogDescription>

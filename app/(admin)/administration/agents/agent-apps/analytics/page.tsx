@@ -15,26 +15,18 @@
  */
 
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Activity,
-  CheckCircle,
-  Clock,
-  Gauge,
-  Users,
-} from "lucide-react";
+import { Activity, CheckCircle, Clock, Gauge, Users } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import {
   fetchAgentAppsAdmin,
@@ -45,7 +37,14 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
-import { UNKNOWN_DISPLAY, formatCount, formatDurationMs, formatPercentFromFraction, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
+import {
+  UNKNOWN_DISPLAY,
+  formatCount,
+  formatDurationMs,
+  formatPercentFromFraction,
+  isKnownNumber,
+  safeRatio,
+} from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -55,7 +54,10 @@ import {
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 import { readOf } from "@/components/read-state/ReadGate";
 
-export const ANALYTICS_COVERAGE = { noun: "app", answeredBy: "client" } as const;
+export const ANALYTICS_COVERAGE = {
+  noun: "app",
+  answeredBy: "client",
+} as const;
 
 export function analyticsSlugDisplay(slug: string): string {
   return isUuidValue(slug) ? slug.slice(0, 8) : slug;
@@ -151,7 +153,10 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
         fallback: UNKNOWN_DISPLAY,
       }),
   },
-  ...adminCostColumns<AgentAppAdminView>({ id: "cost", value: (app) => app.total_cost }),
+  ...adminCostColumns<AgentAppAdminView>({
+    id: "cost",
+    value: (app) => app.total_cost,
+  }),
   {
     id: "tokens",
     header: "Tokens",
@@ -171,7 +176,10 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     mobileHidden: true,
     cell: (app) =>
       app.last_execution_at ? (
-        <time dateTime={app.last_execution_at} className="text-xs text-muted-foreground">
+        <time
+          dateTime={app.last_execution_at}
+          className="text-xs text-muted-foreground"
+        >
           {new Date(app.last_execution_at).toLocaleString()}
         </time>
       ) : (
@@ -215,12 +223,35 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
   },
 ];
 
+const analyticsCopy: MatrxDataTableCopyConfig<AgentAppAdminView> = {
+  label: "App performance",
+  listLabel: "App performance (this view)",
+  location: "AI Matrx Admin — Agent Apps — Analytics",
+  rowKind: "agent-app",
+  listKind: "agent-apps",
+  rowDescription: "A single app's performance metrics.",
+  listDescription:
+    "Per-app performance aggregates currently shown after canonical table filters.",
+  humanRow: humanAgentApp,
+  listHuman: (visibleApps) => visibleApps.map(humanAgentApp).join("\n\n"),
+  listJson: (visibleApps) => visibleApps,
+  listAgent: (visibleApps, allApps) => ({
+    kind: "agent-apps",
+    location: "AI Matrx Admin — Agent Apps — Analytics",
+    description:
+      "Per-app performance aggregates currently shown after canonical table filters.",
+    data: visibleApps,
+    attributes: { count: visibleApps.length, totalCount: allApps.length },
+  }),
+  agentRow: (app) => app,
+  rowAttributes: (app) => ({ id: app.id, status: app.status }),
+};
+
 export default function AgentAppsAnalyticsPage() {
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [viewApps, setViewApps] = useState<AgentAppAdminView[]>([]);
   const { toast } = useToast();
   const formatCostDisplay = formatAdminCost;
   const tableQuery = useTableUrlState({
@@ -238,7 +269,6 @@ export default function AgentAppsAnalyticsPage() {
       // rather than a convenient but incomplete first page.
       const data = await fetchAgentAppsAdmin();
       setApps(data);
-      setViewApps(data);
       setLoadError(null);
     } catch (error) {
       console.error("Error loading agent-app analytics:", error);
@@ -336,11 +366,11 @@ export default function AgentAppsAnalyticsPage() {
   const overallSuccessRate = useMemo(() => {
     const measured = apps.filter(
       (app) =>
-        isKnownNumber(app.success_rate) &&
-        isKnownNumber(app.total_executions),
+        isKnownNumber(app.success_rate) && isKnownNumber(app.total_executions),
     );
     const weightedSum = measured.reduce(
-      (sum, app) => sum + (app.success_rate as number) * (app.total_executions as number),
+      (sum, app) =>
+        sum + (app.success_rate as number) * (app.total_executions as number),
       0,
     );
     const denominator = measured.reduce(
@@ -400,151 +430,134 @@ export default function AgentAppsAnalyticsPage() {
         })
       }
     >
-    <div className="flex flex-col h-full w-full bg-textured overflow-hidden">
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <OverviewCard
-              icon={<Activity className="w-4 h-4 text-blue-600" />}
-              label="Total Executions"
-              value={`${executionsPartial.prefix}${formatCount(totals.totalExecutions)}`}
-              sub={
-                executionsPartial.caveat ??
-                "Measured execution total"
-              }
-              copyLabel="Total executions"
-              copyAgent={() => ({
-                kind: "agent-app-analytics-stat",
-                location: "AI Matrx Admin — Agent Apps — Analytics",
-                description: "The total-executions stat card.",
-                data: {
-                  totalExecutions: totals.totalExecutions,
-                  appCount: apps.length,
-                  appsMissingExecutions: totals.appsMissingExecutions,
-                },
-              })}
-            />
-            <OverviewCard
-              icon={<Users className="w-4 h-4 text-purple-600" />}
-              label="Unique Users"
-              value={`${usersPartial.prefix}${formatCount(totals.totalUniqueUsers)}`}
-              sub={usersPartial.caveat ?? "All identified callers"}
-              copyLabel="Unique users"
-              copyAgent={() => ({
-                kind: "agent-app-analytics-stat",
-                location: "AI Matrx Admin — Agent Apps — Analytics",
-                description: "The unique-users stat card.",
-                data: { totalUniqueUsers: totals.totalUniqueUsers },
-              })}
-            />
-            <OverviewCard
-              icon={<CheckCircle className="w-4 h-4 text-green-600" />}
-              label="Success Rate"
-              value={formatPercentFromFraction(overallSuccessRate, { digits: 2 })}
-              sub={successRatePartial.caveat ?? "Execution-weighted average"}
-              copyLabel="Success rate"
-              copyAgent={() => ({
-                kind: "agent-app-analytics-stat",
-                location: "AI Matrx Admin — Agent Apps — Analytics",
-                description: "The execution-weighted success-rate stat card.",
-                data: {
-                  overallSuccessRate:
-                    overallSuccessRate === null
-                      ? null
-                      : overallSuccessRate * 100,
-                  appsMissingSuccessRate: apps.length - measuredSuccessCount,
-                },
-              })}
-            />
-            <OverviewCard
-              icon={<Gauge className="w-4 h-4 text-green-600" />}
-              label="Total Cost"
-              value={`${costPartial.prefix}${formatCostDisplay(totals.totalCost)}`}
-              sub={[
-                `${tokensPartial.prefix}${formatCount(totals.totalTokens)} tokens`,
-                costPartial.caveat,
-                tokensPartial.caveat,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              copyLabel="Total cost"
-              copyAgent={() => ({
-                kind: "agent-app-analytics-stat",
-                location: "AI Matrx Admin — Agent Apps — Analytics",
-                description: "The total-cost stat card.",
-                data: {
-                  totalCost: totals.totalCost,
-                  totalTokens: totals.totalTokens,
-                  appsMissingCost: totals.appsMissingCost,
-                  appsMissingTokens: totals.appsMissingTokens,
-                },
-              })}
-            />
-          </div>
+      <div className="flex flex-col h-full w-full bg-textured overflow-hidden">
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <OverviewCard
+                icon={<Activity className="w-4 h-4 text-blue-600" />}
+                label="Total Executions"
+                value={`${executionsPartial.prefix}${formatCount(totals.totalExecutions)}`}
+                sub={executionsPartial.caveat ?? "Measured execution total"}
+                copyLabel="Total executions"
+                copyAgent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Analytics",
+                  description: "The total-executions stat card.",
+                  data: {
+                    totalExecutions: totals.totalExecutions,
+                    appCount: apps.length,
+                    appsMissingExecutions: totals.appsMissingExecutions,
+                  },
+                })}
+              />
+              <OverviewCard
+                icon={<Users className="w-4 h-4 text-purple-600" />}
+                label="Unique Users"
+                value={`${usersPartial.prefix}${formatCount(totals.totalUniqueUsers)}`}
+                sub={usersPartial.caveat ?? "All identified callers"}
+                copyLabel="Unique users"
+                copyAgent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Analytics",
+                  description: "The unique-users stat card.",
+                  data: { totalUniqueUsers: totals.totalUniqueUsers },
+                })}
+              />
+              <OverviewCard
+                icon={<CheckCircle className="w-4 h-4 text-green-600" />}
+                label="Success Rate"
+                value={formatPercentFromFraction(overallSuccessRate, {
+                  digits: 2,
+                })}
+                sub={successRatePartial.caveat ?? "Execution-weighted average"}
+                copyLabel="Success rate"
+                copyAgent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Analytics",
+                  description: "The execution-weighted success-rate stat card.",
+                  data: {
+                    overallSuccessRate:
+                      overallSuccessRate === null
+                        ? null
+                        : overallSuccessRate * 100,
+                    appsMissingSuccessRate: apps.length - measuredSuccessCount,
+                  },
+                })}
+              />
+              <OverviewCard
+                icon={<Gauge className="w-4 h-4 text-green-600" />}
+                label="Total Cost"
+                value={`${costPartial.prefix}${formatCostDisplay(totals.totalCost)}`}
+                sub={[
+                  `${tokensPartial.prefix}${formatCount(totals.totalTokens)} tokens`,
+                  costPartial.caveat,
+                  tokensPartial.caveat,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                copyLabel="Total cost"
+                copyAgent={() => ({
+                  kind: "agent-app-analytics-stat",
+                  location: "AI Matrx Admin — Agent Apps — Analytics",
+                  description: "The total-cost stat card.",
+                  data: {
+                    totalCost: totals.totalCost,
+                    totalTokens: totals.totalTokens,
+                    appsMissingCost: totals.appsMissingCost,
+                    appsMissingTokens: totals.appsMissingTokens,
+                  },
+                })}
+              />
+            </div>
 
-          {/* The analytics read's failure is said once, by the table (read=). */}
-          <div className="min-h-[32rem]">
-            <MatrxDataTable<AgentAppAdminView>
-              tableId="admin-agent-apps-analytics"
-              data={apps}
-              columns={ANALYTICS_COLUMNS}
-              getRowId={(app) => app.id}
-              isLoading={loading}
-              isFetching={refreshing}
-              stickyHeader
-              pageSize={50}
-              localPagination={{ mode: "numbered", reason: "App analytics keeps exact page sizes and stable canonical footer controls.", approvedBy: "Arman, September 27 2026 footer rule" }}
-              query={{ mode: "controlled-local", state: tableQuery.state, onStateChange: tableQuery.onStateChange }}
-              coverage={{ ...ANALYTICS_COVERAGE, total: apps.length }}
-              toolbar={{
-                title: "App performance",
-                search: true,
-                searchPlaceholder: "Search app analytics…",
-                refresh: { onRefresh: loadData, label: "Refresh app analytics" },
-                actions: viewApps.length > 0 ? (
-                  <CopyButtons
-                    size="icon"
-                    // read-gate-exempt: copy-button label counting rows the table is showing now; rendered only when there are some
-                    label={`App performance (${viewApps.length})`}
-                    human={() => viewApps.map(humanAgentApp).join("\n\n")}
-                    json={() => viewApps}
-                    agent={() => ({
-                      kind: "agent-apps",
-                      location: "AI Matrx Admin — Agent Apps — Analytics",
-                      description: "Per-app performance aggregates currently shown after canonical table filters.",
-                      data: viewApps,
-                      attributes: { count: viewApps.length, totalCount: apps.length },
-                    })}
-                  />
-                ) : undefined,
-              }}
-              detail={{ enabled: false }}
-              window={{ enabled: false }}
-              copy={false}
-              read={readOf({ loading, error: loadError }, { what: "app analytics", onRetry: () => void loadData() })}
-              emptyState={{ title: "No app analytics match the current view." }}
-              onViewChange={setViewApps}
-              rowActions={(app) => (
-                <CopyButtons
-                  size="xs"
-                  label={app.name}
-                  human={() => humanAgentApp(app)}
-                  json={() => app}
-                  agent={() => ({
-                    kind: "agent-app",
-                    location: "AI Matrx Admin — Agent Apps — Analytics",
-                    description: "A single app's performance metrics.",
-                    data: app,
-                    summary: humanAgentApp(app),
-                    attributes: { id: app.id, status: app.status },
-                  })}
-                />
-              )}
-            />
+            {/* The analytics read's failure is said once, by the table (read=). */}
+            <div className="min-h-[32rem]">
+              <MatrxDataTable<AgentAppAdminView>
+                tableId="admin-agent-apps-analytics"
+                data={apps}
+                columns={ANALYTICS_COLUMNS}
+                getRowId={(app) => app.id}
+                isLoading={loading}
+                isFetching={refreshing}
+                stickyHeader
+                pageSize={50}
+                localPagination={{
+                  mode: "numbered",
+                  reason:
+                    "App analytics keeps exact page sizes and stable canonical footer controls.",
+                  approvedBy: "Arman, September 27 2026 footer rule",
+                }}
+                query={{
+                  mode: "controlled-local",
+                  state: tableQuery.state,
+                  onStateChange: tableQuery.onStateChange,
+                }}
+                coverage={{ ...ANALYTICS_COVERAGE, total: apps.length }}
+                toolbar={{
+                  title: "App performance",
+                  search: true,
+                  searchPlaceholder: "Search app analytics…",
+                  refresh: {
+                    onRefresh: loadData,
+                    label: "Refresh app analytics",
+                  },
+                }}
+                detail={{ enabled: false }}
+                window={{ enabled: false }}
+                copy={analyticsCopy}
+                read={readOf(
+                  { loading, error: loadError },
+                  { what: "app analytics", onRetry: () => void loadData() },
+                )}
+                emptyState={{
+                  title: "No app analytics match the current view.",
+                }}
+              />
+            </div>
           </div>
-        </div>
-      </ScrollArea>
-    </div>
+        </ScrollArea>
+      </div>
     </SurfaceRuntimeProvider>
   );
 }
