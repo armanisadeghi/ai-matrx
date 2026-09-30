@@ -62,7 +62,14 @@ This feature owns no database tables. It composes content originating elsewhere 
 
 ### 1. Inline action bar on a chat assistant message
 
-> **Observed 2026-09-21 (Claude, notes-print session):** this is NOT what the code does today. `AssistantActionBar.tsx` renders `MessageOptionsMenu` → `messageActionRegistry.ts` (51 items, its own registry); nothing under `features/agents/components/messages-display/` imports `RichDocument`. Chat and RichDocument share only leaf utilities (`printMarkdownContent`, copy helpers). Moving the live chat bar onto `source: chat-message` is the open consolidation — until then labels and options drift (the `print` label just had to be re-aligned by hand).
+> **Resolved 2026-09-30 (Claude).** The 2026-09-21 note here said the live chat bar did NOT
+> use this registry and that moving it over was the open consolidation. RC-B6 did exactly that:
+> `messageActionRegistry.ts` is deleted, `AssistantMessageFooter.tsx` renders
+> `RichDocumentActions`, and all fourteen chat-only actions now have handlers here. Parity is
+> pinned by `actions/__tests__/chatActionParity.test.ts` (92 assertions: every former chat key
+> resolves AND its menu row runs that registry handler with the chat-message source).
+> Announcements and Preferences were deliberately NOT ported — they are app navigation and live
+> in the user menu (ALC-15, CONTRACT A3). The paragraph below is now accurate.
 
 **Trigger** — `AgentAssistantMessage.tsx` mounts a `<RichDocument actionsVariant="bar" source={{type:"chat-message", messageId, conversationId}}/>` under an assistant turn after `isStreamActive` flips false.
 
