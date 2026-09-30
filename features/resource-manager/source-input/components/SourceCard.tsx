@@ -48,7 +48,6 @@ import { factsPollDelayMs } from "@/features/sources/sourceRows";
 import { sourceHref } from "@/features/sources/api/sourcesApi";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
-import { asClause } from "@/lib/text/asClause";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { sourceKindDef, sourceKindIcon, sourceKindNoun } from "../sourceKinds";
 import {
@@ -534,8 +533,11 @@ function ProcessingLine({
         <p className="flex items-start gap-2 text-xs text-warning">
           <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            {asClause(entry.state_detail ?? "Still being cleaned — the raw text is used until the clean version is ready")}.
-            {progress ? <span className="text-muted-foreground"> Done so far: {asClause(progress)}.</span> : null}
+            {/* R9: short, plain; a stage list only once a stage is done ("Starting" said nothing). */}
+            {entry.state_detail ?? "Cleaning… using the raw text for now"}
+            {progress && !/^start/i.test(progress.trim()) ? (
+              <span className="text-muted-foreground"> · {progress}</span>
+            ) : null}
           </span>
         </p>
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-foreground sm:min-h-0">
