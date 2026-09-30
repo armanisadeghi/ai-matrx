@@ -38,6 +38,11 @@ import {
 } from "@ai-matrx/kit/url-state";
 
 import { useHrRequest } from "../shared/useHrRequest";
+import {
+  fanOutHr,
+  type HrRowEmployer,
+  type HrUnavailableEmployer,
+} from "../../shared/hrScope";
 
 import {
   HR_DIRECTORY_SORTS,
@@ -52,9 +57,20 @@ import type {
   HrDenied,
   HrDirectoryFilter,
   HrDirectoryPage,
+  HrDirectoryRow,
   HrDirectoryStatusRequest,
   HrFailed,
+  HrResult,
 } from "../../types";
+
+/** A directory row plus the employer it belongs to — the org is a column, never a group. */
+export type HrScopedDirectoryRow = HrDirectoryRow & { employer: HrRowEmployer };
+
+/** The directory page across every employer in scope (one employer → exactly that page). */
+export type HrScopedDirectoryPage = Omit<HrDirectoryPage, "rows"> & {
+  rows: HrScopedDirectoryRow[];
+  unavailable: HrUnavailableEmployer[];
+};
 
 // ── Column ids ⇄ door params ────────────────────────────────────────────────
 //
@@ -366,7 +382,7 @@ const COLUMN_WORDS: Record<string, string> = {
 // ── The fetch ───────────────────────────────────────────────────────────────
 
 export type HrDirectoryState = {
-  page: HrDirectoryPage | null;
+  page: HrScopedDirectoryPage | null;
   isLoading: boolean;
   isFetching: boolean;
   error: HrDenied | HrFailed | null;
@@ -380,6 +396,11 @@ function toFilter(
     hiredFrom: string | null;
     hiredTo: string | null;
     myEmploymentId: string | null;
+    /**
+     * Departments, locations, job titles and managers are ids INSIDE one employer. Across
+     * several employers they mean nothing, so they are not sent (the page says so).
+     */
+    perEmployerFilters: boolean;
   },
 ): HrDirectoryFilter {
   const select = (columnId: string): string[] => {
@@ -398,17 +419,19 @@ function toFilter(
   const statuses = asStatuses(select("directory_status"));
   if (statuses.length > 0) filter.status = statuses;
 
-  const [department] = select("department");
-  if (department) filter.department_id = department;
-  const [location] = select("location");
-  if (location) filter.location_id = location;
-  const [jobTitle] = select("job_title");
-  if (jobTitle) filter.job_title_id = jobTitle;
+  if (extras.perEmployerFilters) {
+    const [department] = select("department");
+    if (department) filter.department_id = department;
+    const [location] = select("location");
+    if (location) filter.location_id = location;
+    const [jobTitle] = select("job_title");
+    if (jobTitle) filter.job_title_id = jobTitle;
+  }
 
   const workerClass = asWorkerClass(select("worker_class")[0] ?? null);
   if (workerClass) filter.worker_class = workerClass;
 
-  const [manager] = select("manager_name");
+  const [manager] = extras.perEmployerFilters ? select("manager_name") : [];
   if (manager) filter.manager_employee_id = manager;
 
   // `my_team` is a SCOPE, not a column: the server resolves "reports to one of
@@ -435,54 +458,142 @@ export const HR_HIRE_RANGE_SERVER_FILTER_LIVE = false;
  * see `useHrRequest` for why a string, and not an object, is the honest dep.
  */
 type HrDirectoryRequest = {
-  organizationId: string;
+  /** Every employer the list reads. One → that employer's own page; several → merged. */
+  employers: HrRowEmployer[];
   filter: HrDirectoryFilter;
+  /** `my_team` is asked per employer (each has its own employment id for the viewer). */
+  myTeam: boolean;
+  myEmploymentByOrg: Record<string, string | null>;
   limit: number;
   offset: number;
   sort: HrDirectorySort;
   direction: "asc" | "desc";
 };
 
-/** Module-level, so the hook's dependency array holds a stable reference. */
-function runDirectory(args: HrDirectoryRequest) {
-  return fetchHrDirectory(args);
+function compareRows(
+  a: HrScopedDirectoryRow,
+  b: HrScopedDirectoryRow,
+  sort: HrDirectorySort,
+  direction: "asc" | "desc",
+): number {
+  const left = (a as Record<string, unknown>)[sort];
+  const right = (b as Record<string, unknown>)[sort];
+  const leftText = left == null ? null : String(left);
+  const rightText = right == null ? null : String(right);
+  // A missing value sorts last in either direction.
+  if (leftText === null && rightText === null) return 0;
+  if (leftText === null) return 1;
+  if (rightText === null) return -1;
+  const order = leftText.localeCompare(rightText, undefined, { numeric: true });
+  return direction === "asc" ? order : -order;
+}
+
+/**
+ * Module-level, so the hook's dependency array holds a stable reference.
+ *
+ * One employer asks the door for exactly the page the URL names. Several employers each
+ * return their first `offset + limit` rows in the requested order, and the page is cut
+ * from the merge — so `total` (the sum of each door's own full count), the order and the
+ * page boundaries stay true without any employer's rows being loaded whole.
+ */
+async function runDirectory(
+  args: HrDirectoryRequest,
+): Promise<HrResult<HrScopedDirectoryPage>> {
+  const merged = args.employers.length > 1;
+  const answer = await fanOutHr(args.employers, (organizationId) =>
+    fetchHrDirectory({
+      organizationId,
+      filter: args.myTeam
+        ? {
+            ...args.filter,
+            my_team: args.myEmploymentByOrg[organizationId] ?? "1",
+          }
+        : args.filter,
+      limit: merged ? args.offset + args.limit : args.limit,
+      offset: merged ? 0 : args.offset,
+      sort: args.sort,
+      direction: args.direction,
+    }),
+  );
+  if (!answer.ok) return answer;
+
+  const { parts, unavailable } = answer.data;
+  const rows: HrScopedDirectoryRow[] = parts
+    .flatMap(({ employer, data }) =>
+      data.rows.map((row) => ({ ...row, employer })),
+    )
+    .sort((a, b) => compareRows(a, b, args.sort, args.direction));
+
+  const first = parts[0].data;
+  const any = (pick: (p: HrDirectoryPage) => boolean) =>
+    parts.some((part) => pick(part.data));
+  const union = <T,>(pick: (p: HrDirectoryPage) => T[]): T[] => [
+    ...new Set(parts.flatMap((part) => pick(part.data))),
+  ];
+
+  return {
+    ok: true,
+    data: {
+      ...first,
+      rows: merged ? rows.slice(args.offset, args.offset + args.limit) : rows,
+      total: parts.reduce((sum, part) => sum + part.data.total, 0),
+      limit: args.limit,
+      offset: args.offset,
+      capabilities: union((p) => p.capabilities),
+      columns: {
+        hire_date: any((p) => p.columns.hire_date),
+        manager: any((p) => p.columns.manager),
+        worker_class: any((p) => p.columns.worker_class),
+        employment_detail: any((p) => p.columns.employment_detail),
+      },
+      statuses: {
+        allowed: union((p) => p.statuses.allowed),
+        default: union((p) => p.statuses.default),
+      },
+      unavailable,
+    },
+  };
 }
 
 export function useHrDirectory(args: {
-  organizationId: string | null;
+  /** Every employer the list reads — `useHrContext().scope.employers`. Empty → not ready. */
+  employers: readonly HrRowEmployer[];
   queryState: MatrxDataTableQueryState;
   myTeam: boolean;
   hiredFrom: string | null;
   hiredTo: string | null;
-  myEmploymentId: string | null;
+  myEmploymentByOrg: Record<string, string | null>;
 }): HrDirectoryState {
   const {
-    organizationId,
+    employers,
     queryState,
     myTeam,
     hiredFrom,
     hiredTo,
-    myEmploymentId,
+    myEmploymentByOrg,
   } = args;
 
   const request =
-    organizationId === null
+    employers.length === 0
       ? null
       : JSON.stringify({
-          organizationId,
+          employers: [...employers],
           filter: toFilter(queryState, {
-            myTeam,
+            myTeam: false,
             hiredFrom,
             hiredTo,
-            myEmploymentId,
+            myEmploymentId: null,
+            perEmployerFilters: employers.length === 1,
           }),
+          myTeam,
+          myEmploymentByOrg,
           limit: queryState.pageSize,
           offset: (queryState.page - 1) * queryState.pageSize,
           sort: toDirectorySort(queryState.sort?.id),
           direction: queryState.sort?.direction ?? "asc",
         } satisfies HrDirectoryRequest);
 
-  const state = useHrRequest<HrDirectoryRequest, HrDirectoryPage>(
+  const state = useHrRequest<HrDirectoryRequest, HrScopedDirectoryPage>(
     request,
     runDirectory,
   );

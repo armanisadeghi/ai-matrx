@@ -12,6 +12,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  fanOutHr,
+  toRowEmployer,
+  type HrRowEmployer,
+  type HrUnavailableEmployer,
+} from "@/features/hr/shared/hrScope";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
 
@@ -23,10 +29,19 @@ import {
   type HrRelationsFilter,
   type HrRelationsList,
 } from "../service";
-import type { HrCaseDetail, HrCaseKind } from "../types";
+import type { HrCaseDetail, HrCaseKind, HrRelationsCase } from "../types";
+
+/** A case plus the employer it belongs to — the org is a column, never a group. */
+export type HrScopedRelationsCase = HrRelationsCase & { employer: HrRowEmployer };
+
+/** The relations list across every employer in scope (one employer → exactly that list). */
+export type HrScopedRelationsList = Omit<HrRelationsList, "cases"> & {
+  cases: HrScopedRelationsCase[];
+  unavailable: HrUnavailableEmployer[];
+};
 
 export type HrRelationsCasesState = {
-  list: HrRelationsList | null;
+  list: HrScopedRelationsList | null;
   isLoading: boolean;
   /** A refusal OR a failure. `HrPageState` tells them apart and renders each. */
   error: HrDenied | HrFailed | null;
@@ -38,10 +53,11 @@ export type HrRelationsCasesState = {
 export function useHrRelationsCases(
   filter: HrRelationsFilter,
 ): HrRelationsCasesState {
-  const { active, isLoading: contextLoading } = useHrContext();
-  const organizationId = active?.organization_id ?? null;
+  const { scope, isLoading: contextLoading } = useHrContext();
+  // The employers this list reads: every one in scope under All organizations.
+  const employersKey = JSON.stringify(scope.employers.map(toRowEmployer));
 
-  const [list, setList] = useState<HrRelationsList | null>(null);
+  const [list, setList] = useState<HrScopedRelationsList | null>(null);
   const [error, setError] = useState<HrDenied | HrFailed | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
@@ -54,17 +70,23 @@ export function useHrRelationsCases(
   const filterKey = JSON.stringify(filter);
 
   useEffect(() => {
-    if (!organizationId) return;
+    const employers = JSON.parse(employersKey) as HrRowEmployer[];
+    if (employers.length === 0) return;
     let cancelled = false;
     setIsLoading(true);
 
     (async () => {
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
-      const result = await fetchHrRelationsCases(
-        organizationId,
-        JSON.parse(filterKey) as HrRelationsFilter,
+      const filterValue = JSON.parse(filterKey) as HrRelationsFilter;
+      const answer = await fanOutHr(employers, (organizationId) =>
+        fetchHrRelationsCases(organizationId, filterValue),
       );
       if (cancelled) return;
+      const result = answer.ok
+        ? {
+            ok: true as const,
+            data: mergeRelations(answer.data.parts, answer.data.unavailable),
+          }
+        : answer;
       if (result.ok) {
         setList(result.data);
         setError(null);
@@ -79,7 +101,7 @@ export function useHrRelationsCases(
     return () => {
       cancelled = true;
     };
-  }, [organizationId, filterKey, reloadToken]);
+  }, [employersKey, filterKey, reloadToken]);
 
   return {
     list,
@@ -87,6 +109,29 @@ export function useHrRelationsCases(
     error,
     denied: error?.kind === "denied",
     refresh,
+  };
+}
+
+function mergeRelations(
+  parts: Array<{ employer: HrRowEmployer; data: HrRelationsList }>,
+  unavailable: HrUnavailableEmployer[],
+): HrScopedRelationsList {
+  const merged = parts.length > 1;
+  const cases = parts
+    .flatMap(({ employer, data }) =>
+      data.cases.map((row) => ({ ...row, employer })),
+    )
+    // Newest first, the order each employer's own list already uses.
+    .sort((a, b) => (b.occurredOn ?? "").localeCompare(a.occurredOn ?? ""));
+  return {
+    cases,
+    total: parts.reduce((sum, part) => sum + part.data.total, 0),
+    // "You hold X here, not Y" is one employer's sentence; across several it would be a
+    // claim about none of them, so the merged list never makes it.
+    partial: merged ? false : parts[0].data.partial,
+    correctiveActionsGranted: parts.some((p) => p.data.correctiveActionsGranted),
+    incidentsGranted: parts.some((p) => p.data.incidentsGranted),
+    unavailable,
   };
 }
 
@@ -242,10 +287,8 @@ export function useHrRelationsCase(args: {
         // denial into their audit trail.
         const [parties, notes] = await Promise.all([
           kind === "incident"
-            // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
             ? fetchHrIncidentParties(organizationId, caseId)
             : Promise.resolve(null),
-          // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
           fetchHrCaseRestrictedNotes(organizationId, kind, caseId),
         ]);
         if (cancelled) return;

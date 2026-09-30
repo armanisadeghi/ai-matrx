@@ -84,7 +84,7 @@ export interface HrAccessDeniedProps {
   fallbackLabel: string;
   /**
    * The employer a link named that this person has no standing in — a uuid or a
-   * slug, straight from `?org=`. Present ⇒ this refusal is REQUESTABLE against
+   * slug, straight from `?org_filter=`. Present ⇒ this refusal is REQUESTABLE against
    * that organization and the canonical Request-access panel renders. Absent ⇒
    * absolute. See the header: this is the only requestable HR class today.
    */
@@ -152,7 +152,7 @@ function NOOP() {}
  * conversation with the right people, not a self-serve HR grant — see
  * SPEC-UI-IA §1's refusal law.
  *
- * `[orgId]` and `?org=` both accept a slug, and the gate is keyed on the uuid,
+ * `[orgId]` and `?org_filter=` both accept a slug, and the gate is keyed on the uuid,
  * so a slug goes through `access_gate_resolve_slug` exactly as
  * `OrganizationAccessGate` does. A slug the platform will not resolve for this
  * account falls back to the absolute frame — never upgraded to "doesn't exist".

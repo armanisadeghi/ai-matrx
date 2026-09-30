@@ -65,6 +65,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { HrPageState } from "../../shared/HrStates";
+import { useHrWriteEmployer } from "../../shared/hrScope";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
 import {
@@ -109,7 +110,11 @@ export function HrNewEmployee({
 }) {
   const router = useRouter();
   const api = useBackendApi();
-  const { active, orgRef } = useHrContext();
+  const { orgRef: pageOrgRef } = useHrContext();
+  // A new record is saved into one employer: the filter's, else the active organization.
+  const { active } = useHrWriteEmployer();
+  // Every link out of here acts in THAT employer, so the new record is opened in its own.
+  const orgRef = active?.organization_id ?? pageOrgRef;
   const { can } = useHrPersona();
   const organizationId = active?.organization_id ?? null;
 
@@ -521,6 +526,7 @@ export function HrNewEmployee({
   // ── States ─────────────────────────────────────────────────────────────
   return (
     <HrPageState
+      hasWriteEmployer={active !== null}
       operation="Creating this employee"
       variant="panel"
       noAccessSentence="Adding people isn't yours here. A manager who needs a hire starts a requisition."
@@ -1321,7 +1327,7 @@ function PartyPicker({
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
-          // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
+          // org-filter: write-target the picker finds CRM people to link in the employer the new employee is saved into
           const rows = await searchPartiesByName({
             orgId: organizationId,
             search: term,

@@ -3,19 +3,20 @@
 // THE HR MODULE'S URL DOORS. Every `/hr/*` href in the product is built here.
 //
 // 🚨 NOBODY HAND-ASSEMBLES AN HR URL. Not a template literal in a component, not a
-// `?org=` appended by hand. There are two reasons, and both are load-bearing:
+// `?org_filter=` appended by hand. There are two reasons, and both are load-bearing:
 //
-//  1. **The employer context travels in the URL.** SPEC-UI-IA §1 resolves the active
-//     employer from `?org=` FIRST, before the user's active-org selection. A link
-//     that drops the param silently lands the user in a different employer — and HR
-//     is strictly single-employer, so merging two employers' headcount, timesheets or
-//     pay data is a compliance defect, not a cosmetic bug. Passing `org` through
-//     every builder is how that cannot happen by accident.
-//  2. **`?org=` accepts a SLUG OR A UUID**, matching `organizations/[orgId]`'s own
+//  1. **The employer filter travels in the URL** as `?org_filter=` — never `?org_filter=`, which
+//     belongs to LinkOrganizationWatcher and SWITCHES the active organization. SPEC-UI-IA §1
+//     resolves the employer from it; absent means All organizations. A link that drops the
+//     param lands the user on All organizations, where a page that works on ONE employer
+//     (totals, pay, settings) asks them to pick one. Passing `org` through every builder is
+//     how a narrowed view stays narrowed across a click.
+//  2. **`?org_filter=` accepts a SLUG OR A UUID**, matching `organizations/[orgId]`'s own
 //     rule. Callers hand us whichever they hold; `useHrContext` resolves it.
 //
-// Switching employers is a full context change: navigate to the SAME route with the
-// new `?org=`, never merge. `hrSwitchEmployerHref` is the one builder for that.
+// Switching employers is a full context change: navigate to the SAME route with the new
+// `?org_filter=`. Lists span employers (see `shared/useHrContext.ts`); aggregates never
+// merge. `hrSwitchEmployerHref` is the one builder for that.
 //
 // 🚨 `org` IS A REQUIRED ARGUMENT ON EVERY BUILDER — DELIBERATELY, AND IT STAYS THAT WAY.
 //
@@ -74,9 +75,17 @@ export function hrHref(org: HrOrgRef): string {
  * Switching employer is a full context change, never a merge (SPEC-UI-IA §1). Give
  * it the CURRENT pathname and the new employer; it rebuilds the same route there.
  */
-export function hrSwitchEmployerHref(pathname: string, org: string): string {
+export function hrSwitchEmployerHref(pathname: string, org: string | null): string {
   const path = pathname.startsWith(HR_HREF) ? pathname : HR_HREF;
   return hrUrl(path, org);
+}
+
+/**
+ * A top-level HR section (`/hr/<section>`) — the breadcrumb's parent link when no nav item
+ * matched the path. Carries the employer filter like every other builder.
+ */
+export function hrSectionHref(section: string, org: HrOrgRef): string {
+  return hrUrl(`${HR_HREF}/${section}`, org);
 }
 
 /** Route 2 — My Info. The same `EmployeeProfile` component with `viewer=self`. */

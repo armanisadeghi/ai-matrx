@@ -165,8 +165,12 @@ export const HR_CHANGE_INTENTS = [
 ] as const;
 export type HrChangeIntent = (typeof HR_CHANGE_INTENTS)[number]["value"];
 
-/** The `?org=` query key every HR door carries. Accepts a slug OR a uuid (SPEC-UI-IA §1). */
-export const HR_ORG_PARAM = "org";
+/**
+ * The query key every HR door carries: the employer FILTER, `?org_filter=`. Accepts a uuid or a
+ * slug (SPEC-UI-IA §1); absent means All organizations. NEVER `?org_filter=` — that param belongs to
+ * `LinkOrganizationWatcher` and SWITCHES the active organization (Arman, 2026-09-30).
+ */
+export const HR_ORG_PARAM = "org_filter";
 
 /**
  * 🚨 ONE PHRASE FOR "NOTHING ON FILE", ACROSS ROWS AND PANELS.

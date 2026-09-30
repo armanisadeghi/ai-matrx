@@ -479,7 +479,7 @@ export function ExportRunList({
 }) {
   // 🚨 THE EMPLOYER COMES FROM THE HR CONTEXT, NOT FROM THE REDUX ACTIVE ORG. Every other feature
   // scopes to the user's selected organization; HR does not. SPEC-UI-IA §1 resolves the active
-  // employer from `?org=` FIRST, and HR is strictly single-employer — so the Redux selection would
+  // employer from `?org_filter=` FIRST, and HR is strictly single-employer — so the Redux selection would
   // show one employer's payroll exports on a page opened for another. That is not a scoping bug,
   // it is two employers' pay data merged on one screen. `useExportHistory` resolves it once.
   const history = useExportHistory(payPeriodId, { mockCase });
@@ -691,7 +691,7 @@ export function ExportRunList({
             cell: (row: PayrollExportHistoryRow) => (
               <PayPeriodDoor
                 payPeriodId={row.pay_period_id}
-                // The `?org=` reference travels with the link — HR resolves the employer from
+                // The `?org_filter=` reference travels with the link — HR resolves the employer from
                 // the URL before anything else, so a door that drops it lands the reader in a
                 // different employer's period.
                 orgRef={history.orgRef}

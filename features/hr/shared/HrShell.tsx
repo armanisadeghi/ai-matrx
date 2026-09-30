@@ -5,9 +5,10 @@
 // Three things, and nothing else:
 //   1. THE HR CONTEXT BAR — the employer name, pinned, plus a switcher.
 //      🚨 SWITCHING EMPLOYERS IS A FULL CONTEXT CHANGE: navigate to the SAME route
-//      with the new `?org=`. Never merge two employers' data — HR is strictly
-//      single-employer and merging headcount, timesheets or pay is a compliance
-//      defect, not a feature. `hrSwitchEmployerHref` is the only builder for it.
+//      with the new `?org_filter=`. LISTS span employers (All organizations is the
+//      default); totals, pay and settings belong to exactly one, chosen here or by the
+//      list's own org filter — `useHrContext`'s header states the rule.
+//      `hrSwitchEmployerHref` is the only builder for it.
 //   2. THE PERSONA NAV — `resolveHrNav`, which is CAPABILITY-driven. The persona
 //      picks the label and the self-scoped destination ("My Timesheet"), never the
 //      access decision. An item this person cannot use is ABSENT, not disabled.
@@ -46,7 +47,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { cn } from "@/lib/utils";
 
-import { hrHref } from "../routes";
+import { hrHref, hrSectionHref, hrSwitchEmployerHref } from "../routes";
 import { HrDisclosureClaimed, HrEmployerChoices, HrEmployerSubstitutionNotice } from "./HrStates";
 import { resolveHrNav } from "./hr-nav";
 import { useHrContext } from "./useHrContext";
@@ -78,7 +79,7 @@ export function HrShell({
   actions,
   subNav,
 }: HrShellProps) {
-  const { active, employers, orgRef, isLoading } = useHrContext();
+  const { active, employers, orgRef, isLoading, scope } = useHrContext();
   const { persona, employmentId, all } = useHrPersona();
   // No pathname exists only before an employer context can be resolved.
   const pathname = usePathname() ?? hrHref(null);
@@ -111,7 +112,10 @@ export function HrShell({
   const activeEmployer = active
     ? employers.find((e) => e.organization_id === active.organization_id) ?? null
     : null;
-  const employerName = activeEmployer?.name ?? (isLoading ? "" : "HR");
+  // Under All organizations there is no single employer to name — say so, never pick one.
+  const employerName =
+    activeEmployer?.name ??
+    (isLoading ? "" : scope.mode === "all" && scope.employers.length > 1 ? "All organizations" : "HR");
 
   const crumbs = buildCrumbs({
     pathname,
@@ -139,7 +143,7 @@ export function HrShell({
         center={
           // With no employer open there is nothing to navigate within, and a
           // persona-less nav would differ from the same route once one is chosen.
-          active && navItems.length > 0 ? (
+          (active || scope.actives.length > 0) && navItems.length > 0 ? (
             // A page with its own labeled tab bar (`subNav`) keeps the HR section
             // switch as ONE labeled dropdown — never a second row of icons.
             <RouteModeNav items={navItems} maxVariant={subNav ? "menu" : "full"} />
@@ -270,7 +274,15 @@ function EmployerSwitcher({
       </PopoverTrigger>
       {/* Fixed width: the list searches as you type. */}
       <PopoverContent sizing="fixed" align="start" className="matrx-touch-targets w-80 p-1">
-        <p className="px-2 pb-1 pt-1 text-xs text-muted-foreground">HR shows one employer at a time.</p>
+        {activeOrganizationId ? (
+          <Link
+            href={hrSwitchEmployerHref(pathname, null)}
+            onClick={() => setOpen(false)}
+            className="mx-1 mb-1 flex min-h-9 items-center rounded-md px-2 text-sm text-foreground hover:bg-accent"
+          >
+            All organizations
+          </Link>
+        ) : null}
         <HrEmployerChoices
           employers={employers}
           activeOrganizationId={activeOrganizationId}
@@ -327,7 +339,7 @@ function buildCrumbs({
     // section from the path so the same route always shows the same breadcrumb.
     const section = pathname.split("/")[2];
     const label = section ? HR_SECTION_LABELS[section] : undefined;
-    if (label) crumbs.push({ label, href: `/hr/${section}${orgRef ? `?org=${encodeURIComponent(orgRef)}` : ""}` });
+    if (label) crumbs.push({ label, href: hrSectionHref(section, orgRef) });
   }
 
   if (title) crumbs.push({ label: title, href: null });

@@ -92,7 +92,6 @@ export function LeavePolicyListSurface() {
     const controller = new AbortController();
 
     (async () => {
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       const result = await fetchLeavePolicies(organizationId, {
         signal: controller.signal,
       });

@@ -114,7 +114,9 @@ export function OffboardEmployeeDialog({
   >([]);
   const [basisFailed, setBasisFailed] = useState(false);
   const { active } = useHrContext();
-  const organizationId = active?.organization_id ?? null;
+  // The RECORD's own employer (a list that spans employers sets it on the subject), else the
+  // one the page resolved.
+  const organizationId = subject?.organizationId ?? active?.organization_id ?? null;
   const subjectEmploymentId = subject?.employmentId ?? null;
 
   useEffect(() => {
@@ -122,7 +124,6 @@ export function OffboardEmployeeDialog({
     let cancelled = false;
     // Scoped to THIS person, through the audited route-15 door — never a client-direct
     // select, and never the whole employer's relations history to fill a dropdown.
-    // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
     void fetchHrRelationsCases(organizationId, {
       caseKind: "corrective_action",
       subjectEmploymentId,

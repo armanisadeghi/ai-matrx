@@ -190,13 +190,19 @@ export function LeaveQueueSurface() {
         icon: Undo2,
         onSelect: () => setDecision({ row, intent: "return" }),
       },
-      {
-        kind: "item",
-        id: "leave-reassign",
-        label: "Reassign",
-        icon: UserCog,
-        onSelect: () => setReassign(row),
-      },
+      // Reassigning lists one employer's people. The inbox rows carry no employer, so the verb
+      // exists only once a single employer is resolved (the filter names one) — absent, never dead.
+      ...(organizationId
+        ? [
+            {
+              kind: "item" as const,
+              id: "leave-reassign",
+              label: "Reassign",
+              icon: UserCog,
+              onSelect: () => setReassign(row),
+            },
+          ]
+        : []),
     ];
     return { id: "leave-decision", label: "Decide", items };
   }
@@ -428,6 +434,7 @@ export function LeaveQueueSurface() {
       description="Decisions waiting on you, the balances behind them, and who is out."
     >
       <HrPageState
+        employerScope="all"
         loading={queue.loading}
         error={queue.error}
         operation="Time-off decisions"
@@ -625,10 +632,12 @@ export function LeaveQueueSurface() {
                       <Undo2 className="mr-2 h-4 w-4" />
                       Send back for changes
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setReassign(row)}>
-                      <UserCog className="mr-2 h-4 w-4" />
-                      Reassign
-                    </DropdownMenuItem>
+                    {organizationId ? (
+                      <DropdownMenuItem onSelect={() => setReassign(row)}>
+                        <UserCog className="mr-2 h-4 w-4" />
+                        Reassign
+                      </DropdownMenuItem>
+                    ) : null}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>

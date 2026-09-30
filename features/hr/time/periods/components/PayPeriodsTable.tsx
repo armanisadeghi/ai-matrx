@@ -42,7 +42,7 @@ const PERIOD_STATES: PayPeriodState[] = [
 export interface PayPeriodsTableProps {
   rows: PayPeriodRow[];
   isLoading: boolean;
-  /** Built by `hrTimePeriodHref` — never hand-assembled, so `?org=` always travels. */
+  /** Built by `hrTimePeriodHref` — never hand-assembled, so `?org_filter=` always travels. */
   hrefFor: (row: PayPeriodRow) => string;
   /** The pay-periods read these rows answer (the page owns it). */
   read?: ReadOutcome | undefined;

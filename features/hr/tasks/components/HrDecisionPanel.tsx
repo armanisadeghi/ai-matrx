@@ -111,7 +111,7 @@ export function HrDecisionPanel({
     /*
       🚨 THE BACK LINK CARRIES THE EMPLOYER. It used to be `<Link href="/hr/tasks">`, and this
       panel is the body of EVERY task detail page — so the one control most likely to be pressed
-      on the whole surface was the one that dropped `?org=`. `routes.ts` made all 49 builders
+      on the whole surface was the one that dropped `?org_filter=`. `routes.ts` made all 49 builders
       require `org` on 2026-08-28, which cannot reach a string literal: `hrTasksHref()` is a
       compile error, `"/hr/tasks"` is a valid string. The tasks lane does not scope its rows by
       employer TODAY, so this dropped the param without yet changing what was listed — a latent

@@ -73,7 +73,7 @@ export function HrIdentityDoor({
  * The pay period DOES have a route (rows 32/33), so it gets a real link, not a promise.
  *
  * 🚨 THE HREF IS BUILT BY `hrPayPeriodHref`, NEVER BY A TEMPLATE LITERAL HERE. HR is strictly
- * single-employer and resolves the active employer from `?org=` BEFORE the user's active-org
+ * single-employer and resolves the active employer from `?org_filter=` BEFORE the user's active-org
  * selection, so a hand-assembled URL that drops the param silently lands the reader in a
  * different employer's period — merging two employers' pay data, which is a compliance defect
  * rather than a cosmetic one. `features/hr/routes.ts` is the one place that cannot forget.

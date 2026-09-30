@@ -46,7 +46,7 @@ import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
 import { fetchHrOrgChart, fetchHrStructure } from "../../service";
 import { hrPeopleNewHref } from "../../routes";
-import type { HrDirectoryPage, HrDirectoryRow, HrResult } from "../../types";
+import type { HrDirectoryPage, HrResult } from "../../types";
 import { useHrRequest } from "../shared/useHrRequest";
 import { HrDirectoryCardGrid } from "./HrDirectoryCards";
 import {
@@ -55,7 +55,16 @@ import {
   makeFacetLabelLookup,
   type HrDirectoryFacetOptions,
 } from "./directoryColumns";
-import { useHrDirectory, useHrDirectoryUrlState } from "./useHrDirectory";
+import {
+  useHrDirectory,
+  useHrDirectoryUrlState,
+  type HrScopedDirectoryRow,
+} from "./useHrDirectory";
+import {
+  HrOrgFilter,
+  HrUnavailableNotice,
+  toRowEmployer,
+} from "../../shared/hrScope";
 import {
   useHrEmployeeMenu,
   type HrEmployeeMenuSubject,
@@ -162,9 +171,18 @@ function useHrDirectoryFacets(organizationId: string | null): {
 // ── The surface ─────────────────────────────────────────────────────────────
 
 export function HrDirectory() {
-  const { active, orgRef } = useHrContext();
-  const { persona, can, employeeId, employmentId } = useHrPersona();
-  const organizationId = active?.organization_id ?? null;
+  const { orgRef, scope } = useHrContext();
+  const { persona, can } = useHrPersona();
+  // The employers this list reads: every one in scope under All organizations, the one named
+  // by the filter otherwise. Facet menus (departments, locations, titles, managers) are ids
+  // inside ONE employer, so they exist only when exactly one is in scope.
+  const rowEmployers = scope.employers.map(toRowEmployer);
+  const spansEmployers = rowEmployers.length > 1;
+  const facetOrganizationId =
+    rowEmployers.length === 1 ? rowEmployers[0].organizationId : null;
+  const myEmploymentByOrg = Object.fromEntries(
+    scope.actives.map((a) => [a.organization_id, a.employment_id]),
+  );
 
   // 🚨 THE DOOR PUBLISHES THIS VIEWER'S VOCABULARY, AND THE SURFACE OBEYS IT.
   // `statuses.allowed` is what may be asked for and `statuses.default` is what an
@@ -176,14 +194,20 @@ export function HrDirectory() {
   );
 
   const url = useHrDirectoryUrlState(vocabulary?.default);
-  const { facets, degraded } = useHrDirectoryFacets(organizationId);
+  const { facets, degraded } = useHrDirectoryFacets(facetOrganizationId);
+  const perEmployerFilterInUrl = [
+    "department",
+    "location",
+    "job_title",
+    "manager_name",
+  ].some((columnId) => url.state.columnFilters[columnId] !== undefined);
   const directory = useHrDirectory({
-    organizationId,
+    employers: rowEmployers,
     queryState: url.queryState,
     myTeam: url.myTeam,
     hiredFrom: url.hiredFrom,
     hiredTo: url.hiredTo,
-    myEmploymentId: employmentId,
+    myEmploymentByOrg,
   });
 
   const wireStatuses = directory.page?.statuses;
@@ -224,7 +248,7 @@ export function HrDirectory() {
   const canBulk = can("working_record.read") || can("identity.write");
 
   const page = directory.page;
-  const rows: HrDirectoryRow[] = page?.rows ?? [];
+  const rows: HrScopedDirectoryRow[] = page?.rows ?? [];
   const total = page?.total ?? 0;
   // Every flag defaults to FALSE while the door has not answered. A column that
   // appears before we know whether this viewer may have it is the wrong default in
@@ -242,6 +266,7 @@ export function HrDirectory() {
     publishes,
     allowedStatuses,
     facets,
+    showEmployer: spansEmployers,
   });
   const labelLookup = makeFacetLabelLookup(facets, allowedStatuses);
   const appliedFilters = url.describeFilters(labelLookup);
@@ -251,6 +276,7 @@ export function HrDirectory() {
   return (
     <>
     <HrPageState
+      employerScope="all"
       loading={directory.isLoading}
       error={directory.error?.kind === "failed" ? directory.error : null}
       granted={directory.error?.kind !== "denied"}
@@ -263,6 +289,7 @@ export function HrDirectory() {
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
         {/* ── Toolbar row: scope, view toggle, actions ───────────────────── */}
         <div className="flex flex-wrap items-center gap-2">
+          <HrOrgFilter />
           {showMyTeamTab ? (
             <div
               role="tablist"
@@ -319,6 +346,14 @@ export function HrDirectory() {
           </div>
         </div>
 
+        <HrUnavailableNotice unavailable={page?.unavailable ?? []} />
+
+        {spansEmployers && perEmployerFilterInUrl ? (
+          <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            Pick one organization to use these filters.
+          </p>
+        ) : null}
+
         {degraded ? (
           <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             This employer&apos;s departments, locations and job titles could not be
@@ -341,7 +376,12 @@ export function HrDirectory() {
           <FirstHireDoor canCreate={canCreate} org={orgRef} />
         ) : prefs.view === "cards" ? (
           <div className="space-y-3">
-            <HrDirectoryCardGrid rows={rows} org={orgRef} buildMenu={buildMenu} />
+            <HrDirectoryCardGrid
+              rows={rows}
+              org={orgRef}
+              buildMenu={buildMenu}
+              showEmployer={spansEmployers}
+            />
             <CardPager
               page={url.state.page}
               pageSize={url.state.pageSize}
@@ -353,7 +393,7 @@ export function HrDirectory() {
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
-            <MatrxDataTable<HrDirectoryRow>
+            <MatrxDataTable<HrScopedDirectoryRow>
               data={rows}
               columns={columns}
               getRowId={(row) => row.employee_id}
@@ -416,6 +456,7 @@ export function HrDirectory() {
                       workEmail: row.work_email,
                       employmentId: row.employment_id,
                       status: row.directory_status,
+                      organizationId: row.employer.organizationId,
                     })
                   }
                 >
@@ -444,6 +485,7 @@ export function HrDirectory() {
                       workEmail: row.work_email,
                       employmentId: row.employment_id,
                       status: row.directory_status,
+                      organizationId: row.employer.organizationId,
                     })
                   }
                 >

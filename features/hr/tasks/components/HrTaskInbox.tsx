@@ -228,7 +228,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
             {/*
               🚨 THIS ROUTE HAS NO `HrShell`, SO IT OWES THE DISCLOSURE ITSELF.
               `/hr/tasks` is a `PageHeader` route: nothing above it states which
-              employer opened, so a `?org=` that resolved to a different one would be
+              employer opened, so a `?org_filter=` that resolved to a different one would be
               silent here — the defect `useHrContext` law B exists to prevent. The
               notice renders null in the ordinary case; the claim stops the embedded
               `HrDecisionPanel` below from repeating it.

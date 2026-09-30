@@ -84,7 +84,6 @@ export function MyIncidentReports() {
     if (!organizationId) return;
     let cancelled = false;
     (async () => {
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       const result = await fetchHrMyIncidentReports(organizationId);
       if (cancelled) return;
       // A refusal or a failure leaves this NULL, never `[]`. The panel then says

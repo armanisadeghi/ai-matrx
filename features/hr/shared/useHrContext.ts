@@ -2,26 +2,44 @@
 //
 // THE EMPLOYER RESOLUTION HOOK. Every `/hr/*` surface stands on this.
 //
-// 🚨 HR IS STRICTLY SINGLE-EMPLOYER. An `hr.employee` belongs to exactly ONE
-// employer of record, and merging two employers' headcount, timesheets or pay data
-// into one view is a compliance defect, not a feature. There is no cross-employer
-// HR view, in v1 or later. Never filter an HR list to "all my orgs" — the CRM's
-// multi-org scope tabs are the wrong model here and copying them is a bug.
+// 🚨 HR LISTS SPAN EMPLOYERS; HR AGGREGATES AND ACTIONS BELONG TO ONE.
+// (Arman, 2026-09-30 — common-docs /policies/active-org-is-never-a-list-filter.md;
+// this replaces the older "never filter an HR list to all my orgs" rule.)
 //
-// The resolution order is SPEC-UI-IA §1, exactly:
-//   1. `?org=<orgId|slug>` — the door format every external link uses.
-//   2. the user's active-organization selection (`useActiveOrganizationPicker`).
-//   3. if the user's HR-reachable orgs number exactly one → that one, SILENTLY.
-//   4. otherwise → the employer picker AS THE PAGE (`<HrEmployerPicker>`), never a
-//      modal and never a blocked shell. A chooser is a legitimate page state.
+//   LISTS a person browses (employees, leave requests, relations cases, verifications,
+//   any row list) open on **All organizations**: rows from every employer this person
+//   can see, the employer as a column, and a VISIBLE `EntityOrgFilter` (`?org_filter=`)
+//   to narrow. RLS/the doors already decide what each person sees — nothing here adds
+//   or removes an access check.
 //
-// Rules 3 and 4 are partly the server's: `hr_my_context(null)` already applies rule
-// 3. This hook adds the slug lane (the server takes a uuid only) and re-resolves
-// when the picker's org turns out not to be HR-reachable.
+//   AGGREGATES and ACTIONS — headcount totals, pay runs, pay periods, timesheet sums and
+//   approval batches, an employer's HR settings — belong to EXACTLY ONE employer. Under
+//   All organizations those panels show a one-line prompt to pick an organization (with
+//   the picker right there, `HrEmployerPicker`); they never sum two employers together
+//   and never silently pick one. When the filter names one employer they work for it.
+//
+// 🚨 THE EMPLOYER IS NEVER TAKEN FROM THE ACTIVE ORGANIZATION. The active org is where a
+// NEW record is saved, nothing more. And HR never uses `?org_filter=` (LinkOrganizationWatcher
+// owns that param and SWITCHES the active org); HR's employer filter is `?org_filter=`.
+//
+// The resolution order:
+//   1. `?org_filter=<orgId|slug>` — the one visible filter, and the door format every
+//      external link uses. It names one employer.
+//   2. if the user's HR-reachable orgs number exactly one → that one, SILENTLY (there is
+//      nothing to choose between; All and that one are the same set).
+//   3. otherwise → ALL ORGANIZATIONS: `active` is null, list surfaces read every employer
+//      in scope (`scope.employers`), and a surface that needs one employer renders
+//      `<HrEmployerPicker>` AS THE PAGE (`HrPageState requireEmployer`).
+//
+// Rule 2 is partly the server's: `hr_my_context(null)` already applies it. This hook adds
+// the slug lane (the server takes a uuid only) and re-resolves when the filter's org turns
+// out not to be HR-reachable. Under All it also reads each employer's own context once, so
+// the nav shows the union of what the person may do and list surfaces can tell which
+// employer each row belongs to.
 //
 // 🚨 TWO LAWS GOVERN THE RE-RESOLVE, AND THEY ARE THE WHOLE POINT OF THIS FILE.
 //
-//  A. **AN EXPLICIT `?org=` IS THE ANSWER, NOT A SUGGESTION.** Rule 1 resolves FIRST,
+//  A. **AN EXPLICIT `?org_filter=` IS THE ANSWER, NOT A SUGGESTION.** Rule 1 resolves FIRST,
 //     including when that employer has HR switched OFF. The module-off employer is
 //     not a dead end that needs rescuing: SPEC-UI-IA §6 and R-L1 §D both rule that
 //     `/hr?org=<thatOrg>` renders the ENABLE-DOOR for an owner/admin and a plain
@@ -50,7 +68,6 @@ import {
 import { useSearchParams } from "next/navigation";
 
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 
 import { HR_ORG_PARAM } from "../constants";
 import type { HrPersona } from "../constants";
@@ -67,7 +84,7 @@ import type {
  * The employer that opened is NOT the employer that was asked for. Set only when
  * that actually happened; `null` is the ordinary case.
  *
- * `askedRef` is what belongs in a `?org=` to get back to what they asked for —
+ * `askedRef` is what belongs in a `?org_filter=` to get back to what they asked for —
  * null when we could not open it at all and there is nothing honest to link to.
  */
 export type HrEmployerSubstitution = {
@@ -85,6 +102,22 @@ export type HrEmployerSubstitution = {
   openedName: string;
 };
 
+/**
+ * WHICH EMPLOYERS A LIST READS. `mode: "all"` is All organizations — every employer
+ * this person does HR in (module on and set up); `"one"` is a single employer, named by
+ * the filter or the sole employer. A LIST surface reads `scope.employers`; an aggregate
+ * or an action reads `active` and renders the picker when it is null.
+ */
+export type HrScope = {
+  mode: "all" | "one";
+  /** The employers a list reads, name-sorted. */
+  employers: HrEmployer[];
+  /** Each in-scope employer's own context (capabilities, employee/employment ids). */
+  actives: HrActiveEmployer[];
+  /** `?org_filter=` as written (uuid or slug) — null is All organizations. */
+  orgFilter: string | null;
+};
+
 export type HrContextValue = {
   /** Every employer this person can do HR in — including one whose module is OFF, when they can turn it on. */
   employers: HrEmployer[];
@@ -95,7 +128,7 @@ export type HrContextValue = {
   /** The raw capability list for the active employer. Use `useHrPersona().can(…)`. */
   capabilities: string[];
   /**
-   * What to put in `?org=` on every link out of here — the slug when the employer
+   * What to put in `?org_filter=` on every link out of here — the slug when the employer
    * has one (a readable, shareable door), otherwise the uuid.
    */
   orgRef: string | null;
@@ -104,6 +137,8 @@ export type HrContextValue = {
    * states it on the page — see law B at the top of this file. Never swap in silence.
    */
   substitution: HrEmployerSubstitution | null;
+  /** Which employers a list reads — see `HrScope`. */
+  scope: HrScope;
   /** True on the FIRST resolve only. A refresh keeps the last context on screen. */
   isLoading: boolean;
   error: HrDenied | HrFailed | null;
@@ -118,6 +153,7 @@ const EMPTY: HrContextValue = {
   capabilities: [],
   orgRef: null,
   substitution: null,
+  scope: { mode: "all", employers: [], actives: [], orgFilter: null },
   isLoading: true,
   error: null,
   refresh: () => {},
@@ -130,15 +166,35 @@ const EMPTY: HrContextValue = {
  */
 export const HrRuntimeContext = createContext<HrContextValue | null>(null);
 
-function orgRefFor(
-  employers: HrEmployer[],
-  active: HrActiveEmployer | null,
-): string | null {
-  if (!active) return null;
-  const match = employers.find(
-    (e) => e.organization_id === active.organization_id,
-  );
-  return match?.slug?.trim() || active.organization_id;
+/**
+ * What goes in `?org_filter=` on a link out of here. The UUID, never the slug: the
+ * organization filter control (`EntityOrgFilter`) speaks uuids, and a slug in the URL
+ * would leave it saying "an organization you are not in". Null when nothing is filtered.
+ */
+function orgRefFor(active: HrActiveEmployer | null): string | null {
+  return active ? active.organization_id : null;
+}
+
+const PERSONA_RANK: Record<HrPersona, number> = {
+  employee: 0,
+  manager: 1,
+  hr_admin: 2,
+};
+
+/** The nav's view of All organizations: the union of what this person may do anywhere. */
+function unionOf(actives: HrActiveEmployer[]): {
+  persona: HrPersona | null;
+  capabilities: string[];
+} {
+  let persona: HrPersona | null = null;
+  const caps = new Set<string>();
+  for (const a of actives) {
+    if (a.persona && (persona === null || PERSONA_RANK[a.persona] > PERSONA_RANK[persona])) {
+      persona = a.persona;
+    }
+    for (const c of a.capabilities) caps.add(c);
+  }
+  return { persona, capabilities: [...caps] };
 }
 
 /**
@@ -151,27 +207,22 @@ function orgRefFor(
  */
 export function describeSubstitution({
   orgParam,
-  activeOrgId,
   askedEmployer,
   resolved,
 }: {
   orgParam: string | null;
-  activeOrgId: string | null;
   askedEmployer: HrEmployer | null;
   resolved: HrMyContext;
 }): HrEmployerSubstitution | null {
   const opened = resolved.active;
   if (!opened) return null;
 
-  // Nothing was named: no `?org=`, and no active-organization selection to override.
-  if (!orgParam && !activeOrgId) return null;
+  // Nothing was named: no `?org_filter=`. The active organization is never an ask, so
+  // there is nothing to override (and All organizations has no "opened" employer to swap).
+  if (!orgParam) return null;
 
-  const askedId = askedEmployer?.organization_id ?? (orgParam ? null : activeOrgId);
+  const askedId = askedEmployer?.organization_id ?? null;
   if (askedId && askedId === opened.organization_id) return null;
-  // A `?org=` that resolved to an employer we DID open is handled by the line above;
-  // an active-org selection we could not even name (they have left it since) is not
-  // something to announce — there is no employer to point at and nothing was lost.
-  if (!orgParam && !askedEmployer) return null;
 
   const openedName =
     resolved.employers.find(
@@ -199,11 +250,11 @@ export function useHrContextResolver(
   const enabled = options.enabled ?? true;
   const searchParams = useSearchParams();
   const orgParam = searchParams?.get(HR_ORG_PARAM)?.trim() || null;
-  const { activeOrgId } = useActiveOrganizationPicker();
 
   const [context, setContext] = useState<HrMyContext | null>(null);
   const [substitution, setSubstitution] =
     useState<HrEmployerSubstitution | null>(null);
+  const [allActives, setAllActives] = useState<HrActiveEmployer[]>([]);
   const [error, setError] = useState<HrDenied | HrFailed | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
@@ -226,13 +277,13 @@ export function useHrContextResolver(
         return;
       }
 
-      // Rule 1 wins when it is a uuid; a slug needs the employer list to map it, so
-      // it takes the second pass below. Rule 2 is the picker's org.
-      const firstAsk =
-        orgParam && isUuidShape(orgParam) ? orgParam : (activeOrgId ?? null);
+      // The filter wins when it is a uuid; a slug needs the employer list to map it, so
+      // it takes the second pass below. No filter → null → the server answers with every
+      // employer (and `active` only when there is exactly one). The active organization is
+      // never asked.
+      const firstAsk = orgParam && isUuidShape(orgParam) ? orgParam : null;
 
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
-      let result = await fetchHrContext(firstAsk);
+      const result = await fetchHrContext(firstAsk);
       if (cancelled) return;
 
       if (result.ok) {
@@ -254,16 +305,15 @@ export function useHrContextResolver(
 
         // ── Who was asked for, and did they get it? ─────────────────────────
         // The URL's employer, resolved against the list the server just returned.
-        // A `?org=` that names nothing here is a ref this person cannot do HR in —
+        // A `?org_filter=` that names nothing here is a ref this person cannot do HR in —
         // we never learn (and never say) whether the organization exists.
-        const askedEmployer =
-          resolved.employers.find((e) =>
-            orgParam
-              ? e.organization_id === orgParam || e.slug === orgParam
-              : e.organization_id === activeOrgId,
-          ) ?? null;
+        const askedEmployer = orgParam
+          ? (resolved.employers.find(
+              (e) => e.organization_id === orgParam || e.slug === orgParam,
+            ) ?? null)
+          : null;
 
-        // 🚨 LAW A — AN EXPLICIT `?org=` IS HONORED, MODULE ON OR OFF. When the URL
+        // 🚨 LAW A — AN EXPLICIT `?org_filter=` IS HONORED, MODULE ON OR OFF. When the URL
         // named an employer we opened, we are DONE: a module-off employer renders the
         // enable-door (SPEC-UI-IA §6 / R-L1 §D), which is the door they came for.
         const urlHonored =
@@ -298,14 +348,32 @@ export function useHrContextResolver(
           }
         }
 
+        // ── All organizations: read each employer's own context, once. ─────────────
+        // Only when no single employer opened. The nav shows the union of what this
+        // person may do across the employers in scope, and list surfaces label each row
+        // with its employer. This never picks one: `active` stays null.
+        let scopeActives: HrActiveEmployer[] = [];
+        if (!resolved.active && !orgParam) {
+          const inScope = resolved.employers.filter(
+            (e) => e.module_enabled && e.is_activated,
+          );
+          const reads = await Promise.all(
+            inScope.map((e) => fetchHrContext(e.organization_id)),
+          );
+          if (cancelled) return;
+          scopeActives = reads.flatMap((r) =>
+            r.ok && r.data.active ? [r.data.active] : [],
+          );
+        }
+
         setContext(resolved);
-        // 🚨 LAW B — SAY IT OUT LOUD. Something was asked for (a `?org=`, or the
+        setAllActives(scopeActives);
+        // 🚨 LAW B — SAY IT OUT LOUD. Something was asked for (a `?org_filter=`, or the
         // user's own active-organization selection) and a DIFFERENT employer opened.
         // Silence here is the silent-employer-switch defect wearing a helpful hat.
         setSubstitution(
           describeSubstitution({
             orgParam,
-            activeOrgId: activeOrgId ?? null,
             askedEmployer,
             resolved,
           }),
@@ -321,37 +389,49 @@ export function useHrContextResolver(
     return () => {
       cancelled = true;
     };
-  }, [enabled, orgParam, activeOrgId, reloadToken]);
+  }, [enabled, orgParam, reloadToken]);
 
   if (!enabled) return { ...EMPTY, isLoading: false };
 
   const employers = context?.employers ?? [];
   const active = context?.active ?? null;
+  const union = active ? null : unionOf(allActives);
+  const inScope = active
+    ? employers.filter((e) => e.organization_id === active.organization_id)
+    : employers
+        .filter((e) => e.module_enabled && e.is_activated)
+        .sort((a, b) => a.name.localeCompare(b.name));
 
   return {
     employers,
     active,
-    persona: active?.persona ?? null,
-    capabilities: active?.capabilities ?? [],
+    persona: active ? active.persona : (union?.persona ?? null),
+    capabilities: active ? active.capabilities : (union?.capabilities ?? []),
+    scope: {
+      mode: active ? "one" : "all",
+      employers: inScope,
+      actives: active ? [active] : allActives,
+      orgFilter: orgParam,
+    },
     /*
       🚨 THE EMPLOYER TRAVELS FROM THE FIRST PAINT, NOT FROM HYDRATION.
 
       `orgRefFor` reads the RESOLVED context, so it is null until `hr_my_context` answers. Every
-      `?org=`-carrying link built from this value therefore rendered bare for the first render and
+      `?org_filter=`-carrying link built from this value therefore rendered bare for the first render and
       only grew its employer once the fetch landed — measured on 2026-08-28 as
       `413ms → /hr/tasks`, `801ms → /hr/tasks?org=oak-street-studio`. A click inside
       that window drops the employer exactly as a hardcoded literal would, and lands the user in
       whatever their active-org selection happens to name. A link that is only correct after
       hydration is a race, not a fix.
 
-      `orgParam` is `?org=` read straight off `useSearchParams()` — present synchronously, on the
+      `orgParam` is `?org_filter=` read straight off `useSearchParams()` — present synchronously, on the
       very first render, and it is by definition the employer this page was asked for. It is a
       FALLBACK, never an override: the moment the context resolves, `orgRefFor` wins, so a server
-      substitution (law B) still corrects the value rather than being papered over. With no `?org=`
+      substitution (law B) still corrects the value rather than being papered over. With no `?org_filter=`
       in the URL there is nothing to fall back to and this stays null, which is the honest answer —
       the destination then resolves the employer the same way this page just did.
     */
-    orgRef: orgRefFor(employers, active) ?? orgParam,
+    orgRef: orgParam ? (orgRefFor(active) ?? orgParam) : null,
     substitution,
     isLoading,
     error,

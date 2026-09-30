@@ -27,7 +27,7 @@ import { Loader2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { fetchHrDirectory } from "@/features/hr/service";
-import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { useHrWriteEmployer } from "@/features/hr/shared/hrScope";
 import type { HrDirectoryRow } from "@/features/hr/types";
 
 const MIN_QUERY = 2;
@@ -69,7 +69,7 @@ export function EmploymentPicker({
   disabled?: boolean;
   placeholder?: string;
 }) {
-  const { active } = useHrContext();
+  const { active } = useHrWriteEmployer();
   const organizationId = active?.organization_id ?? null;
 
   const [query, setQuery] = useState("");
@@ -88,7 +88,7 @@ export function EmploymentPicker({
     let cancelled = false;
     setLoading(true);
     const timer = setTimeout(async () => {
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
+      // org-filter: write-target the subject is picked from the employer the new case is saved into
       const result = await fetchHrDirectory({
         organizationId,
         filter: { search: trimmed },

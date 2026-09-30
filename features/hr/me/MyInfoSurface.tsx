@@ -39,7 +39,7 @@ export function MyInfoSurface({ tab = "personal" }: { tab?: string }) {
         employer selected, `HrPageState` renders "HR isn't turned on for this organization"
         and suppresses its children, so a consent ask about employer A was invisible while
         employer B was active. `hr.people.verification_consent_requested` deep-links to a
-        bare `/hr/me` with no `?org=`, so somebody following the notice lands on whichever
+        bare `/hr/me` with no `?org_filter=`, so somebody following the notice lands on whichever
         employer happens to be selected — which is exactly the case that rendered nothing.
 
         Two gates had to be cleared, for the same underlying reason:

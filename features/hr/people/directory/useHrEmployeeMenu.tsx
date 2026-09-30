@@ -54,6 +54,12 @@ export type HrEmployeeMenuSubject = {
   employmentId?: string | null;
   directReportCount?: number | null;
   status?: string | null;
+  /**
+   * The employer this person's record belongs to. A list that spans employers sets it on
+   * every row so the links and the offboarding dialog act in the RECORD'S employer — never
+   * the page's. Absent → the page's own employer (`org`).
+   */
+  organizationId?: string | null;
 };
 
 export type HrEmployeeMenuBuilder = (
@@ -87,6 +93,7 @@ export function useHrEmployeeMenu(args: {
         Boolean(subject.employmentId) &&
         Boolean(onStartOffboarding);
       const alreadyGone = subject.status === "terminated";
+      const recordOrg = subject.organizationId ?? org;
 
       return {
         header: { title: subject.displayName },
@@ -99,14 +106,14 @@ export function useHrEmployeeMenu(args: {
                 id: "open",
                 label: "Open profile",
                 icon: IdCard,
-                href: hrEmployeeHref(subject.employeeId, null, { org }),
+                href: hrEmployeeHref(subject.employeeId, null, { org: recordOrg }),
               },
               {
                 kind: "link",
                 id: "open-new-tab",
                 label: "Open in a new tab",
                 icon: ExternalLink,
-                href: hrEmployeeHref(subject.employeeId, null, { org }),
+                href: hrEmployeeHref(subject.employeeId, null, { org: recordOrg }),
                 target: "_blank",
               },
               {
@@ -114,7 +121,7 @@ export function useHrEmployeeMenu(args: {
                 id: "org-chart",
                 label: "Show on the org chart",
                 icon: Network,
-                href: hrOrgChartHref({ org, focus: subject.employeeId }),
+                href: hrOrgChartHref({ org: recordOrg, focus: subject.employeeId }),
               },
               {
                 kind: "link",
@@ -125,7 +132,7 @@ export function useHrEmployeeMenu(args: {
                 // hidden when we know there are none, rather than opening an
                 // empty list the viewer did not ask for.
                 hidden: (subject.directReportCount ?? 0) === 0,
-                href: hrPeopleHref({ org, managerEmployeeId: subject.employeeId }),
+                href: hrPeopleHref({ org: recordOrg, managerEmployeeId: subject.employeeId }),
               },
               {
                 kind: "link",

@@ -52,7 +52,7 @@ export function hrExceptionHref(
   /**
    * 🚨 REQUIRED, AND IT USED TO BE ABSENT. This builder hard-coded `undefined` for the employer,
    * so EVERY door it produced — from the strip, the queue, the timesheet day blocks and the clock
-   * — dropped `?org=`. A door that lands a multi-employer reader on the employer picker is not a
+   * — dropped `?org_filter=`. A door that lands a multi-employer reader on the employer picker is not a
    * door. Callers pass `useHrContext().orgRef`.
    */
   org: HrOrgRef,

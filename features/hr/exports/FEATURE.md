@@ -158,10 +158,10 @@ Row → `getExportArtifact` (E-23) returns the URL envelope → bytes are stream
 - 🚨 **A field the viewer cannot access is ABSENT from the DOM** (SPEC-UI-IA §4.2). The money
   column is built only when `"total_amount" in row`. A present-but-null key is a *different fact*
   ("this format carries no amounts") and renders as `—`, never `0`.
-- 🚨 **The employer comes from `useHrContext`, never the Redux active org.** HR resolves `?org=`
+- 🚨 **The employer comes from `useHrContext`, never the Redux active org.** HR resolves `?org_filter=`
   first and is strictly single-employer; the Redux selection would merge two employers' pay data.
 - 🚨 **No HR URL is hand-assembled.** `hrPayPeriodHref` / `hrPayPeriodsHref` (`features/hr/routes.ts`)
-  carry `?org=`.
+  carry `?org_filter=`.
 - 🚨 **`X-Idempotency-Key` is minted per user INTENT and reused across retries** (`useIntentKeys`).
   A fresh key on retry is not weaker idempotency — it is none.
 - **The domain key is `payperiod:<id>:v1` and that spelling is frozen.** A second *generate* for

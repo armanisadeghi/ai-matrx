@@ -146,7 +146,7 @@ function MyTimesheetBody({
         </p>
         {/*
           ♻️ THE ORG TRAVELS ON THE LINK. `hrTasksHref(orgRef)` and never a hardcoded "/hr/tasks":
-          HR is strictly single-employer and a link that drops `?org=` silently lands the person in
+          HR is strictly single-employer and a link that drops `?org_filter=` silently lands the person in
           a different employer (`features/hr/routes.ts`). Same org-dropping class as the "/hr/me"
           link this route used to carry.
         */}

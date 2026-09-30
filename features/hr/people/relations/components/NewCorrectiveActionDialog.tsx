@@ -45,7 +45,7 @@ import {
 import { toast } from "@/lib/toast";
 import { issueHrCorrectiveAction } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
-import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { useHrWriteEmployer } from "@/features/hr/shared/hrScope";
 
 import {
   HR_CORRECTIVE_ACTION_LEVELS,
@@ -79,7 +79,7 @@ export function NewCorrectiveActionDialog({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const { active } = useHrContext();
+  const { active } = useHrWriteEmployer();
   const coaching = door === "coaching";
 
   const [subject, setSubject] = useState<string | null>(

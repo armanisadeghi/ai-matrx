@@ -55,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { createHrIncident } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
-import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { useHrWriteEmployer } from "@/features/hr/shared/hrScope";
 
 import {
   HR_INCIDENT_KINDS,
@@ -108,7 +108,7 @@ export function NewIncidentDialog({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const { active } = useHrContext();
+  const { active } = useHrWriteEmployer();
 
   const [kind, setKind] = useState<HrIncidentKind>("complaint");
   const [subject, setSubject] = useState<string | null>(

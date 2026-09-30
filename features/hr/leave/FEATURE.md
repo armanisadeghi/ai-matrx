@@ -207,7 +207,7 @@ divergence banner.
 | `api/rpc.ts`                          | THE ONE DOOR. `granted` dialect → `HrResult`; structural camelCase mapping; evidence-block `calc` left verbatim |
 | `api/service.ts`                      | Typed, field-by-field mappers over the six doors + the reason-category read. Mapped, never cast                 |
 | `api/types.ts`                        | Client shapes, written against the live function bodies                                                         |
-| `hrefs.ts`                            | `hrMeTimeOffPolicyHref` — the server's `ledger_href` re-attached to `?org=`                                     |
+| `hrefs.ts`                            | `hrMeTimeOffPolicyHref` — the server's `ledger_href` re-attached to `?org_filter=`                                     |
 | `components/LeaveBalanceBlock.tsx`    | THE HONESTY LAW component (§5)                                                                                  |
 | `components/LeaveRequestForm.tsx`     | §4.1's form + live preview + verbatim intake refusals                                                           |
 | `components/LeaveRequestList.tsx`     | Request history; discard/withdraw/cancel where lawful, one door per state (LAW 14)                              |

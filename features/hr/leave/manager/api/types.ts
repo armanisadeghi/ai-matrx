@@ -239,7 +239,7 @@ export interface LeaveBalanceRow extends LeaveFigures {
   employeeName: string | null;
   /** `hr._leave_sentence`, verbatim. Never composed here. */
   sentence: string | null;
-  /** The server's own §12 path. The surface re-attaches `?org=` (see `../routes.ts`). */
+  /** The server's own §12 path. The surface re-attaches `?org_filter=` (see `../routes.ts`). */
   ledgerHref: string | null;
 }
 

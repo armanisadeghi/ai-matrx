@@ -66,7 +66,7 @@ export function resolveDefaultTab(
  * 🚨 THIS REDIRECT MAY NEVER EMIT A URL WITH LESS EMPLOYER THAN THE ONE IT RECEIVED.
  *
  * Route 13 is a REWRITE of the URL the user is standing on, so it is the one place in the
- * module where dropping `?org=` is not merely a bad link — it destroys the employer the user
+ * module where dropping `?org_filter=` is not merely a bad link — it destroys the employer the user
  * supplied and then blames them for not supplying one.
  *
  * The bug it fixes (D5) was a RACE, not a missing argument. This component runs TWO
@@ -85,7 +85,7 @@ export function resolveDefaultTab(
  *
  * Two defences, because either alone leaves a hole:
  *
- *  1. FALL BACK TO THE RAW `?org=`. Reading it off `useSearchParams()` is race-free by
+ *  1. FALL BACK TO THE RAW `?org_filter=`. Reading it off `useSearchParams()` is race-free by
  *     construction — it is the value already in the address bar, available on the first
  *     render, needing no round trip. `orgRef` is still PREFERRED when resolved, because it is
  *     normalised to the employer's slug and survives a uuid-vs-slug mismatch.

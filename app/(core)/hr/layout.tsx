@@ -13,7 +13,7 @@
 // break that chain from a file nobody would think to look in. It also adds no
 // vertical clipping — a route layout boundary must never amputate its children.
 //
-// `<HrProvider>` reads `?org=` through `useSearchParams`, so it sits behind a
+// `<HrProvider>` reads `?org_filter=` through `useSearchParams`, so it sits behind a
 // Suspense boundary with a real skeleton rather than a spinner.
 
 import { Suspense, type ReactNode } from "react";

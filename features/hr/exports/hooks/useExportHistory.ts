@@ -15,7 +15,7 @@
  *
  * 🚨 THE EMPLOYER COMES FROM `useHrContext`, NOT FROM THE REDUX ACTIVE ORG. Every other feature in
  * this app scopes to the user's selected organization; HR does not. SPEC-UI-IA §1 resolves the
- * active employer from `?org=` FIRST, and HR is strictly single-employer — so reading the Redux
+ * active employer from `?org_filter=` FIRST, and HR is strictly single-employer — so reading the Redux
  * selection would show one employer's payroll exports on a page the user opened for another.
  * That is not a scoping bug, it is two employers' pay data merged on one screen.
  */
@@ -35,7 +35,7 @@ export interface UseExportHistoryResult {
   awaitingOrganization: boolean;
   /** The resolved employer, for callers that need it in a request body or an href. */
   organizationId: string | null;
-  /** The `?org=` reference (slug or uuid) to carry on outgoing HR links. */
+  /** The `?org_filter=` reference (slug or uuid) to carry on outgoing HR links. */
   orgRef: string | null;
   reload: () => void;
 }
@@ -60,7 +60,6 @@ export function useExportHistory(
     const startTimer = window.setTimeout(() => {
       setIsLoading(true);
       setFailure(null);
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
       listPayrollExports({ organizationId, payPeriodId, limit, mockCase })
         .then((next) => {
           if (cancelled) return;

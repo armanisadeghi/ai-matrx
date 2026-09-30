@@ -20,10 +20,12 @@
 ## Purpose
 
 The HR module: one employer's people, time, hiring, documents and settings, for an
-organization that has switched HR on. **HR is strictly single-employer** — an
-`hr.employee` belongs to exactly one employer of record, and merging two employers'
-headcount, timesheets or pay data into one view is a compliance defect, not a
-feature. There is no cross-employer HR view, in v1 or later.
+organization that has switched HR on. An `hr.employee` belongs to exactly one employer of
+record, so **lists span employers and aggregates do not** (Arman, 2026-09-30): a list a person
+browses opens on All organizations with the employer as a column and a visible filter
+(`?org_filter=`); totals, pay, periods, timesheet batches and an employer's settings need exactly
+one employer and ask which under All organizations. Never the active organization, never `?org=`.
+Rule in full: the header of `shared/useHrContext.ts`.
 
 ---
 
@@ -119,9 +121,11 @@ place. See `types.ts` for the full contract.
 
 ## The laws this layer exists to enforce
 
-1. **Switching employers is a full context change.** The SAME route with a new
-   `?org=`, built only by `hrSwitchEmployerHref`. Never a merge, never a filter
-   across orgs.
+1. **Lists span employers; aggregates and actions take exactly one.** `useHrContext().scope`
+   says which employers a list reads (`fanOutHr` in `shared/hrScope.tsx`, one door call each,
+   rows labelled with their employer, `HrOrgFilter` visible); `HrPageState` shows the
+   pick-an-organization prompt while `active` is null. Switching employers is the SAME route
+   with a new `?org_filter=`, built only by `hrSwitchEmployerHref`. Never a merged total.
 2. **Nav, tab and action visibility are CAPABILITY-driven, never role-string
    driven.** `useHrPersona().can(…)`; the persona picks the label and the
    self-scoped destination, never the access decision.
@@ -178,6 +182,7 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-09-30 (HR lists span employers; aggregates take one — Arman's ruling)** — the older "HR is strictly single-employer, never filter a list to all my orgs" rule is replaced: lists a person browses (directory, relations cases, verifications, leave balances) open on All organizations with an Organization column and a visible filter (`?org_filter=`, `HrOrgFilter`); `useHrContext().scope` names the employers a list reads and `fanOutHr` (`shared/hrScope.tsx`) calls each employer's door and merges (total = sum of each door's count). Totals, pay, periods, timesheet batches and employer settings still need one employer: under All they show "Pick an organization to open this." with the picker. HR no longer reads the active organization for its employer, and `HR_ORG_PARAM` is `org_filter` (was `org`, which switched the active org); a new record saves into the filter's employer, else the active organization (`useHrWriteEmployer`). The leave-decision and task inboxes already span employers (their door carries no organization), so they show no Organization column or filter until that door returns one.
 - `2026-09-27` — page-pass shared defects: `/hr/settings/employer`'s no-employer list is the platform `OrganizationPicker` (design-system with `detail` / `folded` / `hideStatus`): search above eight rows, "Open / Finish setup / Turn on HR" per row, set-up first, HR-off organizations folded under "Organizations without HR (N)"; choosing still navigates to `?org=<slug>`.
 
 - **2026-09-27 (page-pass /hr/settings/employer, round 4)** — HR pages with their own tab bar keep the HR section switch as ONE labeled dropdown (`RouteModeNav` `maxVariant="menu"`), not a second row of unlabeled icons; HR tab strips scroll the active tab into view and fade the edge that has more tabs; breadcrumb links are 32px (44px on touch). Employer page: EIN input aligned with its row (hint under the input), Primary address is an h2, right-clicking a section gives that section's content, today's save shows a time, tab title "Employer" matches the page title, and `tax_registrations_status` was dropped (nothing on screen). Shared `Field`: the "grey text is an example" notice shows only while a placeholder is shown.
@@ -278,7 +283,7 @@ wrapper added in another lane's file.
   notice lived in `HrShell` alone, and thirteen `/hr` routes do not mount it —
   `/hr/tasks`, `/hr/tasks/[instanceId]` (the landing every HR notification deep-links
   to) and the whole `/hr/me/*` family. Measured live: `/hr?org=<unreachable>` stated
-  the swap, while the same `?org=` on `/hr/tasks/<instance>` rendered another
+  the swap, while the same `?org_filter=` on `/hr/tasks/<instance>` rendered another
   employer's pay change in silence. The disclosure now hangs off `HrPageState`, with
   `HrShell`, `HrTaskInbox` and `HrDecisionPanel` claiming it via
   `HrDisclosureClaimed` so it is stated once and never zero times. Guards:

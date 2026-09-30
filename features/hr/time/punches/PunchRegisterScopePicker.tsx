@@ -25,12 +25,12 @@
  * 🚨 **THE SCOPE LIVES IN THE URL**, so a scoped register is linkable, bookmarkable and shareable
  * with the person who has to act on it — the same property `hrPunchesHref` already relies on.
  *
- * 🚨 **`?org=` IS AN ANSWER, AND THIS CONTROL MUST NOT RE-ASK IT.**
+ * 🚨 **`?org_filter=` IS AN ANSWER, AND THIS CONTROL MUST NOT RE-ASK IT.**
  * Arriving at `/hr/time/punches?org=<employer>` used to read *"This register has no scope yet.
  * Choose a person, or an employer"* above a list of every employer — telling somebody to choose an
  * employer they had already named in the URL. The employer and the SUBJECT are two different
- * questions: `?org=` settles which employer, `?employment=` / `?scope=org` settle whose punches.
- * Once `?org=` is present only the second question is open, and only the second is asked.
+ * questions: `?org_filter=` settles which employer, `?employment=` / `?scope=org` settle whose punches.
+ * Once `?org_filter=` is present only the second question is open, and only the second is asked.
  *
  * The employer in the URL is never overridden here, and `scope=org` is never assumed from it: an
  * employer-wide register is a large, separately-gated read, so it stays something a person asks
@@ -43,6 +43,7 @@ import { Building2, ChevronDown, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { HR_ORG_PARAM } from "@/features/hr/constants";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { EmployeeSearchSelect } from "../clock/EmployeeSearchSelect";
@@ -103,7 +104,7 @@ export function PunchRegisterScopePicker({
   }
 
   /*
-   * The employer `?org=` resolved to. `useHrContext` applies SPEC-UI-IA §1 rule 1, so when the URL
+   * The employer `?org_filter=` resolved to. `useHrContext` applies SPEC-UI-IA §1 rule 1, so when the URL
    * carries an employer this IS that employer — which is exactly why this control may state it
    * rather than ask for it.
    */
@@ -134,7 +135,7 @@ export function PunchRegisterScopePicker({
             </>
           ) : activeEmployer ? (
             /*
-             * THE EMPLOYER IS ALREADY SETTLED — by `?org=` or by the context it resolved to — so
+             * THE EMPLOYER IS ALREADY SETTLED — by `?org_filter=` or by the context it resolved to — so
              * it is STATED, not asked for. Only the subject is still open.
              */
             <>
@@ -211,7 +212,7 @@ export function PunchRegisterScopePicker({
               <ul className="space-y-1">
                 {/*
                   🚨 THE EMPLOYER ALREADY IN THE URL COMES FIRST, AS THE PRIMARY ACTION.
-                  It is not one option among several: `?org=` already named it, and re-listing it
+                  It is not one option among several: `?org_filter=` already named it, and re-listing it
                   level with the others is what made this control read as "you have not chosen an
                   employer" to somebody who had. The rest stay reachable — an employer-wide
                   register IS one of the doors this page opens — but below, and secondary.
@@ -229,10 +230,9 @@ export function PunchRegisterScopePicker({
                         onClick={() => {
                           const query = new URLSearchParams(params?.toString() ?? "");
                           query.delete("employment");
-                          // Rewriting `org` for the ACTIVE employer is a no-op that also
-                          // normalises a uuid in the URL to the readable slug; for any other
+                          // Rewriting the filter for the ACTIVE employer is a no-op; for any other
                           // employer it is the deliberate full context change §1 requires.
-                          query.set("org", employer.slug ?? employer.organization_id);
+                          query.set(HR_ORG_PARAM, employer.organization_id);
                           query.set("scope", "org");
                           // hr-url-exempt: the same copy-then-amend rebuild, and this branch explicitly
                           // RE-SETS `org` above for the employer being switched to (§1's full context change).

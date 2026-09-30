@@ -27,7 +27,7 @@ export function useExportFormats(
   /**
    * 🚨 THE EMPLOYER, EXPLICITLY. This is a GET, so it carries no body for the transport to derive
    * `X-Organization-Id` from — without it the header falls back to the REDUX picker's org, which
-   * is not what HR scopes to (SPEC-UI-IA §1: `?org=` wins). The registry is capability-scoped per
+   * is not what HR scopes to (SPEC-UI-IA §1: `?org_filter=` wins). The registry is capability-scoped per
    * employer, so a header naming the wrong one answers about the wrong employer. R5.
    */
   organizationId?: string | null,

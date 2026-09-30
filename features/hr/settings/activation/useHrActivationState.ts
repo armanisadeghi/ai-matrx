@@ -33,7 +33,7 @@ export type HrActivationState = {
   mode: HrActivationMode | null;
   /** The resolved employer, or null → the caller renders the employer picker. */
   organizationId: string | null;
-  /** What to put in `?org=` on links out of the wizard. */
+  /** What to put in `?org_filter=` on links out of the wizard. */
   orgRef: string | null;
   /**
    * Org owner/admin AND no `hr_owner` assignment yet — the ONE gate on the wizard's

@@ -55,6 +55,15 @@ import {
 } from "@/components/ui/select";
 
 import { HrPageState } from "@/features/hr/shared/HrStates";
+import {
+  HrEmployerLabel,
+  HrOrgFilter,
+  HrUnavailableNotice,
+  fanOutHr,
+  toRowEmployer,
+  type HrRowEmployer,
+  type HrUnavailableEmployer,
+} from "@/features/hr/shared/hrScope";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -72,7 +81,14 @@ import {
   LeaveFigureCell,
 } from "./balanceFigures";
 import { fetchLeaveBalances } from "./api/service";
-import type { LeaveBalanceList, LeaveBalanceRow } from "./api/types";
+import type { LeaveBalanceList, LeaveBalanceRow as WireBalanceRow } from "./api/types";
+
+/** A balance row plus the employer it belongs to — the org is a column, never a group. */
+type LeaveBalanceRow = WireBalanceRow & { employer: HrRowEmployer };
+type ScopedBalanceList = Omit<LeaveBalanceList, "rows"> & {
+  rows: LeaveBalanceRow[];
+  unavailable: HrUnavailableEmployer[];
+};
 import { LeaveAdjustDialog } from "./LeaveAdjustDialog";
 import { hrPageRefusalProps } from "./refusal";
 import { LeaveDeskShell } from "./LeaveDeskShell";
@@ -109,17 +125,19 @@ function accrualSummary(row: LeaveBalanceRow): string {
 }
 
 export function LeaveBalancesSurface() {
-  const { active, orgRef } = useHrContext();
+  const { scope: hrScope, orgRef } = useHrContext();
   const router = useRouter();
   const params = useSearchParams();
-  const organizationId = active?.organization_id ?? null;
+  // The employers this list reads: every one in scope under All organizations.
+  const employersKey = JSON.stringify(hrScope.employers.map(toRowEmployer));
+  const spansEmployers = hrScope.employers.length > 1;
 
   const scopeParam = params?.get("scope") ?? null;
   const scope: Scope = isScope(scopeParam) ? scopeParam : "organization";
   const policyParam = params?.get("policy") ?? null;
   const negativeOnly = params?.get("negative") === "1";
 
-  const [list, setList] = useState<LeaveBalanceList | null>(null);
+  const [list, setList] = useState<ScopedBalanceList | null>(null);
   const [error, setError] = useState<HrDenied | HrFailed | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
@@ -128,14 +146,29 @@ export function LeaveBalancesSurface() {
 
   const load = useCallback(
     async (signal: AbortSignal) => {
-      if (!organizationId) return;
+      const employers = JSON.parse(employersKey) as HrRowEmployer[];
+      if (employers.length === 0) return;
       setLoading(true);
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
-      const result = await fetchLeaveBalances(
-        { organizationId, scope, leavePolicyId: policyParam, negativeOnly },
-        { signal },
+      const answer = await fanOutHr(employers, (organizationId) =>
+        fetchLeaveBalances(
+          { organizationId, scope, leavePolicyId: policyParam, negativeOnly },
+          { signal },
+        ),
       );
       if (signal.aborted) return;
+      const result = answer.ok
+        ? {
+            ok: true as const,
+            data: {
+              ...answer.data.parts[0].data,
+              canAdjust: answer.data.parts.some((p) => p.data.canAdjust),
+              rows: answer.data.parts.flatMap(({ employer, data }) =>
+                data.rows.map((row) => ({ ...row, employer })),
+              ),
+              unavailable: answer.data.unavailable,
+            } satisfies ScopedBalanceList,
+          }
+        : answer;
       if (result.ok) {
         setList(result.data);
         setError(null);
@@ -144,7 +177,7 @@ export function LeaveBalancesSurface() {
       }
       setLoading(false);
     },
-    [organizationId, scope, policyParam, negativeOnly],
+    [employersKey, scope, policyParam, negativeOnly],
   );
 
   useEffect(() => {
@@ -183,6 +216,19 @@ export function LeaveBalancesSurface() {
   }
 
   const columns: MatrxColumnDef<LeaveBalanceRow>[] = [
+    ...(spansEmployers
+      ? [
+          {
+            id: "employer",
+            accessorFn: (row: LeaveBalanceRow) => row.employer.name,
+            header: "Organization",
+            filter: false as const,
+            cell: (row: LeaveBalanceRow) => (
+              <HrEmployerLabel name={row.employer.name} />
+            ),
+          } satisfies MatrxColumnDef<LeaveBalanceRow>,
+        ]
+      : []),
     {
       id: "employee",
       accessorFn: (row) => row.employeeName ?? "",
@@ -190,7 +236,7 @@ export function LeaveBalancesSurface() {
       sortable: true,
       filter: "text",
       cell: (row) => {
-        const href = leaveLedgerHrefFrom(row.ledgerHref, orgRef);
+        const href = leaveLedgerHrefFrom(row.ledgerHref, row.employer.organizationId);
         return (
           <div className="min-w-0">
             {href ? (
@@ -352,6 +398,7 @@ export function LeaveBalancesSurface() {
       description="Decisions waiting on you, the balances behind them, and who is out."
     >
       <HrPageState
+        employerScope="all"
         loading={loading}
         {...hrPageRefusalProps(error)}
         operation="Leave balances"
@@ -359,6 +406,10 @@ export function LeaveBalancesSurface() {
         variant="table"
       >
         <div className="space-y-4 p-4 sm:p-6">
+          <div className="flex flex-wrap items-center gap-2 empty:hidden">
+            <HrOrgFilter />
+          </div>
+          <HrUnavailableNotice unavailable={list?.unavailable ?? []} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {/*
@@ -456,7 +507,7 @@ export function LeaveBalancesSurface() {
                 null;
               setContextRow(row);
               if (!row) return null;
-              const menuTarget = leaveBalanceRowTarget(row, orgRef);
+              const menuTarget = leaveBalanceRowTarget(row, row.employer.organizationId);
               return {
                 [CONTEXT_MENU_ENTITY_KEY]: hrPersonEntityRef(menuTarget),
                 content: [
@@ -472,7 +523,7 @@ export function LeaveBalancesSurface() {
               contextRow
                 ? [
                     buildHrPersonMenuSection(
-                      leaveBalanceRowTarget(contextRow, orgRef),
+                      leaveBalanceRowTarget(contextRow, contextRow.employer.organizationId),
                       {
                         onAdjustBalance: list?.canAdjust
                           ? () => setAdjusting(contextRow)
@@ -534,7 +585,10 @@ export function LeaveBalancesSurface() {
 
       <LeaveAdjustDialog
         row={adjusting}
-        ledgerHref={leaveLedgerHrefFrom(adjusting?.ledgerHref ?? null, orgRef)}
+        ledgerHref={leaveLedgerHrefFrom(
+          adjusting?.ledgerHref ?? null,
+          adjusting?.employer.organizationId ?? orgRef,
+        )}
         onClose={() => setAdjusting(null)}
         onAdjusted={() => setReloadToken((n) => n + 1)}
       />

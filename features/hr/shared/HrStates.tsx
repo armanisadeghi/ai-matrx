@@ -396,7 +396,7 @@ export function HrNoAccess({
  * The list is `hr_my_context().employers`, which the server already limits to
  * employers this person can do HR in — plus an employer whose module is OFF when
  * they are its owner/admin, because they are the only one who can turn it on.
- * Switching is a full context change: the SAME route with a new `?org=`.
+ * Switching is a full context change: the SAME route with a new `?org_filter=`.
  */
 export function HrEmployerPicker({ className }: { className?: string } = {}) {
   const { employers, isLoading, error, refresh } = useHrContext();
@@ -433,7 +433,7 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
       nothing to pick — offering a chooser with no choices is the dead end the
       canonical refusal exists to kill. So it becomes the platform's denial
       about that ORGANIZATION, with the request-access click that reaches its
-      owners and admins. With no `?org=` there is nothing to name and nothing to
+      owners and admins. With no `?org_filter=` there is nothing to name and nothing to
       ask for, so the plain page stands.
     */
     if (askedEmployerRef) {
@@ -457,8 +457,8 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
             No employer here uses HR yet
           </h2>
           <p className="text-sm text-muted-foreground">
-            HR belongs to one employer at a time. An owner or admin of an
-            organization turns it on in that organization&apos;s settings.
+            An owner or admin of an organization turns it on in that
+            organization&apos;s settings.
           </p>
         </div>
       </div>
@@ -467,6 +467,14 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
 
   return (
     <div className={cn("matrx-touch-targets w-full min-w-0 max-w-xl px-4 py-3 sm:px-6", className)}>
+      {/* The aggregate/action prompt (law: lists span employers, totals and pay do not).
+          Under All organizations this page cannot sum employers or pick one for you. */}
+      <p
+        data-hr-pick-organization=""
+        className="pb-2 text-sm font-medium text-foreground"
+      >
+        Pick an organization to open this.
+      </p>
       <HrEmployerChoices
         employers={choosable}
         activeOrganizationId={null}
@@ -476,6 +484,20 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
       />
     </div>
   );
+}
+
+/**
+ * THE AGGREGATE GATE. A section whose every page totals, approves or pays for ONE employer
+ * (time and attendance: timesheet sums and approval batches, pay periods, overtime, the punch
+ * register) renders its pages only once a single employer is open. Under All organizations it
+ * renders the pick-an-organization prompt with the picker right there — it never sums employers
+ * and never picks one for the person. While the context resolves, the picker shows its loading
+ * state, so nothing flashes.
+ */
+export function HrOneEmployerGate({ children }: { children: ReactNode }) {
+  const { active } = useHrContext();
+  if (!active) return <HrEmployerPicker />;
+  return <>{children}</>;
 }
 
 /**
@@ -491,7 +513,7 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
  *  - HR off → "Turn on HR" (owners/admins only), folded away under a disclosure
  *    because most organizations without HR are not what someone came here for.
  * The employer on screen is always listed (marked), whatever its state.
- * Choosing navigates: the SAME route with a new `?org=`.
+ * Choosing navigates: the SAME route with a new `?org_filter=`.
  */
 export function HrEmployerChoices({
   employers,
@@ -556,7 +578,8 @@ export function HrEmployerChoices({
         if (!employer) return;
         onChosen?.();
         if (isActive(employer)) return;
-        const ref = employer.slug?.trim() || employer.organization_id;
+        // The filter speaks uuids (`EntityOrgFilter` / `useOrgFilterParam`), never slugs.
+        const ref = employer.organization_id;
         startTransition(() => {
           router.push(hrSwitchEmployerHref(pathname, ref));
         });
@@ -577,7 +600,7 @@ export function HrEmployerChoices({
  * notification deep-links to) and the whole `/hr/me/*` family. So on exactly the
  * surfaces an outside link lands somebody on, HR could open a different employer in
  * silence. Proven live on 2026-08-29: `/hr?org=<unreachable>` said so; the same
- * `?org=` on `/hr/tasks/<instance>` said nothing and rendered another employer's
+ * `?org_filter=` on `/hr/tasks/<instance>` said nothing and rendered another employer's
  * pay change.
  *
  * So the notice now hangs off `HrPageState` — the ordered state machine EVERY HR
@@ -620,7 +643,7 @@ export function useHrDisclosureClaimed(): boolean {
  * this page is showing, and it must still be true the moment somebody looks up.
  */
 /**
- * The rescue landed nowhere: `?org=` named an employer this person cannot do HR
+ * The rescue landed nowhere: `?org_filter=` named an employer this person cannot do HR
  * in, and the employer they were rescued into has HR off or unfinished — so the
  * substitution bought them nothing and `HrPageState` refuses about the ASKED-FOR
  * employer instead, through the canonical access-denied primitive.
@@ -702,7 +725,7 @@ export function HrEmployerSubstitutionNotice({
     >
       <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       <span className="min-w-0">{sentence}</span>
-      {/* The way back is a real door: `?org=` is honored now, so a module-off
+      {/* The way back is a real door: `?org_filter=` is honored now, so a module-off
           employer opens its enable door instead of bouncing back to here. */}
       {askedRef ? (
         <Link
@@ -835,6 +858,14 @@ export function HrPageState({
   noAccessSentence,
   /** Set false for a surface that legitimately renders with no employer (rare). */
   requireEmployer = true,
+  /**
+   * `"one"` (default) — an AGGREGATE or ACTION surface: it needs exactly one employer and
+   * shows the pick-an-organization prompt while `active` is null (All organizations).
+   * `"all"` — a LIST surface: it reads every employer in `scope`, so All organizations is a
+   * valid state; the picker shows only when no employer is in scope at all.
+   */
+  employerScope = "one",
+  hasWriteEmployer = false,
 }: {
   loading?: boolean;
   error?: unknown;
@@ -848,6 +879,12 @@ export function HrPageState({
   personaHomeHref?: string;
   noAccessSentence?: string;
   requireEmployer?: boolean;
+  employerScope?: "one" | "all";
+  /**
+   * A CREATE surface resolves its own employer (`useHrWriteEmployer`: the filter's, else the
+   * active organization) and says so here, so it is not sent to the picker under All.
+   */
+  hasWriteEmployer?: boolean;
 }) {
   const context = useHrContext();
   const disclosureClaimed = useHrDisclosureClaimed();
@@ -890,12 +927,19 @@ export function HrPageState({
     );
   }
 
-  if (requireEmployer && !context.active) return <HrEmployerPicker />;
+  if (
+    requireEmployer &&
+    !context.active &&
+    !(employerScope === "all" && context.scope.employers.length > 0) &&
+    !hasWriteEmployer
+  ) {
+    return <HrEmployerPicker />;
+  }
 
   /*
     🚨 THE SMS-DEEP-LINK LANDING (owner, on his phone, 2026-08-30).
 
-    `?org=` named an employer this person cannot do HR in, so
+    `?org_filter=` named an employer this person cannot do HR in, so
     `useHrContextResolver` rescued them into an employer they CAN use — and the
     rescue landed on one with HR switched off or never set up. The result was a
     page about the WRONG ORGANIZATION offering to turn HR on there, which

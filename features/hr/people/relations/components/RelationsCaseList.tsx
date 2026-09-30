@@ -47,13 +47,22 @@ import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { useHrPersona } from "@/features/hr/shared/useHrPersona";
 
-import { useHrRelationsCases } from "../hooks/useRelationsCases";
+import {
+  HrEmployerLabel,
+  HrOrgFilter,
+  HrUnavailableNotice,
+  useHrWriteEmployer,
+} from "@/features/hr/shared/hrScope";
+
+import {
+  useHrRelationsCases,
+  type HrScopedRelationsCase,
+} from "../hooks/useRelationsCases";
 import type { HrRelationsFilter } from "../service";
 import {
   HR_INCIDENT_STATES,
   HR_INCIDENT_STATE_LABELS,
   HR_INCIDENT_STATE_TOKEN,
-  type HrRelationsCase,
 } from "../types";
 import { NewCorrectiveActionDialog } from "./NewCorrectiveActionDialog";
 import { NewIncidentDialog } from "./NewIncidentDialog";
@@ -61,7 +70,10 @@ import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusCh
 
 
 export function RelationsCaseList() {
-  const { orgRef } = useHrContext();
+  const { scope } = useHrContext();
+  const spansEmployers = scope.employers.length > 1;
+  // A new case is saved into one employer: the filter's, else the active organization.
+  const writeEmployer = useHrWriteEmployer();
   const { can } = useHrPersona();
   const [filter, setFilter] = useState<HrRelationsFilter>({});
   const [newAction, setNewAction] = useState<"coaching" | "formal" | null>(null);
@@ -69,10 +81,25 @@ export function RelationsCaseList() {
 
   const { list, isLoading, error, refresh } = useHrRelationsCases(filter);
 
-  const canIssue = can("corrective_action.issue");
-  const canReport = can("incident.read") || can("incident.investigate");
+  const canIssue = can("corrective_action.issue") && writeEmployer.active !== null;
+  const canReport =
+    (can("incident.read") || can("incident.investigate")) &&
+    writeEmployer.active !== null;
 
-  const columns: MatrxColumnDef<HrRelationsCase>[] = [
+  const columns: MatrxColumnDef<HrScopedRelationsCase>[] = [
+    ...(spansEmployers
+      ? [
+          {
+            id: "employer",
+            accessorFn: (row: HrScopedRelationsCase) => row.employer.name,
+            header: "Organization",
+            filter: false as const,
+            cell: (row: HrScopedRelationsCase) => (
+              <HrEmployerLabel name={row.employer.name} />
+            ),
+          } satisfies MatrxColumnDef<HrScopedRelationsCase>,
+        ]
+      : []),
     {
       id: "kind",
       accessorFn: (row) => row.kindLabel,
@@ -88,7 +115,7 @@ export function RelationsCaseList() {
           {/* A voided record STAYS ON THE LIST, struck through. Removing it
               from the queue would be the deletion the void exists instead of. */}
           <Link
-            href={hrRelationsCaseHref(row.id, orgRef, row.caseKind)}
+            href={hrRelationsCaseHref(row.id, row.employer.organizationId, row.caseKind)}
             className={`truncate text-sm font-medium underline-offset-2 hover:underline ${
               row.voided
                 ? "text-muted-foreground line-through"
@@ -190,6 +217,7 @@ export function RelationsCaseList() {
 
   return (
     <HrPageState
+      employerScope="all"
       loading={isLoading}
       error={error && error.kind === "failed" ? error : null}
       granted={error?.kind === "denied" ? false : undefined}
@@ -199,6 +227,10 @@ export function RelationsCaseList() {
       noAccessSentence="This part of HR isn't yours here."
     >
       <div className="flex h-full min-h-0 flex-col gap-3 p-4 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 empty:hidden">
+          <HrOrgFilter />
+        </div>
+        <HrUnavailableNotice unavailable={list?.unavailable ?? []} />
         {list?.partial ? (
           // 🚨 THIS BANNER ONCE MADE A COMPLETENESS CLAIM OVER A DOOR THAT HAD
           // REFUSED. Verified on production v0.4.1474: the corrective-action side
@@ -223,7 +255,7 @@ export function RelationsCaseList() {
           </p>
         ) : null}
 
-        <MatrxDataTable<HrRelationsCase>
+        <MatrxDataTable<HrScopedRelationsCase>
           data={list?.cases ?? []}
           columns={columns}
           getRowId={(row) => `${row.caseKind}:${row.id}`}

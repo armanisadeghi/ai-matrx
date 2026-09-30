@@ -10,7 +10,7 @@ import { hrComplianceLawsHref } from "@/features/hr/routes";
  * top-level "Compliance" item resolving to `/hr/compliance` since the nav shipped,
  * and no route existed behind it — it 404'd for every persona that could see it.
  * The section's first real surface is the law portal (D25), so the root opens it,
- * carrying `?org=` through the builder rather than re-assembling a URL by hand.
+ * carrying `?org_filter=` through the builder rather than re-assembling a URL by hand.
  *
  * When Compliance grows its own landing surface, this file is what that lane
  * replaces — the tab bar in `HrComplianceShell` is where a new destination is added.

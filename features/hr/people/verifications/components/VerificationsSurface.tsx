@@ -30,6 +30,16 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { toast } from "@/lib/toast";
 import { HrPageState, hrErrorSentence } from "@/features/hr/shared/HrStates";
+import {
+  HrEmployerLabel,
+  HrOrgFilter,
+  HrUnavailableNotice,
+  fanOutHr,
+  toRowEmployer,
+  useHrWriteEmployer,
+  type HrRowEmployer,
+  type HrUnavailableEmployer,
+} from "@/features/hr/shared/hrScope";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { useHrPersona } from "@/features/hr/shared/useHrPersona";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
@@ -53,35 +63,54 @@ import { VerificationRowActions } from "./VerificationRowActions";
 import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusChip";
 
 
+type ScopedLetterRow = HrVerificationLetterRow & { employer: HrRowEmployer };
+
 export function VerificationsSurface() {
-  const { active } = useHrContext();
+  const { scope } = useHrContext();
   const { can } = useHrPersona();
   const api = useBackendApi();
+  // A new request is saved into one employer: the filter's, else the active organization.
+  const writeEmployer = useHrWriteEmployer();
+  // The employers this list reads: every one in scope under All organizations.
+  const employersKey = JSON.stringify(scope.employers.map(toRowEmployer));
+  const spansEmployers = scope.employers.length > 1;
 
-  const [rows, setRows] = useState<HrVerificationLetterRow[] | null>(null);
+  const [rows, setRows] = useState<ScopedLetterRow[] | null>(null);
+  const [unavailable, setUnavailable] = useState<HrUnavailableEmployer[]>([]);
   const [error, setError] = useState<HrDenied | HrFailed | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [clickedRow, setClickedRow] = useState<HrVerificationLetterRow | null>(
+  const [clickedRow, setClickedRow] = useState<ScopedLetterRow | null>(
     null,
   );
 
   const refresh = useCallback(() => setReloadToken((n) => n + 1), []);
-  const organizationId = active?.organization_id ?? null;
 
   useEffect(() => {
-    if (!organizationId) return;
+    const employers = JSON.parse(employersKey) as HrRowEmployer[];
+    if (employers.length === 0) return;
     let cancelled = false;
     setIsLoading(true);
 
     (async () => {
-      // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
-      const result = await fetchHrVerificationLetters({ organizationId });
+      const answer = await fanOutHr(employers, (organizationId) =>
+        fetchHrVerificationLetters({ organizationId }),
+      );
       if (cancelled) return;
+      const result = answer.ok
+        ? {
+            ok: true as const,
+            merged: answer.data.parts.flatMap(({ employer, data }) =>
+              (data.rows ?? []).map((row) => ({ ...row, employer })),
+            ),
+            unavailable: answer.data.unavailable,
+          }
+        : answer;
       if (result.ok) {
-        setRows(result.data.rows ?? []);
+        setRows(result.merged);
+        setUnavailable(result.unavailable);
         setError(null);
       } else {
         // A refusal leaves the rows NULL, never an empty array — "not yours to
@@ -95,18 +124,18 @@ export function VerificationsSurface() {
     return () => {
       cancelled = true;
     };
-  }, [organizationId, reloadToken]);
+  }, [employersKey, reloadToken]);
 
   const canGenerate = can("identity.write") || can("working_record.write");
 
   const generate = useCallback(
-    async (row: HrVerificationLetterRow) => {
-      if (!organizationId) return;
+    async (row: ScopedLetterRow) => {
       setBusyId(row.id);
       const outcome = await generateHrVerificationLetter({
         request: api.fetch,
         letterId: row.id,
-        organizationId,
+        // The RECORD's own employer — never the page's.
+        organizationId: row.employer.organizationId,
         includesCompensation: Boolean(row.includes_compensation),
         recipient: row.requester_email ?? row.requester_name ?? null,
       });
@@ -139,10 +168,23 @@ export function VerificationsSurface() {
           toast.error(outcome.message);
       }
     },
-    [api.fetch, organizationId, refresh],
+    [api.fetch, refresh],
   );
 
-  const columns: MatrxColumnDef<HrVerificationLetterRow>[] = [
+  const columns: MatrxColumnDef<ScopedLetterRow>[] = [
+    ...(spansEmployers
+      ? [
+          {
+            id: "employer",
+            accessorFn: (row: ScopedLetterRow) => row.employer.name,
+            header: "Organization",
+            filter: false as const,
+            cell: (row: ScopedLetterRow) => (
+              <HrEmployerLabel name={row.employer.name} />
+            ),
+          } satisfies MatrxColumnDef<ScopedLetterRow>,
+        ]
+      : []),
     {
       id: "subject",
       accessorFn: (row) => row.subject_name ?? "",
@@ -248,6 +290,7 @@ export function VerificationsSurface() {
 
   return (
     <HrPageState
+      employerScope="all"
       loading={isLoading}
       error={error && error.kind === "failed" ? error : null}
       granted={error?.kind === "denied" ? false : undefined}
@@ -255,7 +298,11 @@ export function VerificationsSurface() {
       variant="table"
       onRetry={refresh}
     >
-      <div className="flex h-full min-h-0 flex-col p-4 sm:p-6">
+      <div className="flex h-full min-h-0 flex-col gap-3 p-4 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 empty:hidden">
+          <HrOrgFilter />
+        </div>
+        <HrUnavailableNotice unavailable={unavailable} />
         <NonEditableContextMenu
           sourceFeature="admin"
           contentSource={{ type: "raw" }}
@@ -303,7 +350,7 @@ export function VerificationsSurface() {
             },
           ]}
         >
-        <MatrxDataTable<HrVerificationLetterRow>
+        <MatrxDataTable<ScopedLetterRow>
           data={rows ?? []}
           columns={columns}
           getRowId={(row) => row.id}
@@ -321,7 +368,7 @@ export function VerificationsSurface() {
           toolbar={{
             search: true,
             searchPlaceholder: "Search requests",
-            actions: canGenerate ? (
+            actions: canGenerate && writeEmployer.active ? (
               <Button
                 type="button"
                 size="sm"

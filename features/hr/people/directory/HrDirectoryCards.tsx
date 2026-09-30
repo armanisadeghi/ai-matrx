@@ -23,7 +23,8 @@ import { HrEmployeePhoto } from "../../shared/HrEmployeePhoto";
 import { MoreHorizontal } from "lucide-react";
 
 import { hrEmployeeHref, type HrOrgRef } from "../../routes";
-import type { HrDirectoryRow } from "../../types";
+import { HrEmployerLabel } from "../../shared/hrScope";
+import type { HrScopedDirectoryRow } from "./useHrDirectory";
 import { HrPersonDoor } from "../doors/HrPersonDoor";
 import { HrRowBasisNote, HrStatusChip } from "../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../shared/HrWorkerClassChip";
@@ -36,15 +37,20 @@ import type { HrEmployeeMenuBuilder } from "./useHrEmployeeMenu";
 
 export function HrDirectoryCard({
   row,
-  org,
+  org: pageOrg,
   buildMenu,
+  showEmployer = false,
   className,
 }: {
-  row: HrDirectoryRow;
+  row: HrScopedDirectoryRow;
   org: HrOrgRef;
   buildMenu: HrEmployeeMenuBuilder;
+  /** A list spanning employers labels each card with its employer. */
+  showEmployer?: boolean;
   className?: string;
 }) {
+  // Links act in the RECORD's own employer, never the page's.
+  const org = row.employer.organizationId ?? pageOrg;
   return (
     <div
       className={cn(
@@ -89,6 +95,7 @@ export function HrDirectoryCard({
               workEmail: row.work_email,
               employmentId: row.employment_id,
               status: row.directory_status,
+              organizationId: row.employer.organizationId,
             })
           }
         >
@@ -104,6 +111,7 @@ export function HrDirectoryCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
+        {showEmployer ? <HrEmployerLabel name={row.employer.name} /> : null}
         <HrStatusChip status={row.directory_status} />
         <HrWorkerClassChip workerClass={row.worker_class} />
       </div>
@@ -157,10 +165,12 @@ export function HrDirectoryCardGrid({
   rows,
   org,
   buildMenu,
+  showEmployer = false,
 }: {
-  rows: HrDirectoryRow[];
+  rows: HrScopedDirectoryRow[];
   org: HrOrgRef;
   buildMenu: HrEmployeeMenuBuilder;
+  showEmployer?: boolean;
 }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -170,6 +180,7 @@ export function HrDirectoryCardGrid({
           row={row}
           org={org}
           buildMenu={buildMenu}
+          showEmployer={showEmployer}
         />
       ))}
     </div>

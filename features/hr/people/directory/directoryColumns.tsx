@@ -39,7 +39,8 @@ import {
 } from "../shared/HrStatusChip";
 import { HrWorkerClassChip, hrWorkerClassLabel } from "../shared/HrWorkerClassChip";
 import { HrPersonDoor, HrStructureDoor } from "../doors/HrPersonDoor";
-import type { HrDirectoryRow } from "../../types";
+import { HrEmployerLabel } from "../../shared/hrScope";
+import type { HrScopedDirectoryRow } from "./useHrDirectory";
 import {
   HR_DIRECTORY_STATUSES,
   HR_WORKER_CLASSES,
@@ -117,11 +118,15 @@ export function buildHrDirectoryColumns(args: {
   /** `page.statuses.allowed` — the only statuses this viewer may ask for. */
   allowedStatuses: readonly HrDirectoryStatus[];
   facets: HrDirectoryFacetOptions;
-}): MatrxColumnDef<HrDirectoryRow>[] {
-  const { org, publishes, allowedStatuses, facets } = args;
+  /** A list spanning employers shows the employer as a column. */
+  showEmployer?: boolean;
+}): MatrxColumnDef<HrScopedDirectoryRow>[] {
+  const { org: pageOrg, publishes, allowedStatuses, facets, showEmployer } = args;
+  // Every door on a row opens in THE RECORD'S employer, never the page's.
+  const orgOf = (row: HrScopedDirectoryRow) => row.employer.organizationId ?? pageOrg;
   const statusOptions = hrStatusOptions(allowedStatuses);
 
-  const columns: MatrxColumnDef<HrDirectoryRow>[] = [
+  const columns: MatrxColumnDef<HrScopedDirectoryRow>[] = [
     {
       id: "display_name",
       accessorKey: "display_name",
@@ -150,12 +155,26 @@ export function buildHrDirectoryColumns(args: {
               rowBasis: row.row_basis,
               hireDate: row.hire_date,
             }}
-            org={org}
+            org={orgOf(row)}
           />
           <HrRowBasisNote rowBasis={row.row_basis} hireDate={row.hire_date} />
         </div>
       ),
     },
+    ...(showEmployer
+      ? [
+          {
+            id: "employer",
+            accessorFn: (row: HrScopedDirectoryRow) => row.employer.name,
+            header: "Organization",
+            // Narrowing by organization is the page's own visible filter, not a column menu.
+            filter: false as const,
+            cell: (row: HrScopedDirectoryRow) => (
+              <HrEmployerLabel name={row.employer.name} />
+            ),
+          } satisfies MatrxColumnDef<HrScopedDirectoryRow>,
+        ]
+      : []),
     {
       id: "job_title",
       accessorKey: "job_title",
@@ -166,7 +185,7 @@ export function buildHrDirectoryColumns(args: {
         <HrStructureDoor
           id={row.job_title_id}
           label={row.job_title}
-          href={hrStructureFocusHref(row.job_title_id ?? "", org)}
+          href={hrStructureFocusHref(row.job_title_id ?? "", orgOf(row))}
         />
       ),
     },
@@ -180,7 +199,7 @@ export function buildHrDirectoryColumns(args: {
         <HrStructureDoor
           id={row.department_id}
           label={row.department}
-          href={hrStructureFocusHref(row.department_id ?? "", org)}
+          href={hrStructureFocusHref(row.department_id ?? "", orgOf(row))}
         />
       ),
     },
@@ -194,7 +213,7 @@ export function buildHrDirectoryColumns(args: {
         <HrStructureDoor
           id={row.location_id}
           label={row.location}
-          href={hrStructureFocusHref(row.location_id ?? "", org)}
+          href={hrStructureFocusHref(row.location_id ?? "", orgOf(row))}
         />
       ),
     },
@@ -220,7 +239,7 @@ export function buildHrDirectoryColumns(args: {
               employeeId: row.manager_employee_id,
               displayName: row.manager_name,
             }}
-            org={org}
+            org={orgOf(row)}
             tab="job"
             showControls={false}
           />

@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { createHrVerificationRequest } from "@/features/hr/service";
-import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { useHrWriteEmployer } from "@/features/hr/shared/hrScope";
 import type { HrDenied, HrFailed, HrResult } from "@/features/hr/types";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
 import { EmploymentPicker } from "@/features/hr/people/relations/components/EmploymentPicker";
@@ -65,7 +65,7 @@ export function NewVerificationRequestDialog({
   onCreated: () => void;
   onFailed: (result: HrDenied | HrFailed) => void;
 }) {
-  const { active } = useHrContext();
+  const { active } = useHrWriteEmployer();
 
   const [source, setSource] = useState<HrVerificationSource>("third_party");
   const [kind, setKind] = useState<HrVerificationKind>("employment");

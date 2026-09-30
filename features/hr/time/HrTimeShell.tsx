@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 
 import { HrSubShell, type HrRouteTab } from "@/features/hr/shared/HrSubShell";
+import { HrOneEmployerGate } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import {
   hrOvertimeHref,
@@ -114,7 +115,9 @@ export function HrTimeShell({
       description={description}
       actions={actions}
     >
-      {children}
+      {/* Timesheets, periods, overtime and punches total one employer: under All organizations
+          this asks which, instead of answering for an employer nobody chose. */}
+      <HrOneEmployerGate>{children}</HrOneEmployerGate>
     </HrSubShell>
   );
 }

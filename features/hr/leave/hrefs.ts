@@ -8,8 +8,8 @@
  *
  * 🚨 WHY THIS EXISTS AT ALL RATHER THAN USING THE SERVER'S `ledger_href`.
  * `hr.my_time_off` returns `ledger_href = '/hr/me/time-off/<policyId>'` — correct as a path
- * and WRONG as a link from this app, because it carries no `?org=`. SPEC-UI-IA §1 resolves
- * the active employer from `?org=` FIRST, so a link that drops it can silently land the
+ * and WRONG as a link from this app, because it carries no `?org_filter=`. SPEC-UI-IA §1 resolves
+ * the active employer from `?org_filter=` FIRST, so a link that drops it can silently land the
  * person in a different employer — and HR is strictly single-employer, which makes that a
  * compliance defect, not a cosmetic one. So the server's path is used for its POLICY ID and
  * the employer is re-attached here, the same way `routes.ts` does it.

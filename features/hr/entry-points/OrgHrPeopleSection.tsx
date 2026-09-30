@@ -108,7 +108,7 @@ export function OrgHrPeopleSection({
           <SummaryTile
             label="Waiting on a decision"
             value={summary.pending_approvals}
-            /* `?org=` appended by hand is banned by name in `routes.ts`'s header — this tile
+            /* `?org_filter=` appended by hand is banned by name in `routes.ts`'s header — this tile
                was the one place still doing it, and it also double-encoded nothing only by luck. */
             href={hrTasksHref(orgSlugOrId)}
           />

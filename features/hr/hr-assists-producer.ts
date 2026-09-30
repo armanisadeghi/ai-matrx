@@ -61,7 +61,7 @@ const MAX_CHIPS = 3;
 type HrAssistInput = {
   userId: string;
   organizationId: string;
-  /** What goes in `?org=` on every link this producer builds. */
+  /** What goes in `?org_filter=` on every link this producer builds. */
   orgRef: HrOrgRef;
   /** From `hr_my_context().active.capabilities`. Never a client-side guess. */
   capabilities: string[];

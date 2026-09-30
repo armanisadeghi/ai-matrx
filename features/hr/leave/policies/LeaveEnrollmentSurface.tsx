@@ -113,14 +113,11 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
       setLoading(true);
 
       const [policies, balances, people] = await Promise.all([
-        // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
         fetchLeavePolicies(organizationId, { signal }),
-        // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
         fetchLeaveBalances(
           { organizationId, scope: "organization", leavePolicyId: policyId },
           { signal },
         ),
-        // org-filter: server-call HR is single-employer; this reads the one employer the page resolved (?org= or picker), named in the HR shell
         fetchHrDirectory({
           organizationId,
           filter: { status: ["active"] },

@@ -5,9 +5,8 @@
 // this file has no header, no shell and no data fetch of its own.
 //
 // 🚨 THE EMPLOYER CONTEXT MUST SURVIVE THE HOP. SPEC-UI-IA §1 resolves the active employer from
-// `?org=` BEFORE the user's active-org selection, and HR is strictly single-employer — so a
-// redirect that dropped the param would silently land somebody in a *different* employer's
-// timesheets. Merging two employers' pay data is a compliance defect, not a cosmetic bug. The
+// `?org_filter=`, and timesheets are one employer's — so a redirect that dropped the param would
+// land somebody on All organizations, where the approval grid asks them to pick one. The
 // param is therefore rebuilt through the one URL builder (`hrTimesheetsHref`) rather than
 // concatenated here; nobody hand-assembles an HR URL.
 //
@@ -18,13 +17,21 @@
 
 import { redirect } from "next/navigation";
 
+import { HR_ORG_PARAM } from "@/features/hr/constants";
 import { hrTimesheetsHref } from "@/features/hr/routes";
 
 export default async function HrTimeSectionRoot({
   searchParams,
 }: {
-  searchParams: Promise<{ org?: string; period?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { org, period } = await searchParams;
-  redirect(hrTimesheetsHref(org, period));
+  const params = await searchParams;
+  const org = params[HR_ORG_PARAM];
+  const period = params.period;
+  redirect(
+    hrTimesheetsHref(
+      typeof org === "string" ? org : null,
+      typeof period === "string" ? period : undefined,
+    ),
+  );
 }

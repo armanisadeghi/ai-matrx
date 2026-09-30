@@ -37,7 +37,7 @@ jest.mock("../useHrContext", () => ({
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/hr/tasks",
-  // `HrPageState` reads `?org=` so a context-level refusal can name the employer
+  // `HrPageState` reads `?org_filter=` so a context-level refusal can name the employer
   // the link asked for (the SMS-deep-link case). These tests are about the
   // substitution disclosure, so the link asks for nothing.
   useSearchParams: () => new URLSearchParams(),
@@ -61,6 +61,7 @@ function baseContext(
     persona: "hr_admin",
     capabilities: [],
     orgRef: "admin",
+    scope: { mode: "one", employers: [], actives: [], orgFilter: null },
     substitution,
     isLoading: false,
     error: null,
@@ -98,7 +99,7 @@ describe("HrPageState states which employer opened", () => {
     expect(container.textContent).toContain("admin's Workspace");
     // The way back is a real door, not just a lament.
     expect(
-      container.querySelector('a[href="/hr?org=castellano-reyes"]'),
+      container.querySelector('a[href="/hr?org_filter=castellano-reyes"]'),
     ).not.toBeNull();
     // And it never swallows the page it is qualifying.
     expect(container.textContent).toContain("the page");

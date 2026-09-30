@@ -110,7 +110,7 @@ export function MyTimesheetContext({
   useEffect(() => {
     /*
       Params win — nothing is fetched. And the employer context is still settling: the door does
-      not need it (it resolves from the SESSION, not from `?org=`), but rendering a resolved answer
+      not need it (it resolves from the SESSION, not from `?org_filter=`), but rendering a resolved answer
       before the shell settles would flash a timesheet under the wrong employer heading.
     */
     if (bothFromParams || isLoading) return;
@@ -221,7 +221,7 @@ export function MyTimesheetContext({
           </p>
           {/*
             ♻️ THE ORG TRAVELS ON THE LINK. `hrMeHref(orgRef)` and never a bare "/hr/me" — HR is
-            strictly single-employer and a link that drops `?org=` silently lands the person in a
+            strictly single-employer and a link that drops `?org_filter=` silently lands the person in a
             different employer (`features/hr/routes.ts`). This link used to be a hardcoded
             "/hr/me": the same org-dropping class fixed elsewhere in this module.
           */}

@@ -6,7 +6,7 @@
  * `features/hr/leave/hrefs.ts`. This build owns `features/hr/leave/**` and nothing else, and
  * `routes.ts` is edited by other lanes concurrently.
  *
- * 🚨 EVERY DOOR CARRIES `?org=`. SPEC-UI-IA §1 resolves the active employer from `?org=` FIRST,
+ * 🚨 EVERY DOOR CARRIES `?org_filter=`. SPEC-UI-IA §1 resolves the active employer from `?org_filter=` FIRST,
  * before the user's active-org selection — so a link that drops it can silently land the person
  * in a different employer. HR is strictly single-employer, which makes that a compliance
  * defect, not a cosmetic one.
