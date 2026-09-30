@@ -31035,6 +31035,10 @@ export type Database = {
         Args: { p_data: Json; p_organization_id: string; p_table_id: string }
         Returns: Json
       }
+      _record_shown_to_ctx: {
+        Args: { p_organization_ids: string[]; p_table_id: string }
+        Returns: Json
+      }
       _seen_one: { Args: { p_id: string; p_user_id: string }; Returns: boolean }
       _share_write_person: {
         Args: {
@@ -32367,6 +32371,7 @@ export type Database = {
       data_home_tables: {
         Args: { p_organization_id?: string }
         Returns: {
+          created_by: string
           kept_by_the_app: boolean
           kind: string
           member: boolean
@@ -32374,8 +32379,10 @@ export type Database = {
           organization_id: string
           organization_name: string
           shared_with_me: boolean
+          system: boolean
           table_id: string
           table_name: string
+          team: boolean
           updated_at: string
           visibility: string
         }[]
@@ -35482,6 +35489,10 @@ export type Database = {
         }
         Returns: Json
       }
+      seen_among: {
+        Args: { p_ids: string[]; p_user_id: string }
+        Returns: string[]
+      }
       sensitivity_rank: { Args: { p_sensitivity: string }; Returns: number }
       share_access: {
         Args: { p_organization_id: string; p_subject_id: string }
@@ -36062,6 +36073,22 @@ export type Database = {
           table_name: string
           updated_at: string
           visibility: string
+        }[]
+      }
+      tables_listed_among: {
+        Args: { p_organization_id: string; p_tables: string[] }
+        Returns: string[]
+      }
+      tables_seen_among: {
+        Args: {
+          p_among: string[]
+          p_organization_ids: string[]
+          p_user_id: string
+        }
+        Returns: {
+          id: string
+          organization_id: string
+          seen: boolean
         }[]
       }
       tables_seen_once_per_group: {
@@ -91153,6 +91180,10 @@ export type Database = {
           severity: string
         }[]
       }
+      __list_counts_compare: {
+        Args: { p_counts_sql: string; p_list_sql: string }
+        Returns: Json
+      }
       __list_counts_conformance: {
         Args: never
         Returns: {
@@ -115894,6 +115925,15 @@ export type Database = {
           priority_impressions: number
         }[]
       }
+      fn_click_tail_history_spans: {
+        Args: { p_history_before: string; p_since: string }
+        Returns: {
+          run_id: string
+          site_id: string
+          span_from: string
+          span_to: string
+        }[]
+      }
       fn_complete_keyword_classification_batch: {
         Args: {
           p_batch_failure?: boolean
@@ -115969,13 +116009,18 @@ export type Database = {
           value_label: string
         }[]
       }
-      fn_enqueue_keyword_click_tail: {
-        Args: { p_max: number; p_target_version: string }
+      fn_enqueue_keyword_click_tail_batch: {
+        Args: {
+          p_clicks: number[]
+          p_impressions: number[]
+          p_keyword_ids: string[]
+          p_site_counts: number[]
+          p_target_version: string
+          p_window_days: number[]
+        }
         Returns: {
-          candidates: number
           enqueued: number
           revived: number
-          tail_window_days: number
         }[]
       }
       fn_evaluate_condition_matchers: {
@@ -115997,6 +116042,25 @@ export type Database = {
         Returns: Json
       }
       fn_geo_area_sync_meaning: { Args: { p_area_id: string }; Returns: Json }
+      fn_gsc_keyword_demand_span: {
+        Args: {
+          p_from: string
+          p_site_id: string
+          p_to: string
+          p_unqueued_clicked_only: boolean
+        }
+        Returns: {
+          clicks: number
+          impressions: number
+          keyword_id: string
+        }[]
+      }
+      fn_gsc_query_sites: {
+        Args: never
+        Returns: {
+          site_id: string
+        }[]
+      }
       fn_ingest_keyword_research: {
         Args: {
           p_language?: string
@@ -116102,14 +116166,6 @@ export type Database = {
           worth_written: number
         }[]
       }
-      fn_refresh_keyword_classification_queue: {
-        Args: { p_target_version: string; p_window_days: number }
-        Returns: {
-          now_done: number
-          now_pending: number
-          scanned: number
-        }[]
-      }
       fn_refresh_page_intent_queue: {
         Args: { p_site_id: string; p_window_days: number }
         Returns: {
@@ -116190,6 +116246,21 @@ export type Database = {
       fn_upsert_keyword: {
         Args: { p_language?: string; p_phrase: string }
         Returns: Record<string, unknown>
+      }
+      fn_upsert_keyword_classification_demand: {
+        Args: {
+          p_clicks: number[]
+          p_impressions: number[]
+          p_keyword_ids: string[]
+          p_site_counts: number[]
+          p_target_version: string
+          p_window_days: number
+        }
+        Returns: {
+          now_done: number
+          now_pending: number
+          scanned: number
+        }[]
       }
       fn_upsert_keywords: {
         Args: { p_items: Json }
