@@ -218,9 +218,14 @@ describe("right-clicking a table row", () => {
     unregister();
 
     await expect(buildWithHeadingCheck(sections)).resolves.toBeDefined();
-    // The shape that shipped in 1c9e4a4986 and threw live ("Menu heading \"\"").
+    // 9054a34457 (2026-09-28): an unlabelled PRIMARY section is the clicked row's own group and no
+    // longer throws (it threw live in 1c9e4a4986 as `Menu heading ""`). A section that DOES carry a
+    // label still has to be an approved heading — a container word is refused.
     await expect(
       buildWithHeadingCheck([{ ...sections[0], label: undefined, primary: true }]),
+    ).resolves.toBeDefined();
+    await expect(
+      buildWithHeadingCheck([{ ...sections[0], label: "More…", primary: false }]),
     ).rejects.toThrow(/not an approved heading/);
   });
 });
