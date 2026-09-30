@@ -48,6 +48,10 @@ export function clearanceFor(
 
 function isScroller(el: Element): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false;
+  // Editors own their internal padding and auto-grow measurements. Insetting
+  // a textarea makes the dock inflate the draft, then chase its new size.
+  // Walk on to the containing page scroller; dock lift already avoids fields.
+  if (el.closest('textarea, input, [role="textbox"], [contenteditable]:not([contenteditable="false"])')) return false;
   const oy = getComputedStyle(el).overflowY;
   return (oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 1;
 }

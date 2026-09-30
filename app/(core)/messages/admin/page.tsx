@@ -17,6 +17,14 @@ const MESSAGES_ADMIN_MAP: FeatureAdminMap = {
   routeScanPath: "app/(core)/messages",
   routes: [
     {
+      url: "/messages-showcase",
+      label: "Message showcase",
+      description:
+        "Real bubble renderers with synthetic examples, light/dark previews and two contact headers. Example actions never modify records.",
+      filePath: "app/(core)/messages-showcase/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/messages",
       label: "Conversation inbox",
       description:
@@ -84,7 +92,8 @@ const MESSAGES_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "MessagingSideSheet",
       filePath: "features/messaging/components/MessagingSideSheet.tsx",
-      description: "The docked messages sheet — app frame around the same two panes.",
+      description:
+        "The docked messages sheet — app frame around the same two panes.",
       status: "Live",
       tier: "internal",
     },

@@ -1,0 +1,256 @@
+/* The app's macOS Messages presentation. All panes share this skin; the
+   package still owns conversations, bubbles, delivery and actions. */
+.messages-native {
+  color-scheme: light;
+  --mx-msg-border: rgba(0, 0, 0, 0.1);
+  --mx-msg-border-strong: rgba(0, 0, 0, 0.18);
+  --mx-msg-bg-hover: rgba(0, 0, 0, 0.05);
+  --mx-msg-bg-active: rgba(0, 0, 0, 0.08);
+  --mx-msg-accent-hover: #0079df;
+  --mx-msg-accent-subtle: rgba(0, 140, 255, 0.12);
+  --mx-msg-danger: #c52a36;
+  --mx-msg-success: #188449;
+  --mx-msg-warning: #966400;
+  --mx-msg-focus-ring: rgba(0, 140, 255, 0.5);
+  --mx-msg-bg: #ffffff;
+  --mx-msg-bg-subtle: #eceaeb;
+  --mx-msg-bg-raised: #fafafa;
+  --mx-msg-text: #171717;
+  --mx-msg-text-muted: #777777;
+  --mx-msg-text-faint: #858585;
+  --mx-msg-accent: #008cff;
+  --mx-msg-text-on-accent: #ffffff;
+  --mx-msg-bubble-mine-bg: #39b9f6;
+  --mx-msg-bubble-mine-text: #ffffff;
+  --mx-msg-bubble-theirs-bg: #e9e9eb;
+  --mx-msg-bubble-theirs-text: #171717;
+  --mx-msg-font:
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --mx-msg-font-size: 13px;
+  --mx-msg-font-size-sm: 12px;
+  --mx-msg-list-width: 100%;
+  --mx-msg-touch-target: 28px;
+  --mx-msg-bubble-radius: 17px;
+  font-family: var(--mx-msg-font);
+  font-size: var(--mx-msg-font-size);
+  line-height: 1.35;
+  min-width: 0;
+  color: var(--mx-msg-text);
+  background: var(--mx-msg-bg);
+}
+.messages-native .mx-msg__list {
+  width: 100%;
+  border-right: 0;
+}
+.messages-native .mx-msg__search {
+  padding: 10px;
+  gap: 6px;
+  border-bottom: 0;
+}
+.messages-native .mx-msg__search input {
+  width: 0;
+  min-width: 0;
+  min-height: 28px;
+  height: 28px;
+  padding: 4px 9px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.messages-native .mx-msg__search > svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+.messages-native .mx-msg__rows {
+  padding: 0 7px 8px;
+}
+.messages-native .mx-msg__row {
+  padding: 10px 8px;
+  gap: 9px;
+  border-radius: 7px;
+  min-width: 0;
+}
+.messages-native .mx-msg__row-name {
+  font-size: 13px;
+  line-height: 18px;
+}
+.messages-native .mx-msg__row-time {
+  font-size: 11px;
+}
+.messages-native .mx-msg__row-preview {
+  font-size: 12px;
+  line-height: 16px;
+}
+.messages-native .mx-msg__row[aria-current="true"] {
+  background: var(--mx-msg-accent);
+  color: var(--mx-msg-text-on-accent);
+}
+.messages-native
+  .mx-msg__row[aria-current="true"]
+  :is(.mx-msg__row-time, .mx-msg__row-preview) {
+  color: inherit;
+}
+.messages-native .mx-msg__badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  line-height: 16px;
+  font-size: 10px;
+}
+.messages-native .mx-msg__header {
+  min-height: 40px;
+  padding: 6px 12px;
+  gap: 8px;
+}
+.messages-native .mx-msg__header-title {
+  font-size: 13px;
+}
+.messages-native .mx-msg__header > .mx-msg__avatar {
+  width: 24px;
+  height: 24px;
+}
+.messages-native .mx-msg__header-subtitle:empty {
+  display: none;
+}
+.messages-native .mx-msg__ai-bar {
+  padding: 5px 10px;
+  gap: 5px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+.messages-native .mx-msg__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 26px;
+  padding: 4px 9px;
+  font-size: 11px;
+  line-height: 16px;
+}
+.messages-native .mx-msg__chip > svg {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+}
+.messages-native .mx-msg__messages {
+  padding: 10px 20px 6px;
+}
+.messages-native .mx-msg__day {
+  background: transparent;
+  font-size: 10px;
+  align-self: center;
+  text-align: center;
+}
+.messages-native .mx-msg__group {
+  margin-top: 6px;
+}
+.messages-native .mx-msg__bubble {
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 7px 12px;
+}
+.messages-native .mx-msg__meta {
+  font-size: 10px;
+  min-height: 16px;
+  gap: 5px;
+}
+.messages-native .mx-msg__author {
+  font-size: 11px;
+}
+.messages-native .mx-msg__typing {
+  min-height: 16px;
+  font-size: 11px;
+  padding-bottom: 2px;
+}
+.messages-native .mx-msg__composer {
+  border-top: 0;
+  padding: 6px 10px 10px;
+}
+.messages-native .messages-composer textarea {
+  border-radius: 22px;
+  padding: 11px 132px 11px 13px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  box-shadow: none;
+}
+.messages-native .messages-call-row {
+  min-width: 0;
+  position: relative;
+}
+.messages-native .messages-call-row > .mx-msg__row {
+  padding-right: 34px;
+}
+.messages-native .messages-call-row > :last-child:not(.mx-msg__row) {
+  position: absolute;
+  right: 2px;
+  transform: scale(0.7);
+  transform-origin: right center;
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .messages-native {
+    --mx-msg-touch-target: 44px;
+  }
+  .messages-native .mx-msg__search input {
+    font-size: 16px;
+    min-height: 36px;
+  }
+  .messages-native .mx-msg__chip {
+    min-height: 44px;
+  }
+  .messages-native .messages-composer textarea {
+    font-size: 16px;
+  }
+  .messages-native .messages-call-row > :last-child:not(.mx-msg__row) {
+    transform: none;
+  }
+  .messages-native .messages-call-row > .mx-msg__row {
+    padding-right: 48px;
+  }
+}
+
+.messages-native[data-theme="dark"],
+.dark .messages-native:not([data-theme="light"]),
+[data-theme="dark"] .messages-native:not([data-theme="light"]) {
+  color-scheme: dark;
+  --mx-msg-bg-hover: rgba(255, 255, 255, 0.08);
+  --mx-msg-bg-active: rgba(255, 255, 255, 0.12);
+  --mx-msg-accent-hover: #329aff;
+  --mx-msg-accent-subtle: rgba(0, 140, 255, 0.2);
+  --mx-msg-danger: #ff6b7d;
+  --mx-msg-success: #45c98a;
+  --mx-msg-warning: #e2a33a;
+  --mx-msg-focus-ring: rgba(66, 160, 255, 0.65);
+  --mx-msg-border: rgba(255, 255, 255, 0.12);
+  --mx-msg-border-strong: rgba(255, 255, 255, 0.22);
+  --mx-msg-bg: #1e1e1e;
+  --mx-msg-bg-subtle: #29282a;
+  --mx-msg-bg-raised: #353537;
+  --mx-msg-text: #f5f5f7;
+  --mx-msg-text-muted: #a6a6ab;
+  --mx-msg-text-faint: #a6a6ab;
+  --mx-msg-bubble-theirs-bg: #3a3a3c;
+  --mx-msg-bubble-theirs-text: #f5f5f7;
+  --mx-msg-bubble-mine-bg: #087ffe;
+}
+
+/* Native bubble tails belong to the message silhouette, not its renderer. */
+.messages-native .mx-msg__bubble--tail::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -4px;
+  width: 10px;
+  height: 12px;
+  background: var(--mx-msg-bubble-theirs-bg);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%, 45% 65%);
+}
+.messages-native .mx-msg__bubble--mine.mx-msg__bubble--tail::after {
+  left: auto;
+  right: -4px;
+  transform: scaleX(-1);
+  background: var(--mx-msg-bubble-mine-bg);
+}
