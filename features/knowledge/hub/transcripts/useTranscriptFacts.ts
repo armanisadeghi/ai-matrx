@@ -123,6 +123,22 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
           );
         const results = await Promise.all(reads);
         if (cancelled) return;
+        // A recording session that produced a transcript shows that transcript's opening words.
+        const readIds = new Set(results.flatMap((r) => (r.t ?? []).map((t) => t.id)));
+        const produced = [
+          ...new Set(results.flatMap((r) => (r.s ?? []).map((x) => x.transcript_id)).filter((id): id is string => Boolean(id))),
+        ].filter((id) => !readIds.has(id));
+        for (const c of chunks(produced)) {
+          const { data: made, error: madeError } = await supabase
+            .schema("transcripts")
+            .from("transcripts")
+            .select(TRANSCRIPT_COLUMNS)
+            .in("id", c)
+            .is("deleted_at", null);
+          if (madeError) throw new Error(`the sessions' transcripts: ${madeError.message}`);
+          results.push({ t: (made ?? []) as unknown as TranscriptRecordFields[] });
+        }
+        if (cancelled) return;
         // A listed Source that is an EDITED version is not the id its transcript links to:
         // follow `metadata.edit_of` once, so its row still gets its transcript's facts.
         const linked = new Set(results.flatMap((r) => (r.t ?? []).map((t) => t.processed_document_id)));
@@ -214,7 +230,10 @@ export function useTranscriptFacts(hits: KnowledgeHit[], enabled: boolean): Tran
     orgNames,
     sourceAlias,
   });
-  const content = buildTranscriptContent(wanted, [...transcripts.values()], sourceAlias);
+  const sessionTranscript = new Map(
+    [...sessions.values()].filter((x) => x.transcript_id).map((x) => [x.id, x.transcript_id as string]),
+  );
+  const content = buildTranscriptContent(wanted, [...transcripts.values()], sourceAlias, sessionTranscript);
 
   return {
     facts,

@@ -527,26 +527,40 @@ export function transcriptFacetCounts(
  * word count, and a draft or live session status.
  * Only facts the record actually carries — an unknown is omitted, never "0 min".
  */
+/** The session states a person needs to hear about, in words. Idle and stopped are said by what the row holds. */
+const SESSION_LIVE: Record<string, string> = {
+  recording: "Recording now",
+  live: "Recording now",
+  active: "Recording now",
+  paused: "Paused",
+  processing: "Processing",
+  failed: "Failed",
+};
+
 export function transcriptRowFacts(
   fact: TranscriptListRow | null | undefined,
-  content?: Pick<TranscriptRowContent, "channel" | "speakers"> | null,
+  content?: Pick<TranscriptRowContent, "channel" | "speakers"> & { snippet?: string | null } | null,
 ): string[] {
   if (!fact) return [];
   const out: string[] = [];
   if (content?.channel) out.push(content.channel);
   if (content?.speakers.length)
     out.push(content.speakers.length > 2 ? `${content.speakers.length} speakers` : content.speakers.join(", "));
-  if (fact.kind === "session" || fact.kind === "cleanup" || fact.kind === "unsorted")
-    out.push(TRANSCRIPT_KIND_LABEL[fact.kind as HubTranscriptKind]);
+  const hasDuration = typeof fact.duration_seconds === "number" && fact.duration_seconds > 0;
+  if (fact.kind === "session" || fact.kind === "cleanup") {
+    // A session says what it holds, in words: "Empty recording session" until something was
+    // recorded or cleaned into it; never the machine's own state word ("idle", "stopped").
+    const noun = fact.kind === "cleanup" ? "cleanup" : "recording session";
+    const empty = !hasDuration && !fact.transcript_id && !content?.snippet;
+    out.push(empty ? `Empty ${noun}` : noun.charAt(0).toUpperCase() + noun.slice(1));
+    if (SESSION_LIVE[fact.status ?? ""]) out.push(SESSION_LIVE[fact.status ?? ""]);
+  } else if (fact.kind === "unsorted") out.push(TRANSCRIPT_KIND_LABEL.unsorted);
   // THE package formatters (dense voice): "13 min", "1h 2m"; "2,340 words".
-  if (typeof fact.duration_seconds === "number" && fact.duration_seconds > 0)
-    out.push(formatDurationSeconds(fact.duration_seconds, { style: "coarse" }));
+  if (hasDuration) out.push(formatDurationSeconds(fact.duration_seconds, { style: "coarse" }));
   if (typeof fact.word_count === "number" && fact.word_count > 0)
     out.push(`${formatCount(fact.word_count)} ${fact.word_count === 1 ? "word" : "words"}`);
-  // A live session says so; a transcript's draft flag is not shown on the row — it is not a
-  // status any other layout carries (the Status facet filters by it).
-  if ((fact.kind === "session" || fact.kind === "cleanup") && fact.status && fact.status !== "completed")
-    out.push(fact.status.charAt(0).toUpperCase() + fact.status.slice(1).replace(/_/g, " "));
+  // A transcript's draft flag is not shown on the row — it is not a status any other layout
+  // carries (the Status facet filters by it).
   return out;
 }
 
@@ -646,6 +660,8 @@ export function buildTranscriptContent(
   transcripts: TranscriptRecordFields[],
   /** A Source whose own id is not linked (an edited version): the id of the version that is. */
   sourceAlias: Map<string, string> = new Map(),
+  /** A recording session → the transcript it produced (its opening words become the session's). */
+  sessionTranscript: Map<string, string> = new Map(),
 ): Map<string, TranscriptRowContent> {
   const byId = new Map(transcripts.map((t) => [t.id, t]));
   const bySource = new Map(
@@ -658,8 +674,16 @@ export function buildTranscriptContent(
         ? byId.get(h.id)
         : isTranscriptSourceHit(h)
           ? (bySource.get(h.id) ?? bySource.get(sourceAlias.get(h.id) ?? ""))
-          : undefined;
-    if (t) out.set(`${h.entity}:${h.id}`, transcriptRowContent(t));
+          : h.entity === STUDIO_SESSION_TOKEN
+            ? byId.get(sessionTranscript.get(h.id) ?? "")
+            : undefined;
+    if (!t) continue;
+    const c = transcriptRowContent(t);
+    // A session keeps its own name and kind; it borrows only what its transcript says.
+    out.set(
+      `${h.entity}:${h.id}`,
+      h.entity === STUDIO_SESSION_TOKEN ? { ...c, title: null, mediaKind: "recording" } : c,
+    );
   }
   return out;
 }

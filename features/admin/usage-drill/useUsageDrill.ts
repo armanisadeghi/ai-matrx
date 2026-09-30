@@ -79,9 +79,11 @@ export function usageWhere(question: MatrxDrillQuestion): Record<string, unknown
   return where;
 }
 
-function rowOf(r: { groups: Record<string, unknown> | null; measures: Record<string, number | string | null> | null; row_count: number; prior_measures?: Record<string, number | string | null> | null; distinct_groups?: number | null }): MatrxDrillAnswerRow {
+function rowOf(r: { groups: Record<string, unknown> | null; prior_groups?: Record<string, unknown> | null; measures: Record<string, number | string | null> | null; row_count: number; prior_measures?: Record<string, number | string | null> | null; distinct_groups?: number | null }): MatrxDrillAnswerRow {
   const groups: Record<string, string | null> = {};
-  for (const [k, v] of Object.entries(r.groups ?? {})) groups[k] = v === null || v === undefined ? null : String(v);
+  // A group that only the PRIOR window had (a compare) arrives with groups null and its values in
+  // prior_groups; reading groups alone turned every such group into the same empty key.
+  for (const [k, v] of Object.entries(r.groups ?? r.prior_groups ?? {})) groups[k] = v === null || v === undefined ? null : String(v);
   const num = (m: Record<string, number | string | null> | null | undefined) => {
     const out: Record<string, number | null> = {};
     for (const [k, v] of Object.entries(m ?? {})) out[k] = v === null || v === undefined ? null : Number(v);

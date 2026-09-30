@@ -145,7 +145,8 @@ export function UsageExplorer() {
           </span>
           <span className="text-xs text-muted-foreground">
             {drillWindowLabel(question.window ?? null)}
-            {total ? ` · ${formatCount(total.measures.calls ?? 0)} calls · ${formatCount(total.measures.requests ?? 0)} requests` : ""}
+            {total?.measures.calls != null ? ` · ${formatCount(total.measures.calls)} calls` : ""}
+            {total?.measures.requests != null ? ` · ${formatCount(total.measures.requests)} requests` : ""}
           </span>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -219,36 +220,44 @@ export function UsageExplorer() {
             Pick a way to group the usage (Group by, on the right) — by person, organization, provider, model, feature, agent, or when.
           </p>
         ) : (
-          <MatrxDrillAnswerTable
-            dimensions={dimensions}
-            measures={measures}
-            question={question}
-            onQuestionChange={onQuestionChange}
-            answers={answers}
-            paths={paths}
-            error={error}
-            rowNoun="call"
-            emptyLabel="None"
-            exportTitle="AI usage"
-            coverage={{ whole: whole?.measures.cost ?? null, measure: "cost" }}
-            chart={question.show.includes("cost") ? { measure: "cost" } : undefined}
-            note={
-              <>
-                {grainWasChosen ? <span>Shown by {autoGrain} — the grain {drillWindowLabel(question.window ?? null).toLowerCase()} reads best at. </span> : null}
-                {says.map((s) => (
-                  <span key={s}>{s} </span>
-                ))}
-                {freshness.error ? <span className="text-destructive">{freshness.error}</span> : null}
-                <span>
-                  The calls behind a number open in the{" "}
-                  <AppLink href={spendHref(question)} className="underline underline-offset-2">
-                    Spend Explorer
-                  </AppLink>
-                  .
+          <>
+            {/* The answer's own sentences, one line above it. When @ai-matrx/design-system with the
+                usage adoptions (0.49.38: exportTitle / coverage / chart / note on
+                MatrxDrillAnswerTable) is installed, this line moves into the table's `note` and the
+                table gains export, the coverage line and the inline chart — see
+                PROGRESS-DRILL-USAGE-PAGE "Open". */}
+            <p data-usage-note className="px-4 py-1 text-xs text-muted-foreground">
+              {grainWasChosen ? <span>Shown by {autoGrain} — the grain {drillWindowLabel(question.window ?? null).toLowerCase()} reads best at. </span> : null}
+              {question.where.length > 0 && whole?.measures.cost != null && total?.measures.cost != null ? (
+                <span data-usage-coverage>
+                  This slice is {money(total.measures.cost)} of the {money(whole.measures.cost)} the whole window holds
+                  {whole.measures.cost > 0 ? ` (${Math.round((total.measures.cost / whole.measures.cost) * 100)}%)` : ""}.{" "}
                 </span>
-              </>
-            }
-          />
+              ) : null}
+              {says.map((s) => (
+                <span key={s}>{s} </span>
+              ))}
+              {freshness.error ? <span className="text-destructive">{freshness.error} </span> : null}
+              <span>
+                The calls behind a number open in the{" "}
+                <AppLink href={spendHref(question)} className="underline underline-offset-2">
+                  Spend Explorer
+                </AppLink>
+                .
+              </span>
+            </p>
+            <MatrxDrillAnswerTable
+              dimensions={dimensions}
+              measures={measures}
+              question={question}
+              onQuestionChange={onQuestionChange}
+              answers={answers}
+              paths={paths}
+              error={error}
+              rowNoun="hourly total"
+              emptyLabel="None"
+            />
+          </>
         )}
       </div>
     </div>

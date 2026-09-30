@@ -5,11 +5,25 @@ Configuration: ~/.config/matrx/tsc-queue.json {"max_concurrent": 1}.
 All wrapper callers on this host share /tmp/matrx-tsc-queue-<uid>.
 Results are never reused by a later invocation. Finished results expire after a
  day (or earlier at the 1 GiB retention budget); logs are streamed from disk, never accumulated in the queue's RAM.
+
+A check runs only for callers that are still alive. Each caller is recorded on
+its run by identity (pid + process start time, so a reused pid never counts);
+it removes itself on exit, and a sweep drops callers that died without doing so
+(SIGKILL). A pending run with no live caller is dropped before it can start; a
+running check with no live caller for ABANDON_GRACE_SECONDS is killed and its
+slot released (2026-09-29: with a cap of 1, one abandoned compile blocked every
+agent on the machine).
+
+The memory ceiling measures REAL memory: on macOS each process's physical
+footprint (proc_pid_rusage ri_phys_footprint, what Activity Monitor calls
+"Memory"), because RSS excludes compressed pages — a process showed ~3 GB RSS
+while its footprint was 44 GB. Elsewhere, or when the call fails, RSS.
 """
 from __future__ import annotations
 
 import argparse
 from contextlib import contextmanager
+import ctypes
 import fcntl
 import hashlib
 import json
@@ -21,6 +35,7 @@ import select
 import signal
 import subprocess
 import sys
+import threading
 import time
 import uuid
 
@@ -28,6 +43,12 @@ POLL_SECONDS = 0.1
 RESULT_TTL_SECONDS = 86400
 MAX_LOG_BYTES = 128 * 1024 * 1024
 MAX_RETAINED_BYTES = 1024 * 1024 * 1024
+DEFAULT_MAX_MEMORY_GB = 24
+# How often callers are checked for liveness, and how long a running check may
+# go with no live caller before it is killed.
+WAITER_CHECK_SECONDS = 1.0
+ABANDON_GRACE_SECONDS = 10.0
+CALLER_SIGNALS = (signal.SIGTERM, signal.SIGHUP)
 # Shell/terminal bookkeeping does not affect TypeScript. Everything else is
 # hashed (never stored), including compiler runtime and memory settings.
 ENV_NOISE = {'_', 'SHLVL', 'PWD', 'OLDPWD', 'TERM', 'COLORTERM',
@@ -47,6 +68,83 @@ def process_snapshot():
                          'pgid': int(parts[2]), 'rss': int(parts[3]),
                          'command': parts[4]})
     return rows
+
+
+class _RUsageInfoV0(ctypes.Structure):
+    _fields_ = [('ri_uuid', ctypes.c_uint8 * 16)] + [
+        (name, ctypes.c_uint64) for name in (
+            'ri_user_time', 'ri_system_time', 'ri_pkg_idle_wkups',
+            'ri_interrupt_wkups', 'ri_pageins', 'ri_wired_size',
+            'ri_resident_size', 'ri_phys_footprint', 'ri_proc_start_abstime',
+            'ri_proc_exit_abstime')]
+
+
+_LIBPROC = None
+if sys.platform == 'darwin':
+    try:
+        _LIBPROC = ctypes.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+        _LIBPROC.proc_pid_rusage.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
+        _LIBPROC.proc_pid_rusage.restype = ctypes.c_int
+    except (OSError, AttributeError):
+        _LIBPROC = None
+
+
+def phys_footprint_bytes(pid):
+    """macOS physical footprint (includes compressed memory); None if unavailable."""
+    if _LIBPROC is None:
+        return None
+    info = _RUsageInfoV0()
+    if _LIBPROC.proc_pid_rusage(pid, 0, ctypes.byref(info)) != 0:  # RUSAGE_INFO_V0
+        return None
+    return info.ri_phys_footprint
+
+
+def process_memory_bytes(row):
+    footprint = phys_footprint_bytes(row['pid'])
+    return footprint if footprint is not None else row['rss'] * 1024
+
+
+def waiter_identity(pid):
+    """A caller is (pid, start time): a reused pid has a different start."""
+    identities = process_identities([pid])
+    return {'pid': pid, 'start': identities.get(pid)}
+
+
+def process_identities(pids):
+    """{pid: start time} for live, non-zombie processes among pids."""
+    if not pids:
+        return {}
+    result = subprocess.run(['ps', '-o', 'pid=,stat=,lstart=', '-p',
+                             ','.join(str(pid) for pid in pids)],
+                            capture_output=True, text=True)
+    identities = {}
+    for line in result.stdout.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) == 3 and not parts[1].startswith('Z'):
+            identities[int(parts[0])] = ' '.join(parts[2].split())
+    return identities
+
+
+def live_waiters(waiters):
+    alive = process_identities(sorted({w['pid'] for w in waiters}))
+    return [w for w in waiters if w.get('start') and alive.get(w['pid']) == w['start']]
+
+
+def prune_waiters(run):
+    """Drop dead callers from a run; True when a caller is still alive.
+
+    A run written by an older queue version carries an integer count, which
+    cannot be checked; it is treated as alive rather than killed on a guess.
+    """
+    if not isinstance(run.get('waiters'), list):
+        return True
+    run['waiters'] = live_waiters(run['waiters'])
+    return bool(run['waiters'])
+
+
+def _caller_signalled(signum, frame):
+    # SystemExit unwinds through _run's finally, which removes this caller.
+    raise SystemExit(128 + signum)
 
 
 # The compiler is the EXECUTABLE of a process (argv[0], or the script node runs
@@ -144,6 +242,12 @@ class Queue:
 
     def recover(self, data):
         now = time.time()
+        if now >= data.get('next_waiter_check_at', 0):
+            data['next_waiter_check_at'] = now + WAITER_CHECK_SECONDS
+            for rid, run in list(data['runs'].items()):
+                # Nobody is left to receive this result: never start it.
+                if run['state'] == 'pending' and not prune_waiters(run):
+                    del data['runs'][rid]
         for rid, run in list(data['runs'].items()):
             if run['state'] == 'running' and not locked(self.base / 'keys' / run['key']):
                 run.update(state='done', status=70, finished_at=now,
@@ -228,25 +332,52 @@ class Queue:
         return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
     def run(self, root, compiler_bin, compiler_name, args, env, cwd, stdout, stderr):
+        previous = {}
+        if threading.current_thread() is threading.main_thread():
+            for sig in CALLER_SIGNALS:
+                previous[sig] = signal.signal(sig, _caller_signalled)
         try:
             return self._run(root, compiler_bin, compiler_name, args, dict(env), cwd, stdout, stderr)
         except Exception as error:
             stderr.write(f'[tsc-capped] ERROR: {error}\n'.encode())
             stderr.flush()
             return 70
+        finally:
+            for sig, handler in previous.items():
+                signal.signal(sig, handler)
+
+    def leave(self, target, me):
+        """This caller no longer wants the result (finished, failed or killed)."""
+        with self.state() as (data, _):
+            run = data['runs'].get(target)
+            if run is None or not isinstance(run.get('waiters'), list):
+                return
+            run['waiters'] = [w for w in run['waiters'] if w != me]
+            if run['state'] == 'pending' and not run['waiters']:
+                del data['runs'][target]
 
     def _run(self, root, compiler_bin, compiler_name, args, env, cwd, stdout, stderr):
         root, binary, cwd = Path(root).resolve(), Path(compiler_bin).resolve(), Path(cwd).resolve()
         if any(arg.lower().split('=')[0] in ('--watch', '-w') for arg in args):
             raise ValueError('watch mode is not supported by the finite check queue; use a one-shot --noEmit check')
-        rss_gb = int(env.get('MATRX_TSC_MAX_RSS_GB', '20'))
+        # The knob keeps its historical name; it bounds REAL memory (footprint).
+        rss_gb = int(env.get('MATRX_TSC_MAX_RSS_GB', str(DEFAULT_MAX_MEMORY_GB)))
         if rss_gb < 1:
             raise ValueError('MATRX_TSC_MAX_RSS_GB must be a positive integer')
         key = self.fingerprint(root, binary, args, env, cwd)
+        me = waiter_identity(os.getpid())
+        if not me['start']:
+            raise RuntimeError('could not read this process start time; refusing to queue a check nobody can track')
         target = None
-        while True:
-            completed = None
-            with self.state() as (data, state_fd):
+        try:
+            return self._wait(root, binary, args, env, cwd, stdout, stderr, rss_gb, key, me,
+                              lambda value=None: target if value is None else value)
+        finally:
+            pass
+
+    def _wait(self, *a):  # placeholder replaced below
+        raise NotImplementedError
+
                 cap = self.cap()
                 self.recover(data)
                 if target is None:

@@ -66,12 +66,26 @@ select_server() {
   JAR="$BASE.jar"
   LOCK="$BASE.lock"
   FAILED="$BASE.failed"
+  USED="$BASE.used"
 }
 
 SESSION_LABEL="$(preview_session_label "$REPO_ROOT")"
 SESSION_RAW="$(preview_session_raw "$REPO_ROOT")"
 select_server "$SERVER"
-# Runaway watchdog, NOT a budget. Raised 8 -> 192 GB on 2026-08-15, MEASURED.
+# Runaway watchdog, NOT a budget. Measured in REAL memory since 2026-09-29.
+#
+# 2026-09-29: lowered 192 -> 128 GB and switched from `ps` RSS to the sum of
+# each process's macOS phys_footprint (real_memory_kb below). RSS excludes
+# compressed memory, so on this host it under-reports massively: a next-server
+# whose real footprint was 44–50 GB showed ~3 GB RSS, and a preview that grew to
+# 50 GB real in 2 h of mostly idle time helped push the 256 GB Mac to the edge.
+# Next dev keeps every compiled route in memory and never gives it back, so the
+# ordinary fix for growth is the IDLE STOP / RECYCLE below, not this cap. 128 GB
+# still clears every measured heavy-route peak below (the 138 GB figure was RSS
+# with a cache-inflated distdir, before the cache cap) and leaves half the host
+# to everything else. If you change it, measure real memory first.
+#
+# History: raised 8 -> 192 GB on 2026-08-15, MEASURED (RSS).
 #
 # 8 GB did not catch runaways; it guaranteed that NO agent could ever verify
 # anything in a browser. This app's dev server needs far more than that just to
@@ -93,8 +107,25 @@ select_server "$SERVER"
 # 2026-08-15 "normal" figures above may themselves have been cache-inflated:
 # with a fresh distdir, cold /notes peaked at 18 GB RSS. Revisit this cap
 # downward only after re-measuring heavy routes with the cache cap in force.
-MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-192}"
+MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-128}"
 NO_PROGRESS_SEC="${MATRX_PREVIEW_NO_PROGRESS_SEC:-300}"
+# OLD NEVER BLOCKS NEW (Arman, 2026-09-29: "sessions will leave them open and
+# running — we need to allow new ones and kill old ones"). "Used" means the
+# server logged an HTTP request (` GET /route 200 in 82ms`); the monitor records
+# the time of the last one in $USED. Minutes may be fractional.
+#   IDLE_STOP_MIN     nothing requested for this long -> stopped (a recycle, not a crash)
+#   RECYCLE_GB        real memory at/over this ...
+#   RECYCLE_IDLE_MIN  ... and idle this long -> recycled; `preview:start` also takes
+#                     over a preview idle this long (any checkout's) instead of refusing
+#   BUSY_GUARD_MIN    a preview that served a request this recently is never killed,
+#                     not even when its health check fails
+IDLE_STOP_MIN="${MATRX_PREVIEW_IDLE_STOP_MIN:-30}"
+RECYCLE_GB="${MATRX_PREVIEW_RECYCLE_GB:-40}"
+RECYCLE_IDLE_MIN="${MATRX_PREVIEW_RECYCLE_IDLE_MIN:-5}"
+BUSY_GUARD_MIN="${MATRX_PREVIEW_BUSY_GUARD_MIN:-2}"
+# A stop by the idle/recycle rules is normal housekeeping. Its FAILED line
+# carries this prefix so the next start and status word it as a recycle.
+RECYCLED_PREFIX="RECYCLED: "
 # Log runaway bound. 2026-09-12: a `pnpm install` in this shared checkout
 # relinked @ai-matrx/design-system while the server was compiling. 1,268 files
 # import that package, so Turbopack reported module-not-found for every one of
@@ -207,6 +238,13 @@ nm_moved_note() {
 
 report_previous_failure() {
   [[ -f "$FAILED" ]] || return 0
+  local first
+  first="$(head -1 "$FAILED")"
+  if [[ "$first" == "$RECYCLED_PREFIX"* ]]; then
+    # Normal housekeeping, not a crash: say what happened in one line.
+    printf '[preview] the previous %s preview was recycled (normal): %s\n' "$SERVER" "${first#"$RECYCLED_PREFIX"}" >&2
+    return 0
+  fi
   printf '\n' >&2
   printf '[preview] ============================================================\n' >&2
   printf '[preview] WATCHDOG STOPPED THE PREVIOUS PREVIEW\n' >&2
@@ -487,6 +525,9 @@ cmd_start() {
   mkdir -p "$STATE_DIR"
   clear_stale_state
   report_previous_failure
+  # OLD NEVER BLOCKS NEW: an abandoned or dead-but-alive preview is stopped here
+  # (loudly) instead of refusing or being reused; a busy one is reused below.
+  retire_stale_preview || true
   reuse_managed_meta && return 0
 
   local running pid port owner
@@ -644,6 +685,7 @@ PY
     [[ -z "$CLONE_REF" ]] || echo "CLONE_REF=$CLONE_REF"
   } >"$META"
   rm -f "$READY" "$JAR" "$FAILED"
+  date +%s >"$USED" # a fresh start counts as use; the idle clock starts now
 
   # exec_command reaps ordinary child process groups even under `nohup`.
   # Detach helpers exactly like Next itself or the watchdog silently vanishes
@@ -706,18 +748,161 @@ group_rss_kb() {
     awk -v wanted="$pgid" '$1 == wanted { total += $2 } END { print total + 0 }'
 }
 
+group_pids() {
+  local pid="$1" pgid
+  pgid="$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')"
+  [[ -n "$pgid" ]] || return 0
+  ps -Ao pgid=,pid= 2>/dev/null | awk -v wanted="$pgid" '$1 == wanted { print $2 }'
+}
+
+# macOS phys_footprint per pid via libproc proc_pid_rusage(pid, RUSAGE_INFO_V0).
+# It is what Activity Monitor calls "Memory": it INCLUDES compressed memory,
+# which `ps` RSS does not. Prints the total in KB; exits 1 when unavailable.
+FOOTPRINT_PY='
+import ctypes, sys
+class RU(ctypes.Structure):
+    _fields_ = [("uuid", ctypes.c_uint8 * 16)] + [(n, ctypes.c_uint64) for n in (
+        "user_time", "system_time", "pkg_idle_wkups", "interrupt_wkups", "pageins",
+        "wired_size", "resident_size", "phys_footprint", "proc_start_abstime", "proc_exit_abstime")]
+try:
+    lib = ctypes.CDLL("/usr/lib/libproc.dylib")
+except OSError:
+    sys.exit(1)
+total = ok = 0
+for arg in sys.argv[1:]:
+    ru = RU()
+    if lib.proc_pid_rusage(int(arg), 0, ctypes.byref(ru)) == 0:
+        total += ru.phys_footprint
+        ok += 1
+if not ok:
+    sys.exit(1)
+print(total // 1024)
+'
+
+# real_memory_kb <pid> -> "<kb> footprint" (real memory of the whole process
+# group), or "<kb> rss" when footprint is unavailable (not macOS, no python3).
+real_memory_kb() {
+  local pid="$1" pids kb
+  pids="$(group_pids "$pid" | tr '\n' ' ')"
+  if [[ -n "${pids// /}" && "${MATRX_PREVIEW_MEMORY_SOURCE:-}" != rss && -x /usr/bin/python3 ]]; then
+    # shellcheck disable=SC2086
+    kb="$(/usr/bin/python3 -c "$FOOTPRINT_PY" $pids 2>/dev/null)"
+    if [[ "$kb" =~ ^[0-9]+$ ]]; then
+      printf '%s footprint\n' "$kb"
+      return 0
+    fi
+  fi
+  printf '%s rss\n' "$(group_rss_kb "$pid")"
+}
+
+kb_to_gb() { awk -v kb="$1" 'BEGIN { printf "%.1f", kb / 1048576 }'; }
+min_to_sec() { awk -v m="$1" 'BEGIN { printf "%d", m * 60 }'; }
+gb_to_kb() { awk -v gb="$1" 'BEGIN { printf "%d", gb * 1048576 }'; }
+memory_label() { [[ "$1" == footprint ]] && printf 'GB real memory' || printf 'GB RSS (real memory unavailable)'; }
+
+# Last use = the last HTTP request the server logged. The monitor stamps $USED;
+# a server started before this existed has none, so fall back to the log's
+# last write — the closest honest signal it left.
+last_used_epoch() {
+  local v
+  v="$(head -1 "$USED" 2>/dev/null)"
+  if [[ "$v" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$v"
+    return 0
+  fi
+  mtime "$LOG"
+}
+
+idle_seconds() {
+  local now last
+  now="$(date +%s)"
+  last="$(last_used_epoch)"
+  [[ "$last" =~ ^[0-9]+$ && "$last" -gt 0 ]] || last="$now"
+  (( now > last )) && printf '%s\n' "$(( now - last ))" || printf '0\n'
+}
+
+# Next dev logs one line per request: ` GET /route 200 in 82ms (...)`.
+REQUEST_LINE_RE='^[[:space:]]*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) /[^ ]* [0-9]{3} in '
+SCAN_OFFSET=0
+# Scan log bytes written since the last call; any request line stamps $USED.
+note_requests() {
+  local size
+  [[ -f "$LOG" ]] || return 0
+  size="$(stat_fmt %s %z "$LOG" || echo 0)"
+  [[ "$size" =~ ^[0-9]+$ ]] || return 0
+  (( size < SCAN_OFFSET )) && SCAN_OFFSET=0 # rotated
+  (( size > SCAN_OFFSET )) || return 0
+  # No `grep -q`: an early exit SIGPIPEs tail and pipefail would turn a match into failure.
+  if tail -c "+$(( SCAN_OFFSET + 1 ))" "$LOG" 2>/dev/null | grep -E "$REQUEST_LINE_RE" >/dev/null; then
+    date +%s >"$USED"
+  fi
+  SCAN_OFFSET="$size"
+}
+
+# THE STOP DECISION. preview_stop_reason <kb> <idle-seconds> [footprint|rss]
+# prints the reason to stop now, or nothing. Idle/recycle reasons carry
+# $RECYCLED_PREFIX: they are housekeeping, and are worded that way later.
+preview_stop_reason() {
+  local kb="$1" idle="$2" source="${3:-footprint}" gb label idle_min
+  gb="$(kb_to_gb "$kb")"
+  label="$(memory_label "$source")"
+  idle_min="$(( idle / 60 ))"
+  if (( kb >= $(gb_to_kb "$MAX_RSS_GB") )); then
+    printf 'preview stopped at %s %s (cap %s GB); no automatic restart — the next pnpm preview:start starts a fresh one\n' "$gb" "$label" "$MAX_RSS_GB"
+  elif (( idle >= $(min_to_sec "$IDLE_STOP_MIN") )); then
+    printf '%sstopped after %s min unused (no request for %s min; %s %s) — the next pnpm preview:start starts a fresh one\n' "$RECYCLED_PREFIX" "$idle_min" "$IDLE_STOP_MIN" "$gb" "$label"
+  elif (( kb >= $(gb_to_kb "$RECYCLE_GB") && idle >= $(min_to_sec "$RECYCLE_IDLE_MIN") )); then
+    printf '%srecycled at %s %s after %s min idle (recycle at %s GB once idle %s min) — the next pnpm preview:start starts a fresh one\n' "$RECYCLED_PREFIX" "$gb" "$label" "$idle_min" "$RECYCLE_GB" "$RECYCLE_IDLE_MIN"
+  fi
+}
+
+# Any HTTP answer counts as alive. The static 404 is instant, compiles nothing,
+# and Next does not log it, so the probe never counts as "use".
+preview_answers() {
+  curl -s -o /dev/null --max-time 10 "http://127.0.0.1:$1/_next/static/__matrx_health" 2>/dev/null
+}
+
+# OLD NEVER BLOCKS NEW. Called by cmd_start: a managed preview (any checkout's)
+# that is idle >= RECYCLE_IDLE_MIN, or that stopped answering, is stopped so a
+# fresh one can start. One that served a request within BUSY_GUARD_MIN is never
+# touched; a busy healthy one is reused exactly as before. Returns 0 if it stopped one.
+retire_stale_preview() {
+  [[ -f "$META" ]] || return 1
+  local pid port idle why kb source
+  pid="$(meta_value PID)"
+  port="$(meta_value PORT)"
+  alive "$pid" || return 1
+  idle="$(idle_seconds)"
+  (( idle >= $(min_to_sec "$BUSY_GUARD_MIN") )) || return 1
+  if (( idle >= $(min_to_sec "$RECYCLE_IDLE_MIN") )); then
+    why="unused for $(( idle / 60 )) min"
+  elif [[ -f "$READY" ]] && ! preview_answers "$port"; then
+    why="not answering on port $port (unused for $(( idle / 60 )) min)"
+  else
+    return 1
+  fi
+  read -r kb source <<<"$(real_memory_kb "$pid")"
+  stop_for_limit "$pid" "${RECYCLED_PREFIX}replaced by a new pnpm preview:start (session $SESSION_RAW): the previous preview pid $pid from '$(meta_value ROOT)' was $why at $(kb_to_gb "$kb") $(memory_label "$source") — started a fresh one"
+  return 0
+}
+
 stop_for_limit() {
   local pid="$1" reason="$2"
   printf '%s\n' "$reason" >"$FAILED"
-  printf '[preview] WATCHDOG: %s\n' "$reason" >>"$LOG"
-  log "$reason"
+  if [[ "$reason" == "$RECYCLED_PREFIX"* ]]; then
+    printf '[preview] %s\n' "$reason" >>"$LOG"
+    log "${reason#"$RECYCLED_PREFIX"}"
+  else
+    printf '[preview] WATCHDOG: %s\n' "$reason" >>"$LOG"
+    log "$reason"
+  fi
   killtree "$pid" TERM
   for _ in 1 2 3 4 5 6; do
     alive "$pid" || break
     sleep 0.5
   done
   alive "$pid" && killtree "$pid" KILL
-  rm -f "$META" "$READY" "$JAR"
+  rm -f "$META" "$READY" "$JAR" "$USED"
 }
 
 # Keep an error storm from filling the volume. The Next process holds this file
@@ -748,17 +933,23 @@ rotate_oversized_log() {
 }
 
 cmd_monitor() {
-  local expected_pid="${1:-}" threshold_kb last_log_mtime now log_mtime rss_kb
+  local expected_pid="${1:-}" last_log_mtime now log_mtime mem_kb mem_source reason
   alive "$expected_pid" || exit 0
-  threshold_kb="$(awk -v gb="$MAX_RSS_GB" 'BEGIN { printf "%d", gb * 1048576 }')"
   last_log_mtime="$(mtime "$LOG")"
   now="$(date +%s)"
   local last_progress="$now"
+  # Requests already in the log predate this monitor; start scanning at its end.
+  SCAN_OFFSET="$(stat_fmt %s %z "$LOG" || echo 0)"
+  [[ "$SCAN_OFFSET" =~ ^[0-9]+$ ]] || SCAN_OFFSET=0
+  [[ -f "$USED" ]] || date +%s >"$USED"
 
   while alive "$expected_pid"; do
-    rss_kb="$(group_rss_kb "$expected_pid")"
-    if (( rss_kb >= threshold_kb )); then
-      stop_for_limit "$expected_pid" "preview stopped at $(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }') GB RSS (cap ${MAX_RSS_GB} GB); no automatic restart"
+    note_requests
+    read -r mem_kb mem_source <<<"$(real_memory_kb "$expected_pid")"
+    reason="$(preview_stop_reason "$mem_kb" "$(idle_seconds)" "$mem_source")"
+    if [[ -n "$reason" ]]; then
+      # Re-check liveness: a takeover by preview:start may have just stopped it.
+      alive "$expected_pid" && [[ "$(meta_value PID)" == "$expected_pid" ]] && stop_for_limit "$expected_pid" "$reason"
       exit 0
     fi
 
@@ -798,10 +989,12 @@ cmd_status() {
 cmd_status_one() {
   clear_stale_state
   if [[ -f "$META" ]]; then
-    local pid port owner rss_kb
+    local pid port owner mem_kb mem_source idle
     pid="$(meta_value PID)"; port="$(meta_value PORT)"; owner="$(meta_value ROOT)"
-    rss_kb="$(group_rss_kb "$pid")"
-    log "RUNNING pid=$pid port=$port rss=$(awk -v kb="$rss_kb" 'BEGIN { printf "%.1f", kb / 1048576 }')GB owner=$owner session=$(meta_value OWNER_SESSION)"
+    read -r mem_kb mem_source <<<"$(real_memory_kb "$pid")"
+    idle="$(idle_seconds)"
+    log "RUNNING pid=$pid port=$port memory=$(kb_to_gb "$mem_kb") $(memory_label "$mem_source") last-used=$(( idle / 60 )) min ago owner=$owner session=$(meta_value OWNER_SESSION)"
+    log "housekeeping: stopped after ${IDLE_STOP_MIN} min unused; recycled at >= ${RECYCLE_GB} GB once idle ${RECYCLE_IDLE_MIN} min; hard cap ${MAX_RSS_GB} GB; a new preview:start replaces one idle >= ${RECYCLE_IDLE_MIN} min"
     if [[ "$owner" == "$REPO_ROOT" ]]; then
       announce_session_url "$port"
       log "this server hot-reloads edits in THIS checkout; you do not need another server"
@@ -831,7 +1024,11 @@ cmd_status_one() {
     fi
   elif [[ -f "$FAILED" ]]; then
     report_previous_failure
-    log "STOPPED — fix the reported cause, then run pnpm preview:start"
+    if [[ "$(head -1 "$FAILED")" == "$RECYCLED_PREFIX"* ]]; then
+      log "STOPPED (recycled, normal) — pnpm preview:start$SERVER_FLAG starts a fresh one"
+    else
+      log "STOPPED — fix the reported cause, then run pnpm preview:start"
+    fi
   else
     log "no managed $SERVER preview is running (start: pnpm preview:start$SERVER_FLAG)"
   fi
@@ -867,7 +1064,7 @@ cmd_stop() {
     alive "$pid" && killtree "$pid" KILL
   fi
 
-  rm -f "$META" "$LOG" "$READY" "$JAR" "$FAILED"
+  rm -f "$META" "$LOG" "$READY" "$JAR" "$FAILED" "$USED"
   rmdir "$LOCK" 2>/dev/null || true
   log "managed $SERVER preview stopped; build cache $DISTDIR was preserved"
 }

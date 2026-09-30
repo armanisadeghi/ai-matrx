@@ -41,6 +41,10 @@ import {
   confirmationsPayload,
   correctionsPayload,
   dimensionCatalogPayload,
+  existingMatchersPayload,
+  humanExamplesPayload,
+  keywordsPayload,
+  matcherHitsPayload,
 } from "./trial";
 import {
   agreementsAsVerdicts,
@@ -113,18 +117,13 @@ export function VerifyPanel({
         initiation: "user",
         organizationId,
         variables: {
-          keywords_json: rulings.map((row) => ({
-            keyword_id: row.keywordId,
-            phrase: row.keyword,
-            clicks: row.clicks,
-            impressions: row.impressions,
-          })),
-          human_examples_json: [],
+          keywords_json: keywordsPayload(rulings),
+          human_examples_json: humanExamplesPayload([]),
           dimension_catalog_json: dimensionCatalogPayload(
             dimensions,
             dimension.slug,
           ),
-          matcher_hits_json: [],
+          matcher_hits_json: matcherHitsPayload([]),
           site_context: siteLabel,
         },
         coerce: coerceStampProposals,
@@ -202,7 +201,7 @@ export function VerifyPanel({
             dimensions,
             dimension.slug,
           ),
-          existing_matchers_json: [],
+          existing_matchers_json: existingMatchersPayload([]),
         },
         coerce: (value) => coerceRuleProposals(value, dimension.slug),
       });

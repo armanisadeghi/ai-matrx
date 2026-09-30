@@ -154,83 +154,185 @@ export function matcherKindWords(kind: string): string {
 
 /* ------------------------------------------ what the agents are told (input) */
 
+/*
+ * Every value below is a REGISTERED KIND (aidream `aidream/kinds/seo_ruling_session.py`,
+ * offered by the `seo.ruling_session_proposal` / `seo.ruling_session_teach`
+ * provisions): an object carrying `__kind` plus ONE list field. A kind is never a
+ * bare array, so the builders wrap — the records inside are unchanged.
+ */
+
+export interface RulingKeywordSet {
+  __kind: "seo_ruling_keyword_set";
+  keywords: Array<{
+    keyword_id: string;
+    phrase: string;
+    clicks: number;
+    impressions: number;
+  }>;
+}
+
+export interface RulingDimensionCatalog {
+  __kind: "seo_ruling_dimension_catalog";
+  dimensions: Array<{
+    slug: string;
+    label: string;
+    description: string | null;
+    values: Array<{ slug: string; label: string; description: string | null }>;
+  }>;
+}
+
+export interface RulingExampleSet {
+  __kind: "seo_ruling_example_set";
+  examples: Array<{
+    phrase: string;
+    dimension_slug: string;
+    dimension_label: string;
+    value_slug: string;
+    value_label: string;
+    reason: string;
+  }>;
+}
+
+export interface RulingMatcherHitSet {
+  __kind: "seo_ruling_matcher_hit_set";
+  hits: Array<{
+    phrase: string;
+    value_slug: string;
+    matcher_kind: string;
+    pattern: string;
+  }>;
+}
+
+export interface RulingCorrectionSet {
+  __kind: "seo_ruling_correction_set";
+  corrections: Array<{
+    phrase: string;
+    proposed_value_slug: string;
+    proposed_value_label: string;
+    corrected_value_slug: string;
+    corrected_value_label: string;
+    human_reason: string;
+  }>;
+}
+
+export interface RulingConfirmationSet {
+  __kind: "seo_ruling_confirmation_set";
+  confirmations: Array<{ phrase: string; value_slug: string; value_label: string }>;
+}
+
+export interface RulingMatcherSet {
+  __kind: "seo_ruling_matcher_set";
+  matchers: Array<{ value_slug: string; matcher_kind: string; pattern: string }>;
+}
+
+/** The keywords a proposer is asked to stamp. */
+export function keywordsPayload(
+  rows: Array<{ keywordId: string; keyword: string; clicks: number; impressions: number }>,
+): RulingKeywordSet {
+  return {
+    __kind: "seo_ruling_keyword_set",
+    keywords: rows.map((row) => ({
+      keyword_id: row.keywordId,
+      phrase: row.keyword,
+      clicks: row.clicks,
+      impressions: row.impressions,
+    })),
+  };
+}
+
 /** The vocabulary an agent may choose from — nothing outside it is allowed. */
 export function dimensionCatalogPayload(
   dimensions: FacetDimension[],
   onlySlug?: string | null,
-): Array<{
-  slug: string;
-  label: string;
-  description: string | null;
-  values: Array<{ slug: string; label: string; description: string | null }>;
-}> {
-  return dimensions
-    .filter((dimension) => (onlySlug ? dimension.slug === onlySlug : true))
-    .map((dimension) => ({
-      slug: dimension.slug,
-      label: dimension.label,
-      description: dimension.description,
-      values: dimension.values
-        .filter((value) => !value.abstain)
-        .map((value) => ({
-          slug: value.key,
-          label: value.label,
-          description: value.description,
-        })),
-    }));
+): RulingDimensionCatalog {
+  return {
+    __kind: "seo_ruling_dimension_catalog",
+    dimensions: dimensions
+      .filter((dimension) => (onlySlug ? dimension.slug === onlySlug : true))
+      .map((dimension) => ({
+        slug: dimension.slug,
+        label: dimension.label,
+        description: dimension.description,
+        values: dimension.values
+          .filter((value) => !value.abstain)
+          .map((value) => ({
+            slug: value.key,
+            label: value.label,
+            description: value.description,
+          })),
+      })),
+  };
 }
 
-export function humanExamplesPayload(
-  rulings: SessionRuling[],
-): Array<Record<string, string>> {
-  return rulings.map((ruling) => ({
-    phrase: ruling.phrase,
-    dimension_slug: ruling.dimensionSlug,
-    dimension_label: ruling.dimensionLabel,
-    value_slug: ruling.valueSlug,
-    value_label: ruling.valueLabel,
-    reason: ruling.reason,
-  }));
+export function humanExamplesPayload(rulings: SessionRuling[]): RulingExampleSet {
+  return {
+    __kind: "seo_ruling_example_set",
+    examples: rulings.map((ruling) => ({
+      phrase: ruling.phrase,
+      dimension_slug: ruling.dimensionSlug,
+      dimension_label: ruling.dimensionLabel,
+      value_slug: ruling.valueSlug,
+      value_label: ruling.valueLabel,
+      reason: ruling.reason,
+    })),
+  };
 }
 
-export function matcherHitsPayload(
-  proposals: TrialProposal[],
-): Array<Record<string, string>> {
-  return proposals
-    .filter((proposal) => proposal.source === "rule")
-    .map((proposal) => ({
-      phrase: proposal.keyword,
-      value_slug: proposal.valueSlug,
-      matcher_kind: proposal.matcherKind ?? "contains",
-      pattern: proposal.matcherPattern ?? "",
-    }));
+export function matcherHitsPayload(proposals: TrialProposal[]): RulingMatcherHitSet {
+  return {
+    __kind: "seo_ruling_matcher_hit_set",
+    hits: proposals
+      .filter((proposal) => proposal.source === "rule")
+      .map((proposal) => ({
+        phrase: proposal.keyword,
+        value_slug: proposal.valueSlug,
+        matcher_kind: proposal.matcherKind ?? "contains",
+        pattern: proposal.matcherPattern ?? "",
+      })),
+  };
 }
 
-export function correctionsPayload(
-  verdicts: TrialVerdict[],
-): Array<Record<string, string>> {
-  return verdicts
-    .filter((verdict) => verdict.status === "wrong" && verdict.correctedValueSlug)
-    .map((verdict) => ({
-      phrase: verdict.proposal.keyword,
-      proposed_value_slug: verdict.proposal.valueSlug,
-      proposed_value_label: verdict.proposal.valueLabel,
-      corrected_value_slug: verdict.correctedValueSlug ?? "",
-      corrected_value_label: verdict.correctedValueLabel ?? "",
-      human_reason: verdict.correctionReason ?? "",
-    }));
+export function correctionsPayload(verdicts: TrialVerdict[]): RulingCorrectionSet {
+  return {
+    __kind: "seo_ruling_correction_set",
+    corrections: verdicts
+      .filter((verdict) => verdict.status === "wrong" && verdict.correctedValueSlug)
+      .map((verdict) => ({
+        phrase: verdict.proposal.keyword,
+        proposed_value_slug: verdict.proposal.valueSlug,
+        proposed_value_label: verdict.proposal.valueLabel,
+        corrected_value_slug: verdict.correctedValueSlug ?? "",
+        corrected_value_label: verdict.correctedValueLabel ?? "",
+        human_reason: verdict.correctionReason ?? "",
+      })),
+  };
 }
 
-export function confirmationsPayload(
-  verdicts: TrialVerdict[],
-): Array<Record<string, string>> {
-  return verdicts
-    .filter((verdict) => verdict.status === "right")
-    .map((verdict) => ({
-      phrase: verdict.proposal.keyword,
-      value_slug: verdict.proposal.valueSlug,
-      value_label: verdict.proposal.valueLabel,
-    }));
+export function confirmationsPayload(verdicts: TrialVerdict[]): RulingConfirmationSet {
+  return {
+    __kind: "seo_ruling_confirmation_set",
+    confirmations: verdicts
+      .filter((verdict) => verdict.status === "right")
+      .map((verdict) => ({
+        phrase: verdict.proposal.keyword,
+        value_slug: verdict.proposal.valueSlug,
+        value_label: verdict.proposal.valueLabel,
+      })),
+  };
+}
+
+/** The site rules behind rule-sourced proposals (the teach round's context). */
+export function existingMatchersPayload(verdicts: TrialVerdict[]): RulingMatcherSet {
+  return {
+    __kind: "seo_ruling_matcher_set",
+    matchers: verdicts
+      .filter((verdict) => verdict.proposal.source === "rule")
+      .map((verdict) => ({
+        value_slug: verdict.proposal.valueSlug,
+        matcher_kind: verdict.proposal.matcherKind ?? "contains",
+        pattern: verdict.proposal.matcherPattern ?? "",
+      })),
+  };
 }
 
 /* ------------------------------------------ what the agents answer (output) */

@@ -992,7 +992,7 @@ export interface DataBuildOrAskOffer {
   existing_builders?: unknown;
   existing_builders_count?: string;
   member_roster?: unknown;
-  asker_level: string;
+  asker_level?: string;
   change_approval_setting?: string;
   organization_timezone?: string;
   page_route?: string;
@@ -4348,20 +4348,44 @@ export interface SeoReputationIntelligenceOffer {
 /** Offered shape of provision `seo.ruling_session_proposal` (kind `seo.ruling_session_proposal.offer`). */
 export interface SeoRulingSessionProposalOffer {
   __kind?: "seo.ruling_session_proposal.offer";
-  keywords_json?: unknown;
-  human_examples_json?: unknown;
-  dimension_catalog_json?: unknown;
-  matcher_hits_json?: unknown;
+  keywords_json?: {
+  __kind?: "seo_ruling_keyword_set";
+  keywords?: unknown[];
+};
+  human_examples_json?: {
+  __kind?: "seo_ruling_example_set";
+  examples?: unknown[];
+};
+  dimension_catalog_json?: {
+  __kind?: "seo_ruling_dimension_catalog";
+  dimensions?: unknown[];
+};
+  matcher_hits_json?: {
+  hits?: unknown[];
+  __kind?: "seo_ruling_matcher_hit_set";
+};
   site_context?: string;
 }
 
 /** Offered shape of provision `seo.ruling_session_teach` (kind `seo.ruling_session_teach.offer`). */
 export interface SeoRulingSessionTeachOffer {
   __kind?: "seo.ruling_session_teach.offer";
-  corrections_json?: unknown;
-  confirmations_json?: unknown;
-  dimension_catalog_json?: unknown;
-  existing_matchers_json?: unknown;
+  corrections_json?: {
+  __kind?: "seo_ruling_correction_set";
+  corrections?: unknown[];
+};
+  confirmations_json?: {
+  __kind?: "seo_ruling_confirmation_set";
+  confirmations?: unknown[];
+};
+  dimension_catalog_json?: {
+  __kind?: "seo_ruling_dimension_catalog";
+  dimensions?: unknown[];
+};
+  existing_matchers_json?: {
+  __kind?: "seo_ruling_matcher_set";
+  matchers?: unknown[];
+};
 }
 
 /** Offered shape of provision `seo.serp_intent_analysis` (kind `seo.serp_intent_analysis.offer`). */

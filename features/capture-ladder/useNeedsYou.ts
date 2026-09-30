@@ -50,6 +50,7 @@ import {
   fetchNeedsYouHandoffs,
 } from "@/features/capture-ladder/captureHandoffTable";
 import type { CaptureHandoff } from "@/features/capture-ladder/types";
+import { hasBrowserSession } from "@/lib/supabase/hasBrowserSession";
 
 /** One place names this channel — a second, different declaration throws. */
 const needsYouChannel = defineChannelNamespace({
@@ -129,6 +130,13 @@ export function useNeedsYou(): UseNeedsYouResult {
 
   const load = useCallback(async () => {
     const token = ++readToken.current;
+    // A sessionless guest (anon role, e.g. /p/<slug>) has no capture handoffs
+    // by definition; reading would only 401. Stay in `loading` (never `ready`,
+    // so the producer resolves nothing) and re-read once a session appears.
+    if (!(await hasBrowserSession())) {
+      if (readToken.current === token) setState({ kind: "loading" });
+      return;
+    }
     const result = await fetchNeedsYouHandoffs();
     if (readToken.current !== token) return;
     if (result.kind === "ok") {
@@ -160,9 +168,10 @@ export function useNeedsYou(): UseNeedsYouResult {
     [],
   );
 
+  // `userId` is a dep so a sign-in re-reads at once instead of at the next poll.
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, userId]);
 
   // ── The poll floor ────────────────────────────────────────────────────────
   useEffect(() => {

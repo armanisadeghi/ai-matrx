@@ -98,7 +98,7 @@ const read = async () =>
     bars: document.querySelectorAll("[data-matrx-drill-bar]").length,
     footer: document.querySelector("[data-matrx-drill-total]")?.textContent ?? null,
     error: document.querySelector("[data-matrx-drill-answer] [role='alert'], [data-matrx-drill-answer] .text-destructive")?.textContent ?? null,
-    coverage: document.querySelector("[data-matrx-drill-coverage]")?.textContent ?? null,
+    coverage: (document.querySelector("[data-matrx-drill-coverage]") ?? document.querySelector("[data-usage-coverage]"))?.textContent ?? null,
     note: document.querySelector("[data-matrx-drill-note]")?.textContent?.slice(0, 200) ?? null,
   }));
 const settle = async () => {

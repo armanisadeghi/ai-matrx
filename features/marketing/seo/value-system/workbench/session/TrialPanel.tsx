@@ -79,7 +79,9 @@ import {
   confirmationsPayload,
   correctionsPayload,
   dimensionCatalogPayload,
+  existingMatchersPayload,
   humanExamplesPayload,
+  keywordsPayload,
   matcherHitsPayload,
   matcherKindWords,
   proposalsFromMatchers,
@@ -199,12 +201,7 @@ export function TrialPanel({
             initiation: "user",
             organizationId,
             variables: {
-              keywords_json: silent.map((row) => ({
-                keyword_id: row.keywordId,
-                phrase: row.keyword,
-                clicks: row.clicks,
-                impressions: row.impressions,
-              })),
+              keywords_json: keywordsPayload(silent),
               human_examples_json: humanExamplesPayload(rulings),
               dimension_catalog_json: dimensionCatalogPayload(
                 dimensions,
@@ -412,20 +409,14 @@ export function TrialPanel({
             dimensions,
             dimension.slug,
           ),
-          existing_matchers_json: verdicts
-            .filter((verdict) => verdict.proposal.source === "rule")
-            .map((verdict) => ({
-              value_slug: verdict.proposal.valueSlug,
-              matcher_kind: verdict.proposal.matcherKind ?? "contains",
-              pattern: verdict.proposal.matcherPattern ?? "",
-            })),
+          existing_matchers_json: existingMatchersPayload(verdicts),
         },
         coerce: (value) => coerceRuleProposals(value, dimension.slug),
       });
 
       if (proposals.length === 0) {
         setRuleNote(
-          corrections.length === 0
+          corrections.corrections.length === 0
             ? "Nothing was wrong, and no rule was worth writing from a batch you agreed with. Your rules are unchanged."
             : "Your corrections did not add up to a rule the system could state without breaking one of the ones it got right. Nothing was proposed — rule the next batch and it will try again.",
         );

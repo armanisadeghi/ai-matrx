@@ -20,6 +20,13 @@ SPEC.loader.exec_module(MODULE)
 CTX = mp.get_context('fork')
 
 
+def pid_alive(pid):
+    try: os.kill(pid, 0)
+    except ProcessLookupError: return False
+    stat = subprocess.run(['ps', '-o', 'stat=', '-p', str(pid)], capture_output=True, text=True)
+    return bool(stat.stdout.strip()) and not stat.stdout.strip().startswith('Z')
+
+
 def client(base, compiler, name, args, env):
     base = Path(base)
     queue = MODULE.Queue(base / 'queue', base / 'config.json', base / 'legacy', lambda: [])
@@ -247,17 +254,95 @@ sys.exit(int((base / 'exit-code').read_text()))
         self.launch('B', args, compiler=compiler)
         self.assertEqual(self.result('B'), (b'', b''))
 
-    def test_rss_ceiling_returns_137_without_allocating_gigabytes(self):
+    def patch(self, name, value):
+        # Fork copies the patched module into the client, supervisor and guard.
+        missing = object()
+        original = getattr(MODULE, name, missing)
+        setattr(MODULE, name, value)
+        self.addCleanup(lambda: delattr(MODULE, name) if original is missing
+                        else setattr(MODULE, name, original))
+
+    def test_rss_fallback_ceiling_returns_137_without_allocating_gigabytes(self):
+        # Where the physical footprint is unavailable, RSS is the measurement.
         original_snapshot = MODULE.process_snapshot
-        def excessive_rss():
-            return [{**row, 'rss': 21 * 1048576} for row in original_snapshot()]
-        MODULE.process_snapshot = excessive_rss
-        try:
-            self.launch('A')
-        finally:
-            MODULE.process_snapshot = original_snapshot
+        self.patch('process_snapshot', lambda: [{**row, 'rss': 25 * 1048576}
+                                               for row in original_snapshot()])
+        self.patch('phys_footprint_bytes', lambda pid: None)
+        self.launch('A')
         _, error = self.result('A', 137)
-        self.assertIn(b'RSS ceiling', error)
+        self.assertIn(b'memory ceiling', error)
+
+    def test_memory_ceiling_counts_physical_footprint_not_rss(self):
+        # macOS RSS excludes compressed memory: a process at ~3 GB RSS held a
+        # 44 GB footprint. Real RSS here is tiny; only the footprint is over.
+        self.patch('phys_footprint_bytes', lambda pid: 25 * 1024 ** 3)
+        self.launch('A')
+        _, error = self.result('A', 137)
+        self.assertIn(b'memory ceiling', error)
+
+    def test_abandoned_running_check_is_stopped_and_frees_the_slot(self):
+        self.patch('ABANDON_GRACE_SECONDS', 1)
+        self.patch('WAITER_CHECK_SECONDS', .2)
+        a = self.launch('A')
+        self.wait(lambda: len(self.started()) == 1, 'A did not start')
+        compiler_pid = int(self.started()[0].name.split('-')[1])
+        os.kill(a.pid, signal.SIGKILL); a.join(2)
+        run = self.wait(lambda: next((r for r in self.runs() if r['state'] == 'done'), None),
+                        'abandoned check kept compiling with no caller alive', timeout=8)
+        self.assertIn('abandoned', run['error'])
+        self.wait(lambda: not pid_alive(compiler_pid), 'abandoned compiler survived')
+        (self.base / 'source').write_text('D')
+        self.launch('B', ['--strict'])
+        self.wait(lambda: len(self.started()) == 2, 'slot was not released for the next check')
+        (self.base / 'release-D').touch()
+        self.result('B')
+
+    def test_any_live_caller_keeps_a_shared_check_running(self):
+        self.patch('ABANDON_GRACE_SECONDS', .5)
+        self.patch('WAITER_CHECK_SECONDS', .1)
+        self.launch('A')
+        self.wait(lambda: len(self.started()) == 1, 'A did not start')
+        b = self.launch('B'); c = self.launch('C')
+        self.joined(2)
+        (self.base / 'source').write_text('D')
+        (self.base / 'release-A').touch()
+        self.wait(lambda: len(self.started()) == 2, 'shared generation did not start')
+        os.kill(b.pid, signal.SIGKILL); b.join(2)
+        time.sleep(2)
+        self.assertEqual([r['state'] for r in self.runs() if r['id'] and r.get('error') is None
+                          and r['state'] == 'running'], ['running'],
+                         'check stopped although caller C is still waiting')
+        os.kill(c.pid, signal.SIGKILL); c.join(2)
+        run = self.wait(lambda: next((r for r in self.runs() if r.get('error')), None),
+                        'check kept compiling after its last caller died', timeout=8)
+        self.assertIn('abandoned', run['error'])
+
+    def test_pending_check_whose_callers_all_died_never_starts(self):
+        self.patch('WAITER_CHECK_SECONDS', .2)
+        self.launch('A')
+        self.wait(lambda: len(self.started()) == 1, 'A did not start')
+        b = self.launch('B')
+        self.joined(1)
+        os.kill(b.pid, signal.SIGKILL); b.join(2)
+        self.wait(lambda: not any(r['state'] == 'pending' for r in self.runs()),
+                  'pending check for a dead caller was kept', timeout=8)
+        (self.base / 'source').write_text('D')
+        (self.base / 'release-A').touch()
+        self.result('A')
+        time.sleep(1)
+        self.assertEqual(len(self.started()), 1, 'a compile started for nobody')
+
+    def test_caller_signal_exit_removes_itself_from_its_check(self):
+        # No liveness sweep here: only the caller's own exit path can remove it.
+        self.patch('WAITER_CHECK_SECONDS', 1000)
+        self.launch('A')
+        self.wait(lambda: len(self.started()) == 1, 'A did not start')
+        b = self.launch('B')
+        self.joined(1)
+        b.terminate(); b.join(2)
+        self.wait(lambda: not any(r['state'] == 'pending' for r in self.runs()),
+                  'terminated caller left its pending check behind', timeout=3)
+        self.assertTrue(all(isinstance(r['waiters'], list) for r in self.runs()))
 
     def test_peak_report_setting_is_not_coalesced(self):
         (self.base / 'config.json').write_text('{"max_concurrent":2}')
@@ -266,8 +351,8 @@ sys.exit(int((base / 'exit-code').read_text()))
         self.launch('B', env={**self.env, 'MATRX_TSC_REPORT_PEAK': '1'})
         self.wait(lambda: len(self.started()) == 2, 'peak output option incorrectly coalesced')
         (self.base / 'release-A').touch()
-        self.assertNotIn(b'peak RSS', self.result('A')[1])
-        self.assertIn(b'peak RSS', self.result('B')[1])
+        self.assertNotIn(b'peak memory', self.result('A')[1])
+        self.assertIn(b'peak memory', self.result('B')[1])
 
     def test_launch_failure_is_loud(self):
         self.compiler.write_text('#!/no/such/interpreter\n')
@@ -305,6 +390,29 @@ sys.exit(module.main(queue_factory=factory))
         good = subprocess.run(command, cwd=self.base, env=env, capture_output=True, timeout=15)
         self.assertEqual(good.returncode, 0, good.stderr)
         self.assertEqual(good.stdout, b'')
+
+
+class WaiterIdentity(unittest.TestCase):
+    def test_reused_pid_with_another_start_time_is_not_alive(self):
+        me = MODULE.waiter_identity(os.getpid())
+        self.assertTrue(me['start'])
+        self.assertEqual(MODULE.live_waiters([me]), [me])
+        self.assertEqual(MODULE.live_waiters([{**me, 'start': 'Thu Jan  1 00:00:00 1970'}]), [])
+
+    def test_exited_process_is_not_alive(self):
+        proc = subprocess.Popen(['true']); proc.wait()
+        self.assertEqual(MODULE.live_waiters([{'pid': proc.pid, 'start': 'x'}]), [])
+
+
+@unittest.skipUnless(sys.platform == 'darwin', 'physical footprint is a macOS measurement')
+class PhysicalFootprint(unittest.TestCase):
+    def test_footprint_is_read_and_tracks_allocation(self):
+        before = MODULE.phys_footprint_bytes(os.getpid())
+        self.assertIsNotNone(before)
+        block = bytearray(os.urandom(1024)) * (300 * 1024)  # 300 MiB, touched
+        after = MODULE.phys_footprint_bytes(os.getpid())
+        self.assertGreater(after - before, 250 * 1024 ** 2)
+        del block
 
 
 class CompilerCensus(unittest.TestCase):
