@@ -67,7 +67,13 @@ export type KnownItemType =
   // canonical `platform.entity_types` token, `web_youtube_video`, never a twin
   // spelled `youtube_video` (that spelling is already an agent CONTENT BLOCK
   // type — a video someone pasted into a message — and is a different thing).
-  | "web_youtube_video";
+  | "web_youtube_video"
+  // Mandate Candidates (PLAN §2.6, A3): one live-vs-candidate pair
+  // (`mandate.candidate_run`) and a candidate's N-pair summary
+  // (`mandate.candidate`). Registered beside their feature,
+  // `features/mandates/candidates/itemTypes.ts`.
+  | "mandate_candidate_run"
+  | "mandate_candidate";
 
 export type ItemType = KnownItemType | (string & {});
 

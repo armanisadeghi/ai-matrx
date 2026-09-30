@@ -46,6 +46,10 @@ import { GOOGLE_DOCUMENT_ITEM_TYPE } from "@/features/google-workspace/documents
 import { CALENDAR_EVENT_ITEM_TYPE } from "@/features/google-workspace/calendar/itemType";
 import { WEB_SITE_ITEM_TYPE } from "@/features/marketing/site-item-type";
 import { WEB_YOUTUBE_VIDEO_ITEM_TYPE } from "@/features/marketing/youtube/itemType";
+import {
+  MANDATE_CANDIDATE_ITEM_TYPE,
+  MANDATE_CANDIDATE_RUN_ITEM_TYPE,
+} from "@/features/mandates/candidates/itemTypes";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
 import { refinePartyDetail } from "@/features/crm/party-detail";
@@ -897,6 +901,13 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   // read-only sections all arrive through `refineDetail`, the same seam U-W1
   // and U-W2 use.
   web_youtube_video: WEB_YOUTUBE_VIDEO_ITEM_TYPE,
+  // Mandate Candidates F3 — a pair and a candidate summary open as Detail
+  // records (window / docked / page) from the notification links
+  // `?panels=detail:mandate_candidate_run.<id>:as-window` and
+  // `?panels=detail:mandate_candidate.<id>:as-window`. Registration beside the
+  // feature: `features/mandates/candidates/itemTypes.ts`.
+  mandate_candidate_run: MANDATE_CANDIDATE_RUN_ITEM_TYPE,
+  mandate_candidate: MANDATE_CANDIDATE_ITEM_TYPE,
 };
 
 async function enrichFile(

@@ -1,0 +1,599 @@
+"use client";
+
+/**
+ * The pair record's body (Detail type `mandate_candidate_run`, PLAN §2.6).
+ *
+ * Reading order is the decision order: what the review concluded → did both
+ * runs get the same input → the two answers side by side → what each run did
+ * with tools → the two chats. Everything here is recorded data; nothing is
+ * derived that the server did not record (P8 / P10 / P13 / P15 / P19).
+ */
+
+import { useEffect, useState } from "react";
+import { Columns2, MessagesSquare, ThumbsDown, ThumbsUp } from "lucide-react";
+
+import MarkdownStream from "@/components/markdown";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
+import { BackendApiError } from "@/lib/api/errors";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
+import { useOpenReviewWalkWindow } from "@/features/overlays/openers/reviewWalkWindow";
+
+import {
+  recordCandidateAgreement,
+  type LiveCandidate,
+  type LiveCandidateRun,
+  type LiveCandidateRunPayload,
+} from "../api";
+import { useOpenCandidateSummary } from "../openers";
+import { useTranscriptUnit } from "../transcripts";
+import {
+  DISPOSITION_WORD,
+  RUN_STATUS_WORD,
+  STOP_MATCH_WORD,
+  VERDICT_TONE,
+  VERDICT_WORD,
+  inputPartWord,
+} from "../words";
+import { Chip, JsonBlock, MetricsLine, NewTabLink, StateLine, detailPageHref } from "./parts";
+
+export interface CandidateRunRow extends Record<string, unknown> {
+  run: LiveCandidateRun;
+  candidate: LiveCandidate | null;
+}
+
+type Json = Record<string, unknown>;
+
+function obj(value: unknown): Json | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Json) : null;
+}
+
+function str(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+/** The answer as recorded: `{text, artifact}` (outcome.py `output_record`). */
+function answerText(output: unknown): string | null {
+  const record = obj(output);
+  if (!record) return str(output);
+  const text = str(record.text);
+  if (text) return text;
+  if (record.artifact !== null && record.artifact !== undefined) {
+    try {
+      return JSON.stringify(record.artifact, null, 2);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** JSON answers go through the ONE pipeline as a fence, so a `__kind` renders as its kind. */
+function asMarkdown(text: string): string {
+  const trimmed = text.trim();
+  if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+    try {
+      JSON.parse(trimmed);
+      return "```json\n" + trimmed + "\n```";
+    } catch {
+      return text;
+    }
+  }
+  return text;
+}
+
+function errorMessage(error: unknown): string | null {
+  const record = obj(error);
+  if (!record) return str(error);
+  return str(record.message) ?? str(record.code);
+}
+
+/** The door's own input (P2): `variables` + `user_input`, top-level or under `request`. */
+function sharedInput(doorArgs: unknown): { userInput: string | null; variables: Json | null } {
+  const args = obj(doorArgs);
+  if (!args) return { userInput: null, variables: null };
+  const request = obj(args.request);
+  return {
+    userInput: str(args.user_input) ?? str(request?.user_input),
+    variables: obj(args.variables) ?? obj(request?.variables),
+  };
+}
+
+export function CandidateRunBody({ row }: { row: CandidateRunRow }) {
+  const [run, setRun] = useState(row.run);
+  const candidate = row.candidate;
+  const payload = run.payload ?? null;
+
+  return (
+    <div className="space-y-5" data-candidate-run-body>
+      <Toolbar run={run} candidate={candidate} payload={payload} />
+      <ReviewBlock run={run} candidate={candidate} payload={payload} onRun={setRun} />
+      {payload ? null : (
+        <StateLine>
+          {run.payload_withheld_reason?.trim() ||
+            "The details belong to a conversation you can't open."}
+        </StateLine>
+      )}
+      <InputBlock run={run} payload={payload} />
+      <AnswersBlock run={run} candidate={candidate} payload={payload} />
+      <ToolsBlock run={run} payload={payload} />
+    </div>
+  );
+}
+
+function Toolbar({
+  run,
+  candidate,
+  payload,
+}: {
+  run: LiveCandidateRun;
+  candidate: LiveCandidate | null;
+  payload: LiveCandidateRunPayload | null;
+}) {
+  const openDiff = useOpenDiffViewerWindow();
+  const openSummary = useOpenCandidateSummary();
+  const live = answerText(payload?.live_output);
+  const cand = answerText(payload?.candidate_output);
+  return (
+    <div className="flex flex-wrap items-center gap-1" data-candidate-run-toolbar>
+      {live !== null && cand !== null ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 text-xs"
+          onClick={() =>
+            openDiff({
+              original: live,
+              modified: cand,
+              originalLabel: "Live",
+              modifiedLabel: "Candidate",
+              title: `Pair ${run.number} — live vs candidate`,
+              instanceId: `mandate-candidate-diff-${run.id}`,
+            })
+          }
+        >
+          <Columns2 className="h-3.5 w-3.5" />
+          Compare text
+        </Button>
+      ) : null}
+      {candidate ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-xs"
+          onClick={() => openSummary(candidate.id)}
+        >
+          All {candidate.counts.runs_wanted} runs
+        </Button>
+      ) : null}
+      <NewTabLink href={detailPageHref("mandate_candidate_run", run.id)} />
+    </div>
+  );
+}
+
+function ReviewBlock({
+  run,
+  candidate,
+  payload,
+  onRun,
+}: {
+  run: LiveCandidateRun;
+  candidate: LiveCandidate | null;
+  payload: LiveCandidateRunPayload | null;
+  onRun: (run: LiveCandidateRun) => void;
+}) {
+  const judge = obj(payload?.judge);
+  const reasoning = str(judge?.reasoning);
+  const stopped = obj(payload?.stopped_at);
+  const candidateError = errorMessage(payload?.candidate_error);
+
+  let headline: string;
+  if (run.status === "completed" && run.verdict) headline = VERDICT_WORD[run.verdict];
+  else if (run.status === "stopped") {
+    const step = stopped?.step;
+    const tool = str(stopped?.tool) ?? "a tool";
+    headline = typeof step === "number" ? `Stopped at step ${step}: ${tool}` : `Stopped at ${tool}`;
+  } else headline = RUN_STATUS_WORD[run.status];
+
+  return (
+    <section className="space-y-2" data-candidate-review>
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={cn(
+            "inline-flex items-center rounded-md px-2 py-1 text-sm font-semibold",
+            run.verdict && run.status === "completed"
+              ? VERDICT_TONE[run.verdict]
+              : run.status === "failed" || run.status === "timed_out"
+                ? "bg-red-500/15 text-red-700 dark:text-red-400"
+                : run.status === "stopped"
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                  : "bg-muted text-foreground",
+          )}
+          data-candidate-verdict
+        >
+          {headline}
+        </span>
+        {candidate ? (
+          <span className="text-xs text-muted-foreground">
+            Run {run.number} of {candidate.counts.runs_wanted}
+          </span>
+        ) : null}
+        {run.stop_match ? <Chip>{STOP_MATCH_WORD[run.stop_match]}</Chip> : null}
+      </div>
+      {reasoning ? <p className="text-sm leading-relaxed">{reasoning}</p> : null}
+      {run.status === "failed" || run.status === "timed_out" ? (
+        <ErrorNotice
+          size="compact"
+          title={run.status === "timed_out" ? "Candidate timed out" : "Candidate failed"}
+          message={candidateError ?? run.candidate_error_code ?? "The candidate run failed without a reason."}
+          error={payload?.candidate_error ?? run.candidate_error_code}
+          code={run.candidate_error_code ?? undefined}
+          operation="Run the mandate candidate"
+          records={[{ type: "mandate_candidate_run", id: run.id }]}
+        />
+      ) : null}
+      {run.judge_error_code ? (
+        <ErrorNotice
+          size="compact"
+          title="Review didn't run"
+          message="The answers were recorded, but the AI review could not compare them."
+          code={run.judge_error_code}
+          operation="Review the candidate run"
+          records={[{ type: "mandate_candidate_run", id: run.id }]}
+        />
+      ) : null}
+      {run.status === "completed" && run.verdict && candidate?.can_decide ? (
+        <Agreement run={run} onRun={onRun} />
+      ) : null}
+    </section>
+  );
+}
+
+function Agreement({ run, onRun }: { run: LiveCandidateRun; onRun: (run: LiveCandidateRun) => void }) {
+  const [busy, setBusy] = useState<"agree" | "disagree" | null>(null);
+  const choose = async (agreement: "agree" | "disagree") => {
+    setBusy(agreement);
+    try {
+      onRun(await recordCandidateAgreement(run.id, agreement));
+    } catch (error) {
+      toast.error(error instanceof BackendApiError ? error.userMessage : String(error));
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div className="flex items-center gap-1.5" data-candidate-agreement>
+      <span className="mr-1 text-xs text-muted-foreground">This review</span>
+      {(["agree", "disagree"] as const).map((choice) => {
+        const Icon = choice === "agree" ? ThumbsUp : ThumbsDown;
+        const chosen = run.human_agreement === choice;
+        return (
+          <Button
+            key={choice}
+            size="sm"
+            variant={chosen ? "default" : "outline"}
+            className="h-7 gap-1 text-xs"
+            aria-pressed={chosen}
+            disabled={busy !== null}
+            onClick={() => void choose(choice)}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {choice === "agree" ? "Agree" : "Disagree"}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+function InputBlock({
+  run,
+  payload,
+}: {
+  run: LiveCandidateRun;
+  payload: LiveCandidateRunPayload | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const differences = obj(run.input_differences);
+  const flagged = Array.isArray(differences?.flagged) ? (differences.flagged as string[]) : [];
+  const expected = Array.isArray(differences?.expected) ? (differences.expected as string[]) : [];
+  const unmeasured = Array.isArray(differences?.unmeasured) ? (differences.unmeasured as string[]) : [];
+  const identical = differences?.identical === true;
+  const input = sharedInput(payload?.door_args);
+  const hasInput = input.userInput !== null || (input.variables && Object.keys(input.variables).length > 0);
+
+  return (
+    <section className="space-y-2" data-candidate-input>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Input</h4>
+      <div className="flex flex-wrap items-center gap-1.5 text-xs" data-candidate-input-line>
+        {identical ? (
+          <Chip className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">Inputs identical</Chip>
+        ) : null}
+        {flagged.map((part) => (
+          <Chip key={`f-${part}`} className="bg-red-500/15 text-red-700 dark:text-red-400">
+            {inputPartWord(part)} differed
+          </Chip>
+        ))}
+        {expected.map((part) => (
+          <Chip key={`e-${part}`}>{inputPartWord(part)}: the candidate's own</Chip>
+        ))}
+        {unmeasured.map((part) => (
+          <Chip key={`u-${part}`} className="bg-amber-500/15 text-amber-700 dark:text-amber-400">
+            {inputPartWord(part)} not measured
+          </Chip>
+        ))}
+        {!differences ? <Chip>Not measured yet</Chip> : null}
+      </div>
+      {payload && hasInput ? (
+        <div className="space-y-1.5">
+          {input.userInput ? (
+            <p className="line-clamp-3 rounded-md bg-muted/60 px-2.5 py-1.5 text-sm">{input.userInput}</p>
+          ) : null}
+          {input.variables && Object.keys(input.variables).length > 0 ? (
+            <>
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+              >
+                {open ? "Hide" : "Show"} {Object.keys(input.variables).length} variables
+              </button>
+              {open ? <JsonBlock value={input.variables} /> : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function AnswersBlock({
+  run,
+  candidate,
+  payload,
+}: {
+  run: LiveCandidateRun;
+  candidate: LiveCandidate | null;
+  payload: LiveCandidateRunPayload | null;
+}) {
+  return (
+    <section className="@container space-y-2" data-candidate-answers>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Answers</h4>
+      <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
+        <AnswerColumn
+          side="live"
+          title="Live"
+          holder={candidate?.baseline_holder_name ?? null}
+          metrics={run.live_metrics}
+          output={payload ? payload.live_output : undefined}
+          error={payload ? payload.live_error : undefined}
+          errorCode={run.live_error_code ?? null}
+          conversationId={run.live_conversation_id ?? null}
+          agentId={candidate?.baseline_holder_type === "agent" ? (candidate.baseline_holder_id ?? null) : null}
+          withheld={!payload}
+        />
+        <AnswerColumn
+          side="candidate"
+          title="Candidate"
+          holder={candidate?.holder_name ?? null}
+          versionId={run.candidate_resolved_version_id ?? null}
+          holderType={candidate?.holder_type ?? null}
+          metrics={run.candidate_metrics}
+          output={payload ? payload.candidate_output : undefined}
+          error={payload ? payload.candidate_error : undefined}
+          errorCode={run.candidate_error_code ?? null}
+          conversationId={run.candidate_conversation_id ?? null}
+          agentId={candidate?.holder_type === "agent" ? candidate.holder_id : null}
+          withheld={!payload}
+          pending={run.status === "queued" || run.status === "running"}
+        />
+      </div>
+    </section>
+  );
+}
+
+function AnswerColumn(props: {
+  side: "live" | "candidate";
+  title: string;
+  holder: string | null;
+  versionId?: string | null;
+  holderType?: "agent" | "workflow" | null;
+  metrics: Record<string, unknown> | null | undefined;
+  output: unknown;
+  error: unknown;
+  errorCode: string | null;
+  conversationId: string | null;
+  agentId: string | null;
+  withheld: boolean;
+  pending?: boolean;
+}) {
+  const text = answerText(props.output);
+  const error = errorMessage(props.error) ?? props.errorCode;
+  return (
+    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-border p-2.5" data-candidate-answer={props.side}>
+      <div className="min-w-0">
+        <div className="text-xs font-semibold">{props.title}</div>
+        {props.holder ? (
+          <div className="truncate text-xs text-muted-foreground" title={props.holder}>
+            {props.holder}
+          </div>
+        ) : null}
+        {props.versionId && props.holderType ? (
+          <VersionLine versionId={props.versionId} holderType={props.holderType} />
+        ) : null}
+      </div>
+      <MetricsLine metrics={props.metrics} />
+      <div className="min-h-0">
+        {props.withheld ? null : props.pending ? (
+          <StateLine>Still running.</StateLine>
+        ) : text ? (
+          <div className="max-h-80 overflow-auto rounded-md bg-muted/30 p-2 text-sm">
+            <MarkdownStream imagePolicy="ai" content={asMarkdown(text)} />
+          </div>
+        ) : error ? (
+          <ErrorNotice size="inline" message={error} error={props.error ?? props.errorCode} />
+        ) : (
+          <StateLine>No answer was recorded.</StateLine>
+        )}
+      </div>
+      <SawButton
+        side={props.side}
+        conversationId={props.conversationId}
+        agentId={props.agentId}
+        agentName={props.holder}
+      />
+    </div>
+  );
+}
+
+/** P13 — exactly which version ran, by its version number when readable. */
+function VersionLine({ versionId, holderType }: { versionId: string; holderType: "agent" | "workflow" }) {
+  const [number, setNumber] = useState<{ id: string; n: number | null } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void supabase
+      .schema(holderType)
+      .from("definition_version")
+      .select("version_number")
+      .eq("id", versionId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) console.error("[mandate candidates] version read failed", versionId, error.message);
+        if (!cancelled) setNumber({ id: versionId, n: data?.version_number ?? null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [versionId, holderType]);
+  const n = number?.id === versionId ? number.n : null;
+  return (
+    <div className="text-[11px] text-muted-foreground tabular-nums" title={versionId} data-candidate-version>
+      {n != null ? `Version ${n}` : `Version ${versionId.slice(0, 8)}`}
+    </div>
+  );
+}
+
+function SawButton({
+  side,
+  conversationId,
+  agentId,
+  agentName,
+}: {
+  side: "live" | "candidate";
+  conversationId: string | null;
+  agentId: string | null;
+  agentName: string | null;
+}) {
+  const unit = useTranscriptUnit(conversationId);
+  const openWalk = useOpenReviewWalkWindow();
+  const label = side === "live" ? "What the live agent saw" : "What the candidate saw";
+
+  if (!conversationId) {
+    return <StateLine>This run left no transcript.</StateLine>;
+  }
+  if (unit.state === "error") {
+    return (
+      <ErrorNotice
+        size="inline"
+        message="Couldn't look up the transcript."
+        error={unit.message}
+        calls={["chat.request", "chat.message"]}
+      />
+    );
+  }
+  if (unit.state === "none") {
+    return <StateLine>No transcript you can open.</StateLine>;
+  }
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7 w-full gap-1 text-xs"
+      disabled={unit.state === "loading"}
+      data-candidate-saw={side}
+      onClick={() => {
+        if (unit.state !== "ready") return;
+        openWalk({ ...unit.unit, agentId, agentName });
+      }}
+    >
+      <MessagesSquare className="h-3.5 w-3.5" />
+      {label}
+    </Button>
+  );
+}
+
+function ToolsBlock({
+  run,
+  payload,
+}: {
+  run: LiveCandidateRun;
+  payload: LiveCandidateRunPayload | null;
+}) {
+  const dispositions = run.tool_dispositions ?? [];
+  const stopped = obj(payload?.stopped_at);
+  const liveAtStep = obj(stopped?.live_call_at_same_step);
+  if (dispositions.length === 0 && !stopped) {
+    return (
+      <section className="space-y-2" data-candidate-tools>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tool calls</h4>
+        <p className="text-xs text-muted-foreground">The candidate made no tool calls.</p>
+      </section>
+    );
+  }
+  return (
+    <section className="space-y-2" data-candidate-tools>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tool calls</h4>
+      <ol className="divide-y divide-border/60 rounded-lg border border-border">
+        {dispositions.map((d, index) => (
+          <li key={`${d.seq ?? index}-${d.tool ?? ""}`} className="flex items-center gap-2 px-2.5 py-1.5 text-xs">
+            <span className="w-5 shrink-0 text-right tabular-nums text-muted-foreground">{d.seq ?? index + 1}</span>
+            <span className="min-w-0 flex-1 truncate font-mono" title={d.tool ?? undefined}>
+              {d.tool ?? "unnamed tool"}
+            </span>
+            {d.disposition ? (
+              <Chip
+                className={cn(
+                  d.disposition === "stopped" && "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+                  d.disposition === "borrowed" && "bg-sky-500/15 text-sky-700 dark:text-sky-400",
+                  d.disposition === "real" && "bg-muted text-muted-foreground",
+                )}
+              >
+                {DISPOSITION_WORD[d.disposition]}
+              </Chip>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+      {stopped && payload ? (
+        <div className="@container space-y-1.5" data-candidate-stop>
+          <div className="text-xs font-medium">
+            At step {String(stopped.step ?? "?")} the candidate wanted to call{" "}
+            <span className="font-mono">{str(stopped.tool) ?? "a tool"}</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 @lg:grid-cols-2">
+            <div className="min-w-0 space-y-1">
+              <div className="text-[11px] text-muted-foreground">Candidate proposed</div>
+              <JsonBlock value={stopped.args ?? null} />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="text-[11px] text-muted-foreground">
+                {liveAtStep ? (
+                  <>
+                    Live run called <span className="font-mono">{str(liveAtStep.tool) ?? "a tool"}</span>
+                  </>
+                ) : (
+                  "Live run made no call here"
+                )}
+              </div>
+              {liveAtStep ? <JsonBlock value={liveAtStep.canonical_args ?? null} /> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
