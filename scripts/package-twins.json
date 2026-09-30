@@ -47,6 +47,12 @@
           "file": "features/files/redux/realtime-middleware.ts",
           "reason": "Consumer of the request-id ledger above, on top of everything the package does."
         }
+      ],
+      "census": [
+        {
+          "file": "features/rich-document/annotations/echo.ts",
+          "reason": "IS echo suppression, and the package ledger (createWriteLedger: requestId + revision matching) covers its legs, but it cannot collapse honestly in this session: the annotation sidecar (useAnnotationSidecar.ts) records writes into a PERMANENT tab-scoped ledger (client_request_id on create, door-returned version on edit, comment id on delete, also read by the broadcast delete-notice path), while the package ledger is a begin/settle/abandon lifecycle with a 30-second TTL. Collapsing moves eight sidecar write sites onto that lifecycle and needs a two-tab live realtime check that a formatter-drain lane cannot run."
+        }
       ]
     },
     {
@@ -398,6 +404,22 @@
         {
           "file": "features/organizations/components/OrgPrivacyTab.tsx",
           "why": "PROVABLY NOT A RENDERED MONEY STRING: this value is the initial content of a TEXT INPUT an admin edits and submits back as a number, so it must be a bare numeral. formatUsd returns \"$1,200.00\", which cannot go in a number field and cannot be parsed back out of one \u2014 the same reason bytesToGb/gbToBytes are allow-listed against the byte-size lane. The money the same surface DISPLAYS goes through the package."
+        },
+        {
+          "file": "components/markdown-studio/__fixtures__/stress-corpus.ts",
+          "why": "PROVABLY NOT A RENDERED MONEY STRING: `price: +(r() * 100).toFixed(2)` builds a NUMBER (the unary + turns it back) inside a generated JSON test payload for the markdown studio's stress corpus. Nothing is shown to a person and no `$` is printed."
+        },
+        {
+          "file": "components/rich-editor/core/commands.ts",
+          "why": "PROVABLY NOT MONEY: `$${tex}$` wraps a TeX expression in LaTeX inline-math delimiters for the editor's math island. The `$` characters are math syntax, not a currency sign."
+        },
+        {
+          "file": "scripts/check-cost-display.ts",
+          "why": "PROVABLY NOT A RENDERED MONEY STRING: the matched lines are SOURCE TEXT planted as the cost-display guard's own self-test fixtures (`{ name, source, want: 1 }`). They must stay money bodies, or that guard's self-test can no longer prove it fails."
+        },
+        {
+          "file": "scripts/filtergroups/seat-proof.mjs",
+          "why": "PROVABLY NOT A DISPLAY: `${c.cards}/$${c.total}` builds an equality KEY compared against the expected \"3/$1255\" and \"4/$2345\" pipeline-board answers of this seat proof. formatUsd would print \"$1,255.00\" and break the comparison; a missing total fails the comparison rather than reading as money."
         }
       ],
       "shapeCensus": [
@@ -520,6 +542,14 @@
         {
           "file": "scripts/gate-corpus/restore-graph.ts",
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
+        },
+        {
+          "file": "features/action-requests/components/ActionRequestAnswerForm.tsx",
+          "why": "IS the money capability (a spend-approval amount) and cannot collapse honestly yet: its `money` prints 2 places at a dollar or more and UP TO 4 below a dollar with trailing zeros trimmed (\"$0.29\", \"$0.018\"). formatUsd's `adaptive` voice FIXES the places (\"$0.2900\", \"$0.0180\") and `digits: 2` rounds $0.0035 to \"$0.00\". Blocked on a kit voice: a trimmed-precision money style (minimum 2 places, trailing zeros dropped, sub-cent digits kept). Same gap as features/admin/dated-changes/describe.ts."
+        },
+        {
+          "file": "features/admin/dated-changes/describe.ts",
+          "why": "IS the money capability (per-million-token prices in a dated price change) and cannot collapse honestly yet: it prints \"$0.75 in / $3.75 out / $0.075 cached\" (minimum 2 places, up to 4, trailing zeros trimmed; pinned by features/admin/attention/__tests__/dated-change-items.test.ts). formatUsd `adaptive` prints \"$0.7500\" and \"$0.0750\"; `digits: 2` rounds $0.075 to \"$0.08\". Blocked on a kit voice: a trimmed-precision money style. Same gap as ActionRequestAnswerForm.tsx."
         }
       ]
     },
@@ -539,6 +569,14 @@
         {
           "file": "features/admin/codex-usage/CodexUsageDashboard.tsx",
           "why": "PROVABLY NOT A COUNT: the one formatter left in this file is `credits`, a FRACTIONAL balance always shown to two decimals (\"12.50 standard credits\"). formatCount renders integers and would print \"13\". The integer metrics on the same screen were collapsed onto formatCount in the same change (2026-09-17)."
+        },
+        {
+          "file": "components/errors/__tests__/error-renders-carry-alchemy.test.ts",
+          "why": "PROVABLY NOT A RENDERED COUNT: the matched line is SOURCE TEXT handed to the error-render detector under test (`counts(\"...toLocaleString()...\")`), planted so that detector's self-test can prove it fires. Nothing is displayed."
+        },
+        {
+          "file": "features/marketing/components/reputation/crisis/CrisisHoldingView.tsx",
+          "why": "PROVABLY NOT A COUNT: `until` is a Date (`new Date(result.decay.valid_until)`), and Date#toLocaleString renders a timestamp, not an integer. The line is the holding statement's valid-until time."
         }
       ],
       "shapeCensus": [
@@ -1770,7 +1808,12 @@
       "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative \u2014 NEVER a confident '0 B'). 2026-09-11: the name lane read GREEN while 134 byte-size bodies lived in 67 files under OTHER names \u2014 this row now also carries the SHAPE rule below, which is what actually closed the class.",
       "shapeRule": "byte-size",
       "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. A second review the same day proved the rule was blind to the DECIMAL (SI) family \u2014 1000 / 1e6 / 1_000_000 \u2014 and to a GB-input body that MULTIPLIES; five live twins were returning zero findings. Both are covered now. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant can never match: the division arms require a DIVISION or THRESHOLD COMPARISON against a byte base, and the multiply arm requires BOTH a non-literal operand (so 80 * 1024 * 1024 is out) AND the unit label on the same line outside any comment (so `limitMb * 1024 * 1024; // 25 MB` is out). This repo has ~60 legitimate byte ceilings that must stay untouched.",
-      "allow": [],
+      "allow": [
+        {
+          "file": "features/agent-comparison/components/RunsComparisonTable.tsx",
+          "reason": "NOT A SECOND NAME FOR THE EXPORT: `format` is the comparison table's per-row formatter SLOT (every row spec has one; twenty other rows put fmtTokens, fmtCost, fmtMs, etc. there), so `format: (v) => formatFileSize(v)` hides no call site from the input lane. The only values reaching it are `clientAccumulatedBytes` / `clientTotalPayloadBytes`, which features/agents/redux/execution-system/thunks/process-stream.ts measures as `new TextEncoder().encode(text).length` \u2014 true UTF-8 bytes, never a character count. The arrow exists because the slot's type is `(v, unit: CostUnit) => string`, which formatFileSize's options parameter cannot satisfy directly."
+        }
+      ],
       "shapeAllow": [
         {
           "file": "features/admin/spend/explorer/labels.ts",
@@ -1795,7 +1838,12 @@
           "why": "PROVABLY NOT A DISPLAY STRING: `(rate.perMegabyteMs * known.bytes) / BYTES_PER_MB` and `(rate.perThousandWordsMs * known.words) / 1_000` are ESTIMATION MATH \u2014 a measured milliseconds-per-megabyte rate multiplied by a size to predict how long work will take. There is no unit label and no rendered string on either line; the number that comes out is milliseconds, not bytes. The one place this file DID render a size (\"1.2 MB\" in the progress caption) was collapsed onto formatFileSize in the same change (2026-09-17)."
         }
       ],
-      "shapeCensus": [],
+      "shapeCensus": [
+        {
+          "file": "scripts/checks/run.mjs",
+          "why": "IS the byte-size capability (`totalmem()` turned into a GB figure in the runner's worker warning) and has not been collapsed: this is the checks runner itself, which the 2026-09-30 formatter-drain lane was told not to edit (guard infrastructure). Collapse it with formatFileSize(totalmem()) in a lane that owns scripts/checks."
+        }
+      ],
       "inputAllow": [],
       "inputCensus": [
         {
