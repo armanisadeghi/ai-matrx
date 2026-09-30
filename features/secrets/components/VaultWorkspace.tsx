@@ -153,7 +153,11 @@ export function VaultWorkspace({
    * organization (a filter change only; RLS still decides what they can read).
    */
   const openOrganizationScope = () => {
-    setUserScope({ kind: "organization", organizationId: null });
+    // Opening the tab keeps the page's `?org_filter=` (the filter is URL state, not tab state).
+    setUserScope({
+      kind: "organization",
+      organizationId: controlledScope === undefined ? urlOrgFilter : null,
+    });
     setSelectedId(null);
   };
   const chooseOrganizationFilter = (organizationId: string | null) => {

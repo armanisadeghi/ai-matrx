@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { readOrgFilter } from "@/lib/entity-list/orgFilterUrl";
 import type { VaultListSort } from "../vault-list";
 import type { CredentialFamily, VaultScope } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -27,7 +29,14 @@ export function VaultRouteWorkspaceStateProvider({ children }: { children: React
   const [sort, setSort] = useState<VaultListSort>("newest");
   const [family, setFamily] = useState<"all" | CredentialFamily>("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [scope, setScope] = useState<VaultScope>({ kind: "mine" });
+  // `?org_filter=` only means something on the Organization tab, so a page opened with it (a
+  // reload, a shared link) opens there — the filter never survives invisibly on another tab.
+  const params = useSearchParams();
+  const [scope, setScope] = useState<VaultScope>(() =>
+    readOrgFilter(new URLSearchParams(params?.toString() ?? ""))
+      ? { kind: "organization", organizationId: null }
+      : { kind: "mine" },
+  );
   return <VaultRouteWorkspaceStateContext value={{ search, setSearch, sort, setSort, family, setFamily, favoritesOnly, setFavoritesOnly, scope, setScope }}>
     {children}
   </VaultRouteWorkspaceStateContext>;
