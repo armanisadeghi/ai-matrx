@@ -228,6 +228,12 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Clipboard",
         link: "/administration/automation/scheduling/templates",
       },
+      {
+        title: "Dated Changes",
+        description: "Changes scheduled to take effect on a set date.",
+        iconName: "CalendarClock",
+        link: "/administration/automation/scheduling/dated-changes",
+      },
     ],
   },
   {
