@@ -62,9 +62,10 @@ export async function pickFiles({
   multiple: boolean;
   accept?: string;
   /**
-   * The TABLE's organization: the window lists only its files and files an upload there (a filter
-   * on what is shown, not a permission — merged-grid review 2, fix lane F item 4). The shared host
-   * binding supplies it (`recordsUiHostFor`); records-ui's ask does not carry it.
+   * The TABLE's organization: where an upload from the window is filed. It is NOT a list filter —
+   * the window lists every file the person holds and offers the visible organization filter
+   * (AO-168). The shared host binding supplies it (`recordsUiHostFor`); records-ui's ask does not
+   * carry it.
    */
   organizationId?: string | null;
 }): Promise<string[] | null> {
@@ -73,7 +74,7 @@ export async function pickFiles({
     multi: multiple,
     title: multiple ? "Attach files" : "Attach a file",
     ...(allowedExtensions.length > 0 ? { allowedExtensions } : {}),
-    ...(organizationId ? { organizationId } : {}),
+    ...(organizationId ? { uploadOrganizationId: organizationId } : {}),
   });
   return picked && picked.length > 0 ? picked : null;
 }

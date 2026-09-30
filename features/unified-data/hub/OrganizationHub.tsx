@@ -33,7 +33,6 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
 
 /** What each listing's rows are, in the store's kind words — every row on the home says its kind. */
@@ -169,14 +168,18 @@ export function OrganizationHub({
    */
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const selectedOrganizationName = useAppSelector(selectOrganizationName);
-  const organizationName = namedOrganizationName ?? selectedOrganizationName;
+  // The name of the ONE organization the filter names (null under All organizations). Never the
+  // ACTIVE organization's name: a row without its own organization name is labelled by nothing,
+  // not by an organization it may not be in (AO-162).
+  const organizationName = namedOrganizationName ?? null;
   const knobUserId = useAppSelector(selectUserId);
-  const defaultScope = useEffectiveKnob(organizationId ?? knobOrganizationId, knobUserId, DATA_HOME_DEFAULT_SCOPE_KNOB);
+  // LIST-DEFAULT KNOBS resolve in the organization the FILTER names, else at the person / platform
+  // tier — never in the ACTIVE organization (AO-163).
+  const defaultScope = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_SCOPE_KNOB);
   const scope: DataHomeScope = resolveDataHomeScope(searchParams.get("scope"), defaultScope);
-  const defaultKind = useEffectiveKnob(organizationId ?? knobOrganizationId, knobUserId, DATA_HOME_DEFAULT_KIND_KNOB);
+  const defaultKind = useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_KIND_KNOB);
   const kind = resolveDataHomeKind(searchParams.get("kind"), defaultKind);
-  const order = resolveDataHomeOrder(useEffectiveKnob(organizationId ?? knobOrganizationId, knobUserId, DATA_HOME_DEFAULT_ORDER_KNOB));
+  const order = resolveDataHomeOrder(useEffectiveKnob(organizationId, knobUserId, DATA_HOME_DEFAULT_ORDER_KNOB));
   const chooseKind = useCallback(
     (next: string) => {
       const href = dataHomeKindHref(pathname, searchParams, next);
@@ -301,7 +304,7 @@ export function OrganizationHub({
    * never invents a sharing rule nobody measured.
    */
   const userId = useAppSelector(selectUserId);
-  const memberVisibility = useEffectiveKnob(organizationId ?? knobOrganizationId, userId, MEMBER_VISIBILITY);
+  const memberVisibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
   // THE SENTENCE IS THE READER'S (UI-FIX-19): shared-only speaks to a member, never to the
   // owner or an admin, whose own lane still reaches every table.
   const { role: myRole } = useUserRole(organizationId ?? undefined);

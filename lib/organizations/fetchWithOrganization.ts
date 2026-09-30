@@ -109,8 +109,16 @@ async function readOrganizationRefusal(
 export async function fetchWithOrganization(
   input: RequestInfo | URL,
   init?: RequestInit,
+  /**
+   * PER-CALL ORGANIZATION (active-org law 2026-09-30, rule 3). A call about an EXISTING record
+   * passes THAT RECORD'S own organization here; it rides as `X-Organization-Id` in place of the
+   * active one, exactly like `callApi`'s `scopeOverrides.organization_id`. Omit it for new work,
+   * which is saved in the active organization. The organization-required refusal still opens the
+   * gate once when neither is known.
+   */
+  options?: { organizationId?: string | null },
 ): Promise<Response> {
-  const selected = getActiveOrgId();
+  const selected = options?.organizationId || getActiveOrgId();
   const response = await fetch(input, withOrganizationHeader(init, selected));
   const refusal = await readOrganizationRefusal(response);
   if (!refusal) return response;
