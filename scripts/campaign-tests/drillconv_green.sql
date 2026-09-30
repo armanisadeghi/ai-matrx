@@ -186,8 +186,9 @@ begin
     exception when others then v_bad := v_bad || format('%s: %s', y ->> 'key', sqlerrm);
     end;
   end loop;
-  perform pg_temp.chk('K7 describe lists kg_cost''s five built-in Saved views and each answers',
-    cardinality(v_bad) = 0 and jsonb_array_length(platform.drill_describe(c_org, c_src) -> 'views') = 5, array_to_string(v_bad, '; '));
+  -- (six since lane DRILL-GAPS added "Unit economics and the monthly projection")
+  perform pg_temp.chk('K7 describe lists kg_cost''s six built-in Saved views and each answers',
+    cardinality(v_bad) = 0 and jsonb_array_length(platform.drill_describe(c_org, c_src) -> 'views') = 6, array_to_string(v_bad, '; '));
   execute 'reset role';
 end $$;
 

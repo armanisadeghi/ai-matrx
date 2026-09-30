@@ -1,6 +1,11 @@
 -- chair-step: the inverse of migrations/campaign/drillgaps_a_measure_can_be_a_percentile_a_scaled_ratio_or_a_run_rate.sql (lane DRILL-GAPS) — puts the five door bodies back exactly as they were (platform._drill_agg_sql, _drill_ratio_sql, _drill_compile, drill_definition_problems, _drill_question_problems) and drops the two server-only helpers it added. A declared definition that uses a percentile, a run rate, a list denominator, a ratio of ratios, a Measure's own where or invoker records must be put back first (its own inverse), or the census names it. No row of anybody's data is touched.
 -- lane: DRILL-GAPS
 -- lock: platform
+-- based-on: platform._drill_agg_sql(jsonb, text, text, text) f2a06aa7af71582a5674402c72a1312ea89c5e726a5144ad9c154982c7f0ec37
+-- based-on: platform._drill_ratio_sql(jsonb, text, text) 68a80351652c328d71b9bd2d7fb41b3874cef7b43c635d5dc55953dc5a2c7527
+-- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) d11eb2405f2047f6391d7822aa2f23d5b7ee0224d0c93b9f1f28aeccf8c23558
+-- based-on: platform.drill_definition_problems(jsonb) 0084d20f4639cd9faa3e3ee13f4d4573d89782c5227165a590de040072e2c208
+-- based-on: platform._drill_question_problems(jsonb, jsonb, text) 3b21ae306d577d221363a98c45a707462f982682015a8af7c77827e44cf806e8
 
 CREATE OR REPLACE FUNCTION platform._drill_agg_sql(p_measure jsonb, p_col text, p_flag text, p_filter text DEFAULT NULL::text)
  RETURNS text

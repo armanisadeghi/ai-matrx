@@ -183,7 +183,7 @@ set search_path to 'pg_catalog'
 as $function$
   select case
     when p_measure ->> 'op' = 'rate' then
-      format('(coalesce(sum(%1$s)%2$s, 0)::numeric / nullif(max(%1$s_ws)%2$s, 0)::numeric * %3$s)',
+      format('(coalesce(sum(%1$s)%2$s, 0)::numeric * %3$s / nullif(max(%1$s_ws)%2$s, 0)::numeric)',
              p_col,
              coalesce(' filter (where ' || nullif(concat_ws(' and ', p_flag, p_filter), '') || ')', ''),
              coalesce(p_measure ->> 'per_sql', '86400'))
@@ -1508,7 +1508,7 @@ begin
       -- (records.fact = its fact), read as the person, among the columns it already reads
       if v_mode <> 'definer' then
         if p_def -> 'records' ->> 'fact' is distinct from p_def ->> 'fact' then
-          p := p || 'An invoker definition''s records are its own rows: records.fact is the definition''s own fact, read as the person.'::text;
+          p := p || 'Records read from another relation belong to a definer definition only; an invoker definition''s records are its own rows (records.fact is its own fact), read as the person.'::text;
         end if;
         for v_x in select x #>> '{}' from jsonb_array_elements(p_def -> 'records' -> 'columns') x loop
           if not exists (select 1 from jsonb_array_elements(coalesce(p_def -> 'detail' -> 'columns', '[]')) y where y #>> '{}' = v_x)

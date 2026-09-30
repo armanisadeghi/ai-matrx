@@ -249,7 +249,7 @@ begin
   begin
     v_p := platform.drill_definition_problems(jsonb_set(base, '{records,fact}', '"workflow_run_facts"'));
     perform pg_temp.chk('D8 an invoker definition''s records are its own rows (another fact refused)',
-      exists (select 1 from unnest(v_p) x where x ~ 'records are its own rows'), array_to_string(v_p, ' | '));
+      exists (select 1 from unnest(v_p) x where x ~ 'definer definition only; an invoker definition''s records are its own rows'), array_to_string(v_p, ' | '));
   exception when others then perform pg_temp.chk('D8 invoker records', false, sqlerrm);
   end;
   begin
