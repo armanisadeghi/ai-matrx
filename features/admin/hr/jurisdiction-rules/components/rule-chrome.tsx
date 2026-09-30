@@ -253,7 +253,8 @@ export function RuleAccessRefusal({
           <p className="text-sm text-muted-foreground">
             {detail ??
               (superadmin
-                ? "Employment-law rules are promoted and demoted by a superadmin from the admin portal. Your admin level does not carry that authority (D25, 2026-08-28)."
+                ? // Decision D25, 2026-08-28.
+                  "Only a superadmin can promote or demote these rules."
                 : `The database refused this request: ${reason}.`)}
           </p>
         </div>

@@ -49,12 +49,9 @@ export function PreviewDialog({ onClose }: { onClose: () => void }) {
           <DialogTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5 text-sky-500" /> What agents receive
           </DialogTitle>
+          {/* Resolved by resolve_full_context. */}
           <DialogDescription>
-            The live global system context — what every agent gets with no scope
-            selected, straight from{" "}
-            <code className="text-xs">resolve_full_context</code>. Ambient
-            values compute fresh per request; dataset feeds arrive as pointers
-            agents query with the Knowledge tools.
+            What every agent gets with no scope selected. Ambient values compute per request; datasets arrive as pointers.
           </DialogDescription>
         </DialogHeader>
 

@@ -166,12 +166,7 @@ function DriftDashboard() {
           <h1 className="text-2xl font-semibold text-foreground">
             Preferences Drift
           </h1>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Accounts whose stored preferences still carry a retired shape. These
-            self-heal on load and via the weekly{" "}
-            <code className="text-xs">heal-user-preferences-drift</code> cron.
-            Open a user from Accounts to see their actual preferences.
-          </p>
+          {/* Drifted rows self-heal on load and via the weekly heal-user-preferences-drift cron. */}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -466,7 +461,7 @@ function UserPreferencesView({ userId }: { userId: string }) {
         </div>
       ) : !loading && !meta.exists ? (
         <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          This user has no saved preferences row yet (using platform defaults).
+          No saved preferences; platform defaults apply.
         </div>
       ) : (
         <div className="min-h-0 flex-1">

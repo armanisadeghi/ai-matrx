@@ -63,10 +63,9 @@ export function GuestBlockDialog({
           <DialogTitle className="text-base">Block guest access: {label}</DialogTitle>
           <DialogDescription className="text-xs">
             Every signed-out request from this browser
-            {fingerprintHint ? ` (fingerprint ${fingerprintHint}…)` : ""} is refused
-            with 403 — guest chat, agent runs, and every other AI Matrx server call —{" "}
+            {fingerprintHint ? ` (fingerprint ${fingerprintHint}…)` : ""} is refused{" "}
             <span className="font-medium text-foreground">{untilText}</span>. Signing in
-            to an account is not affected.
+            is not affected.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">

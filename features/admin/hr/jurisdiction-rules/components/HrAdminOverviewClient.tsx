@@ -97,9 +97,9 @@ function HrAdminOverview({ data }: { data: JurisdictionRulesAdminData }) {
             {overdue.length} rule{overdue.length === 1 ? "" : "s"} past their
             verification date
           </div>
+          {/* Verification dates are the promise that a cited rule still says what we recorded. */}
           <p className="mt-0.5 text-muted-foreground">
-            Verification dates are the promise that a cited rule still says what
-            we recorded. The oldest is {Math.max(...overdue.map((row) => row.days_overdue))} days
+            Oldest is {Math.max(...overdue.map((row) => row.days_overdue))} days
             past due —{" "}
             <AppLink
               href="/administration/hr/jurisdiction-rules/verification"
@@ -118,10 +118,16 @@ function HrAdminOverview({ data }: { data: JurisdictionRulesAdminData }) {
             <AlertTriangle className="h-4 w-4" />
             California PTO payout amounts are withheld pending verification
           </div>
+          {/* Blocked on the CA pto-payout excludes key; payout amounts are flagged, not paid. */}
           <p className="mt-0.5 text-muted-foreground">
-            {CA_PTO_PAYOUT_SEED_TASK} (the CA <code>pto-payout</code>{" "}
-            <code>excludes</code> key) is not complete, so payout amounts are
-            flagged rather than paid on.
+            {CA_PTO_PAYOUT_SEED_TASK} is incomplete —{" "}
+            <AppLink
+              href="/administration/hr/jurisdiction-rules/verification"
+              className="text-primary hover:underline"
+            >
+              open the verification board
+            </AppLink>
+            .
           </p>
         </div>
       ) : null}
@@ -136,9 +142,7 @@ function HrAdminOverview({ data }: { data: JurisdictionRulesAdminData }) {
             Jurisdiction rules
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {rules.length} rules across {classes.length} classes. Filter by
-            class, jurisdiction and status; open a rule to review its citation
-            and promote or demote it.
+            {rules.length} rules across {classes.length} classes
           </p>
         </AppLink>
         <AppLink
@@ -150,9 +154,8 @@ function HrAdminOverview({ data }: { data: JurisdictionRulesAdminData }) {
             Verification
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {seedProgress.length} JUR-SEED tasks,{" "}
-            {seedProgress.filter((task) => task.task_complete).length} complete.
-            Plus every rule past its verification date.
+            {seedProgress.filter((task) => task.task_complete).length} of{" "}
+            {seedProgress.length} seed tasks complete
           </p>
         </AppLink>
       </div>

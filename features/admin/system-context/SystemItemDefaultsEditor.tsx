@@ -26,9 +26,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const SYSTEM_ITEM_DEFAULTS_KNOB = { feature: "context", key: "system_item_defaults" } as const;
 
-/** The one honest sentence the page says about this list. */
-export const SYSTEM_ITEM_DEFAULTS_SENTENCE = "Every agent receives these without naming them.";
-
 export interface SystemItemOption {
   key: string;
   display_name: string;
@@ -166,12 +163,7 @@ export function SystemItemDefaultsEditor({
       aria-label="System items every agent receives"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold">System items every agent receives</h2>
-          <p className="text-sm text-muted-foreground">
-            {SYSTEM_ITEM_DEFAULTS_SENTENCE} Any other System item reaches an agent only when the agent names it.
-          </p>
-        </div>
+        <h2 className="text-sm font-semibold">System items every agent receives</h2>
         <div className="flex items-center gap-2">
           {!isDefault && (
             <Button

@@ -158,7 +158,7 @@ export default function CreateAnnouncementDialog({ open, onOpenChange, onSuccess
                             id="message"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Enter the announcement message here. Be clear and concise about what users need to know."
+                            placeholder="Announcement message"
                             className="min-h-[200px]"
                             disabled={isSubmitting}
                         />

@@ -37,6 +37,7 @@ import type { Database as DB, Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { DATA_STORES_PATH } from "@/features/knowledge/modulePaths";
+import AppLink from "@/components/navigation/AppLink";
 
 export type FeedType = DB["public"]["Enums"]["context_feed_type"];
 export type FeedConfig = Record<string, unknown>;
@@ -227,8 +228,10 @@ function DatasetFeedConfig({
         <p className="text-xs text-destructive">Could not load datasets: {error} <ErrorAlchemyMenu error={error} /></p>
       ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          No published knowledge libraries found. Publish one from{" "}
-          <code className="text-[11px]">/knowledge/data-stores</code> first.
+          No published libraries — publish one in{" "}
+          <AppLink href={DATA_STORES_PATH} className="underline underline-offset-2 hover:text-foreground">
+            Data stores
+          </AppLink>
         </p>
       ) : (
         <Select
@@ -256,11 +259,7 @@ function DatasetFeedConfig({
           </SelectContent>
         </Select>
       )}
-      <p className="text-[11px] text-muted-foreground">
-        Agents query this resource with the Knowledge tools (
-        <code className="text-[10px]">knowledge_search(data_store_id=…)</code>). Pointing
-        at sub-resources (only the tables, only the KG…) comes next.
-      </p>
+      {/* Agents query this via knowledge_search(data_store_id=…); sub-resource pointing not built yet. */}
     </div>
   );
 }
@@ -315,7 +314,7 @@ function DefinitionFeedConfig({
               rows={3}
               value={cfgStr(config, "prompt")}
               onChange={(e) => set("prompt", e.target.value)}
-              placeholder="Summarize today's top 10 AI policy headlines as a JSON array of {title, url}."
+              placeholder="Top 10 AI policy headlines as a JSON array of {title, url}"
             />
           </FieldRow>
           <div className="grid grid-cols-2 gap-3">
@@ -397,7 +396,7 @@ function DefinitionFeedConfig({
           </FieldRow>
           <FieldRow
             label="Extraction pattern"
-            hint="A saved browser extraction pattern (from the Matrx Chrome plugin) or a CSS/AI extraction. Runs through our scraper."
+            hint="A saved browser pattern, or a CSS or AI extraction"
           >
             <Input
               value={cfgStr(config, "pattern")}
@@ -417,7 +416,8 @@ function DefinitionFeedConfig({
       )}
 
       {feedType === "computed" && (
-        <FieldRow label="Expression / code" hint="User-defined computed code is coming; built-in ambient keys (current_date…) are reserved.">
+        // User-defined computed code not built yet; built-in ambient keys (current_date…) are reserved.
+        <FieldRow label="Expression / code">
           <Textarea
             rows={3}
             value={cfgStr(config, "expression")}

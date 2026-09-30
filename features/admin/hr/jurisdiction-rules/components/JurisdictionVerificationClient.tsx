@@ -253,15 +253,11 @@ export function JurisdictionVerificationClient() {
             {CA_PTO_PAYOUT_SEED_TASK} incomplete — California PTO payout amounts
             are withheld
           </div>
+          {/* CA pto-payout excludes key unverified; payout amounts flagged, not presented as owed. */}
           <p className="mt-1 text-sm text-muted-foreground">
-            The California <code>pto-payout</code> rule&rsquo;s{" "}
-            <code>excludes</code> key is still unverified. Until this task is
-            complete, PTO payout amounts for California are flagged pending
-            verification rather than presented as owed.{" "}
             {/* read-gate-exempt: drawn only after the load.state ok early return above, so never from a failed read */}
-            {caTask.rows_total} rule
-            {caTask.rows_total === 1 ? " sits" : "s sit"} under this task,{" "}
-            {caTask.rows_with_unverified_keys} with unverified keys.
+            {caTask.rows_with_unverified_keys} of {caTask.rows_total} rules
+            under this task have unverified keys.
           </p>
         </div>
       ) : null}

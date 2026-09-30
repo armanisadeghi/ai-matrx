@@ -613,12 +613,7 @@ export function UserAcquisitionTableClient() {
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
-      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-        Guest status comes from Supabase, not the displayed name. Headline
-        people, account, conversion, and cost totals exclude bots and
-        localhost/agent tests. Historical gaps and direct/browser-withheld
-        referrers are labeled separately instead of being combined as unknown.
-      </div>
+      {/* Guest status from Supabase, not name; headline totals exclude bots and localhost/agent tests; gaps labeled separately. */}
       {/* The read's failure is said once, by the table (read=). */}
       {focusUser ? (
         <div className="flex items-center rounded-md border px-3 py-1.5 text-xs">
@@ -782,7 +777,6 @@ export function UserAcquisitionTableClient() {
       {selected ? (
         <SidePanelSurface
           title={selected.display_name}
-          description="HTTP activity, runtime work, cost, and captured problems in one chronology."
           onClose={() => setSelected(null)}
           defaultWidth={720}
         >

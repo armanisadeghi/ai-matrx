@@ -195,7 +195,7 @@ export function EditItemDialog({
           {feedType === "manual" && !item.is_computed && (
             <Field
               label="Value"
-              hint="Saving updates the value in place — every version is kept in history."
+              hint="Each save keeps a version in history"
             >
               {item.value_type === "markdown" ? (
                 <ProTextarea
@@ -340,9 +340,7 @@ export function AddItemDialog({
         <DialogHeader>
           <DialogTitle>Add System Context Item</DialogTitle>
           <DialogDescription>
-            A platform-wide truth every agent can receive. Define what it is,
-            then choose how it stays populated — set a value by hand, link a
-            dataset, run an agent, hit an API, or scrape the web.
+            A platform-wide truth any agent can receive.
           </DialogDescription>
         </DialogHeader>
 

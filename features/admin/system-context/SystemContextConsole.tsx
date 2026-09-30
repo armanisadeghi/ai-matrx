@@ -418,10 +418,6 @@ export function SystemContextConsole() {
             <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
               <Globe className="h-6 w-6 text-sky-500" /> System Context
             </h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Platform-wide truths available to every agent: ambient runtime
-              facts, curated values, and queryable industry datasets.
-            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <PageCaptureButton />

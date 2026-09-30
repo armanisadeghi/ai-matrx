@@ -1,7 +1,7 @@
 /**
  * The System items every agent receives without naming them (lane CONTEXT-VALUES-NAMED-2): the
  * platform knob `context/system_item_defaults`, edited on the admin scopes-context page. The
- * editor says the one honest sentence, shows the list with each item's name, names a key that is
+ * editor shows its heading (no prose under it), shows the list with each item's name, names a key that is
  * not a System item, adds and removes, saves the exact list through the knob's write path, resets
  * to the default with `null`, and says why a refused save was refused. Data doors are injected;
  * the editor is the real component.
@@ -18,7 +18,6 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 import {
-  SYSTEM_ITEM_DEFAULTS_SENTENCE,
   SystemItemDefaultsEditor,
   type SystemItemDefaultsData,
 } from "./SystemItemDefaultsEditor";
@@ -81,10 +80,10 @@ function listed(): string[] {
   );
 }
 
-it("says the honest sentence and shows the default list by name, with no save until something changes", async () => {
+it("shows the heading with no prose under it and the default list by name, with no save until something changes", async () => {
   await render({ value: DEFAULTS, defaultValue: DEFAULTS, items: ITEMS });
-  expect(host.textContent).toContain(SYSTEM_ITEM_DEFAULTS_SENTENCE);
-  expect(SYSTEM_ITEM_DEFAULTS_SENTENCE).toBe("Every agent receives these without naming them.");
+  expect(host.textContent).toContain("System items every agent receives");
+  expect(host.textContent).not.toContain("without naming them");
   expect(listed()).toEqual(DEFAULTS);
   expect(host.textContent).toContain("Your Timezone");
   expect(host.textContent).not.toContain("Save");

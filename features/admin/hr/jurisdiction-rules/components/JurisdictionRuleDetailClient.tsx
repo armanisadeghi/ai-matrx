@@ -159,11 +159,11 @@ function CitationAtSignoff({ rule }: { rule: JurisdictionRule }) {
         <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {rule.unverified_keys.length} parameter
-          {rule.unverified_keys.length === 1 ? "" : "s"} are still unverified (
-          {rule.unverified_keys.join(", ")})
+          {rule.unverified_keys.length === 1 ? "" : "s"} unverified (
+          {rule.unverified_keys.join(", ")}).
           {rule.produces_money
-            ? " — and this class produces money, so promoting it makes an unverified number payable."
-            : "."}
+            ? " Promoting makes an unverified amount payable."
+            : ""}
         </p>
       ) : null}
     </div>
@@ -419,10 +419,7 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
         </Section>
 
         <Section title="Parameters">
-          <p className="mb-1.5 text-xs text-muted-foreground">
-            Read-only. A change to what this rule says arrives as a NEW version
-            through the amendment flow, never as an edit here.
-          </p>
+          {/* Changes arrive as a new version through the amendment flow, never as an edit here. */}
           <Json value={rule.parameters} />
         </Section>
 
