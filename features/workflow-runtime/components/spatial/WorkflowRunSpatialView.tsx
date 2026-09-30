@@ -54,6 +54,7 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import { selectRequestCarriesKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 
+import type { Rect } from "@/features/spatial/engine/camera";
 import type { PaceTier } from "@/features/spatial/engine/lod";
 import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
 import {
@@ -423,6 +424,7 @@ function RunBoard({
                 declaredKind={t.content.declaredKind}
                 waitsFor={t.content.waitsFor}
                 onMove={board.moveTile}
+                onResize={board.resizeTile}
                 onThrow={onThrow}
                 ensureLane={ensureLane}
               />
@@ -431,6 +433,7 @@ function RunBoard({
                 key={t.id}
                 spec={t}
                 onMove={board.moveTile}
+                onResize={board.resizeTile}
                 onThrow={onThrow}
                 onContent={onContent}
               />
@@ -550,11 +553,13 @@ const ADDED_IDLE: StatusFrom = { kind: "static", value: { status: "idle", progre
 function AddedTile({
   spec,
   onMove,
+  onResize,
   onThrow,
   onContent,
 }: {
   spec: RunTileSpec;
   onMove: (id: string, x: number, y: number) => void;
+  onResize: (id: string, rect: Rect) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
   onContent: (id: string, content: RunTileContent, title?: string) => void;
 }) {
@@ -569,6 +574,7 @@ function AddedTile({
       icon={spec.icon}
       statusFrom={c.type === "note" && !entityId(c.source) ? ADDED_IDLE : ADDED_DONE}
       onMove={onMove}
+      onResize={onResize}
       onThrow={onThrow}
       throwActions={RUN_THROWS}
     >
@@ -677,6 +683,7 @@ function RunNodeTile({
   declaredKind,
   waitsFor,
   onMove,
+  onResize,
   onThrow,
   ensureLane,
 }: {
@@ -685,6 +692,7 @@ function RunNodeTile({
   declaredKind: string | null;
   waitsFor: string[];
   onMove: (id: string, x: number, y: number) => void;
+  onResize: (id: string, rect: Rect) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
   ensureLane: EnsureLane;
 }) {
@@ -699,6 +707,7 @@ function RunNodeTile({
       icon={spec.icon}
       statusFrom={statusFrom}
       onMove={onMove}
+      onResize={onResize}
       onThrow={onThrow}
       throwActions={RUN_THROWS}
     >

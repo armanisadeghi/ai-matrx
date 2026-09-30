@@ -114,3 +114,30 @@ export function doubleClickAction(at: {
   if (at.inHeader) return "fly";
   return at.interacting ? "native" : "fly-and-interact";
 }
+
+export type PressAction = "control" | "native" | "select-native" | "move";
+
+/**
+ * What a primary press on a tile does — the pointer twin of `routeWheel`.
+ *
+ *   control        — a button, field, link… gets its own press.
+ *   native         — inside the body of the tile being worked in.
+ *   select-native  — a FINGER on a tile's body: the tile is selected but the
+ *                    touch stays native, so the content scrolls (and a body
+ *                    that cannot scroll simply doesn't). A finger never drags
+ *                    a tile by its body, and never pans the board over a tile.
+ *   move           — select and drag the tile (mouse / pen on the body of a
+ *                    tile you are not working in; the header, always).
+ * Empty space is the viewport's: a finger there pans the board.
+ */
+export function pressAction(at: {
+  pointerType: string;
+  inHeader: boolean;
+  onControl: boolean;
+  interacting: boolean;
+}): PressAction {
+  if (at.onControl) return "control";
+  if (at.inHeader) return "move";
+  if (at.interacting) return "native";
+  return at.pointerType === "touch" ? "select-native" : "move";
+}

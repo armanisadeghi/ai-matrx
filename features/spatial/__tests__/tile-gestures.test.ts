@@ -2,6 +2,7 @@ import {
   MIN_TILE_SIZE,
   RESIZE_HANDLES,
   doubleClickAction,
+  pressAction,
   resizeHandleWorldPx,
   resizeRect,
 } from "../engine/tile-gestures";
@@ -123,5 +124,27 @@ describe("double-click rule", () => {
 
   it("a focused (full-screen) tile keeps native double-click", () => {
     expect(doubleClickAction({ ...base, focused: true, inHeader: true })).toBe("native");
+  });
+});
+
+describe("press rule (mouse, pen and touch)", () => {
+  const base = { pointerType: "mouse", inHeader: false, onControl: false, interacting: false };
+
+  it("a mouse press on an idle tile's body selects and drags it", () => {
+    expect(pressAction(base)).toBe("move");
+  });
+
+  it("a finger on a tile's body scrolls its content (it selects, never drags) — like routeWheel", () => {
+    expect(pressAction({ ...base, pointerType: "touch" })).toBe("select-native");
+  });
+
+  it("the header always drags, for a finger too", () => {
+    expect(pressAction({ ...base, pointerType: "touch", inHeader: true })).toBe("move");
+    expect(pressAction({ ...base, inHeader: true, interacting: true })).toBe("move");
+  });
+
+  it("controls get their own press; an interacting body is native", () => {
+    expect(pressAction({ ...base, onControl: true })).toBe("control");
+    expect(pressAction({ ...base, interacting: true })).toBe("native");
   });
 });
