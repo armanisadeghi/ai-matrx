@@ -363,7 +363,11 @@ function trackedTsx() {
 function resolveTargets() {
   let files = trackedTsx();
   if (PATHS.length) {
-    const wanted = PATHS.map((p) => relative(ROOT, resolve(process.cwd(), p)));
+    // A path resolves from the caller's cwd first, then from the repo root (a caller outside the repo).
+    const wanted = PATHS.map((p) => {
+      const fromCwd = resolve(process.cwd(), p);
+      return relative(ROOT, existsSync(fromCwd) ? fromCwd : resolve(ROOT, p));
+    });
     files = files.filter((f) => wanted.some((w) => f === w || f.startsWith(w.endsWith("/") ? w : w + "/")));
     for (const w of wanted) if (existsSync(resolve(ROOT, w)) && statSync(resolve(ROOT, w)).isFile() && !files.includes(w)) files.push(w);
   }
@@ -382,6 +386,10 @@ const RULE_ORDER = ["implementation-leak", "multi-sentence", "page-description",
 
 function run() {
   const files = resolveTargets();
+  if (PATHS.length && files.length === 0) {
+    console.error(`interface-text: none of ${PATHS.join(", ")} matched a tracked .tsx file under ${ROOT} — nothing was scanned.`);
+    process.exit(2);
+  }
   const findings = [];
   for (const f of files) {
     let src;
