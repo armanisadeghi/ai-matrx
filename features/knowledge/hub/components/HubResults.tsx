@@ -517,6 +517,7 @@ function TableLayout({
   stage,
   sourceTotal,
   sourceMayHaveMore,
+  more,
 }: {
   hits: KnowledgeHit[];
   handlers: ResultHandlers;
@@ -524,6 +525,8 @@ function TableLayout({
   error: string | null;
   onRetry: () => void;
   stage?: HubStageColumn;
+  /** The hub's one paging model: the table reads the next page as you scroll, like every layout. */
+  more: MoreState;
   /** Exact item total reported by every source section, when available. */
   sourceTotal?: number;
   /** A source section still has unread rows, or has not answered yet. */
@@ -538,12 +541,20 @@ function TableLayout({
     columnFilters: {},
     sort: null,
   });
-  const coverage =
-    typeof sourceTotal === "number" && sourceTotal > hits.length
-      ? { loaded: hits.length, total: sourceTotal, answeredBy: "source" as const, noun: "item" }
-      : sourceMayHaveMore
-        ? { loaded: hits.length, answeredBy: "source" as const, noun: "item" }
-        : undefined;
+  // One paging model (the hub's): the table appends the source's next page as you scroll
+  // (controlled-append), filters and sorts the rows in hand, and names the true total.
+  const pagination = {
+    queryKey: "knowledge-hub",
+    rows: hits,
+    loading,
+    isFetchingNextPage: more.loading,
+    error: more.error ? new Error(more.error) : null,
+    hasNextPage: more.has,
+    loadNextPage: async () => more.load(),
+    refresh: onRetry,
+    totalItems: sourceTotal,
+    retrySource: more.load,
+  };
   const shownTitle = (hit: KnowledgeHit) => handlers.rowContent?.(hit)?.title ?? hit.title;
   const shownSnippet = (hit: KnowledgeHit) => handlers.rowContent?.(hit)?.snippet ?? hit.snippet ?? null;
   const genericRowSummary = (hit: KnowledgeHit) =>
@@ -670,17 +681,21 @@ function TableLayout({
         // total changes the canonical footer from "1–N of N" to an honest
         // loaded-window label. The cursor remains owned by the hub below.
         query={{
-          mode: "controlled-local",
+          mode: "controlled-append",
           state: tableQuery,
           onStateChange: setTableQuery,
-          ...(typeof sourceTotal === "number" ? { sourceProcessing: { sourceTotal } } : {}),
+          pagination,
+          sourceProcessing: {
+            search: "local",
+            columnFilters: "local",
+            sort: "local",
+            ...(typeof sourceTotal === "number" ? { sourceTotal } : {}),
+          },
+          scroll: { mode: "scroll" },
         }}
         read={{ status: loading ? "loading" : error ? "error" : "ready", error, onRetry, what: "your knowledge" }}
         emptyState={{ title: "Nothing here yet", description: "Nothing in this view matches its filters." }}
-        // The table filters and sorts the rows currently in hand. The source's
-        // section counts can prove this is only a loaded window even before it
-        // exposes a continuation cursor, so pass that honest coverage through.
-        coverage={coverage}
+
         selection={{
           selectedIds: [...handlers.selected],
           onSelectedIdsChange: (ids) => {
@@ -861,6 +876,9 @@ export function BrowseResults({
   // Searching: the passages lane is part of the answer (its failure is said, its "more" pages).
   const relevant = sections.filter((s) => s.key !== "top_hit" && (searching || s.key !== "segments"));
   const loading = relevant.some((s) => s.status === "loading");
+  // A new filter or search is being read while the previous rows are still on screen (Linear):
+  // they dim under a thin running bar and take no clicks until the answer replaces them.
+  const updating = loading && hits.length > 0;
   const failed = relevant.filter((s) => s.status === "error" && s.section?.error);
   const more = relevant.filter((s) => s.section?.next_cursor);
   const loadingMore = relevant.some((s) => s.loadingMore);
@@ -899,28 +917,22 @@ export function BrowseResults({
     error: relevant.find((s) => s.moreError)?.moreError ?? null,
     load: () => more.forEach((s) => onShowMore(s.key)),
   };
-  // The table keeps one quiet "Load more" under it; list, board and gallery read on as you scroll.
-  const footer =
-    more.length || loadingMore ? (
-      <div className="flex shrink-0 justify-center py-2">
-        <button
-          type="button"
-          disabled={loadingMore}
-          onClick={() => more.forEach((s) => onShowMore(s.key))}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-70"
-        >
-          {loadingMore ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-          {loadingMore ? "Loading more results…" : "Load more"}
-        </button>
-      </div>
-    ) : null;
+  // The running bar over a list being replaced (Linear): thin, at the top, never a spinner page.
+  const updatingBar = updating ? (
+    <div className="h-0.5 w-full shrink-0 animate-pulse rounded-full bg-primary/70" role="status" aria-label="Updating results" />
+  ) : (
+    <div className="h-0.5 w-full shrink-0" aria-hidden />
+  );
+  const dim = updating ? "pointer-events-none opacity-50 transition-opacity" : "transition-opacity";
 
   if (layout === "table")
     return (
       <div className="flex min-h-0 flex-1 flex-col">
+        {updatingBar}
         {/* With nothing loaded the table says the failure itself (read=), once;
             the per-section strip is for a partial failure beside rows that did load. */}
         {hits.length > 0 ? failures : null}
+        <div className={cn("flex min-h-0 flex-1 flex-col", dim)}>
         <TableLayout
           hits={hits}
           handlers={h}
@@ -930,13 +942,15 @@ export function BrowseResults({
           stage={stage}
           sourceTotal={sourceTotal}
           sourceMayHaveMore={sourceMayHaveMore}
+          more={moreState}
         />
-        {footer}
+        </div>
       </div>
     );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {updatingBar}
       {failures}
       {loading && hits.length === 0 ? <RowsSkeleton rows={8} label="Loading your knowledge" /> : null}
       {!loading && hits.length === 0 && !failed.length ? (
@@ -946,7 +960,8 @@ export function BrowseResults({
         </div>
       ) : null}
       {hits.length ? (
-        layout === "board" ? (
+        <div className={cn("flex min-h-0 flex-1 flex-col", dim)}>
+        {layout === "board" ? (
           <BoardLayout hits={hits} handlers={h} more={moreState} />
         ) : layout === "gallery" ? (
           <GalleryLayout hits={hits} handlers={h} more={moreState} />
@@ -959,7 +974,8 @@ export function BrowseResults({
             initialScrollTop={restore?.scrollTop}
             onScrollTop={restore?.onScrollTop}
           />
-        )
+        )}
+        </div>
       ) : null}
       {hits.length && layout !== "list" && (moreState.loading || moreState.error) ? (
         <div className="flex shrink-0 items-center justify-center gap-2 py-2 text-xs text-muted-foreground" role="status">

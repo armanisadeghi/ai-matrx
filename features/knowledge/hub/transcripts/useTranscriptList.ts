@@ -9,8 +9,11 @@
  *                                 searched (titles, folders, tags AND the
  *                                 transcript text) and paged on the server,
  *                                 with the true total on every row;
- *   public.trx_list_facets        each facet's values with whole-set counts;
- *   public.trx_list_scope_counts  how many rows each scope holds.
+ *   public.trx_list_facets        each facet's values with whole-set counts — and,
+ *                                 for the facets a recording session carries (Type,
+ *                                 Status, Visibility) and every Scope, the list's own
+ *                                 total for that value, so a count always equals
+ *                                 what choosing it returns.
  *
  * Nothing is filtered or counted over the rows that happen to be loaded: every
  * filter, count and total is the server's, over the whole set. The rows are
@@ -53,6 +56,9 @@ export function transcriptServerFilters(sel: TranscriptFacetSelection): Record<s
   }
   return out;
 }
+
+/** The facets a recording session row carries — counted by the list itself (see the facets read). */
+const SESSION_FACETS: TranscriptFacet[] = ["kind", "status", "visibility"];
 
 export function transcriptScopeOf(sel: TranscriptFacetSelection): TranscriptScope {
   const s = sel.scope?.[0];
@@ -130,6 +136,9 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
   const [facetsError, setFacetsError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const depthRef = useRef(initialDepth);
+  /** The filters the rows on screen answer — a page read for older filters is dropped, never appended. */
+  const liveKey = useRef(key);
+  liveKey.current = key;
 
   const call = (offset: number, limit: number) =>
     supabase.rpc("trx_list_scoped", {
@@ -152,6 +161,7 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
     setStatus("loading");
     setError(null);
     setMoreError(null);
+    setLoadingMore(false);
     void (async () => {
       const { data, error: e } = await call(0, limit);
       if (cancelled) return;
@@ -176,13 +186,6 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
         p_search: undefined,
         p_deep: false,
       });
-      const counts = search
-        ? { data: null, error: { message: "not counted while searching" } }
-        : await supabase.rpc("trx_list_scope_counts", {
-            p_search: undefined,
-            p_deep: false,
-            p_filters: filters,
-          });
       if (cancelled) return;
       if (e) {
         setFacets(null);
@@ -196,14 +199,37 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
         if (!facet) continue;
         (out[facet] ??= []).push({ value: row.value, count: search ? -1 : Number(row.total ?? 0) });
       }
-      // Scope: its counts when the server answered them (a deep text search can outrun the
-      // count's time budget) — otherwise the three scopes without a number, never a wrong one.
-      const scopeTotals = new Map<string, number>();
-      for (const r of counts.error ? [] : ((counts.data ?? []) as { scope: string; total: number }[]))
-        scopeTotals.set(r.scope, (scopeTotals.get(r.scope) ?? 0) + Number(r.total ?? 0));
-      out.scope = (["mine", "shared", "public"] as const)
-        .filter((s) => counts.error || scopeTotals.has(s))
-        .map((s) => ({ value: s, count: counts.error ? -1 : (scopeTotals.get(s) ?? 0) }));
+      // A count must equal what choosing it returns. trx_list_facets counts recording sessions
+      // the list itself does not show (measured 2026-09-29: Session 211 vs 53, Idle 227 vs 70,
+      // Cleanup 27 vs 22, Stopped 11 vs 5), so every facet a session row carries — Type,
+      // Status, Visibility — and every Scope is counted by the list itself: the same
+      // function, the same filters, one row asked for, its true total read.
+      if (!search) {
+        const recount = async (facet: TranscriptFacet, value: string, sc: TranscriptScope = scope) => {
+          const f = FILTER_KEY[facet];
+          const { data: r, error: re } = await supabase.rpc("trx_list_scoped", {
+            p_scope: sc,
+            p_org_id: sc === "orgs" && orgId ? orgId : undefined,
+            // Like every other facet count here: over the whole view, this value alone.
+            p_filters: f ? { [f.filter]: { values: [value] } } : {},
+            p_limit: 1,
+            p_offset: 0,
+          });
+          if (re) return -1;
+          return (r as TranscriptListRow[] | null)?.length ? Number((r as TranscriptListRow[])[0].total_count) : 0;
+        };
+        const jobs: Promise<void>[] = [];
+        for (const facet of SESSION_FACETS)
+          for (const v of out[facet] ?? []) jobs.push(recount(facet, v.value).then((n) => void (v.count = n)));
+        const scopes = (["mine", "shared", "public"] as const).map((sc) => ({ value: sc, count: -1 }));
+        for (const sc of scopes) jobs.push(recount("scope", sc.value, sc.value).then((n) => void (sc.count = n)));
+        await Promise.all(jobs);
+        if (cancelled) return;
+        for (const facet of SESSION_FACETS) if (out[facet]) out[facet] = out[facet]!.filter((v) => v.count !== 0);
+        out.scope = scopes.filter((sc) => sc.count !== 0);
+      } else {
+        out.scope = (["mine", "shared", "public"] as const).map((sc) => ({ value: sc, count: -1 }));
+      }
       for (const [f, values] of Object.entries(out))
         if (f !== "scope") values?.sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
       setFacets(out);
@@ -220,8 +246,10 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
     setMoreError(null);
+    const askedFor = key;
     void (async () => {
       const { data, error: e } = await call(rows.length, TRANSCRIPT_PAGE);
+      if (liveKey.current !== askedFor) return;
       setLoadingMore(false);
       if (e) {
         setMoreError(message(e, "More transcripts"));
