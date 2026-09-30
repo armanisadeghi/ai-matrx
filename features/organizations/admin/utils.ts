@@ -7,6 +7,7 @@ import {
   formatRelativeTime as kitFormatRelativeTime,
   type CostUnit,
 } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**
@@ -46,7 +47,7 @@ export function formatMcents(
   unit: CostUnit = currentCostUnit(),
 ): string {
   if (mcents == null) return "—";
-  return formatCost(mcents / MCENTS_PER_USD, { unit });
+  return formatCost(mcents / MCENTS_PER_USD, { rate: currentPointsRate(), unit });
 }
 
 /** USD → milli-cents for storing a budget. Returns null for empty input. */

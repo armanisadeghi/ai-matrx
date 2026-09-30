@@ -11,6 +11,15 @@
 
 import { agentAppAdminKpis, agentAppKpis } from "@/features/agent-apps/format";
 
+
+// The points rate is the billing.points_per_usd knob; this suite runs with no
+// knob snapshot, so it pins the rate to a fixture (the platform default).
+jest.mock("@/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@/components/cost/pointsRate"),
+  currentPointsRate: () => 20_000,
+  usePointsRate: () => 20_000,
+}));
+
 describe("agentAppAdminKpis — unknown must not read as a number", () => {
   it("renders an unknown cost as an em-dash, not $0.0000", () => {
     expect(agentAppAdminKpis({ total_cost: null }).cost).toBe("—");

@@ -1,5 +1,14 @@
 import { workflowFailureAgentInput, workflowFailureHuman } from "./run-copy";
 
+
+// The points rate is the billing.points_per_usd knob; this suite runs with no
+// knob snapshot, so it pins the rate to a fixture (the platform default).
+jest.mock("@/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@/components/cost/pointsRate"),
+  currentPointsRate: () => 20_000,
+  usePointsRate: () => 20_000,
+}));
+
 const VIEW = {
   kind: "run" as const,
   headline: "Unknown rule ids stopped partway through.",

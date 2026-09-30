@@ -28,6 +28,15 @@ import { explorerQuestionOf, findingQuestion, recordsOf } from "../types";
 import { drillWindowLabel } from "@ai-matrx/design-system/data-table";
 import { doorSort, explorerWindowRange } from "../useDrillExplorer";
 
+
+// The points rate is the billing.points_per_usd knob; this suite runs with no
+// knob snapshot, so it pins the rate to a fixture (the platform default).
+jest.mock("@/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@/components/cost/pointsRate"),
+  currentPointsRate: () => 20_000,
+  usePointsRate: () => 20_000,
+}));
+
 const DEF = {
   key: "ai_usage",
   dimensions: [

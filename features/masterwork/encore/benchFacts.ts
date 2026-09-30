@@ -13,6 +13,7 @@
 // the strings are byte-identical to the ones it built inline.
 
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** The trial arm's cost, in the viewer's unit (points for everyone, dollars
@@ -22,7 +23,7 @@ export function money(
   unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (usd === null || usd === undefined) return null;
-  return formatCost(usd, { unit });
+  return formatCost(usd, { rate: currentPointsRate(), unit });
 }
 
 /** Whole seconds, or minutes once a trial arm has run long enough to need them. */

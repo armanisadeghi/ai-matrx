@@ -37,6 +37,7 @@ import { currentCostUnit } from "@/components/cost/costUnit";
 import {
   formatCost as formatKitCost,
   type CostUnit, formatDurationSeconds } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 
 export function stringOrEmpty(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -119,5 +120,5 @@ export function formatCost(
   unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (cost === null) return null;
-  return formatKitCost(cost, { unit });
+  return formatKitCost(cost, { rate: currentPointsRate(), unit });
 }

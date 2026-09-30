@@ -23,6 +23,7 @@ import {
   UNKNOWN_DISPLAY,
 } from "@/lib/format/honest";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**
@@ -163,7 +164,7 @@ export function agentAppKpis(
   // UNMEASURED cost is omitted. The old `> 0` test hid a real free run and
   // (with the `?? 0` twin below) turned an unknown one into "$0.00".
   if (isKnownNumber(app.total_cost)) {
-    kpis.cost = formatCost(app.total_cost, { unit });
+    kpis.cost = formatCost(app.total_cost, { rate: currentPointsRate(), unit });
   }
   if (app.status) kpis.status = app.status;
   if (app.published_to_web != null) {
@@ -185,7 +186,7 @@ export function agentAppAdminKpis(
     runs: formatCount(app.total_executions),
     users: formatCount(app.unique_users_count),
     success: formatPercentFromFraction(app.success_rate),
-    cost: formatCost(app.total_cost, { unit }),
+    cost: formatCost(app.total_cost, { rate: currentPointsRate(), unit }),
   };
 }
 

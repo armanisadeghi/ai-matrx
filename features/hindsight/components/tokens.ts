@@ -4,6 +4,7 @@
  */
 import { Globe, Network, StepForward, Webhook, Workflow, Wrench } from "lucide-react";
 import { formatCost, formatDurationSeconds, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 
 import type { Lever, SubjectKind, Verdict } from "../types";
 import { currentCostUnit } from "@/components/cost/costUnit";
@@ -96,7 +97,7 @@ export function fmtCost(
   value: number | null | undefined,
   unit: CostUnit = currentCostUnit(),
 ): string {
-  return formatCost(value, { unit });
+  return formatCost(value, { rate: currentPointsRate(), unit });
 }
 
 export function fmtElapsed(seconds: number): string {

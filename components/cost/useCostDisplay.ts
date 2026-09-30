@@ -11,7 +11,8 @@
  * normal users, they use points or credits … Everyone should see
  * credits/points except for system admins who should always be able to toggle
  * to see $." So:
- *   - every viewer sees POINTS (20,000 points = $1, `@ai-matrx/kit/format`);
+ *   - every viewer sees POINTS, at the `billing.points_per_usd` knob's rate for
+ *     the active organization (`pointsRate.ts`), converted by `@ai-matrx/kit/format`;
  *   - a system admin (ADMIN IDENTITY, `selectIsAdminPerson`, any
  *     `admins.level`) who flipped the "Show costs in dollars" switch in the
  *     header menu's Admin group sees $ — on every page, because the ruling says
@@ -41,14 +42,21 @@ import {
 import type { RootState } from "@/lib/redux/store";
 import { selectCanToggleCostUnit, selectCostUnit } from "./costUnit";
 import { formatAdminCost } from "./formatAdminCost";
+import { usePointsRate } from "./pointsRate";
 
 export { currentCostUnit, selectCostUnit, selectShowCostInUsdPreference } from "./costUnit";
+export { currentPointsRate, POINTS_RATE_KNOB, usePointsRate } from "./pointsRate";
 
 export interface CostDisplay {
   /** `"points"` for everyone; `"usd"` only for an admin who flipped the switch. */
   unit: CostUnit;
   /** True when the viewer may flip the switch at all (system admins). */
   canToggle: boolean;
+  /**
+   * Points per dollar for this viewer's organization (the `billing.points_per_usd`
+   * knob), or `null` until the knob snapshot answers — costs read "—" meanwhile.
+   */
+  rate: number | null;
   /** A USD cost → the viewer's string: `"1,234 points"` or `"$0.0617"`. */
   format: (
     usd: number | null | undefined,
@@ -83,15 +91,19 @@ function useCostState(): { unit: CostUnit; canToggle: boolean } {
 
 export function useCostDisplay(): CostDisplay {
   const { unit, canToggle } = useCostState();
+  // Subscribes: the moment the knob snapshot lands (or an organization's rate
+  // changes), every cost on screen re-renders at the real rate.
+  const rate = usePointsRate();
   const pathname = usePathname();
   const showBoth = pathname?.startsWith("/administration") === true;
   return {
     unit,
     canToggle,
+    rate,
     format: (usd, options) =>
       showBoth
-        ? formatAdminCost(usd, options)
-        : formatCost(usd, { ...options, unit }),
-    toPoints: usdToPoints,
+        ? formatAdminCost(usd, { ...options, rate })
+        : formatCost(usd, { ...options, unit, rate }),
+    toPoints: (usd) => usdToPoints(usd, { rate }),
   };
 }

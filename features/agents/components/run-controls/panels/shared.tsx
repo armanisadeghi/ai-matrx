@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCost, formatDurationMs, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 
 /**
  * Shared primitives for request/session stat panels.
@@ -99,7 +100,7 @@ export function fmtCost(
   cost: number | null | undefined,
   unit: CostUnit = currentCostUnit(),
 ): string {
-  return formatCost(cost, { unit });
+  return formatCost(cost, { rate: currentPointsRate(), unit });
 }
 
 // ── Stats extractors ───────────────────────────────────────────────────────

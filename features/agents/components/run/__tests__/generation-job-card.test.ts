@@ -15,6 +15,15 @@ import {
 } from "@/features/agents/components/run/GenerationJobCard";
 import { readVideoSecondPoints } from "@/features/agents/components/run/useVideoSecondPoints";
 
+
+// The points rate is the billing.points_per_usd knob; this suite runs with no
+// knob snapshot, so it pins the rate to a fixture (the platform default).
+jest.mock("@/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@/components/cost/pointsRate"),
+  currentPointsRate: () => 20_000,
+  usePointsRate: () => 20_000,
+}));
+
 test("a variable bound to the control wins over the literal setting", () => {
   const defs = [{ name: "clip_length", control: { key: "duration_seconds" } }];
   expect(resolvedControl("duration_seconds", { duration_seconds: 4 }, defs, { clip_length: "8" })).toBe("8");

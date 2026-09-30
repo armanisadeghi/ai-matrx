@@ -40,6 +40,7 @@ import {
 import { selectRunModelId } from "@/features/agents/runtime/generation-job";
 import { useVideoSecondPoints } from "./useVideoSecondPoints";
 import { formatCost, pointsToUsd, type CostUnit, formatDurationMs } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
@@ -93,8 +94,8 @@ export function describeEstimate(
   unit: CostUnit = currentCostUnit(),
 ): string {
   if (estimate.points !== null && estimate.pointsPerSecond !== null) {
-    const total = formatCost(pointsToUsd(estimate.points), { unit });
-    const rate = formatCost(pointsToUsd(estimate.pointsPerSecond), { unit });
+    const total = formatCost(pointsToUsd(estimate.points, { rate: currentPointsRate() }), { rate: currentPointsRate(), unit });
+    const rate = formatCost(pointsToUsd(estimate.pointsPerSecond, { rate: currentPointsRate() }), { rate: currentPointsRate(), unit });
     return `≈ ${total} (${rate}/s × ${estimate.seconds} s)`;
   }
   if (estimate.seconds === null) {

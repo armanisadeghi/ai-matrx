@@ -3,6 +3,7 @@
 // The words and numbers a run row prints. Pure — tested in __tests__.
 
 import { formatCost, type CostUnit, formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import type { MandateRun, RunHistoryView, RunRung, RunStatus } from "./service";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
@@ -71,7 +72,7 @@ export function absoluteWhen(iso: string): string {
 /** A run's cost in the viewer's unit ("538 points"; dollars only for a
  *  system admin who flipped the switch); "—" when not known. */
 export function costWords(cost: number | null, unit: CostUnit = currentCostUnit()): string {
-  return formatCost(cost, { unit });
+  return formatCost(cost, { rate: currentPointsRate(), unit });
 }
 
 /** "850ms" / "6.2s" / "11s" / "2m 05s"; "—" when not finished. */

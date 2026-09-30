@@ -34,6 +34,7 @@
 
 import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { formatCost, formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** The one feature namespace these rows live under. */
@@ -252,7 +253,7 @@ export async function estimateTranscription(
     durationLabel: formatClock(durationSeconds),
     costUsd,
     costLabel: rate.resolved
-      ? `about ${formatCost(costUsd, { unit })}`
+      ? `about ${formatCost(costUsd, { rate: currentPointsRate(), unit })}`
       : "could not be priced — the transcription rate could not be read",
     processingSeconds,
     processingLabel: speed.resolved

@@ -38,14 +38,14 @@ export function Cost({
   muted,
   unknown,
 }: CostProps) {
-  const { unit, canToggle, format } = useCostDisplay();
+  const { unit, canToggle, format, rate } = useCostDisplay();
   const text = format(usd, { short, unknown });
   const known = typeof usd === "number" && Number.isFinite(usd);
   // The title remains useful outside administration, where the admin can
   // still choose a single display unit from the header switch.
   const title =
     canToggle && known
-      ? formatCost(usd, { unit: unit === "usd" ? "points" : "usd" })
+      ? formatCost(usd, { unit: unit === "usd" ? "points" : "usd", rate })
       : undefined;
   return (
     <span

@@ -16,6 +16,15 @@ jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () 
 import { ActionRequestAnswerForm } from "../ActionRequestAnswerForm";
 import type { ApproveSpendRender } from "../../service";
 
+
+// The points rate is the billing.points_per_usd knob; this suite runs with no
+// knob snapshot, so it pins the rate to a fixture (the platform default).
+jest.mock("@/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@/components/cost/pointsRate"),
+  currentPointsRate: () => 20_000,
+  usePointsRate: () => 20_000,
+}));
+
 const RENDER: ApproveSpendRender = {
   __kind: "action_request.render",
   form: "approve_spend",

@@ -34,6 +34,7 @@ import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { formatPoints, pointsToUsd } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   LIMIT_SOURCE_LABEL,
@@ -50,7 +51,7 @@ import { useSpendBudget } from "./useSpendBudget";
  *  a system admin who flipped the switch. */
 function usePointsText(): (points: number) => string {
   const { format } = useCostDisplay();
-  return (points) => format(pointsToUsd(points));
+  return (points) => format(pointsToUsd(points, { rate: currentPointsRate() }));
 }
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

@@ -54,8 +54,10 @@ real error, never a blank.
   `MICRO_USD_CAPABILITIES`, once. Adding a money dimension means adding it to
   that set — nowhere else.
 - 🚨 **`platform.points` is stored AND edited in points; dollars are a hint.**
-  20,000 points = $1 of model spend (`POINTS_PER_USD` in `types.ts`, mirrored
-  server-side in `aidream/services/billing/ai_points.py` — the two must agree).
+  The points-per-dollar rate is ONE setting, the `billing.points_per_usd` feature
+  knob (platform default 20,000; an organization may carry its own; never per
+  person). The client reads it through `components/cost/pointsRate.ts`, the server
+  through `aidream/services/billing/ai_points.py`; nothing else holds the number.
   The admin types points; `pointsToUsdLabel()` renders "~$16.00 / month of AI"
   live beside the draft and beside the saved value. Never conflate it with
   `seo.provider_spend`, which is a different capability in micro-dollars.

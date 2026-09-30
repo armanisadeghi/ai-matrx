@@ -7,6 +7,7 @@
  */
 
 import { formatCost } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import {
   buildAgentPayload,
   type AgentPayloadInput,
@@ -47,7 +48,7 @@ export function workflowFailureHuman(view: WorkflowFailureView): string {
       : null;
   const cost =
     view.costUsd !== undefined && view.costUsd > 0
-      ? formatCost(view.costUsd, { unit: currentCostUnit() })
+      ? formatCost(view.costUsd, { rate: currentPointsRate(), unit: currentCostUnit() })
       : null;
   return compactLines([
     view.workflowName ? `Workflow: ${view.workflowName}` : null,
@@ -76,7 +77,7 @@ export function workflowFailureAgentInput(
       : null;
   const cost =
     view.costUsd !== undefined && view.costUsd > 0
-      ? formatCost(view.costUsd, { unit: currentCostUnit() })
+      ? formatCost(view.costUsd, { rate: currentPointsRate(), unit: currentCostUnit() })
       : null;
 
   return {

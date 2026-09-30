@@ -28,6 +28,7 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
@@ -189,7 +190,7 @@ export const NO_COST_CELL = "no rate set";
  * by hand.
  */
 export function costCell(usd: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
-  return formatCost(usd, { unit, unknown: NO_COST_CELL });
+  return formatCost(usd, { rate: currentPointsRate(), unit, unknown: NO_COST_CELL });
 }
 
 export function formatSeconds(seconds: number | null | undefined): string {

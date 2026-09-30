@@ -6,12 +6,14 @@
  * Arman, 2026-09-27: people see points, never dollars; only a system admin who
  * flipped "Show costs in dollars" sees $. The server records the approval in
  * USD (`ApproveSpendResult.approved_amount_usd`, stored to the cent), so a
- * member types POINTS and this module converts at the one platform rate
- * (`@ai-matrx/kit/format`). The USD is rounded UP to the cent, so what the
+ * member types POINTS and this module converts at the viewer's points rate
+ * (the `billing.points_per_usd` knob, `components/cost/pointsRate.ts`). With no
+ * rate yet, a points amount is not an amount (`null`) — never a guess. The USD is rounded UP to the cent, so what the
  * server records is never below what the person typed.
  */
 
-import { POINTS_PER_USD, usdToPoints, type CostUnit } from "@ai-matrx/kit/format";
+import { pointsToUsd, usdToPoints, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 
 /** aidream's own ceiling on one approval (`ApproveSpendResult.approved_amount_usd`). */
 export const MAX_APPROVAL_USD = 100_000;
@@ -23,7 +25,7 @@ export function centsUp(usd: number): number {
 
 /** The text the amount box starts with: whole points, or dollars to the cent. */
 export function initialAmountText(usd: number, unit: CostUnit): string {
-  return unit === "usd" ? usd.toFixed(2) : String(usdToPoints(usd) ?? 0);
+  return unit === "usd" ? usd.toFixed(2) : String(usdToPoints(usd, { rate: currentPointsRate() }) ?? "");
 }
 
 /**
@@ -40,6 +42,8 @@ export function parseApprovalUsd(text: string, unit: CostUnit): number | null {
   }
   const cleaned = text.replace(/[\s,]/g, "").replace(/(points?|pts)$/i, "");
   if (!/^\d+$/.test(cleaned)) return null;
-  const usd = centsUp(Number(cleaned) / POINTS_PER_USD);
+  const raw = pointsToUsd(Number(cleaned), { rate: currentPointsRate() });
+  if (raw === null) return null;
+  const usd = centsUp(raw);
   return Number.isFinite(usd) && usd <= MAX_APPROVAL_USD ? usd : null;
 }

@@ -75,6 +75,7 @@ import {
   formatDurationMs,
   type CostUnit,
 } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 
 export interface AgentResultBlockProps {
   serverData?: unknown;
@@ -149,7 +150,7 @@ function factList(facts: AgentRunFacts, unit: CostUnit): Fact[] {
     out.push({ label: "Tool calls", value: formatCount(facts.toolCalls) });
   }
   if (facts.costUsd !== null) {
-    out.push({ label: "Cost", value: formatCost(facts.costUsd, { unit }) });
+    out.push({ label: "Cost", value: formatCost(facts.costUsd, { rate: currentPointsRate(), unit }) });
   }
   if (facts.inputTokens !== null || facts.outputTokens !== null) {
     out.push({
@@ -176,7 +177,7 @@ function summaryLine(facts: AgentRunFacts, unit: CostUnit): string | null {
     facts.durationMs !== null ? formatDuration(facts.durationMs) : null;
   if (duration) parts.push(duration);
   if (facts.costUsd !== null && facts.costUsd > 0) {
-    parts.push(formatCost(facts.costUsd, { unit }));
+    parts.push(formatCost(facts.costUsd, { rate: currentPointsRate(), unit }));
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }

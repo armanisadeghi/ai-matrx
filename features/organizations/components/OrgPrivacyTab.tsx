@@ -37,6 +37,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { FIELD_ACTION, useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { formatDurationMs, formatPercent, pointsToUsd, usdToPoints } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
@@ -128,7 +129,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
     setBudgetDraft(
       unit === "usd"
         ? twoDecimalText(dailyBudget)
-        : String(usdToPoints(dailyBudget) ?? 0),
+        : String(usdToPoints(dailyBudget, { rate: currentPointsRate() }) ?? 0),
     );
     setEditingBudget(true);
   };
@@ -148,7 +149,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
       );
       return;
     }
-    const parsedUsd = unit === "usd" ? parsed : (pointsToUsd(parsed) ?? 0);
+    const parsedUsd = unit === "usd" ? parsed : (pointsToUsd(parsed, { rate: currentPointsRate() }) ?? 0);
     try {
       await pref.setBudgetUsd(parsedUsd);
       setEditingBudget(false);

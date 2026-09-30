@@ -15,6 +15,7 @@ import { setMemberControls } from "../service";
 import type { OrgAdminMember } from "../types";
 import { bytesToGb, gbToBytes, MCENTS_PER_USD, usdToMcents } from "../utils";
 import { pointsToUsd, usdToPoints } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
@@ -32,7 +33,7 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
   const [budgetPoints, setBudgetPoints] = useState(
     member.monthlyBudgetMcents == null
       ? ""
-      : String(usdToPoints(member.monthlyBudgetMcents / MCENTS_PER_USD) ?? ""),
+      : String(usdToPoints(member.monthlyBudgetMcents / MCENTS_PER_USD, { rate: currentPointsRate() }) ?? ""),
   );
   const [notes, setNotes] = useState(member.notes ?? "");
   const [saving, setSaving] = useState(false);
@@ -47,7 +48,7 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
         monthlyBudgetMcents: usdToMcents(
           budgetPoints.trim() === ""
             ? ""
-            : String(pointsToUsd(Number(budgetPoints)) ?? ""),
+            : String(pointsToUsd(Number(budgetPoints), { rate: currentPointsRate() }) ?? ""),
         ),
         notes: notes.trim() || null,
       });

@@ -8,8 +8,8 @@
  * to see $." Every AI/run cost therefore renders through ONE primitive:
  * `<Cost usd={…}/>` / `<CostBadge/>` / `useCostDisplay().format` in
  * `components/cost/`, built on `formatCost` in `@ai-matrx/kit/format`
- * at the rate of the `billing.points_per_usd` knob, the same rate
- * `aidream/services/billing/ai_points.py` banks). A member sees points; only a system admin who flipped the switch in
+ * at the rate of the `billing.points_per_usd` knob — the same rate
+ * `aidream/services/billing/ai_points.py` banks. A member sees points; only a system admin who flipped the switch in
  * the header menu's Admin group sees dollars.
  *
  * WHAT THIS FLAGS, per file (comments excluded):

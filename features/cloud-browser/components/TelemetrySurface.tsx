@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { HouseWifi } from "lucide-react";
 import { formatCost, formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import type {
   EgressUnavailable,
@@ -38,7 +39,7 @@ function formatValue(m: TelemetryMetric, unit: CostUnit): string {
   // thing this package exists to forbid.
   if (m.unit === "bytes") return formatFileSize(m.value);
   // A USD metric is platform cost: points for everyone, $ for an admin who asked.
-  if (m.unit === "USD") return formatCost(m.value, { unit });
+  if (m.unit === "USD") return formatCost(m.value, { rate: currentPointsRate(), unit });
   return `${m.value.toLocaleString()}${m.unit ? " " + m.unit : ""}`;
 }
 

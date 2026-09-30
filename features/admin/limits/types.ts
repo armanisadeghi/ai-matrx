@@ -7,6 +7,7 @@
 // hardcode.
 
 import { pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
@@ -162,7 +163,7 @@ export function pointsToUsdLabel(
   if (typeof points === "string" && points.trim() === "") return null;
   if (!Number.isFinite(numeric) || numeric < 0) return null;
   void unit;
-  const money = formatAdminCost(pointsToUsd(numeric));
+  const money = formatAdminCost(pointsToUsd(numeric, { rate: currentPointsRate() }));
   const per = period && period !== "lifetime" ? ` / ${period}` : "";
   return `~${money}${per} of AI`;
 }

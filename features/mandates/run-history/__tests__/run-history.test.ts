@@ -17,6 +17,15 @@ import {
   RUNG_NOT_RECORDED,
 } from "../format";
 
+
+// The points rate is the billing.points_per_usd knob; this suite runs with no
+// knob snapshot, so it pins the rate to a fixture (the platform default).
+jest.mock("@/components/cost/pointsRate", () => ({
+  ...jest.requireActual("@/components/cost/pointsRate"),
+  currentPointsRate: () => 20_000,
+  usePointsRate: () => 20_000,
+}));
+
 const conversationRow = {
   run_kind: "conversation",
   run_id: "771c65fa-4a38-4f13-8c45-00dd634c21f5",

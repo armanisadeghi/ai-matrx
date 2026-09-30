@@ -250,8 +250,8 @@ export async function removeGuardrail(id: string): Promise<void> {
 }
 
 // ── Units ──────────────────────────────────────────────────────────────────
-// THE points conversion lives in `@ai-matrx/kit/format` (POINTS_PER_USD,
-// usdToPoints, pointsToUsd, formatPoints) — shared with the server's
+// THE points conversion lives in `@ai-matrx/kit/format` (at the rate of the
+// billing.points_per_usd knob, `components/cost/pointsRate.ts`; usdToPoints, pointsToUsd, formatPoints) — shared with the server's
 // ai_points.py and every client. Render a points figure for a person with
 // `useCostDisplay().format(pointsToUsd(points))`, so a system admin who asked
 // for dollars sees dollars and nobody else ever does.

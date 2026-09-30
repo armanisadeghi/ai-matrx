@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCost, formatFileSize, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { isMicroUsd, isPoints, MICRO_USD_PER_USD } from "@/features/admin/limits/types";
 import {
@@ -49,8 +50,8 @@ function formatValue(capability: string, value: number, unit: CostUnit): string 
   if (capability.endsWith("_bytes")) {
     return formatFileSize(value);
   }
-  if (isPoints(capability)) return formatCost(pointsToUsd(value), { unit });
-  if (isMicroUsd(capability)) return formatCost(value / MICRO_USD_PER_USD, { unit });
+  if (isPoints(capability)) return formatCost(pointsToUsd(value, { rate: currentPointsRate() }), { rate: currentPointsRate(), unit });
+  if (isMicroUsd(capability)) return formatCost(value / MICRO_USD_PER_USD, { rate: currentPointsRate(), unit });
   return value.toLocaleString();
 }
 
