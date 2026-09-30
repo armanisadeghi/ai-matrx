@@ -395,7 +395,7 @@ export function buildSchemaPayload(
       const blank = blankValue(field, mode);
       if (blank.send) {
         payload[field.key] = blank.value;
-        changed += 1;
+        if (field.key !== "id") changed += 1;
       } else if (field.required) {
         warnings.push({
           key: field.key,
@@ -406,7 +406,8 @@ export function buildSchemaPayload(
     }
 
     payload[field.key] = coerce(field, value.raw, warnings);
-    changed += 1;
+    // The record's own id says WHICH row, not what changes.
+    if (field.key !== "id") changed += 1;
   }
 
   if (mode === "update" && changed === 0) {

@@ -204,6 +204,25 @@ describe("buildSchemaPayload", () => {
     expect(warnings.map((w) => w.key)).toEqual([null]);
   });
 
+  it("the admin builder's update (id is a field there) still warns when only the id is set", () => {
+    const adminUpdate = deriveSchemaFields(t.schemas!.update, {
+      titleColumn: t.title_column,
+      resolveRecordToken: (k) => (k === "id" ? ("task" as EntityTypeToken) : null),
+    });
+    expect(field(adminUpdate, "id")).toMatchObject({
+      kind: "record",
+      recordToken: "task",
+      tier: "essential",
+    });
+    const { payload, warnings } = buildSchemaPayload(
+      adminUpdate,
+      { id: touched("task-1") },
+      "update",
+    );
+    expect(payload).toEqual({ id: "task-1" });
+    expect(warnings.map((w) => w.key)).toEqual([null]);
+  });
+
   it("converts a local date-time to ISO, and keeps bad JSON as text with a warning", () => {
     const { payload, warnings } = buildSchemaPayload(
       createFields,

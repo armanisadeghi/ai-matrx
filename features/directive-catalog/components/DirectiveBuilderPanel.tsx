@@ -10,7 +10,8 @@
  *    `MatrxEnvelopeBlock` — the same reference-chip renderer the chat uses, which
  *    resolves the value from Supabase and opens the entity on click. This works
  *    TODAY and is the "test it" payoff.
- *  - create / update (state "yes"): a JSON payload editor + Execute runs it via
+ *  - create / update (state "yes"): a form generated from the server's item
+ *    schema (`SchemaFieldsForm`; a JSON view stays one click away) + Execute runs it via
  *    `POST /directives/execute` (the Plane-1 writer, as the user / RLS) and shows the
  *    per-item receipts. Idempotent by content key; `force` opts out. delete is soft
  *    (planned) → disabled; non-"yes" writes are disabled. We NEVER write Supabase
@@ -50,7 +51,18 @@ import {
   referenceFieldsForSpecs,
   refFieldsForNoun,
 } from "@/features/directive-catalog/buildEnvelope";
-import { identityFieldPickerInfo } from "@/features/directive-catalog/identityPicker";
+import {
+  identityFieldPickerInfo,
+  payloadFieldEntityInfo,
+} from "@/features/directive-catalog/identityPicker";
+import {
+  applyFieldChange,
+  buildSchemaPayload,
+  deriveSchemaFields,
+  valuesFromPayload,
+  type SchemaFieldValue,
+} from "@/features/directive-catalog/schemaFields";
+import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
 import {
   buildSchemaExample,
   isJsonSchema,
@@ -118,6 +130,13 @@ export function DirectiveBuilderPanel({
   const [renderNonce, setRenderNonce] = useState(0);
   // Write-verb state.
   const [writePayload, setWritePayload] = useState("");
+  // The same answers the reference picker's Create/Update form holds.
+  const [payloadValues, setPayloadValues] = useState<
+    Record<string, SchemaFieldValue>
+  >({});
+  const [payloadView, setPayloadView] = useState<"fields" | "json">("fields");
+  /** Why the last Fields/JSON switch did less than asked — shown inline. */
+  const [viewNote, setViewNote] = useState<string | null>(null);
   const [force, setForce] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<DirectiveApplyResult | null>(null);
@@ -179,8 +198,54 @@ export function DirectiveBuilderPanel({
     }
   }, [isReference, writePayload]);
 
-  const payloadError = parsed.error;
-  const payloadOk = parsed.error === null;
+  // The form generated from the server's item schema for this verb + noun.
+  const writeFields = useMemo(() => {
+    const schema = noun?.schemas?.[verb];
+    if (isReference || !noun || !isJsonSchema(schema)) return [];
+    return deriveSchemaFields(schema, {
+      titleColumn: noun.title_column,
+      resolveRecordToken: (key) =>
+        payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
+    });
+  }, [isReference, noun, verb]);
+  // No published schema → the JSON view is the only honest editor.
+  const effectiveView = writeFields.length === 0 ? "json" : payloadView;
+  const builtPayload = useMemo(
+    () =>
+      buildSchemaPayload(
+        writeFields,
+        payloadValues,
+        verb === "update" ? "update" : "create",
+      ),
+    [writeFields, payloadValues, verb],
+  );
+
+  const switchPayloadView = (next: "fields" | "json") => {
+    if (next === effectiveView) return;
+    if (next === "json") {
+      setWritePayload(JSON.stringify(builtPayload.payload, null, 2));
+      setViewNote(null);
+    } else if (parsed.error === null) {
+      const known = new Set(writeFields.map((f) => f.key));
+      const unknown = Object.keys(parsed.value).filter((k) => !known.has(k));
+      setViewNote(
+        unknown.length > 0
+          ? `Not in this schema, so not sent from Fields: ${unknown.join(", ")}`
+          : null,
+      );
+      setPayloadValues(valuesFromPayload(writeFields, parsed.value));
+    } else {
+      setViewNote("Fix the JSON below to switch to Fields.");
+      return;
+    }
+    setPayloadView(next);
+  };
+
+  // What Execute sends: the form's payload, or the JSON view's.
+  const effectivePayload =
+    effectiveView === "fields" ? builtPayload.payload : parsed.value;
+  const payloadError = effectiveView === "json" ? parsed.error : null;
+  const payloadOk = payloadError === null;
 
   const envelope = useMemo(() => {
     if (!nounName) return null;
@@ -188,7 +253,7 @@ export function DirectiveBuilderPanel({
       return buildDirectiveEnvelope(verb, nounName, currentReferenceFields);
     return buildKindDirective(
       buildDirectiveSlug(verb, nounName),
-      payloadOk ? [parsed.value] : [],
+      payloadOk ? [effectivePayload] : [],
     );
   }, [
     verb,
@@ -196,7 +261,7 @@ export function DirectiveBuilderPanel({
     isReference,
     currentReferenceFields,
     payloadOk,
-    parsed.value,
+    effectivePayload,
   ]);
 
   const displayedEnvelope = useMemo(() => {
@@ -222,6 +287,8 @@ export function DirectiveBuilderPanel({
     setResult(null);
     setExecError(null);
     setWritePayload("");
+    setPayloadValues({});
+    setViewNote(null);
   };
 
   const handleVerbChange = (nextVerb: DirectiveVerb) => {
@@ -230,6 +297,8 @@ export function DirectiveBuilderPanel({
     setResult(null);
     setExecError(null);
     setWritePayload("");
+    setPayloadValues({});
+    setViewNote(null);
   };
 
   const chooseIdentity = async (
@@ -268,7 +337,7 @@ export function DirectiveBuilderPanel({
     try {
       const res = await executeDirective(baseUrl, {
         directive: `directive_v${catalog.directive_version}_${verb}_${nounName}`,
-        items: [parsed.value],
+        items: [effectivePayload],
         force,
       });
       setResult(res);
@@ -509,23 +578,68 @@ export function DirectiveBuilderPanel({
       ) : (
         <div className="flex flex-col gap-3">
           {/* Payload — the row's fields (shape mirrors the table). */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Payload — the row&apos;s fields (JSON)
-              {verb === "update" ? " · include the row's id" : ""}
-            </label>
-            <Textarea
-              value={writePayload}
-              onChange={(e) => setWritePayload(e.target.value)}
-              spellCheck={false}
-              className={cn(
-                "min-h-[120px] font-mono text-base lg:text-xs",
-                payloadError && "border-red-500 focus-visible:ring-red-500",
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">
+                Payload — the row&apos;s fields
+              </span>
+              {writeFields.length > 0 && (
+                <div
+                  role="radiogroup"
+                  aria-label="Payload editor"
+                  className="ml-auto flex rounded-md border border-border p-0.5 text-xs"
+                >
+                  {(["fields", "json"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      role="radio"
+                      aria-checked={effectiveView === v}
+                      onClick={() => switchPayloadView(v)}
+                      className={cn(
+                        "min-h-7 rounded px-2",
+                        effectiveView === v
+                          ? "bg-primary/10 text-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {v === "fields" ? "Fields" : "JSON"}
+                    </button>
+                  ))}
+                </div>
               )}
-              placeholder={writePayloadPlaceholder}
-            />
-            {payloadError && (
-              <p className="text-xs text-red-500">{payloadError} <ErrorAlchemyMenu error={payloadError} /></p>
+            </div>
+            {viewNote && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                {viewNote}
+              </p>
+            )}
+            {effectiveView === "fields" ? (
+              <SchemaFieldsForm
+                fields={writeFields}
+                values={payloadValues}
+                mode={verb === "update" ? "update" : "create"}
+                warnings={builtPayload.warnings}
+                onChange={(key, value) =>
+                  setPayloadValues((prev) => applyFieldChange(prev, key, value))
+                }
+              />
+            ) : (
+              <>
+                <Textarea
+                  value={writePayload}
+                  onChange={(e) => setWritePayload(e.target.value)}
+                  spellCheck={false}
+                  className={cn(
+                    "min-h-[120px] font-mono text-base lg:text-xs",
+                    payloadError && "border-red-500 focus-visible:ring-red-500",
+                  )}
+                  placeholder={writePayloadPlaceholder}
+                />
+                {payloadError && (
+                  <p className="text-xs text-red-500">{payloadError} <ErrorAlchemyMenu error={payloadError} /></p>
+                )}
+              </>
             )}
           </div>
 

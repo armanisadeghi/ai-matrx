@@ -53,9 +53,19 @@ import type {
   DirectiveCatalog,
   NounDirectives,
 } from "@/features/directive-catalog/types";
+import { isJsonSchema } from "@/features/directive-catalog/schemaExamples";
+import { payloadFieldEntityInfo } from "@/features/directive-catalog/identityPicker";
+import {
+  applyFieldChange,
+  buildSchemaPayload,
+  deriveSchemaFields,
+  type SchemaFieldValue,
+} from "@/features/directive-catalog/schemaFields";
+import { SchemaFieldsForm } from "@/features/directive-catalog/components/SchemaFieldsForm";
 import {
   FRIENDLY_REFERENCE_TYPE_LABELS,
   INLINE_CREATE_REFERENCE_TYPES,
+  wireItems,
   type ReferenceDelivery,
   type ReferencePick,
 } from "./referencePickerTypes";
@@ -145,8 +155,8 @@ function findNoun(catalog: DirectiveCatalog, token: string): NounDirectives | nu
 interface ActionOption {
   directiveClass: DirectiveClass;
   label: string;
-  /** Present = shown greyed with this reason (never silently absent). */
-  disabledReason?: string;
+  /** One short line under the label (side effects say what gets inserted). */
+  hint?: string;
 }
 
 const LINK_ACTION: ActionOption = {
@@ -154,30 +164,73 @@ const LINK_ACTION: ActionOption = {
   label: "Link to it",
 };
 
+/** Every side effect is inserted as a button that asks before it runs. */
+const BUTTON_HINT = "Inserts a button that asks before it runs";
+
+/**
+ * The actions the server says this type supports — every one of them real.
+ * Order: link, then the writes from least to most destructive.
+ */
 function actionOptionsFor(noun: NounDirectives | null): ActionOption[] {
   const options: ActionOption[] = [LINK_ACTION];
   if (!noun) return options;
-  if (noun.delete === "yes") {
-    options.push({
-      directiveClass: "delete",
-      label: "Delete it (inserts a button; runs only when clicked)",
-    });
+  if (noun.create === "yes") {
+    options.push({ directiveClass: "create", label: "Create one", hint: BUTTON_HINT });
   }
   if (noun.update === "yes") {
-    options.push({
-      directiveClass: "update",
-      label: "Update it",
-      disabledReason: "Needs field values — not available from this picker yet",
-    });
+    options.push({ directiveClass: "update", label: "Update it", hint: BUTTON_HINT });
   }
-  if (noun.create === "yes") {
-    options.push({
-      directiveClass: "create",
-      label: "Create one",
-      disabledReason: "Needs field values — not available from this picker yet",
-    });
+  if (noun.delete === "yes") {
+    options.push({ directiveClass: "delete", label: "Delete it", hint: BUTTON_HINT });
   }
   return options;
+}
+
+/** The type's catalog row — schemas, title column — from the cached catalog. */
+function useDirectiveNoun(token: string): {
+  noun: NounDirectives | null;
+  loading: boolean;
+  error: string | null;
+} {
+  const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  const [state, setState] = useState<{
+    noun: NounDirectives | null;
+    loading: boolean;
+    error: string | null;
+  }>({ noun: null, loading: true, error: null });
+
+  useEffect(() => {
+    if (!baseUrl) {
+      setState({
+        noun: null,
+        loading: false,
+        error: "No server is configured, so this type's fields cannot be loaded.",
+      });
+      return;
+    }
+    let cancelled = false;
+    setState({ noun: null, loading: true, error: null });
+    loadCatalog(baseUrl)
+      .then((catalog) => {
+        if (!cancelled) {
+          setState({ noun: findNoun(catalog, token), loading: false, error: null });
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setState({
+            noun: null,
+            loading: false,
+            error: `Couldn't load this type's fields (${err instanceof Error ? err.message : "unknown error"}).`,
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseUrl, token]);
+
+  return state;
 }
 
 // ── Body ────────────────────────────────────────────────────────────────────
@@ -200,17 +253,23 @@ export function ReferencePickerBody({
 
   const [activeType, setActiveType] = useState<TypeOption | null>(null);
   const [delivery, setDelivery] = useState<ReferenceDelivery>(mode);
-  const [directiveClass, setDirectiveClass] = useState<DirectiveClass>("reference");
+  const [directiveClass, setDirectiveClassState] =
+    useState<DirectiveClass>("reference");
+  /** The record an Update will change — chosen by search before the form opens. */
+  const [target, setTarget] = useState<{ id: string; title: string | null } | null>(
+    null,
+  );
   const [filePickerOpen, setFilePickerOpen] = useState(false);
 
-  const finish = (items: ReferenceItem[], title: string | null) => {
+  const setDirectiveClass = (next: DirectiveClass) => {
+    setDirectiveClassState(next);
+    setTarget(null);
+  };
+
+  const finish = (items: object[], title: string | null) => {
     if (!activeType || items.length === 0) return;
-    // Pure identity on the wire: the chip resolves the live label itself.
-    const pure = items.map((item) => {
-      const { label: _label, ...rest } = item as Record<string, unknown>;
-      return rest as ReferenceItem;
-    });
-    const fence = buildDirectiveFence(directiveClass, activeType.token, pure);
+    const wire = wireItems(directiveClass, items) as ReferenceItem[];
+    const fence = buildDirectiveFence(directiveClass, activeType.token, wire);
     const shell = fence.split("\n")[1] ?? "";
     onPicked({
       fence,
@@ -238,21 +297,44 @@ export function ReferencePickerBody({
     );
   }
 
+  const header = {
+    type: activeType,
+    mode,
+    delivery,
+    onDeliveryChange: setDelivery,
+    directiveClass,
+    onDirectiveClassChange: setDirectiveClass,
+    onBack: () => {
+      setDirectiveClass("reference");
+      setActiveType(null);
+    },
+  };
+
+  // Create has nothing to search for; Update searches first, then opens the form.
+  if (directiveClass === "create" || (directiveClass === "update" && target)) {
+    return (
+      <WriteStep
+        {...header}
+        target={directiveClass === "update" ? target : null}
+        onChangeTarget={() => setTarget(null)}
+        onSubmit={finish}
+      />
+    );
+  }
+
   return (
     <>
       <RecordStep
-        type={activeType}
-        mode={mode}
-        delivery={delivery}
-        onDeliveryChange={setDelivery}
-        directiveClass={directiveClass}
-        onDirectiveClassChange={setDirectiveClass}
-        onBack={() => setActiveType(null)}
+        {...header}
         onBrowseFiles={() => setFilePickerOpen(true)}
         onPickMany={(items) => {
           const first = items[0] as Record<string, unknown> | undefined;
           const title =
             typeof first?.label === "string" ? (first.label as string) : null;
+          if (directiveClass === "update") {
+            if (typeof first?.id === "string") setTarget({ id: first.id, title });
+            return;
+          }
           finish(items, title);
         }}
       />
@@ -456,17 +538,7 @@ function TypeList({
 
 // ── Step 2: action + record ─────────────────────────────────────────────────
 
-function RecordStep({
-  type,
-  mode,
-  delivery,
-  onDeliveryChange,
-  directiveClass,
-  onDirectiveClassChange,
-  onBack,
-  onBrowseFiles,
-  onPickMany,
-}: {
+interface StepHeaderProps {
   type: TypeOption;
   mode: ReferenceDelivery;
   delivery: ReferenceDelivery;
@@ -474,14 +546,75 @@ function RecordStep({
   directiveClass: DirectiveClass;
   onDirectiveClassChange: (c: DirectiveClass) => void;
   onBack: () => void;
+}
+
+/** What the search step asks for, per action. */
+function searchPrompt(
+  directiveClass: DirectiveClass,
+  delivery: ReferenceDelivery,
+  typeLabel: string,
+): string {
+  const noun = typeLabel.toLowerCase();
+  if (directiveClass === "update") return `Choose the ${noun} to update.`;
+  if (directiveClass === "delete") return `Choose the ${noun} the button will delete.`;
+  return `${delivery === "insert" ? "Insert" : "Copy"} the reference by choosing a ${noun} below.`;
+}
+
+function RecordStep({
+  onBrowseFiles,
+  onPickMany,
+  ...header
+}: StepHeaderProps & {
   onBrowseFiles: () => void;
   onPickMany: (items: ReferenceItem[]) => void;
 }) {
+  const { type, delivery, directiveClass } = header;
   const isEntity = isEntityTypeToken(type.token);
-  const verb = delivery === "insert" ? "Insert" : "Copy";
 
   return (
     <div className="flex min-h-0 flex-col gap-3">
+      <StepHeader {...header} />
+
+      <p className="text-xs text-muted-foreground">
+        {searchPrompt(directiveClass, delivery, type.label)}
+      </p>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <ReferenceTypeAdder
+          type={type.token}
+          onBrowseFiles={onBrowseFiles}
+          onPickMany={onPickMany}
+        />
+      </div>
+
+      {isEntity &&
+        directiveClass === "reference" &&
+        INLINE_CREATE_REFERENCE_TYPES.has(type.token) && (
+          <InlineCreate
+            token={type.token as EntityTypeToken}
+            label={type.label}
+            onCreated={(id, title) =>
+              onPickMany([{ id, label: title } as unknown as ReferenceItem])
+            }
+          />
+        )}
+    </div>
+  );
+}
+
+/** Back, type, Insert/Copy toggle, and the action — shared by both steps. */
+function StepHeader({
+  type,
+  mode,
+  delivery,
+  onDeliveryChange,
+  directiveClass,
+  onDirectiveClassChange,
+  onBack,
+}: StepHeaderProps) {
+  const isEntity = isEntityTypeToken(type.token);
+  return (
+    <div className="flex shrink-0 flex-col gap-3">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
@@ -528,28 +661,133 @@ function RecordStep({
           onChange={onDirectiveClassChange}
         />
       )}
+    </div>
+  );
+}
 
-      <p className="text-xs text-muted-foreground">
-        {verb} the reference by choosing a {type.label.toLowerCase()} below.
-      </p>
+// ── Step 2b: the write form (Create / Update) ───────────────────────────────
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <ReferenceTypeAdder
-          type={type.token}
-          onBrowseFiles={onBrowseFiles}
-          onPickMany={onPickMany}
-        />
-      </div>
+function WriteStep({
+  target,
+  onChangeTarget,
+  onSubmit,
+  ...header
+}: StepHeaderProps & {
+  /** Update only: the record this button will change. */
+  target: { id: string; title: string | null } | null;
+  onChangeTarget: () => void;
+  onSubmit: (items: object[], title: string | null) => void;
+}) {
+  const { type, delivery, directiveClass } = header;
+  const formMode = directiveClass === "update" ? "update" : "create";
+  const { noun, loading, error } = useDirectiveNoun(type.token);
+  const [values, setValues] = useState<Record<string, SchemaFieldValue>>({});
 
-      {isEntity && INLINE_CREATE_REFERENCE_TYPES.has(type.token) && (
-        <InlineCreate
-          token={type.token as EntityTypeToken}
-          label={type.label}
-          onCreated={(id, title) =>
-            onPickMany([{ id, label: title } as unknown as ReferenceItem])
-          }
-        />
+  const schema = noun?.schemas?.[directiveClass];
+  const fields = useMemo(
+    () =>
+      noun && isJsonSchema(schema)
+        ? deriveSchemaFields(schema, {
+            titleColumn: noun.title_column,
+            // The record an update changes was chosen by search; it is not a field.
+            exclude: formMode === "update" ? ["id"] : [],
+            resolveRecordToken: (key) =>
+              payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
+          })
+        : [],
+    [noun, schema, formMode],
+  );
+
+  const built = buildSchemaPayload(
+    fields,
+    values,
+    formMode,
+    formMode === "update" && target ? { id: target.id } : {},
+  );
+
+  const titleColumn = noun?.title_column ?? null;
+  const typedTitle =
+    titleColumn && typeof values[titleColumn]?.raw === "string"
+      ? (values[titleColumn]!.raw as string).trim()
+      : "";
+
+  const submit = () =>
+    onSubmit(
+      [built.payload],
+      formMode === "update" ? (target?.title ?? null) : typedTitle || null,
+    );
+
+  const body = (() => {
+    if (loading) {
+      return (
+        <div className="flex flex-col gap-3" aria-busy="true">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-md" />
+          ))}
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          {error} <ErrorAlchemyMenu error={error} />
+        </p>
+      );
+    }
+    if (fields.length === 0) {
+      const message = `The server did not publish the fields for this action on ${type.label}, so it cannot be filled in here.`;
+      return (
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          {message} <ErrorAlchemyMenu error={message} />
+        </p>
+      );
+    }
+    return (
+      <SchemaFieldsForm
+        fields={fields}
+        values={values}
+        mode={formMode}
+        warnings={built.warnings}
+        onChange={(key, value) =>
+          setValues((prev) => applyFieldChange(prev, key, value))
+        }
+      />
+    );
+  })();
+
+  return (
+    <div className="flex min-h-0 flex-col gap-3">
+      <StepHeader {...header} />
+
+      {formMode === "update" && target && (
+        <div className="flex shrink-0 items-center gap-2 text-xs">
+          <span className="text-muted-foreground">Updating</span>
+          <span className="truncate font-medium text-foreground">
+            {target.title ?? `this ${type.label.toLowerCase()}`}
+          </span>
+          <button
+            type="button"
+            onClick={onChangeTarget}
+            className="ml-auto min-h-7 text-muted-foreground hover:text-foreground"
+          >
+            Change
+          </button>
+        </div>
       )}
+
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">{body}</div>
+
+      <div className="flex shrink-0 justify-end border-t border-border pt-3">
+        <Button
+          type="button"
+          size="sm"
+          className="h-11 lg:h-8"
+          disabled={loading || fields.length === 0}
+          onClick={submit}
+        >
+          {delivery === "insert" ? "Insert button" : "Copy button"}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -626,8 +864,6 @@ function ActionRow({
             <button
               key={o.directiveClass}
               type="button"
-              disabled={Boolean(o.disabledReason)}
-              title={o.disabledReason}
               aria-checked={o.directiveClass === directiveClass}
               role="radio"
               onClick={() => {
@@ -635,18 +871,15 @@ function ActionRow({
                 setExpanded(false);
               }}
               className={cn(
-                "flex w-full items-center gap-2 rounded px-1.5 py-1 text-left",
+                "flex min-h-9 w-full flex-col items-start justify-center rounded px-1.5 py-1 text-left",
                 o.directiveClass === directiveClass
                   ? "bg-primary/10 text-foreground"
                   : "hover:bg-accent",
-                o.disabledReason && "cursor-not-allowed opacity-60",
               )}
             >
               <span>{o.label}</span>
-              {o.disabledReason && (
-                <span className="ml-auto truncate text-[11px] text-muted-foreground">
-                  {o.disabledReason}
-                </span>
+              {o.hint && (
+                <span className="text-[11px] text-muted-foreground">{o.hint}</span>
               )}
             </button>
           ))}
