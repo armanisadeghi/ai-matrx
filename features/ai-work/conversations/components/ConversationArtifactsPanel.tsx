@@ -434,7 +434,7 @@ function FileRow({ file, depth }: { file: ArtifactFile; depth: number }) {
         title={new Date(file.updatedAt).toLocaleString()}
         className="hidden w-20 shrink-0 truncate text-right text-muted-foreground md:inline"
       >
-        {formatRelativeTime(file.updatedAt)}
+        {formatRelativeTime(file.updatedAt, { absolute: "date" })}
       </time>
       <span className="flex shrink-0 items-center gap-0.5">
         <a

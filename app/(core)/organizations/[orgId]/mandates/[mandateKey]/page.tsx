@@ -21,7 +21,7 @@ export default function OrgMandateRecordRoute() {
     <OrgMandateSeat orgSlugOrId={orgSlugOrId}>
       {({ orgId, canManage }) => (
         <MandateRecordPage
-          mandateKey={mandateKey}
+          mandateKeyOrId={mandateKey}
           level="organization"
           orgId={orgId}
           canManageOrg={canManage}

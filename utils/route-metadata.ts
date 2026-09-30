@@ -13,7 +13,7 @@
 // The root (a)/layout.tsx sets template: "%s — AI Matrx".
 // These helpers set only the %s portion — do NOT append "| AI Matrx" here.
 
-import { Metadata } from "next";
+import type { Metadata, ResolvedMetadata, ResolvingMetadata } from "next";
 import { generateFaviconMetadata } from "./favicon-utils";
 import { siteConfig } from "@/config/extras/site";
 import {
@@ -297,4 +297,66 @@ export function getRouteFavicon(
   emoji?: string,
 ): Metadata {
   return generateFaviconMetadata(pathname, undefined, letter, emoji);
+}
+
+/**
+ * One TAB of a tab shell whose section title is only known per request — a
+ * record page (`/research/topics/[topicId]/sources`, `/organizations/[orgId]/members`).
+ *
+ * The shell's own `generateMetadata` fetches the record and titles the tab with
+ * its name. A sibling tab cannot repeat that fetch just to know the name, and a
+ * static `createRouteMetadata` would replace the record's name with a constant.
+ * So this reads the PARENT's already-resolved title (Next passes it as the
+ * second argument) and puts the tab's own name in front of it:
+ *
+ *   "Acme Launch - AI Matrx"  →  "Sources | Acme Launch - AI Matrx"
+ *
+ * The resolved parent title already carries the root template (`%s - AI Matrx`);
+ * that template is peeled off before prefixing and re-applied by Next, so the
+ * brand suffix never doubles. Nothing is fetched twice.
+ *
+ * ```ts
+ * // app/(core)/research/topics/[topicId]/sources/layout.tsx
+ * export const generateMetadata = createTabMetadata("/research", {
+ *   titlePrefix: "Sources",
+ *   letter: "SO",
+ * });
+ * ```
+ *
+ * `letter` follows the favicon rules: 1–2 characters, never 3, unique within
+ * its colour family (`pnpm check:favicon-letters`).
+ */
+export function createTabMetadata(
+  pathname: string,
+  options: { titlePrefix: string; letter?: string; emoji?: string },
+): (props: unknown, parent: ResolvingMetadata) => Promise<Metadata> {
+  const { titlePrefix, letter, emoji } = options;
+  return async (_props, parent) => {
+    const resolved = await parent;
+    const parentTitle = sectionTitleFrom(resolved.title);
+    return generateFaviconMetadata(
+      pathname,
+      { title: parentTitle ? `${titlePrefix} | ${parentTitle}` : titlePrefix },
+      letter,
+      emoji,
+    );
+  };
+}
+
+/**
+ * The section's own words from a resolved parent title — the template the root
+ * layout applied is removed, because Next applies it again to this segment.
+ */
+export function sectionTitleFrom(
+  title: ResolvedMetadata["title"] | null | undefined,
+): string | undefined {
+  const absolute = title?.absolute;
+  if (!absolute) return undefined;
+  const template = title?.template;
+  if (!template || !template.includes("%s")) return absolute;
+  const [before, after] = template.split("%s");
+  let raw = absolute;
+  if (before && raw.startsWith(before)) raw = raw.slice(before.length);
+  if (after && raw.endsWith(after)) raw = raw.slice(0, raw.length - after.length);
+  return raw || undefined;
 }

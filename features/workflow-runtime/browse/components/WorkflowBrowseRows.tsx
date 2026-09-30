@@ -145,7 +145,7 @@ export function WorkflowBrowseRows({
               className="hidden w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground sm:block"
               title={new Date(row.updated_at).toLocaleString()}
             >
-              {formatRelativeTime(row.updated_at)}
+              {formatRelativeTime(row.updated_at, { absolute: "date" })}
             </span>
 
             <ItemMenu config={menuFor(row)} align="end">

@@ -42,7 +42,7 @@ describe("softDeleteMandate", () => {
   });
 
   it("invalidates the mandate cache so every reader drops it at once", () => {
-    expect(fn).toContain("invalidateMandateCache(data.mandate_key)");
+    expect(fn).toContain("invalidateMandateCache(storedMandateKey(data.mandate_key))");
   });
 });
 

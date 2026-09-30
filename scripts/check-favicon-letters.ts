@@ -137,11 +137,17 @@ function collect(root: string): Assignment[] {
     }),
   );
 
-  const files = execSync(`git ls-files 'app/**/layout.tsx' 'app/**/layout.dev.tsx'`, {
-    cwd: root,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  })
+  // Tracked AND untracked-but-not-ignored: a guard judges what is on disk. A
+  // tracked-only read could not see a layout written in the same session, so two
+  // new siblings handed the same badge passed until someone committed them.
+  const files = execSync(
+    `git ls-files --cached --others --exclude-standard 'app/**/layout.tsx' 'app/**/layout.dev.tsx'`,
+    {
+      cwd: root,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    },
+  )
     .split("\n")
     .filter(Boolean);
 

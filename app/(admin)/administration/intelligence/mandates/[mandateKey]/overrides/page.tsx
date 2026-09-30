@@ -1,4 +1,5 @@
 import { OverridesPreviewPage } from "@/features/mandates/overrides-simple/OverridesPreviewPage";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 export const metadata = {
   title: "Mandate overrides",
@@ -12,5 +13,7 @@ export default async function IntelligenceMandateOverridesRoute({
 }) {
   // The App Router already decodes dynamic segment params.
   const { mandateKey } = await params;
-  return <OverridesPreviewPage mandateKey={mandateKey} systemOnly />;
+  // The page boundary: the segment enters the typed world once, here. The
+  // record it names is read from the database, which answers for it.
+  return <OverridesPreviewPage mandateKey={storedMandateKey(mandateKey)} systemOnly />;
 }

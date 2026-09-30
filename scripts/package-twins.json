@@ -360,14 +360,6 @@
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "lib/api/run-wait.ts",
-          "why": "IS the duration capability, but cannot collapse honestly: it speaks TWO-TIER PROSE (`describeSeconds(90)` = \"1 minute 30 seconds\" in \"did not start within 1 minute 30 seconds\") inside a sentence, and kit has no such voice. `long` renders one tier only (\"1 minute\"), which would state a false length, and `coarse` (\"2 min\") is the dense-cell voice, not prose. Second site needing the same voice: features/meet/lib/invitation.ts. Blocker: a two-tier prose voice in @ai-matrx/kit/format (a package change, reported 2026-09-30); collapse the day it ships."
-        },
-        {
-          "file": "features/meet/lib/invitation.ts",
-          "why": "IS the duration capability, but cannot collapse honestly: it speaks TWO-TIER PROSE (`durationLabel(90)` = \"1 hour 30 minutes\" in the pasted invitation's \"When: ... (1 hour 30 minutes)\") inside a sentence, and kit has no such voice. `long` renders one tier only (\"1 hour\" for a 90-minute meeting), which would state a false length, and `coarse` (\"1h 30m\") is the dense-cell voice, not prose. Second site needing the same voice: lib/api/run-wait.ts. Blocker: a two-tier prose voice in @ai-matrx/kit/format (a package change, reported 2026-09-30); collapse the day it ships."
-        },
-        {
           "file": "features/admin/dated-changes/describe.ts",
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `lagText` becomes formatDurationSeconds(seconds, { style: \"long\", round: \"nearest\" }) behind the existing `<= 600` guard (5400 s reads \"2 hours\" as before; 3 days reads \"3 days\" instead of \"72 hours\"). A debt, not an exemption."
         },

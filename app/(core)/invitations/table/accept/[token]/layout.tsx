@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/invitations", {
   titlePrefix: "Open",
   title: "Shared Table",
   description: "Open a table somebody outside your organization shared with you.",
-  letter: "It",
+  letter: "TB",
 });
 
 export default function TableShareInvitationLayout({

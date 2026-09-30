@@ -14,7 +14,6 @@ jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
 import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import {
   RUN_STREAM_LIFETIME_BACKSTOP_MS,
-  describeSeconds,
   resolveRunWait,
   runJobLabel,
   runOutputKindFromModalities,
@@ -95,8 +94,10 @@ describe("what the person is told", () => {
     expect(runJobLabel("image", "Gemini 3.1 Flash Image")).toBe(
       "Generating an image with Gemini 3.1 Flash Image",
     );
-    expect(describeSeconds(300)).toBe("5 minutes");
-    expect(describeSeconds(90)).toBe("1 minute 30 seconds");
+    expect(runWaitTimeoutMessage("text", null, 90)).toContain("within 1 minute 30 seconds,");
+    expect(runWaitTimeoutMessage("text", null, 45)).toContain("within 45 seconds,");
+    expect(runWaitTimeoutMessage("video", null, 3600)).toContain("within 1 hour,");
+    expect(runWaitTimeoutMessage("text", null, null)).toContain(" in time,");
     const message = runWaitTimeoutMessage("image", "Gemini 3.1 Flash Image", 300);
     expect(message).toContain("within 5 minutes");
     expect(message).toContain("Gemini 3.1 Flash Image");

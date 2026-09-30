@@ -110,6 +110,7 @@ import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -783,7 +784,7 @@ export function MandateTestBench({
     }
     setRunning(true);
     try {
-      const response = await runMandateTests(dispatch, mandate.mandate_key, {
+      const response = await runMandateTests(dispatch, storedMandateKey(mandate.mandate_key), {
         baseline: {
           candidate_id: "baseline",
           label: baselineLabel,
@@ -1212,7 +1213,7 @@ export function MandateTestBench({
               (group) => group.exemplar_id === exemplar.id,
             );
             const history = parseMandateTestHistory(exemplar.metadata, {
-              mandateKey: mandate.mandate_key,
+              mandateKey: storedMandateKey(mandate.mandate_key),
               exemplarId: exemplar.id,
             });
             return (

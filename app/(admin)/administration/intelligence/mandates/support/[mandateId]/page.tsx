@@ -19,7 +19,7 @@ export default async function IntelligenceMandateSupportRecordRoute({
   const { mandateId } = await params;
   return (
     <MandateRecordPage
-      mandateKey={mandateId}
+      mandateKeyOrId={mandateId}
       lane="support"
       listHref={ADMIN_MANDATES_SUPPORT}
     />

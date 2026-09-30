@@ -13,7 +13,7 @@
  */
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-import { scanCarrierTypes, scanSource } from "@/scripts/check-mandate-keys";
+import { explainCensus, scanCarrierTypes, scanSource } from "@/scripts/check-mandate-keys";
 
 /** A real member of the published vocabulary, and its literal spelling. */
 const REAL_KEY = MANDATE_KEYS.seo__keyword_classifier;
@@ -214,5 +214,50 @@ describe("check:mandate-keys RULE 2 — GREEN: the fix, and what is honestly a s
 
   it("does NOT read a file with no mandate-key member in it at all", () => {
     expect(all(`export function useThing(key: string) {}`)).toEqual([]);
+  });
+});
+
+describe("check:mandate-keys CENSUS — every string mandateKey member is typed or explained (D10)", () => {
+  const FILE = "features/mandates/authoring/draft.ts";
+  const census = () =>
+    scanCarrierTypes(FILE, `export interface MandateDraft { mandateKey: string; }`);
+
+  it("RED: a string mandateKey member nobody explained is UNEXPLAINED — the guard fails on it", () => {
+    const { unexplained, explained } = explainCensus(census(), []);
+    expect(unexplained.map((c) => `${c.owner}.${c.member}`)).toEqual(["MandateDraft.mandateKey"]);
+    expect(explained).toEqual([]);
+  });
+
+  it("RED: an allowlist entry with a blank reason explains nothing", () => {
+    const { unexplained } = explainCensus(census(), [
+      { file: FILE, owner: "MandateDraft", member: "mandateKey", reason: "   " },
+    ]);
+    expect(unexplained).toHaveLength(1);
+  });
+
+  it("RED: an entry for a different owner does not explain this one", () => {
+    const { unexplained, stale } = explainCensus(census(), [
+      { file: FILE, owner: "OtherDraft", member: "mandateKey", reason: "typed by a person" },
+    ]);
+    expect(unexplained).toHaveLength(1);
+    expect(stale).toHaveLength(1);
+  });
+
+  it("GREEN: named with a reason (file + owner + member, never a line) it is explained", () => {
+    const { unexplained, explained, stale } = explainCensus(census(), [
+      { file: FILE, owner: "MandateDraft", member: "mandateKey", reason: "the key a person is still typing" },
+    ]);
+    expect(unexplained).toEqual([]);
+    expect(explained).toHaveLength(1);
+    expect(stale).toEqual([]);
+  });
+
+  it("GREEN: the typed member is not in the census at all — that IS the fix", () => {
+    const typed = scanCarrierTypes(
+      FILE,
+      `import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+       export interface MandateDraft { mandateKey: AnyMandateKey; }`,
+    );
+    expect(explainCensus(typed, []).unexplained).toEqual([]);
   });
 });

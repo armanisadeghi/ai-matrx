@@ -4,6 +4,7 @@
 // invitation: the text for "Copy invitation" / "Email invitation", and the
 // calendar event for "Add to calendar". Pure, so it is tested without a DOM.
 
+import { formatDurationMinutes } from "@ai-matrx/kit/format";
 import type { MeetingRecord } from "@ai-matrx/meet/react";
 import { endFromDuration, type CalendarEvent } from "@/lib/calendar/eventLinks";
 import { describeRecurrence } from "@/features/meet/lib/recurrence";
@@ -59,13 +60,10 @@ export function invitationWhen(
   });
 }
 
+/** The meeting's exact length in prose — "45 minutes", "1 hour 30 minutes". */
 function durationLabel(minutes: number | null): string | null {
   if (minutes === null || minutes <= 0) return null;
-  if (minutes < 60) return `${minutes} minutes`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  const h = hours === 1 ? "1 hour" : `${hours} hours`;
-  return rest === 0 ? h : `${h} ${rest} minutes`;
+  return formatDurationMinutes(minutes, { style: "long", parts: 2 });
 }
 
 /** The ready-to-paste invitation. */

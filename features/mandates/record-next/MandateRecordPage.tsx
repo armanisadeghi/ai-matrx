@@ -51,7 +51,7 @@ import { MandateVisibilityControl } from "./MandateVisibilityControl";
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
-import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * Which seat opens the record. `system` (the default) is the admin route,
@@ -60,7 +60,8 @@ import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandat
  * decides the tabs, the principal, and which header actions exist.
  */
 export interface MandateRecordPageProps {
-  mandateKey: AnyMandateKey;
+  /** The route segment: a mandate key, or a row id (the support lookup). */
+  mandateKeyOrId: string;
   level?: RecordLevel;
   /** Organization level: the route's organization id. */
   orgId?: string | null;
@@ -91,7 +92,7 @@ export function MandateRecordPage(props: MandateRecordPageProps) {
 }
 
 function MandateRecordPageInner({
-  mandateKey,
+  mandateKeyOrId,
   level = "system",
   orgId = null,
   canManageOrg = false,
@@ -124,7 +125,7 @@ function MandateRecordPageInner({
       surfaceName={MANDATE_WORKSPACE_SURFACE_NAME}
       getScope={() => ({
         ...createMandateWorkspaceScope({
-          mandate_key: mandateKey,
+          mandate_key: mandateKeyOrId,
           selection: window.getSelection()?.toString() || undefined,
         }),
         ...getRegisteredSurfaceScopeContributions(MANDATE_WORKSPACE_SURFACE_NAME),
@@ -142,7 +143,7 @@ function MandateRecordPageInner({
           }
         >
           <MandateRecordBody
-            mandateKeyOrId={mandateKey}
+            mandateKeyOrId={mandateKeyOrId}
             host={level === "system" ? "admin-route" : "route"}
             principal={
               level === "organization" && orgId

@@ -613,7 +613,7 @@ function WorkflowRunPicker({ onPick, onCancel }: PickerProps) {
           <RunStatusChip status={r.status} />
           {r.startedAt ? (
             <span className="w-20 shrink-0 text-right text-xs text-muted-foreground">
-              {formatRelativeTime(r.startedAt)}
+              {formatRelativeTime(r.startedAt, { absolute: "date" })}
             </span>
           ) : null}
         </>

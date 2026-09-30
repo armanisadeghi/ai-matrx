@@ -105,6 +105,19 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 // entry point runs it from the repo root (pnpm, run-release-gates.sh, CI).
 const DEFAULT_ROOT = process.cwd();
 const ALLOWLIST_FILE = join(DEFAULT_ROOT, "scripts", "mandate-keys-allowlist.json");
+/**
+ * THE CENSUS ALLOWLIST (D10, 2026-09-30). The narrowing wave typed every
+ * non-carrier member that holds a key; what is left is honestly a string — a
+ * Next.js route segment, a key a person is still typing, a script's report
+ * row. Each one is NAMED here with a one-line reason (file + owner + member,
+ * never a line number). Anything string-typed that is not named here fails the
+ * guard, so the census can only shrink.
+ */
+const CENSUS_ALLOWLIST_FILE = join(
+  DEFAULT_ROOT,
+  "scripts",
+  "mandate-keys-census-allowlist.json",
+);
 
 /** `.` → `__` (THE IDENTIFIER RULE), so a finding can print its own fix. */
 const IDENTIFIER_OF = new Map<string, string>(
@@ -143,9 +156,9 @@ const TYPED_DOORS: ReadonlySet<string> = new Set([
  * RULE 2 — THE ENFORCED CARRIERS. A key reaches resolution or execution ONLY
  * through one of these, so this is the set where a `string` parameter actually
  * costs the compile-time guard (V-L6a). Every other member named `mandateKey`
- * is reported as a CENSUS line, never as a failure — see `--census` and the
- * header — because an admin console row, a draft the user is still typing and a
- * `[mandateKey]` route segment are all legitimately unknown strings.
+ * is a CENSUS line: since the D10 narrowing wave (2026-09-30) it must be typed
+ * too, or be named in the census allowlist with a reason — a draft the person
+ * is still typing and a `[mandateKey]` route segment are honestly strings.
  */
 const ENFORCED_CARRIERS: ReadonlySet<string> = new Set([
   "useMandate",
@@ -522,6 +535,60 @@ function loadAllowlist(): AllowEntry[] {
   }
 }
 
+// ── Census allowlist ────────────────────────────────────────────────────────
+
+export interface CensusAllowEntry {
+  file: string;
+  owner: string;
+  member: string;
+  reason: string;
+}
+
+const censusIdentity = (e: { file: string; owner: string; member: string }) =>
+  `${e.file}::${e.owner}::${e.member}`;
+
+/**
+ * Split the census into what is explained (named in the allowlist WITH a
+ * reason) and what is not, plus the entries that no longer match anything.
+ * Pure, so the self-test drives exactly what the CLI decides. An entry with a
+ * blank reason explains nothing.
+ */
+export function explainCensus(
+  census: readonly CarrierSite[],
+  allow: readonly CensusAllowEntry[],
+): {
+  unexplained: CarrierSite[];
+  explained: CarrierSite[];
+  stale: CensusAllowEntry[];
+} {
+  const reasoned = allow.filter((e) => e.reason.trim().length > 0);
+  const named = new Set(reasoned.map(censusIdentity));
+  const unexplained = census.filter((c) => !named.has(censusIdentity(c)));
+  const explained = census.filter((c) => named.has(censusIdentity(c)));
+  const matched = new Set(explained.map(censusIdentity));
+  const stale = reasoned.filter((e) => !matched.has(censusIdentity(e)));
+  return { unexplained, explained, stale };
+}
+
+function loadCensusAllowlist(): CensusAllowEntry[] {
+  if (!existsSync(CENSUS_ALLOWLIST_FILE)) return [];
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(CENSUS_ALLOWLIST_FILE, "utf8"));
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (e): e is CensusAllowEntry =>
+        !!e &&
+        typeof e === "object" &&
+        typeof (e as CensusAllowEntry).file === "string" &&
+        typeof (e as CensusAllowEntry).owner === "string" &&
+        typeof (e as CensusAllowEntry).member === "string" &&
+        typeof (e as CensusAllowEntry).reason === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
 function fixFor(site: Site): string {
@@ -549,12 +616,32 @@ function main(): void {
   const allowlisted = sites.filter((s) => allowed.has(`${s.file}::${s.key}`));
   const matched = new Set(allowlisted.map((s) => `${s.file}::${s.key}`));
   const staleAllow = allow.filter((e) => !matched.has(`${e.file}::${e.key}`));
+  const {
+    unexplained: censusUnexplained,
+    explained: censusExplained,
+    stale: staleCensusAllow,
+  } = explainCensus(census, loadCensusAllowlist());
 
-  const failed = violations.length > 0 || carriers.length > 0;
+  const failed =
+    violations.length > 0 || carriers.length > 0 || censusUnexplained.length > 0;
 
   if (asJson) {
     console.log(
-      JSON.stringify({ scanned, violations, allowlisted, staleAllow, carriers, census }, null, 2),
+      JSON.stringify(
+        {
+          scanned,
+          violations,
+          allowlisted,
+          staleAllow,
+          carriers,
+          census,
+          censusUnexplained,
+          censusExplained,
+          staleCensusAllow,
+        },
+        null,
+        2,
+      ),
     );
     exitAfterDrain(failed ? 1 : 0);
   }
@@ -619,19 +706,40 @@ function main(): void {
     );
   }
 
-  if (census.length > 0) {
+  if (censusUnexplained.length === 0) {
     console.log(
-      `\n${C.yellow}${census.length} other member(s) named mandateKey are typed string${C.reset} ${C.dim}— the CENSUS, not a failure.${C.reset}`,
-    );
-    console.log(
-      `${C.dim}These are admin-console rows, drafts a user is still typing and [mandateKey] route segments, where an unknown string is honest. Narrowing them is the next wave; run --census to list them.${C.reset}`,
+      `${C.green}✓ Every other mandateKey member is typed or explained.${C.reset} ${C.dim}(${censusExplained.length} named in scripts/mandate-keys-census-allowlist.json with a reason)${C.reset}`,
     );
     if (showCensus) {
-      for (const c of census) {
+      for (const c of censusExplained) {
         console.log(
           `  ${C.dim}${c.file}:${c.line}  ${c.owner}  ${c.member}: ${c.declared}${C.reset}`,
         );
       }
+    }
+  } else {
+    console.log(
+      `\n${C.red}${C.bold}✗ ${censusUnexplained.length} mandateKey member(s) typed string with no reason${C.reset}`,
+    );
+    for (const c of censusUnexplained) {
+      console.log(`  ${C.cyan}${c.file}:${c.line}${C.reset}  ${C.dim}${c.owner}${C.reset}`);
+      console.log(
+        `    ${c.member}: ${c.declared}  →  ${C.green}${c.member}: AnyMandateKey${C.reset} ${C.dim}(or MandateKey)${C.reset}`,
+      );
+    }
+    console.log(
+      `\n  ${C.yellow}Fix:${C.reset} type it AnyMandateKey / MandateKey; a row or URL value enters through storedMandateKey() at its boundary.`,
+    );
+    console.log(
+      `  ${C.dim}Honestly not a key (a route segment, a key still being typed)? Name it in scripts/mandate-keys-census-allowlist.json — file, owner, member, and a one-line reason.${C.reset}`,
+    );
+  }
+  if (staleCensusAllow.length > 0) {
+    console.log(
+      `\n${C.yellow}${staleCensusAllow.length} stale census allowlist entr${staleCensusAllow.length === 1 ? "y" : "ies"}${C.reset} ${C.dim}(nothing matches). Remove by hand.${C.reset}`,
+    );
+    for (const e of staleCensusAllow) {
+      console.log(`  ${C.dim}${e.file} :: ${e.owner} :: ${e.member}${C.reset}`);
     }
   }
 

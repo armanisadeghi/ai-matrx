@@ -477,7 +477,7 @@ export function TrashList({
                   {item.label}
                 </span>
                 <span className="text-muted-foreground w-16 shrink-0 text-right text-xs tabular-nums">
-                  {formatRelativeTime(item.deleted_at)}
+                  {formatRelativeTime(item.deleted_at, { absolute: "date" })}
                 </span>
                 {isMovedOlderTable(item) && !offersSwitchBack(item) ? (
                   // Not an owner or admin of that organization: say where it went, offer no door.

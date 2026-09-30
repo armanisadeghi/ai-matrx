@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { personMandateRecordHref } from "@/features/mandates/member-list/routes";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * /mandates/id/[id] — THE DOOR for a mandate named by its definition id.
@@ -25,5 +26,5 @@ export default async function MandateIdResolverPage({
     .maybeSingle();
   if (error) throw new Error(`Failed to resolve mandate: ${error.message}`);
   if (!data) notFound();
-  redirect(personMandateRecordHref(data.mandate_key));
+  redirect(personMandateRecordHref(storedMandateKey(data.mandate_key)));
 }

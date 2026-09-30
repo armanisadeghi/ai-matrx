@@ -29,6 +29,8 @@
  * lifetime backstop (announced loudly), never to a number nobody chose.
  */
 
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
 import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
 /** What a run produces. Anything but text is a job (seconds to minutes). */
@@ -120,17 +122,6 @@ export async function resolveRunWait(
   }
 }
 
-/** "45 seconds", "5 minutes", "1 minute 30 seconds". */
-export function describeSeconds(seconds: number): string {
-  const whole = Math.max(0, Math.round(seconds));
-  const minutes = Math.floor(whole / 60);
-  const rest = whole % 60;
-  const part = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
-  if (minutes === 0) return part(rest, "second");
-  if (rest === 0) return part(minutes, "minute");
-  return `${part(minutes, "minute")} ${part(rest, "second")}`;
-}
-
 const KIND_NOUN: Record<RunOutputKind, string> = {
   text: "a reply",
   image: "an image",
@@ -156,7 +147,10 @@ export function runWaitTimeoutMessage(
   seconds: number | null,
 ): string {
   const waited =
-    seconds != null ? `within ${describeSeconds(seconds)}` : "in time";
+    seconds != null
+      ? // An exact limit an admin configured, so both tiers: "1 minute 30 seconds".
+        `within ${formatDurationSeconds(seconds, { style: "long", parts: 2, round: "nearest" })}`
+      : "in time";
   const who = modelLabel ? ` (${modelLabel})` : "";
   return (
     `The server did not start ${kind === "text" ? "answering" : `generating ${KIND_NOUN[kind]}`}` +

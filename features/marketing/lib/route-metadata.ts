@@ -341,12 +341,77 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
   }
 
   if (section === "content" && segments[3] === "plan" && segments[4]) {
-    return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Content Plan",
-      description:
-        "Plan every URL this site should have — pillars, clusters, briefs, keywords.",
-      letter: "Pn",
-    });
+    // Each view of the plan is its own tab (ContentPlanHeader) — it names
+    // itself, so six open plan tabs never all read "Content Plan".
+    const planViews: Record<string, MarketingRouteIdentity> = {
+      setup: {
+        titlePrefix: "Plan Setup",
+        description: "Set up this site's content plan — scope, sources and structure.",
+        letter: "Su",
+      },
+      table: {
+        titlePrefix: "Plan Table",
+        description: "Every planned URL as a sortable, filterable row.",
+        letter: "Pt",
+      },
+      map: {
+        titlePrefix: "Plan Map",
+        description: "The content plan drawn as a map of pillars and clusters.",
+        letter: "Pm",
+      },
+      entities: {
+        titlePrefix: "Plan Entities",
+        description: "The entities this site's content plan is built around.",
+        letter: "Pe",
+      },
+      "ai-runs": {
+        titlePrefix: "Plan AI Runs",
+        description: "Every AI run that shaped this content plan, and what it changed.",
+        letter: "Pa",
+      },
+      brief: {
+        titlePrefix: "Plan Brief",
+        description: "The brief and targeting behind this site's content plan.",
+        letter: "Pb",
+      },
+    };
+    return createMarketingMetadata(
+      normalizedPath,
+      (segments[5] ? planViews[segments[5]] : undefined) ?? {
+        titlePrefix: "Content Plan",
+        description:
+          "Plan every URL this site should have — pillars, clusters, briefs, keywords.",
+        letter: "Pn",
+      },
+    );
+  }
+
+  // One site's reputation workspace: each screen is its own tab.
+  if (section === "intelligence" && segments[3] === "reputation" && segments[4] && segments[5]) {
+    const reputationViews: Record<string, MarketingRouteIdentity> = {
+      cases: {
+        titlePrefix: "Reputation Cases",
+        description: "Open reputation cases on this site — what was said, where, and what is being done.",
+        letter: "Rc",
+      },
+      evidence: {
+        titlePrefix: "Reputation Evidence",
+        description: "The evidence gathered for this site's reputation work.",
+        letter: "Re",
+      },
+      narratives: {
+        titlePrefix: "Narratives",
+        description: "The narratives circulating about this site and how they are moving.",
+        letter: "Na",
+      },
+      publications: {
+        titlePrefix: "Publications",
+        description: "The publications and outlets carrying this site's reputation story.",
+        letter: "Pu",
+      },
+    };
+    const view = reputationViews[segments[5]];
+    if (view) return createMarketingMetadata(normalizedPath, view);
   }
 
   if (section === "planning" && segments[3] === "initiatives" && segments[4]) {

@@ -1,0 +1,92 @@
+[
+  {
+    "file": "app/(admin)/administration/intelligence/mandates/[mandateKey]/overrides/page.tsx",
+    "owner": "params",
+    "member": "mandateKey",
+    "reason": "Next.js route segment, always a string; typed once at this page boundary through storedMandateKey."
+  },
+  {
+    "file": "app/(admin)/administration/intelligence/mandates/[mandateKey]/page.tsx",
+    "owner": "params",
+    "member": "mandateKey",
+    "reason": "Next.js route segment; handed on as MandateRecordPage's mandateKeyOrId (the record reads the row)."
+  },
+  {
+    "file": "app/(core)/mandates/[mandateKey]/page.tsx",
+    "owner": "params",
+    "member": "mandateKey",
+    "reason": "Next.js route segment that accepts a key or a row UUID; handed on as MandateWorkspace's mandateKeyOrId."
+  },
+  {
+    "file": "app/(core)/mandates/record-preview/[mandateKey]/page.tsx",
+    "owner": "params",
+    "member": "mandateKey",
+    "reason": "Next.js route segment; handed on as MandateRecordPage's mandateKeyOrId (the record reads the row)."
+  },
+  {
+    "file": "features/code-editor/agent-code-editor/agents.ts",
+    "owner": "agentForPromptKey()",
+    "member": "keyOrMandateKey",
+    "reason": "Accepts a code-editor prompt key OR a mandate key and answers which agent entry it names; a lookup door."
+  },
+  {
+    "file": "features/mandates/authoring/draft.ts",
+    "owner": "MandateDraft",
+    "member": "mandateKey",
+    "reason": "The key a person is still typing for a mandate that does not exist yet; the server validates it on create."
+  },
+  {
+    "file": "features/mandates/authoring/key-availability.ts",
+    "owner": "KeyAvailability",
+    "member": "mandateKey",
+    "reason": "The typed-in key being probed for availability; it becomes a key only when a row holds it."
+  },
+  {
+    "file": "features/mandates/authoring/key-availability.ts",
+    "owner": "keyTakenSentence()",
+    "member": "mandateKey",
+    "reason": "Words about a key a person typed while creating a mandate; not yet a key."
+  },
+  {
+    "file": "features/mandates/authoring/key-availability.ts",
+    "owner": "keyUnknownSentence()",
+    "member": "mandateKey",
+    "reason": "Words about a key a person typed while creating a mandate; not yet a key."
+  },
+  {
+    "file": "features/mandates/authoring/key-availability.ts",
+    "owner": "probeMandateKey()",
+    "member": "mandateKey",
+    "reason": "The availability probe: its job is to ask the server about an arbitrary typed string."
+  },
+  {
+    "file": "features/mandates/authoring/NewMandatePage.tsx",
+    "owner": "missingCreationPieces",
+    "member": "mandateKey",
+    "reason": "Checks a create form's typed-in key for blanks before the mandate exists."
+  },
+  {
+    "file": "features/mandates/authoring/service.ts",
+    "owner": "CreateMandateInput",
+    "member": "mandateKey",
+    "reason": "The new key a create request proposes; the server validates and declares it. The answer (CreatedMandate) is typed."
+  },
+  {
+    "file": "features/marketing/link-valuation/configs/matrx-v1.ts",
+    "owner": "AI()",
+    "member": "mandateKey",
+    "reason": "Names a planned link-valuation job for display only; those keys are not declared and no carrier reads them."
+  },
+  {
+    "file": "features/marketing/link-valuation/types.ts",
+    "owner": "SignalSource",
+    "member": "mandateKey",
+    "reason": "Display label of a planned signal source's job (see configs/matrx-v1.ts AI()); never resolved or run."
+  },
+  {
+    "file": "scripts/check-flattened-shapes.ts",
+    "owner": "Finding",
+    "member": "mandateKey",
+    "reason": "A CLI report row that prints whatever key the database holds; never resolved or run."
+  }
+]

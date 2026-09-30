@@ -16,5 +16,5 @@ export default async function IntelligenceMandateRecordRoute({
 }) {
   // The App Router already decodes dynamic params — never decode twice.
   const { mandateKey } = await params;
-  return <MandateRecordPage mandateKey={mandateKey} />;
+  return <MandateRecordPage mandateKeyOrId={mandateKey} />;
 }

@@ -20,7 +20,7 @@ export default async function UserMandateRecordPreviewRoute({
   const { mandateKey } = await params;
   return (
     <MandateRecordPage
-      mandateKey={mandateKey}
+      mandateKeyOrId={mandateKey}
       level="person"
       listHref={PERSON_MANDATE_LIST_HREF}
     />

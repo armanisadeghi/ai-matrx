@@ -72,7 +72,7 @@ function approach(key: string, label: string, sortOrder: number): DistillationAp
     blurb: `${label} blurb`,
     whatItNeeds: "a few minutes",
     costTimeShape: "start now",
-    mandateKey: storedMandateKey(`masterwork.${key}`),
+    mandateKey: `masterwork.${key}` as AnyMandateKey,
     intakeQuery: { interview: "1" },
     sortOrder,
     enabled: true,
@@ -129,7 +129,7 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 import { NewRulebookFlow } from "../NewRulebookFlow";
-import { storedMandateKey } from "@/features/mandates/mandate-key";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 const GOAL = "An assistant that writes the way I write";
 
