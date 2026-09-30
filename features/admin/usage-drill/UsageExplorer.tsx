@@ -25,7 +25,6 @@ import {
   MatrxDrillMeasurePicker,
   MatrxDrillTrail,
   MatrxDrillWindowMenu,
-  drillAutoGrain,
   drillWindowLabel,
   drillWindowRange,
   parseDimensionRef,
@@ -77,6 +76,18 @@ function useUnit(): { unit: Unit; canToggle: boolean; setUnit: (u: Unit) => void
 
 const compact = (v: number | null) => formatCount(v, { style: "compact" });
 
+// `drillAutoGrain` ships in @ai-matrx/design-system 0.49.38, but the registry's
+// current release is 0.49.37. Keep the usage page buildable against that released
+// contract while using the same window policy as the package helper.
+function usageAutoGrain(window: string | null | undefined): "day" | "week" | "month" {
+  const range = drillWindowRange(window);
+  if (!range) return "month";
+  const days = (new Date(range.to).getTime() - new Date(range.from).getTime()) / 86_400_000;
+  if (!Number.isFinite(days) || days <= 90) return "day";
+  if (days <= 366) return "week";
+  return "month";
+}
+
 export function UsageExplorer() {
   const { organizationId, organizationState } = useOrganizationRequired();
   const userId = useAppSelector(selectUserId);
@@ -84,7 +95,7 @@ export function UsageExplorer() {
   const { unit, canToggle, setUnit } = useUnit();
 
   // A time group asked with no grain (`by=at`) reads at the grain its window reads best at.
-  const autoGrain = drillAutoGrain(asked.window ?? null);
+  const autoGrain = usageAutoGrain(asked.window ?? null);
   const withGrain = (ref: string) => (ref === "at" ? `at:${autoGrain}` : ref);
   const question: MatrxDrillQuestion = { ...asked, by: asked.by.map(withGrain), across: asked.across ? withGrain(asked.across) : asked.across };
   const grainWasChosen = asked.by.includes("at") || asked.across === "at";
