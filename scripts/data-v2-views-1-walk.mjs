@@ -129,6 +129,15 @@ try {
     }
   }
 
+  if (PHASE === "boardshot") {
+    await page.goto(`${ORIGIN}/data-v2/${table}?view=kanban`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await until("the board", async () => (await text()).includes("No value"), 180000);
+    await sleep(4000);
+    const overlay = await page.locator("nextjs-portal").count();
+    await shot("a6-kanban-after");
+    step("board", { overlay, text: (await text()).slice(0, 400) });
+  }
+
   if (PHASE === "attach") {
     // A PATIENT'S PHOTO, ATTACHED THROUGH THE GRID'S OWN FILE WINDOW, THEN SEEN ON HER GALLERY CARD.
     await page.goto(`${ORIGIN}/data-v2/${table}?view=grid`, { waitUntil: "domcontentloaded", timeout: 180000 });
