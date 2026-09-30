@@ -13,9 +13,15 @@
 
 import { supabase } from "@/utils/supabase/client";
 
-/** Whose items: the signed-in person's own, or one organization's. A filter, never permission. */
+/**
+ * Whose items — a filter, never permission. `all` is everything the person can see, in every
+ * organization (the default: the active organization never narrows a list). `mine` is what she
+ * made; an `organizationId` on it or on `organization` is the page's organization filter, which
+ * narrows every lane.
+ */
 export type KindScope =
-  | { kind: "mine" }
+  | { kind: "all" }
+  | { kind: "mine"; organizationId?: string | null }
   | { kind: "organization"; organizationId: string };
 
 /** The feature knob that sets how many items a per-kind list loads at a time. */
@@ -34,12 +40,16 @@ export interface KindItem {
 /** A stable string for a scope — use it as a dependency / cache key. */
 export function kindScopeKey(scope: KindScope | null | undefined): string {
   if (!scope) return "";
-  return scope.kind === "mine" ? "mine" : `org:${scope.organizationId}`;
+  if (scope.kind === "all") return "all";
+  if (scope.kind === "mine") return scope.organizationId ? `mine:${scope.organizationId}` : "mine";
+  return `org:${scope.organizationId}`;
 }
 
 /** The inverse of `kindScopeKey` — lets a hook depend on the string alone. */
 export function kindScopeFromKey(key: string): KindScope | null {
+  if (key === "all") return { kind: "all" };
   if (key === "mine") return { kind: "mine" };
+  if (key.startsWith("mine:") && key.length > 5) return { kind: "mine", organizationId: key.slice(5) };
   if (key.startsWith("org:") && key.length > 4) {
     return { kind: "organization", organizationId: key.slice(4) };
   }
@@ -47,9 +57,11 @@ export function kindScopeFromKey(key: string): KindScope | null {
 }
 
 function scopeArgs(scope: KindScope): { p_organization_id?: string; p_mine?: boolean } {
-  return scope.kind === "mine"
-    ? { p_mine: true }
-    : { p_organization_id: scope.organizationId };
+  if (scope.kind === "all") return {};
+  if (scope.kind === "mine") {
+    return scope.organizationId ? { p_mine: true, p_organization_id: scope.organizationId } : { p_mine: true };
+  }
+  return { p_organization_id: scope.organizationId };
 }
 
 function failure(what: string, error: { message?: string; code?: string } | null): Error {

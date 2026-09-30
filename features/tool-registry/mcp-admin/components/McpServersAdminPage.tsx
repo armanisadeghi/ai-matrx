@@ -95,7 +95,8 @@ import {
   type ServerToolRow,
 } from "@/features/tool-registry/mcp-admin/format";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { supabase } from "@/utils/supabase/client";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
@@ -111,7 +112,19 @@ const EMPTY_SERVER_DRAFT: McpServerDraft = {
 };
 
 export function McpServersAdminPage() {
-  const { organizationId } = useOrganizationRequired();
+  // Platform MCP servers are platform infrastructure: provisioned in the SYSTEM organization, like
+  // every sibling admin write (mcpAdmin.service.ts) — the admin seat never acts as itself.
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    resolveSystemOrgId(supabase).then(
+      (id) => live && setOrganizationId(id),
+      (err: unknown) => console.error("[mcp-admin] could not resolve the system organization", err),
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
   const [servers, setServers] = useState<McpServerRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);

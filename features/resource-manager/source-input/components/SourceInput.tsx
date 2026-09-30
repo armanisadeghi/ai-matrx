@@ -31,7 +31,6 @@ import { toast } from "@/lib/toast";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import {
   InlineUploadArea,
@@ -41,6 +40,7 @@ import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-
 import { YouTubeResourcePicker } from "@/features/resource-manager/resource-picker/YouTubeResourcePicker";
 import { AudioResourcePicker } from "@/features/resource-manager/resource-picker/AudioResourcePicker";
 import type { KindScope } from "@/features/scopes/service/kindInventory";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import {
   cancelSourceReview,
   openSourceReview,
@@ -90,7 +90,10 @@ export function SourceInput({
   const [active, setActive] = useState<AddTileId | null>(null);
   const [webUrlForVideo, setWebUrlForVideo] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState("");
-  const [scopeChoice, setScopeChoice] = useState<"mine" | "organization">("mine");
+  // The lane (All | Mine) and the page's organization filter (All organizations by default,
+  // never the active organization — law: active-org-is-never-a-list-filter).
+  const [scopeChoice, setScopeChoice] = useState<"all" | "mine">("all");
+  const [orgFilter, setOrgFilter] = useState<string | null>(null);
   const set = useSourceSet(surfaceKey, { defaultForm, deliveries, max });
   const runner = useProcessingRunner();
   const intake = useSourceIntake(set, { attachTo });
@@ -99,14 +102,16 @@ export function SourceInput({
   const autoOpened = useRef(false);
 
   // Never lose input + file uploads' Sources — UI-free, in the hook.
+  // org-filter: write-target Sources are filed in the organization the person works in
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const activeOrgName = useAppSelector(selectActiveOrganizationName);
   useSourceRecovery(set, intake, runner, { organizationId: activeOrgId });
-  // Mine | <Org>: a filter over what is listed, never permission.
+  // All | Mine, narrowed by the organization filter: a filter over what is listed, never permission.
   const scope: KindScope =
-    scopeChoice === "organization" && activeOrgId
-      ? { kind: "organization", organizationId: activeOrgId }
-      : { kind: "mine" };
+    scopeChoice === "mine"
+      ? { kind: "mine", organizationId: orgFilter }
+      : orgFilter
+        ? { kind: "organization", organizationId: orgFilter }
+        : { kind: "all" };
 
   // A review this input opened closes when the input goes away (the page navigated).
   const openedReview = useRef(false);
@@ -311,18 +316,21 @@ export function SourceInput({
               className="pl-8 text-base sm:text-sm"
             />
           </div>
-          {activeOrgId ? (
-            <SegmentedControl
-              value={scope.kind === "organization" ? "organization" : "mine"}
-              onValueChange={(v) => setScopeChoice(v === "organization" ? "organization" : "mine")}
-              data={[
-                { value: "mine", label: "Mine" },
-                { value: "organization", label: activeOrgName || "Organization" },
-              ]}
-              size="sm"
-              className="max-w-full shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
-            />
-          ) : null}
+          <SegmentedControl
+            value={scopeChoice}
+            onValueChange={(v) => setScopeChoice(v === "mine" ? "mine" : "all")}
+            data={[
+              { value: "all", label: "All" },
+              { value: "mine", label: "Mine" },
+            ]}
+            size="sm"
+            className="max-w-full shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
+          />
+          <EntityOrgFilter
+            orgId={orgFilter}
+            onChange={setOrgFilter}
+            counts={{ byKind: {}, narrow: { all: [] } }}
+          />
         </div>
       ) : null}
 

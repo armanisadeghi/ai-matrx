@@ -22,8 +22,6 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -47,19 +45,19 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface LoadedWorkflow {
   name: string;
+  organizationId: string;
   definition: WorkflowDefinitionLike;
 }
 
 type MobileView = "build" | "preview";
 
 export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
-  // The EXPLICIT active org — a run surface is created for the organization
-  // the user chose. With none, `create` already refuses by name and writes
-  // nothing; never a personal-workspace default.
-  const organizationId = useAppSelector(selectOrganizationId);
   const isMobile = useIsMobile();
 
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
+  // A run surface belongs to the WORKFLOW'S OWN organization (the record's own org — never the
+  // organization the person happens to be working in; law: active-org-is-never-a-list-filter).
+  const organizationId = workflow?.organizationId ?? null;
   const [surface, setSurface] = useState<RuntimeSurfaceRow | null>(null);
   const [config, setConfig] = useState<RunSurfaceConfig | null>(null);
   const [meta, setMeta] = useState<SurfaceMeta>({
@@ -92,7 +90,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
           setLoadFailure({});
           return;
         }
-        setWorkflow({ name: loaded.name, definition: loaded.definition });
+        setWorkflow({ name: loaded.name, organizationId: loaded.organizationId, definition: loaded.definition });
         setSurface(row);
         const next = normalize(row ? row.config : autoLayoutSurface(loaded.definition));
         setConfig(next);
@@ -135,7 +133,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
   const create = useCallback(async () => {
     if (!config) return;
     if (!organizationId) {
-      toast.error("Pick an organization before creating this view.");
+      toast.error("This workflow's organization is not loaded yet. Reload and try again.");
       return;
     }
     setBusy(true);

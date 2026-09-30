@@ -33,7 +33,7 @@ import { kitRecordsClient } from "../installer";
 import { publishKit, updateKit } from "../publish";
 import { buildManifest, draftGuide, type Snapshot } from "../serialize";
 import { fetchKit } from "../service";
-import { agentForkableByOrg, detectSetup, type Detected } from "../snapshot";
+import { agentForkableByOrg, detectSetup, readAgentFacts, type Detected } from "../snapshot";
 import type { KitGuideStep, KitManifest } from "../types";
 import { ErrorNotice } from "./ErrorNotice";
 import { KIT_ICON_CHOICES, KitIcon } from "./KitIcon";
@@ -82,6 +82,7 @@ const EMPTY_DETAILS: Details = {
 
 export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: SaveKitDialogProps) {
   const userId = useAppSelector(selectUserId);
+  // org-filter: write-target the organization the kit is published into; the agent's setup is read in the agent's own org
   const org = useOrganizationRequired();
   const organizationId = org.organizationState === "ready" ? org.organizationId : null;
   const { organizations } = useUserOrganizations();
@@ -136,12 +137,17 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
 
   // Create mode: read the setup once an agent is picked.
   useEffect(() => {
-    if (editing || !agentId || !organizationId) return;
+    if (editing || !agentId) return;
     let cancelled = false;
     setDetecting(true);
     setDetectError(null);
     setDetected(null);
-    detectSetup(kitRecordsClient(organizationId, userId), organizationId, agentId)
+    // The agent's setup is read in the organization the AGENT lives in (the record's own org), not
+    // the one the person is working in; the kit is then published into the working organization.
+    readAgentFacts(agentId)
+      .then((facts) =>
+        detectSetup(kitRecordsClient(facts.organizationId, userId), facts.organizationId, agentId),
+      )
       .then((d) => {
         if (cancelled) return;
         setDetected(d);
@@ -179,7 +185,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
     return () => {
       cancelled = true;
     };
-  }, [editing, agentId, organizationId, userId, attempt]);
+  }, [editing, agentId, userId, attempt]);
 
   const build = () => {
     if (editing && editingManifest) {

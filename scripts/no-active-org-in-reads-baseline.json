@@ -71,11 +71,6 @@
       "owner": "agents",
       "note": "organizationId → ensureEffectiveKnob page-size knob; library/video reads take no org"
     },
-    "features/agents/components/scope-batch-import/ScopeBatchImportBody.tsx": {
-      "class": "labelled-active-default",
-      "owner": "agents",
-      "note": "activeOrgId default for scope-type list; an Organization select on the same form changes it"
-    },
     "features/agents/components/tools-management/AgentToolsManager.tsx": {
       "class": "not-a-list",
       "owner": "agents",
@@ -296,11 +291,6 @@
       "owner": "settings",
       "note": "active org selects which org's knobs/overrides are read; settings pane names the org"
     },
-    "features/spatial/items/data-items.tsx": {
-      "class": "silent-filter",
-      "owner": "spatial",
-      "note": "useOrganizationRequired → RecordsMount/TablesHome picker of tables in the active org; only a context notice, no org control"
-    },
     "features/structured-lists/StructuredListManagerV1.tsx": {
       "class": "write-target",
       "owner": "structured-lists",
@@ -315,11 +305,6 @@
       "class": "write-target",
       "owner": "tasks",
       "note": "appOrgId fallback only for createTaskThunk destination; list uses its own org filter picker (default All)"
-    },
-    "features/tool-registry/mcp-admin/components/McpServersAdminPage.tsx": {
-      "class": "write-target",
-      "owner": "tool-registry",
-      "note": "organizationId only passed to AddMcpServerDialog; listServers takes no org"
     },
     "features/unified-data/test-bench/TryEverythingScreen.tsx": {
       "class": "silent-filter",

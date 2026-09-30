@@ -152,7 +152,7 @@ export function AddMcpServerDialog({
 
   const onProvision = async () => {
     if (!organizationId) {
-      toast.error("Choose an organization before provisioning an MCP server.");
+      toast.error("The platform organization is still loading — try again in a moment.");
       return;
     }
     setBusy(true);
