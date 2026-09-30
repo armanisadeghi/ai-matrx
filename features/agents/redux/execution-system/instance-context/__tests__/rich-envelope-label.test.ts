@@ -46,11 +46,12 @@ it("an explicit label/type still wins, and a plain object stays json keyed by it
     state,
     setContextEntry({ conversationId, key: "data", value: { a: 1 } }),
   );
-  expect(state.byConversationId[conversationId].data).toMatchObject({ type: "json", label: "data" });
+  // An unlabelled key reads as words, never the token (BREAKER-2 B2-22).
+  expect(state.byConversationId[conversationId].data).toMatchObject({ type: "json", label: "Data" });
   // Not an envelope (a non-envelope key rides along) — plain JSON, like the server reads it.
   state = instanceContextReducer(
     state,
     setContextEntry({ conversationId, key: "post", value: { content: "x", author: "a", label: "L" } }),
   );
-  expect(state.byConversationId[conversationId].post).toMatchObject({ type: "json", label: "post" });
+  expect(state.byConversationId[conversationId].post).toMatchObject({ type: "json", label: "Post" });
 });

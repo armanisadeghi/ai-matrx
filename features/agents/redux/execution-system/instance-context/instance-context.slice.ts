@@ -51,6 +51,21 @@ function inferType(value: unknown): ContextObjectType {
  * says what it is, so the entry takes its type and label from it instead of
  * reporting "json" and the bare key.
  */
+/**
+ * A CONTEXT KEY AS A CHIP'S WORDS when nobody gave it a label (BREAKER-2 B2-22): the chip read
+ * `records_ta…`. `records_table_id` → "Records table", never the token.
+ */
+export function keyWords(key: string): string {
+  const words = key
+    .replace(/[_\-.]+/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/\b(id|ids)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (words === "") return key;
+  return words.charAt(0).toUpperCase() + words.slice(1).toLowerCase();
+}
+
 const RICH_ENVELOPE_KEYS = new Set([
   "content",
   "mutable",
@@ -148,7 +163,7 @@ const instanceContextSlice = createSlice({
         value,
         slotMatched,
         type: type ?? envelope.type ?? inferType(value),
-        label: label ?? envelope.label ?? key,
+        label: label ?? envelope.label ?? keyWords(key),
       };
     },
 
@@ -192,7 +207,7 @@ const instanceContextSlice = createSlice({
           value: entry.value,
           slotMatched: entry.slotMatched ?? false,
           type: entry.type ?? envelope.type ?? inferType(entry.value),
-          label: entry.label ?? envelope.label ?? entry.key,
+          label: entry.label ?? envelope.label ?? keyWords(entry.key),
         };
       }
     },

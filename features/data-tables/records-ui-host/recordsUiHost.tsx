@@ -137,6 +137,35 @@ export const PREVIEW_RIGHTS: NonNullable<RecordsUiHost["rights"]> = () => ({
  * knows from the share door); a roster is then not hers to read. Left out, membership is read
  * from her own organization list, which answers the same question.
  */
+/**
+ * WHAT A BUILD-ASK OPENS THE ASSISTANT WITH (BREAKER-2 B2-22). The sentence the screen offered is
+ * what the person would say, so it waits in the box for her to send or change — never sent for her
+ * (autoRun is off); it is her message, not machine data. Each context value carries the words its
+ * chip shows — the chips read `records_ta…`; the server unwraps `{content, label}`.
+ */
+export function buildAskRuntime(ask: AgentBuildAsk): {
+  userInput: string;
+  context: Record<string, { content: string; label: string }>;
+} {
+  return {
+    userInput: ask.suggestion,
+    context: {
+      records_table_id: { content: ask.tableId, label: "This table" },
+      records_wanted: { content: ask.kind, label: WANTED_WORDS[ask.kind] ?? "What to build" },
+      records_suggested_wording: { content: ask.suggestion, label: "The ask" },
+    },
+  };
+}
+
+/** What each build-ask is about, in a chip's words (`AgentBuildAsk.kind`). */
+const WANTED_WORDS: Record<AgentBuildAsk["kind"], string> = {
+  form: "A form",
+  booking: "A booking page",
+  portal: "A portal",
+  digest: "A summary email",
+  column: "A column",
+};
+
 export function useRecordsUiPorts({
   organizationId,
   dataSource,
@@ -203,11 +232,7 @@ export function useRecordsUiPorts({
         sourceFeature: "udt",
         config: { displayMode: "floating-chat", autoRun: false, allowChat: true },
         runtime: {
-          context: {
-            records_table_id: ask.tableId,
-            records_wanted: ask.kind,
-            records_suggested_wording: ask.suggestion,
-          },
+          ...buildAskRuntime(ask),
           // Who is asking — a mapped-only offered value of Provision
           // `data.build_or_ask`: it rides `variables` (never context), so the
           // mandate door delivers it only where a binding's consumption map

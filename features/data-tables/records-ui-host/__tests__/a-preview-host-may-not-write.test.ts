@@ -17,6 +17,7 @@ jest.mock("@/features/unified-data/grid-agent-context/RecordStoreTableSurface", 
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("./../mergedGridKnob", () => ({ useMergedGridKnob: () => false }));
+jest.mock("@/features/unified-data/recordsReferences", () => ({ RECORDS_REFERENCES: {} }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 
 import { PREVIEW_RIGHTS, recordsUiHostFor, type RecordsUiPorts } from "../recordsUiHost";
