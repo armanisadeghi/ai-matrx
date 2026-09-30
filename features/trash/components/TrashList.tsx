@@ -476,7 +476,8 @@ export function TrashList({
                 <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline">
                   {item.label}
                 </span>
-                <span className="text-muted-foreground w-16 shrink-0 text-right text-xs tabular-nums">
+                {/* w-18 (72px): past a year the stamp is a date, and "12/28/2025" is ~70px at text-xs — w-16 clipped it. */}
+                <span className="text-muted-foreground w-18 shrink-0 text-right text-xs tabular-nums whitespace-nowrap">
                   {formatRelativeTime(item.deleted_at, { absolute: "date" })}
                 </span>
                 {isMovedOlderTable(item) && !offersSwitchBack(item) ? (
