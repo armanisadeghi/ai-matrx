@@ -30,6 +30,12 @@ import type {
   ProductCaptureItemRow,
 } from "./types";
 
+/** Optional organization narrowing for a READ: null = everything the person can
+ *  access, across all their organizations (access-by-person law). Never the
+ *  header's selected organization. */
+const inOrganization = (organizationId: string | null) =>
+  organizationId ? { organization_id: organizationId } : {};
+
 const ITEM_COLUMNS =
   "id, organization_id, code, code_source, notes, folder_path, status, created_at, version";
 const FILE_COLUMNS = "id, item_id, file_id, kind, metadata, created_at";
@@ -165,12 +171,12 @@ export async function loadItem(itemId: string): Promise<CaptureItem | null> {
 /** Recent items of the org, newest first (the review sheet's read). A short
  *  list is an acceptable answer here — rendering, not a completeness check. */
 export async function listRecentItems(
-  organizationId: string,
+  organizationId: string | null,
   limit = 50,
 ): Promise<CaptureItem[]> {
   const { data, error } = await items()
     .select(ITEM_COLUMNS)
-    .eq("organization_id", organizationId)
+    .match(inOrganization(organizationId))
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -182,13 +188,13 @@ export async function listRecentItems(
  *  contract (`readAllRows`): the list drives management decisions, and a
  *  silent 1000-row cap would hide real items. */
 export async function listAllItems(
-  organizationId: string,
+  organizationId: string | null,
 ): Promise<CaptureItem[]> {
   const rows = await readAllRows<ItemRow>(
     ({ from, to }) =>
       items()
         .select(ITEM_COLUMNS, { count: "exact" })
-        .eq("organization_id", organizationId)
+        .match(inOrganization(organizationId))
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .order("id", { ascending: true })
@@ -201,13 +207,13 @@ export async function listAllItems(
 /** EVERY file link of the org (for the manage page's counts + thumbnails),
  *  grouped by item. Complete by contract, same reason as `listAllItems`. */
 export async function listAllFiles(
-  organizationId: string,
+  organizationId: string | null,
 ): Promise<Map<string, CaptureFile[]>> {
   const rows = await readAllRows<FileRow>(
     ({ from, to }) =>
       files()
         .select(FILE_COLUMNS, { count: "exact" })
-        .eq("organization_id", organizationId)
+        .match(inOrganization(organizationId))
         .is("deleted_at", null)
         .order("created_at", { ascending: true })
         .order("id", { ascending: true })

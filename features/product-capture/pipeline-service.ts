@@ -20,6 +20,12 @@ import type {
 } from "./pipeline-types";
 import { closeItem, loadItem, reopenItem } from "./service";
 
+/** Optional organization narrowing for a READ: null = everything the person can
+ *  access, across all their organizations (access-by-person law). Never the
+ *  header's selected organization. */
+const inOrganization = (organizationId: string | null) =>
+  organizationId ? { organization_id: organizationId } : {};
+
 function items() {
   return createClient().schema("workbench").from("product_capture_item");
 }
@@ -85,13 +91,13 @@ export async function loadPipelineItem(
 /** The org's items grouped for the stage stepper (a render list — a short
  *  page per stage is acceptable; management completeness lives on /all). */
 export async function listItemsByStage(
-  organizationId: string,
+  organizationId: string | null,
   stage: PipelineStage,
   limit = 200,
 ): Promise<PipelineItem[]> {
   const { data, error } = await items()
     .select(ITEM_COLUMNS)
-    .eq("organization_id", organizationId)
+    .match(inOrganization(organizationId))
     .eq("stage", stage)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -119,11 +125,11 @@ export async function listItemsByIds(
 
 /** Per-stage counts for the stepper badges. */
 export async function countItemsByStage(
-  organizationId: string,
+  organizationId: string | null,
 ): Promise<Record<string, number>> {
   const { data, error } = await items()
     .select("stage")
-    .eq("organization_id", organizationId)
+    .match(inOrganization(organizationId))
     .is("deleted_at", null);
   if (error) throw error;
   const counts: Record<string, number> = {};
@@ -386,12 +392,12 @@ export async function listItemQuestions(
 
 /** The org-wide quick-answer queue: OPEN questions, skipped ones last. */
 export async function listOpenQuestions(
-  organizationId: string,
+  organizationId: string | null,
   limit = 100,
 ): Promise<PipelineQuestion[]> {
   const { data, error } = await questions()
     .select(QUESTION_COLUMNS)
-    .eq("organization_id", organizationId)
+    .match(inOrganization(organizationId))
     .eq("status", "open")
     .order("skip_count", { ascending: true })
     .order("priority", { ascending: false })
@@ -403,11 +409,11 @@ export async function listOpenQuestions(
 
 /** Open-question counts per item (stage-list badges). */
 export async function countOpenQuestionsByItem(
-  organizationId: string,
+  organizationId: string | null,
 ): Promise<Map<string, number>> {
   const { data, error } = await questions()
     .select("item_id")
-    .eq("organization_id", organizationId)
+    .match(inOrganization(organizationId))
     .eq("status", "open");
   if (error) throw error;
   const map = new Map<string, number>();

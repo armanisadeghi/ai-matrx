@@ -13,9 +13,6 @@ import { ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import type { PipelineStage } from "../../pipeline-types";
@@ -37,10 +34,9 @@ export function PipelineWorkspace({
 }: {
   initialItemId: string | null;
 }) {
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
-  // `organization_id ?? the person's own organization id`, so with no organization
-  // selected the pipeline showed the OWN organization's items as the organization's.
-  const organizationId = useAppSelector(selectOrganizationId);
+  // Reads span EVERY organization the person can access (access-by-person
+  // law) — never the header's selected organization. Items name their own org.
+  const organizationId: string | null = null;
   const isMobile = useIsMobile();
 
   const [stage, setStage] = useState<PipelineStage>("intake");
@@ -50,26 +46,11 @@ export function PipelineWorkspace({
   const [entries, setEntries] = useState<StageListEntry[] | null>(null);
   // The stage-list read's failure — the list says it instead of "No items".
   const [listError, setListError] = useState<unknown>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
-  // useMandateInputSurface already fixed. `entries` starts null and null is the
-  // list's loading state, so with no organization the load effect's early
-  // return left the stage list loading FOREVER with no remedy. Before the
-  // bootstrap resolves, loading is the truth; once it has resolved with no
-  // organization, that is a settled fact and it is said, with the remedy.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Mobile: once an item is picked, the workspace replaces the list.
   const [mobileDetail, setMobileDetail] = useState(false);
 
   const refreshCounts = useCallback(async () => {
-    if (!organizationId) return;
     try {
       setCounts(await countItemsByStage(organizationId));
       setCountsError(null);
@@ -81,8 +62,7 @@ export function PipelineWorkspace({
 
   const refreshList = useCallback(
     async (forStage: PipelineStage) => {
-      if (!organizationId) return;
-      try {
+        try {
         const items = await listItemsByStage(organizationId, forStage);
         const [filesByItem, openByItem] = await Promise.all([
           listFilesForItems(items.map((i) => i.id)),
@@ -118,7 +98,6 @@ export function PipelineWorkspace({
 
   // Initial + per-stage load (deferred a tick — no sync setState in effect).
   useEffect(() => {
-    if (!organizationId) return;
     const timer = setTimeout(() => {
       setEntries(null);
       void refreshCounts();
@@ -130,7 +109,7 @@ export function PipelineWorkspace({
   // ?item= deep link: land on that item's stage with it selected.
   const deepLinkTriedRef = useRef(false);
   useEffect(() => {
-    if (!initialItemId || !organizationId || deepLinkTriedRef.current) return;
+    if (!initialItemId || deepLinkTriedRef.current) return;
     deepLinkTriedRef.current = true;
     const timer = setTimeout(() => {
       void loadPipelineItem(initialItemId)
@@ -155,15 +134,7 @@ export function PipelineWorkspace({
     setMobileDetail(true);
   };
 
-  const list =
-    organizationUnanswered ? (
-      <OrganizationContextNotice
-        state={organizationState}
-        compact
-        className="px-4 py-16"
-        description="No organization is selected, so the pipeline cannot be read — choose one from the organization picker in the header and this fills in."
-      />
-    ) : (
+  const list = (
       <div className="flex min-h-0 flex-col">
         <StageItemList
           entries={entries ?? []}

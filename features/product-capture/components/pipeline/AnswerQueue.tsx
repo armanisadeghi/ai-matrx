@@ -30,9 +30,6 @@ import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { transcribeAudioFile } from "@/features/audio/services/speechApi";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { toast } from "@/lib/toast";
 
 import { VoiceNoteButton } from "../VoiceNoteButton";
@@ -55,25 +52,10 @@ interface QueueEntry {
 }
 
 export function AnswerQueue() {
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
-  // `organization_id ?? the person's own organization id`, so with no organization
-  // selected the queue answered questions against the OWN organization's items.
-  const organizationId = useAppSelector(selectOrganizationId);
+  // Reads span EVERY organization the person can access (access-by-person
+  // law) — never the header's selected organization. Items name their own org.
+  const organizationId: string | null = null;
   const [queue, setQueue] = useState<QueueEntry[] | null>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
-  // useMandateInputSurface already fixed. `queue` starts null and null renders the
-  // spinner, so with no organization the load effect's early return left it
-  // spinning FOREVER with no remedy. Before the bootstrap resolves, loading is
-  // the truth; once it has resolved with no organization, that is a settled
-  // fact and it is said, with the action that fixes it.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [answeredCount, setAnsweredCount] = useState(0);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -82,7 +64,6 @@ export function AnswerQueue() {
   const [loadError, setLoadError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
-    if (!organizationId) return;
     try {
       const open = await listOpenQuestions(organizationId);
       const itemIds = [...new Set(open.map((q) => q.itemId))];
@@ -115,7 +96,6 @@ export function AnswerQueue() {
   }, [organizationId]);
 
   useEffect(() => {
-    if (!organizationId) return;
     const timer = setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);
   }, [organizationId, load]);
@@ -205,17 +185,6 @@ export function AnswerQueue() {
     },
     [],
   );
-
-  if (organizationUnanswered) {
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        compact
-        className="px-6 py-16"
-        description="No organization is selected, so the question queue cannot be read — choose one from the organization picker in the header and this fills in."
-      />
-    );
-  }
 
   if (loadError && !current) {
     return (

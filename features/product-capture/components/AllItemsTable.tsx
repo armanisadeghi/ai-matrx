@@ -41,9 +41,6 @@ import {
   type CaptureItemMenuRow,
 } from "../item-actions";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -85,33 +82,17 @@ function formatWhen(iso: string): string {
 
 export function AllItemsTable() {
   const router = useRouter();
-  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
-  // `organization_id ?? the person's own organization id`, so with no organization
-  // selected the table listed the OWN organization's captures as if they were the organization's.
-  const organizationId = useAppSelector(selectOrganizationId);
+  // Reads span EVERY organization the person can access (access-by-person
+  // law) — never the header's selected organization. Items name their own org.
+  const organizationId: string | null = null;
 
   const isMobile = useIsMobile();
   const [rows, setRows] = useState<ItemTableRow[] | null>(null);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class the original mandates console and
-  // useMandateInputSurface already fixed. `rows` starts null and null renders
-  // the spinner (and the footer spun on its own while the org was null), so with
-  // no organization the load's early return left the table spinning FOREVER
-  // with no remedy. Before the bootstrap resolves, loading is the truth; once it
-  // has resolved with no organization, that is a settled fact and it is said.
-  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
-  // set TRUE by `setOrgBootstrapFailure` as well, so "resolved and still no
-  // id" was ALSO the failed read — and this screen told a member of thirteen
-  // organizations to pick one. The gate's discriminant separates them and the
-  // ONE notice renders each, the failed one with its Retry.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [confirmDelete, setConfirmDelete] = useState<ItemTableRow | null>(null);
   const [actionsTarget, setActionsTarget] = useState<ItemTableRow | null>(null);
   const [clickedRow, setClickedRow] = useState<ItemTableRow | null>(null);
 
   const load = useCallback(async () => {
-    if (!organizationId) return;
     try {
       const [items, filesByItem] = await Promise.all([
         listAllItems(organizationId),
@@ -327,17 +308,6 @@ export function AllItemsTable() {
     },
   });
 
-  if (organizationUnanswered) {
-    return (
-      <OrganizationContextNotice
-        state={organizationState}
-        compact
-        className="px-6 py-10"
-        description="No organization is selected, so captured items cannot be read — choose one from the organization picker in the header and this fills in."
-      />
-    );
-  }
-
   // Mobile: a swipeable card list on the shared gesture row (tap → view,
   // swipe RIGHT → capture, swipe LEFT → delete, long-press → all actions —
   // the iOS-native shape of the same list). Desktop keeps the canonical
@@ -544,11 +514,6 @@ export function AllItemsTable() {
           </>
         )}
       />
-      {organizationId === null && (
-        <div className="flex justify-center py-6">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      )}
       </div>
       </NonEditableContextMenu>
 

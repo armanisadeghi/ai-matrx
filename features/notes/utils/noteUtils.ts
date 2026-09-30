@@ -5,19 +5,6 @@ import { DEFAULT_FOLDER_NAMES } from "../constants/defaultFolders";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 
 /**
- * Whether a note belongs in the active-org sidebar/list view: visible when the
- * note's org matches the active org. Callers still handle the null-org
- * ("homeless") case separately.
- */
-export function noteMatchesActiveOrgContext(
-  note: { organization_id: string | null },
-  activeOrgId: string | null,
-): boolean {
-  if (!activeOrgId) return true;
-  return note.organization_id != null && note.organization_id === activeOrgId;
-}
-
-/**
  * Ordered folder names for a sidebar: defaults first, then any folders
  * present on the given notes (alphabetically). Keeps the folder list in
  * lockstep with whatever note set the counts are derived from.

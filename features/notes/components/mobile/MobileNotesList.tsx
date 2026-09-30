@@ -40,13 +40,11 @@ import {
   restoreNote,
 } from "../../redux/thunks";
 import {
-  selectOrganizationId,
   selectProjectId,
   selectTaskId,
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
-import { noteMatchesActiveOrgContext } from "../../utils/noteUtils";
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
 import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
@@ -83,7 +81,6 @@ export default function MobileNotesList({
   const trashFetchedRef = useRef(false);
 
   // Active context for filtering
-  const activeOrgId = useAppSelector(selectOrganizationId);
   const activeProjectId = useAppSelector(selectProjectId);
   const activeTaskId = useAppSelector(selectTaskId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
@@ -107,10 +104,6 @@ export default function MobileNotesList({
       seen.add(n.id);
       return true;
     });
-    if (activeOrgId)
-      result = result.filter((n) =>
-        noteMatchesActiveOrgContext(n, activeOrgId),
-      );
     if (scopeFilteredNoteIds)
       result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
     if (activeProjectId)
@@ -119,7 +112,6 @@ export default function MobileNotesList({
     return result;
   }, [
     notes,
-    activeOrgId,
     scopeFilteredNoteIds,
     activeProjectId,
     activeTaskId,

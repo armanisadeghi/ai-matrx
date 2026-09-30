@@ -7,7 +7,6 @@ import {
   selectIsAuthenticated,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import {
   connectGoogle,
@@ -38,15 +37,12 @@ export function useGoogleCapabilities() {
   const authReady = useAppSelector(selectAuthReady);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const userId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectOrganizationId);
+  // The capability catalog is the same in every organization: no selected
+  // organization gates or keys this read.
   return useQuery({
-    queryKey: [...googleConnectionKeys.capabilities, userId, organizationId],
+    queryKey: [...googleConnectionKeys.capabilities, userId],
     queryFn: ({ signal }) => listGoogleCapabilities(signal),
-    enabled:
-      authReady &&
-      isAuthenticated &&
-      Boolean(userId) &&
-      Boolean(organizationId),
+    enabled: authReady && isAuthenticated && Boolean(userId),
     staleTime: 30_000,
   });
 }
@@ -56,9 +52,8 @@ export function useGoogleConnectionInventory() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const userId = useAppSelector(selectUserId);
   const organizationIds = useAppSelector(selectOrganizationIds);
-  const organizationId = useAppSelector(selectOrganizationId);
   return useQuery({
-    queryKey: [...googleConnectionKeys.inventory, userId, organizationId],
+    queryKey: [...googleConnectionKeys.inventory, userId],
     queryFn: ({ signal }) => listGoogleConnectionInventory(signal),
     // `users.integration_connections` is deliberately unavailable to `anon`.
     // Core routes can mount before the Redux auth slice hydrates, so do not

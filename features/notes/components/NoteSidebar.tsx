@@ -48,7 +48,6 @@ import {
   Clock,
   LayoutGrid,
   RotateCcw,
-  TriangleAlert,
   Users,
   Eye,
   Pencil,
@@ -69,7 +68,6 @@ import {
   selectTaskName,
 } from "@/lib/redux/slices/appContextSlice";
 import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
-import { noteMatchesActiveOrgContext } from "../utils/noteUtils";
 import {
   setInstanceActiveTab,
   addInstanceTab,
@@ -231,49 +229,21 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     matchAll: false,
   });
 
-  // ── Filter notes by active context (org + scopes + project + task) ─
+  // ── Filter notes by active context (scopes + project + task) ────────
   //
-  // Org rule (see `noteMatchesActiveOrgContext`): the active org.
-  // Historical notes were stamped onto the personal org at retrofit time, so
-  // a strict active-org-only filter zeros every folder count whenever the
-  // user is working in a company org. Other company orgs stay excluded.
-  // Null-org ("homeless") notes are hidden by default with a banner + toggle.
-  const [includeHomeless, setIncludeHomeless] = useState(false);
-  const { contextFiltered, homelessCount } = useMemo(() => {
+  // NEVER by the selected organization (access-by-person law): the list shows
+  // every note the person can access across all their organizations; each
+  // folder header already names its organization when names collide.
+  const contextFiltered = useMemo(() => {
     let result = allNotes;
-    let homeless: typeof allNotes = [];
-    if (activeOrgId) {
-      homeless = result.filter((n) => n.organization_id == null);
-      result = result.filter((n) =>
-        noteMatchesActiveOrgContext(n, activeOrgId),
-      );
-    }
     if (scopeFilteredNoteIds)
       result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
-    if (activeProjectId) {
+    if (activeProjectId)
       result = result.filter((n) => n.project_id === activeProjectId);
-      homeless = homeless.filter(
-        (n) => n.project_id == null || n.project_id === activeProjectId,
-      );
-    }
-    if (activeTaskId) {
+    if (activeTaskId)
       result = result.filter((n) => n.task_id === activeTaskId);
-      homeless = homeless.filter(
-        (n) => n.task_id == null || n.task_id === activeTaskId,
-      );
-    }
-    return {
-      contextFiltered: includeHomeless ? [...result, ...homeless] : result,
-      homelessCount: homeless.length,
-    };
-  }, [
-    allNotes,
-    activeOrgId,
-    scopeFilteredNoteIds,
-    activeProjectId,
-    activeTaskId,
-    includeHomeless,
-  ]);
+    return result;
+  }, [allNotes, scopeFilteredNoteIds, activeProjectId, activeTaskId]);
 
   // ── Local UI state ─────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -801,7 +771,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       const count = folderNotes.length;
       if (count === 0) return;
       const representative = folderNotes.find(
-        (note) => note.folder_id && note.organization_id === activeOrgId,
+        (note) => note.folder_id && note.organization_id,
       );
       if (!representative?.folder_id) {
         throw new Error("This folder cannot be changed until its organization identity is available.");
@@ -828,7 +798,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         // Error handled in service
       }
     },
-    [dispatch, groupedNotes, activeOrgId],
+    [dispatch, groupedNotes],
   );
 
   // Surface sections for the v3 right-click menu on a folder header.
@@ -876,7 +846,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     async (newName: string) => {
       if (!renameFolderTarget) return;
       const representative = (groupedNotes.get(renameFolderTarget) ?? []).find(
-        (note) => note.folder_id && note.organization_id === activeOrgId,
+        (note) => note.folder_id && note.organization_id,
       );
       if (!representative?.folder_id) {
         throw new Error("This folder cannot be renamed until its organization identity is available.");
@@ -895,7 +865,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         toast.error(words.title, { description: words.description });
       }
     },
-    [dispatch, renameFolderTarget, groupedNotes, activeOrgId],
+    [dispatch, renameFolderTarget, groupedNotes],
   );
 
   // ── Create folder handler ──────────────────────────────────────────
@@ -1017,34 +987,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
           detail={bodySearch.error}
           className="mx-2 my-1"
         />
-      )}
-
-      {activeOrgId && homelessCount > 0 && (
-        <div className="shrink-0 flex items-center gap-1.5 border-b border-border/20 px-2.5 py-1">
-          <span className="flex min-w-0 items-center gap-1.5 text-xs text-amber-600/80 dark:text-amber-400/80">
-            <TriangleAlert className="h-2.5 w-2.5 shrink-0" />
-            <span className="truncate">
-              {/* read-gate-exempt: warning renders only when homelessCount is above 0, so a failed list read hides it rather than saying 0 */}
-              {homelessCount} note{homelessCount === 1 ? "" : "s"} without an
-              organization
-            </span>
-          </span>
-          <span className="ml-auto text-xs text-amber-700 dark:text-amber-300">
-            Open the note to review its destination.
-          </span>
-          <button
-            type="button"
-            onClick={() => setIncludeHomeless((v) => !v)}
-            className="shrink-0 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            title={
-              includeHomeless
-                ? "Hide these notes"
-                : "Show these notes in the list"
-            }
-          >
-            {includeHomeless ? "Hide" : "Show"}
-          </button>
-        </div>
       )}
 
       {/* Toolbar. Two kinds of control, made visually distinct so their
