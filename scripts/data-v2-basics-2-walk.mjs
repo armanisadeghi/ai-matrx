@@ -182,7 +182,7 @@ async function nudgeRound(row, col, word) {
 }
 
 try {
-  const who = PHASE === "member" ? "member" : "admin";
+  const who = PHASE === "member" || PHASE === "b221" ? "member" : "admin";
   const email = who === "admin" ? env.AI_ADMIN_USERNAME : env.AI_MEMBER_USERNAME;
   const pw = who === "admin" ? env.AI_ADMIN_PASSWORD : env.AI_MEMBER_PASSWORD;
   await resumeWalk();
@@ -1309,6 +1309,121 @@ try {
     step("B2-22 Ask AI opens with the ask", { offer, composer, chips: [...new Set(chips)].slice(0, 8) });
     if (!composer.some((t) => t.length > 10)) friction("Ask AI opened with an empty box");
     if (chips.some((c) => /records_|Records T…|Records S…/.test(c))) friction(`Ask AI chips read as keys: ${chips.join(" | ")}`);
+  }
+
+  if (PHASE === "b3live") {
+    // BREAKER-3 B3-06 and B3-07 on the published records-ui, through the page's own UI.
+    // ── B3-06: a table of 300 records in the Grid ───────────────────────────────────────────
+    if (!process.env.SKIP_B306) {
+      let tid = process.env.BIG ?? null;
+      if (!tid) {
+        const name = `Visit Log 300 ${String(Date.now()).slice(-4)}`;
+        await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 300000 });
+        await unpark();
+        await sleep(6000);
+        if (await page.getByText("An organization is needed").count()) {
+          await page.getByRole("button", { name: "Choose organization" }).last().click();
+          await sleep(1500);
+          await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
+          await sleep(6000);
+        }
+        await page.getByRole("button", { name: /^New table/ }).first().click();
+        await sleep(1200);
+        await page.getByPlaceholder("Table name").fill(name);
+        await page.getByRole("button", { name: "Create", exact: true }).click();
+        await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(page.url()), 60000);
+        tid = page.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1];
+        await open(tid, "?view=sheet");
+        await page.getByRole("button", { name: /^Paste$/ }).first().click();
+        const dlg = page.getByRole("dialog").filter({ hasText: /Paste Rows|Confirm Pasted Rows/ });
+        await dlg.waitFor({ timeout: 20000 });
+        const lines = ["Title"];
+        for (let k = 1; k <= 300; k += 1) lines.push(`Visit ${String(((k * 157) % 300) + 1).padStart(3, "0")}`);
+        await dlg.locator("#pasteData").fill(lines.join("\n"));
+        await dlg.getByRole("button", { name: "Parse", exact: true }).click();
+        await sleep(3000);
+        await dlg.locator("[data-matrx-import-confirm]").last().click();
+        await until("the paste report", async () => /Pasted \d+ of \d+/.test(await dlg.innerText().catch(() => "")), 240000);
+        const report = (await dlg.innerText().catch(() => "")).replace(/\s+/g, " ").match(/Pasted \d+ of \d+/)?.[0] ?? null;
+        await page.getByRole("button", { name: /^Done$/ }).first().click().catch(() => page.keyboard.press("Escape"));
+        step("made a 300-row table through the Paste dialog", { tid, name, report });
+      }
+      await page.goto(`${ORIGIN}/data-v2/${tid}?view=grid`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await until("the grid", async () => (await page.locator("tbody tr").count()) > 5, 240000);
+      await sleep(5000);
+      // Sort by Title from the header, as a person does.
+      const footer = async () => (await page.locator("main").innerText()).replace(/\s+/g, " ").match(/\d[\d,]*\s*[–-]\s*\d[\d,]*\s+of\s+[\d,]+|Unknown total/g) ?? [];
+      const firstTitles = async () => (await page.locator("tbody tr").evaluateAll((trs) => trs.slice(0, 5).map((t) => (t.innerText.match(/Visit \d{3}/) ?? [""])[0])));
+      const before = { footer: await footer(), first: await firstTitles() };
+      const th = page.locator("thead th", { hasText: /^Title/ }).first();
+      await th.click().catch(() => {});
+      await sleep(4000);
+      let sorted = { footer: await footer(), first: await firstTitles() };
+      if (!sorted.first[0] || !/Visit 001|Visit 300/.test(sorted.first[0])) {
+        await th.click().catch(() => {});
+        await sleep(4000);
+        sorted = { footer: await footer(), first: await firstTitles() };
+      }
+      await shot("b3-06-grid-300");
+      step("B3-06 the Grid on 300 records", { tid, before, sorted });
+      if (!before.footer.some((f) => /of 300/.test(f)) || before.footer.some((f) => /of 100\b|Unknown total/.test(f))) friction(`the Grid's count: ${before.footer.join(" | ")}`);
+      if (!/Visit 001|Visit 300/.test(sorted.first[0] ?? "")) friction(`sorted by Title, page 1 starts ${sorted.first.join(", ")}`);
+      out.b3_big_table = tid;
+    }
+    // ── B3-07: the reference editor on the last column before Actions ──────────────────────
+    if (!process.env.SKIP_B307) {
+      await page.goto(`${ORIGIN}/data-v2/${process.env.TABLE}?view=grid`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await until("the grid", async () => (await page.locator("tbody tr").count()) > 0, 240000);
+      await sleep(5000);
+      await page.locator("[data-matrx-table-scroll], main").first().evaluate((el) => {
+        const sc = [...document.querySelectorAll("*")].find((n) => n.scrollWidth > n.clientWidth + 20 && getComputedStyle(n).overflowX !== "visible");
+        if (sc) sc.scrollLeft = sc.scrollWidth;
+      });
+      await sleep(1500);
+      const row = page.locator("tbody tr", { hasText: "Alpha0" }).first();
+      const ths = await page.locator("thead th").allInnerTexts();
+      const ci = ths.findIndex((t) => /^Referring Clinic/.test(t.trim()));
+      const cell = row.locator("td").nth(ci);
+      await cell.click();
+      await sleep(500);
+      await page.keyboard.press("Enter");
+      await sleep(2500);
+      await shot("b3-07-ref-editor");
+      const reach = await page.evaluate(() => {
+        const ed = document.querySelector("[data-matrx-cell-editor]");
+        if (!ed) return { editor: false };
+        const buttons = [...ed.querySelectorAll("button")].filter((b) => b.getBoundingClientRect().width > 0);
+        return {
+          editor: true,
+          buttons: buttons.map((b) => {
+            const r = b.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return { label: (b.getAttribute("aria-label") ?? b.textContent ?? "").trim().slice(0, 40), reachable: !!hit && (hit === b || b.contains(hit)) };
+          }),
+        };
+      });
+      step("B3-07 the reference editor beside the sticky Actions column", { column_index: ci, reach });
+      if (!reach.editor || !reach.buttons?.length || reach.buttons.some((b) => !b.reachable)) friction(`a reference editor control is covered: ${JSON.stringify(reach)}`);
+      await page.keyboard.press("Escape");
+    }
+  }
+
+  if (PHASE === "b221") {
+    // BREAKER-2 B2-21 on the published records-ui: test@test.com, a Viewer on an organization table.
+    await open(T.equipment);
+    const share = page.locator("[data-share-for-somebody-else]");
+    await until("the viewer's Share", async () => (await share.count()) > 0, 60000);
+    const count = await share.count();
+    if (count) await share.first().click();
+    await sleep(1200);
+    const said = (await page.locator("[data-radix-popper-content-wrapper]").allInnerTexts()).join(" | ").replace(/\s+/g, " ");
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN }).catch(() => {});
+    await page.locator("[data-share-copy-link]").first().click().catch(() => {});
+    await sleep(800);
+    const copied = await page.locator("[data-radix-popper-content-wrapper]").innerText().catch(() => "");
+    await shot("b2-21-viewer-share");
+    step("B2-21 a viewer's Share", { control: count, said, after_copy: copied.replace(/\s+/g, " ").slice(0, 200) });
+    if (!count || !/Admin/.test(said) || !/Copied|page address/.test(copied)) friction(`viewer share: control=${count} said=${said}`);
   }
 
   if (PHASE === "tidy") {
