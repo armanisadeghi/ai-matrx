@@ -733,7 +733,10 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
             name = offered;
           }
         }
-        done(agentStep, { links: [{ label: "Open agent", href: KIT_ROUTES.agent(newId) }] });
+        done(agentStep, {
+          ...(name !== agent.name ? { detail: `Named "${name}"` } : {}),
+          links: [{ label: "Open agent", href: KIT_ROUTES.agent(newId) }],
+        });
       }
       const bindStep = `bind:${agent.key}`;
       if (agent.bindings.length > 0 && !steps.bindings?.[agent.key]) {
