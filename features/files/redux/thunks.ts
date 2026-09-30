@@ -141,6 +141,8 @@ import type {
   RenameFileArg,
   ResourceType,
   RestoreVersionArg,
+  SaveFileNewVersionArg,
+  SaveFileNewVersionResult,
   RevokePermissionArg,
   UpdateFileMetadataArg,
   UploadFilesArg,
@@ -1813,6 +1815,109 @@ export const restoreVersion = createAsyncThunk<
       invalidateOfficeExtraction(fileId);
       // Reload version list to pick up the new synthetic version row.
       await dispatch(loadFileVersions({ fileId })).unwrap();
+    } finally {
+      dispatch(setFileLoading({ id: fileId, loading: false }));
+      releaseRequest(requestId);
+    }
+  },
+);
+
+/**
+ * THE edit-save path: write new content as the next version of the SAME file.
+ *
+ * Every editor that saves a file's text goes through here — never `uploadFiles`.
+ * `uploadFiles` is the NEW-file path: it auto-renames a colliding name to
+ * "name (1).ext" (Drive semantics for a dropped duplicate), so an editor that
+ * re-uploaded its own file created a second file and left the original at
+ * version 1 while the UI said "Saved" (2026-09-30).
+ *
+ * This thunk uploads to the file's exact stored `file_path` (the service
+ * version-bumps the row at that path) and then REFUSES any answer that is not
+ * that same row: a different `file_id` or `is_new: true` throws, naming what
+ * happened, so a save can never again silently become a copy.
+ */
+export const saveFileNewVersion = createAsyncThunk<
+  SaveFileNewVersionResult,
+  SaveFileNewVersionArg,
+  ThunkApi
+>(
+  "cloudFiles/saveFileNewVersion",
+  async ({ fileId, content, changeSummary }, { dispatch, getState }) => {
+    if (isVirtualResourceId(fileId)) {
+      throw new Error(
+        "saveFileNewVersion is for stored files; virtual files save through writeAny.",
+      );
+    }
+    let record: CloudFile | undefined = getState().cloudFiles.filesById[fileId];
+    // A row hydrated for rendering only may not carry its path — read the
+    // file's own metadata rather than guessing a path from its folder.
+    if (!record?.filePath) {
+      const { data } = await Files.getFileMetadata(fileId);
+      const fresh = apiFileRecordToCloudFile(data);
+      dispatch(upsertFile(fresh));
+      record = fresh;
+    }
+    if (!record.filePath) {
+      throw new Error(
+        "We couldn't save — this file has no stored path. Refresh and try again.",
+      );
+    }
+    const mimeType = record.mimeType ?? "text/plain";
+    const body =
+      typeof content === "string"
+        ? new Blob([content], { type: mimeType })
+        : content;
+    const upload = new File([body], record.fileName, { type: mimeType });
+
+    dispatch(setFileLoading({ id: fileId, loading: true }));
+    const requestId = newRequestId();
+    registerRequest({
+      requestId,
+      kind: "upload",
+      resourceId: fileId,
+      resourceType: "file",
+    });
+    try {
+      const { data } = await Files.uploadNewVersion(
+        fileId,
+        {
+          file: upload,
+          filePath: record.filePath,
+          changeSummary: changeSummary ?? "Edited in place",
+        },
+        { requestId, idempotencyKey: requestId },
+      );
+      if (data.file_id !== fileId || data.is_new) {
+        throw new Error(
+          `Saving "${record.fileName}" did not update it — the files service wrote ` +
+            `a separate file (${data.file_path}, id ${data.file_id}) instead of ` +
+            `version ${record.currentVersion + 1}. Your original is unchanged; ` +
+            `remove the extra file from the folder.`,
+        );
+      }
+      dispatch(
+        upsertFile({
+          id: fileId,
+          currentVersion: data.version_number,
+          fileSize: data.size_bytes,
+          checksum: data.checksum,
+          updatedAt: new Date().toISOString(),
+        }),
+      );
+      // The current bytes changed — drop cached copies so every viewer
+      // reads the new version.
+      invalidateBlobCache(fileId);
+      invalidateOfficeExtraction(fileId);
+      await dispatch(loadFileVersions({ fileId }))
+        .unwrap()
+        .catch((err: unknown) => {
+          // The save landed; only the history refresh failed. Say so.
+          console.error(
+            "[saveFileNewVersion] saved, but the version list did not refresh:",
+            err,
+          );
+        });
+      return { fileId, versionNumber: data.version_number };
     } finally {
       dispatch(setFileLoading({ id: fileId, loading: false }));
       releaseRequest(requestId);

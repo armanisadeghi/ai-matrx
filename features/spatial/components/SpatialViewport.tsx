@@ -36,11 +36,18 @@ import {
 import { type Insets, SpatialStore } from "../engine/spatial-store";
 import { type WheelMode, routeWheel } from "../engine/wheel-input";
 import { isCreationTool, toolForKey } from "../engine/tools";
+import { boardOwnsKey, isTyping } from "../engine/key-target";
+import { isAccidentalScroll } from "../engine/native-scroll";
+import { type ScreenRect, clipToVisible, panToReveal, shouldReveal } from "../engine/reveal";
 import { FocusHostContext, SpatialStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
 
 const GRID_WORLD_PX = 24;
 const HASH_THROTTLE_MS = 400;
+/** Screen px kept between a revealed element and the board's edge. */
+const REVEAL_MARGIN_PX = 24;
+const REVEAL_MS = 140;
+const REVEAL_SETTLE_MS = 700;
 
 interface SpatialViewportProps {
   initialCamera?: Camera;
@@ -168,6 +175,139 @@ export function SpatialViewport({
     };
   }, [store]);
 
+  // ── the board never scrolls natively (engine/native-scroll.ts) ──────────
+  // focus() / scrollIntoView() inside a tile can scroll the clipped board
+  // root, the pane it sits in, or a tile card; only the camera moves the
+  // board, so any such scroll is put straight back.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onScroll = (e: Event) => {
+      const el = e.target;
+      if (!(el instanceof Element) || !isAccidentalScroll(el, root)) return;
+      if (el.scrollLeft !== 0) el.scrollLeft = 0;
+      if (el.scrollTop !== 0) el.scrollTop = 0;
+    };
+    document.addEventListener("scroll", onScroll, true);
+    return () => document.removeEventListener("scroll", onScroll, true);
+  }, []);
+
+  // ── what has focus stays on screen (engine/reveal.ts) ────────────────────
+  // What a native scroll would have done, the camera does: keyboard focus (a
+  // grid cell, find-next) or an editor caret moving off the visible board
+  // pans by the smallest amount, never a zoom. Not for a click's focus, and
+  // not while a pointer is down (drag, pan, pinch).
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const down = new Set<number>();
+    let pressedAt = -Infinity;
+    let frame = 0;
+    let recheck: ReturnType<typeof setTimeout> | undefined;
+    // A grid or editor often scrolls its own content to the focused element
+    // a frame or two AFTER focus moves (and smooth scrolling keeps moving
+    // it), so for a short window after a keyboard focus change the reveal
+    // re-runs on those scrolls. Outside the window a scroll is the person's
+    // own and never drags the board.
+    let settleUntil = 0;
+    let settling: { el: Node; measure: () => ScreenRect | null } | null = null;
+    const onDown = (e: PointerEvent) => {
+      down.add(e.pointerId);
+      pressedAt = performance.now();
+    };
+    const onUp = (e: PointerEvent) => {
+      down.delete(e.pointerId);
+    };
+    // The smallest camera pan that brings `r` inside the visible board.
+    const panInto = (r: ScreenRect | null, animate: boolean) => {
+      if (!r || (r.right - r.left === 0 && r.bottom - r.top === 0)) return;
+      const box = root.getBoundingClientRect();
+      const inset = store.getInsets();
+      const { dx, dy } = panToReveal(
+        r,
+        { left: box.left + inset.left, top: box.top + inset.top, right: box.right - inset.right, bottom: box.bottom - inset.bottom },
+        REVEAL_MARGIN_PX,
+      );
+      if (dx === 0 && dy === 0) return;
+      const next = panBy(store.getCamera(), dx, dy);
+      if (animate) store.flyTo(next, REVEAL_MS);
+      else store.setCamera(next);
+    };
+    // What of `rect` the content inside the tile lets anyone see: clipped by
+    // every non-visible-overflow box between it and the tile (its own grid
+    // scroller, the card). A cell hidden past a grid's edge is the grid's to
+    // scroll, not the camera's to chase.
+    const visible = (host: Element | null, rect: ScreenRect | null): ScreenRect | null => {
+      if (!host || !rect) return rect;
+      const clips: ScreenRect[] = [];
+      for (let el = host.parentElement; el && !el.matches("[data-spatial-tile]"); el = el.parentElement) {
+        const st = getComputedStyle(el);
+        if (st.overflowX !== "visible" || st.overflowY !== "visible") clips.push(el.getBoundingClientRect());
+      }
+      return clipToVisible(rect, clips);
+    };
+    const reveal = (from: Node | null, measure: () => ScreenRect | null) => {
+      const el = from instanceof Element ? from : from?.parentElement ?? null;
+      const inTile = !!el && root.contains(el) && !!el.closest("[data-spatial-tile]");
+      if (!shouldReveal({ inTile, pointersDown: down.size, msSincePress: performance.now() - pressedAt })) return;
+      if (from) {
+        settling = { el: from, measure };
+        settleUntil = performance.now() + REVEAL_SETTLE_MS;
+      }
+      cancelAnimationFrame(frame);
+      // After layout settles (a grid scrolls its own cell into view first).
+      frame = requestAnimationFrame(() => {
+        panInto(measure(), true);
+      });
+      // Once more after the flight lands: content that re-laid itself out
+      // meanwhile (a virtualised grid) is caught without a scroll event.
+      clearTimeout(recheck);
+      const mine = settling;
+      recheck = setTimeout(() => {
+        if (settling === mine && down.size === 0) panInto(measure(), false);
+      }, REVEAL_MS + 120);
+    };
+    const onContentScroll = (e: Event) => {
+      if (!settling || performance.now() > settleUntil) return;
+      const target = e.target;
+      if (!(target instanceof Element) || !target.contains(settling.el)) return;
+      const { measure } = settling;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        panInto(measure(), false);
+      });
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      const el = e.target as Element | null;
+      reveal(el, () => visible(el, el?.getBoundingClientRect() ?? null));
+    };
+    const onSelection = () => {
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
+      const node = sel.anchorNode;
+      const host = node instanceof Element ? node : node?.parentElement;
+      if (!host?.closest("[contenteditable='true'], [contenteditable='']")) return;
+      const range = sel.getRangeAt(0);
+      reveal(node, () => visible(host, range.getClientRects()[0] ?? range.getBoundingClientRect()));
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("pointercancel", onUp, true);
+    root.addEventListener("focusin", onFocusIn);
+    document.addEventListener("selectionchange", onSelection);
+    document.addEventListener("scroll", onContentScroll, true);
+    return () => {
+      document.removeEventListener("scroll", onContentScroll, true);
+      cancelAnimationFrame(frame);
+      clearTimeout(recheck);
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("pointercancel", onUp, true);
+      root.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("selectionchange", onSelection);
+    };
+  }, [store]);
+
   // ── wheel (non-passive: we own the gesture) ──────────────────────────────
   useEffect(() => {
     const root = rootRef.current;
@@ -215,7 +355,7 @@ export function SpatialViewport({
     let spaceDown = false;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !isTyping(e.target)) {
+      if (e.code === "Space" && boardOwnsKey(e.target)) {
         spaceDown = true;
         root.style.cursor = "grab";
         e.preventDefault();
@@ -327,6 +467,9 @@ export function SpatialViewport({
         }
         return;
       }
+      // A key inside a tile's content (a grid cell, an editor, a control)
+      // belongs to that content: Enter there never opens full screen.
+      if (e.key !== "Escape" && !boardOwnsKey(e.target)) return;
       if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
       // While a tile is interacting its content owns the keyboard (lists,
       // players, editors) — the board answers only Esc, which steps back out.
@@ -388,7 +531,7 @@ export function SpatialViewport({
       <div
         ref={rootRef}
         className={cn(
-          "relative h-full w-full touch-none select-none overflow-hidden bg-muted/40",
+          "relative h-full w-full touch-none select-none overflow-clip bg-muted/40",
           className,
         )}
         aria-label="Spatial view — drag to pan, pinch or ctrl+scroll to zoom, shift+1 to fit everything"
@@ -422,11 +565,12 @@ function toolCursor(tool: string): string {
   return "crosshair";
 }
 
-function isTyping(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-  if (!el) return false;
-  return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
-}
+/**
+ * True when the key belongs to a text field, so the board must not act on it (Space pans, letters
+ * pick tools). A field is not only an input or a contenteditable: Monaco (the file tile's editor)
+ * types into an EditContext host — a plain div with `editContext` set — and ARIA editors expose
+ * `role="textbox"`. Missing those ate every space typed into a file.
+ */
 
 /** True when some scroll container between the pointer and the tile has room
  * to scroll in the wheel's direction. Any scroll container counts — tile

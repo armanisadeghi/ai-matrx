@@ -38,7 +38,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
-import { uploadFiles as uploadFilesThunk } from "@/features/files/redux/thunks";
+import { saveFileNewVersion } from "@/features/files/redux/thunks";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -147,18 +147,12 @@ export function CloudFileEditor({
     setSaving(true);
     setSaveError(null);
     try {
-      // Re-upload as the same filename to the same parent. The Python
-      // backend treats that as a new version of the existing file.
-      const reUploaded = new File(
-        [new Blob([text], { type: file.mimeType ?? "text/plain" })],
-        file.fileName,
-        { type: file.mimeType ?? "text/plain" },
-      );
+      // A save is the NEXT VERSION of this same file — never an upload
+      // (an upload of a taken name becomes "name (1).ext", a second file).
       await dispatch(
-        uploadFilesThunk({
-          files: [reUploaded],
-          parentFolderId: file.parentFolderId,
-          visibility: file.visibility,
+        saveFileNewVersion({
+          fileId: file.id,
+          content: text,
           changeSummary: "Edited in place",
         }),
       ).unwrap();

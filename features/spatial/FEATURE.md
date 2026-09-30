@@ -283,9 +283,39 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   document" places a draft tile that creates the document only on its Create click (org gate +
   `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
   `{ kind: "document" }` source renders through the same item and is saved in the entity form.
+- **A document tile is `/documents/[id]`'s own component** (`items/document-items.tsx`, key `udt_document`):
+  `DocumentRecord` (features/data-tables) — rename, Copy reference, Share, the Rulebook notice, the Univer
+  editor with its save status, snapshot and History — which mounts `matrx-user/documents` itself, so the
+  item declares `surface: { name }` with no `Host`. An agent reads and writes the name, the description AND
+  the body text (`document_body_text` / `document_body`, applied through Univer's command service). "New
+  document" places a draft tile that creates the document only on its Create click (org gate +
+  `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
+  `{ kind: "document" }` source renders through the same item and is saved in the entity form.
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-30 — What has focus stays on screen (`engine/reveal.ts`): keyboard focus moving to an element
+  inside a tile that is off the visible board (tabbing grid cells, find-next) or a contenteditable
+  caret leaving it pans the CAMERA by the smallest amount, 24px margin, never a zoom (Figma, Excel) —
+  what a native scroll would have done now that the board never scrolls natively. Not for a click's
+  focus (within 400ms of a press) and never while a pointer is down. It reveals only what the content
+  itself shows (`clipToVisible`: a cell hidden past a grid's own scroll edge brings at most that edge on
+  screen — the grid scrolls its content), and re-checks for 700ms while the content settles (a grid
+  scrolling its own cell into view a frame later).
+
+- 2026-09-30 — Keys and scroll belong to their owner: `engine/key-target.ts` (`isTyping`, `boardOwnsKey`)
+  is the one guard for every board key — a key inside a tile's content (grid cell, editor, Monaco
+  EditContext, textbox) is the content's, so Enter there never opens full screen and Backspace never
+  takes the tile off (`useBoardKeys` shares it). `engine/native-scroll.ts`: the board never scrolls
+  natively — the root is `overflow: clip`, and a `focus()`/`scrollIntoView()` scroll of the root, a
+  clipped ancestor pane or a tile card is reset at once; only the camera moves the board.
+
+- 2026-09-30 — Browser verification of every item type (note, file, chat, table, record, task, project) and
+  the bridge. Two fixes: the board's key guard (`isTyping`, `components/SpatialViewport.tsx`) now treats
+  an EditContext host (Monaco, the file tile's editor) and `role="textbox"` as typing — Space-to-pan was
+  eating every space typed into a file (`__tests__/typing-target.test.ts`); the File tile adopts the file's
+  current name as its title, so a rename no longer leaves the board and `board_items` on the old name.
 
 - 2026-09-30 — The gaps, closed as one class: `onResize` is required on `SpatialTile` and wired on
   every `useBoard` host (War Room opts out explicitly), guarded by `resize-wiring.test.ts`; a finger

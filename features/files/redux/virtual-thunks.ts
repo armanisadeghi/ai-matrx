@@ -68,7 +68,7 @@ import {
   moveFile as moveFileThunk,
   renameFile as renameFileThunk,
   updateFolder as updateFolderThunk,
-  uploadFiles as uploadFilesThunk,
+  saveFileNewVersion,
 } from "./thunks";
 
 type ThunkApi = { dispatch: AppDispatch; state: StateWithCloudFiles };
@@ -391,24 +391,12 @@ export const writeAny = createAsyncThunk<void, WriteAnyArg, ThunkApi>(
   "cloudFiles/writeAny",
   async ({ id, content, expectedUpdatedAt }, { dispatch, getState }) => {
     if (!isSyntheticId(id)) {
-      // Real cloud-file edit-in-place uses uploadFiles to create a new
-      // version. Mirrors the existing CloudFileEditor save flow.
-      const state = getState().cloudFiles;
-      const record = state.filesById[id];
-      if (!record)
-        throw new Error(
-          "We couldn't save — that file isn't loaded in this view. Refresh and try again.",
-        );
-      const reUploaded = new File(
-        [new Blob([content], { type: record.mimeType ?? "text/plain" })],
-        record.fileName,
-        { type: record.mimeType ?? "text/plain" },
-      );
+      // A stored file's edit is the NEXT VERSION of that same file —
+      // never an upload (a taken name becomes "name (1).ext").
       await dispatch(
-        uploadFilesThunk({
-          files: [reUploaded],
-          parentFolderId: record.parentFolderId,
-          visibility: record.visibility,
+        saveFileNewVersion({
+          fileId: id,
+          content,
           changeSummary: "Edited in place",
         }),
       ).unwrap();

@@ -38,6 +38,7 @@ import { NotePickerInline } from "@/features/notes/components/NotePickerPopover"
 import { SingleFileSurfaceHost } from "@/features/files/components/surfaces/single-file/SingleFileSurfaceHost";
 import { SingleFileWorkspace } from "@/features/files/components/surfaces/single-file/SingleFileWorkspace";
 import { FILE_SURFACE_NAME } from "@/features/surfaces/manifests/file.manifest";
+import { selectFileById } from "@/features/files/redux/selectors";
 import { FilesResourcePicker } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import { InlineUploadArea } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import { NoteItemBody } from "./NoteItemBody";
@@ -51,6 +52,7 @@ import {
   fileItem,
   isEntity,
 } from "./work-sources";
+import { titleToAdopt } from "./feature-items.logic";
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
@@ -228,8 +230,15 @@ function FileSurfaceHost({ source, children }: { source: NodeSource; children: R
  * Analysis, Share, Info, Versions). Route navigation (back, breadcrumb, Show
  * files) is the page's, not the file's, so it is not here.
  */
-function FileBody({ source }: ItemBodyProps) {
+function FileBody({ source, title, onSource }: ItemBodyProps) {
   const fileId = fileIdOf(source);
+  // The tile's title follows the file's name, so a rename (on the tile, the file's page or by an
+  // agent) never leaves the board — and `board_items` — naming the file by its old name.
+  const fileName = useAppSelector((state) => (fileId ? selectFileById(state, fileId)?.fileName : undefined));
+  const adopt = titleToAdopt(title, fileName);
+  useEffect(() => {
+    if (adopt) onSource(source, adopt);
+  }, [adopt, source, onSource]);
   if (!fileId) {
     return (
       <div className="flex h-full items-center justify-center bg-card p-4 text-xs text-muted-foreground">

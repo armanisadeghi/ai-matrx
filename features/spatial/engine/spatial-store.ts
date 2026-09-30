@@ -113,6 +113,8 @@ export class SpatialStore {
     this.insets = insets;
   }
 
+  getInsets = (): Insets => this.insets;
+
   /** `fitRect` inside the viewport minus the overlay insets. */
   private fitClear(target: Rect, padding: number, maxZ: number): Camera {
     const { top, right, bottom, left } = this.insets;
