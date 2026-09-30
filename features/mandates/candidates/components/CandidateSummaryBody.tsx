@@ -92,7 +92,7 @@ export function CandidateSummaryBody({ row }: { row: CandidateSummaryRow }) {
                 RECOMMENDATION_TONE[candidate.recommendation],
               )}
             >
-              {RECOMMENDATION_WORD[candidate.recommendation]}
+              Recommended: {RECOMMENDATION_WORD[candidate.recommendation].toLowerCase()}
             </span>
           ) : (
             <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-sm font-semibold">
@@ -287,7 +287,7 @@ function Decisions({
             setVersions(null);
           }
         }}
-        title={versions ? "Which version goes live?" : `Promote to ${mandate}?`}
+        title={versions ? "Which version goes live?" : `Make the candidate live for ${mandate}?`}
         description={
           versions
             ? "The runs used different versions. Pick the one you compared."
