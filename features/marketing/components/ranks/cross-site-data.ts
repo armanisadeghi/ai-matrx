@@ -17,7 +17,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
+import { listOrgParam } from "@/lib/list-scope/types";
 import { getGscKeywordValueForMulti } from "@/features/marketing/search-console/data-insights";
 
 /** Sparkline / movement window, mirrored by the scoped RPC. */
@@ -106,7 +106,7 @@ export async function fetchCrossSiteRankPage(
 ): Promise<EntityListPage<CrossSiteRankRow>> {
   const args = {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_sort: sort.sort,
     p_dir: sort.direction,
@@ -136,6 +136,7 @@ export async function fetchCrossSiteRankCounts(
 ): Promise<EntityScopeCounts> {
   const response = await supabase.rpc("seo_rank_target_list_scope_counts", {
     p_search: query.search.trim() || undefined,
+    p_org_id: listOrgParam(query),
     p_filters: query.filters,
   });
   const data = assertData(response.data, response.error);
@@ -148,7 +149,7 @@ export async function fetchCrossSiteRankFacets(
 ): Promise<EntityFacets> {
   const response = await supabase.rpc("seo_rank_target_list_facets", {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
   });
   const data = assertData(response.data, response.error);

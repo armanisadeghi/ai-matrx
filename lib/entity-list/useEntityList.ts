@@ -34,7 +34,7 @@ import {
   queryToParamPatch,
   readQueryFromParams,
 } from "./urlQuery";
-import { scopeKey, type ListScope } from "@/lib/list-scope/types";
+import { makeScope, scopeKey, type ListScope } from "@/lib/list-scope/types";
 import { defaultListScopeFor } from "@/lib/list-scope";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -108,6 +108,13 @@ export interface UseEntityListArgs<TRow> {
    * click away and never blocked" is unchanged.
    */
   registryToken?: string;
+  /**
+   * The lanes this list renders (after `withStandardLanes`). A default lane the
+   * surface does not offer — the platform's All on a Mine-only Private type, a
+   * knob's word on a list without that tab — lands on All when offered, else
+   * on the first lane, so an untouched page never asks a lane it has no tab for.
+   */
+  supportedScopes?: readonly ListScope["kind"][];
   /**
    * Put the query in the URL (scope / search / filters / archived / deep /
    * page). Off by default so existing surfaces are untouched; on, the URL is
@@ -207,6 +214,7 @@ export function useEntityList<TRow>({
   defaultFilters,
   defaultScope,
   registryToken,
+  supportedScopes,
   urlState = false,
   supportsArchived = true,
   searchSpansDefaultFilters = false,
@@ -247,6 +255,15 @@ export function useEntityList<TRow>({
     ...(registryScope ? { scope: registryScope } : {}),
     ...(defaultScope ? { scope: defaultScope } : {}),
   };
+  if (
+    supportedScopes &&
+    supportedScopes.length > 0 &&
+    !supportedScopes.includes(defaultQuery.scope.kind)
+  ) {
+    defaultQuery.scope = makeScope(
+      supportedScopes.includes("all") ? "all" : supportedScopes[0],
+    );
+  }
   const [rawQuery, setQuery] = useQueryState(urlState, defaultQuery);
 
   // 🚨 THE LATE-KNOB PROBLEM. A surface without `urlState` holds its query in
@@ -385,6 +402,7 @@ export function useEntityList<TRow>({
       search: search.trim(),
       filters: q.filters,
       scope: q.scope,
+      orgId: q.orgId,
       archived: q.archived,
       deep: q.deep,
       service: serviceKey,
@@ -450,8 +468,11 @@ export function useEntityList<TRow>({
   // the service carries ONLY those fields (scope pinned to the default, page
   // 1): counts are scope-independent by contract, and passing the live scope
   // here would hand the service a stale value from the last key change.
+  // The ORGANIZATION FILTER narrows every lane's count too — it is part of the
+  // question, unlike the lane itself.
   const countsQuery: EntityListQuery = {
     ...DEFAULT_ENTITY_LIST_QUERY,
+    orgId: query.orgId,
     search: debouncedSearch,
     deep: query.deep,
     archived: query.archived,
@@ -506,6 +527,7 @@ export function useEntityList<TRow>({
   const facetsQuery: EntityListQuery = {
     ...DEFAULT_ENTITY_LIST_QUERY,
     scope: query.scope,
+    orgId: query.orgId,
     search: debouncedSearch,
     deep: query.deep,
     archived: query.archived,
@@ -640,6 +662,8 @@ export function useEntityList<TRow>({
   };
 
   const setScope = (scope: ListScope) => patchQuery({ scope });
+  /** The organization filter (null = All organizations). Never the active organization. */
+  const setOrgId = (orgId: string | null) => patchQuery({ orgId });
   const setFilters = (filters: EntityFilters) => patchQuery({ filters });
   const setSearch = (search: string) => {
     lastTypedAt.current = Date.now();
@@ -662,6 +686,8 @@ export function useEntityList<TRow>({
       ...prev,
       archived: defaultQuery.archived,
       filters: defaultQuery.filters,
+      // The organization filter is a filter: cleared back to All organizations.
+      orgId: null,
       page: 1,
     }));
   };
@@ -706,6 +732,7 @@ export function useEntityList<TRow>({
     isFetching,
     error,
     setScope,
+    setOrgId,
     setFilters,
     setSearch,
     setDeep,

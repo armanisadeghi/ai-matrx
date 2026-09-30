@@ -25,11 +25,9 @@
  * and RLS is already the ceiling. And the other scope is always one click away and never blocked
  * (§3.3), so a caller may always pass an explicit scope and get exactly that.
  *
- * 🚨 NOTHING SILENT. If the registry cannot be read, this module returns `mine` — the narrower
- * screen, which is never WRONG, only sometimes emptier than it should be — and it SAYS SO through
- * `onFallback`, which the caller wires to the repo's error capture. A screen that quietly shows one
- * person's rows where the organization's belong is the defect; a screen that says "showing only
- * yours — the registry was unreachable" is honest.
+ * 🚨 NOTHING SILENT. If the registry cannot be read, this module returns `all` — the platform's
+ * default lane (2026-09-30), which widens no access — and it SAYS SO through `onFallback`, which
+ * the caller wires to the repo's error capture.
  *
  * WHERE THE ANSWER LIVES (2026-09-29). The landing tab is the Feature Knob family
  * `lists.landing_tab/<token>` (see LANDING_TAB_FEATURE below), read from the ONE knob snapshot
@@ -55,10 +53,15 @@ import { fetchShownToContext, shownToMyOrgsFilter } from "./shownTo";
  * type-checks anyway. Found by DD-137c while converting the clients; the union keeps the name it
  * had, and the word it maps to gets its own.
  */
-export type ListScopeWord = "mine" | "organization";
+export type ListScopeWord = "all" | "mine" | "organization";
 
-/** The narrower screen is the safe fallback: never wrong, only sometimes emptier. */
-export const FALLBACK_LIST_SCOPE: ListScopeWord = "mine";
+const LIST_SCOPE_WORDS: readonly ListScopeWord[] = ["all", "mine", "organization"];
+
+/**
+ * The fallback when the knob cannot be read: All, the platform's default lane (Arman 2026-09-30).
+ * It widens no access — every lane is what the person may already see — it only picks the tab.
+ */
+export const FALLBACK_LIST_SCOPE: ListScopeWord = "all";
 
 /** Announce when a stand-in fired. Wired by the host to `captureError`. */
 export type ListScopeFallbackReporter = (message: string, cause: unknown) => void;
@@ -96,18 +99,18 @@ export async function resolveListScope(token: string): Promise<ListScopeWord> {
       feature: LANDING_TAB_FEATURE,
       key: token,
     });
-    if (value === "mine" || value === "organization") return value;
+    if (LIST_SCOPE_WORDS.includes(value as ListScopeWord)) return value as ListScopeWord;
     reportFallback(
       `The landing tab for "${token}" (${LANDING_TAB_FEATURE}) answered ${JSON.stringify(value)}, which is ` +
-        `neither "mine" nor "organization", so this list is showing only your own rows.`,
+        `not "all", "mine" or "organization", so this list opened on All.`,
       null,
     );
     return FALLBACK_LIST_SCOPE;
   } catch (cause) {
     reportFallback(
       `No landing tab is registered for "${token}" (${LANDING_TAB_FEATURE}) or it could not be read, so this ` +
-        `list is showing only your own rows. Types without a "Shown to" knob (Private, Confidential, child ` +
-        `records) have none on purpose; any other type needs its row seeded.`,
+        `list opened on All. Types without a "Shown to" knob (Private, Confidential, child records) have ` +
+        `none on purpose; any other type needs its row seeded.`,
       cause,
     );
     return FALLBACK_LIST_SCOPE;
@@ -199,19 +202,17 @@ export async function defaultListFilter(
  * with `DEFAULT_LIST_SCOPE = { kind: "mine" }` — a LITERAL, and exactly the literal DD-137's second
  * axis exists to replace. This function is the same answer read from the registry instead:
  *
- *   const scope = await defaultListScopeFor("transcript");   // { kind: "orgs", organizationId: null }
- *   query = applyListScope(query, scope, { userId, ownerColumn: "created_by" });
+ *   const scope = await defaultListScopeFor("transcript");   // { kind: "all" }
  *
- * `organizationId: null` is deliberate and is what the union's own comment already means by it:
- * blended across every non-personal organization the person belongs to. Narrowing to ONE
- * organization is a thing the person does with the org switcher, never a default a list invents.
+ * A lane never carries an organization: narrowing to ONE organization is the page's organization
+ * filter (`EntityListQuery.orgId`, `?org_filter=`), never a default a list invents and never the active
+ * organization.
  *
- * On any failure it returns `{ kind: "mine" }` — the narrower screen — and `resolveListScope` has
- * already said so through `onFallback`. It never returns the wider one on a guess.
+ * On any failure it returns `{ kind: "all" }` and `resolveListScope` has already said so.
  */
 export async function defaultListScopeFor(token: string): Promise<ListScope> {
   const word = await resolveListScope(token);
-  return word === "organization"
-    ? { kind: "orgs", organizationId: null }
-    : { kind: "mine" };
+  if (word === "organization") return { kind: "orgs" };
+  if (word === "mine") return { kind: "mine" };
+  return { kind: "all" };
 }

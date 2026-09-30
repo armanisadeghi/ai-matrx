@@ -26,7 +26,7 @@ import {
   type EntityListQuery as BrowseQuery,
   type EntityScopeCounts as BrowseScopeCounts,
 } from "@/lib/entity-list/types";
-import { LIST_SCOPE_KINDS, scopeNarrowId } from "@/lib/list-scope/types";
+import { LIST_SCOPE_KINDS, listOrgParam } from "@/lib/list-scope/types";
 
 export interface AgentBrowsePage {
   rows: AgentBrowseRow[];
@@ -66,7 +66,7 @@ export async function fetchAgentBrowsePage(
   await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await supabase.rpc("agx_list_scoped", {
     p_scope: query.scope.kind,
-    p_org_id: scopeNarrowId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_sort: opts.sort,
@@ -111,6 +111,7 @@ export async function fetchBrowseScopeCounts(
   await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await supabase.rpc("agx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
+    p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_archived: query.archived,
     p_filters: filtersJson(query),
@@ -154,7 +155,7 @@ export async function fetchBrowseFacets(
   await requireAuthenticatedSupabaseSession(supabase);
   const { data, error } = await supabase.rpc("agx_list_facets", {
     p_scope: query.scope.kind,
-    p_org_id: scopeNarrowId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_archived: query.archived,

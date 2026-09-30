@@ -93,6 +93,8 @@ export interface EntityListController<TRow> {
   error: EntityListFailure | null;
 
   setScope: (scope: EntityListQuery["scope"]) => void;
+  /** The organization filter (`?org_filter=`, null = All organizations). Never the active organization. */
+  setOrgId: (orgId: string | null) => void;
   setFilters: (filters: EntityFilters) => void;
   setSearch: (search: string) => void;
   setDeep: (deep: boolean) => void;
@@ -411,6 +413,13 @@ export interface EntityListConfig<TRow> {
    * Absent → the tab's own dropdown is the only place the scope narrows.
    */
   scopeSections?: EntityScopeFacetSection[];
+
+  /**
+   * The ORGANIZATION FILTER (right end of the lane row; `?org_filter=`). On by default
+   * for every personal-seat list; `false` only for a list whose records carry no
+   * organization at all. Never an admin page's (it has no personal lanes).
+   */
+  orgFilter?: boolean;
 
   /** `__none__` display labels per column id, for table filter options. */
   noneLabels?: Record<string, string>;

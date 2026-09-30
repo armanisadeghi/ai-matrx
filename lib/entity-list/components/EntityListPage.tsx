@@ -38,7 +38,8 @@ import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
 import {
   makeScope,
-  withTeamScope,
+  PERSONAL_SEAT_SCOPES,
+  withStandardLanes,
   type ListScope,
   type ListScopeKind,
 } from "@/lib/list-scope/types";
@@ -55,6 +56,7 @@ import { entityListRowHref } from "../doors";
 import { countActiveFilters } from "../types";
 import { EditRowRegistry } from "../editRowRegistry";
 import { EntityScopeTabs, scopeKindLabel } from "./EntityScopeTabs";
+import { EntityOrgFilter } from "./EntityOrgFilter";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
 import {
@@ -178,8 +180,13 @@ export function EntityListPage<TRow>({
   clearsShellHeader = true,
   scopeTabs = true,
 }: EntityListPageProps<TRow>) {
-  // "My team" joins every list that offers "My Orgs" here, once — never per page.
-  const visibleScopes = withTeamScope(scopes ?? config.scopes);
+  // "All" and "My team" join every list that offers them here, once — never per page.
+  const visibleScopes = withStandardLanes(scopes ?? config.scopes);
+  // THE ORGANIZATION FILTER shows on personal-seat lists only: an admin page
+  // never acts as the viewer, so it never offers the viewer's organizations.
+  const orgFilter =
+    config.orgFilter !== false &&
+    visibleScopes.some((kind) => PERSONAL_SEAT_SCOPES.includes(kind));
   // 🚨 THE URL IS THE QUERY ON EVERY LIST PAGE (default ON since 2026-09-26).
   // It used to be opt-in, and `/agents/all` and `/workflows/all` never opted
   // in: `?scope=mine&q=seo` was ignored, the late registry default flipped
@@ -270,6 +277,7 @@ export function EntityListPage<TRow>({
     defaultFilters: config.defaultFilters,
     defaultScope,
     registryToken: config.registryToken,
+    supportedScopes: visibleScopes,
     urlState: urlState,
     supportsArchived: config.supportsArchived !== false,
     searchSpansDefaultFilters: config.searchSpansDefaultFilters,
@@ -354,6 +362,8 @@ export function EntityListPage<TRow>({
 
   const isNarrowed =
     Boolean(list.query.search.trim()) ||
+    // The organization filter is a narrowing like any other (its own control, same door out).
+    Boolean(list.query.orgId) ||
     countActiveFilters(list.query, list.defaultArchived) > 0;
 
   // 🚨 A FAILED READ IS NOT AN EMPTY RESULT (one-resolution R-O1). When the
@@ -435,7 +445,7 @@ export function EntityListPage<TRow>({
   // door: teams are set up in the organization's settings. Asked only while
   // the My team tab is the one on screen.
   const teamScope = list.query.scope.kind === "team" ? list.query.scope : null;
-  const teamOrgId = teamScope?.organizationId ?? null;
+  const teamOrgId = teamScope ? list.query.orgId : null;
   const myTeams = useMyTeams(teamOrgId, teamScope !== null);
   // The team narrow rows list only organizations where the viewer HAS teammates,
   // so the name is looked up in both lists; an unnamed organization is still
@@ -877,6 +887,16 @@ export function EntityListPage<TRow>({
             />
             )}
           </div>
+          {orgFilter && (
+            <div className="flex shrink-0 items-center sm:ml-auto">
+              <EntityOrgFilter
+                orgId={list.query.orgId}
+                onChange={list.setOrgId}
+                counts={list.counts}
+                countsLoading={list.countsLoading || Boolean(list.countsError)}
+              />
+            </div>
+          )}
           {headerActions && (
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {typeof headerActions === "function"
@@ -909,6 +929,7 @@ export function EntityListPage<TRow>({
           countsLoading={list.countsLoading}
           countsError={list.countsError}
           onScopeChange={list.setScope}
+          onOrgChange={list.setOrgId}
           hasFavorites={Boolean(config.favorite)}
           hasArchived={config.supportsArchived !== false}
           searchPlaceholder={

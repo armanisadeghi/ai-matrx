@@ -33,9 +33,9 @@ function stateFilterValues(query: EntityListQuery): string[] | null {
   return null;
 }
 
-/** The organization the on-page scope control names — never the header's. */
+/** The page's organization filter (`?org_filter=`) — never the header's active organization. */
 function scopedOrganizationId(query: EntityListQuery): string | null {
-  return query.scope.kind === "orgs" ? query.scope.organizationId : null;
+  return query.orgId;
 }
 
 async function fetchPage(

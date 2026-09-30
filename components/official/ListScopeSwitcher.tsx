@@ -3,11 +3,10 @@
 // components/official/ListScopeSwitcher.tsx
 //
 // Compact segmented control for THE VIEW LAW's canonical list scope:
-// Mine / Shared (optional) / one chip per non-personal org. Controlled —
-// the caller owns the ListScope value and re-runs its query on change.
-//
-// Personal org is excluded from the org chips: content in the personal org
-// IS "Mine" — surfacing it again as an org chip would duplicate the tab.
+// Mine / Shared (optional) / one chip per org. Controlled — the caller owns the
+// lane AND the organization filter and re-runs its query on change. An org chip
+// is the My Orgs lane with the organization filter set to that org (the two are
+// separate axes: lib/list-scope/types.ts § TWO AXES).
 
 import { User, Users2, Building2 } from "lucide-react";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -16,7 +15,9 @@ import { cn } from "@/lib/utils";
 
 export interface ListScopeSwitcherProps {
   value: ListScope;
-  onChange: (scope: ListScope) => void;
+  /** The organization filter (null = All organizations). */
+  orgId?: string | null;
+  onChange: (scope: ListScope, orgId: string | null) => void;
   /** Provide only if this surface has a shared-with-me source wired up. */
   onShared?: () => void;
   className?: string;
@@ -24,12 +25,14 @@ export interface ListScopeSwitcherProps {
 
 export function ListScopeSwitcher({
   value,
+  orgId = null,
   onChange,
   onShared,
   className,
 }: ListScopeSwitcherProps) {
   const { organizations } = useUserOrganizations();
-  const activeKey = scopeKey(value);
+  const activeKey =
+    value.kind === "orgs" && orgId ? `orgs:${orgId}` : scopeKey(value);
 
   const baseChip =
     "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-colors whitespace-nowrap lg:min-h-8 lg:px-2.5";
@@ -54,7 +57,7 @@ export function ListScopeSwitcher({
           baseChip,
           activeKey === "mine" ? activeChip : inactiveChip,
         )}
-        onClick={() => onChange({ kind: "mine" })}
+        onClick={() => onChange({ kind: "mine" }, null)}
       >
         <User className="h-3.5 w-3.5" />
         Mine
@@ -70,7 +73,7 @@ export function ListScopeSwitcher({
             activeKey === "shared" ? activeChip : inactiveChip,
           )}
           onClick={() => {
-            onChange({ kind: "shared" });
+            onChange({ kind: "shared" }, null);
             onShared();
           }}
         >
@@ -91,7 +94,7 @@ export function ListScopeSwitcher({
               baseChip,
               activeKey === key ? activeChip : inactiveChip,
             )}
-            onClick={() => onChange({ kind: "orgs", organizationId: org.id })}
+            onClick={() => onChange({ kind: "orgs" }, org.id)}
             title={org.name}
           >
             <Building2 className="h-3.5 w-3.5" />

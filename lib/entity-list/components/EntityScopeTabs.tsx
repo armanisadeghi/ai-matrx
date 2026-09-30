@@ -14,19 +14,16 @@
 // decision belongs to the page, which can read auth state — it passes the
 // resolved list down. This component never gates anything itself.
 //
-// Why "My Orgs" (and Industry) is ONE tab with a dropdown rather than a chip
-// per entity, the shape components/official/ListScopeSwitcher uses today: a
-// user belongs to a personal org + N companies and may attach several
-// industries. A chip-per-entity tab bar has unbounded width and offers no
-// blended view, so it answers "which team?" before "what does my team have?".
-//
-// The narrowing options (names AND counts) come from the counts query, never
-// from a Redux slice. Reading org names from the organizations slice meant
-// depending on `fetchFullContext`, which only runs on tasks/org-settings
-// surfaces — so on /agents/all the slice was empty and this dropdown silently
-// never rendered at all.
+// A LANE NEVER NARROWS TO AN ORGANIZATION (Arman 2026-09-30). Which
+// organization a list shows is the page's organization filter — its own
+// control at the right end of this row (`EntityOrgFilter`), narrowing every
+// lane at once. The only in-tab narrowing left is a lane's OWN axis: Industry
+// (which industry) and the admin support lanes (which organization / person
+// the platform is being looked into). Those options (names AND counts) come
+// from the counts query, never from a Redux slice.
 
 import {
+  Layers,
   User,
   UsersRound,
   Building2,
@@ -58,7 +55,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import {
   makeScope,
-  withTeamScope,
+  withStandardLanes,
   scopeIndustryId,
   scopeNarrowId,
   type ListScope,
@@ -68,7 +65,7 @@ import type { EntityScopeCounts } from "@/lib/entity-list/types";
 
 interface Props {
   scope: ListScope;
-  /** Which of the fixed five this surface supports, in display order. */
+  /** Which of the fixed lanes this surface supports, in display order (All / My team are added here). */
   scopes: ListScopeKind[];
   counts: EntityScopeCounts;
   /**
@@ -83,6 +80,13 @@ interface Props {
   onChange: (scope: ListScope) => void;
 }
 
+/** Lanes with an axis of their own to narrow by, inside the tab. */
+const LANE_NARROWS: ReadonlySet<ListScopeKind> = new Set([
+  "industry",
+  "platform_orgs",
+  "platform_users",
+]);
+
 const TAB_BASE =
   "inline-flex h-11 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors whitespace-nowrap lg:h-7 lg:gap-1.5 lg:px-2.5";
 const TAB_ACTIVE = "bg-primary text-primary-foreground";
@@ -92,6 +96,11 @@ const SCOPE_META: Record<
   ListScopeKind,
   { label: string; icon: typeof User; title?: string }
 > = {
+  all: {
+    label: "All",
+    icon: Layers,
+    title: "Everything that is yours to see: Mine, My team, My Orgs and Shared",
+  },
   mine: { label: "Mine", icon: User, title: "Records you created" },
   team: {
     label: "My team",
@@ -194,7 +203,10 @@ export function EntityScopeTabs({
         : more.start
           ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem)]"
           : "";
-  const kinds = withTeamScope(scopes);
+  const kinds = withStandardLanes(scopes);
+  // Only a lane's OWN axis narrows inside its tab; organizations are the org filter's.
+  const narrowOptions = (kind: ListScopeKind) =>
+    LANE_NARROWS.has(kind) ? (counts.narrow[kind] ?? []) : [];
   // Control-type rule: up to four choices are pills, more are a select. On a
   // phone five or more scope tabs never fit (at 375 /transcripts showed two of
   // five, "Shared" and "Public" past the edge), so the SAME slot holds a
@@ -224,7 +236,7 @@ export function EntityScopeTabs({
           {kinds.map((kind) => {
             const meta = SCOPE_META[kind];
             const Icon = meta.icon;
-            const options = counts.narrow[kind] ?? [];
+            const options = narrowOptions(kind);
             const item = (
               <SelectItem key={kind} value={kind}>
                 <span className="inline-flex items-center gap-1.5">
@@ -265,13 +277,11 @@ export function EntityScopeTabs({
       role="tablist"
       aria-label="List scope"
     >
-      {/* "My team" joins every tab bar that offers "My Orgs" — here, once. */}
+      {/* "All" and "My team" join every tab bar that offers them — here, once. */}
       {kinds.map((kind) => {
         const meta = SCOPE_META[kind];
         const Icon = meta.icon;
-        // The server decides what a scope narrows to; personal orgs are
-        // already excluded there (their content IS "Mine").
-        const options = counts.narrow[kind] ?? [];
+        const options = narrowOptions(kind);
         const active = scope.kind === kind;
 
         // The id this tab is currently narrowed to, if any. Read through the

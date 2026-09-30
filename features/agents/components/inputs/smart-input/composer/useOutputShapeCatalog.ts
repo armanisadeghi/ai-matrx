@@ -54,13 +54,13 @@ function sourceQuery(source: ShapeSource, search: string, page: number): EntityL
     source === "system"
       ? { kind: "public" }
       : source === "org"
-        ? { kind: "orgs", organizationId: null }
+        ? { kind: "orgs" }
         : { kind: "mine" };
   const filters: EntityFilters =
     source === "system"
       ? { ...ACTIVE_ONLY, origin: { kind: "select", values: ["system"] } }
       : ACTIVE_ONLY;
-  return { scope, search, deep: false, archived: "active", filters, page };
+  return { scope, orgId: null, search, deep: false, archived: "active", filters, page };
 }
 
 const SORT: EntityListSort = {

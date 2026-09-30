@@ -23,6 +23,7 @@ import {
   selectTranscriptsLoadError,
   selectTranscriptsLoading,
   selectTranscriptsScope,
+  selectTranscriptsOrgFilter,
 } from "../redux/transcriptsSlice";
 import {
   copyTranscript as copyTranscriptThunk,
@@ -53,7 +54,9 @@ export interface UseTranscriptsApi {
   initialized: boolean;
   /** VIEW LAW: the declared list scope driving fetches. */
   scope: ListScope;
-  setScope: (scope: ListScope) => void;
+  /** The organization filter (null = All organizations). */
+  orgFilter: string | null;
+  setScope: (scope: ListScope, orgFilter?: string | null) => void;
 }
 
 export function useTranscripts(): UseTranscriptsApi {
@@ -65,6 +68,7 @@ export function useTranscripts(): UseTranscriptsApi {
   const activeTranscript = useAppSelector(selectActiveTranscript);
   const initialized = useAppSelector(selectTranscriptsInitialized);
   const scope = useAppSelector(selectTranscriptsScope);
+  const orgFilter = useAppSelector(selectTranscriptsOrgFilter);
 
   return {
     transcripts,
@@ -74,6 +78,7 @@ export function useTranscripts(): UseTranscriptsApi {
     activeTranscript,
     initialized,
     scope,
+    orgFilter,
     setActiveTranscript: (transcript) =>
       dispatch(setActiveTranscriptThunk(transcript)),
     createTranscript: (input) => dispatch(createTranscriptThunk(input)),
@@ -83,6 +88,6 @@ export function useTranscripts(): UseTranscriptsApi {
     copyTranscript: (id) => dispatch(copyTranscriptThunk(id)),
     refreshTranscripts: () => dispatch(fetchTranscripts()),
     initialize: () => dispatch(initializeTranscripts()),
-    setScope: (next) => dispatch(setTranscriptsScope(next)),
+    setScope: (next, nextOrg = null) => dispatch(setTranscriptsScope(next, nextOrg)),
   };
 }

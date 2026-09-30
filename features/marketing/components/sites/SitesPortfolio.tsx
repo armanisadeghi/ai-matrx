@@ -319,7 +319,7 @@ export function SitesPortfolio({
       <main className="h-full overflow-hidden bg-textured">
         <EntityListPage
           config={config}
-          defaultScope={{ kind: "orgs", organizationId: null }}
+          defaultScope={{ kind: "orgs" }}
           surface={surface}
           notice={(list) => (
             <div className="space-y-2">

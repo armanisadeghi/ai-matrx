@@ -51,7 +51,18 @@ export type EntityFilters = Record<string, EntityFilterValue>;
 export type ArchivedFilter = ArchiveFilterValue;
 
 export interface EntityListQuery {
+  /** The access LANE — how I can see a record (All, Mine, My team, …). */
   scope: ListScope;
+  /**
+   * THE ORGANIZATION FILTER — which of my organizations to look at. Its own
+   * axis, never inside a lane: null = All organizations (the default on every
+   * load), else one organization id. URL `?org_filter=`. It narrows EVERY lane and
+   * the counts, and is sent to every list RPC as `p_org_id`
+   * (`listOrgParam(query)`). It never initializes from, syncs with, or writes
+   * to the ACTIVE organization (common-docs
+   * /policies/active-org-is-never-a-list-filter.md).
+   */
+  orgId: string | null;
   search: string;
   /**
    * Reach into full record content (prompt bodies, transcript text...).
@@ -70,6 +81,7 @@ export interface EntityListQuery {
 
 export const DEFAULT_ENTITY_LIST_QUERY: EntityListQuery = {
   scope: DEFAULT_LIST_SCOPE,
+  orgId: null,
   search: "",
   deep: false,
   archived: "active",

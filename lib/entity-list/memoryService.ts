@@ -42,6 +42,12 @@ export interface MemoryServiceOptions<TRow> {
   scope: ListScopeKind;
   /** Fallback sort when the requested column is not a field. */
   defaultSort: string;
+  /**
+   * The row's organization, when the corpus has one. The ORGANIZATION FILTER
+   * (`query.orgId`) then narrows the page, the counts and the facets alike; a
+   * corpus without it has no organization axis and ignores the filter.
+   */
+  organizationOf?: (row: TRow) => string | null | undefined;
 }
 
 function asText(value: unknown): string {
@@ -111,9 +117,14 @@ export function createMemoryListService<TRow>(
   };
   const { fields } = options;
 
+  const inOrg = (row: TRow, query: EntityListQuery) =>
+    !query.orgId || !options.organizationOf || options.organizationOf(row) === query.orgId;
   const matching = async (query: EntityListQuery, skip?: string) =>
     (await all()).filter(
-      (row) => matchesSearch(row, query.search, fields) && matchesFilters(row, query, fields, skip),
+      (row) =>
+        inOrg(row, query) &&
+        matchesSearch(row, query.search, fields) &&
+        matchesFilters(row, query, fields, skip),
     );
 
   return {

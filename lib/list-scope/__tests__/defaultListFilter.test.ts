@@ -133,8 +133,13 @@ describe("where a list opens is its own knob, never its visibility (2026-09-29)"
     await expect(resolveListScope("fc_set")).resolves.toBe("organization");
   });
 
-  it("a type with no landing knob opens on mine and says so", async () => {
-    await expect(resolveListScope("private_thing")).resolves.toBe("mine");
+  it("the All lane is a landing tab of its own (2026-09-30)", async () => {
+    landing["lists.landing_tab.fc_set"] = "all";
+    await expect(resolveListScope("fc_set")).resolves.toBe("all");
+  });
+
+  it("a type with no landing knob opens on All and says so", async () => {
+    await expect(resolveListScope("private_thing")).resolves.toBe("all");
     expect(reported.join(" ")).toMatch(/lists\.landing_tab/);
   });
 });

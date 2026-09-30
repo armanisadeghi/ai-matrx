@@ -45,8 +45,8 @@ function argsFor(
   ascending: boolean,
 ) {
   return {
-    // The on-page scope control's organization — never the header's.
-    organizationId: query.scope.kind === "orgs" ? query.scope.organizationId : null,
+    // The page's organization filter — never the header's active organization.
+    organizationId: query.orgId,
     search: query.search,
     page,
     pageSize,

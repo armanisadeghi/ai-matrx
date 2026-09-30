@@ -148,14 +148,20 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
       ? q.not("deleted_at", "is", null)
       : q.is("deleted_at", null);
 
-  // Scope — explicit, per THE VIEW LAW.
+  // Scope — explicit, per THE VIEW LAW. The ORGANIZATION FILTER (`query.orgId`)
+  // narrows every lane; it is never the active organization.
   const scope = query.scope;
-  if (scope.kind === "mine") {
+  const orgId = query.orgId;
+  if (orgId) q = q.eq("organization_id", orgId);
+  if (scope.kind === "all") {
+    // ALL = Mine ∪ My Orgs (CRM has no Shared lane; My team is inside My Orgs).
+    q = ctx.orgIds.length
+      ? q.or(`created_by.eq.${ctx.userId},organization_id.in.(${ctx.orgIds.join(",")})`)
+      : q.eq("created_by", ctx.userId);
+  } else if (scope.kind === "mine") {
     q = q.eq("created_by", ctx.userId);
   } else if (scope.kind === "orgs") {
-    q = scope.organizationId
-      ? q.eq("organization_id", scope.organizationId)
-      : q.in("organization_id", ctx.orgIds);
+    if (!orgId) q = q.in("organization_id", ctx.orgIds);
   } else if (scope.kind === "team") {
     if (ctx.teamReachUnread) {
       throw new Error(
@@ -164,7 +170,7 @@ export function applyPartyListPredicates<Q extends PartyPredicateBuilder<Q>>(
     }
     // MY TEAM: parties I and the people I share a team with created, per organization.
     const reach = (ctx.teamReach ?? []).filter(
-      (p) => !scope.organizationId || p.organizationId === scope.organizationId,
+      (p) => !orgId || p.organizationId === orgId,
     );
     const filter = teamReachOrFilter(reach, ctx.userId);
     q = filter === null ? q.in("organization_id", []) : q.or(filter);
@@ -294,6 +300,8 @@ export async function fetchPartyScopeCounts(
     // Same sanitizer the page query uses, so a tab's number can never describe
     // a different search term than the rows below it.
     p_search: sanitizeSearch(query.search) || undefined,
+    // The organization filter narrows every lane's count, as it narrows the list.
+    p_org_id: query.orgId ?? undefined,
     // The tabs must count exactly what the list shows — same record-class
     // filter, or a tab reads 1,181 above a list of 6 rows.
     p_record_class:
@@ -309,7 +317,7 @@ export async function fetchPartyScopeCounts(
   for (const row of data ?? []) {
     const total = Number(row.total ?? 0);
     const kind = row.scope;
-    if (kind !== "mine" && kind !== "team" && kind !== "orgs" && kind !== "public") continue;
+    if (kind !== "all" && kind !== "mine" && kind !== "team" && kind !== "orgs" && kind !== "public") continue;
     // A narrow_id means "one org inside this scope"; no id is the scope's own
     // blended total. Zero-count orgs stay out of the dropdown, as before.
     if (row.narrow_id) {

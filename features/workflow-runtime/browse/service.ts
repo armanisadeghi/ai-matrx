@@ -28,7 +28,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
+import { listOrgParam } from "@/lib/list-scope/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { WorkflowBrowseRow, WorkflowRowEdit } from "./types";
 
@@ -52,7 +52,7 @@ export async function fetchWorkflowBrowsePage(
 ): Promise<EntityListPage<WorkflowBrowseRow>> {
   const { data, error } = await supabase.rpc("wfx_list_scoped", {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_sort: opts.sort,
@@ -96,6 +96,7 @@ export async function fetchWorkflowScopeCounts(
 ): Promise<EntityScopeCounts> {
   const { data, error } = await supabase.rpc("wfx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
+    p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_archived: query.archived,
     p_filters: filtersJson(query),
@@ -118,7 +119,7 @@ export async function fetchWorkflowFacets(
 ): Promise<EntityFacets> {
   const { data, error } = await supabase.rpc("wfx_list_facets", {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_archived: query.archived,

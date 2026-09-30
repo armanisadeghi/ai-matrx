@@ -111,6 +111,8 @@ interface Props<TRow> {
   countsError?: string | null;
   /** Writes the scope a section chose. Same setter the tabs use. */
   onScopeChange?: (scope: ListScope) => void;
+  /** The organization filter's setter (an organization section writes `orgId`, never the lane). */
+  onOrgChange?: (orgId: string | null) => void;
   /** Offer the Favorites section + pin toggle. */
   hasFavorites: boolean;
   /** Offer the Archived section. */
@@ -204,6 +206,7 @@ export function EntityFilterPanel<TRow>({
   countsLoading = false,
   countsError = null,
   onScopeChange,
+  onOrgChange,
   hasFavorites,
   hasArchived,
   sort,
@@ -350,7 +353,11 @@ export function EntityFilterPanel<TRow>({
             if (!onScopeChange) return null;
             if (query.scope.kind !== section.scope) return null;
             const options = counts?.narrow[section.scope] ?? [];
-            const narrowedTo = scopeNarrowId(query.scope) ?? "";
+            // A section on My Orgs / My team narrows by ORGANIZATION, which is
+            // the organization filter's axis (`orgId`), never the lane's.
+            const byOrganization = section.scope === "orgs" || section.scope === "team";
+            const narrowedTo =
+              (byOrganization ? query.orgId : scopeNarrowId(query.scope)) ?? "";
             // 🚨 A DECLARED SECTION IS NEVER ABSENT (one-resolution FIX-R6/F1).
             // This used to `return null` on zero options, so a surface that
             // declares an Organization section and whose counts came back
@@ -391,7 +398,9 @@ export function EntityFilterPanel<TRow>({
                 <RadioSelect
                   value={narrowedTo}
                   onChange={(id) =>
-                    onScopeChange(makeScope(section.scope, id || null))
+                    byOrganization
+                      ? onOrgChange?.(id || null)
+                      : onScopeChange(makeScope(section.scope, id || null))
                   }
                   options={[
                     {

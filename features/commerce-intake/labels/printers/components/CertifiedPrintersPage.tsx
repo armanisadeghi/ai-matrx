@@ -59,7 +59,7 @@ export function CertifiedPrintersPage() {
       {config && (
         <EntityListPage
           config={config}
-          defaultScope={{ kind: "orgs", organizationId: null }}
+          defaultScope={{ kind: "orgs" }}
           headerActions={actions}
           emptyAction={actions}
         />

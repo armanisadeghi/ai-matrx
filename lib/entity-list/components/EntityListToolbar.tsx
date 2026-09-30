@@ -70,6 +70,8 @@ interface Props<TRow> {
   /** The counts query's own failure, printed where its options would be. */
   countsError?: string | null;
   onScopeChange?: (scope: ListScope) => void;
+  /** The organization filter's setter — an organization section in the panel writes it. */
+  onOrgChange?: (orgId: string | null) => void;
   hasFavorites: boolean;
   hasArchived: boolean;
   /** "Search agents…" */
@@ -145,6 +147,7 @@ export function EntityListToolbar<TRow>({
   countsLoading,
   countsError,
   onScopeChange,
+  onOrgChange,
   hasFavorites,
   hasArchived,
   searchPlaceholder,
@@ -228,6 +231,7 @@ export function EntityListToolbar<TRow>({
           countsLoading={countsLoading}
           countsError={countsError}
           onScopeChange={onScopeChange}
+          onOrgChange={onOrgChange}
           hasFavorites={hasFavorites}
           hasArchived={hasArchived}
           sort={prefs.sort}

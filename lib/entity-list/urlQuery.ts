@@ -36,6 +36,13 @@ import type { ArchivedFilter, EntityFilters, EntityListQuery } from "./types";
 /** Every param this adapter owns. Namespaced-free on purpose: one list per page. */
 export const ENTITY_LIST_URL_PARAMS = {
   scope: "scope",
+  /**
+   * The organization filter (`EntityListQuery.orgId`); absent = All organizations.
+   * 🚨 NOT `org`: `?org=` belongs to LinkOrganizationWatcher, which SWITCHES THE
+   * ACTIVE ORGANIZATION when it appears — sharing it would couple the filter to
+   * the active org, the very defect this axis exists to end.
+   */
+  org: "org_filter",
   search: "q",
   page: "page",
   filters: "filters",
@@ -46,7 +53,7 @@ export const ENTITY_LIST_URL_PARAMS = {
 } as const;
 
 const ARCHIVED_VALUES: ArchivedFilter[] = ["active", "archived", "all"];
-/** `mine` | `shared` | `orgs` | `orgs:<uuid>` | `industry:<uuid>` | `system`. */
+/** `all` | `mine` | `shared` | `orgs` | `industry:<uuid>` | `system` | `platform_orgs:<uuid>`. */
 function parseScope(raw: string | null, fallback: ListScope): ListScope {
   if (!raw) return fallback;
   const [kind, narrowId] = raw.split(":", 2);
@@ -88,8 +95,13 @@ export function readQueryFromParams(
   const archivedRaw = params.get(ENTITY_LIST_URL_PARAMS.archived);
   const filters = parseFilters(params.get(ENTITY_LIST_URL_PARAMS.filters));
 
+  const rawScope = params.get(ENTITY_LIST_URL_PARAMS.scope);
+  // A link written before the organization filter was its own axis
+  // (`?scope=orgs:<uuid>`) still opens that organization — as the filter.
+  const legacyOrg = /^(orgs|team):(.+)$/.exec(rawScope ?? "")?.[2] ?? null;
   return {
-    scope: parseScope(params.get(ENTITY_LIST_URL_PARAMS.scope), defaults.scope),
+    scope: parseScope(rawScope, defaults.scope),
+    orgId: params.get(ENTITY_LIST_URL_PARAMS.org) || legacyOrg || defaults.orgId,
     search: params.get(ENTITY_LIST_URL_PARAMS.search) ?? defaults.search,
     deep: params.has(ENTITY_LIST_URL_PARAMS.deep)
       ? params.get(ENTITY_LIST_URL_PARAMS.deep) === "1"
@@ -132,6 +144,8 @@ export function queryToParamPatch(
       scopeKey(query.scope) === scopeKey(defaults.scope)
         ? null
         : scopeKey(query.scope),
+    [ENTITY_LIST_URL_PARAMS.org]:
+      query.orgId && query.orgId !== defaults.orgId ? query.orgId : null,
     [ENTITY_LIST_URL_PARAMS.search]: query.search.trim() ? query.search : null,
     [ENTITY_LIST_URL_PARAMS.deep]:
       query.deep === defaults.deep ? null : query.deep ? "1" : "0",
@@ -174,6 +188,7 @@ export function historyModeFor(
   const onlySearchChanged =
     previous.search !== next.search &&
     scopeKey(previous.scope) === scopeKey(next.scope) &&
+    previous.orgId === next.orgId &&
     previous.archived === next.archived &&
     previous.deep === next.deep &&
     JSON.stringify(previous.filters) === JSON.stringify(next.filters);

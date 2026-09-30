@@ -7,7 +7,7 @@ import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { applyListScope } from "@/lib/list-scope/applyListScope";
-import { defaultListScopeFor } from "@/lib/list-scope";
+import { defaultListFilter, defaultListScopeFor, type ListScopeQuery } from "@/lib/list-scope";
 import { fetchShownToContext } from "@/lib/list-scope/shownTo";
 import type { ListScope } from "@/lib/list-scope/types";
 import type { Database, Json } from "@/types/database.types";
@@ -70,6 +70,34 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
 }
 
 /**
+ * THE VIEW LAW for every transcript list read: the lane (default from the landing-tab knob) plus
+ * the ORGANIZATION FILTER (`orgId`, null = All organizations — never the active organization).
+ * Mine, and My Orgs narrowed to one organization, are single filters (`applyListScope`); All and a
+ * blended My Orgs are every organization's Shown-to filter plus shares (`defaultListFilter`),
+ * narrowed by the organization filter when one is chosen.
+ */
+async function scopeTranscripts<Q extends ListScopeQuery<Q>>(
+  query: Q,
+  scope: ListScope | undefined,
+  orgId: string | null,
+): Promise<Q> {
+  const userId = requireUserId();
+  const resolved = scope ?? (await defaultListScopeFor("transcript"));
+  if (resolved.kind === "all" || (resolved.kind === "orgs" && !orgId)) {
+    const filter = await defaultListFilter("transcript", { userId, requested: "organization" });
+    const blended = filter.apply(query);
+    return orgId ? blended.eq("organization_id", orgId) : blended;
+  }
+  return applyListScope(query, resolved, {
+    userId,
+    ownerColumn: "created_by",
+    organizationId: orgId,
+    // Access ladder T-11: an organization list honors each row's "Shown to".
+    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
+  });
+}
+
+/**
  * Fetch all transcripts for the caller's declared scope (excluding deleted).
  *
  * THE VIEW LAW is unchanged — RLS is the ceiling, never the filter, and this list declares its
@@ -79,20 +107,13 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
  */
 export async function fetchTranscripts(
   scope?: ListScope,
+  orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const userId = requireUserId();
-  const resolved = scope ?? (await defaultListScopeFor("transcript"));
-  let query = supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .select("*")
-    .is("deleted_at", null);
-  query = applyListScope(query, resolved, {
-    userId,
-    ownerColumn: "created_by",
-    // Access ladder T-11: an organization list honors each row\'s "Shown to".
-    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
-  });
+  const query = await scopeTranscripts(
+    supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
+    scope,
+    orgId,
+  );
   const { data, error } = await query.order("updated_at", { ascending: false });
 
   if (error) {
@@ -111,20 +132,13 @@ export async function fetchTranscriptsPaginated(
   limit: number = 20,
   offset: number = 0,
   scope?: ListScope,
+  orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const userId = requireUserId();
-  const resolved = scope ?? (await defaultListScopeFor("transcript"));
-  let query = supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .select("*")
-    .is("deleted_at", null);
-  query = applyListScope(query, resolved, {
-    userId,
-    ownerColumn: "created_by",
-    // Access ladder T-11: an organization list honors each row\'s "Shown to".
-    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
-  });
+  const query = await scopeTranscripts(
+    supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
+    scope,
+    orgId,
+  );
   const { data, error } = await query
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -484,24 +498,13 @@ export async function copyTranscript(id: string): Promise<Transcript> {
 export async function searchTranscripts(
   query: string,
   scope?: ListScope,
+  orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const userId = requireUserId();
-  // THE VIEW LAW still holds: this list declares its scope. DD-137c / §3.3 changes only where the
-  // declaration comes from — `transcript` is registered `organization`, so search covers the
-  // organization's transcripts and a search that finds nothing no longer means somebody else
-  // recorded it.
-  const resolved = scope ?? (await defaultListScopeFor("transcript"));
-  let searchQuery = supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .select("*")
-    .is("deleted_at", null);
-  searchQuery = applyListScope(searchQuery, resolved, {
-    userId,
-    ownerColumn: "created_by",
-    // Access ladder T-11: an organization list honors each row\'s "Shown to".
-    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
-  });
+  const searchQuery = await scopeTranscripts(
+    supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
+    scope,
+    orgId,
+  );
   const { data, error } = await searchQuery
     .or(buildSearchOr(query, ["title", "description"]))
     .order("updated_at", { ascending: false });
@@ -520,20 +523,13 @@ export async function searchTranscripts(
 export async function getTranscriptsByFolder(
   folderName: string,
   scope?: ListScope,
+  orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const userId = requireUserId();
-  const resolved = scope ?? (await defaultListScopeFor("transcript"));
-  let folderQuery = supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .select("*")
-    .is("deleted_at", null);
-  folderQuery = applyListScope(folderQuery, resolved, {
-    userId,
-    ownerColumn: "created_by",
-    // Access ladder T-11: an organization list honors each row\'s "Shown to".
-    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
-  });
+  const folderQuery = await scopeTranscripts(
+    supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
+    scope,
+    orgId,
+  );
   const { data, error } = await folderQuery
     .eq("folder_name", folderName)
     .order("updated_at", { ascending: false });
@@ -552,20 +548,13 @@ export async function getTranscriptsByFolder(
 export async function getTranscriptsByTag(
   tag: string,
   scope?: ListScope,
+  orgId: string | null = null,
 ): Promise<Transcript[]> {
-  const userId = requireUserId();
-  const resolved = scope ?? (await defaultListScopeFor("transcript"));
-  let tagQuery = supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .select("*")
-    .is("deleted_at", null);
-  tagQuery = applyListScope(tagQuery, resolved, {
-    userId,
-    ownerColumn: "created_by",
-    // Access ladder T-11: an organization list honors each row\'s "Shown to".
-    shownTo: resolved.kind === "orgs" ? await fetchShownToContext("transcript") : undefined,
-  });
+  const tagQuery = await scopeTranscripts(
+    supabase.schema("transcripts").from("transcripts").select("*").is("deleted_at", null),
+    scope,
+    orgId,
+  );
   const { data, error } = await tagQuery
     .contains("tags", [tag])
     .order("updated_at", { ascending: false });

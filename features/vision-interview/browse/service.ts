@@ -18,7 +18,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
+import { listOrgParam } from "@/lib/list-scope/types";
 import type { SessionListRow } from "./types";
 
 function pgError(error: { message?: string; code?: string }): Error {
@@ -50,7 +50,7 @@ export async function fetchSessionPage(
     "ivw_list_scoped" as never,
     {
       p_scope: query.scope.kind,
-      p_org_id: scopeOrgId(query.scope) ?? undefined,
+      p_org_id: listOrgParam(query),
       p_search: query.search.trim() || undefined,
       p_sort: sort.sort,
       p_dir: sort.direction,
@@ -71,6 +71,7 @@ export async function fetchSessionScopeCounts(
     "ivw_list_scope_counts" as never,
     {
       p_search: query.search.trim() || undefined,
+      p_org_id: listOrgParam(query),
       p_filters: query.filters,
     } as never,
   );
@@ -87,7 +88,7 @@ export async function fetchSessionFacets(
     "ivw_list_facets" as never,
     {
       p_scope: query.scope.kind,
-      p_org_id: scopeOrgId(query.scope) ?? undefined,
+      p_org_id: listOrgParam(query),
       p_search: query.search.trim() || undefined,
     } as never,
   );

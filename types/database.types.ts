@@ -40115,6 +40115,7 @@ export type Database = {
           p_archived?: string
           p_filters?: Json
           p_kind?: string
+          p_org_id?: string
           p_search?: string
         }
         Returns: {
@@ -40205,7 +40206,12 @@ export type Database = {
       }
       fc_set_folder_ids: { Args: { p_set_id: string }; Returns: string[] }
       fc_set_list_counts: {
-        Args: { p_archived?: string; p_filters?: Json; p_search?: string }
+        Args: {
+          p_archived?: string
+          p_filters?: Json
+          p_org_id?: string
+          p_search?: string
+        }
         Returns: {
           scope: string
           total: number
@@ -93197,6 +93203,7 @@ export type Database = {
           p_archived?: string
           p_deep?: boolean
           p_filters?: Json
+          p_org_id?: string
           p_search?: string
         }
         Returns: {
@@ -94380,7 +94387,12 @@ export type Database = {
         }[]
       }
       crm_inbox_list_scope_counts: {
-        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Args: {
+          p_deep?: boolean
+          p_filters?: Json
+          p_org_id?: string
+          p_search?: string
+        }
         Returns: {
           label: string
           narrow_id: string
@@ -94460,30 +94472,21 @@ export type Database = {
         Args: { p_handled?: boolean; p_interaction_id: string }
         Returns: string
       }
-      crm_list_scope_counts:
-        | {
-            Args: { p_kind?: string; p_search?: string; p_view?: string }
-            Returns: {
-              label: string
-              narrow_id: string
-              scope: string
-              total: number
-            }[]
-          }
-        | {
-            Args: {
-              p_kind?: string
-              p_record_class?: string
-              p_search?: string
-              p_view?: string
-            }
-            Returns: {
-              label: string
-              narrow_id: string
-              scope: string
-              total: number
-            }[]
-          }
+      crm_list_scope_counts: {
+        Args: {
+          p_kind?: string
+          p_org_id?: string
+          p_record_class?: string
+          p_search?: string
+          p_view?: string
+        }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
       crm_merge_parties: {
         Args: {
           p_loser: string
@@ -94539,6 +94542,7 @@ export type Database = {
           p_archived?: string
           p_deep?: boolean
           p_filters?: Json
+          p_org_id?: string
           p_search?: string
         }
         Returns: {
@@ -95166,6 +95170,7 @@ export type Database = {
           p_filters?: Json
           p_limit?: number
           p_offset?: number
+          p_org_id?: string
           p_scope?: string
           p_search?: string
           p_sort?: string
@@ -95199,7 +95204,7 @@ export type Database = {
         }[]
       }
       edu_library_scope_counts: {
-        Args: { p_filters?: Json; p_search?: string }
+        Args: { p_filters?: Json; p_org_id?: string; p_search?: string }
         Returns: {
           label: string
           narrow_id: string
@@ -98084,7 +98089,7 @@ export type Database = {
         }[]
       }
       ivw_list_scope_counts: {
-        Args: { p_filters?: Json; p_search?: string }
+        Args: { p_filters?: Json; p_org_id?: string; p_search?: string }
         Returns: {
           label: string
           narrow_id: string
@@ -98573,7 +98578,12 @@ export type Database = {
         }[]
       }
       mkt_initiative_list_scope_counts: {
-        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Args: {
+          p_deep?: boolean
+          p_filters?: Json
+          p_org_id?: string
+          p_search?: string
+        }
         Returns: {
           label: string
           narrow_id: string
@@ -98682,7 +98692,7 @@ export type Database = {
         }[]
       }
       mnd_list_scope_counts: {
-        Args: { p_search?: string }
+        Args: { p_org_id?: string; p_search?: string }
         Returns: {
           label: string
           narrow_id: string
@@ -99747,7 +99757,12 @@ export type Database = {
         }[]
       }
       rsx_list_scope_counts: {
-        Args: { p_archived?: string; p_filters?: Json; p_search?: string }
+        Args: {
+          p_archived?: string
+          p_filters?: Json
+          p_org_id?: string
+          p_search?: string
+        }
         Returns: {
           label: string
           narrow_id: string
@@ -99942,7 +99957,7 @@ export type Database = {
         }[]
       }
       seo_rank_target_list_scope_counts: {
-        Args: { p_filters?: Json; p_search?: string }
+        Args: { p_filters?: Json; p_org_id?: string; p_search?: string }
         Returns: {
           label: string
           narrow_id: string
@@ -100156,7 +100171,12 @@ export type Database = {
         }[]
       }
       shx_list_scope_counts: {
-        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Args: {
+          p_deep?: boolean
+          p_filters?: Json
+          p_org_id?: string
+          p_search?: string
+        }
         Returns: {
           label: string
           narrow_id: string
@@ -100516,7 +100536,12 @@ export type Database = {
         }[]
       }
       trx_list_scope_counts: {
-        Args: { p_deep?: boolean; p_filters?: Json; p_search?: string }
+        Args: {
+          p_deep?: boolean
+          p_filters?: Json
+          p_org_id?: string
+          p_search?: string
+        }
         Returns: {
           label: string
           narrow_id: string
@@ -100957,6 +100982,7 @@ export type Database = {
           p_archived?: string
           p_deep?: boolean
           p_filters?: Json
+          p_org_id?: string
           p_search?: string
         }
         Returns: {

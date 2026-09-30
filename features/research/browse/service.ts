@@ -25,7 +25,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
+import { listOrgParam } from "@/lib/list-scope/types";
 import type { ResearchTopicListRow } from "./types";
 
 function pgError(error: { message?: string; code?: string }): Error {
@@ -59,7 +59,7 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
   ): Promise<EntityListPage<ResearchTopicListRow>> {
     const { data, error } = await supabase.rpc("rsx_list_scoped", {
       p_scope: query.scope.kind,
-      p_org_id: scopeOrgId(query.scope) ?? undefined,
+      p_org_id: listOrgParam(query),
       p_search: query.search.trim() || undefined,
       p_sort: sort.sort,
       p_dir: sort.direction,
@@ -76,6 +76,7 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
   async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
     const { data, error } = await supabase.rpc("rsx_list_scope_counts", {
       p_search: query.search.trim() || undefined,
+      p_org_id: listOrgParam(query),
       p_filters: query.filters,
       p_archived: query.archived,
     });
@@ -88,7 +89,7 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
   async fetchFacets(query: EntityListQuery): Promise<EntityFacets> {
     const { data, error } = await supabase.rpc("rsx_list_facets", {
       p_scope: query.scope.kind,
-      p_org_id: scopeOrgId(query.scope) ?? undefined,
+      p_org_id: listOrgParam(query),
       p_search: query.search.trim() || undefined,
       p_archived: query.archived,
     });

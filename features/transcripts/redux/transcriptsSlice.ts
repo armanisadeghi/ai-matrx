@@ -33,6 +33,8 @@ export interface TranscriptsState {
   initialized: boolean;
   /** VIEW LAW: the declared list scope driving fetches. */
   scope: ListScope;
+  /** The organization filter (null = All organizations) — never the active organization. */
+  orgFilter: string | null;
 }
 
 const initialState: TranscriptsState = {
@@ -43,6 +45,7 @@ const initialState: TranscriptsState = {
   activeId: null,
   initialized: false,
   scope: { kind: "mine" },
+  orgFilter: null,
 };
 
 const slice = createSlice({
@@ -79,8 +82,12 @@ const slice = createSlice({
     activeTranscriptChanged(state, action: PayloadAction<string | null>) {
       state.activeId = action.payload;
     },
-    transcriptsScopeChanged(state, action: PayloadAction<ListScope>) {
-      state.scope = action.payload;
+    transcriptsScopeChanged(
+      state,
+      action: PayloadAction<{ scope: ListScope; orgFilter: string | null }>,
+    ) {
+      state.scope = action.payload.scope;
+      state.orgFilter = action.payload.orgFilter;
     },
     /** Prepend a newly created/copied transcript and make it active. */
     transcriptAdded(state, action: PayloadAction<Transcript>) {
@@ -146,6 +153,8 @@ export const selectTranscriptsHasLoaded = (state: WithTranscripts): boolean =>
   state.transcripts.hasLoaded;
 export const selectTranscriptsScope = (state: WithTranscripts): ListScope =>
   state.transcripts.scope;
+export const selectTranscriptsOrgFilter = (state: WithTranscripts): string | null =>
+  state.transcripts.orgFilter;
 export const selectActiveTranscriptId = (
   state: WithTranscripts,
 ): string | null => state.transcripts.activeId;

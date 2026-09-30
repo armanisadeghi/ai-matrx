@@ -19,7 +19,7 @@ import type {
 } from "@/lib/entity-list/types";
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import type { EntityListPage } from "@/lib/entity-list/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
+import { listOrgParam } from "@/lib/list-scope/types";
 import type { TranscriptListRow, TranscriptRowEdit } from "./types";
 
 function pgError(error: { message?: string; code?: string }): Error {
@@ -37,7 +37,7 @@ export async function fetchTranscriptListPage(
 ): Promise<EntityListPage<TranscriptListRow>> {
   const { data, error } = await supabase.rpc("trx_list_scoped", {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_sort: sort.sort,
@@ -58,6 +58,7 @@ export async function fetchTranscriptScopeCounts(
 ): Promise<EntityScopeCounts> {
   const { data, error } = await supabase.rpc("trx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
+    p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_filters: query.filters,
   });
@@ -73,7 +74,7 @@ export async function fetchTranscriptFacets(
 ): Promise<EntityFacets> {
   const { data, error } = await supabase.rpc("trx_list_facets", {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
   });

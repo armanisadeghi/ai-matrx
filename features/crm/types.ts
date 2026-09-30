@@ -345,6 +345,8 @@ export type PartyListView = "active" | "trash";
 
 export interface PartyListQuery {
   scope: import("@/lib/list-scope/types").ListScope;
+  /** The organization filter (`?org_filter=`, null = All organizations) — never the active organization. */
+  orgId: string | null;
   search: string;
   kind: PartyKindFilter;
   filters: PartyListFilters;
@@ -355,7 +357,8 @@ export interface PartyListQuery {
 }
 
 export const DEFAULT_PARTY_QUERY: PartyListQuery = {
-  scope: { kind: "mine" },
+  scope: { kind: "all" },
+  orgId: null,
   search: "",
   kind: "all",
   // The default is a REAL filter, not an empty bag: a CRM that shows every

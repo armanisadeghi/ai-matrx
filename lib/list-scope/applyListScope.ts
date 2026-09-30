@@ -34,6 +34,12 @@ export interface ApplyListScopeOpts {
    * T-11). Omit only for a table with no `shown_to` column (Private / Confidential types).
    */
   shownTo?: ShownToContext;
+  /**
+   * THE ORGANIZATION FILTER (`EntityListQuery.orgId`; null = All organizations). It narrows
+   * EVERY lane — never the active organization (common-docs
+   * /policies/active-org-is-never-a-list-filter.md).
+   */
+  organizationId?: string | null;
 }
 
 /**
@@ -43,10 +49,12 @@ export interface ApplyListScopeOpts {
  * requiring a membership join, a grant table, or a blended set needs the
  * feature's own `*_list_scoped` RPC — see lib/list-scope/FEATURE.md.
  *
- * - "mine"     → `.eq(ownerColumn, userId)`
- * - "orgs"     → `.eq(orgColumn, organizationId)` when narrowed to ONE org.
- *                Blended (`organizationId: null`) throws: it needs the caller's
+ * - "mine"     → `.eq(ownerColumn, userId)` (+ `.eq(orgColumn, organizationId)`
+ *                when the organization filter names one)
+ * - "orgs"     → `.eq(orgColumn, organizationId)` when the organization filter
+ *                names ONE org. Blended (no filter) throws: it needs the caller's
  *                org membership list, which is a join, not a filter.
+ * - "all"      → throws (a union of four lanes; use the feature's RPC).
  * - "shared"   → throws (grant model is per-feature).
  * - "industry" → throws (needs the grant table AND the org→industry
  *                attachment join).
@@ -64,22 +72,30 @@ export function applyListScope<Q extends EqCapable<Q>>(
   const ownerColumn = opts.ownerColumn ?? "created_by";
   const orgColumn = opts.orgColumn ?? "organization_id";
 
+  const organizationId = opts.organizationId ?? null;
   switch (scope.kind) {
-    case "mine":
-      return query.eq(ownerColumn, opts.userId);
+    case "mine": {
+      const mine = query.eq(ownerColumn, opts.userId);
+      return organizationId ? mine.eq(orgColumn, organizationId) : mine;
+    }
+    case "all":
+      throw new Error(
+        "[list-scope] applyListScope cannot express 'all' — it is Mine ∪ My team ∪ " +
+          "My Orgs ∪ Shared, a union of joins. Use this feature's *_list_scoped RPC.",
+      );
     case "orgs":
-      if (scope.organizationId === null) {
+      if (organizationId === null) {
         throw new Error(
           "[list-scope] applyListScope cannot express a BLENDED 'orgs' scope — " +
             "it needs the caller's org membership list (a join), not a filter. " +
-            "Narrow to one organizationId, or use this feature's *_list_scoped RPC.",
+            "Pass the organization filter (opts.organizationId), or use this feature's *_list_scoped RPC.",
         );
       }
       return opts.shownTo
         ? query
-            .eq(orgColumn, scope.organizationId)
-            .or(shownToFilter(opts.shownTo, scope.organizationId, opts.userId, ownerColumn))
-        : query.eq(orgColumn, scope.organizationId);
+            .eq(orgColumn, organizationId)
+            .or(shownToFilter(opts.shownTo, organizationId, opts.userId, ownerColumn))
+        : query.eq(orgColumn, organizationId);
     case "team":
       throw new Error(
         "[list-scope] applyListScope does not support 'team' — it needs the " +

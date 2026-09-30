@@ -51,6 +51,7 @@ export function TranscriptsSidebar({
     setActiveTranscript,
     updateTranscript,
     scope,
+    orgFilter,
     setScope,
   } = useTranscripts();
   const toast = useToastManager("transcripts");
@@ -162,7 +163,7 @@ export function TranscriptsSidebar({
         </div>
 
         {/* VIEW LAW scope switcher — Mine / org chips (transcripts has no shared-with-me RPC yet, so Shared is omitted) */}
-        <ListScopeSwitcher value={scope} onChange={setScope} className="mb-2 w-full overflow-x-auto" />
+        <ListScopeSwitcher value={scope} orgId={orgFilter} onChange={setScope} className="mb-2 w-full overflow-x-auto" />
 
         {/* Search */}
         <div className="relative">

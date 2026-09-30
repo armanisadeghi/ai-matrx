@@ -83,7 +83,7 @@ export function LabelBatchesPage() {
       {config && (
         <EntityListPage
           config={config}
-          defaultScope={{ kind: "orgs", organizationId: null }}
+          defaultScope={{ kind: "orgs" }}
           headerActions={actions}
           emptyAction={actions}
         />

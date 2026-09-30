@@ -11,10 +11,11 @@
 // a scope the user learns on one page has to mean the same thing on every
 // other page. See lib/list-scope/FEATURE.md.
 //
+//   all      → everything that is mine to see: Mine ∪ My team ∪ My Orgs ∪ Shared
+//              (THE DEFAULT LANE; Public and System are discovery lanes, never folded in)
 //   mine     → what did I make?
-//   team     → what did my team make?       (people I share a team with, per org;
-//                                            blended, or narrowed to one org)
-//   orgs     → what does my organization have? (blended, or narrowed to one org)
+//   team     → what did my team make?       (people I share a team with)
+//   orgs     → what does my organization have?
 //   shared   → what did someone hand me?    (explicit iam.permissions grant)
 //   industry → what does my field publish?  (see below)
 //   public   → what has a tenant published platform-wide?
@@ -40,6 +41,13 @@
 //
 // A page renders one tab per scope the surface supports; switching scopes
 // changes the declared query, never silently reinterprets RLS output.
+//
+// TWO AXES, NEVER MIXED (Arman 2026-09-30, common-docs
+// /policies/active-org-is-never-a-list-filter.md). The LANE (this union) says HOW
+// I can see a record. WHICH ORGANIZATION it is in is a separate axis — the
+// page's organization filter, `EntityListQuery.orgId` (URL `?org_filter=`, null = All
+// organizations) — and it narrows EVERY lane. A lane carries no organization id.
+// The ACTIVE organization is neither: it never reaches a list read.
 
 // THE ADMIN SEAT (Arman, 2026-09-26): "No one acts as themselves in admin."
 // An admin page never shows mine / orgs / shared — those are PERSONAL-SEAT
@@ -58,6 +66,7 @@
 // Guarded by `pnpm check:admin-no-personal-seat`.
 
 export type ListScopeKind =
+  | "all"
   | "mine"
   | "team"
   | "orgs"
@@ -70,6 +79,8 @@ export type ListScopeKind =
   | "platform_all";
 
 export type ListScope =
+  /** ALL: Mine ∪ My team ∪ My Orgs ∪ Shared, one row per record. The default lane. */
+  | { kind: "all" }
   | { kind: "mine" }
   /**
    * MY TEAM (access ladder: "my team or department"). Rows in an organization I
@@ -78,11 +89,11 @@ export type ListScope =
    * the list says so) — never a copy of Mine (2026-09-28). A team is a
    * list filter, never an access boundary: every row here is one "orgs" would
    * also show. Server reach: `iam.my_team_reach(p_org_id)` (teams FEATURE.md).
-   * `organizationId: null` = blended across every organization I belong to.
+   * Narrowing to one organization is the organization filter's job (`orgId`).
    */
-  | { kind: "team"; organizationId: string | null }
-  /** `organizationId: null` = blended across all my non-personal orgs. */
-  | { kind: "orgs"; organizationId: string | null }
+  | { kind: "team" }
+  /** Every organization I belong to; one organization = the organization filter. */
+  | { kind: "orgs" }
   | { kind: "shared" }
   /** `industryId: null` = blended across every industry my orgs have attached. */
   | { kind: "industry"; industryId: string | null }
@@ -107,9 +118,13 @@ export const ADMIN_SUPPORT_LIST_SCOPES: ListScopeKind[] = [
 ];
 
 /** The personal-seat scopes: legal on user pages, banned on admin pages. */
-export const PERSONAL_SEAT_SCOPES: readonly ListScopeKind[] = ["mine", "team", "orgs", "shared"];
+export const PERSONAL_SEAT_SCOPES: readonly ListScopeKind[] = ["all", "mine", "team", "orgs", "shared"];
 
-export const DEFAULT_LIST_SCOPE: ListScope = { kind: "mine" };
+/** The lanes the All lane unions. */
+export const ALL_LANE_MEMBERS: readonly ListScopeKind[] = ["mine", "team", "orgs", "shared"];
+
+/** Every user list opens on All unless its page or knob says otherwise. */
+export const DEFAULT_LIST_SCOPE: ListScope = { kind: "all" };
 
 /**
  * The vocabulary as a runtime value — for validating a scope string that
@@ -120,6 +135,7 @@ export const DEFAULT_LIST_SCOPE: ListScope = { kind: "mine" };
  * dropped on the way to its tab.
  */
 export const LIST_SCOPE_KINDS: readonly ListScopeKind[] = [
+  "all",
   "mine",
   "team",
   "orgs",
@@ -165,6 +181,30 @@ export function withTeamScope(scopes: readonly ListScopeKind[]): ListScopeKind[]
   return out;
 }
 
+/**
+ * THE ONE PLACE "All" joins a list (2026-09-30). A tab bar offering two or more
+ * of the personal lanes (Mine / My team / My Orgs / Shared) gets All as its
+ * FIRST tab — never declared per page. A list with one personal lane (a Private
+ * type: Mine alone) or none (an admin page) is untouched: All would repeat it.
+ * Idempotent; its `*_list_scoped` RPC answers `p_scope = 'all'`.
+ */
+export function withAllScope(scopes: readonly ListScopeKind[]): ListScopeKind[] {
+  if (scopes.includes("all")) return [...scopes];
+  const personal = scopes.filter((k) => ALL_LANE_MEMBERS.includes(k)).length;
+  return personal >= 2 ? ["all", ...scopes] : [...scopes];
+}
+
+/** The lanes a tab bar renders: the surface's own, plus All and My team where they belong. */
+export function withStandardLanes(scopes: readonly ListScopeKind[]): ListScopeKind[] {
+  return withAllScope(withTeamScope(scopes));
+}
+
+export function isAllScope(
+  scope: ListScope,
+): scope is Extract<ListScope, { kind: "all" }> {
+  return scope.kind === "all";
+}
+
 export function isOrgsScope(
   scope: ListScope,
 ): scope is Extract<ListScope, { kind: "orgs" }> {
@@ -195,38 +235,41 @@ export function isPublicScope(
   return scope.kind === "public";
 }
 
-/**
- * The org this scope narrows to, or null. Saves every call site from narrowing
- * the union just to read an optional id.
- */
-export function scopeOrgId(scope: ListScope): string | null {
-  return scope.kind === "orgs" || scope.kind === "team" ? scope.organizationId : null;
-}
-
 /** The industry this scope narrows to, or null. */
 export function scopeIndustryId(scope: ListScope): string | null {
   return scope.kind === "industry" ? scope.industryId : null;
 }
 
 /**
- * The id this scope is narrowed to, whatever axis it narrows on — or null when
- * it is blended or has no narrowing axis at all. The kind-specific readers
- * above stay, because a caller that KNOWS it is looking at organizations should
- * say so; this one is for the shell, which renders a narrowing control without
- * knowing which axis it belongs to.
+ * The id a LANE itself is narrowed to — an industry, or an admin support lane's
+ * one organization / person. Personal lanes never carry one: which organization
+ * a list shows is the organization filter (`EntityListQuery.orgId`).
  */
 export function scopeNarrowId(scope: ListScope): string | null {
-  if (scope.kind === "orgs" || scope.kind === "team") return scope.organizationId;
   if (scope.kind === "platform_orgs" || scope.kind === "platform_users")
     return scope.organizationId;
   if (scope.kind === "industry") return scope.industryId;
   return null;
 }
 
+/**
+ * THE `p_org_id` EVERY `*_list_scoped` / `*_scope_counts` / facets RPC receives:
+ * the page's organization filter (null = All organizations → undefined), or —
+ * on an admin support lane — that lane's own one-organization narrowing. Never
+ * the active organization.
+ */
+export function listOrgParam(query: {
+  scope: ListScope;
+  orgId: string | null;
+}): string | undefined {
+  if (query.orgId) return query.orgId;
+  if (query.scope.kind === "platform_orgs" || query.scope.kind === "platform_users")
+    return query.scope.organizationId ?? undefined;
+  return undefined;
+}
+
 /** Stable identity for tab selection / React keys. */
 export function scopeKey(scope: ListScope): string {
-  if (scope.kind === "orgs" || scope.kind === "team")
-    return scope.organizationId ? `${scope.kind}:${scope.organizationId}` : scope.kind;
   if (scope.kind === "industry")
     return scope.industryId ? `industry:${scope.industryId}` : "industry";
   if (scope.kind === "platform_orgs" || scope.kind === "platform_users")
@@ -240,10 +283,12 @@ export function makeScope(
   narrowToId: string | null = null,
 ): ListScope {
   switch (kind) {
+    case "all":
+      return { kind: "all" };
     case "orgs":
-      return { kind: "orgs", organizationId: narrowToId };
+      return { kind: "orgs" };
     case "team":
-      return { kind: "team", organizationId: narrowToId };
+      return { kind: "team" };
     case "industry":
       return { kind: "industry", industryId: narrowToId };
     case "mine":

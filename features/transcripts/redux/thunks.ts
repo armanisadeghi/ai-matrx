@@ -75,8 +75,8 @@ export const fetchTranscripts = (): AppThunk<Promise<void>> => {
   return async (dispatch, getState) => {
     try {
       dispatch(transcriptsLoadingChanged(true));
-      const scope = getState().transcripts.scope;
-      const data = await transcriptsService.fetchTranscripts(scope);
+      const { scope, orgFilter } = getState().transcripts;
+      const data = await transcriptsService.fetchTranscripts(scope, orgFilter);
       // ONE batched dispatch for the whole list (never per-row).
       dispatch(transcriptsFetched(data));
     } catch (error) {
@@ -131,9 +131,12 @@ export const initializeTranscripts = (): AppThunk => {
 };
 
 /** Change the declared list scope (VIEW LAW) and refetch under it. */
-export const setTranscriptsScope = (scope: ListScope): AppThunk => {
+export const setTranscriptsScope = (
+  scope: ListScope,
+  orgFilter: string | null = null,
+): AppThunk => {
   return (dispatch, getState) => {
-    dispatch(transcriptsScopeChanged(scope));
+    dispatch(transcriptsScopeChanged({ scope, orgFilter }));
     if (selectTranscriptsInitialized(getState())) {
       void dispatch(fetchTranscripts());
     }

@@ -8,7 +8,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
+import { listOrgParam } from "@/lib/list-scope/types";
 import type { ShapeBrowseRow } from "./types";
 
 function pgError(error: { message?: string; code?: string }): Error {
@@ -29,7 +29,7 @@ export async function fetchShapePage(
 ): Promise<EntityListPage<ShapeBrowseRow>> {
   const { data, error } = await supabase.rpc("shx_list_scoped", {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_sort: sort.sort,
@@ -48,6 +48,7 @@ export async function fetchShapeScopeCounts(
 ): Promise<EntityScopeCounts> {
   const { data, error } = await supabase.rpc("shx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
+    p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_filters: filtersJson(query),
   });
@@ -62,7 +63,7 @@ export async function fetchShapeFacets(
 ): Promise<EntityFacets> {
   const { data, error } = await supabase.rpc("shx_list_facets", {
     p_scope: query.scope.kind,
-    p_org_id: scopeOrgId(query.scope) ?? undefined,
+    p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
   });
