@@ -1486,6 +1486,34 @@ try {
         await page.keyboard.press("Escape");
         await sleep(800);
       }
+      if (!triggers) {
+        // A phone: the page's header actions ride the shell's ⋮ sheet (HeaderPhoneOverflow).
+        await page.locator('button[aria-label^="Search, agents, canvas and inbox"]').first().click().catch(() => {});
+        await sleep(1500);
+        const inSheet = page.locator("[data-header-page-actions] [data-table-menu], [data-header-page-actions] button[aria-label='Table menu']");
+        const n = await inSheet.count();
+        let phoneItems = [];
+        if (n) {
+          await inSheet.first().click();
+          await sleep(1500);
+          phoneItems = (await page.locator("[data-table-menu-content] [role^=menuitem]").allInnerTexts()).map((t) => t.trim());
+          await shot(`b401-${view}-${width}-phone-menu`);
+          await page.keyboard.press("Escape");
+          await sleep(600);
+        } else {
+          await shot(`b401-${view}-${width}-phone-sheet`);
+        }
+        await page.keyboard.press("Escape").catch(() => {});
+        await sleep(600);
+        found[view] = { triggers: n, items: phoneItems, via: "the shell's ⋮ sheet" };
+        continue;
+      }
+      if (!triggers) {
+        await shot(`b401-${view}-${width}-page`);
+        const header = await page.evaluate(() => [...document.querySelectorAll("header button, [data-route-header] button, button")].filter((b) => { const r = b.getBoundingClientRect(); return r.width > 0 && r.top < 90; }).map((b) => (b.getAttribute("aria-label") ?? b.textContent ?? "").trim().slice(0, 40)));
+        found[view] = { triggers, header };
+        continue;
+      }
       found[view] = { triggers, items };
     }
     step("B4-01 the table menu from the header", found);
