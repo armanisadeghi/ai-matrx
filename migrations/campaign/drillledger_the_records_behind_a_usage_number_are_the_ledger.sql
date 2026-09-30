@@ -2439,10 +2439,10 @@ begin
           continue when v_d = 0;
           v_set := v_set || jsonb_build_object(m ->> 'key', jsonb_build_object(
                      'counted', v_cnt -> (m ->> 'key'), 'now', v_sums -> (m ->> 'key'), 'difference', v_d));
-          v_part := v_part || case when m ->> 'unit' = 'usd'
-                                   then '$' || to_char(abs(v_d), 'FM999,999,999,990.00')
-                                   else to_char(abs(v_d), 'FM999,999,999,999,990') || ' ' || lower(coalesce(m ->> 'label', m ->> 'key')) end
-                              || case when v_d > 0 then ' more has landed' else ' has come off' end;
+          v_part := v_part || (case when m ->> 'unit' = 'usd'
+                                    then '$' || to_char(abs(v_d), 'FM999,999,999,990.00')
+                                    else to_char(abs(v_d), 'FM999,999,999,999,990') || ' ' || lower(coalesce(m ->> 'label', m ->> 'key')) end
+                               || case when v_d > 0 then ' more has landed' else ' has come off' end);
         end loop;
         if cardinality(v_part) > 0 then
           v_says := format('%s since the count at %s UTC. These records show the ledger now; the number shows the count until the next recount.',
