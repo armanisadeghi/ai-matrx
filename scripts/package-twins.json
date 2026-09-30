@@ -194,6 +194,54 @@
         {
           "file": "scripts/release-outcome.test.mjs",
           "reason": "NOT a formatter, and not even JavaScript: the `/ 60` sits inside a REGEX LITERAL asserting that the SHELL script `scripts/release-outcome.sh` prints \"up to $((wall / 60)) min\". The arithmetic is bash's, in a file no npm package can reach, and this line's job is to pin that script's wording. The lane strips quoted strings and template text before testing a line, but a regex literal is genuine code everywhere else, so the exemption is written here rather than guessed by the rule."
+        },
+        {
+          "file": "components/official/drill-explorer/measureFormat.ts",
+          "why": "PROVABLY NOT A DURATION: the flagged line is the DEFAULT branch of `drillUnitFormatter`, taken for a measure whose unit the screen does not know; it prints the raw number (formatCount at >= 1000 or for integers, otherwise 3 significant digits). `>= 1000` is a magnitude threshold, not a millisecond base, and the file's real `\"ms\"` branch already calls formatDurationMs."
+        },
+        {
+          "file": "features/meet/lib/find-time.ts",
+          "why": "PROVABLY NOT A DURATION: `clockOf(minutes)` turns minutes-since-midnight into a 24-hour wall-clock TIME OF DAY (\"09:30\") for free/busy slot bounds, the exact inverse of `minutesOf(\"09:30\")` above it. A time of day is not a span: formatDurationMinutes(570) prints \"9:30:00\" (clock) or \"9h 30m\" (coarse) and would break the round trip."
+        },
+        {
+          "file": "features/question-desk/__tests__/question-list-completeness.test.ts",
+          "why": "NOT A DURATION: a test fixture builds the seconds field of a synthetic ISO `created_at` (\"2026-09-22T00:00:SS\") for 1001 rows; `% 60` wraps a row index into a valid seconds value. Nothing is rendered to a person."
+        },
+        {
+          "file": "lib/dates/isoInstantWithOffset.ts",
+          "why": "NOT A DURATION: builds the UTC-OFFSET designator of an ISO-8601 instant (`-07:00`), which ISO 8601 fixes as sign + HH:MM. The 60 splits the offset into hours and minutes of a time-zone designator; no kit voice prints a zone offset."
+        },
+        {
+          "file": "scripts/check-store-doors-decide.ts",
+          "why": "NOT A DISPLAY: `within(ms)` builds the VALUE of a Postgres `set local statement_timeout` interpolated into SQL (\"30s\"), and Postgres must parse it. Kit's compact voice would emit \"1m 30s\" for 90 seconds, which is not a Postgres duration literal."
+        },
+        {
+          "file": "scripts/lib/check-target.ts",
+          "why": "NOT A DISPLAY: the remaining hit is `ceilingFor()`, which returns the VALUE of a Postgres `set local statement_timeout` (\"30s\", \"540s\", \"1500ms\") interpolated into SQL; kit's compact voice (\"9m 00s\") is not a Postgres duration literal. Every person-facing string in this file (the [TARGET] banner ceiling, `cloneAge`) calls formatDurationMs as of 2026-09-30."
+        },
+        {
+          "file": "vendor/xlsx/xlsx.js",
+          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
+        },
+        {
+          "file": "vendor/xlsx/xlsx.mjs",
+          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
+        },
+        {
+          "file": "vendor/xlsx/dist/xlsx.core.min.js",
+          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
+        },
+        {
+          "file": "vendor/xlsx/dist/xlsx.full.min.js",
+          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
+        },
+        {
+          "file": "vendor/xlsx/dist/xlsx.mini.min.js",
+          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
+        },
+        {
+          "file": "vendor/xlsx/dist/xlsx.extendscript.js",
+          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
         }
       ],
       "shapeCensus": [
@@ -304,6 +352,30 @@
         {
           "file": "scripts/gate-corpus/run.ts",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
+        },
+        {
+          "file": "lib/api/run-wait.ts",
+          "why": "IS the duration capability, but cannot collapse honestly: it speaks TWO-TIER PROSE (`describeSeconds(90)` = \"1 minute 30 seconds\" in \"did not start within 1 minute 30 seconds\") inside a sentence, and kit has no such voice. `long` renders one tier only (\"1 minute\"), which would state a false length, and `coarse` (\"2 min\") is the dense-cell voice, not prose. Second site needing the same voice: features/meet/lib/invitation.ts. Blocker: a two-tier prose voice in @ai-matrx/kit/format (a package change, reported 2026-09-30); collapse the day it ships."
+        },
+        {
+          "file": "features/meet/lib/invitation.ts",
+          "why": "IS the duration capability, but cannot collapse honestly: it speaks TWO-TIER PROSE (`durationLabel(90)` = \"1 hour 30 minutes\" in the pasted invitation's \"When: ... (1 hour 30 minutes)\") inside a sentence, and kit has no such voice. `long` renders one tier only (\"1 hour\" for a 90-minute meeting), which would state a false length, and `coarse` (\"1h 30m\") is the dense-cell voice, not prose. Second site needing the same voice: lib/api/run-wait.ts. Blocker: a two-tier prose voice in @ai-matrx/kit/format (a package change, reported 2026-09-30); collapse the day it ships."
+        },
+        {
+          "file": "features/admin/dated-changes/describe.ts",
+          "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `lagText` becomes formatDurationSeconds(seconds, { style: \"long\", round: \"nearest\" }) behind the existing `<= 600` guard (5400 s reads \"2 hours\" as before; 3 days reads \"3 days\" instead of \"72 hours\"). A debt, not an exemption."
+        },
+        {
+          "file": "features/agents/components/context-preview/ContextCompareView.tsx",
+          "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: the answer header's ` ${(duration_ms / 1000).toFixed(1)} s` becomes formatDurationMs(duration_ms, { style: \"compact\" }) (\"4.5s\", \"850ms\"). A debt, not an exemption."
+        },
+        {
+          "file": "utils/supabase/walkCap.ts",
+          "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `Retrying in ${KNOB_TTL_MS / 1000}s` and `ago()` become formatDurationMs(ms, { style: \"compact\" }) (+ \" ago\"). A debt, not an exemption."
+        },
+        {
+          "file": "scripts/check-heavy-checks-target-the-clone.ts",
+          "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: the two `${t.ms / 1000}s` findings become formatDurationMs(t.ms, { style: \"compact\" }). A debt, not an exemption."
         }
       ]
     },
@@ -1598,7 +1670,12 @@
           "reason": "A WRAPPER over the package formatter, not a reimplementation: it binds fallback:\"Never\", which is this roster's own statement (\"no activity on record\") and not the same as an em-dash. The body is one delegating line."
         }
       ],
-      "shapeAllow": [],
+      "shapeAllow": [
+        {
+          "file": "features/marketing/news-monitor/kinds/NewsOpportunityReportView.tsx",
+          "why": "NOT A RELATIVE TIME: the card title pluralises a COUNT of big stories (`stor${big === 1 ? \"y\" : \"ies\"}`) beside `pitch-ready` and `watched` counts. No timestamp, clock or age enters the line; the lane reads the count's plural tail as a unit."
+        }
+      ],
       "shapeCensus": [
         {
           "file": "features/admin/system-errors/open-outages.ts",
