@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppStore } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { listDuplicateSchedules } from "../service/schedulerClient";
 import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
@@ -24,7 +24,7 @@ import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
  * retryable warning while the failure is also captured by Error Inspector.
  */
 export function useDuplicateSchedules(refreshToken?: unknown) {
-  const organizationId = useAppSelector(selectOrganizationId);
+  const store = useAppStore();
   const [groups, setGroups] = useState<DuplicateScheduleGroup[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -33,11 +33,10 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
     let cancelled = false;
 
     const load = async () => {
-      // The duplicate check is per organization: with none selected there is nothing to compare
-      // within, so it waits (the schedules list itself never does).
-      if (!organizationId) return;
       try {
-        const res = await listDuplicateSchedules(organizationId);
+        const res = await listDuplicateSchedules(
+          selectOrganizationId(store.getState()),
+        );
         if (cancelled) return;
         setGroups(res.groups ?? []);
         setError(null);
@@ -65,7 +64,7 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
     };
     // refreshToken lets a caller re-check after it changes a schedule (pausing
     // one of a pair resolves its group, and the banner must then disappear).
-  }, [organizationId, refreshToken, refreshVersion]);
+  }, [store, refreshToken, refreshVersion]);
 
   // A group whose extras are all paused costs nothing and is already resolved.
   const liveGroups = groups.filter((g) => g.enabled_count > 1);

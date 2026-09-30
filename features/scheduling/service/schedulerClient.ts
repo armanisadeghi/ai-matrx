@@ -8,6 +8,7 @@
 // see cross-user rows via /scheduler/tasks or /scheduler/runs — those
 // remain on direct Supabase via lib/services/scheduling-admin-service.ts.
 
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { serverMessageFromBody, WriteRefusedError } from "@/lib/errors/writeFailure";
 import { supabase } from "@/utils/supabase/client";
 import type {
@@ -119,11 +120,15 @@ async function request<T>(
     }
     // Words for the person, the method/path/status line for diagnostics (GATES-TAIL): a
     // caller that shows `err.message` never shows "PATCH /scheduler/tasks/<id> 500".
-    throw new WriteRefusedError({
+    const refused = new WriteRefusedError({
       status: res.status,
       serverMessage: serverMessageFromBody(body),
       technical: `${init.method} ${path} ${res.status}${detail}`,
     });
+    // Carry the server's wire code so callers can tell "organization_required" apart.
+    const wireCode = (body as { code?: unknown } | null)?.code;
+    if (typeof wireCode === "string") (refused as { code?: string }).code = wireCode;
+    throw refused;
   }
   return (await res.json()) as T;
 }
@@ -156,17 +161,22 @@ export function createTask(
  * (THE SCHEDULER DUPLICATE GUARD). Paused and trigger-less schedules are
  * excluded server-side: they cannot fire, so they cost nothing.
  */
-export function listDuplicateSchedules(
-  organizationId?: string,
+export async function listDuplicateSchedules(
+  workingOrganizationId?: string | null,
 ): Promise<DuplicateScheduleResponse> {
-  // Duplicates are compared WITHIN one organization and the server route still requires it
-  // (live: 400 organization_required without the header), so this one read names the
-  // organization the caller is working in. Every other scheduler read stays organization-free.
-  return request<DuplicateScheduleResponse>(
-    "/scheduler/tasks/duplicates",
-    { method: "GET" },
-    organizationId,
-  );
+  const path = "/scheduler/tasks/duplicates";
+  try {
+    return await request<DuplicateScheduleResponse>(path, { method: "GET" });
+  } catch (error) {
+    // 2026-09-29 TEMPORARY FALLBACK: aidream declared this route organization-free but the
+    // deployed server may still answer 400 organization_required. Retry ONCE with the working
+    // organization so the check works before and after that deploy. Remove this catch once the
+    // server change is live (verify: the first call above succeeds with no X-Organization-Id).
+    if (workingOrganizationId && isOrganizationRequiredError(error)) {
+      return request<DuplicateScheduleResponse>(path, { method: "GET" }, workingOrganizationId);
+    }
+    throw error;
+  }
 }
 
 export function listTasks(

@@ -28,6 +28,8 @@ import {
   selectShowCompleted,
   setSelectedTaskId,
   setNewTaskTitle,
+  selectFilterOrgId,
+  setFilterOrgId,
 } from "@/features/tasks/redux/taskUiSlice";
 import { getTaskGroupByBanner } from "@/features/tasks/constants/groupBy";
 import { selectAllScopesFlat } from "@/features/scopes/redux/selectors/tree";
@@ -118,6 +120,7 @@ export default function TaskListPane() {
   const groupByBanner = getTaskGroupByBanner(groupBy);
   const isGrouped = groupBy !== "none";
   const orgId = useAppSelector(selectOrganizationId);
+  const filterOrgId = useAppSelector(selectFilterOrgId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   // Names for scopes of EVERY organization: the list shows tasks across all of the person's
   // organizations, so a chip's name never depends on the header's selected one.
@@ -363,6 +366,16 @@ export default function TaskListPane() {
               <p className="text-[11px] mt-0.5 text-center">
                 Adjust filters or add a task above
               </p>
+              {filterOrgId ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => dispatch(setFilterOrgId(null))}
+                >
+                  View all organizations
+                </Button>
+              ) : null}
             </div>
           ) : (
             <div className={cn(isGrouped && "p-2 space-y-2")}>

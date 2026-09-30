@@ -20,6 +20,8 @@ import {
 import {
   selectSelectedTaskId,
   setSelectedTaskId,
+  selectFilterOrgId,
+  setFilterOrgId,
 } from "@/features/tasks/redux/taskUiSlice";
 import { toggleTaskCompleteThunk } from "@/features/tasks/redux/thunks";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
@@ -362,6 +364,7 @@ function ColumnHead({
 export default function TasksTableView() {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector(selectFilteredTasks);
+  const filterOrgId = useAppSelector(selectFilterOrgId);
   const tasksRead = useTasksRead();
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
   const copySourceId = React.useId();
@@ -729,6 +732,17 @@ export default function TasksTableView() {
                   className="py-10 text-center text-sm text-muted-foreground"
                 >
                   No tasks match these filters.
+                  {filterOrgId ? (
+                    <div className="mt-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => dispatch(setFilterOrgId(null))}
+                      >
+                        View all organizations
+                      </Button>
+                    </div>
+                  ) : null}
                 </TableCell>
               </TableRow>
             ) : sorted.length === 0 ? (
