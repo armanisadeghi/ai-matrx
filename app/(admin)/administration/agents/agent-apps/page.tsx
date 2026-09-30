@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
@@ -507,20 +506,7 @@ export default function AgentAppsAdminDashboardPage() {
             )}
           </div>
 
-          <Card className="border-dashed">
-            <CardContent className="p-4 text-sm text-muted-foreground space-y-1.5">
-              <div className="font-medium text-foreground">
-                About agent-app administration
-              </div>
-              <p>
-                This surface aggregates every agent-backed public app on the
-                platform. Use it to feature, verify, moderate, and override rate
-                limits. Individual owners manage their own apps from the
-                authenticated agent-apps route; this admin surface is the
-                superset across all owners.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Admin view over every agent-backed public app; owners manage their own from the agent-apps route. */}
         </div>
       </div>
     </div>

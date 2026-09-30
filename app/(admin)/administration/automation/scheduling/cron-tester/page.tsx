@@ -94,12 +94,7 @@ export default function CronTesterPage() {
       <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-w-3xl">
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-blue-500" />
-          <p
-            className="truncate text-xs text-muted-foreground"
-            title="FE-side preview only; the aidream Python parser is authoritative for actual schedule writes."
-          >
-            FE-side preview only; the aidream Python parser is authoritative for actual schedule writes.
-          </p>
+          {/* Frontend preview only; the aidream Python parser is authoritative for schedule writes. */}
         </div>
 
         <Card>

@@ -65,12 +65,10 @@ export default function NewSystemAgentChoicePage() {
               <div className="font-medium text-foreground text-sm">
                 Promoting a user agent instead?
               </div>
+              {/* Convert keeps a link to the source agent for later refresh. */}
               <p>
-                If a user has already built and tested an agent that should
-                become a builtin, open it in the user-side builder, then use the
-                options menu &rarr; <strong>Convert to System Agent</strong>.
-                That preserves a link back to the source agent for future
-                refresh.
+                Open it in the builder &rarr; options menu &rarr;{" "}
+                <strong>Convert to System Agent</strong>.
               </p>
             </div>
           </Card>

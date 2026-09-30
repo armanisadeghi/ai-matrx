@@ -40,10 +40,7 @@ export default async function SyncFleetPage() {
         <h1 className="text-sm font-semibold text-foreground">
           Folder sync — fleet health
         </h1>
-        <p className="text-xs text-muted-foreground">
-          States and counts for every sync mapping in the organizations you
-          administer. Local folder paths are deliberately not available here.
-        </p>
+        {/* Local folder paths are intentionally not exposed on this page. */}
       </header>
       <SyncFleetClient rows={(data ?? []) as unknown as SyncAdminRow[]} />
     </div>

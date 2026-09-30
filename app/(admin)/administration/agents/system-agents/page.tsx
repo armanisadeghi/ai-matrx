@@ -302,10 +302,6 @@ export default function SystemAgentsDashboardPage() {
           <div className="space-y-2">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Create</h2>
-              <p className="text-xs text-muted-foreground">
-                Direct entry points for every creation route in the admin
-                catalog.
-              </p>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {QUICK_ACTIONS.map((action) => {
@@ -341,19 +337,7 @@ export default function SystemAgentsDashboardPage() {
             </div>
           </div>
 
-          <Card className="border-dashed">
-            <CardContent className="p-4 text-sm text-muted-foreground space-y-1.5">
-              <div className="font-medium text-foreground">
-                About global-scope management
-              </div>
-              <p>
-                Everything you create here is available to every user on the
-                platform unless overridden by a user- or organization-scope
-                entry. User and organization scopes are managed in separate
-                routes — this page only writes global rows.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Writes global rows only; user and org scopes are managed on their own routes. */}
         </div>
       </div>
     </div>

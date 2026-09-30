@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -611,9 +610,6 @@ export default function AgentAppsCategoriesAdminPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Category Details</CardTitle>
-                    <CardDescription>
-                      Configure the category information
-                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">

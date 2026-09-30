@@ -980,11 +980,7 @@ export default function SystemJobsPage() {
       >
         <div className="mb-1.5">
           <h2 className="text-sm font-medium">Database jobs (pg_cron)</h2>
-          <p className="text-xs text-muted-foreground">
-            SQL scheduled inside Postgres itself — pruning, refreshes, partition
-            upkeep. Same controls; no Run now (several are destructive purges,
-            and pg_cron has no run-once).
-          </p>
+          {/* pg_cron jobs: no Run now — several are destructive purges and pg_cron has no run-once. */}
         </div>
         <NonEditableContextMenu
           sourceFeature="scheduled"
@@ -1275,9 +1271,8 @@ function SystemJobEditDialog({
               placeholder="Leave untouched to keep the current args. {} clears them."
             />
             <p className="text-xs text-muted-foreground">
-              Sent as <span className="font-mono">variables_args</span> only if
-              you edit this field. The current server-side args are not echoed
-              on this wire, so this replaces rather than merges.
+              {/* Sent as variables_args only when edited; current server args are not echoed back. */}
+              Editing replaces the current args; it never merges.
             </p>
           </div>
 

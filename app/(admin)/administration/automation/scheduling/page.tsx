@@ -65,12 +65,7 @@ export default function SchedulingAdminOverview() {
     <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
       <div className="flex items-center gap-2">
         <CalendarClock className="h-5 w-5 text-blue-500" />
-        <p
-          className="truncate text-xs text-muted-foreground"
-          title="Cross-user view of the sch_* spine. RLS allows platform admins to read everything via the is_platform_admin() escape hatch."
-        >
-          Cross-user view of the sch_* spine. RLS allows platform admins to read everything via the is_platform_admin() escape hatch.
-        </p>
+        {/* Cross-user view of sch_*; platform admins read all via is_platform_admin() in RLS. */}
       </div>
 
       {error && (
@@ -131,7 +126,7 @@ export default function SchedulingAdminOverview() {
           href="/administration/automation/scheduling/tasks"
           icon={ListChecks}
           title="Tasks"
-          description="Every scheduled task across the platform — filter, inspect, disable."
+          description="Every scheduled task across the platform"
         />
         <Tile
           href="/administration/automation/scheduling/runs"
@@ -143,14 +138,14 @@ export default function SchedulingAdminOverview() {
           href="/administration/automation/scheduling/system-jobs"
           icon={CalendarCheck}
           title="System jobs"
-          description="Recurring server jobs (kind=tool) — flip the switch, edit cadence, run now."
+          description="Recurring server jobs you can edit or run now"
           badge="Python"
         />
         <Tile
           href="/administration/automation/scheduling/orphan-leases"
           icon={AlertTriangle}
           title="Orphan leases"
-          description="Claims that lapsed mid-execution — should self-heal but watch for spikes."
+          description="Claims that lapsed mid-run; should self-heal"
         />
         <Tile
           href="/administration/automation/scheduling/cron-tester"
@@ -162,7 +157,7 @@ export default function SchedulingAdminOverview() {
           href="/administration/automation/scheduling/scanner-health"
           icon={CalendarCheck}
           title="Scanner health"
-          description="aidream-backed status: last tick, queue depth, in-flight claims."
+          description="Last tick, queue depth, in-flight claims"
           badge="Python"
         />
         <Tile

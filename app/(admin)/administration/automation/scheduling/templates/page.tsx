@@ -35,9 +35,8 @@ export default function TemplatesPage() {
       <Alert>
         <AlertTitle>Coming next</AlertTitle>
         <AlertDescription>
-          Backed by a new <code>sch_template</code> table owned by a system
-          user and exposed via a curated read RPC. Until that lands, the seeds
-          below show the shape we&apos;re going for.
+          {/* Planned: sch_template table owned by a system user, exposed via a curated read RPC. */}
+          Preview seeds — templates are not live yet.
         </AlertDescription>
       </Alert>
 
