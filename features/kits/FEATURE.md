@@ -53,6 +53,10 @@ The product word lives ONLY in `constants.ts` (`KIT_WORD`) — "Kits" is a worki
 - **Fork rule:** installing needs `viewer` on the source agent (`agx_duplicate_agent`). The flow warns when the agent is `personal` or in another org and opens the canonical share modal (`useOpenShareModal`, resourceType `agent`).
 - **Gallery:** "<Org>'s kits" (client, the SET org) above "From AI Matrx" (server, the system org via `resolveSystemOrgId`); `fetchKits(client, organizationId)` is always scoped.
 
+## Limits (feature knobs, feature `kits`)
+
+`seed_row_cap` (200, org-overridable) and `preview_rows` (8, org + user) are read with `useScopedKitKnobs`; `attached_poll_ms` (4000), `run_lease_seconds` (180) and `archive_max_passes` (200) are platform-locked and read with `kitKnob` (`knobs.ts`). Seeded 2026-09-30 (agent-set, review in 45 days). No constant fallback: a missing knob raises / is shown as missing.
+
 ## Install steps
 
 record the install → declare each table (relations to other kit tables resolved) → `recordWriteMany` the example rows (`{table_key, record_index}` values resolved) → `duplicateAgent` thunk (`agx_duplicate_agent`, the ONE fork; its refusal sentence is shown verbatim) → rename/tag from the manifest → write bindings → `callApi POST /workflows` with `{{table:k}}` / `{{agent:k}}` substituted → mark installed. Failure: the stepper marks the failing step with the door's sentence, the record says `failed`, and the rail offers **Finish install** (resume) or **Remove what was created** (confirm dialog names exactly what is archived). Removal archives only recorded ids: `tableArchive` passes, agent `deleted_at`, `deleteWorkflow` — all soft.
@@ -67,6 +71,8 @@ record the install → declare each table (relations to other kit tables resolve
 ---
 
 ## Change Log
+
+- `2026-09-30` — Interface-text sweep (labels not prose, `variableLabel`, errors ≤140 with Details), limits moved to feature knobs, kit lists via `readAllRows`, agent copies take the next free name on a clash, multi-agent fan-out verified on the clone.
 
 - `2026-09-25` — Save as kit: dialog, serializer + round-trip test, org-scoped gallery, owner edit/unpublish, agent-menu + gallery entry points.
 - `2026-09-25` — Verification fixes: deterministic-id claim + lease, guarded/verified writes, captured org, app-kept ledger, cleared bound defaults, plain errors with Details, per-table order, org change link, removal dialog with dependents + restore windows (tables: the table's `retention_days`; agents/workflows: platform floor, never purged), workflow link → `/workflows/<id>` (no step/canvas editor route exists).
