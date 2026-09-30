@@ -40,6 +40,7 @@ import {
 } from "@/features/scopes/redux/selectors/admin";
 import type { ContextItemRow, OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 
 jest.mock("@/utils/auth/getUserId", () => ({
   getUserId: () => "a3c1d2e4-5f60-4718-9a2b-3c4d5e6f7081",
@@ -67,6 +68,8 @@ jest.mock("@/features/scopes/service/scopeStore", () => {
 });
 
 const svc = jest.mocked(scopesService);
+// The writer is scopeStore (a field edit lives only there since SCOPES-OLD-WRITERS); its mock is the same object.
+const writer = jest.mocked(scopeStore);
 
 const ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
 const OTHER_ORG = "7721ceda-72f0-4e4c-b712-00cf9dc8f117";
@@ -220,7 +223,7 @@ describe("2. the scope-context view is derived, and its writes use the one door"
 
   it("a definition edit shows in the view with no re-read", async () => {
     const { store } = await storeWithView();
-    svc.updateContextItem.mockResolvedValue({ ok: true, data: item({ display_name: "Tone of voice" }) });
+    writer.updateContextItem.mockResolvedValue({ ok: true, data: item({ display_name: "Tone of voice" }) });
 
     await store.dispatch(updateContextItem({ id: "9e8d7c6b-5a49-4382-b716-05f4e3d2c1b0", display_name: "Tone of voice" })).unwrap();
 
