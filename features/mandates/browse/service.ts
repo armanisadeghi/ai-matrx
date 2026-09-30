@@ -30,6 +30,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import {
   ALL_HOMES,
+  ORGS_HOME,
   SYSTEM_HOME,
   countMandatesInHome,
   listMandatesScoped,
@@ -69,16 +70,14 @@ export type MandateListMode =
     };
 
 /**
- * The home the OWNERSHIP tab is asking for. `orgs` with no narrowing is the
- * blended view — the platform's own jobs plus every organization the caller
- * belongs to — which is the only state in which a member of an organization
- * with no mandates of its own sees anything at all.
+ * The home a LANE is asking for: All = the platform's own jobs plus every organization the caller
+ * belongs to; My Orgs = only the organizations the caller belongs to; System = the platform's own.
+ * One organization is the page's organization filter (`query.orgId` → `p_org_id`, which narrows every
+ * lane) — never a lane's and never the active organization.
  */
-export function homeForScope(scope: ListScope, orgId: string | null = null): MandateHome {
+export function homeForScope(scope: ListScope): MandateHome {
   if (scope.kind === "system") return SYSTEM_HOME;
-  // One organization is the page's organization filter (`query.orgId`), never the lane's
-  // and never the active organization.
-  if (scope.kind === "orgs" && orgId) return orgHome(orgId);
+  if (scope.kind === "orgs") return ORGS_HOME;
   return ALL_HOMES;
 }
 
@@ -124,7 +123,7 @@ export async function fetchMandateListPage(
     ...(mode.kind === "organization"
       ? { resolutionFor: "org" as const, organizationId: mode.organizationId }
       : {
-          home: homeForScope(query.scope, query.orgId),
+          home: homeForScope(query.scope),
           resolutionFor: "mine" as const,
           // The page's ORGANIZATION FILTER — a list read never carries the active organization.
           organizationId: query.orgId,
@@ -174,88 +173,65 @@ export async function fetchMandateScopeCounts(
     };
   }
 
+  // Each lane's badge is the door's own `total_count` for that lane's home, under the page's
+  // organization filter — so a badge and the rows behind it cannot disagree.
   const shared = {
     resolutionFor: "mine" as const,
     organizationId: query.orgId,
     search,
     filters,
   };
-  const homes: { home: MandateHome; option: ScopeNarrowOption | null }[] = [
-    { home: ALL_HOMES, option: null },
+  const lanes: { kind: "all" | "orgs" | "system"; home: MandateHome }[] = [
+    { kind: "all", home: ALL_HOMES },
+    { kind: "orgs", home: ORGS_HOME },
     ...(mode.canListSystemHome
-      ? [{ home: SYSTEM_HOME, option: null as ScopeNarrowOption | null }]
+      ? [{ kind: "system" as const, home: SYSTEM_HOME }]
       : []),
-    ...mode.organizations.map((organization) => ({
-      home: orgHome(organization.id),
-      option: { id: organization.id, label: organization.name, count: 0 },
-    })),
   ];
-
-  const settled = await Promise.allSettled(
-    homes.map((entry) => countMandatesInHome(entry.home, shared)),
-  );
+  // The organization filter's per-organization numbers (`narrow.all`): counted across every
+  // organization on purpose, so each option shows what choosing it would list.
+  const perOrg = mode.organizations.map((organization) => ({
+    organization,
+    home: orgHome(organization.id),
+  }));
+  const [laneResults, orgResults] = await Promise.all([
+    Promise.allSettled(lanes.map((lane) => countMandatesInHome(lane.home, shared))),
+    Promise.allSettled(
+      perOrg.map((entry) =>
+        countMandatesInHome(entry.home, { ...shared, organizationId: null }),
+      ),
+    ),
+  ]);
 
   const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  const narrowed: ScopeNarrowOption[] = [];
-  const refusedHomes: string[] = [];
-  settled.forEach((result, index) => {
-    const entry = homes[index];
+  laneResults.forEach((result, index) => {
     if (result.status === "rejected") {
+      // A lane whose count fails is left without a number rather than shown as 0.
       console.error(
-        `[mandates] the list door refused a count for home ${JSON.stringify(entry.home)} — that tab is listed without a number rather than with a wrong one.`,
+        `[mandates] the list door refused a count for the ${lanes[index].kind} lane — it is listed without a number rather than with a wrong one.`,
         result.reason,
       );
-      if (entry.option) {
-        refusedHomes.push(
-          `${entry.option.label} (${
-            result.reason instanceof Error
-              ? result.reason.message
-              : "no message from the door"
-          })`,
-        );
-      }
       return;
     }
-    if (entry.option) {
-      narrowed.push({ ...entry.option, count: result.value });
-      return;
-    }
-    if (entry.home.kind === "system") counts.byKind.system = result.value;
-    else {
-      // ALL_HOMES answers the All lane and My Orgs identically (the platform's own jobs plus every
-      // organization the caller belongs to), so both badges carry the door's one count.
-      counts.byKind.orgs = result.value;
-      counts.byKind.all = result.value;
-    }
+    counts.byKind[lanes[index].kind] = result.value;
   });
-  if (narrowed.length > 0) counts.narrow.orgs = narrowed;
-  // 🚨 WHY THERE IS NOTHING TO NARROW TO, whenever there is nothing (FIX-R6/F1).
-  // The Organization section is DECLARED by this surface, so it always renders;
-  // when it has no options it prints one of these instead of vanishing.
-  else counts.narrowUnavailable = { orgs: unavailableReason(mode, refusedHomes) };
+  const narrowed: ScopeNarrowOption[] = [];
+  orgResults.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error(
+        `[mandates] the list door refused a count for organization ${perOrg[index].organization.id}.`,
+        result.reason,
+      );
+      return;
+    }
+    narrowed.push({
+      id: perOrg[index].organization.id,
+      label: perOrg[index].organization.name,
+      count: result.value,
+    });
+  });
+  if (narrowed.length > 0) counts.narrow.all = narrowed;
   return counts;
-}
-
-/**
- * The sentence a reader gets where the organization options would be. Each
- * branch is a different world, and telling them apart is the whole point: an
- * unread membership list, a genuinely org-less account and a refusing door all
- * produced the SAME empty panel before this existed.
- */
-function unavailableReason(
-  mode: Extract<MandateListMode, { kind: "homes" }>,
-  refusedHomes: readonly string[],
-): string {
-  if (refusedHomes.length > 0) {
-    return `The list door refused a count for ${refusedHomes.join("; ")}. Those organizations are left out rather than shown with a wrong number — reload, and if it persists the door is refusing a membership you do have.`;
-  }
-  if (mode.organizationsError) {
-    return `Your organizations could not be read (${mode.organizationsError}), so there is nothing to narrow to yet. Reload the page — every job you can see is still listed above.`;
-  }
-  if (mode.organizationsLoading) {
-    return "Still reading which organizations you belong to. They will appear here as soon as that answers.";
-  }
-  return "You do not belong to any organization yet, so there is no home to narrow to. Everything above is what the platform itself ships.";
 }
 
 /**

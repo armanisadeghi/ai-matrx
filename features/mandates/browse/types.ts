@@ -118,13 +118,12 @@ export const HEALTH_EXPLANATION: Partial<Record<MandateListHealth, string>> = {
 };
 
 /**
- * THE OWNERSHIP AXIS. Mandates have no `created_by` scope — a person's
- * mandates are their organizations' mandates (D-R3) — so the tab set is the
- * organizations the caller belongs to, plus the platform's own corpus for an
- * admin. `/mandates` passes the admin-conditional subset itself; a
- * module-constant cannot read who is looking.
+ * THE LANES. Mandates have no `created_by` scope — a person's mandates are their organizations'
+ * mandates (D-R3) — so a person has no Mine and no My team (`lanes: { team: false }`). All and My Orgs are
+ * declared here; `/mandates` adds System for a platform admin itself, because a module constant
+ * cannot read who is looking.
  */
-export const MANDATE_LIST_SCOPES: ListScopeKind[] = ["orgs"];
+export const MANDATE_LIST_SCOPES: ListScopeKind[] = ["all", "orgs"];
 
 export interface BadgeMeta {
   label: string;

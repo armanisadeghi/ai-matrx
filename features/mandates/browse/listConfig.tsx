@@ -84,12 +84,12 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
     id: row.id,
     title: row.label,
   }),
-  // OWNERSHIP tabs: the organizations the caller belongs to. `/mandates` adds
-  // the platform's own corpus for an admin — a module constant cannot read who
-  // is looking, so that subset is passed by the page.
+  // LANES: All + My Orgs. `/mandates` adds System for an admin — a module constant cannot read who
+  // is looking, so that subset is passed by the page. Which organization a list narrows to is the
+  // shell's organization filter (`?org_filter=`), not a section of this config.
   scopes: MANDATE_LIST_SCOPES,
   // A mandate is homed to an organization (or the platform), never a team.
-  teamLane: false,
+  lanes: { team: false },
   // Every host passes its own `service` (which home, whose ladder). This
   // default is the honest fallback: the blended corpus, resolved for the
   // caller with no active organization and therefore no org rung.
@@ -114,23 +114,6 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   // be a lie — none offered.
   supportsArchived: false,
   urlState: true,
-  // 🚨 THE ORGANIZATION SECTION IS THE OWNERSHIP AXIS, IN THE PANEL
-  // (one-resolution FIX-R3/W1). It narrows `p_home` — the SAME state the
-  // ownership tab's dropdown writes — so choosing an organization here re-asks
-  // `mnd_list_scoped(p_home => 'org:<id>')`. Nothing is filtered in the
-  // browser: a home is the door's decision and only the door's.
-  //
-  // It is NOT in `facetSections`, deliberately: a facet writes `p_filters`, and
-  // a second way to say "whose mandates" would be a second answer to the one
-  // question `p_home` owns.
-  scopeSections: [
-    {
-      scope: "orgs",
-      label: "Organization",
-      allLabel: "All homes",
-      hint: "Whose job it is. Choosing one organization shows only the jobs that organization added; All homes also includes the jobs the platform ships, so an organization's count never sums to it.",
-    },
-  ],
   facetSections: [
     {
       facet: "feature",

@@ -21,6 +21,8 @@
 //                                               belongs to — a personal
 //                                               workspace is just an
 //                                               organization (D-R3).
+//                 'orgs'        only the organizations the caller belongs to
+//                               (the My Orgs lane) — never the platform's own.
 //   RESOLUTION (p_resolution_for) whose ladder is computed for each of them.
 //                                 'mine'  who fulfils it FOR ME, in the
 //                                         organization I pass (D-R1: the org
@@ -52,12 +54,15 @@ import type { MandateListRow } from "./browse/types";
 /** WHOSE mandates are in the corpus. */
 export type MandateHome =
   | { kind: "all" }
+  | { kind: "orgs" }
   | { kind: "system" }
   | { kind: "org"; organizationId: string };
 
 /** The default: the platform's own plus every organization the caller is in. */
 export const ALL_HOMES: MandateHome = { kind: "all" };
 export const SYSTEM_HOME: MandateHome = { kind: "system" };
+/** My Orgs: mandates homed in an organization the caller belongs to — never the platform's own. */
+export const ORGS_HOME: MandateHome = { kind: "orgs" };
 /**
  * Upper bound for a full-corpus read through this door. The system home
  * holds 409 rows today (measured live 2026-09-07), so reaching this is a
@@ -79,6 +84,8 @@ export function homeParam(home: MandateHome): string {
       return `org:${home.organizationId}`;
     case "all":
       return "all";
+    case "orgs":
+      return "orgs";
   }
 }
 

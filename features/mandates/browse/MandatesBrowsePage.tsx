@@ -11,19 +11,20 @@
 // a mandate is a platform decision, not a user one, so creation moved to
 // /administration/intelligence/mandates/new and this page has no New button.
 //
-// 🚨 OWNERSHIP TABS (one-resolution, 2026-09-07). A mandate's home is its
-// ORGANIZATION (D-R3), so the tabs are the organizations the caller belongs to
-// — a own organization included, because a own organization is just an
-// organization — plus the platform's own corpus for a Matrx admin. A non-admin
-// never sees the System tab; if one asks for that home anyway (a pasted
-// `?scope=system` link), the door refuses with its reason and the shell prints
-// it. Nothing here decides who may see what: `mnd_list_scoped` does, and it is
-// the only thing that does.
+// 🚨 LANES (active-org law, 2026-09-30). The standard lanes, declared once:
+// All (default, via the lists.landing_tab knob) = the platform's own jobs plus
+// every organization the caller belongs to; My Orgs = mandates homed in the
+// caller's organizations; System = the platform's own corpus, for a Matrx
+// admin. No Mine (a mandate has no person owner) and no My team
+// (`lanes: { team: false }`). Which organization a list narrows to is the page's
+// organization filter (`?org_filter=`, default All organizations) — never the
+// active organization. Nothing here decides who may see what: `mnd_list_scoped`
+// does, and it is the only thing that does.
 //
-// The tab picks OWNERSHIP. RESOLUTION is always the caller's own, in their
-// ACTIVE organization (D-R1) — so "Fulfilled by" and "Decided by" answer "what
-// runs for me right now" on every tab, which is the one question this page is
-// for.
+// "Fulfilled by" / "Decided by" resolve against the page organization filter
+// when one is set, else each mandate's OWN home organization — computed by the
+// list door, never from the active organization. The coverage report (badges
+// and the coverage filter) follows the same filter.
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
@@ -32,7 +33,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAdminLevel } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import { usePageOrgFilter } from "@/features/mandates/display-org";
 import { mandateListConfig } from "./listConfig";
+import { MANDATE_LIST_SCOPES } from "./types";
 import { MandateCoverageProvider } from "./CoverageBadge";
 import { MandateHomeNamesProvider } from "./MandateHome";
 import { MandateCoverageNotice, useCoverageList } from "./useCoverageList";
@@ -55,13 +58,12 @@ export function MandatesBrowsePage() {
   }));
 
   const scopes: ListScopeKind[] = isPlatformAdmin
-    ? ["orgs", "system"]
-    : ["orgs"];
+    ? [...MANDATE_LIST_SCOPES, "system"]
+    : MANDATE_LIST_SCOPES;
+  const pageOrgFilter = usePageOrgFilter();
 
-  // The blended home is the honest start: an organization with no mandates of
-  // its own would otherwise open on an empty screen while the platform's 400+
-  // jobs it inherits sit one click away with no sign they exist.
   const { view, service } = useCoverageList({
+    organizationId: pageOrgFilter,
     mode: {
       kind: "homes",
       organizations,
