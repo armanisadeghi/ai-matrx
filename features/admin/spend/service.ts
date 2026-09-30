@@ -540,3 +540,92 @@ export async function fetchSpendBreakdown(
     topRequests: arr(payload.top_requests).map(parseRequest),
   };
 }
+
+// ---------------------------------------------------------------------------
+// ESTIMATED COST — priced by a published rate, never invoiced (2026-09-30).
+//
+// Some ledger rows carry no billed `cost` but an ESTIMATE in
+// `meters.estimated_usd`: compute priced at a published rate (the mandate
+// reference patrol's container time at the AWS Fargate list price) while the
+// real bill is a hosting invoice. The explorer's totals are `cost` only, so
+// without this read those runs showed as $0. They are shown in their own
+// labelled block and NEVER added to any invoiced total — adding them would
+// count the hosting invoice twice.
+//
+// A plain table read, not an RPC: the only rows that carry an estimate are a
+// handful a day, so the sum is done here. Capped and says so.
+// ---------------------------------------------------------------------------
+
+export const ESTIMATED_SPEND_ROW_CAP = 500;
+
+export interface EstimatedSpendRow {
+  id: string;
+  at: string;
+  /** What produced it, e.g. `mandate_reference_patrol_compute`. */
+  source: string;
+  estimatedUsd: number;
+  /** The row's billed `cost` — shown beside the estimate, never merged with it. */
+  ledgerCostUsd: number;
+  linkKind: string | null;
+  linkId: string | null;
+}
+
+export interface EstimatedSpend {
+  rows: EstimatedSpendRow[];
+  totalEstimatedUsd: number;
+  /** True when the window held more rows than the read returned. */
+  capped: boolean;
+}
+
+/** `utility:<feature>:<run id>` → `<feature>`; else the link kind. */
+function estimateSource(leaseHolder: unknown, linkKind: unknown): string {
+  const holder = str(leaseHolder);
+  const parts = holder.split(":");
+  if (parts.length >= 2 && parts[1]) return parts[1];
+  return str(linkKind) || "unlabelled";
+}
+
+export function parseEstimatedSpendRows(raw: unknown): EstimatedSpend {
+  const rows: EstimatedSpendRow[] = [];
+  for (const item of arr(raw)) {
+    const row = asRecord(item);
+    const meters = asRecord(row.meters);
+    const estimated = numOrNull(meters.estimated_usd);
+    if (estimated === null) continue;
+    rows.push({
+      id: str(row.id),
+      at: str(row.created_at),
+      source: estimateSource(row.lease_holder, row.link_kind),
+      estimatedUsd: estimated,
+      ledgerCostUsd: num(row.cost),
+      linkKind: strOrNull(row.link_kind),
+      linkId: strOrNull(row.link_id),
+    });
+  }
+  return {
+    rows,
+    totalEstimatedUsd: rows.reduce((sum, r) => sum + r.estimatedUsd, 0),
+    capped: rows.length >= ESTIMATED_SPEND_ROW_CAP,
+  };
+}
+
+export async function fetchEstimatedSpend(args: {
+  from: Date;
+  to: Date;
+  signal?: AbortSignal;
+}): Promise<EstimatedSpend> {
+  const supabase = createClient();
+  let query = supabase
+    .schema("runtime")
+    .from("global_execution")
+    .select("id, created_at, cost, meters, link_kind, link_id, lease_holder")
+    .not("meters->>estimated_usd", "is", null)
+    .gte("created_at", args.from.toISOString())
+    .lt("created_at", args.to.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(ESTIMATED_SPEND_ROW_CAP);
+  if (args.signal) query = query.abortSignal(args.signal);
+  const { data, error } = await query;
+  if (error) throw error;
+  return parseEstimatedSpendRows(data);
+}

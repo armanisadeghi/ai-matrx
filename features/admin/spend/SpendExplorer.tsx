@@ -26,6 +26,7 @@ import { useIsMounted } from "@/hooks/use-is-mounted";
 
 import { DigHerePanel } from "./explorer/DigHerePanel";
 import { DimensionTables } from "./explorer/DimensionTables";
+import { EstimatedCostPanel } from "./explorer/EstimatedCostPanel";
 import { FilterChips } from "./explorer/FilterChips";
 import { ParetoPanel } from "./explorer/ParetoPanel";
 import { SeriesBars } from "./explorer/SeriesBars";
@@ -243,6 +244,17 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
           ignoredFilters={Object.entries(filters)
             .filter(([key, value]) => key !== "organization" && Boolean(value))
             .map(([key]) => key)}
+          refreshKey={refreshKey}
+        />
+      )}
+
+      {/* Priced by a published rate, never invoiced — its own block, never in
+          the totals below (see EstimatedCostPanel). */}
+      {windowTooWide ? null : (
+        <EstimatedCostPanel
+          from={window.from}
+          to={window.to}
+          windowLabel={windowLabel}
           refreshKey={refreshKey}
         />
       )}

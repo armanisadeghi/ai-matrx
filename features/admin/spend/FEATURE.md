@@ -163,6 +163,20 @@ person → `/administration/users?focus=<id>`, agent →
 A signal that found nothing says "none" — it never disappears (the unpriced
 line included). Signal costs over 25% of the window turn destructive-toned.
 
+### Estimated cost (`explorer/EstimatedCostPanel.tsx`)
+
+Some ledger rows carry no billed `cost` but an estimate in
+`meters.estimated_usd` — compute priced at a published rate while the real bill
+is an invoice (first producer: aidream's `mandate_reference_patrol`, container
+time at the AWS Fargate list price, source `mandate_reference_patrol_compute`).
+The explorer's totals are `cost` only, so those runs read $0 there. The panel
+"Estimated · not invoiced · not in totals" lists them for the window (source,
+when, estimated, billed) with its own sum, and is **never added to any total**:
+hosting is already the `fixed_monthly_usd` figure, so adding the estimate would
+count it twice. It is a direct table read (`fetchEstimatedSpend`, rows capped at
+500 and labelled when capped), not an RPC — only a handful of rows a day carry
+an estimate. Guard: `estimated-spend.test.ts`.
+
 ## Gating
 
 Three layers, in order of authority (the last one is the real one):
@@ -296,6 +310,13 @@ Registered in `features/admin/constants/admin-categories.ts` +
   statements with `auto_explain` rather than guessing.
 
 ## Change Log
+
+- **2026-09-30 (estimated cost shown, never merged)** — New "Estimated" block
+  under Saved by batching: every `runtime.global_execution` row in the window
+  whose price is `meters.estimated_usd` (the mandate reference patrol's
+  Fargate-priced compute first), with its own total, billed `cost` beside it,
+  and no effect on any invoiced figure. Mandate verification 2026-09-30,
+  defect G (spend half).
 
 - **2026-09-14 (surface contract wired)** — The dashboard is now the
   `matrx-admin/billing-spend` surface, with its route mapping, registered
