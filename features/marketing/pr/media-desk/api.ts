@@ -180,6 +180,9 @@ function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
 
 interface RunOptions {
   onStage?: (stage: Stage) => void;
+  /** The durable run id (`seo.collection_run`), the moment the server claims it — so a
+   * reload or remount can pick the run back up (`rejoin.ts`) instead of losing it. */
+  onRun?: (runId: string) => void;
 }
 
 /** The ONE consumer shape for the three commands. */
@@ -209,6 +212,9 @@ async function consume<T>(
       if (kind === "seo.run_in_progress") {
         failure = String(data.message ?? "This is already running.");
         return;
+      }
+      if (kind === "seo.command_run" && typeof data.run_id === "string") {
+        options.onRun?.(data.run_id);
       }
       const label = stageLabel(data);
       if (label) options.onStage?.({ kind, label });

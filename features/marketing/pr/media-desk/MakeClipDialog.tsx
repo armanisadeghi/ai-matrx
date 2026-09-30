@@ -9,7 +9,7 @@
  * A finished clip lands in the brand's clips gallery.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Scissors } from "lucide-react";
 
@@ -31,6 +31,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { makePressClip, type MakeClipResult, type Stage } from "./api";
 import { ClipView } from "./ClipView";
 import { StageList } from "./StageList";
+import { forgetRun, rememberRun, useRejoinRun } from "./rejoin";
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -66,9 +67,18 @@ export function MakeClipDialog({
   const [error, setError] = useState<string | null>(null);
   const fixedUrl = Boolean(coverageMentionId && defaultUrl);
   const clientName = client.trim() || defaultClientName;
-  const canRun = isHttpUrl(url) && clientName.length > 0 && !running;
+  const runKey = `clip:${siteId}:${coverageMentionId ?? "link"}`;
+  const rejoin = useRejoinRun<MakeClipResult>(runKey, open && !running && !result);
+  const shown = running ? null : (result ?? rejoin.result);
+  useEffect(() => {
+    if (rejoin.result?.status === "finished") {
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "press", "clips"] });
+    }
+  }, [rejoin.result, queryClient]);
+  const canRun = isHttpUrl(url) && clientName.length > 0 && !running && !rejoin.following;
 
   const reset = () => {
+    rejoin.clear();
     setStages([]);
     setResult(null);
     setError(null);
@@ -78,6 +88,7 @@ export function MakeClipDialog({
   };
 
   const run = async () => {
+    rejoin.clear();
     setRunning(true);
     setStages([]);
     setResult(null);
@@ -87,8 +98,12 @@ export function MakeClipDialog({
         dispatch,
         siteId,
         { url: url.trim(), client_name: clientName, coverage_mention_id: coverageMentionId },
-        { onStage: (stage) => setStages((prev) => [...prev, stage]) },
+        {
+          onStage: (stage) => setStages((prev) => [...prev, stage]),
+          onRun: (runId) => rememberRun(runKey, runId),
+        },
       );
+      forgetRun(runKey);
       setResult(done);
       if (done.status === "finished") {
         void queryClient.invalidateQueries({ queryKey: ["marketing", "press", "clips"] });
@@ -152,20 +167,31 @@ export function MakeClipDialog({
               If this name is not in the article, no clip is made — a clip never stretches an adjacent mention.
             </p>
           </div>
+          {rejoin.following && !running ? (
+            <StageList
+              stages={[
+                {
+                  kind: "rejoin",
+                  label: `Picking up the clip you started at ${new Date(rejoin.following.startedAt).toLocaleTimeString()} — it kept running while you were away`,
+                },
+              ]}
+              running
+            />
+          ) : null}
           <StageList stages={stages} running={running} />
-          {error ? (
+          {error ?? rejoin.error ? (
             <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-              <span>{error}</span>
-              <ErrorAlchemyMenu error={error} />
+              <span>{error ?? rejoin.error}</span>
+              <ErrorAlchemyMenu error={error ?? rejoin.error ?? ""} />
             </div>
           ) : null}
-          {result ? <ClipView result={result} /> : null}
+          {shown ? <ClipView result={shown} /> : null}
         </div>
 
         <DialogFooter>
           <Button onClick={() => void run()} disabled={!canRun}>
             <Scissors className="mr-1.5 h-4 w-4" aria-hidden />
-            {running ? "Making the clip…" : result ? "Make it again" : "Make clip"}
+            {running ? "Making the clip…" : shown ? "Make it again" : "Make clip"}
           </Button>
         </DialogFooter>
       </DialogContent>

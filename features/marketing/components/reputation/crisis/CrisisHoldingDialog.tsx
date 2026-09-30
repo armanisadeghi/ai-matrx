@@ -44,6 +44,7 @@ import {
   type Stage,
 } from "@/features/marketing/pr/media-desk/api";
 import { StageList } from "@/features/marketing/pr/media-desk/StageList";
+import { forgetRun, rememberRun, useRejoinRun } from "@/features/marketing/pr/media-desk/rejoin";
 import {
   AUDIENCES,
   INCIDENT_TYPES,
@@ -298,7 +299,10 @@ export function CrisisHoldingDialog({
   const [form, setForm] = useState<IntakeForm | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<CrisisHoldingResult | null>(null);
+  const [ownResult, setResult] = useState<CrisisHoldingResult | null>(null);
+  const runKey = `crisis:${siteId}`;
+  const rejoin = useRejoinRun<CrisisHoldingResult>(runKey, open && !ownResult);
+  const result = ownResult ?? rejoin.result;
   const [error, setError] = useState<string | null>(null);
 
   const prefillReady = !brand.isLoading && !facts.isLoading;
@@ -310,14 +314,19 @@ export function CrisisHoldingDialog({
     setRunning(true);
     setStages([]);
     setError(null);
+    rejoin.clear();
     if (!counselReviewMode) setResult(null);
     try {
       const done = await draftCrisisHolding(
         dispatch,
         siteId,
         { intake: toWire(current), counsel_review_mode: counselReviewMode },
-        { onStage: (stage) => setStages((prev) => [...prev, stage]) },
+        {
+          onStage: (stage) => setStages((prev) => [...prev, stage]),
+          onRun: (runId) => rememberRun(runKey, runId),
+        },
       );
+      forgetRun(runKey);
       setResult(done);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -353,11 +362,22 @@ export function CrisisHoldingDialog({
         ) : result && !running ? null : (
           <CrisisIntakeForm form={current} setForm={setForm} disabled={running} />
         )}
+        {rejoin.following && !running ? (
+          <StageList
+            stages={[
+              {
+                kind: "rejoin",
+                label: `Picking up the draft you started at ${new Date(rejoin.following.startedAt).toLocaleTimeString()} — it kept running while you were away`,
+              },
+            ]}
+            running
+          />
+        ) : null}
         <StageList stages={stages} running={running} />
-        {error ? (
+        {error ?? rejoin.error ? (
           <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-            <span>{error}</span>
-            <ErrorAlchemyMenu error={error} />
+            <span>{error ?? rejoin.error}</span>
+            <ErrorAlchemyMenu error={error ?? rejoin.error ?? ""} />
           </div>
         ) : null}
         {result ? (
@@ -370,7 +390,10 @@ export function CrisisHoldingDialog({
         ) : null}
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
           {result && !running ? (
-            <Button variant="ghost" size="sm" onClick={() => setResult(null)}>
+            <Button variant="ghost" size="sm" onClick={() => {
+                setResult(null);
+                rejoin.clear();
+              }}>
               Edit the intake
             </Button>
           ) : null}

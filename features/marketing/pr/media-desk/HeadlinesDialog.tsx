@@ -39,6 +39,7 @@ import {
   type Stage,
 } from "./api";
 import { StageList } from "./StageList";
+import { forgetRun, rememberRun, useRejoinRun } from "./rejoin";
 
 export const FORMAT_LABELS: Record<HeadlineFormat, string> = {
   news: "News headline",
@@ -177,7 +178,10 @@ export function HeadlinesDialog({
   const [peg, setPeg] = useState("");
   const [stages, setStages] = useState<Stage[]>([]);
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<HeadlinesResult | null>(null);
+  const [ownResult, setResult] = useState<HeadlinesResult | null>(null);
+  const runKey = `headlines:${siteId}:${angleId ?? "facts"}`;
+  const rejoin = useRejoinRun<HeadlinesResult>(runKey, open && !running && !ownResult);
+  const result = running ? null : (ownResult ?? rejoin.result);
   const [error, setError] = useState<string | null>(null);
   const ownFacts = factsText
     .split("\n")
@@ -189,6 +193,7 @@ export function HeadlinesDialog({
     setFormats((prev) => (on ? [...new Set([...prev, format])] : prev.filter((f) => f !== format)));
 
   const run = async () => {
+    rejoin.clear();
     setRunning(true);
     setStages([]);
     setResult(null);
@@ -198,8 +203,12 @@ export function HeadlinesDialog({
         dispatch,
         siteId,
         { angle_id: angleId, facts: ownFacts, formats, peg: peg.trim() || null },
-        { onStage: (stage) => setStages((prev) => [...prev, stage]) },
+        {
+          onStage: (stage) => setStages((prev) => [...prev, stage]),
+          onRun: (runId) => rememberRun(runKey, runId),
+        },
       );
+      forgetRun(runKey);
       setResult(done);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -271,6 +280,12 @@ export function HeadlinesDialog({
               className="text-base sm:text-sm"
             />
           </div>
+          {rejoin.following && !running ? (
+            <StageList
+              stages={[{ kind: "rejoin", label: "Picking up the headlines you started — they kept being written while you were away" }]}
+              running
+            />
+          ) : null}
           <StageList stages={stages} running={running} />
           {error ? (
             <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
