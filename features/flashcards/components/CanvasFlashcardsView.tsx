@@ -244,6 +244,14 @@ export function CanvasFlashcardsView({
           resultsByIndex={mobileResultsByIndex}
           grading={grading}
           onClose={() => setMobileDismissed(true)}
+          toolsPanel={
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link href={flashcardSetHref({ id: linkedSetId })}>
+                <Library className="h-4 w-4" />
+                Open in Flashcards
+              </Link>
+            </Button>
+          }
         />
       </div>
     );
