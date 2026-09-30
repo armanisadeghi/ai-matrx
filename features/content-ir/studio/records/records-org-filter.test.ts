@@ -42,7 +42,7 @@ const base = {
   confirmation: "all" as const,
   writer: "all" as const,
   archiveFilter: "active" as const,
-  columnFilters: [],
+  columnFilters: {},
   sort: "created_at" as never,
   direction: "desc" as const,
   page: 1,
