@@ -25,7 +25,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArchivedDisclosure, ArchivedPortals, TablesHome } from "@ai-matrx/records-ui";
-import { RecordsProvider, useRecordsClient, useTables } from "@ai-matrx/records/react";
+import { RecordsProvider, useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { cn } from "@ai-matrx/design-system";
 
@@ -57,7 +57,6 @@ import {
   seesOnlyWhatIsShared,
   type HubItem,
   type HubReadContext,
-  withHubTableFacts,
 } from "./capabilities";
 import { ArchivedTablesList, type ArchivedTable } from "./ArchivedTablesList";
 import { ArchivedPortalsEverywhere } from "./ArchivedPortalsEverywhere";
@@ -91,6 +90,9 @@ import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { makeScope } from "@/lib/list-scope/types";
 
+
+/** The page reads no organization-bound Table list (see `tables` below). */
+const NO_TABLES: readonly Table[] = [];
 
 export interface OrganizationHubProps {
   /** The ONE organization the on-page dropdown chose; null = All Orgs (the person's own reach). */
@@ -246,8 +248,6 @@ export function OrganizationHub({
     };
   }, [dataSource, oneOrganization]);
   const client = useRecordsClient();
-  const tablesRead = useTables();
-  const userIdForFacts = useAppSelector(selectUserId);
   /**
    * WHO CAN SEE EACH TABLE, AND WHICH ARE MINE. The Table list carries each
    * Table's document, and `visibility` and `created_by` are record COLUMNS, not
@@ -286,11 +286,15 @@ export function OrganizationHub({
       alive = false;
     };
   }, [dataSource, organizationId]);
-  const tables = useMemo<readonly Table[]>(() => {
-    const listed = tablesRead.data ?? [];
-    if (facts.phase !== "read") return listed;
-    return withHubTableFacts(listed, facts.rows, userIdForFacts ?? null);
-  }, [tablesRead.data, facts, userIdForFacts]);
+  /**
+   * NO ORGANIZATION-BOUND TABLE LIST ON THIS PAGE (BREAKER-4 B4-02, 2026-09-30). The records client's
+   * `tableList()` (useTables) reads ONE organization's Table kernel, so under All organizations — the
+   * mount carries no organization, by law — it asked `custom.read_records` with none and the store
+   * answered 400 on every visit. Every listing reads `custom.data_home` instead, whose rows carry
+   * their own facts; nothing here needs one organization's list.
+   */
+  const tables = NO_TABLES;
+
 
   /*
    * NO "SHOW EVERYTHING" FOLD ON THIS PAGE (Arman, 2026-09-27 21:40 PT): the home hides nothing.
@@ -319,7 +323,6 @@ export function OrganizationHub({
   // EVERY CAPABILITY, ONE CALL EACH, IN PARALLEL. Ten doors, ten round trips
   // for the whole organization — not ten per table.
   useEffect(() => {
-    if (tablesRead.loading) return;
     // Read the capabilities ONCE, after the lane facts have answered either way,
     // rather than once before and once after.
     if (facts.phase === "reading") return;
@@ -387,7 +390,7 @@ export function OrganizationHub({
     return () => {
       alive = false;
     };
-  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase, everywhere, pages, changedBy]);
+  }, [client, dataSource, organizationId, tables, facts.phase, everywhere, pages, changedBy]);
 
   // THE ARCHIVE, through the store's own archived door over the Table kernel —
   // the same door a table's own archive uses, addressed at the kernel that

@@ -233,9 +233,14 @@ const CLIENT = {
   checklistTemplates: async () => ({ ok: true as const, data: [] }),
 };
 const TABLES = { data: [], loading: false, error: null };
+/** How many times the hub asked the records client for ONE organization's Table list (useTables). */
+let tableListAsked = 0;
 jest.mock("@ai-matrx/records/react", () => ({
   useRecordsClient: () => CLIENT,
-  useTables: () => TABLES,
+  useTables: () => {
+    tableListAsked += 1;
+    return TABLES;
+  },
 }));
 jest.mock("@ai-matrx/records-ui", () => {
   const actual = jest.requireActual("@ai-matrx/records-ui");
@@ -699,5 +704,17 @@ describe("the data home · one flat list, never grouped by organization", () => 
     }
     const shapes = new Set(marks.map((m) => m.className));
     expect(shapes.size).toBe(1);
+  });
+});
+
+// ── BREAKER-4 B4-02 (2026-09-30): under All organizations the mount carries no organization (the
+// law), so the records client's one-organization Table list (useTables → custom.read_records) asked
+// the store with none and got 400 on every visit. RED on the tail-8 hub: it called useTables.
+describe("the data home · no organization-bound list under All organizations", () => {
+  it("never asks for one organization's Table list — every listing reads custom.data_home", async () => {
+    tableListAsked = 0;
+    await mount("", { filter: "all" });
+    expect(tableListAsked).toBe(0);
+    expect(tableRows()).toHaveLength(4);
   });
 });
