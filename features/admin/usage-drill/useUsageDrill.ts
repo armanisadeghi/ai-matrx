@@ -18,6 +18,8 @@ import type { DrillSource } from "@ai-matrx/records";
 import { supabase } from "@/utils/supabase/client";
 import type { DrillExplorerFreshness, DrillNameResolver } from "@/components/official/drill-explorer/types";
 
+import { UNNAMED } from "./usageWords";
+
 export const USAGE_SOURCE: DrillSource = { kind: "entity", token: "ai_usage" };
 /** The Dimensions whose values are ids the names door reads. */
 export const NAMED_DIMENSIONS = ["organization", "person", "agent"] as const;
@@ -39,13 +41,17 @@ function stringMap(value: unknown): Record<string, string> {
 /** The names door, for one Dimension's ids. */
 export function usageNameResolver(organizationId: string, dimension: (typeof NAMED_DIMENSIONS)[number]): DrillNameResolver {
   return {
-    emptyLabel: dimension === "person" ? "No person" : "None",
+    emptyLabel: dimension === "person" ? "No person" : dimension === "agent" ? "No agent" : "No organization",
+    missingLabel: "Reading the name…",
     resolve: async (ids) => {
       const { data, error } = await supabase
         .schema("platform")
         .rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: { organization: [], person: [], agent: [], [dimension]: ids } });
       if (error) return { ok: false, message: `The names behind these groups could not be read (${error.message}), so they show as ids.` };
-      return { ok: true, names: stringMap(isRecord(data) ? data[dimension] : null) };
+      // Every id asked comes back with words: its name, or — when the door could not name it — a
+      // sentence, never the id (VERIFIER-32 F5).
+      const found = stringMap(isRecord(data) ? data[dimension] : null);
+      return { ok: true, names: Object.fromEntries(ids.map((id) => [id, found[id] ?? UNNAMED[dimension]])) };
     },
   };
 }
