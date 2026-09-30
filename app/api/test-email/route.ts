@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { extractErrorMessage } from "@/utils/errors";
+import { outboundSuppression } from "@/lib/communications/outbound-guard";
 
 export async function GET() {
   try {
@@ -30,6 +31,15 @@ export async function GET() {
         success: false,
         error: "EMAIL_FROM is not set in environment variables"
       }, { status: 500 });
+    }
+
+    // 🚨 A copy of production never emails a person (lib/communications/outbound-guard.ts).
+    const suppressed = outboundSuppression("email", "info@aimatrx.com");
+    if (suppressed) {
+      return NextResponse.json(
+        { success: false, error: suppressed.message, code: suppressed.code },
+        { status: 409 },
+      );
     }
 
     // Initialize Resend

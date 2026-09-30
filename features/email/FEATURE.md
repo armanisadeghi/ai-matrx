@@ -7,6 +7,7 @@ There are **two independent paths** with **separate Resend credentials**.
 
 ## Path 1 — Application email (this repo)
 
+- 🚨 **A copy of production never emails a person:** `sendEmail` returns `{ success: false, suppressed: true, error.code: "suppressed_on_clone" }` before Resend when the server's Supabase URL is not production's (`lib/communications/outbound-guard.ts`).
 - **Sender:** `lib/email/client.ts` → Resend API (`resend` package). Application templates in `lib/email/templates/` use the supported `react-email` runtime package; the deprecated `@react-email/components` and `@react-email/tailwind` packages are not used.
 - **Credentials:** `RESEND_API_KEY` in app env (Vercel/Doppler). Uses the app's
   existing Resend keys (e.g. `RealSingles Production`, `Onboarding`). **Not** the
@@ -77,6 +78,7 @@ Reset-password email template must use `{{ .ConfirmationURL }}` (not `{{ .SiteUR
 
 ## Change Log
 
+- **2026-09-30** — Clone outbound guard in `sendEmail` and `app/api/test-email` (X1).
 - **2026-09-21** — Replaced deprecated `@react-email/components` imports in all
   application templates with `react-email`. `react-email` is now a runtime
   dependency; the unused deprecated component, Tailwind, and UUID stub-type

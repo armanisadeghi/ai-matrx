@@ -77,6 +77,8 @@ export interface VerificationResult {
   success: boolean;
   status?: string;
   error?: string;
+  /** `suppressed_on_clone` when the outbound guard refused (lib/communications/outbound-guard.ts). */
+  errorCode?: string;
 }
 
 export type SmsDirection = 'inbound' | 'outbound';

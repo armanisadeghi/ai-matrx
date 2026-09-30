@@ -11,6 +11,7 @@ import type { SendSmsOptions, SendSmsResult } from './types';
 import { extractErrorMessage } from "@/utils/errors";
 import { formatSmsBody } from '@/features/sms/compliance';
 import { isPhoneNumberOptedOut } from './receive';
+import { outboundSuppression } from '@/lib/communications/outbound-guard';
 
 /**
  * Send an SMS message via Twilio Messaging Service.
@@ -18,6 +19,12 @@ import { isPhoneNumberOptedOut } from './receive';
  */
 export async function sendSms(options: SendSmsOptions): Promise<SendSmsResult> {
   const { to, body, from, mediaUrl, statusCallback, messagingServiceSid } = options;
+
+  // 🚨 A copy of production texts only a loopback test handset (lib/communications/outbound-guard.ts).
+  const suppressed = outboundSuppression('sms', to);
+  if (suppressed) {
+    return { success: false, error: suppressed.message, errorCode: suppressed.code };
+  }
 
   try {
     const client = getTwilioClient();

@@ -105,6 +105,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Invariants
 
+- 🚨 A server wired to a copy of production texts only a loopback test handset: `sendSms`, `sendVerification` and the number purchase/webhook repoint refuse with `suppressed_on_clone` first (`lib/communications/outbound-guard.ts`).
 - Phone ownership verification is not consent by itself; the explicit disclosure must also be accepted.
 - `sms_notification_preferences` never manufactures a consent row. Enabling requires an existing verified, opted-in record for the same user and number.
 - The public SMS page, privacy policy, terms URL, settings disclosure, and recorded consent metadata describe one program and must stay aligned.
@@ -144,6 +145,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-09-30` — Clone outbound guard on every Twilio send and account write (`lib/communications/outbound-guard.ts`, X1).
 - `2026-09-26` — **One consent per SMS program, never bundled** (carrier rejection 30913 on the Personal Staff campaign). Enrollment shows a separate unchecked box per program — AI Matrx SMS Notifications (`transactional` + `notifications` rows) and AI Matrx Personal Staff (`ai_agent` row, its own disclosure/version) — and records only what was checked. Live DB (via MCP): `communication.enroll_verified_phone_for_assistant` binds a new Personal Staff destination only with an opted-in `ai_agent` consent (`personal_staff_consent_missing` otherwise); `communication.sms_notification_gate` judges `personal_staff.*` events on `ai_agent` (a number with no `ai_agent` row keeps its earlier notifications consent); `get_my_sms_assistant_program` reports the `ai_agent` status first. Public pages: `/sms` split into per-program sections, new `/sms/personal-staff` (the Personal Staff campaign's opt-in URL). Web opt-out also opts out `ai_agent`.
 - `2026-09-22` — Removed the retired exact-action approval UI and refreshed the producer API contract after the backend gate deletion. Conversation links now describe opening the conversation without promising an approval pause.
 

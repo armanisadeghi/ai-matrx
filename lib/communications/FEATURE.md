@@ -11,6 +11,20 @@ This folder owns shared channel/runtime contracts and provider adapters. Product
 policy, CRM identity/consent, provider transport persistence, and agent execution stay with their
 canonical owners.
 
+## 🚨 No message leaves a copy of production — `outbound-guard.ts`
+
+A server wired to the nightly clone (the clone preview) holds production's Resend/Twilio/Slack keys
+over production's real people. `outboundSuppression(channel, address)` allows a provider call only
+when `NEXT_PUBLIC_SUPABASE_URL` is production's (`db.matrxserver.com` or
+`brsgrqvjdzwihsvnfqkf.supabase.co`); otherwise only a loopback test handset is reachable and the
+seam returns its own failure carrying `suppressed_on_clone` (logged, never a success). Seams:
+`lib/email/client.ts::sendEmail`, `app/api/test-email`, `lib/sms/send.ts::sendSms`,
+`lib/sms/verify.ts::sendVerification`, `lib/sms/numbers.ts` (`purchasePhoneNumber`,
+`updateAllWebhookUrls`), `app/api/slack-proxy`. A new provider send or provider-account write calls
+it first. `LOOPBACK_TEST_HANDSETS` mirrors `aidream/aidream/designated_test_recipients.py` (the
+single home); `outbound-guard.test.ts` fails when they disagree. aidream's twin:
+`aidream/services/clone_connection/outbound_guard.py`.
+
 ## Twilio webhook boundary
 
 `providers/twilio/webhook-validation.ts` is the one signature validator for Messaging and Voice.
@@ -74,6 +88,9 @@ exact URL and all form parameters:
 [recording consent guidance](https://help.twilio.com/articles/360011522553).
 
 ## Change log
+
+- 2026-09-30 — Outbound guard: a clone-wired server never emails, texts, verifies, buys/repoints
+  numbers or posts to Slack for real (X1).
 
 - 2026-09-08 — Proved the first live owner recording and made its canonical file pointer
   retention-safe with `ON DELETE SET NULL`, preserving the call when governed media expires.

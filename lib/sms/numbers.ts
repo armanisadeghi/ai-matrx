@@ -9,6 +9,7 @@ import { createAdminClient } from '@/utils/supabase/adminClient';
 import type { PhoneNumberPurchaseOptions, PhoneNumberInfo } from './types';
 import { extractErrorMessage } from "@/utils/errors";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { outboundSuppression, refuseOutboundOffProduction } from "@/lib/communications/outbound-guard";
 
 /**
  * Search for available phone numbers to purchase.
@@ -71,7 +72,11 @@ export async function purchasePhoneNumber(
   phoneNumber: string,
   userId?: string,
   friendlyName?: string
-): Promise<{ success: boolean; data?: PhoneNumberInfo; error?: string }> {
+): Promise<{ success: boolean; data?: PhoneNumberInfo; error?: string; code?: string }> {
+  // 🚨 A copy of production never buys a number on the real Twilio account.
+  const suppressed = outboundSuppression('provider_write', null);
+  if (suppressed) return { success: false, error: suppressed.message, code: suppressed.code };
+
   const client = getTwilioClient();
   const supabase = createAdminClient();
   const baseUrl = getAppBaseUrl();
@@ -219,6 +224,8 @@ export async function listPhoneNumbers(options?: {
  * Useful after domain changes or initial setup.
  */
 export async function updateAllWebhookUrls(): Promise<{ updated: number; errors: number }> {
+  // 🚨 From a copy of production this would repoint PRODUCTION's live numbers at this server.
+  refuseOutboundOffProduction('provider_write', null);
   const client = getTwilioClient();
   const supabase = createAdminClient();
   const baseUrl = getAppBaseUrl();

@@ -5,6 +5,8 @@
 import { Resend } from "resend";
 import type { Attachment } from "resend";
 
+import { outboundSuppression } from "@/lib/communications/outbound-guard";
+
 // Lazy initialization to avoid build-time errors when API key is not available
 let resend: Resend | null = null;
 
@@ -86,6 +88,18 @@ interface SendEmailOptions {
  */
 export async function sendEmail(options: SendEmailOptions) {
   const { to, subject, html, text, from, replyTo, attachments } = options;
+
+  // 🚨 A copy of production never emails a person (lib/communications/outbound-guard.ts).
+  for (const recipient of Array.isArray(to) ? to : [to]) {
+    const suppressed = outboundSuppression("email", recipient);
+    if (suppressed) {
+      return {
+        success: false,
+        suppressed: true,
+        error: { code: suppressed.code, message: suppressed.message },
+      };
+    }
+  }
 
   const senderAddress = from || process.env.EMAIL_FROM;
 

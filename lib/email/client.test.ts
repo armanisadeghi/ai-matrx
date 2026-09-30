@@ -9,6 +9,8 @@ jest.mock("resend", () => ({
 test("passes attachment bytes unchanged to the Resend email payload", async () => {
   process.env.RESEND_API_KEY = "test-key";
   process.env.EMAIL_FROM = "AI Matrx <mail@matrx.test>";
+  // Resend is mocked; declare production identity so the clone outbound guard lets it through.
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://db.matrxserver.com";
   providerSend.mockResolvedValue({ data: { id: "email-1" }, error: null });
 
   const { sendEmail } = await import("./client");

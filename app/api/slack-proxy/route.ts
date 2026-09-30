@@ -1,10 +1,21 @@
 // app/api/slack-proxy/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
+import { outboundSuppression } from '@/lib/communications/outbound-guard';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { endpoint, method, payload, token } = body;
+
+    // 🚨 A copy of production never writes to a third party's Slack (lib/communications/outbound-guard.ts).
+    const suppressed = outboundSuppression('slack', null);
+    if (suppressed) {
+      return NextResponse.json(
+        { ok: false, error: suppressed.message, code: suppressed.code },
+        { status: 409 },
+      );
+    }
 
     // Construct the Slack API URL
     const url = `https://slack.com/api/${endpoint}`;

@@ -10,6 +10,7 @@
 import { getTwilioClient, getVerifyServiceSid } from './client';
 import type { VerificationResult } from './types';
 import { extractErrorMessage } from "@/utils/errors";
+import { outboundSuppression } from "@/lib/communications/outbound-guard";
 import {
   checkTestHandsetVerification,
   isDesignatedTestHandset,
@@ -38,6 +39,12 @@ export async function sendVerification(
     // env var, flag or header that can put a real person's number on it.
     if (await isDesignatedTestHandset(phoneNumber)) {
       return await sendTestHandsetVerification(phoneNumber);
+    }
+
+    // 🚨 A copy of production never sends a real person a code (lib/communications/outbound-guard.ts).
+    const suppressed = outboundSuppression(channel === 'call' ? 'voice' : 'sms', phoneNumber);
+    if (suppressed) {
+      return { success: false, error: suppressed.message, errorCode: suppressed.code };
     }
 
     const client = getTwilioClient();
