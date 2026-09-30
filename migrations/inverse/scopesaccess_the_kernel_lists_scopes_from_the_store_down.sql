@@ -1,6 +1,8 @@
 -- INVERSE of migrations/campaign/scopesaccess_the_kernel_lists_scopes_from_the_store.sql (lane SCOPES-READS-ACCESS).
 -- chair-step: puts back the kernel's list of scopes reading context.scopes and the kernel expectation production held before.
-@BASEDON@
+-- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 85c7633b6631124a0e1b35d69bafa66da801448334312709c5d068cae1a2f661
+-- based-on: iam.entity_read_kernel_expected() 0a3e31f11fd8251a431963346ec106c9d496d1c781188e726088f12e01515f4b
+-- based-on: iam.entity_read_kernel_members_expected() 70c196f7ba95bb82030180301b53dde5641a5a3315ca1c7293950b9bbd8dc0e9
 
 CREATE OR REPLACE FUNCTION iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)
  RETURNS uuid[]

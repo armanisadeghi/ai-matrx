@@ -52,20 +52,20 @@ select clock_timestamp() as old_start, pg_temp.k_run('old') as lists, clock_time
 \i migrations/campaign/scopesaccess_the_kernel_lists_scopes_from_the_store.sql
 select clock_timestamp() as new_start, pg_temp.k_run('new') as lists, clock_timestamp() as new_end;
 
--- RED: a scope whose creator is someone else in the store only
+-- RED: a scope handed, in the store only, to a person outside its organization — her list must gain it
 savepoint k_planted;
 create temp table k_plant on commit drop as
-  select s.id, s.created_by from context.scopes s join custom.record r on r.id = s.id
-   where s.created_by is not null and s.deleted_at is null and s.visibility = 'personal' and s.id in (select id from k_world)
-   order by s.id limit 1;
-update custom.record set created_by = (select id from auth.users where id <> (select created_by from k_plant) order by id limit 1)
- where id = (select id from k_plant);
+  select s.id, s.organization_id,
+         (select u.id from auth.users u where not exists (select 1 from iam.memberships m where m.user_id = u.id
+             and m.container_id = s.organization_id and m.deleted_at is null) order by u.id limit 1) as outsider
+    from context.scopes s join custom.record r on r.id = s.id
+   where s.deleted_at is null and s.id in (select id from k_world) order by s.id limit 1;
+update custom.record set created_by = (select outsider from k_plant) where id = (select id from k_plant);
 do $red$
 declare v_before uuid[]; v_after uuid[];
 begin
-  if not exists (select 1 from k_plant) then raise exception 'FIXTURE: no personal scope to plant on'; end if;
-  select ids into v_before from k_ans where side = 'new' and uid = (select created_by from k_plant) and lvl = 'viewer' and pub;
-  perform set_config('request.jwt.claims', json_build_object('sub', (select created_by from k_plant), 'role', 'authenticated')::text, true);
+  select ids into v_before from k_ans where side = 'new' and uid = (select outsider from k_plant) and lvl = 'viewer' and pub;
+  perform set_config('request.jwt.claims', json_build_object('sub', (select outsider from k_plant), 'role', 'authenticated')::text, true);
   v_after := array(select x from unnest(iam.accessible_entity_ids('scope', 'viewer'::public.permission_level, 0, true)) x
                     where x in (select id from k_world) order by 1);
   perform set_config('request.jwt.claims', '', true);
