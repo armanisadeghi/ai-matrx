@@ -23,7 +23,6 @@ agent -> Needs Arman) with ` — <question> — <what was checked> — <who>` ad
 Its files stay as they are.
 
 ## Held files
-- _conflicts/2026-09-30-124431/features/marketing/seo/topical-map/panel/PanelSection.tsx.held — LOCAL latest 2026-09-30 12:41; GITHUB latest 2026-09-30 12:37; LOCAL lacks 1 of GITHUB's 32 new lines; GITHUB lacks 4 of LOCAL's 35 new lines; recover: git show 035d0c9ad1:'features/marketing/seo/topical-map/panel/PanelSection.tsx' / ba0e5cf6f2:'features/marketing/seo/topical-map/panel/PanelSection.tsx'
 
 ## Needs a manager
 
