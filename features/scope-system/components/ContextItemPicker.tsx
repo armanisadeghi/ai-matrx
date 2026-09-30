@@ -62,7 +62,6 @@ import {
   selectOrganizationsList,
   selectTreeStatus,
 } from "@/features/scopes/redux/selectors/tree";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
   listScopeTypeItems,
@@ -144,7 +143,6 @@ export function ContextItemPicker({
   customData,
 }: ContextItemPickerProps) {
   const dispatch = useAppDispatch();
-  const activeOrgId = useAppSelector(selectActiveOrganizationId);
   const orgs = useAppSelector(selectOrganizationsList);
   const treeStatus = useAppSelector(selectTreeStatus);
   const selectOrgIdForScopeType = useMemo(
@@ -158,8 +156,8 @@ export function ContextItemPicker({
    * one organization — so the tree answers the question. Guessing with the
    * active org is what made reopening a binding show the wrong organization, an
    * unresolvable scope type and a frozen item picker (PNI-000 re-verify 1). The
-   * active org is the fallback for ONE case only: a binding with no scope type,
-   * where nothing has been chosen yet.
+   * active org never seeds the picker: with nothing chosen yet the person picks
+   * an organization (a sole membership is auto-selected — nothing to choose).
    */
   const ownerOrgId = useAppSelector((s) =>
     selectOrgIdForScopeType(s, value.scopeTypeId),
@@ -171,8 +169,10 @@ export function ContextItemPicker({
     value.source ?? (value.scopeTypeId ? "scope" : "system");
   const isSystem = source === "system";
 
-  // Default the displayed org to the value, else the active org (never assumed/required).
-  const orgId = value.orgId || ownerOrgId || activeOrgId || "";
+  // The org is the value's, else the scope type's owner, else the sole
+  // membership; otherwise unset until the person picks (never the active org).
+  const orgId =
+    value.orgId || ownerOrgId || (orgs.length === 1 ? orgs[0].id : "");
   const scopeTypeId = value.scopeTypeId || "";
   // System items are cached under a sentinel so the same selectors serve both.
   const itemsKey = isSystem ? SYSTEM_ITEMS_KEY : scopeTypeId;

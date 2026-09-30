@@ -30,12 +30,8 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
-  makeSelectOrphanProjects,
-  makeSelectProjectsForOrg,
-  makeSelectTaskBucket,
-  makeSelectTasksForLevel,
+  selectOrganizations,
   selectOrganizationsList,
   selectTreeStatus,
 } from "@/features/scopes/redux/selectors/tree";
@@ -45,6 +41,7 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import type {
   OrgNode,
   ProjectNode,
+  TaskBucketEntry,
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
@@ -77,7 +74,10 @@ interface BaseProps {
   label?: string;
   /** Custom empty-state text. */
   emptyText?: string;
-  /** Override the org context. Defaults to the active org. */
+  /**
+   * Narrow to one organization. Omitted = every organization the person
+   * belongs to (the active org never narrows a read).
+   */
   organizationId?: string | null;
 }
 
@@ -91,8 +91,8 @@ interface TaskProps extends BaseProps {
   kind: "task";
   /**
    * Pin task bucket to this project. If null/undefined, the picker
-   * resolves the bucket from (in order): caller-supplied scope, then
-   * active org.
+   * resolves the bucket from the caller-supplied org, else every org the
+   * person belongs to.
    */
   projectId?: string | null;
   /** When picking a task whose project differs, optionally cascade. */
@@ -111,43 +111,92 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
   const dispatch = useAppDispatch();
   const { error: treeError, refresh: refreshTree } = useScopeTree();
   const treeStatus = useAppSelector(selectTreeStatus);
-  const activeOrgId = useAppSelector(selectActiveOrganizationId);
-  const orgId = props.organizationId ?? activeOrgId;
+  // No org prop = every organization (never the active one).
+  const orgId = props.organizationId ?? null;
 
   // ─── Pull rows per kind ────────────────────────────────────────────────
   const organizations = useAppSelector(selectOrganizationsList);
-  const selectProjectsForOrg = useMemo(() => makeSelectProjectsForOrg(), []);
-  const selectOrphanProjects = useMemo(() => makeSelectOrphanProjects(), []);
-  const selectTaskBucket = useMemo(() => makeSelectTaskBucket(), []);
-  const selectTasks = useMemo(() => makeSelectTasksForLevel(), []);
+  const orgsById = useAppSelector(selectOrganizations);
+  const orphanProjectsByOrg = useAppSelector(
+    (s) => s.scopesTree.orphanProjectsByOrg,
+  );
+  const tasksByKey = useAppSelector((s) => s.scopesTree.tasksByKey);
+  const tasksById = useAppSelector((s) => s.scopesTree.tasksById);
 
-  const projects = useAppSelector((s) => selectProjectsForOrg(s, orgId));
-  const orphanProjectsBucket = useAppSelector((s) =>
-    selectOrphanProjects(s, orgId),
+  const orgIds = useMemo(
+    () => (orgId ? [orgId] : organizations.map((o) => o.id)),
+    [orgId, organizations],
+  );
+  const projects = useMemo(
+    () => orgIds.flatMap((id) => orgsById[id]?.projects ?? []),
+    [orgIds, orgsById],
+  );
+  const orphanBuckets = useMemo(
+    () =>
+      orgIds.flatMap((id) => {
+        const b = orphanProjectsByOrg[id];
+        return b ? [b] : [];
+      }),
+    [orgIds, orphanProjectsByOrg],
+  );
+  const orphanItems = useMemo(
+    () =>
+      orphanBuckets.flatMap((b) => (b.status === "ready" ? b.items : [])),
+    [orphanBuckets],
+  );
+  const orphansUnfetched = orgIds.some(
+    (id) => (orphanProjectsByOrg[id]?.status ?? "unfetched") === "unfetched",
   );
 
   // ─── Task bucket level resolution ──────────────────────────────────────
   const taskProjectId =
     props.kind === "task" ? (props.projectId ?? null) : null;
-  const taskLevel: { level: TaskBucketLevel; id: string } | null =
-    useMemo(() => {
-      if (props.kind !== "task") return null;
-      if (taskProjectId) return { level: "project", id: taskProjectId };
-      if (orgId) return { level: "org", id: orgId };
-      return null;
-    }, [props.kind, taskProjectId, orgId]);
+  const taskLevels: { level: TaskBucketLevel; id: string }[] = useMemo(() => {
+    if (props.kind !== "task") return [];
+    if (taskProjectId) return [{ level: "project", id: taskProjectId }];
+    return orgIds.map((id) => ({ level: "org" as const, id }));
+  }, [props.kind, taskProjectId, orgIds]);
+  const taskLevelsKey = taskLevels.map((l) => `${l.level}:${l.id}`).join("|");
 
-  const taskBucket = useAppSelector((s) =>
-    taskLevel ? selectTaskBucket(s, taskLevel) : null,
+  const taskBuckets: TaskBucketEntry[] = useMemo(
+    () =>
+      taskLevels.flatMap((l) => {
+        const b = tasksByKey[`${l.level}:${l.id}`];
+        return b ? [b] : [];
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [taskLevelsKey, tasksByKey],
   );
-  const tasksForLevel = useAppSelector((s) =>
-    taskLevel ? selectTasks(s, taskLevel) : undefined,
-  );
+  const tasksForLevel: TaskNode[] | undefined = useMemo(() => {
+    if (taskLevels.length === 0) return undefined;
+    return taskBuckets.flatMap((b) =>
+      b.taskIds
+        .map((id) => tasksById[id])
+        .filter((node): node is TaskNode => node !== undefined),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskLevelsKey, taskBuckets, tasksById]);
+  // One status for the whole read: any failure/loading shows, "empty" only
+  // when every bucket is empty.
+  const taskStatus: TaskBucketEntry["status"] = taskBuckets.some(
+    (b) => b.status === "error",
+  )
+    ? "error"
+    : taskBuckets.some((b) => b.status === "loading")
+      ? "loading"
+      : taskBuckets.length > 0 &&
+          taskBuckets.length === taskLevels.length &&
+          taskBuckets.every((b) => b.status === "empty")
+        ? "empty"
+        : "idle";
+  const taskError =
+    taskBuckets.find((b) => b.status === "error")?.error ?? null;
 
   useEffect(() => {
-    if (props.kind !== "task" || !taskLevel) return;
-    void dispatch(ensureScopeTasks(taskLevel.level, taskLevel.id));
-  }, [dispatch, props.kind, taskLevel?.level, taskLevel?.id]);
+    if (props.kind !== "task") return;
+    for (const l of taskLevels) void dispatch(ensureScopeTasks(l.level, l.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, props.kind, taskLevelsKey]);
 
   // ─── Compute the options for the active kind ───────────────────────────
   const { options, orphanOptions, displayName } = useMemo(() => {
@@ -187,16 +236,14 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
         if (hasMatch) mainOpts.push(row);
         else orphanOpts.push(row);
       }
-      if (orphanProjectsBucket.status === "ready") {
-        for (const p of orphanProjectsBucket.items) {
-          if (seen.has(p.id)) continue;
-          seen.add(p.id);
-          orphanOpts.push({ id: p.id, name: p.name });
-        }
+      for (const p of orphanItems) {
+        if (seen.has(p.id)) continue;
+        seen.add(p.id);
+        orphanOpts.push({ id: p.id, name: p.name });
       }
       const name =
         projects.find((p) => p.id === props.value)?.name ??
-        orphanProjectsBucket.items.find((p) => p.id === props.value)?.name ??
+        orphanItems.find((p) => p.id === props.value)?.name ??
         null;
       return {
         options: mainOpts,
@@ -228,7 +275,7 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
     // project-mode deps:
     props.kind === "project" ? props.filterScopeIds : null,
     projects,
-    orphanProjectsBucket,
+    orphanItems,
     // task-mode deps:
     tasksForLevel,
   ]);
@@ -271,8 +318,8 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
   };
 
   const handleLoadOrphans = () => {
-    if (props.kind !== "project" || !orgId) return;
-    void dispatch(ensureOrphanProjects(orgId));
+    if (props.kind !== "project") return;
+    for (const id of orgIds) void dispatch(ensureOrphanProjects(id));
   };
 
   // ─── Kind metadata ────────────────────────────────────────────────────
@@ -293,7 +340,7 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
         // read-gate-exempt: label text only; the list renders ReadFailure instead of emptyText when the tree read fails
         defaultEmpty: orgId
           ? "No projects in this organization"
-          : "Select an organization first",
+          : "No projects in any of your organizations",
       };
     }
     return {
@@ -301,30 +348,32 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
       accentClass: "text-sky-500",
       defaultLabel: "Task",
       defaultEmpty:
-        props.kind === "task" && !taskLevel
-          ? "Pick an org or project first"
-          : taskBucket?.status === "loading"
+        props.kind === "task" && taskLevels.length === 0
+          ? "No organizations or projects to pick tasks from"
+          : taskStatus === "loading"
             ? "Loading tasks…"
             // read-gate-exempt: label text only; the list renders ReadFailure instead of emptyText when the task or tree read fails
-            : taskBucket?.status === "empty"
+            : taskStatus === "empty"
               ? "No open tasks at this level"
               : "No tasks",
     };
-  }, [props.kind, orgId, taskLevel, taskBucket?.status]);
+  }, [props.kind, orgId, taskLevels.length, taskStatus]);
 
   // The read behind this picker: the task bucket for tasks, the scope tree
   // for organizations and projects. A failed read is shown, never "none".
   const readError: unknown =
     props.kind === "task"
-      ? taskBucket?.status === "error"
-        ? (taskBucket.error ?? true)
+      ? taskStatus === "error"
+        ? (taskError ?? true)
         : null
       : treeStatus === "error"
         ? (treeError ?? true)
         : null;
   const retryRead = () => {
-    if (props.kind === "task" && taskLevel) {
-      void dispatch(ensureScopeTasks(taskLevel.level, taskLevel.id, { refresh: true }));
+    if (props.kind === "task" && taskLevels.length > 0) {
+      for (const l of taskLevels) {
+        void dispatch(ensureScopeTasks(l.level, l.id, { refresh: true }));
+      }
     } else {
       void refreshTree();
     }
@@ -476,7 +525,7 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
                     ))}
                   </>
                 )}
-                {orphanProjectsBucket.status === "unfetched" && orgId && (
+                {orphansUnfetched && orgIds.length > 0 && (
                   <button
                     type="button"
                     onClick={handleLoadOrphans}

@@ -161,7 +161,7 @@ export function ScopesSettingsPanel() {
               showIcon={false}
               className="font-semibold text-foreground"
             />
-            . The hub and manager default to this org.
+            . New scopes you create are saved in this org.
           </p>
         </Card>
       )}

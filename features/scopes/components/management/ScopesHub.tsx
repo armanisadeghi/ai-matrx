@@ -75,12 +75,11 @@ export function ScopesHub() {
   const active = useActiveContext();
   const [query, setQuery] = useState("");
 
-  // Active org first, then personal, then alphabetical; types by sort_order.
-  const orderedOrgs = [...organizations].sort((a, b) => {
-    if (a.id === active.organizationId) return -1;
-    if (b.id === active.organizationId) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  // Alphabetical by org, types by sort_order — the active org never orders
+  // (or otherwise shapes) what the hub shows.
+  const orderedOrgs = [...organizations].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   const dimensions: DimensionRow[] = orderedOrgs.flatMap((org) =>
     [...org.scope_types]
       .sort((a, b) => a.sort_order - b.sort_order)

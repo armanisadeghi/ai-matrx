@@ -1610,14 +1610,6 @@ export function ContextAssignmentField({
                     if (types.length === 0) return null;
                     return (
                       <div key={groupOrg.id} className="space-y-2">
-                        {isAllOrgs && (
-                          <div className="flex items-center gap-1.5 px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            <Building2 className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">
-                              {formatOrgDisplayName(groupOrg)}
-                            </span>
-                          </div>
-                        )}
                         {types.map(({ type, scopes, total }) => {
                           const Icon = resolveIcon(type.icon);
                           const c = resolveColor(type);
@@ -1627,7 +1619,13 @@ export function ContextAssignmentField({
                               icon={Icon}
                               iconClass={c.fg}
                               borderClass={c.border}
-                              title={type.label_plural}
+                              // The org is a label on the section, never a heading
+                              // that groups sections (org filter law, rule 3).
+                              title={
+                                isAllOrgs && organizations.length > 1
+                                  ? `${type.label_plural} · ${formatOrgDisplayName(groupOrg)}`
+                                  : type.label_plural
+                              }
                               count={total}
                               defaultOpen={defaultScopeTypeOpen}
                               addLabel={

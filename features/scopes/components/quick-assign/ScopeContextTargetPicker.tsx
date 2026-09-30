@@ -42,7 +42,6 @@ import {
   selectTreeError,
 } from "@/features/scopes/redux/selectors/tree";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
 import {
   makeSelectItemsForType,
@@ -95,11 +94,12 @@ export function ScopeContextTargetPicker({
   disabled,
 }: ScopeContextTargetPickerProps) {
   const dispatch = useAppDispatch();
-  const activeOrgId = useAppSelector(selectActiveOrganizationId);
   const orgs = useAppSelector(selectOrganizationsList);
   const treeError = useAppSelector(selectTreeError);
 
-  const orgId = value.orgId || activeOrgId || "";
+  // Unset until the person picks (a sole membership is auto-selected) — the
+  // active org never seeds what a picker shows.
+  const orgId = value.orgId || (orgs.length === 1 ? orgs[0].id : "");
   const scopeTypeId = value.scopeTypeId || "";
   const scopeId = value.scopeId || "";
   const contextItemId = value.contextItemId || "";
