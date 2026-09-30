@@ -59,7 +59,9 @@ export function candidateTabCount(candidate: LiveCandidate | null | undefined): 
 
 /** Null while reading, when there is no open candidate, or when the read failed. */
 export function useCandidateCount(mandateKey: AnyMandateKey | null): RecordTabCount | null {
-  const dispatch = useAppDispatch();
+  // Read through a ref: the store's dispatch is stable, but a host that hands a
+  // fresh one per render must not turn every render into a re-read.
+  const dispatchRef = useRef(useAppDispatch());
   const [count, setCount] = useState<{
     key: string;
     count: RecordTabCount | null;
@@ -78,7 +80,7 @@ export function useCandidateCount(mandateKey: AnyMandateKey | null): RecordTabCo
     if (!mandateKey) return;
     let cancelled = false;
     inFlight.current = true;
-    fetchLiveCandidates(dispatch, mandateKey).finally(() => {
+    fetchLiveCandidates(dispatchRef.current, mandateKey).finally(() => {
       inFlight.current = false;
     }).then(
       (answer) => {
@@ -104,7 +106,7 @@ export function useCandidateCount(mandateKey: AnyMandateKey | null): RecordTabCo
     return () => {
       cancelled = true;
     };
-  }, [dispatch, mandateKey, reads]);
+  }, [mandateKey, reads]);
 
   const current = count && count.key === mandateKey ? count : null;
   const pollMs = useCandidatePollMs(Boolean(current?.collecting));
