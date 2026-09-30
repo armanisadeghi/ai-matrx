@@ -1,6 +1,6 @@
 // features/marketing/seo/topical-map/knobs.ts
 //
-// The 56 organization-configurable opinions behind every topical-map screen
+// The 57 organization-configurable opinions behind every topical-map screen
 // (requirements §0.1 and §5, law 6: opinions become knobs). Feature key
 // `seo.topical_map` in `platform.feature_knob`; every row is overridable by
 // organization, brand, site and user.
@@ -13,7 +13,7 @@
 //
 // 🚨 THE COUNT IS THE ROW SET, NOT A NUMBER SOMEBODY TYPED. `TOPICAL_MAP_KNOB_KEYS`
 // is every `seo.topical_map` key the database holds (measured live 2026-09-18,
-// 53 rows, 56 since SETTINGS-3 landed three page sizes). This file used to read 27 of them, and the 26 it skipped — every
+// 53 rows, 56 since SETTINGS-3 landed three page sizes, 57 since the topic panel paged its sections 2026-09-30). This file used to read 27 of them, and the 26 it skipped — every
 // mapper, intent and region ceiling, the geography policy, the table's default
 // column set — were read nowhere in this repo at all, so an admin turning them
 // changed nothing a person could see. A lane that needs a knob this file lacks
@@ -122,6 +122,8 @@ export interface TopicalMapKnobs {
   history_page_size: number;
   /** Rows each wanted/held-back backlog shows (SETTINGS-3: was WANTED_TOPIC_LIMIT = 20). */
   wanted_topic_limit: number;
+  /** Rows each topic-panel section shows before "Show more", and each step's size. */
+  panel_page_size: number;
   // The detail panel (§2.3)
   detail_panel: MapDetailPanel;
   // Agents (§2.4)
@@ -210,6 +212,7 @@ const INT_KNOB_KEYS = [
   "overview_min_nodes",
   "page_summary_max_words",
   "pages_low_traffic_clicks_max",
+  "panel_page_size",
   "performance_window_days",
   "region_binding_batch_size",
   "region_daily_page_ceiling",
@@ -419,7 +422,7 @@ async function readEnumKnobs<K extends string>(
   return out;
 }
 
-/** Reads all 56. One cached fetch backs every call (see `featureKnobs`). */
+/** Reads all 57. One cached fetch backs every call (see `featureKnobs`). */
 export async function readTopicalMapKnobs(): Promise<TopicalMapKnobs> {
   const f = TOPICAL_MAP_KNOB_FEATURE;
   const [ints, bools, enums, json, tableDefaultColumns] = await Promise.all([
@@ -451,7 +454,7 @@ export interface TopicalMapKnobsState {
 }
 
 /**
- * The 56 knobs, for a client screen. `knobs` is null until they load and stays
+ * The 57 knobs, for a client screen. `knobs` is null until they load and stays
  * null on failure — a caller renders the failure, never a guessed default.
  *
  * It is a TanStack query (`topicalMapKeys.knobs`, 60s fresh) rather than the

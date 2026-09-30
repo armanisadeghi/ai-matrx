@@ -17,15 +17,11 @@
 
 import { useAppSelector } from "@/lib/redux/hooks";
 
-import {
-  useMapTopicAssociations,
-  useMapTopicRows,
-  useMapTree,
-  useTopicalMap,
-} from "../hooks";
+import { useMapTopicRows, useMapTree, useTopicalMap } from "../hooks";
 import { useTopicalMapKnobs } from "../knobs";
 import { selectMapLoadedAt, selectMapTopic } from "../redux/selectors";
 import type { MapTopic, MapTopicAssociation } from "../types";
+import { useTopicAssociationPages, type KindPaging } from "./useTopicAssociationPages";
 
 /** The same keys `MapTreeHarness` loads with, so the cache is shared. */
 export const PANEL_TREE_INCLUDE = ["description", "status", "counts", "facets"];
@@ -39,9 +35,15 @@ export interface TopicPanelData {
   topicRow: MapTopic | null;
   /** `seo.map_tree`, only when this session has not loaded the map yet. */
   tree: ReturnType<typeof useMapTree>;
-  /** `seo.map_topic_associations` for this slug — the generic section's whole source. */
-  associations: ReturnType<typeof useMapTopicAssociations>;
+  /**
+   * `seo.map_topic_associations` for this slug, PAGED by the `panel_page_size`
+   * knob — the first page's query (pending / error / refetch).
+   */
+  associations: ReturnType<typeof useTopicAssociationPages>["first"];
+  /** Every row loaded so far: the first page of each kind plus every "Show more". */
   associationRows: readonly MapTopicAssociation[];
+  /** "Show more" for one kind (`web_page`, `seo_keyword`, `plan_node`, or any other token). */
+  paging: (kind: string) => KindPaging;
   knobs: ReturnType<typeof useTopicalMapKnobs>;
   /** True while the tree is being loaded BY THE PANEL (not by a workspace). */
   treeSelfLoading: boolean;
@@ -62,8 +64,13 @@ export function useTopicPanelData(mapId: string, slug: string, siteId: string | 
 
   const map = useTopicalMap(mapId);
   const topicRows = useMapTopicRows(mapId);
-  const associations = useMapTopicAssociations(mapId, slug, null, topic !== null);
   const knobs = useTopicalMapKnobs();
+  const associations = useTopicAssociationPages(
+    mapId,
+    slug,
+    knobs.knobs?.panel_page_size ?? null,
+    topic !== null,
+  );
 
   const topicRow = topicRows.data?.find((row) => row.slug === slug) ?? null;
 
@@ -72,8 +79,9 @@ export function useTopicPanelData(mapId: string, slug: string, siteId: string | 
     topicRows,
     topicRow,
     tree,
-    associations,
-    associationRows: associations.data ?? [],
+    associations: associations.first,
+    associationRows: associations.rows,
+    paging: associations.paging,
     knobs,
     treeSelfLoading: needsTree && tree.isPending,
   };

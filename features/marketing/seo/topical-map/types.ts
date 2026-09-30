@@ -342,6 +342,12 @@ export interface MapTopicAssociationResolved {
     role?: string;
     direction: MapTopicAssociationDirection;
     payload?: Json;
+    /**
+     * Present only on a PAGED read (`limit` passed): where this row sits in its
+     * kind. Pass the last shown row's cursor as `after`, with that one kind, to
+     * read the rows after it.
+     */
+    cursor?: string;
   };
   /**
    * The other end, resolved. A facet value (`kind: "seo_map_facet_value"`)

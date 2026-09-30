@@ -294,7 +294,11 @@ function TopicDetailBodyInner({
           readOnly={readOnly}
         />
 
-        {data.associations.isPending ? (
+        {data.knobs.error ? (
+          <PanelSection title="Attachments">
+            <TopicalMapFailed what="this organization's map settings" error={data.knobs.error} />
+          </PanelSection>
+        ) : data.associations.isPending ? (
           <PanelSection title="Attachments">
             <SuspenseLoader centered={false} message="Loading what is attached to this topic…" />
           </PanelSection>
@@ -311,6 +315,8 @@ function TopicDetailBodyInner({
                 siteId={siteId}
                 pages={split.pages}
                 intentColors={knobs.intent_colors}
+                paging={data.paging("web_page")}
+                total={topic.pages}
               />
             ) : (
               <PanelSection title="Pages" count={split.pages.length}>
@@ -326,8 +332,16 @@ function TopicDetailBodyInner({
               planned={split.planned}
               readOnly={readOnly}
               onMade={refetchAssociations}
+              paging={data.paging("plan_node")}
+              total={topic.planned}
             />
-            <KeywordsSection slug={slug} siteId={siteId} keywords={split.keywords} />
+            <KeywordsSection
+              slug={slug}
+              siteId={siteId}
+              keywords={split.keywords}
+              paging={data.paging("seo_keyword")}
+              total={topic.keywords}
+            />
             <AssociationsSection
               topicName={topic.name}
               topicId={data.topicRow?.id ?? null}
@@ -336,6 +350,7 @@ function TopicDetailBodyInner({
               attachedKeys={attachedKeys}
               readOnly={readOnly}
               onChanged={refetchAssociations}
+              paging={data.paging}
             />
           </>
         )}

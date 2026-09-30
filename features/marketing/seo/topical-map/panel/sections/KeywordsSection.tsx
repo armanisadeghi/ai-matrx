@@ -18,12 +18,17 @@ import { AppLink } from "@/components/navigation/AppLink";
 import { useMapLinks } from "../../links";
 import type { MapTopicAssociationResolved } from "../../types";
 import { itemLabel } from "../associationGroups";
-import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { PanelEmptyLine, PanelSection, ShowMoreRow, pagedCount } from "../PanelSection";
+import type { KindPaging } from "../useTopicAssociationPages";
 
 export interface KeywordsSectionProps {
   slug: string;
   siteId: string | null;
   keywords: readonly MapTopicAssociationResolved[];
+  /** "Show more" for this kind — the panel reads only the rows it shows. */
+  paging: KindPaging;
+  /** The tree's own total for this kind, printed while more rows exist. */
+  total?: number;
 }
 
 function payloadSiteId(row: MapTopicAssociationResolved): string | null {
@@ -35,7 +40,7 @@ function payloadSiteId(row: MapTopicAssociationResolved): string | null {
   return null;
 }
 
-export function KeywordsSection({ slug, siteId, keywords }: KeywordsSectionProps) {
+export function KeywordsSection({ slug, siteId, keywords, paging, total }: KeywordsSectionProps) {
   const links = useMapLinks();
   const sites = new Set(
     keywords
@@ -49,7 +54,7 @@ export function KeywordsSection({ slug, siteId, keywords }: KeywordsSectionProps
   return (
     <PanelSection
       title="Keywords"
-      count={keywords.length}
+      count={pagedCount(keywords.length, paging, total)}
       action={
         workbench ? (
           <AppLink
@@ -93,6 +98,7 @@ export function KeywordsSection({ slug, siteId, keywords }: KeywordsSectionProps
           })}
         </ul>
       )}
+      <ShowMoreRow paging={paging} shown={keywords.length} total={total} noun="keywords" />
     </PanelSection>
   );
 }

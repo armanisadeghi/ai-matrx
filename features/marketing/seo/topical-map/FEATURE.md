@@ -99,7 +99,7 @@ fixture would only prove the selector agrees with whoever wrote it.
 
 ## Knobs
 
-`platform.feature_knob`, feature `seo.topical_map`, 53 keys, all overridable by organization,
+`platform.feature_knob`, feature `seo.topical_map`, 57 keys, all overridable by organization,
 brand, site and user. Enum vocabularies derive from `features/settings/universal/knobEnumVocabularies.generated.ts`, never hand-typed. A missing row RAISES by design — there is no code fallback, and
 `useTopicalMapKnobs` returns `knobs: null` with the error rather than a guessed default.
 
@@ -115,6 +115,20 @@ went blank**. An unknown value now degrades: it is captured for the Error Inspec
 reader falls back to that row's own `default_value`.
 
 ## Change log
+
+- **2026-09-30** — The topic panel PAGES its attachments. After 14,303 keyword homes moved onto
+  `seo.site_keyword_value.topic_id`, All Green's "Consumer Electronics Recycling" panel (2,857
+  keywords + 3,779 pages) took 36 s on the clone (45 s live): `seo.map_topic_associations`
+  evaluated each item's resolve + access + traffic up to four times (an inlined CTE referenced
+  four times), checked the keyword's site once per keyword, read traffic one page at a time, and
+  the panel asked for every row. Migration `seo_topic_panel_reads_each_item_once_and_pages.sql`:
+  each item is resolved once, the site check runs once per distinct site, traffic is one read per
+  window, and new `p_limit` / `p_after` (per-kind keyset paging, `association.cursor`) let the
+  panel read only what it shows. Access is the same predicates, proved byte-identical (unpaged)
+  for a member, an admin and a refused non-member on the clone. The panel reads `panel_page_size`
+  (new knob, 100) rows per kind and each section offers "Show more"
+  (`panel/useTopicAssociationPages.ts`, `pageByKind`). The outline's per-topic page rows and
+  `map_tree`'s `associations` include still read unpaged (now ~5x faster).
 
 - **2026-09-20** — Research integration rebuilt server-side (aidream `134d180ed9`): `existing_research`
   reads the `research-topical-map` bundle (named offerings per page with URLs, keyword syntheses, the

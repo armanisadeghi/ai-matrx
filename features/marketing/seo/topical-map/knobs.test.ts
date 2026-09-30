@@ -1,6 +1,6 @@
 // features/marketing/seo/topical-map/knobs.test.ts
 //
-// FORCING FUNCTIONS for the 56-row knob reader (CONTRACTS §7).
+// FORCING FUNCTIONS for the 57-row knob reader (CONTRACTS §7).
 //
 // The rows this suite serves are NOT invented: every value below is the
 // `default_value` the seeding migration wrote for that row (aidream
@@ -176,6 +176,7 @@ const SEEDED: Record<string, unknown> = {
     "arriving",
   ],
   table_page_size: 100,
+  panel_page_size: 100,
   topic_agent_change_mode: "apply",
   topic_description_max_chars: 1200,
   wanted_topic_limit: 20,
@@ -194,12 +195,12 @@ function serve(overrides: Record<string, unknown> = {}, drop: string[] = []): vo
 beforeEach(() => serve());
 
 describe("the key set IS the row set", () => {
-  it("declares exactly the 56 keys the database holds, with no duplicates", () => {
-    expect(TOPICAL_MAP_KNOB_KEYS).toHaveLength(56);
-    expect(new Set(TOPICAL_MAP_KNOB_KEYS).size).toBe(56);
+  it("declares exactly the 57 keys the database holds, with no duplicates", () => {
+    expect(TOPICAL_MAP_KNOB_KEYS).toHaveLength(57);
+    expect(new Set(TOPICAL_MAP_KNOB_KEYS).size).toBe(57);
   });
 
-  it("names the same 56 keys this suite serves", () => {
+  it("names the same 57 keys this suite serves", () => {
     // If a key is added to the reader without a seeded value here, the suite
     // stops measuring that key rather than quietly passing.
     expect([...TOPICAL_MAP_KNOB_KEYS].sort()).toEqual(Object.keys(SEEDED).sort());

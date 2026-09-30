@@ -540,16 +540,30 @@ export async function setPagesMapTopics(
  * `facets`, `keywords` and `planned` as well as raw entity tokens. Omit it
  * (or pass null) for every kind; `[]` asks for no kinds and returns `[]`.
  * Raises P0002 when the slug is not in the map.
+ *
+ * PAGED (`page`): at most `page.limit` visible rows PER KIND, each carrying
+ * `association.cursor`; the server resolves only those rows, so a topic with
+ * thousands of keywords answers in the time of one page. `page.after` (a
+ * returned cursor) continues exactly ONE kind — pass `kinds` of one entry.
+ * Ask for one row more than you show to learn whether there is more.
  */
+export interface MapTopicAssociationsPage {
+  limit: number;
+  after?: string | null;
+}
+
 export async function mapTopicAssociations(
   mapId: string,
   slug: string,
   kinds?: string[] | null,
+  page?: MapTopicAssociationsPage,
 ): Promise<MapTopicAssociation[]> {
   const response = await (await seoDb()).rpc("map_topic_associations", {
     p_map_id: mapId,
     p_slug: slug,
     ...(kinds === null || kinds === undefined ? {} : { p_kinds: kinds }),
+    ...(page ? { p_limit: page.limit } : {}),
+    ...(page?.after ? { p_after: page.after } : {}),
   });
   return assertData(response.data as unknown as MapTopicAssociation[], response.error);
 }

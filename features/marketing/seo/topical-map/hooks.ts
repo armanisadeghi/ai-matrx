@@ -146,6 +146,12 @@ export const topicalMapKeys = {
     [...topicalMapKeys.map(mapId), "topic-facets", slug] as const,
   topicAssociations: (mapId: string, slug: string, kinds: readonly string[] | null) =>
     [...topicalMapKeys.map(mapId), "topic-associations", slug, kinds] as const,
+  /** A PAGED read: the first `limit` rows of every kind. Under `topicAssociations`, so one invalidation reaches both. */
+  topicAssociationsPaged: (mapId: string, slug: string, limit: number) =>
+    [...topicalMapKeys.map(mapId), "topic-associations", slug, "paged", limit] as const,
+  /** The rows of ONE kind after `after`, read on "Show more". */
+  topicAssociationsMore: (mapId: string, slug: string, kind: string, after: string, limit: number) =>
+    [...topicalMapKeys.map(mapId), "topic-associations", slug, "more", kind, after, limit] as const,
   history: (mapId: string, options: MapHistoryListOptions) =>
     [...topicalMapKeys.map(mapId), "history", options] as const,
   pageIntents: (mapId: string, options: PageIntentsListOptions) =>
@@ -406,6 +412,28 @@ export function useMapTopicAssociations(
         mapTopicAssociations(mapId, slug, kinds),
       ),
     enabled: enabled && Boolean(mapId && slug),
+  });
+}
+
+/**
+ * The topic panel's read: the first `pageSize` rows of EVERY kind, asked as
+ * `pageSize + 1` so the panel knows which kinds have more without a count the
+ * server would have to resolve every row to give. `pageSize` is the
+ * `panel_page_size` knob; the query waits for it.
+ */
+export function useMapTopicAssociationsPaged(
+  mapId: string,
+  slug: string,
+  pageSize: number | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: topicalMapKeys.topicAssociationsPaged(mapId, slug, pageSize ?? 0),
+    queryFn: () =>
+      withTopicalMapErrors("seo.map_topic_associations", () =>
+        mapTopicAssociations(mapId, slug, null, { limit: (pageSize ?? 0) + 1 }),
+      ),
+    enabled: enabled && Boolean(mapId && slug) && pageSize !== null && pageSize > 0,
   });
 }
 

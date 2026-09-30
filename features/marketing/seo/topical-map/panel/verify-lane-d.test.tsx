@@ -226,6 +226,7 @@ function liveKnobs(): TopicalMapKnobs {
     topic_agent_change_mode: "apply",
     description_regeneration_mode: "queued",
     performance_window_days: 28,
+    panel_page_size: 100,
     topic_description_max_chars: 1200,
     intent_colors: {
       in_place: "green",
