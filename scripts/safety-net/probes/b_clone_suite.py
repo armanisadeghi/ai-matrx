@@ -43,24 +43,22 @@ def env_file(path: Path) -> dict[str, str]:
     return out
 
 
-REF = re.search(r"^clone_ref\s*=\s*(\S+)", (CODE / "common-docs/operations/clone/CLONE-REF").read_text(), re.M).group(1)
-DSN = env_file(FE / ".env.local").get("CLONE_DATABASE_URL", "")
-if f"postgres.{REF}" not in DSN:
-    raise SystemExit(f"refused: CLONE_DATABASE_URL does not name the current clone {REF}")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import b_db  # noqa: E402 — session pooler, client-side rollback (chair 2026-10-01: never leave a pooled backend in a transaction)
+
+# The suites run through psql on the clone's SESSION pooler (5432): if psql stops mid-transaction on an error, the
+# session — not a shared transaction-pool backend the clone's server also draws from — is what ends.
+DSN = b_db.clone_dsn()
 
 
 def q(sql: str) -> str:
-    r = subprocess.run([PSQL, DSN, "-X", "-At", "-v", "ON_ERROR_STOP=1", "-f", "-"],
-                       input=f"begin read only;\nset local statement_timeout = '180s';\n{sql}\nrollback;\n",
-                       capture_output=True, text=True, timeout=300)
-    if r.returncode:
-        raise RuntimeError(r.stderr[-500:])
-    lines = [x for x in r.stdout.splitlines() if x not in ("BEGIN", "SET", "ROLLBACK")]
-    return lines[-1] if lines else ""
+    rows = b_db.read(sql, "clone", timeout_s=180)
+    v = rows[-1][0] if rows else None
+    return json.dumps(v, default=str) if isinstance(v, (dict, list)) else ("" if v is None else str(v))
 
 
 def readiness() -> dict:
-    return json.loads(q("select jsonb_build_object('state', r->>'state', 'ready', r->'ready', 'says', r->>'says', 'copy_again_needed', r->'copy_again_needed') from (select platform._final_switch_readiness() r) x;"))
+    return json.loads(q("select jsonb_build_object('state', r->>'state', 'ready', r->'ready', 'says', r->>'says', 'copy_again_needed', r->'copy_again_needed') from (select platform._final_switch_readiness() r) x"))
 
 
 def step1() -> str:

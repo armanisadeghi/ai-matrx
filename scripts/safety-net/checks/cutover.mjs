@@ -10,8 +10,9 @@ export default [
     id: "cutover.state",
     area: "cutover",
     kind: "cmd",
-    cmd: "python3",
-    args: ["scripts/safety-net/probes/b_cutover_state.py"],
+    // uv/aidream for psycopg: every read through probes/b_db.py (session pooler, client-side rollback, 6543 refused).
+    cmd: "uv",
+    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_cutover_state.py"],
     stepsJson: "b-cutover-state.json",
     items: ["C01", "C02", "C04", "C05", "C06", "C08", "C09", "C10", "C12", "A11"],
     // Live only: it judges the state the hour presses. Its red proof is the same script pointed at the clone
@@ -28,8 +29,8 @@ export default [
     area: "cutover",
     // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
     kind: "cmd",
-    cmd: "python3",
-    args: ["scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_switch_chain.sql"],
+    cmd: "uv",
+    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_switch_chain.sql"],
     items: ["C01", "C02", "C03", "C04", "C05", "C06", "C13", "A02"],
     targets: ["clone"],
     passWhen: "SWITCH CHAIN GREEN",
@@ -41,8 +42,8 @@ export default [
     area: "cutover",
     // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
     kind: "cmd",
-    cmd: "python3",
-    args: ["scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_old_reads_after_press.sql"],
+    cmd: "uv",
+    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_old_reads_after_press.sql"],
     items: ["C14"],
     targets: ["clone"],
     passWhen: "W4 GREEN",
@@ -55,12 +56,24 @@ export default [
     area: "cutover",
     // cmd, not sql: probes/b_clone_suite.py first runs the REAL Step 1 on the clone server when readiness asks for it.
     kind: "cmd",
-    cmd: "python3",
-    args: ["scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_store_off_after_press.sql"],
+    cmd: "uv",
+    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_clone_suite.py", "scripts/safety-net/probes/b_store_off_after_press.sql"],
     items: ["C15"],
     targets: ["clone"],
     passWhen: "W14 GREEN",
     timeoutMs: 25 * 60 * 1000,
+  },
+  {
+    // The read path's own proof: 6543 refused for production, the session port used, an error inside a read-only
+    // transaction leaves the connection IDLE after the client's rollback (chair 2026-10-01 ~03:20 PT, W27).
+    id: "cutover.db-read-path-self-test",
+    area: "cutover",
+    kind: "cmd",
+    cmd: "uv",
+    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_db.py", "--self-test"],
+    items: ["C12"],
+    targets: ["live", "clone"],
+    failWhen: "^FAIL",
   },
   {
     // The static census: nothing outside the baseline names an old door. Its own red: `pnpm check:old-system-unreachable:self-test`.

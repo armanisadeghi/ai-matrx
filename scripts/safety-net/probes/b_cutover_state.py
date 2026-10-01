@@ -1,10 +1,11 @@
 """LANE SAFETY-NET-B (2026-10-01) — the cutover-mechanics state check, READ-ONLY, live or clone, before or after.
 
     cd matrx-frontend
-    SN_TARGET=live SN_OUT=<dir> python3 scripts/safety-net/probes/b_cutover_state.py                     # BEFORE
-    SN_TARGET=live SN_OUT=<dir> python3 scripts/safety-net/probes/b_cutover_state.py --after <before dir>/b-cutover-state.json   # AFTER
+    SN_TARGET=live SN_OUT=<dir> uv run --project ../aidream python scripts/safety-net/probes/b_cutover_state.py            # BEFORE
+    SN_TARGET=live SN_OUT=<dir> SN_B_BEFORE=<before dir>/b-cutover-state.json uv run --project ../aidream python …         # AFTER
 
-Every statement runs inside `begin read only` (production) and is rolled back. Nothing is written.
+Every read goes through b_db.read: the SESSION pooler (5432; the transaction pooler is refused for production), a
+read-only transaction on its own connection, rolled back and closed by the client in `finally`. Nothing is written.
 
 BEFORE (state old) it proves:
   C01 readiness is Ready with 0 blocked, 0 need Copy again, 0 need the context copy, every platform check met, and
@@ -39,7 +40,6 @@ TARGET = os.environ.get("SN_TARGET", "clone")
 OUT = Path(os.environ.get("SN_OUT", str(CODE / "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc")))
 OUT.mkdir(parents=True, exist_ok=True)
 AFTER = sys.argv[sys.argv.index("--after") + 1] if "--after" in sys.argv else (os.environ.get("SN_B_BEFORE") or None)
-PSQL = next((p for p in ("/opt/homebrew/opt/libpq/bin/psql", "/opt/homebrew/opt/postgresql@17/bin/psql") if Path(p).exists()), "psql")
 TEST_SEAT_ORGS = {"884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f": "admin's Workspace", "0a54df90-eab8-4d07-ab29-81a45fb41e04": "Cedar Ridge Physical Therapy"}
 PAGE_BUDGET_MS = 8000
 WINDOW_POLICY = "api_keys_personal_rows_are_their_owners"
@@ -56,38 +56,24 @@ def _env(path: Path) -> dict[str, str]:
     return out
 
 
-def connection() -> tuple[list[str], dict[str, str]]:
-    if TARGET == "live":
-        e = _env(CODE / "aidream/.env")
-        # W27 (2026-10-01, chair SAFETY-NET): live is NEVER reached through the transaction pooler
-        # (6543) — a read-only transaction whose rollback never ran was handed to the app server and
-        # its UPDATEs failed. The session pooler (5432) on the same host ends the backend on disconnect.
-        env = {"PGHOST": e["SUPABASE_MATRIX_HOST"], "PGUSER": e["SUPABASE_MATRIX_USER"], "PGPASSWORD": e["SUPABASE_MATRIX_PASSWORD"],
-               "PGPORT": "5432", "PGDATABASE": e["SUPABASE_MATRIX_DATABASE_NAME"], "PGAPPNAME": "safety-net-live"}
-        if env["PGPORT"] == "6543":
-            raise SystemExit("refused: live through the transaction pooler (6543), W27")
-        return [PSQL], env
-    ref = re.search(r"^clone_ref\s*=\s*(\S+)", (CODE / "common-docs/operations/clone/CLONE-REF").read_text(), re.M).group(1)
-    dsn = _env(CODE / "matrx-frontend/.env.local").get("CLONE_DATABASE_URL", "")
-    if f"postgres.{ref}" not in dsn:
-        raise SystemExit(f"refused: CLONE_DATABASE_URL does not name the current clone {ref}")
-    return [PSQL, dsn], {}
-
-
-ARGV, PGENV = connection()
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import b_db  # noqa: E402 — the one read path: session pooler, client-side rollback, 6543 refused for production
 
 
 def q(sql: str) -> str:
-    """One read-only transaction; returns the LAST statement's single value."""
-    # W27: ON_ERROR_STOP=0 so the trailing rollback ALWAYS runs; an ERROR anywhere is raised after it.
-    body = (f"begin read only;\nset local statement_timeout = '60s';\n"
-            f"set local idle_in_transaction_session_timeout = '90s';\n{sql}\nrollback;\n")
-    r = subprocess.run([*ARGV, "-X", "-At", "-v", "ON_ERROR_STOP=0", "-f", "-"], input=body, capture_output=True, text=True,
-                       env={**os.environ, **PGENV}, timeout=300)
-    if r.returncode != 0 or "ERROR:" in r.stderr:
-        raise RuntimeError(r.stderr.strip()[-600:])
-    lines = [ln for ln in r.stdout.splitlines() if ln not in ("BEGIN", "SET", "ROLLBACK")]
-    return lines[-1] if lines else ""
+    """One read-only transaction on its own connection (b_db.read); returns the single value of the one statement."""
+    try:
+        rows = b_db.read(sql, TARGET)
+    except Exception as e:  # noqa: BLE001 — said, never swallowed
+        raise RuntimeError(str(e)[-600:]) from e
+    if not rows:
+        return ""
+    v = rows[-1][0]
+    if isinstance(v, bool):
+        return "t" if v else "f"
+    if isinstance(v, (dict, list)):
+        return json.dumps(v, default=str)
+    return "" if v is None else str(v)
 
 
 def qj(sql: str):
@@ -197,7 +183,7 @@ def main() -> int:
     kept = q("""select concat_ws(',', to_regclass('workbench.udt_datasets') is not null, to_regclass('workbench.udt_dataset_rows') is not null,
                        to_regclass('workbench.udt_structured_lists') is not null, to_regclass('context.scopes') is not null,
                        to_regclass('context.scope_types') is not null,
-                       (select count(*) from pg_tables where schemaname = 'graveyard' and (tablename like 'udt\_%' or tablename like 'scope%' or tablename like 'context%')));""")
+                       (select count(*) from pg_tables where schemaname = 'graveyard' and (tablename like 'udt\\_%' or tablename like 'scope%' or tablename like 'context%')));""")
     parts = kept.split(",")
     step(["C09"], "graveyard.nothing_moved", parts[:5] == ["t"] * 5 and parts[5] == "0",
          f"older tables in place (udt_datasets, udt_dataset_rows, udt_structured_lists, context.scopes, context.scope_types): {parts[:5]}; older-system tables in graveyard: {parts[5]}")
