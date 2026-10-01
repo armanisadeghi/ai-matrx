@@ -118,6 +118,50 @@ export function rowAsksThePerson(
   );
 }
 
+/**
+ * True when a row's last piece of work is a tool call — after the model's own
+ * thinking is set aside, nothing it SAID follows its tools. The model always
+ * speaks again once its tools return, so such a row is an iteration the turn
+ * has not finished: a client tool the page has yet to run (`board_read`), a
+ * call parked on the person (`ask_person`), or a result the next iteration is
+ * still reading. Never the turn's final word.
+ */
+export function rowEndsOnToolWork(
+  parts: ReadonlyArray<{ type?: string | null }> | null | undefined,
+): boolean {
+  if (!parts) return false;
+  for (let i = parts.length - 1; i >= 0; i -= 1) {
+    const type = parts[i]?.type ?? "text";
+    if (type === "thinking" || type === "reasoning") continue;
+    return type === "tool_call" || type === "tool_result";
+  }
+  return false;
+}
+
+/** Instance statuses that mean the client is still running or resuming the turn. */
+const IN_FLIGHT_STATUSES: ReadonlySet<string> = new Set(["running", "streaming", "paused"]);
+
+/**
+ * Is this turn still open — waiting on the person, on a client tool, or on a
+ * continuation that has not streamed yet? An open turn has not finished, so it
+ * can never be "finished without writing an answer" (bench 2026-10-01: an
+ * answered ask resumed server-side, parked again on `board_read`, and the
+ * re-read row — thinking + two tool calls — was called finished while the
+ * work went on for four more minutes).
+ */
+export function turnIsStillOpen(input: {
+  instanceStatus: string | null | undefined;
+  requestAwaitingPerson: boolean;
+  rowParts: ReadonlyArray<{ type?: string | null; name?: string | null }> | null | undefined;
+}): boolean {
+  return (
+    IN_FLIGHT_STATUSES.has(input.instanceStatus ?? "") ||
+    input.requestAwaitingPerson ||
+    rowAsksThePerson(input.rowParts) ||
+    rowEndsOnToolWork(input.rowParts)
+  );
+}
+
 export interface AnswerlessTurnInput {
   /** Is this member the turn's ANSWER (the last one), not an intermediate step? */
   isTurnAnswer: boolean;

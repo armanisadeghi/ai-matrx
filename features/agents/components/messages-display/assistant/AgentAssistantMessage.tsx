@@ -91,7 +91,7 @@ import { selectInstanceStatus } from "@/features/agents/redux/execution-system/c
 import {
   countPersonVisibleParts,
   isAnswerlessTurn,
-  rowAsksThePerson,
+  turnIsStillOpen,
 } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
@@ -473,10 +473,11 @@ export function AgentAssistantMessage({
   const answerless = isAnswerlessTurn({
     isTurnAnswer,
     isStreamActive,
-    awaitingPerson:
-      instanceStatus === "paused" ||
-      requestAwaitingPerson ||
-      rowAsksThePerson(extractContentBlocks(record)),
+    awaitingPerson: turnIsStillOpen({
+      instanceStatus,
+      requestAwaitingPerson,
+      rowParts: extractContentBlocks(record),
+    }),
     failed,
     coldMarkdownReady,
     messageId,
