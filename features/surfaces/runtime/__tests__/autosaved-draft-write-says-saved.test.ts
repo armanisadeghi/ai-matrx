@@ -78,7 +78,7 @@ describe("the approval card for a draft write", () => {
   it("says an autosaving editor saves it", () => {
     const change = buildSurfaceWriteApprovalChange(proposalFor(targetNamed("note_content")));
     expect(change.description).not.toMatch(/you still review and save/);
-    expect(change.description).toMatch(/saves automatically/);
+    expect(change.description).toMatch(/saves it automatically/);
   });
 
   it("still says a Save-button draft waits for the person", () => {
