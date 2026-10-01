@@ -18,8 +18,6 @@ import { Eye, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   updateNoteContent,
-  updateNoteLabel,
-  updateNoteTags,
   removeInstanceTab,
   markTabInteraction,
   setInstanceOutlineOpen,
@@ -58,15 +56,11 @@ import { NoteEditorCore, isRichEditorMode, type EditorMode } from "./NoteEditorC
 import type { RichEditorController } from "@/components/rich-editor/RichEditor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { getNoteLiveContent, setNoteLiveContent } from "../utils/noteLiveContent";
-import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
+import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
-import {
-  SurfaceRuntimeProvider,
-  type SurfaceWriteHandlers,
-} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NoteSaveFailureBanner } from "./NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "./NoteDraftRecoveryBanner";
 import { FindReplaceBar } from "./FindReplaceBar";
@@ -96,7 +90,6 @@ const NoteConflictWindow = dynamic(
   { ssr: false },
 );
 
-import { useNotesCollectionWriteHandlers } from "@/features/notes/agent-context/useNotesCollectionWriteHandlers";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -428,50 +421,27 @@ export function NoteContentEditor({
     };
   }, [dispatch, noteId]);
 
-  // ── Agent-context surface scope (`matrx-user/notes`) ─────────────────
-  // ONE builder, shared with the right-click menu's data path. Reads the live
-  // textarea selection + Redux at call time (no stale snapshot). The plain-mode
-  // ProTextarea's "…" bound-agent runs and the context menu both resolve scope
-  // through this, so the body and the menu stay perfectly in sync.
-  const buildSurfaceScope = useNotesSurfaceScope({
+  // ── The `matrx-user/notes` surface runtime — read AND write half ──────
+  // ONE hook shared with the phone editor (MobileNoteEditor), so a run from
+  // the header, the context menu or the "…" bound agents carries the same
+  // scope and the same five write targets on every device (W-69).
+  const {
+    surfaceContextData,
+    getApplicationScope,
+    getWriteHandlers: getSurfaceWriteHandlers,
+  } = useNotesSurfaceRuntime({
     instanceId,
     noteId,
     content: localContent,
+    contentRef: localContentRef,
     textareaRef,
+    richEditorRef,
+    richMode,
     editorMode,
+    readOnly,
+    accessLoading: access.loading,
+    applyContent: handleChangeFlush,
   });
-
-  // Memoized snapshot for the context menu's `contextData` prop. Calling
-  // `buildSurfaceScope()` inline in JSX rebuilt an O(all-notes) map on every
-  // render — i.e. every keystroke (2026-07 freeze class, cost amplifier).
-  const surfaceContextData = useMemo(
-    () => buildSurfaceScope() as Record<string, unknown>,
-    [buildSurfaceScope],
-  );
-
-  const getApplicationScope = useCallback(() => {
-    // Write / Source: the one editor knows its own selection.
-    const rich = richMode ? richEditorRef.current : null;
-    if (rich) {
-      return buildApplicationScopeFromMenuContext({
-        selectedText: rich.selectedText(),
-        selectionRange: null,
-        contextData: buildSurfaceScope() as Record<string, unknown>,
-      });
-    }
-    const el = textareaRef.current;
-    const start = el?.selectionStart ?? 0;
-    const end = el?.selectionEnd ?? 0;
-    const selectedText =
-      el && start !== end
-        ? el.value.slice(Math.min(start, end), Math.max(start, end))
-        : "";
-    return buildApplicationScopeFromMenuContext({
-      selectedText,
-      selectionRange: el ? { type: "editable", element: el, start, end } : null,
-      contextData: buildSurfaceScope() as Record<string, unknown>,
-    });
-  }, [buildSurfaceScope, richMode]);
 
   // ── Note undo/redo ────────────────────────────────────────────────
   // Mounting this hook ALSO installs the capture-phase Cmd+Z / Ctrl+Z (and
@@ -635,96 +605,6 @@ export function NoteContentEditor({
     [dispatch, noteId],
   );
 
-  // ── Write half of the notes surface (manifest `writeTargets`) ──────
-  // Every handler validates its input and THROWS on a bad shape — the
-  // writeback seam (`features/surfaces/runtime/surface-writeback.ts`) turns a
-  // throw into a safe error envelope the agent reads and can correct.
-  //
-  // These are NOT a parallel write path. Content goes through the same
-  // `handleChangeFlush` that content cleanup and artifact materialization use
-  // (→ `updateNoteContent`); title/tags go through the same slice actions the
-  // user's own typing dispatches. All three land on `applyFieldEdit`, so an
-  // agent edit gets an undo entry, marks the field dirty, and is persisted by
-  // the ordinary autosave — indistinguishable from the user having typed it,
-  // and Cmd+Z-able. The folder is the one exception: `folder_name` and
-  // `folder_id` must move together, which only `moveNoteToFolder` does.
-  //
-  // Read-only (a viewer-level sharee, or access still loading) registers NO
-  // handlers at all, so the seam never advertises these targets to an agent.
-  // Throwing instead would mean asking the user to approve a change whose
-  // save RLS is guaranteed to reject.
-  // The collection twins (create / duplicate / update / archive notes, and the
-  // open note's scopes) — see useNotesCollectionWriteHandlers.
-  const getCollectionWriteHandlers = useNotesCollectionWriteHandlers({
-    instanceId,
-    folders: folderReferences,
-    activeNoteId: noteId,
-    activeOrganizationId: noteExists?.organization_id ?? null,
-    readOnly: access.loading || readOnly,
-  });
-
-  const getSurfaceWriteHandlers = (): SurfaceWriteHandlers => {
-    if (access.loading) return {};
-    if (readOnly) return getCollectionWriteHandlers();
-    return {
-      ...getCollectionWriteHandlers(),
-      note_content: (value: unknown) => {
-        if (typeof value !== "string")
-          throw new Error(
-            "note_content expects a string (the full note body).",
-          );
-        handleChangeFlush(value);
-      },
-      append_to_note: (value: unknown) => {
-        if (typeof value !== "string" || !value.trim())
-          throw new Error(
-            "append_to_note expects a non-empty string to add to the end of the note.",
-          );
-        const base = localContentRef.current;
-        handleChangeFlush(base.trim() ? `${base}\n\n${value}` : value);
-      },
-      note_title: (value: unknown) => {
-        if (typeof value !== "string" || !value.trim())
-          throw new Error("note_title expects a non-empty string.");
-        if (/[\r\n]/.test(value))
-          throw new Error("note_title expects a single line — no line breaks.");
-        dispatch(updateNoteLabel({ id: noteId, label: value.trim() }));
-      },
-      note_tags: (value: unknown) => {
-        if (
-          !Array.isArray(value) ||
-          !value.every((tag) => typeof tag === "string" && tag.trim())
-        )
-          throw new Error(
-            "note_tags expects an array of non-empty strings (the FULL tag set — it replaces the existing tags).",
-          );
-        dispatch(
-          updateNoteTags({
-            id: noteId,
-            tags: (value as string[]).map((tag) => tag.trim()),
-          }),
-        );
-      },
-      note_folder: async (value: unknown) => {
-        if (typeof value !== "string" || !value.trim())
-          throw new Error("note_folder expects a folder name string.");
-        const folder = value.trim();
-        // Refuse an unknown name rather than creating a folder as a side
-        // effect: `moveNoteToFolder` resolves through `createFolder`, which
-        // creates-or-gets, so an invented name would silently add a folder to
-        // the user's sidebar. Creating folders stays a human decision.
-        const targetFolder = availableFolderReferences.find(
-          (candidate) => candidate.name === folder,
-        );
-        if (!targetFolder)
-          throw new Error(
-            // access-errors: ok — AI tool-call validation against the loaded folder list; the name is verifiably absent from it
-            `note_folder expects an existing folder. "${folder}" does not exist — choose one of: ${availableFolderReferences.map((candidate) => candidate.name).join(" | ")}.`,
-          );
-        await handleMoveConfirm(targetFolder);
-      },
-    };
-  };
 
   // ── Artifact materialization surface ─────────────────────────────
   // Notes as a materialization surface (/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md):

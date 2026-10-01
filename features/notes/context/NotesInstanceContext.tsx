@@ -15,3 +15,12 @@ export function useNotesInstanceId(): string {
   if (!id) throw new Error("useNotesInstanceId must be used within NotesInstanceProvider");
   return id;
 }
+
+/**
+ * The instance id when this component sits inside a NotesView, `undefined`
+ * otherwise. For components (the phone editor) that report tabs / find state
+ * when a view owns them and still work when mounted alone.
+ */
+export function useOptionalNotesInstanceId(): string | undefined {
+  return useContext(NotesInstanceContext) ?? undefined;
+}

@@ -20,6 +20,9 @@ import { noteIdentityContentSource } from "../../richDocumentSource";
 import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
+import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useOptionalNotesInstanceId } from "../../context/NotesInstanceContext";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { isRichEditorMode, type EditorMode } from "../NoteEditorCore";
 import { useRememberNoteEditorMode } from "../../hooks/usePreferredDefaultEditorMode";
@@ -386,8 +389,38 @@ export default function MobileNoteEditor({
     toast.success("Exported");
   };
 
+  // ── The `matrx-user/notes` surface runtime (W-69) ────────────────────
+  // THE SAME hook the desktop editor uses: the header's Intelligence → Run,
+  // the long-press menu and every agent launched from this note on a phone
+  // carry the note's full scope and its five write targets — never an empty
+  // scope and a toast saying so.
+  const instanceId = useOptionalNotesInstanceId();
+  const {
+    surfaceContextData,
+    getApplicationScope,
+    getWriteHandlers,
+  } = useNotesSurfaceRuntime({
+    instanceId,
+    noteId,
+    content: localContent,
+    contentRef: localContentRef,
+    textareaRef,
+    richEditorRef: richRef,
+    richMode,
+    editorMode: effectiveMode,
+    readOnly,
+    accessLoading: access.loading,
+    applyContent: handleChangeFlush,
+  });
+
   return (
-    // Flex column fills the parent — content scrolls, dock stays at bottom
+    <SurfaceRuntimeProvider
+      surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+      getScope={getApplicationScope}
+      isEditable={!readOnly}
+      getWriteHandlers={getWriteHandlers}
+    >
+    {/* Flex column fills the parent — content scrolls, dock stays at bottom */}
     <div className="h-full bg-background flex flex-col overflow-hidden relative">
       {readOnly && (
         <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
@@ -448,7 +481,7 @@ export default function MobileNoteEditor({
           sourceFeature="notes"
           surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
           resolveContextOnOpen={noteMenuHeading}
-          contextData={{ content: localContent }}
+          contextData={surfaceContextData}
           contentSource={editableContentSource}
           entity={{
             type: "note",
@@ -505,7 +538,7 @@ export default function MobileNoteEditor({
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             resolveContextOnOpen={noteMenuHeading}
-            contextData={{ content: localContent }}
+            contextData={surfaceContextData}
             contentSource={noteIdentityContentSource(noteId, `mobile-readonly:${noteId}`)}
             entity={{
               type: "note",
@@ -529,7 +562,7 @@ export default function MobileNoteEditor({
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             resolveContextOnOpen={noteMenuHeading}
-            contextData={{ content: localContent }}
+            contextData={surfaceContextData}
             contentSource={editableContentSource}
             entity={{
               type: "note",
@@ -614,5 +647,6 @@ export default function MobileNoteEditor({
         isDeleting={isDeleting}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

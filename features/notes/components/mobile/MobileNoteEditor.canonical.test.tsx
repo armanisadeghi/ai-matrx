@@ -23,6 +23,7 @@ import notesReducer, {
 import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "../../redux/notes.types";
 import type { Note } from "../../types";
 import MobileNoteEditor from "./MobileNoteEditor";
+import { getSurfaceRuntimeForName } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 jest.mock("../../hooks/useNotesRedux", () => ({
   useNotesRedux: () => ({
@@ -269,5 +270,37 @@ describe("MobileNoteEditor writes through the canonical path", () => {
     expect(container.querySelector('[data-testid="draft-recovery-banner"]')).not.toBeNull();
 
     await unmount();
+  });
+});
+
+// W-69 (PB-08 dry run, 2026-10-01): on a phone the header's Intelligence → Run
+// launched with an EMPTY application scope — "Running without live page
+// context" — because this editor mounted no surface runtime, so the agent
+// listed every note to find the one on screen. Against the editor before the
+// fix both assertions below fail: no `matrx-user/notes` runtime registers.
+describe("MobileNoteEditor carries the notes surface on a phone (W-69)", () => {
+  it("registers the matrx-user/notes runtime with the open note's scope and write targets", async () => {
+    const store = makeStore();
+    store.dispatch(upsertNoteFromServer({ note: row({ label: "Move 5208" }), fetchStatus: "full" }));
+    const { unmount } = await mount(store);
+
+    const runtime = getSurfaceRuntimeForName("matrx-user/notes");
+    expect(runtime).not.toBeNull();
+    const scope = (await runtime!.getScope()) as Record<string, unknown>;
+    expect(scope.current_note_id).toBe(ID);
+    expect(scope.current_note_title).toBe("Move 5208");
+
+    const handlers = runtime!.getWriteHandlers?.() ?? {};
+    for (const target of ["note_content", "append_to_note", "note_title", "note_tags", "note_folder"]) {
+      expect(handlers).toHaveProperty(target);
+    }
+    // A write lands on the record through the editor's own flush path.
+    await act(async () => {
+      await (handlers.append_to_note as (v: unknown) => unknown)("Routing line: Chicago");
+    });
+    expect(store.getState().notes.notes[ID].content).toBe("base\n\nRouting line: Chicago");
+
+    await unmount();
+    expect(getSurfaceRuntimeForName("matrx-user/notes")).toBeNull();
   });
 });
