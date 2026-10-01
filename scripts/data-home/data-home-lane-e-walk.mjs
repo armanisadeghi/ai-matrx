@@ -251,6 +251,19 @@ try {
     });
     log("390", r);
     await shot("390-home");
+    // The search opens from its icon in the same row.
+    const icon = page.locator("[data-entity-list-phone-controls] button[aria-label^='Search']").first();
+    if (await icon.count()) {
+      await icon.click();
+      await page.keyboard.type("intake");
+      await sleep(1500);
+      const s = await page.evaluate(() => ({
+        boxInRow: Boolean(document.querySelector("[data-entity-list-control-row] [data-entity-list-search]")),
+        cards: [...document.querySelectorAll("[data-row-id]")].filter((e) => e.getBoundingClientRect().height > 0).length,
+      }));
+      log("390 search", s);
+      await shot("390-search");
+    }
   }
 } finally {
   log("console errors", consoleErrors.length);
