@@ -82,25 +82,37 @@ export async function fetchTranscriptScopeCounts(
   return counts;
 }
 
+/** The API's row cap per response; `trx_list_facets` is read a page at a time past it. */
+const FACET_PAGE_ROWS = 1000;
+
 export async function fetchTranscriptFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc("trx_list_facets", {
-    p_scope: query.scope.kind,
-    p_org_id: listOrgParam(query),
-    p_search: query.search.trim() || undefined,
-    p_deep: query.deep,
-    p_archived: query.archived,
-  });
-
-  if (error) throw pgError(error);
-
+  // `trx_list_facets` returns one row per facet value in a stable order (bounded facets first,
+  // tags last). A person with many tags passes the API's 1,000-row cap, which used to drop
+  // the access, organization, owner and draft facets silently — so read every page.
   const byKind: EntityFacets["byKind"] = {};
-  for (const row of data ?? []) {
-    (byKind[row.kind] ??= []).push({
-      value: row.value,
-      count: Number(row.total ?? 0),
-    });
+  for (let from = 0; ; from += FACET_PAGE_ROWS) {
+    const { data, error } = await supabase
+      .rpc("trx_list_facets", {
+        p_scope: query.scope.kind,
+        p_org_id: listOrgParam(query),
+        p_search: query.search.trim() || undefined,
+        p_deep: query.deep,
+        p_archived: query.archived,
+      })
+      .range(from, from + FACET_PAGE_ROWS - 1);
+
+    if (error) throw pgError(error);
+
+    const rows = data ?? [];
+    for (const row of rows) {
+      (byKind[row.kind] ??= []).push({
+        value: row.value,
+        count: Number(row.total ?? 0),
+      });
+    }
+    if (rows.length < FACET_PAGE_ROWS) break;
   }
   return sortFacets({ byKind });
 }

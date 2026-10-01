@@ -7,7 +7,18 @@
  */
 
 const rpc = jest.fn();
-jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
+/** One page of a paged call, by row range; unset = the whole mocked result. */
+let page: ((from: number, to: number) => unknown) | null = null;
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: {
+    rpc: (...a: unknown[]) => {
+      const whole = rpc(...a);
+      return Object.assign(Promise.resolve(whole), {
+        range: (from: number, to: number) => Promise.resolve(page ? page(from, to) : whole),
+      });
+    },
+  },
+}));
 jest.mock("@/utils/supabase/writeOne", () => ({ tryWriteOne: jest.fn() }));
 
 import { DEFAULT_ENTITY_LIST_QUERY, type EntityListQuery } from "@/lib/entity-list/types";
@@ -21,6 +32,7 @@ function query(archived: EntityListQuery["archived"]): EntityListQuery {
 }
 
 beforeEach(() => {
+  page = null;
   rpc.mockReset();
   rpc.mockResolvedValue({ data: [], error: null });
 });
@@ -68,4 +80,21 @@ it.each(["active", "archived", "all"] as const)(
 it("the Visibility filter reads the database's access facet and keeps its label and filter key", () => {
   const section = transcriptListConfig.facetSections?.find((s) => s.filterId === "visibility");
   expect(section).toMatchObject({ facet: "shown_to", label: "Visibility" });
+});
+
+it("the facets read past the API's 1,000-row cap: every page until a short one", async () => {
+  // A person with ~1,000 tags: the access facet sorts before the tags, the tags run past row 1,000.
+  const rows = [
+    { kind: "shown_to", value: "internal", total: 687 },
+    { kind: "shown_to", value: "personal", total: 1 },
+    ...Array.from({ length: 1392 }, (_, i) => ({ kind: "tag", value: `t${i}`, total: 1 })),
+  ];
+  page = (from, to) => ({ data: rows.slice(from, to + 1), error: null });
+  const facets = await fetchTranscriptFacets(query("active"));
+  expect(rpc).toHaveBeenCalledTimes(2);
+  expect(facets.byKind.tag).toHaveLength(1392);
+  expect(facets.byKind.shown_to).toEqual([
+    { value: "internal", count: 687 },
+    { value: "personal", count: 1 },
+  ]);
 });
