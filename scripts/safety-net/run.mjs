@@ -45,7 +45,8 @@ if (flag("list")) {
   process.exit(0);
 }
 
-const TARGET = opt("target");
+const SELF_TEST = flag("self-test");
+const TARGET = SELF_TEST ? "clone" : opt("target");
 if (!["live", "clone"].includes(TARGET)) {
   console.error("--target live|clone is required");
   process.exit(2);
@@ -73,11 +74,30 @@ if (!PSQL) {
 }
 const cloneRef = (readFileSync(join(CODE, "common-docs/operations/clone/CLONE-REF"), "utf8").match(/^clone_ref\s*=\s*(\S+)/m) ?? [])[1];
 const CLONE_DSN = process.env.CLONE_DATABASE_URL ?? FE_ENV.CLONE_DATABASE_URL;
-const LIVE_DSN = (() => {
-  const e = AIDREAM_ENV;
+// 🚨 W27 (2026-10-01 ~03:15 PT, the chair): LIVE IS NEVER REACHED THROUGH THE TRANSACTION POOLER.
+// A `begin read only … rollback` sent through Supavisor's transaction pooler (port 6543) whose rollback
+// never ran (psql stopped on an error, a timeout, a killed run) left a backend in an open READ-ONLY
+// transaction; the pooler handed it to the aidream server and its next UPDATE failed with "cannot
+// execute UPDATE in a read-only transaction" (ops.app_log bursts 09:39–10:14Z). So the live DSN is the
+// SESSION pooler on the same host (port 5432: a disconnect ends the backend), 6543 is refused by name,
+// every live probe runs with ON_ERROR_STOP=0 so its trailing rollback always executes, and every live
+// connection carries application_name=safety-net-live so it can be found. Self-test: --self-test.
+const LIVE_SESSION_PORT = "5432";
+function assertLiveDsn(dsn) {
+  const port = (String(dsn).match(/@[^/:]+:(\d+)\//) ?? [])[1];
+  if (port === "6543") throw new Error("refused: a live connection through the TRANSACTION pooler (6543) can hand a half-open read-only transaction to the app (W27); use the session pooler 5432");
+  if (port !== LIVE_SESSION_PORT) throw new Error(`refused: live DSN port ${port ?? "?"} is not the session pooler ${LIVE_SESSION_PORT}`);
+  return dsn;
+}
+function liveDsnFrom(e) {
   if (!e.SUPABASE_MATRIX_HOST) return null;
-  return `postgresql://${encodeURIComponent(e.SUPABASE_MATRIX_USER)}:${encodeURIComponent(e.SUPABASE_MATRIX_PASSWORD)}@${e.SUPABASE_MATRIX_HOST}:${e.SUPABASE_MATRIX_PORT}/${e.SUPABASE_MATRIX_DATABASE_NAME}`;
-})();
+  return assertLiveDsn(`postgresql://${encodeURIComponent(e.SUPABASE_MATRIX_USER)}:${encodeURIComponent(e.SUPABASE_MATRIX_PASSWORD)}@${e.SUPABASE_MATRIX_HOST}:${LIVE_SESSION_PORT}/${e.SUPABASE_MATRIX_DATABASE_NAME}?application_name=safety-net-live`);
+}
+const LIVE_DSN = liveDsnFrom(AIDREAM_ENV);
+/** The one live/read-only wrapper: rollback ALWAYS runs (ON_ERROR_STOP=0); any ERROR is a failure. */
+function readOnlyBody(text, vars = "") {
+  return `${vars}\nbegin read only;\nset local statement_timeout = '60s';\nset local idle_in_transaction_session_timeout = '90s';\n${text}\nrollback;\n`;
+}
 if (TARGET === "clone") {
   if (!CLONE_DSN || !cloneRef || !CLONE_DSN.includes(`postgres.${cloneRef}`)) {
     console.error(`refused: CLONE_DATABASE_URL does not name the current clone (${cloneRef}); re-publish it (aidream: uv run python scripts/clone/refresh_clone.py --publish-current)`);
@@ -106,6 +126,39 @@ const LABEL = opt("label") ?? (PLANT ? `plant-${PLANT}` : "run");
 const OUT = resolve(opt("out") ?? join(CODE, `common-docs/operations/for-arman/2026-10-01/safety-net/${TARGET}-${hhmm}-${LABEL}`));
 mkdirSync(join(OUT, "logs"), { recursive: true });
 mkdirSync(join(OUT, "shots"), { recursive: true });
+
+// ── self-test (W27): the refusal and the rollback, proven ───────────────────────────────────
+if (SELF_TEST) {
+  let bad = 0;
+  const say = (ok, what) => {
+    console.log(`${ok ? "PASS" : "FAIL"} ${what}`);
+    if (!ok) bad += 1;
+  };
+  let refused = false;
+  try {
+    assertLiveDsn("postgresql://u:p@aws-1-us-east-1.pooler.supabase.com:6543/postgres");
+  } catch {
+    refused = true;
+  }
+  say(refused, "a live DSN on the transaction pooler (6543) is refused");
+  say(!LIVE_DSN || /:5432\//.test(LIVE_DSN), "the live DSN the runner builds is the session pooler (5432)");
+  say(!LIVE_DSN || /application_name=safety-net-live/.test(LIVE_DSN), "every live connection is named safety-net-live");
+  const body = readOnlyBody("select 1/0;");
+  say(/^\s*begin read only;/m.test(body) && /rollback;\s*$/.test(body), "the read-only wrapper opens read only and ends with rollback");
+  // Real proof on the CLONE's session pooler: a probe that errors mid-transaction leaves no open
+  // transaction behind under its application name.
+  const cloneSession = CLONE_DSN.replace(/:6543\//, ":5432/") + (CLONE_DSN.includes("?") ? "&" : "?") + `application_name=sn-selftest-${process.pid}`;
+  const r = spawnSync(PSQL, [cloneSession, "-v", "ON_ERROR_STOP=0", "-At", "-f", "-"], { input: readOnlyBody("select 1/0;\nselect 'after the error';"), encoding: "utf8", cwd: REPO });
+  const out = `${r.stdout}${r.stderr}`;
+  say(/division by zero/.test(out) && /^ROLLBACK$/m.test(out), "an erroring probe still reaches its rollback (ON_ERROR_STOP=0)");
+  const left = spawnSync(PSQL, [CLONE_DSN, "-At", "-c", `select count(*) from pg_stat_activity where application_name = 'sn-selftest-${process.pid}' and state like 'idle in transaction%'`], { encoding: "utf8" });
+  say(left.stdout.trim() === "0", `no transaction is left open after it (found ${left.stdout.trim() || left.stderr.trim()})`);
+  // The old shape, for contrast: ON_ERROR_STOP=1 stops before the rollback (the hazard W27 names).
+  const oldShape = spawnSync(PSQL, [cloneSession, "-v", "ON_ERROR_STOP=1", "-At", "-f", "-"], { input: "begin read only;\nselect 1/0;\nrollback;\n", encoding: "utf8" });
+  say(oldShape.status !== 0 && !/ROLLBACK/.test(`${oldShape.stdout}`), "the OLD shape (ON_ERROR_STOP=1) stops before its rollback — the hazard is real");
+  console.log(bad ? `self-test: ${bad} failed` : "self-test: all passed");
+  process.exit(bad ? 1 : 0);
+}
 
 // ── selection ──────────────────────────────────────────────────────────────────────────────
 const only = opt("only")?.split(",").filter(Boolean) ?? null;
@@ -173,9 +226,12 @@ function run(cmd, argv, { cwd = REPO, env = {}, input = null, timeoutMs = 45 * 6
 }
 
 function psqlSync(sql, { readOnly = false } = {}) {
-  // Through the transaction pooler only one explicit read-only transaction is a guarantee.
-  const body = readOnly ? `begin read only;\n${sql}\nrollback;` : sql;
-  const r = spawnSync(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-At", "-f", "-"], { input: body, encoding: "utf8", cwd: REPO });
+  if (readOnly) {
+    const r = spawnSync(PSQL, [DSN, "-v", "ON_ERROR_STOP=0", "-At", "-f", "-"], { input: readOnlyBody(sql), encoding: "utf8", cwd: REPO });
+    const out = `${r.stdout}${r.stderr}`;
+    return { code: /\bERROR:/.test(out) ? 1 : r.status, out };
+  }
+  const r = spawnSync(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-At", "-f", "-"], { input: sql, encoding: "utf8", cwd: REPO });
   return { code: r.status, out: `${r.stdout}${r.stderr}` };
 }
 
@@ -211,7 +267,7 @@ async function runCheck(c) {
       // A file that opens, ends or includes anything (a campaign suite's preamble commits) is refused.
       const bad = text.split("\n").find((l) => /^\s*(begin|commit|rollback|end|start\s+transaction|abort)\b/i.test(l) || /^\s*\\(i|ir|include|include_relative)\b/.test(l));
       if (bad) throw new Error(`refused on live: ${c.file} controls its own transaction or includes a file (${bad.trim().slice(0, 60)}); a live probe is one plain read-only body`);
-      wrapped = `${vars}\nbegin read only;\n${text}\nrollback;\n`;
+      wrapped = readOnlyBody(text, vars);
     } else {
       // IN-TRANSACTION PLANTS (and a check's `inTxSql`, e.g. a longer `set local statement_timeout`)
       // GO INSIDE THE SUITE'S OWN TRANSACTION. Every campaign suite includes _preamble.sql, which runs
@@ -242,6 +298,13 @@ async function runCheck(c) {
       }
       wrapped = `\\set expect 'clone'\n${vars}\n${suiteRef}\n`;
     }
+    if (readOnly) {
+      // W27: ON_ERROR_STOP=0 so the trailing rollback always runs; an ERROR anywhere is a FAIL.
+      assertLiveDsn(DSN);
+      const r0 = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=0", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 5 * 60 * 1000 });
+      const code = /\bERROR:/.test(r0.out) ? 1 : r0.code;
+      return { code, ms: r0.ms, steps: [], tail: r0.out.slice(-1500) };
+    }
     let r = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 20 * 60 * 1000 });
     // The clone is shared by many lanes: a lock / statement timeout is the neighbours, not the
     // product. Retry ONCE after a pause, and say so in the log; a second timeout is a FAIL.
@@ -267,6 +330,9 @@ async function runCheck(c) {
       env.DATABASE_URL = CLONE_DSN;
     }
     if (c.dbEnv === "target") env.SN_DSN = DSN;
+    // W27: a live cmd that builds its own connection from the five SUPABASE_MATRIX_* values gets the
+    // SESSION pooler port and an application name, never 6543.
+    if (TARGET === "live") Object.assign(env, { SUPABASE_MATRIX_PORT: LIVE_SESSION_PORT, PGPORT: LIVE_SESSION_PORT, PGAPPNAME: "safety-net-live", SN_LIVE_SESSION_PORT: LIVE_SESSION_PORT });
     env.SN_TARGET = TARGET;
     env.SN_OUT = OUT;
     const r = await run(c.cmd, c.args, { cwd, env, log, timeoutMs: c.timeoutMs ?? 30 * 60 * 1000 });

@@ -59,8 +59,13 @@ def _env(path: Path) -> dict[str, str]:
 def connection() -> tuple[list[str], dict[str, str]]:
     if TARGET == "live":
         e = _env(CODE / "aidream/.env")
+        # W27 (2026-10-01, chair SAFETY-NET): live is NEVER reached through the transaction pooler
+        # (6543) — a read-only transaction whose rollback never ran was handed to the app server and
+        # its UPDATEs failed. The session pooler (5432) on the same host ends the backend on disconnect.
         env = {"PGHOST": e["SUPABASE_MATRIX_HOST"], "PGUSER": e["SUPABASE_MATRIX_USER"], "PGPASSWORD": e["SUPABASE_MATRIX_PASSWORD"],
-               "PGPORT": e["SUPABASE_MATRIX_PORT"], "PGDATABASE": e["SUPABASE_MATRIX_DATABASE_NAME"]}
+               "PGPORT": "5432", "PGDATABASE": e["SUPABASE_MATRIX_DATABASE_NAME"], "PGAPPNAME": "safety-net-live"}
+        if env["PGPORT"] == "6543":
+            raise SystemExit("refused: live through the transaction pooler (6543), W27")
         return [PSQL], env
     ref = re.search(r"^clone_ref\s*=\s*(\S+)", (CODE / "common-docs/operations/clone/CLONE-REF").read_text(), re.M).group(1)
     dsn = _env(CODE / "matrx-frontend/.env.local").get("CLONE_DATABASE_URL", "")
@@ -74,10 +79,12 @@ ARGV, PGENV = connection()
 
 def q(sql: str) -> str:
     """One read-only transaction; returns the LAST statement's single value."""
-    body = f"begin read only;\nset local statement_timeout = '120s';\n{sql}\nrollback;\n"
-    r = subprocess.run([*ARGV, "-X", "-At", "-v", "ON_ERROR_STOP=1", "-f", "-"], input=body, capture_output=True, text=True,
+    # W27: ON_ERROR_STOP=0 so the trailing rollback ALWAYS runs; an ERROR anywhere is raised after it.
+    body = (f"begin read only;\nset local statement_timeout = '60s';\n"
+            f"set local idle_in_transaction_session_timeout = '90s';\n{sql}\nrollback;\n")
+    r = subprocess.run([*ARGV, "-X", "-At", "-v", "ON_ERROR_STOP=0", "-f", "-"], input=body, capture_output=True, text=True,
                        env={**os.environ, **PGENV}, timeout=300)
-    if r.returncode != 0:
+    if r.returncode != 0 or "ERROR:" in r.stderr:
         raise RuntimeError(r.stderr.strip()[-600:])
     lines = [ln for ln in r.stdout.splitlines() if ln not in ("BEGIN", "SET", "ROLLBACK")]
     return lines[-1] if lines else ""
