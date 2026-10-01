@@ -121,8 +121,12 @@ try {
   await p2.goto(`${ORIGIN}/administration/usage?view=builtin:usage_by_person&w=30d`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await until("phone answer", async () => ((await p2.locator("[data-matrx-drill-into]").count()) > 0 ? "ok" : null), 240000).catch(() => null);
   await sleep(4000);
+  // the app's theme follows the person's own setting, so the walk puts the page in dark itself (as
+  // drill-live-fixes-walk does) and reads it back
+  await p2.evaluate(() => document.documentElement.classList.toggle("dark", true));
+  await sleep(1000);
   const overflow = await p2.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  const dark = await p2.evaluate(() => document.documentElement.classList.contains("dark") || matchMedia("(prefers-color-scheme: dark)").matches);
+  const dark = await p2.evaluate(() => document.documentElement.classList.contains("dark") && getComputedStyle(document.body).backgroundColor !== "rgb(255, 255, 255)");
   const phoneSearch = await p2.locator("[data-matrx-drill-search]").isVisible().catch(() => false);
   check("390 px dark: no page overflow, search reachable", overflow <= 1 && dark && phoneSearch, `overflow ${overflow}px, dark ${dark}, search visible ${phoneSearch}`);
   await p2.screenshot({ path: `${SHOTS}/phone_dark.png`, fullPage: false });

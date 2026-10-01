@@ -110,8 +110,16 @@ organizations" (`mineScope`), because the door counts the person's rows in every
 ## Invariants & gotchas
 
 - Import only what the PUBLISHED `@ai-matrx/design-system` / `@ai-matrx/records` export (lane
-  DRILL-ADOPT adopted design-system 0.49.40+, records 0.58.109+, records-ui 0.93.83+; installed 0.49.42 /
-  0.58.111 / 0.93.85 on 2026-09-30).
+  DRILL-WIRE needs design-system 0.49.54+ and records 0.58.120+: `search`, Dimension `entity` /
+  `colorFor`, Measure `moment`, `TableDoors.menu`, choice `color`).
+- ONE mapping from a definition to the answer primitives: `drillSiblingDimensions` /
+  `drillSiblingMeasures` (`drillSiblings.ts`) serve the explorer AND its siblings' findings — a relation
+  names its record kind (`entity` = `relation.token`), a choice's declared chart token is its `colorFor`,
+  a `unit: "time"` Measure is a `moment` (never a share, a change or a Pareto line).
+- A group row's record doors come from the table host (`MatrxDataTableHost` `resolveEntityDoors`): a
+  `user` on an `/administration` page gets the admin user menu as `TableDoors.menu`
+  (`features/admin/users/components/admin-user-table-menu.ts`, built from `buildAdminUserMenuSection` —
+  the one destination list); elsewhere a person has no menu; organization / agent keep open + preview.
 - Money: a Measure with unit `usd` prints through the platform's one credits/$ switch
   (`selectCostUnit`, `formatAdminPoints` / `formatAdminUsd`); the toggle shows only to someone who may flip it.
 - A run rate (`op: "rate"`) needs a window with a start: with "all time" it is left out of the ask and
@@ -150,6 +158,10 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   F1 and F3–F9: the knob rule and the no-other-knob-reader guard, records noun / sums / pager / cells,
   the finding's true count, the header's own Measure, a crumb's name asked of the door, the chips.
 - Walk: `scripts/drill-live-fixes-walk.mjs` (live preview, read-only, 1280 / 390, light / dark).
+- `__tests__/drill-wire.test.ts` — a relation's record kind, a choice's colour, a moment Measure, and
+  the admin user menu on administration pages only (5; red 5/5 on HEAD copies).
+- Walk: `scripts/drill-wire-walk.mjs` (shared preview, read-only: search an email, the person row's ⋯
+  and right-click admin menu never pressed, origin colours, Tool calls / finish reason, 390 px dark).
 
 ## Change log
 
@@ -174,3 +186,7 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   pager; moments formatted, ids short; findings show the true count past the cap; the header asks its
   headline Measure; relation crumbs named through the door; the door's calendar said once; toolbar
   controls wrap instead of clipping; the note row is chips (interface text is layout).
+- `2026-09-30` — Lane DRILL-WIRE: adopted design-system 0.49.54 / records 0.58.120 — the answer
+  searches its groups; a person row on an administration page carries the admin user menu (row ⋯ and
+  right-click); choices keep their chart colours (origin); a time Measure is a moment; the explorer and
+  its siblings share one Dimension/Measure mapping.
