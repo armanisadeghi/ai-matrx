@@ -281,7 +281,8 @@ export function scanSource(file, source) {
     if (t.length > budget) push("over-budget", node, t, `${kind} slot: ${t.length} chars, budget ${budget}`);
     const maxSentences = kind === "consequence" || kind === "body" ? 2 : 1;
     if (kind !== "tooltip" && kind !== "placeholder" && sentences(t) > maxSentences) push("multi-sentence", node, t, `${sentences(t)} sentences in one ${kind} slot (max ${maxSentences})`);
-    const leaks = leaksIn(t);
+    // A placeholder shows an example value — an identifier there is the example, not a leak.
+    const leaks = kind === "placeholder" ? [] : leaksIn(t);
     if (leaks.length) push("implementation-leak", node, t, leaks.join(", "));
   };
 
