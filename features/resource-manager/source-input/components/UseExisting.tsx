@@ -1,18 +1,20 @@
 "use client";
 
 /**
- * "Use existing" — what the person already has, by kind. The kinds are THE
- * canonical association set: exactly the kinds whose content role is "Sources"
- * or "Sources & Outputs" in the scope/project Resources grid
- * (`@ai-matrx/associations/react` `CONTENT_ROLES` ids `source` + `hybrid`),
- * reference-pickable, as ONE flat list — no group titles, no Utilities,
- * Outputs or Workspaces (Arman, 2026-09-30).
+ * "Use existing" — what the person already has, by kind. The kinds are EXACTLY
+ * the organization page's Resources grid "Sources" + "Sources & Outputs"
+ * entries — `sourceRoleEntries()` from the grid's own definition
+ * (`features/organizations/resource-catalogue.ts`), in the grid's order, with
+ * the grid's names and icons: Files, Transcripts, Websites, Datasets, Lists,
+ * Workbooks, Notes. One flat list — no Utilities, Outputs or Workspaces
+ * (Arman, 2026-09-30).
  *
- * Counts: `useKindCounts(scope, { tokens })` — one round trip for every kind
- * shown (an empty kind is absent, an uncountable one shows a dash). Lists:
- * `useKindItems` (server-searched, recent first, paged by the
- * `resources.inventory/page_size` knob). The scope (Mine / an organization)
- * is a FILTER, never permission.
+ * Counts and lists: a kind with a registry token reads the kind inventory
+ * (`useKindCounts` / `useKindItems`, server-searched, recent first, paged by
+ * the `resources.inventory/page_size` knob). Websites has no token — it lists
+ * the web pages the person saved as Sources (`savedWebPages.ts`), picked as
+ * `processed_document`. The scope (All / Mine / an organization) is a FILTER,
+ * never permission.
  *
  * Also the answer to the input's one search box: with words typed, every kind
  * that has items shows its first matches, each kind openable for the rest.
@@ -23,17 +25,21 @@
  * UI only: picking goes through `useSourceIntake().addExisting`.
  */
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useState, type ComponentType } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
 import { Badge, Input } from "@ai-matrx/design-system";
 import { useKindCounts } from "@/features/scopes/hooks/useKindCounts";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
+import { sourceRoleEntries } from "@/features/organizations/resource-catalogue";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
-  curatedTokens,
-  listableTokens,
-  tryGetEntityInfo,
-} from "@/features/scopes/registry/entityRegistry";
+  countSavedSources,
+  fetchSavedSourcesPage,
+  SAVED_SOURCE_TOKEN,
+  type SavedSourceGroup,
+} from "@/features/resource-manager/source-input/savedWebPages";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
 import { cn } from "@/utils/cn";
@@ -49,25 +55,92 @@ export interface UseExistingProps {
   onToggle: (token: string, item: KindItem) => void;
 }
 
-function kindWords(token: string) {
-  const info = tryGetEntityInfo(token);
-  return { plural: info?.labelPlural ?? token, Icon: info?.Icon ?? null };
+/** One kind offered: a Resources-grid Sources / Sources & Outputs entry. */
+export interface OfferedKind {
+  /** The grid entry's key — unique per kind. */
+  key: string;
+  /** The token a picked row is sent as. */
+  token: string;
+  /** The grid's name for it ("Files", "Websites"…). */
+  plural: string;
+  Icon: ComponentType<{ className?: string }>;
+  /** Set when the kind is listed from the person's saved Sources (Websites). */
+  savedSourceGroup?: SavedSourceGroup;
 }
 
-/** The content roles a Source can come from: "Sources" and "Sources & Outputs". */
-export const SOURCE_ROLES = ["source", "hybrid"] as const;
-
 /**
- * The kinds offered: every reference-pickable registry resource whose content
- * role is a Source role, in the registry's order. The registry decides, never
- * a hand-written list here.
+ * The kinds offered: the grid's Sources + Sources & Outputs entries, in the
+ * grid's order. The grid's definition decides, never a list here. A grid entry
+ * with neither a token nor a saved-Source group cannot be listed — the guard
+ * test fails on it, never a silent drop.
  */
-export function offeredKinds(): string[] {
-  const pickable = new Set(listableTokens() as string[]);
-  const roles = new Set<string>(SOURCE_ROLES);
-  return (curatedTokens() as string[]).filter(
-    (t) => pickable.has(t) && roles.has(tryGetEntityInfo(t)?.contentRole ?? ""),
+export function offeredKinds(): OfferedKind[] {
+  return sourceRoleEntries().flatMap((e): OfferedKind[] => {
+    const base = { key: e.key, plural: e.labelPlural, Icon: e.icon };
+    if (e.savedSourceGroup) return [{ ...base, token: SAVED_SOURCE_TOKEN, savedSourceGroup: e.savedSourceGroup }];
+    if (e.token) return [{ ...base, token: e.token }];
+    console.error(`[UseExisting] grid kind "${e.key}" has no way to be listed`);
+    return [];
+  });
+}
+
+/** The kind inventory's counts plus the saved-Source counts, as one map keyed by kind key. */
+function useOfferedCounts(scope: KindScope, offered: OfferedKind[]) {
+  const userId = useAppSelector(selectUserId);
+  const inventoryKinds = offered.filter((k) => !k.savedSourceGroup);
+  const inventory = useKindCounts(scope, { tokens: inventoryKinds.map((k) => k.token) });
+  const groups = offered.filter((k) => k.savedSourceGroup);
+  const groupsKey = groups.map((k) => k.key).join(",");
+  const scopeKey = JSON.stringify(scope);
+  const [saved, setSaved] = useState<{ key: string; counts: Map<string, number | null> }>({
+    key: "",
+    counts: new Map(),
+  });
+  const requestKey = `${scopeKey}|${userId}|${groupsKey}`;
+  useEffect(() => {
+    if (!userId || !groupsKey) return undefined;
+    let cancelled = false;
+    const kinds = groupsKey.split(",").map((key) => offered.find((k) => k.key === key)!);
+    void Promise.all(
+      kinds.map(async (k) => [k.key, await countSavedSources(k.savedSourceGroup!, scope, userId)] as const),
+    ).then((pairs) => {
+      if (!cancelled) setSaved({ key: requestKey, counts: new Map(pairs) });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // requestKey carries every input; scope / offered are fresh objects each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestKey]);
+  const counts = new Map<string, number | null>();
+  for (const k of inventoryKinds) if (inventory.counts.has(k.token)) counts.set(k.key, inventory.counts.get(k.token)!);
+  const savedReady = !groupsKey || saved.key === requestKey;
+  if (savedReady) for (const [key, n] of saved.counts) counts.set(key, n);
+  return {
+    counts,
+    loading: inventory.loading || (Boolean(userId) && !savedReady),
+    error: inventory.error,
+    retry: inventory.retry,
+  };
+}
+
+/** One kind's list — the kind inventory, or the person's saved Sources for Websites. */
+function useOfferedKindItems(kind: OfferedKind, scope: KindScope, query: string) {
+  const userId = useAppSelector(selectUserId);
+  const group = kind.savedSourceGroup;
+  const fetchSaved = useCallback(
+    (args: { scope: KindScope; query?: string; offset: number; limit: number }) =>
+      fetchSavedSourcesPage({
+        group: group!,
+        scope: args.scope,
+        userId: userId ?? "",
+        query: args.query,
+        offset: args.offset,
+        limit: args.limit,
+      }),
+    [group, userId],
   );
+  return useKindItems(group && !userId ? null : kind.token, scope, query, group ? { fetchPage: fetchSaved } : undefined);
 }
 
 function shortDate(iso: string | null): string {
@@ -80,7 +153,7 @@ function shortDate(iso: string | null): string {
 
 export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingProps) {
   const offered = offeredKinds();
-  const counts = useKindCounts(scope, { tokens: offered });
+  const counts = useOfferedCounts(scope, offered);
   const [open, setOpen] = useState<string | null>(null);
   const [openQuery, setOpenQuery] = useState("");
   // Matches per kind under the one search box, keyed by query so an old answer never counts.
@@ -89,8 +162,9 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
     byToken: {},
   });
   // Offered order (the grid's), minus kinds with nothing in them; an uncountable kind stays.
-  const kinds = offered.filter((t) => counts.counts.has(t) && counts.counts.get(t) !== 0);
+  const kinds = offered.filter((k) => counts.counts.has(k.key) && counts.counts.get(k.key) !== 0);
   const searching = query.trim().length > 0;
+  const openKind = kinds.find((k) => k.key === open) ?? null;
   // A list's page size is a knob that resolves with or without an organization
   // (user override -> platform default), so a read never waits on one.
 
@@ -109,23 +183,23 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
   if (searching) {
     if (counts.loading) return <TileSkeleton />;
     const settled = matchCounts.query === query ? matchCounts.byToken : {};
-    const none = kinds.every((t) => settled[t] === 0);
+    const none = kinds.every((k) => settled[k.key] === 0);
     return (
       <div className="flex flex-col gap-3">
         {none ? <p className="py-3 text-center text-sm text-muted-foreground">No matches</p> : null}
-        {kinds.map((token) => (
+        {kinds.map((kind) => (
           <KindMatches
-            key={token}
-            token={token}
+            key={kind.key}
+            kind={kind}
             scope={scope}
             query={query}
             isPicked={isPicked}
             onToggle={onToggle}
             onSettled={(n) =>
               setMatchCounts((prev) =>
-                prev.query === query && prev.byToken[token] === n
+                prev.query === query && prev.byToken[kind.key] === n
                   ? prev
-                  : { query, byToken: { ...(prev.query === query ? prev.byToken : {}), [token]: n } },
+                  : { query, byToken: { ...(prev.query === query ? prev.byToken : {}), [kind.key]: n } },
               )
             }
           />
@@ -145,17 +219,17 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
       ) : (
         <>
           <div className="flex flex-wrap gap-2">
-            {kinds.map((token) => {
-              const { plural, Icon } = kindWords(token);
-              const n = counts.counts.get(token);
-              const selected = open === token;
+            {kinds.map((kind) => {
+              const { plural, Icon } = kind;
+              const n = counts.counts.get(kind.key);
+              const selected = open === kind.key;
               return (
                 <button
-                  key={token}
+                  key={kind.key}
                   type="button"
                   aria-pressed={selected}
                   onClick={() => {
-                    setOpen(selected ? null : token);
+                    setOpen(selected ? null : kind.key);
                     setOpenQuery("");
                   }}
                   className={cn(
@@ -165,7 +239,7 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
                       : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
                   )}
                 >
-                  {Icon ? <Icon className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="text-sm text-foreground">{plural}</span>
                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {n === null || n === undefined ? "—" : n.toLocaleString()}
@@ -174,16 +248,16 @@ export function UseExisting({ scope, query, isPicked, onToggle }: UseExistingPro
               );
             })}
           </div>
-          {open ? (
+          {openKind ? (
             <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2">
               <Input
                 value={openQuery}
                 onChange={(e) => setOpenQuery(e.target.value)}
-                placeholder={`Search ${kindWords(open).plural.toLowerCase()}`}
-                aria-label={`Search ${kindWords(open).plural.toLowerCase()}`}
+                placeholder={`Search ${openKind.plural.toLowerCase()}`}
+                aria-label={`Search ${openKind.plural.toLowerCase()}`}
                 className="text-base sm:text-sm"
               />
-              <KindList token={open} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
+              <KindList kind={openKind} scope={scope} query={openQuery} isPicked={isPicked} onToggle={onToggle} />
             </div>
           ) : null}
         </>
@@ -205,14 +279,14 @@ function TileSkeleton() {
 
 /** One kind's matches under the one search box: the first few, then Show more. */
 function KindMatches({
-  token,
+  kind,
   scope,
   query,
   isPicked,
   onToggle,
   onSettled,
 }: {
-  token: string;
+  kind: OfferedKind;
   scope: KindScope;
   query: string;
   isPicked: UseExistingProps["isPicked"];
@@ -221,14 +295,14 @@ function KindMatches({
   onSettled: (count: number) => void;
 }) {
   const [all, setAll] = useState(false);
-  const list = useKindItems(token, scope, query);
+  const list = useOfferedKindItems(kind, scope, query);
   const answered = !list.loading && !list.error;
   const reportSettled = useEffectEvent(() => onSettled(list.items.length));
   useEffect(() => {
     if (answered) reportSettled();
   }, [answered, list.items.length]);
   if (!list.loading && !list.error && list.items.length === 0) return null;
-  const { plural } = kindWords(token);
+  const { plural, token } = kind;
   return (
     <section aria-label={plural} className="flex flex-col gap-1">
       <h4 className="text-xs font-medium text-muted-foreground">{plural}</h4>
@@ -246,20 +320,20 @@ function KindMatches({
 
 /** One kind's whole list: server-searched, recent first, a page at a time. */
 function KindList({
-  token,
+  kind,
   scope,
   query,
   isPicked,
   onToggle,
 }: {
-  token: string;
+  kind: OfferedKind;
   scope: KindScope;
   query: string;
   isPicked: UseExistingProps["isPicked"];
   onToggle: UseExistingProps["onToggle"];
 }) {
-  const list = useKindItems(token, scope, query);
-  return <Rows token={token} list={list} isPicked={isPicked} onToggle={onToggle} />;
+  const list = useOfferedKindItems(kind, scope, query);
+  return <Rows token={kind.token} list={list} isPicked={isPicked} onToggle={onToggle} />;
 }
 
 function Rows({
