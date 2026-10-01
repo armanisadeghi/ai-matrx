@@ -6,8 +6,8 @@
 //
 // Transcripts has no favorite axis (favoritesFirst is ignored). THE ARCHIVED-
 // ITEMS LAW's axis rides `p_filters.archived` (active | archived | all) — the
-// list and its lane counts read the same rows; `trx_list_scoped` returns
-// `is_archived` per row.
+// list, its lane counts and its facets read the same rows; `trx_list_scoped`
+// returns `is_archived` per row and `trx_list_facets` takes `p_archived`.
 
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
@@ -26,47 +26,6 @@ import type { TranscriptListRow, TranscriptRowEdit } from "./types";
 /** The list's filters plus the archive axis, as `trx_list_scoped` / `trx_list_scope_counts` read them. */
 export function transcriptFilters(query: EntityListQuery): Record<string, unknown> {
   return { ...query.filters, archived: { value: query.archived } };
-}
-
-const FACET_NONE = "__none__";
-
-/**
- * Facets from the rows themselves — the same grouping `trx_list_facets` does over
- * `trx_list_scoped` (no column filters), plus the `archived` facet. Used when the
- * archive axis is not "active": `trx_list_facets` reads only active rows and its
- * signature is pinned (the T-13 readers list names it by signature and only shrinks).
- */
-export function transcriptFacetsFromRows(rows: TranscriptListRow[]): EntityFacets {
-  const counts = new Map<string, Map<string, number>>();
-  const add = (kind: string, value: string | null | undefined) => {
-    const v = value ? value : FACET_NONE;
-    const byValue = counts.get(kind) ?? new Map<string, number>();
-    byValue.set(v, (byValue.get(v) ?? 0) + 1);
-    counts.set(kind, byValue);
-  };
-  let drafts = 0;
-  let archived = 0;
-  for (const row of rows) {
-    add("kind", row.kind);
-    add("status", row.status);
-    add("visibility", row.visibility);
-    add("organization_name", row.organization_name);
-    add("owner_email", row.owner_email);
-    if (row.kind === "transcript") {
-      add("folder_name", row.folder_name);
-      if (!row.tags || row.tags.length === 0) add("tag", FACET_NONE);
-      else for (const tag of row.tags) add("tag", tag);
-    }
-    if (row.is_draft) drafts += 1;
-    if (row.is_archived) archived += 1;
-  }
-  const byKind: EntityFacets["byKind"] = {};
-  for (const [kind, byValue] of counts) {
-    byKind[kind] = [...byValue].map(([value, count]) => ({ value, count }));
-  }
-  byKind.draft = [{ value: "draft", count: drafts }];
-  byKind.archived = [{ value: "archived", count: archived }];
-  return sortFacets({ byKind });
 }
 
 function sortFacets(facets: EntityFacets): EntityFacets {
@@ -126,25 +85,12 @@ export async function fetchTranscriptScopeCounts(
 export async function fetchTranscriptFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  if (query.archived !== "active") {
-    // The same base `trx_list_facets` groups: every row of the lane, org filter and search, no column filters.
-    const { data, error } = await supabase.rpc("trx_list_scoped", {
-      p_scope: query.scope.kind,
-      p_org_id: listOrgParam(query),
-      p_search: query.search.trim() || undefined,
-      p_deep: query.deep,
-      p_filters: { archived: { value: query.archived } },
-      p_limit: 1_000_000,
-      p_offset: 0,
-    });
-    if (error) throw pgError(error);
-    return transcriptFacetsFromRows((data ?? []) as TranscriptListRow[]);
-  }
   const { data, error } = await supabase.rpc("trx_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
+    p_archived: query.archived,
   });
 
   if (error) throw pgError(error);

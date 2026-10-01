@@ -100747,6 +100747,7 @@ export type Database = {
       }
       trx_list_facets: {
         Args: {
+          p_archived?: string
           p_deep?: boolean
           p_org_id?: string
           p_scope?: string
