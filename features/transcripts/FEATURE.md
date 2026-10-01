@@ -139,6 +139,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-09-30` — The transcripts list's row menu has Archive for a transcript (the one archive, `archiveRecord`; Undo in the toast, restore from Trash). The list still has no archived axis (`supportsArchived: false`): showing archived transcripts in the list needs `trx_list_*` to take one (V5-B).
 - `2026-08-28` — **Automated recording verification became deterministic and non-transmitting.** The processor's Record Audio step exposes an admin-only safe QA canary that generates a stable audible WAV through the shared PCM encoder, persists it through the exact hidden transcript-recording file path, creates a clearly stamped draft, and never requests microphone access or calls speech-to-text. Normal recordings still use the catalog STT path; their generated title now reaches the saved draft instead of the prior stale state value.
 - `2026-08-28` — Audio upload retries stopped duplicating the universal file transport's structured failure as a second `console-error`; retry progress remains visible through a sanitized warning.
 - `2026-08-26` — **Transcript mode navigation now matches the compact Agents shell header at every width.** Removed the copied 44px mobile/tablet minimums from `TranscriptsModeController`; large mobile targets remain inside drawers and sheets, never in the fixed-height header center. `check:page-headers` now rejects this regression in header/mode/nav components using the shared nav-item styles.
