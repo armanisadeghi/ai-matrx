@@ -70,40 +70,23 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
           })
           .filter((b) => b.variables.length > 0);
         const fan = branches.length > 1;
-        const collection = branches.some((b) => b.bindings.some((x) => x.semantic_type === "collection"));
-        const template = branches.flatMap((b) => b.bindings).find((x) => x.transform?.template)?.transform?.template;
 
         return (
-          <div key={tableKey} className="rounded-xl border border-dashed border-border bg-muted/20 p-3 sm:p-4">
+          <div key={tableKey}>
             <div className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-0">
               {/* The table */}
               <div className="flex md:w-[34%] md:shrink-0 md:items-center">
-                <div className="w-full rounded-lg border border-border bg-card p-3 shadow-sm">
+                <div className="w-full rounded-lg border border-border bg-card p-3">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-chart-2/10 text-chart-2">
-                      <Table2 className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Your table</span>
+                    <Table2 className="h-4 w-4 shrink-0 text-chart-2" />
+                    <span className="min-w-0 truncate text-sm font-medium text-foreground">{table?.name ?? "—"}</span>
                   </div>
-                  <p className="mt-2 text-sm font-medium text-foreground">{table?.name ?? "—"}</p>
                   {table && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {count(table.records.length, "row")} · {count(table.fields.length, "column")}
                     </p>
                   )}
-                  {template && collection && (
-                    <code
-                      className="mt-2 block truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-foreground/80"
-                      title={template}
-                    >
-                      {template}
-                    </code>
-                  )}
-                  {fan && (
-                    <p className="mt-2 rounded-md bg-primary/8 px-2 py-1 text-[11px] font-medium text-primary">
-                      Feeds {count(branches.length, "agent")} — edit once, all follow
-                    </p>
-                  )}
+                  {fan && <p className="mt-1 text-xs font-medium text-primary">Feeds {count(branches.length, "agent")}</p>}
                 </div>
               </div>
 
@@ -130,11 +113,9 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
                       )}
                       {/* branch (wide screens): spine → agent card */}
                       <span aria-hidden className="absolute -left-5 top-1/2 hidden h-px w-5 -translate-y-1/2 border-t-2 border-dashed border-border md:block" />
-                      <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+                      <div className="rounded-lg border border-border bg-card p-3">
                         <div className="flex items-center gap-2">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                            <AGENT_ICON className="h-3.5 w-3.5" />
-                          </span>
+                          <AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />
                           <span className="min-w-0 truncate text-sm font-medium text-foreground">{b.agent.name}</span>
                         </div>
                         {/* One row per input: the input → what it reads. A grid, so a long column
@@ -144,15 +125,15 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
                             <li key={b.variables[i]} className="contents text-xs">
                               <VariableName name={b.variables[i]!} />
                               <ArrowRight className="h-3 w-3 text-muted-foreground" aria-label="reads" />
-                              <span className="truncate text-xs font-medium text-foreground/90" title={reads(x, labelOf)}>
+                              <span className="truncate text-xs text-foreground" title={reads(x, labelOf)}>
                                 {reads(x, labelOf)}
                               </span>
                             </li>
                           ))}
                         </ul>
                         {b.workflows.length > 0 && (
-                          <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <Workflow className="h-3 w-3 text-chart-3" />
+                          <p className="mt-2 flex items-center gap-1 text-xs text-foreground">
+                            <Workflow className="h-3.5 w-3.5 shrink-0 text-chart-3" />
                             Run by {b.workflows.join(", ")}
                           </p>
                         )}

@@ -106,8 +106,15 @@ export function CanvasChatColumn({
     dispatch(setContextEntries({ conversationId: id, entries: [getCanvasContext()] }));
   };
 
-  const refresh = () => {
-    if (conversationId) writeContext(conversationId);
+  // React events bubble through portals, so a click inside the composer's
+  // page-chip popover or the value panel it opens would land here too. Only
+  // the column's own DOM is the chat; a layer it opened is not a reason to
+  // re-read the canvas. (The slice already ignores an unchanged snapshot.)
+  const refresh = (event: { target: EventTarget; currentTarget: EventTarget }) => {
+    if (!conversationId) return;
+    const column = event.currentTarget as Node;
+    if (!column.contains(event.target as Node)) return;
+    writeContext(conversationId);
   };
 
   // (1) Seed the moment the conversation exists — and for every new one.
@@ -164,7 +171,7 @@ export function CanvasChatColumn({
       // (2) Capture phase: runs BEFORE the composer's send button / Enter handler.
       onPointerDownCapture={refresh}
       onKeyDownCapture={(e) => {
-        if (e.key === "Enter") refresh();
+        if (e.key === "Enter") refresh(e);
       }}
       // (3) Focus inside the chat refreshes too.
       onFocusCapture={refresh}

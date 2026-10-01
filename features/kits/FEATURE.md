@@ -72,6 +72,7 @@ record the install → declare each table (relations to other kit tables resolve
 
 ## Change Log
 
+- `2026-09-30` — Visual pass (Arman's five findings): no card-in-card anywhere (How it works, table preview, install rail, installed tables sit on the records Grid's own frame, Try it), only the title row beside an icon, plain foreground section titles, muted only for metadata, gallery leads with the platform's kits and loads with a skeleton, kit content cut to how-to lines in the catalog rows + `common-docs/projects/data-kits/manifests/`. Screens: `common-docs/operations/for-arman/2026-09-30/kits-ui/`.
 - `2026-09-30` — Interface-text sweep (labels not prose, `variableLabel`, errors ≤140 with Details), limits moved to feature knobs, kit lists via `readAllRows`, agent copies take the next free name on a clash, multi-agent fan-out verified on the clone.
 
 - `2026-09-25` — Save as kit: dialog, serializer + round-trip test, org-scoped gallery, owner edit/unpublish, agent-menu + gallery entry points.

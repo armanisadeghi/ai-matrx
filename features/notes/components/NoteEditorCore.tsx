@@ -522,7 +522,16 @@ export function NoteEditorCore({
         // One column in every view: the editor's own side padding is dropped
         // (its 48rem container already centres it where Plain and Read start),
         // and lists indent 24px as Read's do.
-        <div className="absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm! [&_.ProseMirror]:px-0! [&_.ProseMirror_ul]:pl-6! [&_.ProseMirror_ol]:pl-6! [&_.ProseMirror_li]:pl-0!">
+        <div
+          className={cn(
+            "absolute inset-0 w-full h-full [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm! [&_.ProseMirror]:px-0! [&_.ProseMirror_ul]:pl-6! [&_.ProseMirror_ol]:pl-6! [&_.ProseMirror_li]:pl-0!",
+            // Match Plain/Split/Read inside the rich editor's scroll owners.
+            // Padding the frame instead would lift the host's metadata/footer.
+            // Embedded hosts keep the rich editor's existing compact runway.
+            !embedded &&
+              "[&_.rich-editor-visual>div]:pb-[85dvh]! [&_.rich-editor-source>div]:pb-[85dvh]!",
+          )}
+        >
           <RichEditor
             key={resetKey}
             value={content}

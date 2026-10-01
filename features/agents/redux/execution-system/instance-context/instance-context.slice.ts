@@ -10,6 +10,7 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import isEqual from "lodash/isEqual";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
 import { destroyInstance } from "../conversations/conversations.slice";
@@ -108,6 +109,51 @@ function envelopeFacts(value: unknown): {
  */
 export const PER_TURN_CONTEXT_KEYS: readonly string[] = ["quoted_passages"];
 
+/**
+ * AN UNCHANGED WRITE IS A NO-OP. Writers re-send the same value all the time
+ * (the canvas chat re-seeds its snapshot on every pointer-down, the page-follow
+ * refresh re-reads the page every turn). Assigning a fresh entry object for an
+ * equal one hands every reader of this conversation's context a new map and
+ * re-renders the composer's rail, page chip and open detail panel for nothing.
+ * So an entry is replaced only when its key, value (deep), label, type or slot
+ * match actually differ — otherwise the existing object, and with it the
+ * conversation's map, keeps its identity.
+ * Guard: `__tests__/unchanged-write-is-a-no-op.test.ts`.
+ */
+function writeEntry(
+  context: Record<string, InstanceContextEntry>,
+  next: InstanceContextEntry,
+): void {
+  const existing = context[next.key];
+  if (
+    existing &&
+    existing.key === next.key &&
+    existing.label === next.label &&
+    existing.type === next.type &&
+    existing.slotMatched === next.slotMatched &&
+    isEqual(existing.value, next.value)
+  ) {
+    return;
+  }
+  context[next.key] = next;
+}
+
+function sameKeys(a: readonly string[] | undefined, b: readonly string[]): boolean {
+  return !!a && a.length === b.length && a.every((key, i) => key === b[i]);
+}
+
+/** Empty a conversation's context — a no-op when it is already empty. */
+function resetConversation(state: InstanceContextState, conversationId: string): void {
+  const context = state.byConversationId[conversationId];
+  if (!context || Object.keys(context).length > 0) {
+    state.byConversationId[conversationId] = {};
+  }
+  const keys = state.surfaceKeysByConversationId[conversationId];
+  if (!keys || keys.length > 0) {
+    state.surfaceKeysByConversationId[conversationId] = [];
+  }
+}
+
 // =============================================================================
 // Slice
 // =============================================================================
@@ -120,8 +166,7 @@ const instanceContextSlice = createSlice({
       state,
       action: PayloadAction<{ conversationId: string }>,
     ) {
-      state.byConversationId[action.payload.conversationId] = {};
-      state.surfaceKeysByConversationId[action.payload.conversationId] = [];
+      resetConversation(state, action.payload.conversationId);
     },
 
     /**
@@ -156,15 +201,14 @@ const instanceContextSlice = createSlice({
       if (!state.byConversationId[conversationId]) {
         state.byConversationId[conversationId] = {};
       }
-      const context = state.byConversationId[conversationId];
       const envelope = envelopeFacts(value);
-      context[key] = {
+      writeEntry(state.byConversationId[conversationId], {
         key,
         value,
         slotMatched,
         type: type ?? envelope.type ?? inferType(value),
         label: label ?? envelope.label ?? keyWords(key),
-      };
+      });
     },
 
     /**
@@ -202,13 +246,13 @@ const instanceContextSlice = createSlice({
       const context = state.byConversationId[conversationId];
       for (const entry of entries) {
         const envelope = envelopeFacts(entry.value);
-        context[entry.key] = {
+        writeEntry(context, {
           key: entry.key,
           value: entry.value,
           slotMatched: entry.slotMatched ?? false,
           type: entry.type ?? envelope.type ?? inferType(entry.value),
           label: entry.label ?? envelope.label ?? keyWords(entry.key),
-        };
+        });
       }
     },
 
@@ -230,16 +274,17 @@ const instanceContextSlice = createSlice({
         state.byConversationId[conversationId] = {};
       }
       const context = state.byConversationId[conversationId];
-      for (const key of state.surfaceKeysByConversationId[conversationId] ??
-        []) {
-        delete context[key];
+      const nextKeys = entries.map((entry) => entry.key);
+      const incoming = new Set(nextKeys);
+      const previousKeys = state.surfaceKeysByConversationId[conversationId];
+      for (const key of previousKeys ?? []) {
+        // Deleting an absent key is not a change, so only real drops count.
+        if (!incoming.has(key)) delete context[key];
       }
-      for (const entry of entries) {
-        context[entry.key] = entry;
+      for (const entry of entries) writeEntry(context, entry);
+      if (!sameKeys(previousKeys, nextKeys)) {
+        state.surfaceKeysByConversationId[conversationId] = nextKeys;
       }
-      state.surfaceKeysByConversationId[conversationId] = entries.map(
-        (entry) => entry.key,
-      );
     },
 
     /**
@@ -270,8 +315,7 @@ const instanceContextSlice = createSlice({
      * Clear all context for an instance.
      */
     clearInstanceContext(state, action: PayloadAction<string>) {
-      state.byConversationId[action.payload] = {};
-      state.surfaceKeysByConversationId[action.payload] = [];
+      resetConversation(state, action.payload);
     },
 
     removeInstanceContext(state, action: PayloadAction<string>) {
@@ -282,8 +326,7 @@ const instanceContextSlice = createSlice({
 
   extraReducers: (builder) => {
     builder.addCase(createInstanceFull, (state, action) => {
-      state.byConversationId[action.payload.conversationId] = {};
-      state.surfaceKeysByConversationId[action.payload.conversationId] = [];
+      resetConversation(state, action.payload.conversationId);
     });
 
     builder.addCase(destroyInstance, (state, action) => {

@@ -45,14 +45,40 @@ import { ErrorNotice } from "./ErrorNotice";
 import { KitIcon } from "./KitIcon";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
-function Panel({ icon, title, children, aside }: { icon: React.ReactNode; title: string; children: React.ReactNode; aside?: React.ReactNode }) {
+/**
+ * A titled block. `bare` drops the frame for a child that carries its own (the
+ * records Grid) — a host frame is the chrome or has none, never both.
+ */
+function Panel({
+  icon,
+  title,
+  children,
+  aside,
+  bare,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+  aside?: React.ReactNode;
+  bare?: boolean;
+}) {
+  const heading = (
+    <div className={bare ? "mb-2 flex items-center gap-2" : "flex items-center gap-2 border-b border-border px-4 py-2.5"}>
+      {icon}
+      <h2 className="min-w-0 truncate text-sm font-semibold text-foreground">{title}</h2>
+      {aside && <div className="ml-auto flex shrink-0 items-center gap-2">{aside}</div>}
+    </div>
+  );
+  if (bare)
+    return (
+      <section>
+        {heading}
+        {children}
+      </section>
+    );
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
-        <span className="text-muted-foreground">{icon}</span>
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        {aside && <div className="ml-auto flex items-center gap-2">{aside}</div>}
-      </div>
+      {heading}
       {children}
     </section>
   );
@@ -132,7 +158,7 @@ function BindingPreviewCard({
   }, []);
 
   return (
-    <div className="p-4">
+    <div className="px-4 py-3">
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <span className="rounded bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground">{variableLabel(variable)}</span>
         {/* The panel already names the agent; say what this one variable reads. */}
@@ -158,11 +184,11 @@ function BindingPreviewCard({
         {answer === null ? (
           <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground" aria-busy="true">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Loading what the agent reads…
+            Loading…
           </div>
         ) : answer.state === "ok" ? (
           <>
-            <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {answer.preview.row_count !== null && spec.binding.semantic_type !== "value" && (
                 <span>
                   {/* read-gate-exempt: inside answer.state === "ok" — the preview read succeeded; its failure renders its own branch */}
@@ -175,17 +201,17 @@ function BindingPreviewCard({
               {answer.preview.truncated && (
                 <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-px font-medium text-warning">
                   <Scissors className="h-3 w-3" />
-                  Cut short — only the first rows are included
+                  Cut short
                 </span>
               )}
             </div>
-            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11.5px] leading-relaxed text-foreground">
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-3 font-mono text-[11.5px] leading-relaxed text-foreground">
               {answer.preview.text || "(empty — the table has no rows yet)"}
             </pre>
             {!answer.preview.present && answer.preview.absent_reason && (
               <p className="mt-2 flex items-start gap-1.5 text-xs text-warning">
                 <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-                <span className="text-foreground/80">Nothing delivered: {answer.preview.absent_reason}</span>
+                <span className="text-foreground">Nothing delivered: {answer.preview.absent_reason}</span>
               </p>
             )}
             {answer.preview.withheld.length > 0 && (
@@ -199,7 +225,7 @@ function BindingPreviewCard({
                 {answer.preview.notes.map((n) => (
                   <li key={n} className="flex items-start gap-1.5 text-xs text-warning">
                     <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-                    <span className="text-foreground/80">{n}</span>
+                    <span className="text-foreground">{n}</span>
                   </li>
                 ))}
               </ul>
@@ -207,12 +233,10 @@ function BindingPreviewCard({
           </>
         ) : (
           answer.state === "not_deployed" ? (
-            <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <p className="flex items-start gap-2 text-xs text-foreground">
-                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
-                <span>{answer.message}</span>
-              </p>
-            </div>
+            <p className="flex items-start gap-2 text-xs text-foreground">
+              <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
+              <span>{answer.message}</span>
+            </p>
           ) : (
             <ErrorNotice title="The preview could not be shown." error={answer.message} onRetry={() => setAttempt((n) => n + 1)} />
           )
@@ -246,32 +270,24 @@ function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
   };
 
   return (
-    <div className="border-t border-border">
-      <div className="space-y-3 p-4">
-        <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-          <Play className="h-3.5 w-3.5 text-muted-foreground" />
-          Try it
-        </p>
-        {(tryIt.user_input || vars.length > 0) && (
-          <div className="space-y-1.5">
-            {tryIt.user_input && (
-              <p className="rounded-lg bg-muted/40 p-2.5 text-xs leading-relaxed text-foreground/85">{tryIt.user_input}</p>
-            )}
-            {vars.map(([k, v]) => (
-              <div key={k} className="rounded-lg bg-muted/40 p-2.5">
-                <span className="text-[10.5px] font-medium text-muted-foreground">{variableLabel(k)}</span>
-                <p className="mt-0.5 text-xs leading-relaxed text-foreground/85">{v}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button size="sm" onClick={run}>
-            <Play className="mr-1.5 h-3.5 w-3.5" />
-            Run it once
-          </Button>
-          <p className="text-[11px] text-muted-foreground">Uses AI credits · opens in a chat window</p>
+    <div className="space-y-2 border-t border-border p-4">
+      <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+        <Play className="h-3.5 w-3.5 text-primary" />
+        Try it
+      </p>
+      {tryIt.user_input && <p className="text-sm text-foreground">{tryIt.user_input}</p>}
+      {vars.map(([k, v]) => (
+        <div key={k}>
+          <p className="text-xs font-medium text-muted-foreground">{variableLabel(k)}</p>
+          <p className="text-sm text-foreground">{v}</p>
         </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+        <Button size="sm" onClick={run}>
+          <Play className="mr-1.5 h-3.5 w-3.5" />
+          Run it once
+        </Button>
+        <p className="text-xs text-muted-foreground">Uses AI credits</p>
       </div>
     </div>
   );
@@ -313,7 +329,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
     body = (
       <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-busy="true">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Reading where this {KIT_WORD.oneLower} is installed…
+        Finding installs…
       </div>
     );
   } else if (!selected && found.failures.length > 0) {
@@ -355,28 +371,8 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
     const steps = install.steps;
     body = (
       <div className="space-y-6">
-        {/* Doors to everything the install made */}
+        {/* Doors to what the panels below don't show (tables and agents open from their own panel). */}
         <div className="flex flex-wrap gap-2">
-          {m.tables.map((t) => {
-            const id = steps.tables?.[t.key];
-            return id ? (
-              <Link key={t.key} href={KIT_ROUTES.table(id)} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/40">
-                <Table2 className="h-3.5 w-3.5 text-chart-2" />
-                {t.name}
-                <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
-              </Link>
-            ) : null;
-          })}
-          {m.agents.map((a) => {
-            const id = steps.agents?.[a.key];
-            return id ? (
-              <Link key={a.key} href={KIT_ROUTES.agent(id)} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/40">
-                <AGENT_ICON className="h-3.5 w-3.5 text-primary" />
-                {a.name}
-                <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
-              </Link>
-            ) : null;
-          })}
           {m.workflows.map((w) => {
             const id = steps.workflows?.[w.key];
             return id ? (
@@ -408,8 +404,9 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                 return (
                   <Panel
                     key={t.key}
-                    icon={<Table2 className="h-3.5 w-3.5" />}
+                    icon={<Table2 className="h-4 w-4 shrink-0 text-chart-2" />}
                     title={t.name}
+                    bare
                     aside={
                       <Link href={KIT_ROUTES.table(id)} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
                         Open in Data
@@ -417,14 +414,12 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                       </Link>
                     }
                   >
-                    <div className="p-2">
-                      <TableChangeWatcher tableId={id} onChange={bumpTable} />
-                      <Grid
-                        tableId={id}
-                        pageSize={50}
-                        onOpenRecord={(recordId) => router.push(`${KIT_ROUTES.table(id)}?record=${encodeURIComponent(recordId)}`)}
-                      />
-                    </div>
+                    <TableChangeWatcher tableId={id} onChange={bumpTable} />
+                    <Grid
+                      tableId={id}
+                      pageSize={50}
+                      onOpenRecord={(recordId) => router.push(`${KIT_ROUTES.table(id)}?record=${encodeURIComponent(recordId)}`)}
+                    />
                   </Panel>
                 );
               })}
@@ -441,7 +436,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
               return (
                 <Panel
                   key={a.key}
-                  icon={<AGENT_ICON className="h-3.5 w-3.5" />}
+                  icon={<AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />}
                   title={a.name}
                   aside={
                     <Link href={KIT_ROUTES.agent(id)} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
@@ -452,8 +447,8 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                 >
                   {a.bindings.length > 0 && (
                     <>
-                      <p className="flex items-center gap-1.5 border-b border-border px-4 py-2 text-xs text-muted-foreground">
-                        <Eye className="h-3.5 w-3.5" />
+                      <p className="flex items-center gap-1.5 px-4 pt-3 text-sm font-semibold text-foreground">
+                        <Eye className="h-3.5 w-3.5 text-primary" />
                         What it sees
                         <InfoHint text="The exact text your table becomes on each run, updated as you edit it." />
                       </p>
@@ -487,15 +482,15 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
       {header}
       <div className="h-full overflow-y-auto bg-textured">
         <div className="mx-auto w-full max-w-7xl px-4 pb-20 pt-[calc(var(--shell-header-h)+1.25rem)] sm:px-6">
-          <div className="mb-6 flex items-center gap-3">
+          <div className="mb-6 flex flex-wrap items-center gap-3">
             <KitIcon name={m.icon} tintKey={kit.key} />
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">{m.name}</h1>
-              <Link href={KIT_ROUTES.detail(m.key)} className="text-xs text-muted-foreground hover:text-foreground">
-                How this {KIT_WORD.oneLower} works
+            <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-foreground">{m.name}</h1>
+            <div className="ml-auto flex items-center gap-3">
+              <Link href={KIT_ROUTES.detail(m.key)} className="text-sm font-medium text-primary hover:underline">
+                How it works
               </Link>
+              <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
             </div>
-            <EntityOrgFilter className="ml-auto" orgId={orgFilter} onChange={setOrgFilter} />
           </div>
           {found.installs.length > 0 && (
             <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -507,9 +502,9 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                   onClick={() => setPickedOrg(i.organizationId)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/40 aria-pressed:border-primary aria-pressed:bg-primary/10"
                 >
-                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Building2 className="h-3.5 w-3.5" />
                   {orgNameOf(i.organizationId)}
-                  {i.install.status !== "installed" && <span className="text-muted-foreground">partial</span>}
+                  {i.install.status !== "installed" && <span className="rounded bg-warning/15 px-1 text-[10px] text-warning">Partial</span>}
                 </button>
               ))}
               {selected && (

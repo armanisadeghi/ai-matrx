@@ -116,15 +116,16 @@ export function ContextItemBindingEditor({
   };
 
   return (
-    <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
-      <div className="flex items-center justify-between">
-        <div>
+    // Off, the variable is an ordinary input; on, it fills from the person's own
+    // data, a platform truth, or the active scope.
+    <div className="space-y-2 border-t border-border pt-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <Label className="text-sm font-medium cursor-pointer">
             Fill automatically
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Auto-fills from your own data, a platform truth, or the active
-            scope. Optional — left off, it&rsquo;s just a normal input.
+            From your data, a platform value, or the scope
           </p>
         </div>
         <Switch
@@ -135,7 +136,7 @@ export function ContextItemBindingEditor({
       </div>
 
       {bound && (
-        <div className="space-y-2 pt-1.5 border-t border-border">
+        <div className="space-y-2 pt-1">
           <ContextItemPicker
             value={{
               source,
@@ -164,7 +165,7 @@ export function ContextItemBindingEditor({
 
           {contextBinding && (
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
+              <Label className="text-xs font-medium text-foreground">
                 When nothing provides it
               </Label>
               <Select

@@ -173,7 +173,7 @@ export function CustomDataBindingPicker({
       {/* ── Table ─────────────────────────────────────────────────────── */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <Label className="shrink-0 text-xs text-muted-foreground">
+          <Label className="shrink-0 text-xs font-medium text-foreground">
             Table
           </Label>
           {/* THE SHELL'S TAB BAR, on the row it filters — never a private one. */}
@@ -498,7 +498,7 @@ function BoundTableDetails({
     <>
       {/* ── Shape ─────────────────────────────────────────────────── */}
       <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">
+        <Label className="text-xs font-medium text-foreground">
           What the agent gets
         </Label>
         <Select
@@ -528,7 +528,7 @@ function BoundTableDetails({
       {/* ── Record ────────────────────────────────────────────────── */}
       {needsRecord && (
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Record</Label>
+          <Label className="text-xs font-medium text-foreground">Record</Label>
           <CreatablePicker
             value={binding.record_id ?? null}
             options={recordOptions}
@@ -580,7 +580,7 @@ function BoundTableDetails({
       {/* ── Field (one value) ─────────────────────────────────────── */}
       {shape === "value" && (
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Field</Label>
+          <Label className="text-xs font-medium text-foreground">Field</Label>
           <Select
             value={binding.field_key ?? ""}
             onValueChange={(key) => onChange({ ...binding, field_key: key })}
@@ -628,7 +628,7 @@ function BoundTableDetails({
       {/* ── Limit ─────────────────────────────────────────────────── */}
       {shape === "collection" && (
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">
+          <Label className="text-xs font-medium text-foreground">
             At most this many rows
           </Label>
           <Input
@@ -664,7 +664,7 @@ function MissingChoice({
 }: Pick<CustomDataBindingPickerProps, "binding" | "onChange" | "readonly">) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">
+      <Label className="text-xs font-medium text-foreground">
         When there is no data
       </Label>
       <Select
@@ -726,7 +726,7 @@ function TemplateEditor({
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">
+      <Label className="text-xs font-medium text-foreground">
         {perRow ? "How each row reads" : "How the record reads"}
       </Label>
       <Textarea

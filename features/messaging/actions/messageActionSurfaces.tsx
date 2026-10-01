@@ -102,7 +102,7 @@ function ResourceSharedCard({
     ? `${p.resource_label} · shared by ${p.sharer_name}`
     : p.resource_label;
   return (
-    <div className="mt-1 w-full max-w-sm">
+    <div className="w-full max-w-sm">
       <EntityCard
         icon={Icon}
         title={p.resource_title || p.resource_label || "Shared item"}

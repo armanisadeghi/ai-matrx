@@ -7,7 +7,7 @@
 import { variableLabel } from "../format";
 import { useScopedKitKnobs } from "../knobs";
 import Link from "next/link";
-import { Lightbulb, Link2, ListOrdered, Table2, Workflow } from "lucide-react";
+import { ArrowRight, Link2, Workflow } from "lucide-react";
 import type { ReactNode } from "react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
@@ -23,7 +23,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { unpublishKit } from "../publish";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
-import type { KitEntry, KitHighlightKind, KitManifest } from "../types";
+import type { KitEntry, KitManifest } from "../types";
 import { describeBinding, HowItWorks } from "./HowItWorks";
 import { InstallPanel } from "./InstallPanel";
 import { KitIcon } from "./KitIcon";
@@ -37,25 +37,17 @@ export interface SourceAgentFacts {
   description: string | null;
 }
 
-function Section({ id, icon, title, children, aside }: { id?: string; icon: ReactNode; title: string; children: ReactNode; aside?: ReactNode }) {
+function Section({ id, title, children, aside }: { id?: string; title: string; children: ReactNode; aside?: ReactNode }) {
   return (
     <section id={id} className="scroll-mt-24">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-muted-foreground">{icon}</span>
-        <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
         {aside && <div className="ml-auto">{aside}</div>}
       </div>
       {children}
     </section>
   );
 }
-
-const HIGHLIGHT_WORD: Record<KitHighlightKind, string> = {
-  table: "Table",
-  agent: "Agent",
-  workflow: "Workflow",
-  binding: "Connection",
-};
 
 function workflowSteps(definition: unknown): string[] {
   if (!definition || typeof definition !== "object") return [];
@@ -82,19 +74,14 @@ export function KitAgentsSection({ manifest, sourceAgents }: { manifest: KitMani
         const src = sourceAgents[a.source_agent_id];
         return (
           <div key={a.key} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <AGENT_ICON className="h-4.5 w-4.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h4 className="text-sm font-semibold text-foreground">{a.name}</h4>
-                <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{a.description}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                  <span>A copy of</span>
-                  <EntityRef token="agent" id={a.source_agent_id} name={src?.name ?? null} className="text-xs" />
-                  <span>— the original is never changed.</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />
+              <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">{a.name}</h3>
+            </div>
+            <p className="mt-1 text-sm text-foreground">{a.description}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+              <span>Copy of</span>
+              <EntityRef token="agent" id={a.source_agent_id} name={src?.name ?? null} className="text-xs" />
             </div>
             {a.bindings.length > 0 && (
               <div className="mt-3 space-y-1.5 border-t border-border pt-3">
@@ -105,7 +92,7 @@ export function KitAgentsSection({ manifest, sourceAgents }: { manifest: KitMani
                       <span className="rounded bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground">{variableLabel(b.variable)}</span>
                       <Link2 className="h-3 w-3 text-muted-foreground" />
                       <span className="font-medium text-foreground">{table?.name ?? "—"}</span>
-                      <span className="text-muted-foreground">· {describeBinding(b.binding).toLowerCase()}</span>
+                      <span className="text-foreground">· {describeBinding(b.binding).toLowerCase()}</span>
                     </div>
                   );
                 })}
@@ -181,29 +168,24 @@ export function KitDetail({
           {/* Phone order: who it is → install → how it works. Wide: install rail on the right. */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="min-w-0 lg:col-start-1 lg:row-start-1">
-              {/* Identity */}
+              {/* Identity: only the title row sits beside the icon; everything else runs full width. */}
               <header>
-                <div className="flex items-start gap-4">
-                  <KitIcon name={m.icon} tintKey={kit.key} size="lg" />
-                  <div className="min-w-0 flex-1">
-                    <Link href={KIT_ROUTES.gallery} className="text-xs font-medium text-muted-foreground hover:text-foreground">
-                      {KIT_WORD.many}
-                    </Link>
-                    <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-foreground">{m.name}</h1>
-                    <p className="mt-1 text-[15px] leading-relaxed text-foreground/80">{m.tagline}</p>
-                    <WhatYouGet kit={kit} className="mt-3 flex flex-wrap items-center gap-1.5" />
-                  </div>
+                <div className="flex items-center gap-3">
+                  <KitIcon name={m.icon} tintKey={kit.key} />
+                  <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-foreground">{m.name}</h1>
                 </div>
-                {m.description && <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted-foreground">{m.description}</p>}
+                <p className="mt-3 text-base text-foreground">{m.tagline}</p>
+                <WhatYouGet kit={kit} className="mt-2" />
+                {m.description && <p className="mt-4 max-w-3xl text-sm leading-relaxed text-foreground">{m.description}</p>}
                 {m.teaches.length > 0 && (
-                  <ul className="mt-5 grid gap-2 sm:grid-cols-3">
-                    {m.teaches.map((t) => (
-                      <li key={t} className="flex gap-2 rounded-lg border border-border bg-card p-3">
-                        <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-                        <span className="text-xs leading-relaxed text-foreground/85">{t}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-6">
+                    <h2 className="text-base font-semibold text-foreground">What you&rsquo;ll learn</h2>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground marker:text-muted-foreground">
+                      {m.teaches.map((t) => (
+                        <li key={t}>{t}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </header>
             </div>
@@ -213,42 +195,45 @@ export function KitDetail({
             </aside>
 
             <div className="min-w-0 space-y-10 lg:col-start-1 lg:row-start-2">
-              <Section icon={<Link2 className="h-3.5 w-3.5" />} title="How it works">
+              <Section title="How it works">
                 <HowItWorks manifest={m} />
               </Section>
 
-              <Section icon={<Table2 className="h-3.5 w-3.5" />} title={m.tables.length === 1 ? "The table" : "The tables"}>
+              <Section title={m.tables.length === 1 ? "The table" : "The tables"}>
                 <div className="space-y-3">
                   {m.tables.map((t) => (
-                    <TablePreview key={t.key} table={t} kitKey={kit.key} refNames={refNames} previewRows={kitKnobs.previewRows} />
+                    <TablePreview key={t.key} table={t} refNames={refNames} previewRows={kitKnobs.previewRows} />
                   ))}
                 </div>
               </Section>
 
               {m.agents.length > 0 && (
-                <Section icon={<AGENT_ICON className="h-3.5 w-3.5" />} title={m.agents.length === 1 ? "The agent" : "The agents"}>
+                <Section title={m.agents.length === 1 ? "The agent" : "The agents"}>
                   <KitAgentsSection manifest={m} sourceAgents={sourceAgents} />
                 </Section>
               )}
 
               {m.workflows.length > 0 && (
-                <Section icon={<Workflow className="h-3.5 w-3.5" />} title={m.workflows.length === 1 ? "The workflow" : "The workflows"}>
+                <Section title={m.workflows.length === 1 ? "The workflow" : "The workflows"}>
                   <div className="space-y-3">
                     {m.workflows.map((w) => {
                       const steps = workflowSteps(w.definition);
                       return (
                         <div key={w.key} className="rounded-xl border border-border bg-card p-4">
-                          <h4 className="text-sm font-semibold text-foreground">{w.name}</h4>
-                          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{w.description}</p>
+                          <div className="flex items-center gap-2">
+                            <Workflow className="h-4 w-4 shrink-0 text-chart-3" />
+                            <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">{w.name}</h3>
+                          </div>
+                          <p className="mt-1 text-sm text-foreground">{w.description}</p>
                           {steps.length > 0 && (
-                            <ol className="mt-3 flex flex-wrap items-center gap-1.5">
+                            <ol className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-foreground">
                               {steps.map((s, i) => (
                                 <li key={`${s}-${i}`} className="flex items-center gap-1.5">
-                                  <span className="rounded-md border border-border bg-muted/40 px-2 py-1 text-[11px] font-medium text-foreground">
-                                    <span className="mr-1 text-muted-foreground">{i + 1}</span>
+                                  <span>
+                                    <span className="mr-1 tabular-nums text-muted-foreground">{i + 1}.</span>
                                     {s}
                                   </span>
-                                  {i < steps.length - 1 && <span className="text-muted-foreground/60">→</span>}
+                                  {i < steps.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground" aria-hidden />}
                                 </li>
                               ))}
                             </ol>
@@ -261,24 +246,17 @@ export function KitDetail({
               )}
 
               {m.guide.length > 0 && (
-                <Section icon={<ListOrdered className="h-3.5 w-3.5" />} title="Walkthrough">
-                  <ol className="space-y-2">
+                <Section title="Walkthrough">
+                  <ol className="divide-y divide-border rounded-xl border border-border bg-card">
                     {m.guide.map((g, i) => (
-                      <li key={g.title} className="flex gap-3 rounded-xl border border-border bg-card p-4">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
-                          {i + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h4 className="text-sm font-semibold text-foreground">{g.title}</h4>
-                            {g.highlight && (
-                              <span className="rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground">
-                                {HIGHLIGHT_WORD[g.highlight.kind]}
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{g.body}</p>
+                      <li key={g.title} className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold tabular-nums text-background">
+                            {i + 1}
+                          </span>
+                          <h3 className="min-w-0 text-sm font-semibold text-foreground">{g.title}</h3>
                         </div>
+                        <p className="mt-1 text-sm text-foreground">{g.body}</p>
                       </li>
                     ))}
                   </ol>

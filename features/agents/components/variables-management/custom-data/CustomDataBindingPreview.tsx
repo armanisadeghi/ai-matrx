@@ -97,7 +97,7 @@ export function CustomDataBindingPreview({
       : { status: "loading" };
 
   return (
-    <div className="space-y-1.5 rounded-md border border-border bg-background p-2.5">
+    <div className="space-y-1.5">
       <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         What the agent will see

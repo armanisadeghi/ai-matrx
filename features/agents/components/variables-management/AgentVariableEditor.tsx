@@ -392,7 +392,7 @@ export function AgentVariableEditor({
       </div>
 
       {/* ── Required ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-2.5 bg-muted/50 rounded-lg border border-border">
+      <div className="flex items-center justify-between border-t border-border pt-3">
         <Label className="text-sm font-medium cursor-pointer">Required</Label>
         <Switch
           checked={!!variable.required}
@@ -413,22 +413,18 @@ export function AgentVariableEditor({
           A bound variable INHERITS its input from the context item, so the
           local configurator is replaced by an inheritance note. */}
       {isDataBound ? (
-        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-          {/* read-gate-exempt: static explanation of data-bound variables (no input type needed), not an empty view */}
-          <span className="font-medium">Filled from your data</span> every time
-          the agent runs. The person running it sees the value locked and cannot
-          type over it, so no input type is needed here.
-        </div>
+        // The person running it sees the value locked, so no input type is configured here.
+        <p className="border-t border-border pt-3 text-xs text-foreground">
+          {/* read-gate-exempt: static label for data-bound variables, not an empty view */}
+          <span className="font-medium">Filled from your data</span> · locked when it runs
+        </p>
       ) : isBound ? (
-        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-          Input type and options are{" "}
-          <span className="font-medium">
-            inherited from the bound context item
-          </span>
-          . At run time this variable is auto-filled from the active scope and
-          hidden from the user; the default below applies only when no scope
-          value is available.
-        </div>
+        // Input type comes from the bound context item; at run time the value is
+        // auto-filled from the active scope and hidden, the default applying only
+        // when no scope value exists.
+        <p className="border-t border-border pt-3 text-xs text-foreground">
+          <span className="font-medium">Filled from the active scope</span> · input type inherited
+        </p>
       ) : (
         <CustomComponentConfigurator
           value={variable.customComponent}
@@ -440,17 +436,15 @@ export function AgentVariableEditor({
       )}
 
       {canConvertOptionsToPicklist && (
-        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+        <div className="space-y-2 border-t border-border pt-3">
+          {/* Each option is copied as both the public label and the injected text, refinable in Lists. */}
           <div className="min-w-0">
             <Label className="text-sm font-medium">
               Convert options to picklist
             </Label>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {/* read-gate-exempt: options typed into this variable's editor, not rows fetched from a read */}
-              Create a reusable picklist from these {staticOptions.length}{" "}
-              options and link this variable to it. Each option is copied as
-              both the public label and the injected text so you can refine it
-              in Lists.
+              Reuse these {staticOptions.length} options as a list
             </p>
           </div>
           <Button
@@ -472,11 +466,9 @@ export function AgentVariableEditor({
       )}
 
       {/* ── Default Value ─────────────────────────────────────────────── */}
-      <div className="min-w-0 space-y-1.5 overflow-hidden rounded-lg border border-border bg-muted/30 p-3">
+      <div className="min-w-0 space-y-1.5 border-t border-border pt-3">
         <Label className="text-sm font-medium">Default Value</Label>
-        <p className="text-xs text-muted-foreground">
-          Pre-fills this variable at run time. Leave blank for no default.
-        </p>
+        <p className="text-xs text-muted-foreground">Pre-fills it at run time; blank for none</p>
         {readonly ? (
           <p className="text-sm text-foreground whitespace-pre-wrap break-words">
             {variableValueToDisplay(variable.defaultValue) || (

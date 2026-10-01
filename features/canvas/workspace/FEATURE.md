@@ -64,7 +64,9 @@ such layout in the app.
 
 **Canvas context → agent.** `getCanvasContext()` returns ONE `{key, value, type, label}` entry; the column
 writes it with `setContextEntries` when the conversation exists and again in the CAPTURE phase of
-pointerdown / Enter / focus inside the chat, so every request carries the canvas as it is NOW. It never
+pointerdown / Enter / focus inside the chat's own DOM (never from a portaled layer it opened — the page-chip
+popover, the value panel), so every request carries the canvas as it is NOW. An unchanged snapshot is a
+no-op in the slice, so the rail never re-renders for it. It never
 rides `user_input` (THE USER-INPUT LAW). A `contextChip` with `contextKey` equal to the entry's key
 REPLACES the rail's generic pill for it — one input, one pill.
 
@@ -118,6 +120,10 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 ---
 
 ## Change Log
+
+- **2026-09-30** — The canvas re-read fires only for events inside the column's own DOM (React events bubble
+  through portals, so the page-chip popover and value panel used to trigger it), and `setContextEntries`
+  keeps the conversation's entries identical when the snapshot is unchanged.
 
 - **2026-09-28** — Reopening a conversation (history row, a saved board chat tile) runs `resumeConversation`
   instead of `loadConversation` alone, so a turn that was mid-run at reload reattaches and an unanswered

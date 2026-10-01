@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Package, PackagePlus } from "lucide-react";
+import { PackagePlus } from "lucide-react";
+import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -71,107 +72,87 @@ export function KitGallery({
   return (
     <>
       <PageHeader>
-        <HeaderStructured
-          title={KIT_WORD.many}
-          actions={[{ icon: "PackagePlus", label: `Create a ${KIT_WORD.oneLower} from my setup`, onPress: () => openSave() }]}
-        />
+        <HeaderStructured title={KIT_WORD.many} />
       </PageHeader>
       <div className="h-full overflow-y-auto bg-textured">
         <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-[calc(var(--shell-header-h)+1.5rem)] sm:px-6">
-          <section className="max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-              <Package className="h-3 w-3" />
-              {KIT_WORD.many}
-            </div>
-            <h1 className="mt-3 flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
               Start from something that already works
               <InfoHint text={KITS_HERO} label={`What is a ${KIT_WORD.oneLower}?`} side="bottom" />
             </h1>
-          </section>
+            <Button size="sm" variant="outline" onClick={() => openSave()}>
+              <PackagePlus className="mr-1.5 h-3.5 w-3.5" />
+              Save my setup as a {KIT_WORD.oneLower}
+            </Button>
+          </div>
 
           <section className="mt-8">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Your organizations&rsquo; {KIT_WORD.manyLower}
-              </h2>
-              <Button size="sm" variant="outline" onClick={() => openSave()}>
-                <PackagePlus className="mr-1.5 h-3.5 w-3.5" />
-                Create a {KIT_WORD.oneLower} from my setup
-              </Button>
-            </div>
-            {orgKits.error ? (
-              <ErrorNotice className="mt-3 max-w-xl" title={`Your ${KIT_WORD.manyLower} could not be loaded.`} error={orgKits.error} onRetry={orgKits.retry} />
-            ) : orgKits.kits.length === 0 ? (
-              <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-                {orgKits.loading
-                  ? `Looking for saved ${KIT_WORD.manyLower}…`
-                  : `None yet — save an agent that reads your tables as a ${KIT_WORD.oneLower}.`}
-              </p>
-            ) : (
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {orgKits.kits.map((kit) => (
-                  <div key={`${kit.organizationId}:${kit.key}`}>
-                    <KitCard kit={kit} />
-                    {organizations.length > 1 && orgNameOf(kit.organizationId) && (
-                      <p className="mt-1 truncate px-1 text-[11px] text-muted-foreground">
-                        {orgNameOf(kit.organizationId)}
-                      </p>
+            <h2 className="text-base font-semibold text-foreground">From AI Matrx</h2>
+
+            {categories.length > 2 && (
+              <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Category">
+                {categories.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    role="tab"
+                    aria-selected={c === category}
+                    onClick={() => setCategory(c)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                      c === category
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-card text-foreground hover:border-foreground/40",
                     )}
-                  </div>
+                  >
+                    {c}
+                    {c !== ALL && (
+                      <span className={cn("ml-1 tabular-nums", c === category ? "text-background" : "text-muted-foreground")}>
+                        {kits.filter((k) => k.manifest.category === c).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {error ? (
+              <ErrorNotice
+                className="mt-4 max-w-xl"
+                title={`The ${KIT_WORD.manyLower} could not be loaded.`}
+                error={error}
+                onRetry={() => router.refresh()}
+              />
+            ) : kits.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">No {KIT_WORD.manyLower} published yet.</p>
+            ) : (
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {shown.map((kit) => (
+                  <KitCard key={kit.key} kit={kit} />
                 ))}
               </div>
             )}
           </section>
 
-          <h2 className="mt-10 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">From AI Matrx</h2>
-
-          {categories.length > 2 && (
-            <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Category">
-              {categories.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  role="tab"
-                  aria-selected={c === category}
-                  onClick={() => setCategory(c)}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                    c === category
-                      ? "border-foreground/80 bg-foreground text-background"
-                      : "border-border bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-                  )}
-                >
-                  {c}
-                  {c !== ALL && (
-                    <span className="ml-1 opacity-60">{kits.filter((k) => k.manifest.category === c).length}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {error ? (
-            <ErrorNotice
-              className="mt-8 max-w-xl"
-              title={`The ${KIT_WORD.manyLower} could not be loaded.`}
-              error={error}
-              onRetry={() => router.refresh()}
-            />
-          ) : kits.length === 0 ? (
-            <div className="mt-8 flex max-w-xl flex-col items-start rounded-xl border border-dashed border-border bg-card/50 p-6">
-              <Package className="h-5 w-5 text-muted-foreground" />
-              <p className="mt-2 text-sm font-medium text-foreground">No {KIT_WORD.manyLower} are published yet.</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {KIT_WORD.many} appear here as soon as the platform publishes them.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {shown.map((kit) => (
-                <KitCard key={kit.key} kit={kit} />
-              ))}
-            </div>
-          )}
+          <section className="mt-10">
+            <h2 className="text-base font-semibold text-foreground">Your organizations&rsquo; {KIT_WORD.manyLower}</h2>
+            {orgKits.error ? (
+              <ErrorNotice className="mt-3 max-w-xl" title={`Your ${KIT_WORD.manyLower} could not be loaded.`} error={orgKits.error} onRetry={orgKits.retry} />
+            ) : orgKits.loading && orgKits.kits.length === 0 ? (
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+                <Skeleton className="h-[132px] rounded-xl" />
+              </div>
+            ) : orgKits.kits.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">None yet. Save an agent that reads your tables.</p>
+            ) : (
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {orgKits.kits.map((kit) => (
+                  <KitCard key={`${kit.organizationId}:${kit.key}`} kit={kit} subtitle={orgNameOf(kit.organizationId)} />
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </>

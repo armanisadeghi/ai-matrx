@@ -35,7 +35,7 @@
  * in every SmartAgentInput.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FileText,
   ListChecks,
@@ -195,11 +195,7 @@ export function ConversationContextRail({
   const machineFramesVisible = useMachineFramesVisible();
 
   // ── Live context entries (working doc, scratchpad, slot / ad-hoc context) ──
-  const selectEntries = useMemo(
-    () => selectInstanceContextEntries(conversationId),
-    [conversationId],
-  );
-  const entries = useAppSelector(selectEntries);
+  const entries = useAppSelector(selectInstanceContextEntries(conversationId));
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   // Everything the PAGE'S SURFACE contributed rides ONE chip (PageContextChip);
   // every other entry keeps its own.
@@ -270,15 +266,11 @@ export function ConversationContextRail({
     agentId ? selectAgentContextPolicies(state, agentId) : undefined,
   );
   const activeScopeIdsByType = useAppSelector(selectActiveScopeIdsByType);
-  const needsScope = useMemo(
-    () =>
-      (agentContextPolicies ?? []).some((s) => {
-        if (s.source?.kind !== "ctx_item") return false;
-        const scopeTypeId = s.source.scope_type_id;
-        return !scopeTypeId || !activeScopeIdsByType[scopeTypeId]?.length;
-      }),
-    [agentContextPolicies, activeScopeIdsByType],
-  );
+  const needsScope = (agentContextPolicies ?? []).some((s) => {
+    if (s.source?.kind !== "ctx_item") return false;
+    const scopeTypeId = s.source.scope_type_id;
+    return !scopeTypeId || !activeScopeIdsByType[scopeTypeId]?.length;
+  });
   const showSetScopeCta = needsScope;
 
   // ── Detail surfaces (one of each, opened on demand) ────────────────────────
@@ -383,7 +375,7 @@ export function ConversationContextRail({
   };
 
   // ── Working context (Scopes) lives in PlusAttachMenu's ContextLensBar row.
-  const items = useMemo<RailItem[]>(() => {
+  const buildItems = (): RailItem[] => {
     // These items mirror inputs already delivered through another canonical
     // channel (usually required named variables). They make delivery visible;
     // they never add a second copy to the execution payload.
@@ -563,51 +555,24 @@ export function ConversationContextRail({
     }
 
     return out;
-  }, [
-    machineFramesVisible,
-    entries,
-    surfaceKeys,
-    hasLists,
-    taskCounts.total,
-    taskCounts.done,
-    todoCounts.open,
-    workingDocEnabled,
-    workingDocTitle,
-    workingDocSaving,
-    showScratchPill,
-    scratchTitle,
-    scratchSaving,
-    attachedScratchIds.length,
-    attachedItems,
-    detailOpen,
-    activeEntry?.key,
-    listsOpen,
-    canvasOpen,
-    currentCanvasSourceId,
-    cloudBrowserActive,
-    cloudBrowserRunLive,
-    currentCanvasItem?.savedItemId,
-    currentCanvasItem?.content?.metadata?.canvasItemId,
-    scratchScope,
-    conversationId,
-    dispatch,
-  ]);
+  };
+  const items = buildItems();
 
   // ── Inline vs overflow split. Keep the highest-priority pills visible; fold
   // the rest into a clean "…" menu so the rail never wraps. ──────────────────
   const maxInline = isMobile ? 2 : 5;
-  const { inline, overflow } = useMemo(() => {
-    if (presentation === "overflow-only") {
-      return { inline: [] as RailItem[], overflow: items };
-    }
-    if (items.length <= maxInline) {
-      return { inline: items, overflow: [] as RailItem[] };
-    }
-    return {
-      inline: items.slice(0, maxInline - 1),
-      overflow: items.slice(maxInline - 1),
-    };
-  }, [items, maxInline, presentation]);
+  const inline: RailItem[] =
+    presentation === "overflow-only"
+      ? []
+      : items.length <= maxInline
+        ? items
+        : items.slice(0, maxInline - 1);
+  const overflow: RailItem[] =
+    presentation === "overflow-only"
+      ? items
+      : items.length <= maxInline
+        ? []
+        : items.slice(maxInline - 1);
 
   // Zero footprint when there's nothing to surface — but keep any drawer that
   // is mid-open mounted so its close animation completes if the backing item

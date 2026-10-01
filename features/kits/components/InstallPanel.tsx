@@ -58,7 +58,7 @@ function StepIcon({ state }: { state: InstallStepView["state"] }) {
       );
     default:
       return (
-        <span className="flex h-5 w-5 items-center justify-center text-muted-foreground/50">
+        <span className="flex h-5 w-5 items-center justify-center text-muted-foreground">
           <CircleDashed className="h-4 w-4" />
         </span>
       );
@@ -84,7 +84,7 @@ export function InstallStepper({ steps }: { steps: InstallStepView[] }) {
             <p
               className={cn(
                 "text-[13px] leading-snug",
-                s.state === "pending" ? "text-muted-foreground" : "text-foreground",
+                "text-foreground",
                 s.state === "running" && "font-medium",
               )}
             >
@@ -172,11 +172,11 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm">
-      <div className="border-b border-border p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Install</p>
+    <div className="rounded-xl border border-border bg-card">
+      <div className="border-b border-border px-4 py-3">
+        <p className="text-sm font-semibold text-foreground">Install</p>
         {api.organizationState === "ready" && api.organizationId ? (
-          <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground">
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-foreground">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="truncate font-medium">{orgName}</span>
             {!busy && !api.organizationPinned && (
@@ -192,34 +192,41 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
         ) : null}
       </div>
 
-      <div className="space-y-4 p-4">
+      {/* The compact notice brings its own padding; the body adds only the difference. */}
+      <div className={cn("space-y-4", api.organizationState !== "ready" ? "p-1" : "p-4")}>
         {api.organizationState !== "ready" ? (
-          <OrganizationContextNotice state={api.organizationState} what={`Installing a ${KIT_WORD.oneLower}`} compact />
+          <OrganizationContextNotice
+            state={api.organizationState}
+            what={`Installing a ${KIT_WORD.oneLower}`}
+            title="Choose where to install"
+            description=""
+            compact
+          />
         ) : api.store.state !== "on" ? (
           <UnifiedDataSwitchNotice gate={api.store} what="Data records" />
         ) : phase === "loading" ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-busy="true">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Checking whether this {KIT_WORD.oneLower} is already installed here…
+            Checking installs…
           </div>
         ) : readError ? (
           <ErrorNotice title="We could not check whether it is installed here." error={readError} onRetry={api.retryRead} retryLabel="Check again" />
         ) : (
           <>
             {installed && !busy ? (
-              <div className="flex items-start gap-2 rounded-lg bg-success/10 p-3">
-                <PackageCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                <p className="text-sm text-foreground">Installed in {orgName}.</p>
-              </div>
+              <p className="flex items-center gap-2 text-sm font-medium text-success">
+                <PackageCheck className="h-4 w-4 shrink-0" />
+                Installed
+              </p>
             ) : !install && !busy ? (
-              <p className="text-sm leading-relaxed text-muted-foreground">{consequence(manifest)}</p>
+              <p className="text-sm text-foreground">{consequence(manifest)}</p>
             ) : null}
 
             {api.attached && (
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-foreground">
-                <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <p className="flex items-start gap-2 text-sm text-foreground">
+                <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <span>{api.attached}</span>
-              </div>
+              </p>
             )}
 
             {runError && !busy && (
@@ -256,7 +263,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
                 </Button>
               )}
               {install && !busy && !api.attached && (
-                <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-destructive" onClick={onRemove}>
+                <Button variant="ghost" size="sm" className="w-full text-foreground hover:text-destructive" onClick={onRemove}>
                   <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                   {partial ? "Remove what was created" : `Remove this ${KIT_WORD.oneLower}`}
                 </Button>
@@ -276,10 +283,10 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
         <div className="border-t border-border px-4 py-2.5">
           <Link
             href={KIT_ROUTES.table(install.ledger_table_id)}
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-             target="_blank"
-             rel="noopener noreferrer"
-           >
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {KIT_INSTALLS_TABLE.name}
             <ExternalLink className="h-3 w-3" />
           </Link>
