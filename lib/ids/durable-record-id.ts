@@ -25,7 +25,15 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 export const CLIENT_TEMP_ID_PREFIX = "client-";
 
 /** What a client-temp id stands in for. */
-export type ClientTempIdKind = "assistant" | "tool-call";
+export type ClientTempIdKind =
+  /** An answer committed with no `cx_message` reservation (incognito, reservation gap). */
+  | "assistant"
+  /** A tool-call row seeded from a `tool_error` with no reservation. */
+  | "tool-call"
+  /** The optimistic user bubble, until `promoteMessageId` swaps in the server id. */
+  | "user"
+  /** A delivered inbox item's bubble (`injection_consumed`), until promoted. */
+  | "inbox";
 
 /**
  * Mint a client-temp record id. The only producer — a hand-built

@@ -77,6 +77,7 @@ import {
  * features/agents/audits/04-legacy-obliteration-plan.md.
  */
 
+import { mintClientTempId } from "@/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -770,7 +771,10 @@ export const executeManualInstance = createAsyncThunk<
           content.push({ type: "text", text: displayContent });
         }
         if (resourceBlocks.length > 0) content.push(...resourceBlocks);
-        userMessageClientTempId = uuidv4();
+        // Never UUID-shaped: it has no row until `promoteMessageId` swaps in
+        // the server id (and an incognito bubble never gets one), so no
+        // reader may mistake it for a durable message (lib/ids/durable-record-id.ts).
+        userMessageClientTempId = mintClientTempId("user", uuidv4());
         const nextPosition = selectNextMessagePosition(conversationId)(
           getState() as RootState,
         );

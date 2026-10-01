@@ -173,7 +173,7 @@ test("text before an injection is closed before later text with no intermediary 
     h.getState().messages.byConversationId[CONV].byId.pre._streamSlotEnd!;
   expect(h.getState().messages.byConversationId[CONV].orderedIds).toEqual([
     "pre",
-    "inbox_i1",
+    "client-inbox-i1",
   ]);
   for (let i = 0; i < 2; i++) await h.stream.advance();
   await h.done;
@@ -232,7 +232,7 @@ test("pre text and tool remain before the user bubble when reservation is delaye
   ]);
   expect(groups(state)).toMatchObject([
     { kind: "assistant", members: [{ messageId: "pre" }] },
-    { kind: "user", messageId: "inbox_i1" },
+    { kind: "user", messageId: "client-inbox-i1" },
     { kind: "assistant", members: [{ messageId: "post" }] },
   ]);
 });
@@ -254,9 +254,9 @@ test("two injections retain three assistant ranges and both visible user identit
     r = state.messages.byConversationId[CONV].byId;
   expect(state.messages.byConversationId[CONV].orderedIds).toEqual([
     "first",
-    "inbox_i1",
+    "client-inbox-i1",
     "middle",
-    "inbox_i2",
+    "client-inbox-i2",
     "last",
   ]);
   expect(slots(state, 0, r.first._streamSlotEnd)).toEqual(["text:first"]);

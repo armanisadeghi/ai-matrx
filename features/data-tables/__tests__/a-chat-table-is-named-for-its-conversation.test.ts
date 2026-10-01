@@ -30,7 +30,7 @@ import { deriveDatasetNameForChatTable, isPlaceholderTableTitle } from "../deriv
 
 it("a placeholder title gives way to the conversation's title", async () => {
   const name = await deriveDatasetNameForChatTable({
-    sourceMessageId: "m0000000-0000-4000-8000-000000000001",
+    sourceMessageId: "e0000000-0000-4000-8000-000000000001",
     canvasItemId: "a0000000-0000-4000-8000-000000000001",
     artifactTitle: "Table 1",
     tableMarkdown: "| Exercise | Sets |\n|---|---|\n| Quad sets | 3 |",
@@ -44,7 +44,7 @@ it("a real title still wins, and only 'Table' / 'Table N' count as placeholders"
   expect(isPlaceholderTableTitle("table")).toBe(true);
   expect(isPlaceholderTableTitle("Table of home exercises")).toBe(false);
   const name = await deriveDatasetNameForChatTable({
-    sourceMessageId: "m0000000-0000-4000-8000-000000000001",
+    sourceMessageId: "e0000000-0000-4000-8000-000000000001",
     canvasItemId: "a0000000-0000-4000-8000-000000000001",
     artifactTitle: "Balance exercises",
     tableMarkdown: "| Exercise | Sets |\n|---|---|\n| Quad sets | 3 |",

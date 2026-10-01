@@ -79,6 +79,20 @@ export const deleteMessage = createAsyncThunk<
       });
     }
 
+    // A client-temp id has no row to soft-delete. In a PERSISTED conversation
+    // the server may still hold the answer (a reservation gap), so a local-only
+    // removal would come back on reload — refuse plainly instead of pretending.
+    const isClientTempOnly = durableRecordId(messageId) === null;
+    if (
+      isClientTempOnly &&
+      state.conversations.byConversationId[conversationId]?.isEphemeral !== true
+    ) {
+      return rejectWithValue({
+        message:
+          "This message is still saving — reload the conversation, then delete it.",
+      });
+    }
+
     const cascadedToolCalls = selectToolCallsForMessage(messageId)(state);
     const cascadedToolCallSnapshots = cascadedToolCalls.map((tc) => ({
       id: tc.id,
@@ -97,9 +111,9 @@ export const deleteMessage = createAsyncThunk<
       );
     }
 
-    // A client-temp answer (no reservation arrived — e.g. incognito) has no
-    // row: removing it from the transcript IS the whole delete.
-    if (durableRecordId(messageId) === null) {
+    // An ephemeral (incognito) conversation persists nothing: removing the
+    // client-temp message from the transcript IS the whole delete, and it sticks.
+    if (isClientTempOnly) {
       return {
         conversationId,
         messageId,

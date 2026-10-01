@@ -8,6 +8,7 @@
  * 4. Generic fallback (caller may still pass through resolveUniqueDatasetName)
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { supabase } from "@/utils/supabase/client";
 import { convertCxContentToDisplay } from "@/features/cx-chat/utils/cx-content-converter";
 import { normalizeDatasetDisplayName } from "@/features/data-tables/resolve-unique-dataset-name";
@@ -65,12 +66,14 @@ export function findLastHeadingBeforeOffset(
 async function fetchMessageDisplayText(
   messageId: string | null | undefined,
 ): Promise<string | null> {
-  if (!messageId) return null;
+  // A client-temp answer has no row (and its id would 22P02).
+  const durableId = durableRecordId(messageId);
+  if (!durableId) return null;
   const { data, error } = await supabase
     .schema("chat").from("message")
     .select("content")
     .is("deleted_at", null)
-    .eq("id", messageId)
+    .eq("id", durableId)
     .maybeSingle();
   if (error || !data) return null;
   return convertCxContentToDisplay(data.content).content;
@@ -83,11 +86,12 @@ export function isPlaceholderTableTitle(title: string): boolean {
 
 /** The title of the conversation the table's message sits in, when it has one. */
 async function fetchConversationTitle(messageId: string | null | undefined): Promise<string | null> {
-  if (!messageId) return null;
+  const durableId = durableRecordId(messageId);
+  if (!durableId) return null;
   const { data: message } = await supabase
     .schema("chat").from("message")
     .select("conversation_id")
-    .eq("id", messageId)
+    .eq("id", durableId)
     .maybeSingle();
   if (!message?.conversation_id) return null;
   const { data: conversation } = await supabase

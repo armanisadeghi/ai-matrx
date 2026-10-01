@@ -24,6 +24,7 @@ import {
  *   8. Updates request status throughout
  */
 
+import { mintClientTempId } from "@/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type {
@@ -896,7 +897,10 @@ export const executeInstance = createAsyncThunk<
           content.push({ type: "text", text: displayContent });
         }
         content.push(...resourceBlocks);
-        userMessageClientTempId = uuidv4();
+        // Never UUID-shaped: it has no row until `promoteMessageId` swaps in
+        // the server id (and an incognito bubble never gets one), so no
+        // reader may mistake it for a durable message (lib/ids/durable-record-id.ts).
+        userMessageClientTempId = mintClientTempId("user", uuidv4());
         const nextPosition = selectNextMessagePosition(conversationId)(stateAtSubmit);
         // Capture the TRUE per-turn context this message carried, frozen at
         // submit time. The user bubble reads this snapshot — never the live

@@ -18,6 +18,7 @@
  * can never drift.
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
@@ -73,7 +74,8 @@ export function buildTaskSeedFromMessage({
 
   return {
     entity_type: "message",
-    entity_id: messageId,
+    // A client-temp answer has no row to link; the conversation parent still does.
+    entity_id: durableRecordId(messageId),
     label: preview,
     metadata: {
       // Also attach the whole conversation when available so the resulting

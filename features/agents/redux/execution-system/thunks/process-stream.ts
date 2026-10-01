@@ -3003,7 +3003,7 @@ export async function processStream({
           if (item.is_visible_to_user === false) continue;
           const text = item.text ?? "";
           if (!text) continue;
-          const tempId = `inbox_${item.injection_id}`;
+          const tempId = mintClientTempId("inbox", item.injection_id);
           const position =
             typeof item.position === "number"
               ? item.position

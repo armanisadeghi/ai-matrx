@@ -1,5 +1,7 @@
 "use client";
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
+
 /**
  * shareMessageAsWebpage — one-click "publish this response as a public
  * webpage and hand back the permanent URL".
@@ -49,7 +51,7 @@ export async function shareMessageAsWebpage({
     undefined, // userId — the API route resolves the caller's session itself
     {},
     {
-      sourceMessageId: messageId ?? undefined,
+      sourceMessageId: durableRecordId(messageId) ?? undefined,
       sourceConversationId: conversationId ?? undefined,
     },
   );

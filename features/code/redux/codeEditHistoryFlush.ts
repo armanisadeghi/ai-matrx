@@ -16,6 +16,7 @@
  *     route change. Mounted once at the workspace root.
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { useEffect, useRef } from "react";
 import { useStore } from "react-redux";
 import { usePathname } from "next/navigation";
@@ -166,6 +167,9 @@ export function flushHistoryThunk(
         // 500ms debounce window) is what we send.
         const snap = findSnapshot(getState(), write);
         if (!snap) return;
+        // An edit applied from a client-temp answer (incognito) has no message
+        // row to hang history on: it stays in this session only, by design.
+        if (durableRecordId(snap.messageId) === null) return;
         const payload = await buildPayload(snap);
 
         inFlight.add(key);

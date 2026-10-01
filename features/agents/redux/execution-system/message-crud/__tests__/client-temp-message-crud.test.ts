@@ -1,8 +1,11 @@
 /**
  * A client-temp assistant answer (committed when no `cx_message` reservation
- * arrived — every incognito turn) has no database row. Deleting it removes it
- * from the transcript and calls NO RPC; editing it is refused with an honest
- * reason and calls NO RPC. A durable answer still goes to the RPC.
+ * arrived) has no row the client can name. In an INCOGNITO conversation the
+ * server persisted nothing, so deleting removes it locally and it sticks. In a
+ * PERSISTED conversation (a reservation gap) the server may hold the answer, so
+ * a local-only delete would resurrect on reload: it is refused with a plain
+ * reason and the message stays. Editing a client-temp answer is refused. No
+ * client-temp id ever reaches an RPC; a durable answer still does.
  *
  * Break caught: a message-crud thunk sending a `client-assistant-req_…` id to
  * `cx_message_soft_delete` / `cx_message_edit` (22P02, a red toast for a
@@ -11,6 +14,7 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { createInstance } from "../../conversations/conversations.slice";
 import {
   hydrateMessages,
   type MessageRecord,
@@ -69,12 +73,21 @@ function answer(id: string, position: number): MessageRecord {
   };
 }
 
-function storeWith(...messages: MessageRecord[]) {
+function storeWith(isEphemeral: boolean, ...messages: MessageRecord[]) {
   const store = configureStore({
     reducer: createSlimRootReducer(),
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ serializableCheck: false }),
   });
+  store.dispatch(
+    createInstance({
+      conversationId: CONVERSATION_ID,
+      agentId: "6b6b4e45-4699-4860-8dea-d8a60e07d69a",
+      agentType: "user",
+      origin: "manual",
+      isEphemeral,
+    } as never),
+  );
   store.dispatch(hydrateMessages({ conversationId: CONVERSATION_ID, messages }));
   return store;
 }
@@ -89,8 +102,8 @@ beforeEach(() => {
 });
 
 describe("delete", () => {
-  it("removes a client-temp answer locally without calling the database", async () => {
-    const store = storeWith(answer(DURABLE_ID, 1), answer(CLIENT_TEMP_ID, 2));
+  it("removes a client-temp answer in an incognito conversation without calling the database", async () => {
+    const store = storeWith(true, answer(DURABLE_ID, 1), answer(CLIENT_TEMP_ID, 2));
     const result = await store.dispatch(
       deleteMessage({ conversationId: CONVERSATION_ID, messageId: CLIENT_TEMP_ID }),
     );
@@ -101,8 +114,23 @@ describe("delete", () => {
     ).toEqual([DURABLE_ID]);
   });
 
+  it("refuses a client-temp answer in a persisted conversation and keeps it", async () => {
+    const store = storeWith(false, answer(DURABLE_ID, 1), answer(CLIENT_TEMP_ID, 2));
+    const result = await store.dispatch(
+      deleteMessage({ conversationId: CONVERSATION_ID, messageId: CLIENT_TEMP_ID }),
+    );
+    expect(result.meta.requestStatus).toBe("rejected");
+    expect(result.payload).toEqual({
+      message: expect.stringContaining("still saving"),
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(
+      store.getState().messages.byConversationId[CONVERSATION_ID]?.orderedIds,
+    ).toEqual([DURABLE_ID, CLIENT_TEMP_ID]);
+  });
+
   it("sends a durable answer to the soft-delete RPC", async () => {
-    const store = storeWith(answer(DURABLE_ID, 1), answer(CLIENT_TEMP_ID, 2));
+    const store = storeWith(false, answer(DURABLE_ID, 1), answer(CLIENT_TEMP_ID, 2));
     await store.dispatch(
       deleteMessage({ conversationId: CONVERSATION_ID, messageId: DURABLE_ID }),
     );
@@ -115,7 +143,7 @@ describe("delete", () => {
 
 describe("edit", () => {
   it("refuses a client-temp answer without calling the database", async () => {
-    const store = storeWith(answer(CLIENT_TEMP_ID, 2));
+    const store = storeWith(false, answer(CLIENT_TEMP_ID, 2));
     const result = await store.dispatch(
       editMessage({
         conversationId: CONVERSATION_ID,
