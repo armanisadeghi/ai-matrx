@@ -210,7 +210,7 @@ export interface RunCancelledEvent {
   run_id: string;
   status: RunStatus;
   steps_executed: number;
-  reason: "graceful" | "immediate";
+  reason: "graceful" | "immediate" | "candidate_stopped";
 }
 
 export interface RunPausedEvent {
