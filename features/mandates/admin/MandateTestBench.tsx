@@ -150,7 +150,11 @@ function benchOverridesId(draftId: string): string {
   return `mandate-bench-${draftId}`;
 }
 
-const SELECTION_LABEL: Record<CandidateSelection, string> = {
+// "workflow" (compare against a named workflow) exists on the server since
+// 2026-09-30 but this row has no workflow picker yet, so it is not offered —
+// listing it would be a dead option. Add it here together with the picker.
+type OfferedSelection = Exclude<CandidateSelection, "workflow">;
+const SELECTION_LABEL: Record<OfferedSelection, string> = {
   current: "System default",
   mandate_pinned: "Pinned version",
   latest: "Latest version",
@@ -502,7 +506,7 @@ function CandidateEditor({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(Object.keys(SELECTION_LABEL) as CandidateSelection[])
+            {(Object.keys(SELECTION_LABEL) as OfferedSelection[])
               .filter((selection) => !workflowHeld || selection === "current")
               .map(
               (selection) => (

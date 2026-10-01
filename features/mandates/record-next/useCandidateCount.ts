@@ -24,16 +24,16 @@ import { candidateStillMoving, useCandidatePollMs, useHeartbeat } from "@/featur
 
 const CHANGED = "matrx:mandate-candidates-changed";
 
-export function announceCandidatesChanged(mandateKey: string): void {
+export function announceCandidatesChanged(mandateKey: AnyMandateKey): void {
   window.dispatchEvent(new CustomEvent(CHANGED, { detail: { mandateKey } }));
 }
 
 export function onCandidatesChanged(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   listener: () => void,
 ): () => void {
   const handler = (event: Event) => {
-    const detail = (event as CustomEvent<{ mandateKey?: string }>).detail;
+    const detail = (event as CustomEvent<{ mandateKey?: AnyMandateKey }>).detail;
     if (!detail?.mandateKey || detail.mandateKey === mandateKey) listener();
   };
   window.addEventListener(CHANGED, handler);
