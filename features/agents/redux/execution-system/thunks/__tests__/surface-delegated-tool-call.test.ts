@@ -90,6 +90,7 @@ import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { createInstance } from "../../conversations/conversations.slice";
 import { createRequest } from "../../active-requests/active-requests.slice";
 import {
+  resetRoutedDelegatedCallsForTests,
   surfaceDelegatedToolCall,
   type SurfaceDelegatedToolCallArgs,
 } from "../surface-delegated-tool-call.thunk";
@@ -177,6 +178,7 @@ function requestRow(store: TestStore) {
 
 describe("surfaceDelegatedToolCall", () => {
   beforeEach(() => {
+    resetRoutedDelegatedCallsForTests();
     mockPresence.mockReset();
     mockWatches.length = 0;
     mockSubmitted.length = 0;
@@ -378,4 +380,47 @@ describe("surfaceDelegatedToolCall", () => {
       ]);
     },
   );
+});
+
+describe("surfaceDelegatedToolCall — single-flight per call", () => {
+  beforeEach(() => {
+    resetRoutedDelegatedCallsForTests();
+    mockRouted.length = 0;
+  });
+
+  it("runs a page tool once when the live event and the cold-resume pass both surface it", () => {
+    const store = makeStore();
+    // The live tool_delegated event (client request key + reserved UUID)…
+    route(store, { toolName: "board_add_tile", source: "live" });
+    // …then the inline-answer card follows the resumed turn: the cold pass
+    // names the same call by its persisted user_request UUID.
+    route(store, {
+      toolName: "board_add_tile",
+      requestId: USER_REQUEST_ID,
+      source: "cold-resume",
+    });
+    // …and the reconnect's waiting_input recovery names it once more.
+    route(store, {
+      toolName: "board_add_tile",
+      requestId: USER_REQUEST_ID,
+      source: "cold-resume",
+    });
+
+    expect(mockRouted).toHaveLength(1);
+    expect(mockRouted[0].args).toEqual(
+      expect.objectContaining({ callId: CALL_ID, toolName: "board_add_tile" }),
+    );
+  });
+
+  it("a provider's reused call id on a NEW turn is still routed", () => {
+    const store = makeStore();
+    route(store, { toolName: "board_add_tile", source: "live" });
+    route(store, {
+      toolName: "board_add_tile",
+      requestId: "req_next-turn",
+      userRequestId: "22222222-2222-4222-8222-222222222222",
+      source: "live",
+    });
+    expect(mockRouted).toHaveLength(2);
+  });
 });

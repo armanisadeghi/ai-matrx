@@ -87,6 +87,51 @@ function isDesktopDelegatedToolName(toolName: string): boolean {
   return toolName.startsWith("local_");
 }
 
+/**
+ * SINGLE-FLIGHT PER CALL (2026-10-01). A delegated call reaches this router
+ * from several doors — the live `tool_delegated` event, the cold-resume pass
+ * after a reload, the reconnect's `waiting_input` recovery, and the
+ * inline-answer card following a server-resumed turn (it re-follows on every
+ * return to the tab). Any two of them can name the SAME call, and every
+ * executor behind this router runs a real side effect (`board_add_tile` adds a
+ * tile; a surface write writes). So the router — the one seam they all share —
+ * routes a call at most once per page lifetime; a repeat is a no-op.
+ *
+ * Keyed by the server's user_request UUID when known (the live path and the
+ * cold path agree on it) and by the client request key; a call id alone is
+ * never the key, because providers reuse deterministic call ids across turns.
+ */
+const routedDelegatedCalls = new Set<string>();
+const ROUTED_DELEGATED_CALLS_CAP = 2000;
+
+function routeKeys(
+  conversationId: string,
+  requestId: string,
+  userRequestId: string | undefined,
+  callId: string,
+): string[] {
+  const keys = [`${conversationId}|rq:${requestId}|${callId}`];
+  if (userRequestId) keys.push(`${conversationId}|ur:${userRequestId}|${callId}`);
+  return keys;
+}
+
+/** Claims the call for routing; false when this page already routed it. */
+function claimDelegatedCall(keys: string[]): boolean {
+  if (keys.some((key) => routedDelegatedCalls.has(key))) return false;
+  for (const key of keys) routedDelegatedCalls.add(key);
+  while (routedDelegatedCalls.size > ROUTED_DELEGATED_CALLS_CAP) {
+    const oldest = routedDelegatedCalls.values().next().value;
+    if (oldest === undefined) break;
+    routedDelegatedCalls.delete(oldest);
+  }
+  return true;
+}
+
+/** Test seam: forget every routed call (a fresh page). */
+export function resetRoutedDelegatedCallsForTests(): void {
+  routedDelegatedCalls.clear();
+}
+
 export interface SurfaceDelegatedToolCallArgs {
   conversationId: string;
   /**
@@ -124,6 +169,16 @@ export const surfaceDelegatedToolCall = (
       event,
       source = "live",
     } = args;
+
+    if (
+      !claimDelegatedCall(
+        routeKeys(conversationId, requestId, userRequestId, callId),
+      )
+    ) {
+      // Already routed on this page — running it again would repeat its side
+      // effect. The first routing owns the answer.
+      return;
+    }
 
     dispatch(
       addPendingToolCall({
