@@ -5,8 +5,10 @@
  * and a deliberate kind-JSON surface (`allowConvertToShape={false}`) keep the
  * code card.
  */
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import React, { act } from "react";
+import { createRoot } from "react-dom/client";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock("next/dynamic", () => ({
   __esModule: true,
@@ -53,13 +55,22 @@ const KIND = JSON.stringify(
 );
 const KINDLESS = JSON.stringify({ name: "Ada", role: "Engineer" }, null, 2);
 
-function html(node: React.ReactElement): string {
-  return renderToStaticMarkup(node);
+/** Mount, let the kind front door's lazy edge resolve, return the markup. */
+async function html(node: React.ReactElement): Promise<string> {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  await act(async () => root.render(node));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  const out = container.innerHTML;
+  act(() => root.unmount());
+  return out;
 }
 
 describe("JsonBlock settled kind route", () => {
-  it("draws a settled kind as its kind, never the code card", () => {
-    const out = html(<JsonBlock content={KIND} />);
+  it("draws a settled kind as its kind, never the code card", async () => {
+    const out = await html(<JsonBlock content={KIND} />);
     expect(out).toContain('data-kind-route="flashcard_set"');
     expect(out).not.toContain("data-code-card");
     expect(out).not.toContain("__kind");
@@ -68,19 +79,19 @@ describe("JsonBlock settled kind route", () => {
     expect(out).toContain('data-escaped-notice="rendered"');
   });
 
-  it("keeps kindless JSON as JSON", () => {
-    const out = html(<JsonBlock content={KINDLESS} />);
+  it("keeps kindless JSON as JSON", async () => {
+    const out = await html(<JsonBlock content={KINDLESS} />);
     expect(out).toContain("data-code-card");
     expect(out).not.toContain("data-kind-route");
   });
 
-  it("leaves a still-streaming buffer to the block router", () => {
-    const out = html(<JsonBlock content={KIND} isStreamActive />);
+  it("leaves a still-streaming buffer to the block router", async () => {
+    const out = await html(<JsonBlock content={KIND} isStreamActive />);
     expect(out).not.toContain("data-kind-route");
   });
 
-  it("keeps the code card where kind JSON is shown on purpose", () => {
-    const out = html(<JsonBlock content={KIND} allowConvertToShape={false} />);
+  it("keeps the code card where kind JSON is shown on purpose", async () => {
+    const out = await html(<JsonBlock content={KIND} allowConvertToShape={false} />);
     expect(out).toContain("data-code-card");
     expect(out).not.toContain("data-kind-route");
   });

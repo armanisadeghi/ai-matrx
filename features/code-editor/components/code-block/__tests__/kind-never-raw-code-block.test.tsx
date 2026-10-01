@@ -81,12 +81,20 @@ afterEach(() => {
   container.remove();
 });
 
+/** Render, then let the kind front door's lazy edge resolve. */
+const render = async (node: React.ReactElement) => {
+  await act(async () => root.render(node));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+};
+
 const routes = () =>
   [...container.querySelectorAll("[data-kind-route]")].map((n) => n.getAttribute("data-kind-route"));
 
 describe("CodeBlock never draws settled kind JSON", () => {
-  it.each(["json", "JSON", "jsonc", "json5", ""])("language %j: kind JSON renders as its kind", (language) => {
-    act(() => root.render(<CodeBlock code={KIND} language={language} />));
+  it.each(["json", "JSON", "jsonc", "json5", ""])("language %j: kind JSON renders as its kind", async (language) => {
+    await render(<CodeBlock code={KIND} language={language} />);
     expect(routes()).toEqual(["timeline"]);
     expect(container.textContent).not.toContain("__kind");
     expect(
@@ -97,26 +105,26 @@ describe("CodeBlock never draws settled kind JSON", () => {
   it.each([
     ["showSource", { showSource: true }],
     ["a streaming buffer", { isStreamActive: true }],
-  ])("%s keeps the code", (_label, extra) => {
-    act(() => root.render(<CodeBlock code={KIND} language="json" {...extra} />));
+  ])("%s keeps the code", async (_label, extra) => {
+    await render(<CodeBlock code={KIND} language="json" {...extra} />);
     expect(routes()).toEqual([]);
     expect(container.textContent).toContain("__kind");
   });
 
-  it("another language keeps the code", () => {
-    act(() => root.render(<CodeBlock code={KIND} language="typescript" />));
+  it("another language keeps the code", async () => {
+    await render(<CodeBlock code={KIND} language="typescript" />);
     expect(routes()).toEqual([]);
   });
 
-  it("kindless JSON stays JSON", () => {
-    act(() => root.render(<CodeBlock code={KINDLESS} language="json" />));
+  it("kindless JSON stays JSON", async () => {
+    await render(<CodeBlock code={KINDLESS} language="json" />);
     expect(routes()).toEqual([]);
     expect(container.textContent).toContain("Ada Lovelace");
   });
 
-  it("a kind whose own view falls back to a code block of the same value does not loop", () => {
+  it("a kind whose own view falls back to a code block of the same value does not loop", async () => {
     mockLoop.value = KIND;
-    act(() => root.render(<CodeBlock code={KIND} language="json" />));
+    await render(<CodeBlock code={KIND} language="json" />);
     expect(routes()).toEqual(["timeline"]);
     expect(container.textContent).toContain("__kind"); // the inner fallback shows source once
   });

@@ -12,7 +12,7 @@
  */
 
 import React, { createContext, useContext } from "react";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import { isPlainObject } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 
@@ -58,7 +58,7 @@ export function KindValueNode({
   }
   return (
     <KindRouteStack.Provider value={[...stack, key]}>
-      <AnswerValueView value={value} density={density} />
+      <KindValueFrontDoor value={value} density={density} />
     </KindRouteStack.Provider>
   );
 }

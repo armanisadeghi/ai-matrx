@@ -52,7 +52,7 @@ import { useOpenConvertToShapeWindow } from "@/features/overlays/openers/convert
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { findEscapedKindMarkers } from "@/features/content-ir/react/kind-problems";
 import KindEscapedNotice from "@/features/content-ir/react/KindEscapedNotice";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 // Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
@@ -474,7 +474,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           {kindMarkers.length > 0 ? (
             <KindEscapedNotice markers={kindMarkers} rendered />
           ) : null}
-          <AnswerValueView value={data} />
+          <KindValueFrontDoor value={data} />
         </div>
       </JsonKindRouteContext.Provider>
     );

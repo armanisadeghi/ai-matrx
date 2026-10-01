@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import {
   rootKindSlug,
   valueCarriesKind,
@@ -82,7 +82,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
   if (kindPayload) {
     return (
       <div className="my-2 min-w-0">
-        <AnswerValueView value={data} />
+        <KindValueFrontDoor value={data} />
       </div>
     );
   }

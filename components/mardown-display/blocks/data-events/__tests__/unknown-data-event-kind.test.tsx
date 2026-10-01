@@ -39,8 +39,8 @@ afterEach(() => {
 });
 
 describe("UnknownDataEventBlock", () => {
-  it("draws a kind payload as its kind, never the JSON dump", () => {
-    act(() =>
+  it("draws a kind payload as its kind, never the JSON dump", async () => {
+    await act(async () =>
       root.render(
         <UnknownDataEventBlock
           dataType="study_pack"
@@ -48,6 +48,10 @@ describe("UnknownDataEventBlock", () => {
         />,
       ),
     );
+    // The kind renderer sits behind the one lazy front door.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(container.querySelector('[data-kind-route="flashcard_set"]')).not.toBeNull();
     expect(container.querySelector("pre")).toBeNull();
     expect(container.textContent).not.toContain("__kind");

@@ -40,6 +40,18 @@ jest.mock("next/dynamic", () => ({
 // routes it through KindInstanceRender, whose lazy routes are stubbed by the
 // next/dynamic mock above. Stand in its unroutable floor — what these generic
 // kinds get in production — so nested children stay observable here.
+// The kind renderer sits behind a React.lazy front door, which a STATIC
+// render never resolves — render its far side synchronously here.
+jest.mock("@/components/official/structured-value/KindValueFrontDoor", () => ({
+  __esModule: true,
+  KindValueFrontDoor: (props: Record<string, unknown>) => {
+    const react = require("react") as typeof React;
+    const { default: Impl } = jest.requireActual(
+      "@/components/official/structured-value/KindValueRenderImpl",
+    ) as typeof import("@/components/official/structured-value/KindValueRenderImpl");
+    return react.createElement(Impl, props);
+  },
+}));
 jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,
   default: function MockKindInstanceRender(props: { kind: string; value: unknown }) {

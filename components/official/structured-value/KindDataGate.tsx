@@ -11,7 +11,7 @@
 // windows, a "Raw" tab, a "Show the raw data" escape) passes `showSource`.
 
 import React, { createContext, useContext } from "react";
-import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import {
   firstKindSlug,
   rootKindSlug,
@@ -61,7 +61,7 @@ export function KindDataGate({
   if (!kindData) return <>{children}</>;
   return (
     <RoutedValuesContext.Provider value={[...routedAbove, key]}>
-      <AnswerValueView value={data} />
+      <KindValueFrontDoor value={data} />
     </RoutedValuesContext.Provider>
   );
 }
