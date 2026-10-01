@@ -36,6 +36,7 @@ import { toast } from "@/lib/toast";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
+import { buildContinuationBody } from "../utils/continuation-body";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { Json } from "@/types/database.types";
 import { generateRequestId } from "../utils/ids";
@@ -1017,55 +1018,14 @@ export const executeInstance = createAsyncThunk<
         // here silently emptied AppContext on the server (org fell onto the
         // personal-org default; Titanium scope tools "not found"). scope_ids
         // were already forwarded; the org/project/task/source fields were not.
-        routedPayload = {
-          ...(retry ? { retry: true } : { user_input: payload.user_input }),
-          stream: true,
-          ...(payload.config_overrides && {
-            config_overrides: payload.config_overrides,
-          }),
-          ...(payload.context && { context: payload.context }),
-          context_withheld: payload.context_withheld,
-          ...(payload.tools && { tools: payload.tools }),
-          ...(payload.tools_replace !== undefined && {
-            tools_replace: payload.tools_replace,
-          }),
-          ...(payload.client && { client: payload.client }),
-          ...(payload.sandbox && { sandbox: payload.sandbox }),
-          ...(payload.target_instance_id && {
-            target_instance_id: payload.target_instance_id,
-          }),
-          // USER-layer apply policy — re-sent every turn so a mid-conversation
-          // preference change applies immediately (omitted when "default").
-          ...(payload.user && { user: payload.user }),
-          // Conversation identity — re-sent every turn (request wins; server
-          // also restores from the conversation row when omitted).
-          ...(payload.organization_id && {
-            organization_id: payload.organization_id,
-          }),
-          ...(payload.project_id && { project_id: payload.project_id }),
-          ...(payload.task_id && { task_id: payload.task_id }),
-          ...(payload.source_app && { source_app: payload.source_app }),
-          ...(payload.source_feature && {
-            source_feature: payload.source_feature,
-          }),
-          // Provenance attestation — every turn, same rule as source_*.
-          ...(payload.initiation && { initiation: payload.initiation }),
-          // Latest active scope selections — re-sent every turn so a
-          // mid-conversation scope switch applies immediately.
-          ...(payload.scope_ids?.length && { scope_ids: payload.scope_ids }),
-          ...(debug && { debug: true }),
-          ...(payload.block_mode && { block_mode: true }),
-          ...(payload.snapshot && { snapshot: true }),
-          ...(typeof payload.memory === "boolean" && {
-            memory: payload.memory,
-          }),
-          ...(payload.memory_model && { memory_model: payload.memory_model }),
-          ...(payload.memory_scope && { memory_scope: payload.memory_scope }),
-          ...(pendingBypass && { cache_bypass: pendingBypass }),
-          // No `store` here: this branch is persisted-only by construction
-          // (isContinuation excludes ephemeral), and TypeScript proves it —
-          // an ephemeral run can never reach /ai/conversations/{id}.
-        };
+        // Which fields ride a continuation is classified field-by-field in
+        // `CONTINUATION_FIELD_ROUTING` (a new server field fails type-check
+        // until classified). No `store` here: this branch is persisted-only.
+        routedPayload = buildContinuationBody(payload, {
+          retry: Boolean(retry),
+          debug: Boolean(debug),
+          cacheBypass: pendingBypass,
+        });
       } else {
         // Turn 1, or ANY turn of an ephemeral run: POST /ai/agents/{id}
         //
