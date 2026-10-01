@@ -25,6 +25,7 @@ import {
   GitBranch,
   Plus,
   RefreshCw,
+  Loader2,
   Unplug,
   User as UserIcon,
   ArrowUpRight,
@@ -88,7 +89,12 @@ function InstallationRow({
         className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
         aria-label={installation.accountType ?? "Account"}
       />
-      <span className={cn("shrink-0", installation.suspended ? "text-destructive" : "text-muted-foreground")}>
+      <span
+        className={cn(
+          "shrink-0",
+          installation.suspended ? "text-destructive" : "text-muted-foreground",
+        )}
+      >
         {coverageLabel(installation)}
       </span>
     </>
@@ -138,7 +144,13 @@ export function GitHubConnectionCard({
       repository_count: repositoryCount,
       installation_accounts: installations.map((row) => row.accountLogin),
     }),
-    [connected, connection?.status, accountLogin, repositoryCount, installations],
+    [
+      connected,
+      connection?.status,
+      accountLogin,
+      repositoryCount,
+      installations,
+    ],
   );
 
   useSurfaceScopeContribution(
@@ -181,9 +193,15 @@ export function GitHubConnectionCard({
           onClick={() => void github.install()}
           disabled={github.busy || github.loading}
         >
-          <Plus className="h-3.5 w-3.5" />
+          {github.busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
           <span className="sm:hidden">Add repository access</span>
-          <span className="hidden sm:inline">Add an organization or more repositories</span>
+          <span className="hidden sm:inline">
+            Add an organization or more repositories
+          </span>
           <ArrowUpRight className="h-3 w-3" />
         </Button>
       </div>
@@ -195,7 +213,10 @@ export function GitHubConnectionCard({
   );
 
   return (
-    <Card id="integration-github" className={cn("scroll-mt-20", connected && "border-emerald-500/40")}>
+    <Card
+      id="integration-github"
+      className={cn("scroll-mt-20", connected && "border-emerald-500/40")}
+    >
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -269,11 +290,21 @@ export function GitHubConnectionCard({
                 </p>
               )}
               {github.error && (
-                <ErrorNotice size="inline" className="mt-2 text-xs" message={github.error} />
+                <ErrorNotice
+                  size="inline"
+                  className="mt-2 text-xs"
+                  message={github.error}
+                />
               )}
               {!github.error && connection?.status === "needs_attention" && (
-                <ErrorNotice size="inline" className="mt-2 text-xs" message={connection.last_error ??
-                    "GitHub is authorized, but no approved GitHub App installation is available yet."} />
+                <ErrorNotice
+                  size="inline"
+                  className="mt-2 text-xs"
+                  message={
+                    connection.last_error ??
+                    "GitHub is authorized, but no approved GitHub App installation is available yet."
+                  }
+                />
               )}
             </div>
           </div>
@@ -302,7 +333,12 @@ export function GitHubConnectionCard({
                 onClick={() => void github.connect()}
                 disabled={github.loading || github.busy}
               >
-                <GitBranch className="h-3.5 w-3.5" /> {connection ? "Reconnect GitHub" : "Connect GitHub"}
+                {github.busy ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <GitBranch className="h-3.5 w-3.5" />
+                )}{" "}
+                {connection ? "Reconnect GitHub" : "Connect GitHub"}
               </Button>
             )}
             {connection && !compact && (
