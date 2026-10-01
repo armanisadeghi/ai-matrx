@@ -21,7 +21,7 @@ import Link from "next/link";
 import { ChevronDown, ExternalLink, TriangleAlert } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@ai-matrx/design-system";
-import { refusalForAPerson } from "@ai-matrx/records-ui";
+import { hintForAPerson, refusalForAPerson } from "@ai-matrx/records-ui";
 
 
 import type { HubCapability, HubItem } from "./capabilities";
@@ -270,6 +270,9 @@ export function HubListing({
                 </span>
                 <ErrorAlchemyMenu error={state.error.message} />
               </p>
+              {hintForAPerson(state.error.hint) ? (
+                <p className="mt-1 pl-5 text-xs text-muted-foreground">{hintForAPerson(state.error.hint)}</p>
+              ) : null}
             </div>
           ) : state.items.length === 0 ? (
             <p className="px-3 py-3 text-xs text-muted-foreground">
