@@ -20,7 +20,12 @@ import {
   TextDecoder as NodeTextDecoder,
   TextEncoder as NodeTextEncoder,
 } from "node:util";
-import { configureStore } from "@reduxjs/toolkit";
+import {
+  combineReducers,
+  configureStore,
+  type Middleware,
+  type Reducer,
+} from "@reduxjs/toolkit";
 import activeRequestsReducer, {
   createRequest,
 } from "../../active-requests/active-requests.slice";
@@ -100,6 +105,20 @@ function pacedResponse(events: Array<Record<string, unknown>>): Response {
  * per-stream commit (status, message rows, input clears) begins. */
 const phase = { streaming: true };
 
+const endWatcher: Middleware = () => (next) => (action) => {
+  const raw = action as {
+    type?: string;
+    payload?: { event?: { eventType?: string } };
+  };
+  if (
+    raw.type === "activeRequests/appendRawEvent" &&
+    raw.payload?.event?.eventType === "end"
+  ) {
+    phase.streaming = false;
+  }
+  return next(action);
+};
+
 function makeHarnessStore(streams: number[]) {
   let preloaded = activeRequestsReducer(undefined, { type: "@@init" });
   for (const s of streams) {
@@ -115,45 +134,38 @@ function makeHarnessStore(streams: number[]) {
     byConversationId: Object.fromEntries(
       streams.map((s) => [
         conversationIdOf(s),
-        { status: "running", agentId: null },
+        // Ephemeral: no server reservations in this harness, so the commit's
+        // client-temp fallback is the expected path, not a defect to report.
+        { status: "running", agentId: null, isEphemeral: true },
       ]),
     ),
   };
   const fixed =
-    <T,>(value: T) =>
-    (state: T = value) =>
+    <T>(value: T): Reducer<T> =>
+    (state = value) =>
       state;
+  const reducer = combineReducers({
+    activeRequests: activeRequestsReducer,
+    conversations: fixed(conversations),
+    instanceUserInput: fixed({ byConversationId: {} }),
+    instanceUIState: fixed({ byConversationId: {} }),
+    instanceResources: fixed({ byConversationId: {} }),
+    instanceVariableValues: fixed({ byConversationId: {} }),
+    messages: fixed({ byConversationId: {} }),
+    observability: fixed({ toolCalls: {}, userRequests: {}, requests: {} }),
+    agentDefinition: fixed({ agents: {} }),
+  });
   return configureStore({
-    reducer: {
-      activeRequests: activeRequestsReducer,
-      conversations: fixed(conversations),
-      instanceUserInput: fixed({ byConversationId: {} }),
-      instanceUIState: fixed({ byConversationId: {} }),
-      instanceResources: fixed({ byConversationId: {} }),
-      instanceVariableValues: fixed({ byConversationId: {} }),
-      messages: fixed({ byConversationId: {} }),
-      observability: fixed({ toolCalls: {}, userRequests: {}, requests: {} }),
-      agentDefinition: fixed({ agents: {} }),
-    },
-    preloadedState: { activeRequests: preloaded },
+    reducer,
+    preloadedState: { activeRequests: preloaded } as Partial<
+      ReturnType<typeof reducer>
+    >,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: false,
         immutableCheck: false,
         actionCreatorCheck: false,
-      }).concat(() => (next) => (action) => {
-        const raw = action as {
-          type?: string;
-          payload?: { event?: { eventType?: string } };
-        };
-        if (
-          raw.type === "activeRequests/appendRawEvent" &&
-          raw.payload?.event?.eventType === "end"
-        ) {
-          phase.streaming = false;
-        }
-        return next(action);
-      }),
+      }).concat(endWatcher),
   });
 }
 

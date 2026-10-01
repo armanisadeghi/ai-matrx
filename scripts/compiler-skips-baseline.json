@@ -365,7 +365,6 @@
   "features/agents/components/inputs/resources/AttachedDocumentChip.tsx": 1,
   "features/agents/components/inputs/smart-input/InboxQueueStrip.tsx": 1,
   "features/agents/components/inputs/smart-input/RunControlsMenu.tsx": 1,
-  "features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx": 1,
   "features/agents/components/messages-display/TranscriptIntegrityCopyButton.tsx": 1,
   "features/agents/components/messages-display/user/AgentUserMessage.tsx": 1,
   "features/agents/components/messages-display/user/UserActionBar.tsx": 1,

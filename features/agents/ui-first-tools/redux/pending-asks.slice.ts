@@ -225,7 +225,7 @@ function activeAsksOf(all: PendingAsk[]): PendingAsk[] {
 export const selectActivePendingAsksForConversation =
   (conversationId: string) =>
   (state: RootState): PendingAsk[] => {
-    const all = state.pendingAsks?.byConversationId[conversationId];
+    const all = state.pendingAsks?.byConversationId?.[conversationId];
     if (!all || all.length === 0) return EMPTY_ASKS;
     return activeAsksOf(all);
   };
