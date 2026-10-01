@@ -193,10 +193,9 @@ function PasteCsvDialog({
         <DialogHeader>
           <DialogTitle>Paste CSV</DialogTitle>
         </DialogHeader>
+        {/* Accepts rows copied from a spreadsheet (tab-separated) or comma-separated lines. */}
         <p className="text-xs text-muted-foreground">
-          Columns: term, value, kind, language. Copy straight from a spreadsheet or
-          paste comma-separated lines. Rows without a kind use{" "}
-          {KIND_LABELS[defaultKind]}.
+          Columns: term, value, kind, language; blank kind uses {KIND_LABELS[defaultKind]}
         </p>
         <Textarea
           aria-label="CSV rows"

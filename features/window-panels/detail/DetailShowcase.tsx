@@ -67,22 +67,22 @@ const PRESENTATIONS: {
     value: "window",
     label: "Window",
     Icon: AppWindow,
-    blurb:
-      "The default. A floating panel you can move, resize, minimize to the tray and pop out. A bottom sheet on phones.",
+    // Default presentation; renders as a bottom sheet on phones.
+    blurb: "Floating panel to move, resize, minimize or pop out",
   },
   {
     value: "docked",
     label: "Docked",
     Icon: PanelRight,
-    blurb:
-      "A resizable panel docked to the right of what you are working on, no backdrop. A bottom sheet on phones.",
+    // Docked right, no backdrop; renders as a bottom sheet on phones.
+    blurb: "Resizable panel docked beside your work",
   },
   {
     value: "page",
     label: "Page",
     Icon: Expand,
-    blurb:
-      "A full route under the shell header — the only presentation that changes the URL. It offers the window back.",
+    // Renders under the shell header and offers the window back.
+    blurb: "Full page; the only view that changes the URL",
   },
 ];
 
@@ -160,14 +160,10 @@ export function DetailShowcase() {
     <div className="h-full overflow-y-auto bg-textured pb-safe">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-3 sm:px-4">
         <header className="flex flex-col gap-1">
+          {/* One registration per record type yields window, docked and page. Demo uses a real
+              file. Keys in any presentation: Escape closes, [ / ] move through the list,
+              Cmd/Ctrl+Enter saves when a section has an editor. */}
           <h1 className="text-base font-semibold text-foreground">Detail primitive</h1>
-          <p className="text-xs text-muted-foreground">
-            One registration per record type; the wrapper yields window, docked and page. This
-            page uses a real file you can see. Keyboard inside any presentation: Escape closes,{" "}
-            <kbd className="rounded border border-border bg-muted px-1">[</kbd> /{" "}
-            <kbd className="rounded border border-border bg-muted px-1">]</kbd> move through the
-            list, Cmd/Ctrl+Enter saves when a section has an editor.
-          </p>
         </header>
 
         {/* Setting */}
@@ -278,10 +274,8 @@ export function DetailShowcase() {
               <Smartphone className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-medium text-foreground">The same record at phone width (390px), live</h2>
             </div>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Left: the page presentation. Right: this demo opened with the docked deep link, which
-              becomes a bottom sheet on a phone. Both are the real app in a framed viewport.
-            </p>
+            {/* Left: page presentation. Right: docked deep link (a bottom sheet at phone width).
+                Both are the real app in a framed viewport. */}
             <div className="flex flex-wrap gap-4">
               {[
                 { title: "Page", src: detailPageHref(ref) },

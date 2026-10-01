@@ -474,7 +474,7 @@ export function ReviewQueue({
                     <Skeleton className="h-16 w-full" />
                   ) : !state.visible ? (
                     <span className="text-muted-foreground">
-                      This run is in a conversation you cannot open, so only its answer is shown.
+                      You can't open this conversation; only its answer shows
                     </span>
                   ) : state.parts.length === 0 ? (
                     <span className="text-muted-foreground">The turn carried no text.</span>

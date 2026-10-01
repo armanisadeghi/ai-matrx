@@ -286,7 +286,7 @@ export function TermListEditor({
         const reload = await confirm({
           title: "Someone else changed this list",
           description:
-            "Another edit was saved while you were working. Load their version? Your unsaved changes here will be discarded.",
+            "Someone saved first; loading it discards your changes",
           confirmLabel: "Load their version",
           variant: "destructive",
         });
@@ -394,7 +394,7 @@ export function TermListEditor({
         value={draft.context ?? ""}
         onChange={(e) => set({ context: e.target.value || null })}
         rows={2}
-        placeholder="Context that travels with these terms (who the audience is, what the brand is). It is never translated or spoken."
+        placeholder="Audience and brand context; never translated or spoken"
       />
 
       <TermEntriesTable

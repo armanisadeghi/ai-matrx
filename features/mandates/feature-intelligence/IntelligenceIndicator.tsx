@@ -219,11 +219,8 @@ export function IntelligenceIndicator({
       </Tooltip>
       <PopoverContent sizing="content" align="start" className="p-0">
         <div className="border-b border-border px-3 py-2">
+          {/* Lists the AI jobs behind this surface; each opens to see, duplicate or replace it. */}
           <p className="text-[13px] font-semibold text-foreground">Intelligence</p>
-          <p className="text-[11.5px] text-muted-foreground">
-            {label ?? "The AI jobs behind this"} — see what runs{" "}
-            {keys.length === 1 ? "it" : "them"}, duplicate or use your own.
-          </p>
         </div>
         {keys.length > 0 ? (
           <ul className="max-h-72 overflow-y-auto py-1">

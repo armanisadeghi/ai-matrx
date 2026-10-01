@@ -55,8 +55,8 @@ export function MandateGoalBlock({
           </p>
           <p className="text-[11px] text-muted-foreground/70">
             {source === "catalogue"
-              ? "Declared in code — edited where the Mandate is declared, not here."
-              : "Edited in this Mandate's workspace, in its Goal section."}
+              ? "Declared in code; not editable here"
+              : "Editable in this Mandate's Goal section"}
           </p>
         </>
       ) : loading ? (

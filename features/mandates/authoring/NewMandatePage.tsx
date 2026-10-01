@@ -26,6 +26,7 @@ import { OutputKindPicker } from "./OutputKindPicker";
 import { adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import { createMandate, type DraftInput } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { InfoHint } from "@/components/official/InfoHint";
 import {
   keyTakenSentence,
   keyUnknownSentence,
@@ -368,7 +369,16 @@ export function NewMandatePage() {
 
         <TriadFlowMark />
 
-        <Section title="Goal" hint="what it must achieve">
+        <Section
+          title="Goal"
+          hint="what it must achieve"
+          actions={
+            <InfoHint
+              label="About the goal"
+              text="Agents turn this goal into the system prompt and the grading rubric."
+            />
+          }
+        >
           <div className="rounded-xl border border-primary/25 bg-card p-4">
             <ProTextarea
               value={goal}
@@ -376,7 +386,8 @@ export function NewMandatePage() {
                 setGoal(e.target.value);
                 setServerError(null);
               }}
-              placeholder="Exactly what done-well means. Tight, opinionated, no fluff — intelligent agents will turn this into a system prompt and a grading rubric."
+              // Placeholder is an example goal; the purpose lives in the Goal InfoHint.
+              placeholder="Each summary names the decision, owner and due date"
               rows={8}
               className="min-h-40 border-none bg-transparent p-0 text-[14.5px] leading-relaxed shadow-none focus-visible:ring-0"
               aria-label="Goal"
