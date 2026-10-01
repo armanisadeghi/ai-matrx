@@ -54,6 +54,7 @@ import {
   type MappingLayer,
   type MergedValueMappings,
 } from "@/features/surfaces/utils/merge-value-mappings";
+import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import {
   mapScopeToInstanceWithSurface,
@@ -242,6 +243,8 @@ export default function SurfaceMappingsDemoPage() {
         merged?.merged ?? {},
         payload.variableDefinitions ?? [],
         payload.contextPolicies ?? [],
+        null,
+        { alwaysOnKeys: alwaysOnSurfaceKeys(surfaceName, flooredScope) },
       );
 
       setOutput({

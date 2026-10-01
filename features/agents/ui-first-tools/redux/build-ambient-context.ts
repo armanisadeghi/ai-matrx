@@ -53,12 +53,18 @@ interface AmbientContextSnapshot {
   active_scopes?: Record<string, string>;
 }
 
-function snapshotRoute(): AmbientContextSnapshot["route_brief"] {
+function snapshotRoute(engineered: boolean): AmbientContextSnapshot["route_brief"] {
   if (typeof window === "undefined") {
     return { url: null, title: null, route_kind: "server" };
   }
-  const url = window.location.pathname + window.location.search;
-  const title = typeof document !== "undefined" ? document.title : null;
+  // An engineered run (W-31) learns the KIND of page only: the query string
+  // and the title name the open record (`/notes?active=<id>`), and the model
+  // read that note's body through a data tool from them alone.
+  const url = engineered
+    ? window.location.pathname
+    : window.location.pathname + window.location.search;
+  const title =
+    !engineered && typeof document !== "undefined" ? document.title : null;
   let route_kind = "other";
   if (url.startsWith("/chat")) route_kind = "chat";
   else if (url.startsWith("/agents")) route_kind = "agents";
@@ -117,7 +123,9 @@ export function buildAmbientContext(
       timezone,
       locale,
     },
-    route_brief: snapshotRoute(),
+    route_brief: snapshotRoute(
+      state.conversations.byConversationId[conversationId]?.engineeredInputs === true,
+    ),
     conversation: { id: conversationId },
   };
 

@@ -4,8 +4,9 @@
  * in `mapScopeToInstanceWithSurface`, `features/agents/utils/scope-mapping.ts`).
  *
  *   - manifest values marked `alwaysOn: true`;
- *   - the manifest's document evidence (`evidenceSources`), which by contract
- *     never depends on an agent's mapping (`document-evidence.ts`).
+ *   - the manifest's document evidence (`evidenceSources`: its id / file-id
+ *     values and the attached-document keys), which by contract never
+ *     depends on an agent's mapping (`document-evidence.ts`).
  */
 
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
@@ -20,6 +21,12 @@ export function alwaysOnSurfaceKeys(
   const manifest = surfaceName ? getManifest(surfaceName) : undefined;
   for (const value of manifest?.values ?? []) {
     if (value.alwaysOn) keys.add(value.name);
+  }
+  for (const declaration of manifest?.evidenceSources ?? []) {
+    // The document handle itself — with a file id the evidence key is
+    // skipped (`document-evidence.ts`), so the id is what carries it.
+    keys.add(declaration.idValue);
+    if (declaration.fileIdValue) keys.add(declaration.fileIdValue);
   }
   if (manifest?.evidenceSources?.length) {
     const context = applicationScope?.context;

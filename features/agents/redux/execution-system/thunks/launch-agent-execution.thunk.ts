@@ -361,6 +361,8 @@ export const launchAgentExecution = createAsyncThunk<
       : undefined;
   const runtimeContext = runtime?.context;
   const launchValueMappings = runtime?.valueMappings;
+  const declaresMappings = (map: object | null | undefined) =>
+    !!map && Object.keys(map).length > 0;
 
   // ── THE DOCUMENT-VARIABLE PRECONDITION (disease D4) ───────────────────────
   // A Mandate's `required_variables` bind the CALLER too, not only the bound
@@ -683,6 +685,9 @@ export const launchAgentExecution = createAsyncThunk<
         shortcutId,
         uiScopes: applicationScope ?? {},
         alwaysOnKeys: [...alwaysOnSurfaceKeys(surfaceName, applicationScope)],
+        engineeredInputs:
+          declaresMappings(launchValueMappings) ||
+          declaresMappings(shortcutSurfaceMappings),
         sourceFeature,
         ...(organizationId !== undefined ? { organizationId } : {}),
         ...(contextAnchor !== undefined ? { contextAnchor } : {}),
@@ -921,8 +926,19 @@ export const launchAgentExecution = createAsyncThunk<
             agent.variableDefinitions ?? [],
             agent.contextPolicies ?? [],
             null,
-            { alwaysOnKeys: alwaysOnSurfaceKeys(surfaceName, applicationScope) },
+            {
+              alwaysOnKeys: alwaysOnSurfaceKeys(surfaceName, applicationScope),
+              engineered: declaresMappings(launchValueMappings),
+            },
           );
+          // Every later turn re-maps the live page (refreshSurfaceScope);
+          // it honours the same boundary through this stamp (W-31).
+          if (
+            declaresMappings(launchValueMappings) ||
+            declaresMappings(surfaceValueMappings)
+          ) {
+            dispatch(patchConversation({ conversationId, engineeredInputs: true }));
+          }
           if (result.errors.length > 0) {
             // Backstop only — required-missing is pre-checked in
             // prepareLaunchMappings before the instance exists. If this

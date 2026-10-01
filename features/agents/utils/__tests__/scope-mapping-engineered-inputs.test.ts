@@ -11,6 +11,7 @@
 import { buildNotesEditorContextData } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import { mapScopeToInstanceWithSurface } from "../scope-mapping";
+import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
 
 const PARAGRAPH = "Teodoro Vashti will meet the crew at the loading dock.";
 const BODY = [
@@ -96,5 +97,40 @@ describe("a shortcut or binding run gets only what it mapped", () => {
     const result = mapScopeToInstanceWithSurface(notesScope, null, {}, variables, [], null);
     const keys = result.contextEntries.map((e) => e.key);
     expect(keys).toEqual(expect.arrayContaining(["note_bundle", "content", "selection"]));
+  });
+
+  it("a mapping this call cannot see (per-launch, stamped on the conversation) still closes the page", () => {
+    const result = mapScopeToInstanceWithSurface(notesScope, null, {}, variables, [], null, {
+      engineered: true,
+    });
+    expect(result.contextEntries).toEqual([]);
+    expect(everythingSent(result)).not.toContain("PP-88213");
+  });
+
+  it("a mapping to an empty target sends nothing under an empty key", () => {
+    const result = mapScopeToInstanceWithSurface(notesScope, { content: "" }, {}, variables, [], null);
+    expect(result.contextEntries.find((e) => e.key === "")).toBeUndefined();
+    expect(everythingSent(result)).not.toContain("PP-88213");
+  });
+});
+
+describe("always-on values", () => {
+  it("a PDF surface's document handle reaches a mapped run", () => {
+    const pdfScope = withBaselineScope({
+      file_id: "11111111-1111-4111-8111-111111111111",
+      processed_document_id: "22222222-2222-4222-8222-222222222222",
+      full_document_text: "page text",
+    });
+    const result = mapScopeToInstanceWithSurface(
+      pdfScope,
+      { selection: "passage" },
+      {},
+      variables,
+      [],
+      null,
+      { alwaysOnKeys: alwaysOnSurfaceKeys("matrx-user/pdf-extractor", pdfScope) },
+    );
+    expect(result.contextEntries.map((e) => e.key)).toContain("file_id");
+    expect(result.contextEntries.map((e) => e.key)).not.toContain("full_document_text");
   });
 });

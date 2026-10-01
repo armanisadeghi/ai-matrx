@@ -101,6 +101,12 @@ export function mapScopeToInstance(
   // ── Pass 1: scopeMappings (UI key → variable OR context key) ────────────
   if (scopeMappings) {
     for (const [sourceKey, targetName] of Object.entries(scopeMappings)) {
+      if (!targetName?.trim()) {
+        // A mapping with no target names nothing — it must never send its
+        // source under an empty key (live: a shortcut mapping `content` → "").
+        console.warn(`[scope-mapping] "${sourceKey}" is mapped to an empty target — skipped`);
+        continue;
+      }
       const value = applicationScope[sourceKey];
       if (value === undefined) {
         continue;
@@ -121,6 +127,10 @@ export function mapScopeToInstance(
   if (contextMappings) {
     for (const [sourceKey, policyKey] of Object.entries(contextMappings)) {
       if (mappedScopeKeys.has(sourceKey)) {
+        continue;
+      }
+      if (!policyKey?.trim()) {
+        console.warn(`[scope-mapping] "${sourceKey}" is mapped to an empty context key — skipped`);
         continue;
       }
       const value = applicationScope[sourceKey];
@@ -216,7 +226,7 @@ export function mapScopeToInstanceWithSurface(
     | null
     | undefined,
   contextMappings: Record<string, string> | null = null,
-  options: Pick<ScopeMappingOptions, "alwaysOnKeys"> = {},
+  options: ScopeMappingOptions = {},
 ): SurfaceBoundScopeMappingResult {
   // THE ENGINEERED-INPUTS BOUNDARY (W-31). A launch that declares ANY mapping
   // — a shortcut's scope/context/value mappings or a binding's value_mappings
@@ -226,7 +236,11 @@ export function mapScopeToInstanceWithSurface(
   // page's values as before. Every launch and every follow-up turn reaches
   // the model through here: launchAgentExecution, createInstanceFromShortcut,
   // refreshSurfaceScope.
+  // `options.engineered` carries a mapping this call cannot see — the
+  // conversation's per-launch `runtime.valueMappings`, or a shortcut whose
+  // record is no longer loaded (`ExecutionInstance.engineeredInputs`).
   const engineered =
+    options.engineered === true ||
     hasEntries(scopeMappings) ||
     hasEntries(contextMappings) ||
     hasEntries(surfaceValueMappings);

@@ -38,6 +38,7 @@ import { generateConversationId } from "../utils/ids";
 import {
   createInstance,
   destroyInstance,
+  patchConversation,
 } from "../conversations/conversations.slice";
 import { deriveConversationLifecycle } from "@/features/agents/types/instance.types";
 import {
@@ -364,6 +365,12 @@ interface CreateShortcutInstanceArgs {
    * shortcut receives beyond what it maps (`alwaysOnSurfaceKeys`, W-31).
    */
   alwaysOnKeys?: string[];
+  /**
+   * The launch declared its inputs somewhere this thunk cannot see (per-launch
+   * `runtime.valueMappings`) or through the merged binding+shortcut layer.
+   * Stamped on the conversation so every later turn keeps the boundary.
+   */
+  engineeredInputs?: boolean;
 }
 
 export const createInstanceFromShortcut = createAsyncThunk<
@@ -374,6 +381,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
     shortcutId,
     uiScopes,
     alwaysOnKeys,
+    engineeredInputs,
     sourceFeature,
     organizationId,
     contextAnchor,
@@ -608,8 +616,15 @@ export const createInstanceFromShortcut = createAsyncThunk<
       shortcutVariableDefinitions,
       shortcutContextPolicies,
       shortcut.contextMappings,
-      { alwaysOnKeys },
+      { alwaysOnKeys, engineered: engineeredInputs },
     );
+    if (
+      engineeredInputs ||
+      Object.keys(shortcut.scopeMappings ?? {}).length > 0 ||
+      Object.keys(shortcut.contextMappings ?? {}).length > 0
+    ) {
+      dispatch(patchConversation({ conversationId, engineeredInputs: true }));
+    }
     if (result.errors.length > 0) {
       // Backstop only — required-missing is pre-checked by the launch
       // thunk's prepareLaunchMappings before this thunk runs. If this

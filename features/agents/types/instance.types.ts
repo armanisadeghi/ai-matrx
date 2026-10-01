@@ -213,6 +213,13 @@ export interface ExecutionInstance {
   agentType: AgentType;
   origin: InstanceOrigin;
   shortcutId: string | null;
+  /**
+   * The launch declared its inputs (a shortcut, binding or per-launch value
+   * mapping): every turn sends only what it mapped plus always-on values,
+   * never the page (`mapScopeToInstanceWithSurface`, W-31). Stamped by
+   * `launchAgentExecution`; absent = an unmapped run that follows the page.
+   */
+  engineeredInputs?: boolean;
   status: InstanceStatus;
   sourceApp: SourceAppValue;
   sourceFeature: SourceFeatureValue;

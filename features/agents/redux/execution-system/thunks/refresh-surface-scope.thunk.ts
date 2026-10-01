@@ -100,6 +100,11 @@ export const refreshSurfaceScope = createAsyncThunk<
         dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));
         return { refreshed: false, surfaceName, reason: "own_page_conversation" };
       }
+      // An engineered run never saw the page; the screens open now are not
+      // its inputs either (W-31). Its mapped values stay as they were.
+      if (conversation.engineeredInputs) {
+        return { refreshed: false, surfaceName, reason: "no_provider" };
+      }
       if (wasSurfaceMountedThisSession(surfaceName)) {
         const label = getManifest(surfaceName)?.label ?? surfaceName;
         const live = await withLiveSurfaceContext(surfaceName, {
@@ -214,7 +219,12 @@ export const refreshSurfaceScope = createAsyncThunk<
       variableDefinitions,
       agent?.contextPolicies ?? [],
       shortcut?.contextMappings ?? null,
-      { alwaysOnKeys: alwaysOnSurfaceKeys(surfaceName, applicationScope) },
+      {
+        alwaysOnKeys: alwaysOnSurfaceKeys(surfaceName, applicationScope),
+        // Per-launch mappings and an unloaded shortcut are invisible here;
+        // the launch's stamp carries them (W-31).
+        engineered: conversation.engineeredInputs === true,
+      },
     );
 
     if (result.errors.length > 0) {
