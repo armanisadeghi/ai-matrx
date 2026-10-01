@@ -448,7 +448,7 @@ export function AccountsTableClient() {
               className="text-xs tabular-nums"
               title={`First AI use ${fmtDate(row.first_ai_activity)}`}
             >
-              {row.ai_active_days.toLocaleString()}
+              {formatCount(row.ai_active_days)}
             </span>
           ) : (
             <span className="text-xs text-muted-foreground">—</span>
