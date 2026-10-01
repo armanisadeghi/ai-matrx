@@ -21,7 +21,9 @@
  *    `change: { page_value, before, written, same_as_before? }`, and the
  *    message ends with `surfaceWriteReceiptSentence` — so the model never
  *    reads its own effect in the refreshed page values as "already there".
- *  - user declined  → is_error FALSE with `{ ok: false, declined: true }`.
+ *  - person declined → is_error FALSE with `personDeclinedToolOutput`
+ *    (`status: "declined_by_person"`, `declined: true` — never `ok: false`,
+ *    which the server re-reads as a failure).
  *    A decline is an answer, not a failure — an error result would invite the
  *    model to retry the exact write the user just refused.
  *  - refused/failed → is_error TRUE with `reason` (`surface_write_refused`

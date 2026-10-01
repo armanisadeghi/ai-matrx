@@ -44,6 +44,7 @@ import { isWarRoomToolName } from "../tools/names";
 import { getWarRoomThreadTarget } from "../thread-target-registry";
 import { requestWarRoomApproval, cascadeAutoApprove } from "./approval";
 import { buildApprovalChange } from "./summary";
+import { personDeclinedToolOutput } from "@/features/agents/api/person-declined-tool-output";
 
 export interface DispatchWarRoomToolPayload {
   conversationId: string;
@@ -223,15 +224,13 @@ export const dispatchWarRoomTool = createAsyncThunk<
     if (decision.kind === "rejected" || decision.kind === "cancelled") {
       // Non-error: the agent learns the user declined and keeps going.
       complete(
-        {
-          ok: false,
-          declined: true,
-          reason: "user_declined",
+        personDeclinedToolOutput({
+          reason: decision.kind === "cancelled" ? "skipped" : "kept_as_is",
           message:
             decision.kind === "cancelled"
-              ? "The user skipped this change."
-              : "The user declined this change.",
-        },
+              ? "The person skipped this change. It was their choice, not a failure; nothing was changed."
+              : "The person declined this change. It was their choice, not a failure; nothing was changed.",
+        }),
         0,
       );
       return;
@@ -239,14 +238,12 @@ export const dispatchWarRoomTool = createAsyncThunk<
 
     if (decision.kind === "instructions") {
       complete(
-        {
-          ok: false,
-          declined: true,
-          reason: "user_declined_with_instructions",
+        personDeclinedToolOutput({
+          reason: "declined_with_instructions",
           message:
-            "The user declined the proposed change and gave instructions instead.",
+            "The person declined the proposed change and gave instructions instead. Nothing was changed.",
           instructions: decision.text,
-        },
+        }),
         0,
       );
       return;

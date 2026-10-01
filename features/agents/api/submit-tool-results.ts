@@ -82,6 +82,7 @@ type ToolResultsDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
 import type { components } from "@/types/python-generated/api-types";
 import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { settleClientToolCall } from "./settle-client-tool-call";
+import { nonErrorOutputReadsAsFailure } from "./person-declined-tool-output";
 
 type ClientToolResult = components["schemas"]["ClientToolResult"];
 type ToolResultsResponse = components["schemas"]["ToolResultsResponse"];
@@ -500,6 +501,15 @@ export const submitToolResult = (
     // settle-client-tool-call.ts). Never wait for a server event: for a
     // delegated call the server sends none.
     dispatch(settleClientToolCall(pending));
+    if (!pending.is_error && nonErrorOutputReadsAsFailure(pending.output)) {
+      // The server re-reads a non-error `ok: false` as a mislabelled failure
+      // and hands the model "Client tool error" instead of this payload. A
+      // person's decline must use `personDeclinedToolOutput`; a real failure
+      // must set is_error.
+      console.error(
+        `[submitToolResult] "${pending.tool_name}" sent a non-error result with ok:false — the server will record it as a failure and the model will not see this output. Use personDeclinedToolOutput for a decline, or set is_error.`,
+      );
+    }
     const { conversationId, ...rest } = pending;
     const bucket = queue.get(conversationId) ?? [];
     bucket.push(rest);

@@ -42,6 +42,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 
 import { dispatchSurfaceWrite } from "../dispatch-surface-write.thunk";
 import { surfaceWriteFailureSentence } from "@/features/surfaces/runtime/surface-write-tool-output";
+import { nonErrorOutputReadsAsFailure } from "@/features/agents/api/person-declined-tool-output";
 import {
   registerSurfaceRuntime,
   type SurfaceWriteHandlers,
@@ -186,9 +187,42 @@ describe("apply_surface_write tool result", () => {
     expect(apply).not.toHaveBeenCalled();
     expect(submitted.is_error).toBe(false);
     expect(submitted.output).toEqual(
-      expect.objectContaining({ ok: false, declined: true }),
+      expect.objectContaining({
+        status: "declined_by_person",
+        declined: true,
+        reason: "kept_as_is",
+      }),
     );
     expect(submitted.output.message).toContain("Nothing was changed.");
+    expect(submitted.output.message).toContain("chose to keep it as it was");
+    expect(submitted.output.message).toContain("not a failure");
+  });
+
+  // 2026-10-01, /notes "Keep as is": the server's tool_results endpoint reads
+  // a NON-error output carrying `ok: false` as a client tool that mislabelled
+  // its own failure, flips it to an error and replaces the payload with
+  // "Client tool error" (aidream tool_results.py `_misclassified_failure_code`).
+  // The agent heard "the page reported a failure and didn't say why".
+  it("a decline never carries ok:false — the server would rewrite it as a failure", async () => {
+    mockRequestInlineApproval.mockResolvedValue({ kind: "rejected" });
+    const submitted = await run({ create_classes: jest.fn() }, [{}]);
+    expect(submitted.is_error).toBe(false);
+    expect(nonErrorOutputReadsAsFailure(submitted.output)).toBe(false);
+    expect(submitted.output).not.toHaveProperty("ok");
+  });
+
+  it("a decline with typed instructions carries them, still not an error", async () => {
+    mockRequestInlineApproval.mockResolvedValue({ kind: "instructions", text: "make it shorter" });
+    const submitted = await run({ create_classes: jest.fn() }, [{}]);
+    expect(submitted.is_error).toBe(false);
+    expect(nonErrorOutputReadsAsFailure(submitted.output)).toBe(false);
+    expect(submitted.output).toEqual(
+      expect.objectContaining({
+        declined: true,
+        reason: "declined_with_instructions",
+        instructions: "make it shorter",
+      }),
+    );
   });
 });
 

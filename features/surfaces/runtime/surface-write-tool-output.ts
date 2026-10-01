@@ -11,14 +11,16 @@
  *    target, mode, message, change?, result? }` — the message states what
  *    landed and ends with `surfaceWriteReceiptSentence`, so the model never
  *    reads its own effect in the refreshed page values as "already there";
- *  - user declined  → `{ ok: false, declined: true, message }`, NOT an error
- *    (an error result would invite retrying the write the user refused);
+ *  - person declined → `personDeclinedToolOutput` (`status:
+ *    "declined_by_person"`, `declined: true`, no `ok`), NOT an error (an error
+ *    result would invite retrying the write the person refused);
  *  - nothing open can apply it → error, `reason: "surface_not_available"`;
  *  - refused/failed → error, `reason` + `stage` + ONE self-contained sentence
  *    (`surfaceWriteFailureSentence`), identical in `message` and the error.
  */
 
 import type { SurfaceWriteChange, SurfaceWriteResult } from "./surface-writeback";
+import { personDeclinedToolOutput } from "@/features/agents/api/person-declined-tool-output";
 
 /**
  * The sentence the model reads when a write did not land. It always says
@@ -133,19 +135,20 @@ export function surfaceWriteToolOutput(
   }
 
   if (result.declined) {
-    // The user answered "keep as is". Deliberately NOT an error result.
+    // The person answered "Keep as is". Deliberately NOT an error result,
+    // and deliberately no `ok: false` — the server reads that as a failure
+    // (read `person-declined-tool-output.ts`).
     const message =
-      `${result.error} Nothing was changed. Do not retry the same write` +
+      `${result.error} This was the person's choice, not a failure. Nothing was changed. Do not retry the same write` +
       (result.instructions
-        ? " — follow the user's instructions below instead."
-        : " unless the user asks for it.");
+        ? " — follow the person's instructions below instead."
+        : " unless the person asks for it.");
     return {
-      output: {
-        ok: false,
-        declined: true,
+      output: personDeclinedToolOutput({
+        reason: "kept_as_is",
         message,
         ...(result.instructions ? { instructions: result.instructions } : {}),
-      },
+      }),
     };
   }
 

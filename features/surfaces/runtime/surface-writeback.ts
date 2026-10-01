@@ -625,7 +625,7 @@ function declined(
   return {
     ok: false,
     declined: true,
-    error: `The user declined the change to "${target.label}".`,
+    error: `The person chose to keep it as it was: "${target.label}" was not written.`,
     ...(instructions ? { instructions } : {}),
   };
 }
