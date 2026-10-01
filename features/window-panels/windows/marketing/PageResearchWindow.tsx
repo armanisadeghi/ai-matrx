@@ -534,14 +534,14 @@ function PageResearchWindowInner({
           data-surface-value="run_summary"
         >
           <p className="text-[11px] text-muted-foreground">
-            <span data-surface-value="research_phase">Draft phase.</span>{" "}
+            <span data-surface-value="research_phase">Draft</span>
+            {" · "}
             <span data-surface-value="attachment_status">
-              Nothing is attached until you start research.
-            </span>{" "}
-            {/* read-gate-exempt: status copy for the draft form (no run started), not an empty read */}
-            <span data-surface-value="is_streaming">
-              No research is running.
+              Nothing attached yet
             </span>
+            {" · "}
+            {/* read-gate-exempt: status copy for the draft form (no run started), not an empty read */}
+            <span data-surface-value="is_streaming">Not running</span>
           </p>
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={onClose}>

@@ -114,7 +114,7 @@ function AgentShortcutQuickCreateWindowInner({
         <AgentComingSoonContent
           icon={LinkIcon}
           title="No agent selected"
-          description="Open this window from an agent's actions menu to create or link a shortcut."
+          description="Open it from an agent's actions menu"
           agentId={null}
         />
       </WindowPanel>

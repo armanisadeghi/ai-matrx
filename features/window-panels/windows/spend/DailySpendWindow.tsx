@@ -95,7 +95,7 @@ function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
             <div className="font-medium">Today&apos;s spend could not be read. <ErrorAlchemyMenu /></div>
             <p className="mt-1 text-xs">
               {/* No number is shown rather than a wrong one. */}
-              {error.message} Open the dashboard below to retry.
+              {error.message} — open the dashboard below to retry.
             </p>
           </div>
         </div>

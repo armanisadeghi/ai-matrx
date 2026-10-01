@@ -147,12 +147,9 @@ export default function MessagesWindow({
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
               <MessageSquare className="h-7 w-7 text-zinc-400" />
             </div>
-            <h2 className="mb-1 text-base font-medium text-zinc-900 dark:text-zinc-100">
-              Select a conversation
+            <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              Pick or start a conversation
             </h2>
-            <p className="max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
-              Pick a conversation or start a new one.
-            </p>
           </div>
         </NonEditableContextMenu>
       )}

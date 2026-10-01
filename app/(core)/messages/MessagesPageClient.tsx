@@ -52,13 +52,9 @@ export default function MessagesPageClient() {
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h2 className="mb-1 text-lg font-medium text-foreground">
-          Select a conversation
+        <h2 className="text-lg font-medium text-foreground">
+          Pick or start a conversation
         </h2>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Choose a conversation from the list or start a new one to begin
-          messaging
-        </p>
       </div>
     </SurfaceRuntimeProvider>
   );

@@ -203,7 +203,7 @@ function RagAiCopyWindowInner({
           <div className="space-y-2 overflow-y-auto border-b border-border p-3 md:border-b-0">
             <OptionRow
               label="Source + retrieval identifiers"
-              hint="Source, document, chunk, field, page, and link"
+              hint="Source, document, chunk, parent, field, page, and link."
               checked
               disabled
               onCheckedChange={() => undefined}
