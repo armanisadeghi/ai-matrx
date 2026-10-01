@@ -116,6 +116,7 @@ Every stream item below adds its case there.
 - [x] W4. `StructuredValueView` strips nested kinds instead of rendering them.
       Only the root marker is dropped; a nested kind routes to its component (`KindValueNode`).
 - [x] W5. Readout summary table prints 80 chars of stringified output. (→ `invocation-summary.ts`: kind name · instance title)
+- [x] W6. `EmissionRender` routed only on the wire `kind`: a payload with its own root `__kind` (wire kind empty) or a nested kind fell to the generic emit body. (→ `routeEmission` reads the payload's `__kind`; nested kind with no `component_ref` → `AnswerValueView`)
 
 ## F. Screens rendering answer text outside the pipeline
 

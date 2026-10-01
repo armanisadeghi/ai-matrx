@@ -207,3 +207,33 @@ describe("the emit/deliverable dedupe — renders ONCE", () => {
     expect(inSlots.size + streamed.length).toBe(all.length);
   });
 });
+
+describe("routeEmission — the payload's own __kind when the wire kind is empty", () => {
+  const cards = { __kind: "flashcard_set", cards: [] };
+  it("routes a root __kind like a wire kind", () => {
+    expect(routeEmission({ kind: null, kindOk: null, payload: cards })).toEqual({
+      via: "kind",
+      kind: "flashcard_set",
+    });
+  });
+  it("sends a nested kind with no author component to the value door", () => {
+    expect(
+      routeEmission({ kind: null, kindOk: null, payload: { pack: cards } }),
+    ).toEqual({ via: "value" });
+  });
+  it("keeps an author component for a nested kind", () => {
+    expect(
+      routeEmission({
+        kind: null,
+        kindOk: null,
+        payload: { pack: cards },
+        componentRef: "week_card",
+      }).via,
+    ).toBe("component");
+  });
+  it("a wire kind that failed its check still falls back", () => {
+    expect(
+      routeEmission({ kind: "quiz_set", kindOk: false, payload: cards }).via,
+    ).toBe("component");
+  });
+});

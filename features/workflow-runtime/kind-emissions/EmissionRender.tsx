@@ -21,6 +21,7 @@
 import React from "react";
 
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
 import type { EmitMode } from "@/features/workflow-emit/types";
 
@@ -88,6 +89,16 @@ export function EmissionRender({
           showRoutingNote={false}
           variant={variant}
         />
+        <WorkflowDocumentActions content={documentText} />
+      </>
+    );
+  }
+
+  if (route.via === "value") {
+    // Kindless at the root with a kind inside: the canonical value door.
+    return (
+      <>
+        <AnswerValueView value={emission.payload} />
         <WorkflowDocumentActions content={documentText} />
       </>
     );

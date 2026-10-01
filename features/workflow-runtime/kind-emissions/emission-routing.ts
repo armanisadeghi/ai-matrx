@@ -11,6 +11,8 @@
  * over the wire shapes, which is what makes the contract testable at all.
  */
 
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+
 // ---------------------------------------------------------------------------
 // The shapes, structurally typed
 // ---------------------------------------------------------------------------
@@ -54,6 +56,7 @@ export interface ClaimingDeliverable {
  */
 export type EmissionRoute =
   | { via: "kind"; kind: string }
+  | { via: "value" }
   | { via: "component"; reason: "kindless" | "kind_failed_check" };
 
 /**
@@ -69,14 +72,49 @@ export type EmissionRoute =
  * registry DISAGREED — falls back.
  */
 export function routeEmission(
-  emission: Pick<RoutableEmission, "kind" | "kindOk">,
+  emission: Pick<RoutableEmission, "kind" | "kindOk"> & {
+    payload?: unknown;
+    componentRef?: string | null;
+  },
 ): EmissionRoute {
   const kind = emission.kind?.trim();
-  if (!kind) return { via: "component", reason: "kindless" };
-  if (emission.kindOk === false) {
-    return { via: "component", reason: "kind_failed_check" };
+  if (kind) {
+    if (emission.kindOk === false) {
+      return { via: "component", reason: "kind_failed_check" };
+    }
+    return { via: "kind", kind };
   }
-  return { via: "kind", kind };
+  // A kind is never drawn as raw JSON (Arman, 2026-09-30). An empty wire
+  // `kind` does not make a payload kindless: its own root `__kind` routes it
+  // like a wire kind would.
+  const own = payloadKind(emission.payload);
+  if (own) return { via: "kind", kind: own };
+  // A kindless payload that carries a kind deeper in has no author component
+  // to serve it — it goes through the canonical value door, whose floor
+  // routes nested kinds. An author's `component_ref` still serves it.
+  if (!emission.componentRef && carriesNestedKind(emission.payload)) {
+    return { via: "value" };
+  }
+  return { via: "component", reason: "kindless" };
+}
+
+/** The payload's own root `__kind`, when it is an object that claims one. */
+export function payloadKind(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+  const kind = (payload as Record<string, unknown>).__kind;
+  return typeof kind === "string" && kind.trim() ? kind.trim() : null;
+}
+
+/** A `"__kind"` key anywhere inside a structured payload. */
+function carriesNestedKind(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  try {
+    return hasKindKey(JSON.stringify(payload));
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

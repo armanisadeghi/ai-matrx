@@ -41,6 +41,14 @@ jest.mock("@/features/workflow-emit/DbEmitRenderer", () => ({
     <pre data-route="emit">{JSON.stringify(payload)}</pre>
   ),
 }));
+jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
+  StructuredValueView: () => <div data-route="floor" />,
+}));
+jest.mock("@/components/MarkdownStream", () => ({
+  __esModule: true,
+  default: () => <div data-route="markdown" />,
+}));
+jest.mock("@ai-matrx/media/react", () => ({ InlineMediaRef: () => null }));
 jest.mock("../../components/WorkflowDocumentActions", () => ({
   WorkflowDocumentActions: () => null,
 }));
@@ -82,6 +90,12 @@ function emission(
     ...overrides,
   };
 }
+
+const flashcardsPayload = {
+  __kind: "flashcard_set",
+  title: "Cell biology",
+  cards: [{ front: "Mitochondria", back: "Makes ATP" }],
+};
 
 describe("workflow emissions go through the kind door", () => {
   it("no run surface mounts DbEmitRenderer except EmissionRender", () => {
@@ -126,6 +140,36 @@ describe("workflow emissions go through the kind door", () => {
       expect(container.textContent).toContain("flashcard_set");
       expect(container.innerHTML).not.toContain('"__kind"');
       expect(container.querySelector('[data-route="emit"]')).toBeNull();
+    });
+
+    it("routes on the payload's own __kind when the wire kind is empty", () => {
+      emissions = [emission({ kind: null, kindOk: null, payload: flashcardsPayload })];
+      act(() => root.render(<RunEmissions runId="run-1" />));
+      expect(container.querySelector('[data-route="kind"]')?.textContent).toContain(
+        "flashcard_set",
+      );
+      expect(container.querySelector('[data-route="emit"]')).toBeNull();
+      expect(container.innerHTML).not.toContain('"__kind"');
+    });
+
+    it("sends a kindless payload carrying a nested kind to the canonical door", () => {
+      emissions = [
+        emission({ payload: { summary: "Week 3", pack: flashcardsPayload } }),
+      ];
+      act(() => root.render(<RunEmissions runId="run-1" />));
+      expect(container.querySelector('[data-route="floor"]')).not.toBeNull();
+      expect(container.querySelector('[data-route="emit"]')).toBeNull();
+    });
+
+    it("keeps an author's component for a kindless payload with a nested kind", () => {
+      emissions = [
+        emission({
+          componentRef: "week_card",
+          payload: { summary: "Week 3", pack: flashcardsPayload },
+        }),
+      ];
+      act(() => root.render(<RunEmissions runId="run-1" />));
+      expect(container.querySelector('[data-route="emit"]')).not.toBeNull();
     });
 
     it("keeps a kindless emission on the emit renderer", () => {

@@ -51,7 +51,7 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
 | Repaint hook | `useEmitRendererVersion.ts` | `useSyncExternalStore` over that version — a mounted emission re-resolves when an agent edits the row. |
 | Surface constant | `surface.ts` | `matrx-user/workflow`. |
 | Types | `types.ts` | `NodeEmittedEvent` **RE-EXPORTED** from `types/python-generated/workflow-events.ts` (never mirrored — see invariant 6) + `EmitMode`/`EmitPresentation` derived from it + `EmitRendererProps` (payload-shaped, deliberately NOT `ToolRendererProps`). |
-| **The consumer** | `../workflow-runtime/components/run/RunEmissions.tsx` | Renders `run.emissions` in arrival order through `DbEmitRenderer`. Mounted in `RunStage` (above the deliverables) and in `WorkflowRunBoard` (Tier 0). |
+| **The consumer** | `../workflow-runtime/kind-emissions/EmissionRender.tsx` | THE one importer of `DbEmitRenderer`. `RunEmissions` (mounted in `RunStage` and `WorkflowRunBoard`), `DeliveredStream`/`ShowcaseSlot` and the seven bake-off run pages all render an emission through it: a kind (wire `kind`, else the payload's root `__kind`) goes to its kind component, a kindless payload with a nested kind and no `component_ref` to `AnswerValueView`, everything else to `DbEmitRenderer`. |
 
 ## Invariants (violating any of these is a defect)
 
@@ -69,8 +69,9 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
    latency that the generic-body-then-upgrade path already hides, and paid for
    it with the worst build regression this repo has had. Do not re-add it from
    outside this feature.
-2. **One renderer, no fork.** Every emission goes through `DbEmitRenderer`. No
-   consumer inspects a payload shape or draws its own viewer.
+2. **One renderer, no fork.** Every emission goes through `EmissionRender`, and
+   every kindless one through `DbEmitRenderer`. No consumer inspects a payload
+   shape or draws its own viewer.
 3. **The durable `seq` is the identity.** The emissions ring is capped
    (`EMISSIONS_MAX = 100`) and drops from the HEAD, so an array index is not a
    stable key. The slice records `seq` (and `persisted`, true when the emission
@@ -156,6 +157,10 @@ rename these suites, move the path in that script in the same commit; the CI ste
 in `.github/workflows/ci.yml` invokes the script by name and will not notice.
 
 ## Change Log
+
+### 2026-09-30 — kinds never reach the generic body
+
+- Run surfaces render emissions through `workflow-runtime/kind-emissions/EmissionRender`, not `DbEmitRenderer` directly; a kind-carrying payload (wire `kind` or its own `__kind`) is drawn as its kind, never as JSON in the generic body (KIND_NEVER_RAW_CHECKLIST W1/W2/W6).
 
 ### 2026-08-27 — the wire mirror is gone, and the D115 guard now runs in CI
 
