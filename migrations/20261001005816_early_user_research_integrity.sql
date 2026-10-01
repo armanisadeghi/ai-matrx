@@ -1,3 +1,4 @@
+-- chair-step: adds and validates party_research integrity constraints, installs its identity trigger, and revokes direct execution of the private trigger function
 set lock_timeout = '3s';
 alter table crm.party_research add constraint party_research_category check (category in ('unknown','real_user','friend','family','employee','former_employee','owner','test','bot'));
 alter table crm.party_research add constraint party_research_contact_state check (contact_state in ('not_contacted','draft','contacted','replied','trial_active','declined','hold','opted_out'));
@@ -18,4 +19,3 @@ $body$;
 revoke all on function crm._party_research_identity_guard() from public, anon, authenticated;
 create trigger _research_identity_guard before insert or update on crm.party_research
 for each row execute function crm._party_research_identity_guard();
-

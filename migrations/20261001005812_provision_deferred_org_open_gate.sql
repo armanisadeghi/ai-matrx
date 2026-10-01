@@ -1,3 +1,4 @@
+-- based-on: platform.provision_certify_judged(text, text, text, boolean) 8fa104e150de69dcc9238cdefbc01ce537371bfb83d9168390fc096a34bb0f47
 -- org_open_gate is installed by the same deferred access seal as every other policy.
 -- It remains mandatory after attach; final certification is unchanged.
 CREATE OR REPLACE FUNCTION platform.provision_certify_judged(p_schema text, p_table text, p_token text, p_defer_base boolean)
