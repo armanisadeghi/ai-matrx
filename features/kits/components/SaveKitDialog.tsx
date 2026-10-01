@@ -470,9 +470,11 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
             </div>
           ) : step === "guide" ? (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Shown after install. Drafted for you — edit freely.</p>
+              {/* Drafted for the person from their setup; every step is editable. */}
+              <p className="text-sm text-foreground">Shown after install</p>
+              <div className="divide-y divide-border">
               {guide.map((g, i) => (
-                <div key={i} className="flex gap-2 rounded-lg border border-border bg-card p-2">
+                <div key={i} className="flex gap-2 py-2.5 first:pt-0">
                   <span className="mt-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold text-background">{i + 1}</span>
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <Input value={g.title} placeholder="Title" onChange={(e) => setGuide(guide.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} />
@@ -483,6 +485,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                   </Button>
                 </div>
               ))}
+              </div>
               <Button size="sm" variant="outline" onClick={() => setGuide([...guide, { title: "", body: "" }])}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
                 Add a step

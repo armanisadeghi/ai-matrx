@@ -239,7 +239,7 @@ function BindingPreviewCard({
               <span>{answer.message}</span>
             </p>
           ) : (
-            <ErrorNotice title="The preview could not be shown." error={answer.message} onRetry={() => setAttempt((n) => n + 1)} />
+            <ErrorNotice size="inline" title="Preview failed" error={answer.message} onRetry={() => setAttempt((n) => n + 1)} />
           )
         )}
       </div>

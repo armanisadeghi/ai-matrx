@@ -18,6 +18,7 @@ export function ErrorNotice({
   retryLabel = "Try again",
   children,
   className,
+  size,
 }: {
   title: string;
   error: unknown;
@@ -25,6 +26,8 @@ export function ErrorNotice({
   retryLabel?: string;
   children?: ReactNode;
   className?: string;
+  /** `inline` for an error inside a frame that is already the chrome (no second card). */
+  size?: "inline" | "compact" | "default";
 }) {
   const { sentence, detail } = plainError(error);
   return (
@@ -33,6 +36,7 @@ export function ErrorNotice({
       message={sentence}
       error={error}
       className={className}
+      {...(size ? { size } : {})}
       actions={
         onRetry ? (
           <Button size="sm" variant="outline" className="mt-1" onClick={onRetry}>

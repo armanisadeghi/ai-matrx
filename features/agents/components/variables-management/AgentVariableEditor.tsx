@@ -484,7 +484,7 @@ export function AgentVariableEditor({
       <div className="min-w-0 space-y-1.5 border-t border-border pt-3">
         <Label className="text-sm font-medium">Default Value</Label>
         <p className="text-xs text-muted-foreground">
-          Pre-fills it at run time; blank for none
+          {isDataBound || isBound ? "Used when the filled value is empty" : "Pre-fills it at run time; blank for none"}
         </p>
         {readonly ? (
           <p className="text-sm text-foreground whitespace-pre-wrap break-words">

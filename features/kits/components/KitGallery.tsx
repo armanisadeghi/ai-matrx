@@ -77,9 +77,11 @@ export function KitGallery({
       <div className="h-full overflow-y-auto bg-textured">
         <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-[calc(var(--shell-header-h)+1.5rem)] sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Start from something that already works
-              <InfoHint text={KITS_HERO} label={`What is a ${KIT_WORD.oneLower}?`} side="bottom" />
+              <span className="ml-2 inline-flex align-middle">
+                <InfoHint text={KITS_HERO} label={`What is a ${KIT_WORD.oneLower}?`} side="bottom" />
+              </span>
             </h1>
             <Button size="sm" variant="outline" onClick={() => openSave()}>
               <PackagePlus className="mr-1.5 h-3.5 w-3.5" />
