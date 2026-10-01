@@ -537,7 +537,7 @@ export interface ContextReceiptRow {
   user_rule?: ContextRule | null;
   clamped?: boolean;
   client_sent_excluded?: boolean;
-  blocked_by?: "model" | null;
+  blocked_by?: "model" | "self_check" | null;
 }
 
 export interface ContextRule {

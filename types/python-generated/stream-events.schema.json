@@ -5700,7 +5700,10 @@
           "blocked_by": {
             "anyOf": [
               {
-                "const": "model",
+                "enum": [
+                  "model",
+                  "self_check"
+                ],
                 "type": "string"
               },
               {
