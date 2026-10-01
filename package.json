@@ -705,6 +705,8 @@
     "check:shell-layout": "node scripts/check-shell-layout-gate.mjs",
     "check:compiler-skips": "node scripts/check-compiler-skips.mjs",
     "check:compiler-skips:self-test": "node scripts/check-compiler-skips.mjs --self-test",
+    "check:unstable-selectors": "node scripts/check-unstable-selectors.mjs",
+    "check:unstable-selectors:self-test": "node scripts/check-unstable-selectors.mjs --self-test",
     "test:rule-row-squeeze": "playwright test -c config/playwright/playwright.rule-row-squeeze.config.ts",
     "test:library-table-reachable": "playwright test -c config/playwright/playwright.library-table-reachable.config.ts",
     "check:kind-sandbox-gate": "tsx scripts/check-kind-sandbox-gate.ts",
