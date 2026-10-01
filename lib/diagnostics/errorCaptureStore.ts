@@ -415,6 +415,14 @@ export interface CapturedError {
    * Internal — never rendered.
    */
   dedupeKey: string;
+
+  /**
+   * True for a row brought back from this tab's sessionStorage after a reload
+   * (see "Tab-session persistence" below). It was already filed to the server
+   * by the page that captured it, so `persistCapturedErrors` never files it
+   * again; a recurrence on the new page clears the flag (fresh evidence).
+   */
+  restoredFromPreviousPage?: true;
 }
 
 /** The minimal input a capture site provides; the store fills the rest. */
@@ -549,12 +557,147 @@ let notifyScheduled = false;
 
 function emit(): void {
   refreshStats();
+  scheduleSessionSave();
   if (notifyScheduled) return;
   notifyScheduled = true;
   queueMicrotask(() => {
     notifyScheduled = false;
     for (const listener of listeners) listener();
   });
+}
+
+// ── Tab-session persistence ─────────────────────────────────────────────────
+// A reload used to wipe every capture before anyone read it (PB-01 S14,
+// 2026-10-01). The held rows ride THIS TAB's sessionStorage — per tab, gone
+// when the tab closes, never shared — bounded in rows, per-row raw size and
+// total bytes. Every storage touch is try/caught: blocked or full storage
+// costs persistence, never capture. Saves are debounced and flushed on
+// `pagehide`, so a reload right after an error still keeps it.
+
+const SESSION_KEY = "matrx:error-inspector:v1";
+/** Rows restored after a reload (newest first). */
+const SESSION_MAX_ENTRIES = 100;
+/** A row's `raw` dump larger than this is replaced by a truncated preview. */
+const SESSION_RAW_MAX_CHARS = 4_000;
+/** Hard ceiling on the stored string; rows are dropped oldest-first to fit. */
+const SESSION_MAX_CHARS = 1_000_000;
+const SESSION_SAVE_DELAY_MS = 400;
+
+interface StoredCapturedError extends CapturedError {
+  unseen?: number;
+}
+
+let sessionSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function boundRaw(raw: unknown): unknown {
+  if (raw === undefined) return undefined;
+  try {
+    const text = JSON.stringify(raw);
+    if (text === undefined) return undefined;
+    if (text.length <= SESSION_RAW_MAX_CHARS) return raw;
+    return {
+      truncated: true,
+      originalChars: text.length,
+      preview: text.slice(0, SESSION_RAW_MAX_CHARS),
+    };
+  } catch {
+    return { truncated: true, preview: "[raw not serializable]" };
+  }
+}
+
+function serializeSession(): string | null {
+  let rows: StoredCapturedError[] = entries
+    .slice(0, SESSION_MAX_ENTRIES)
+    .map((e) => ({ ...e, raw: boundRaw(e.raw), unseen: unseenById.get(e.id) ?? 0 }));
+  while (true) {
+    let text: string;
+    try {
+      text = JSON.stringify({ v: 1, entries: rows });
+    } catch {
+      return null;
+    }
+    if (text.length <= SESSION_MAX_CHARS || rows.length === 0) return text;
+    rows = rows.slice(0, Math.floor(rows.length / 2));
+  }
+}
+
+function saveSessionNow(): void {
+  if (sessionSaveTimer !== null) {
+    clearTimeout(sessionSaveTimer);
+    sessionSaveTimer = null;
+  }
+  try {
+    if (typeof window === "undefined") return;
+    if (entries.length === 0) {
+      window.sessionStorage.removeItem(SESSION_KEY);
+      return;
+    }
+    const text = serializeSession();
+    if (text !== null) window.sessionStorage.setItem(SESSION_KEY, text);
+  } catch {
+    /* storage blocked or full — capture itself is unaffected */
+  }
+}
+
+function scheduleSessionSave(): void {
+  if (typeof window === "undefined" || sessionSaveTimer !== null) return;
+  try {
+    sessionSaveTimer = setTimeout(saveSessionNow, SESSION_SAVE_DELAY_MS);
+  } catch {
+    sessionSaveTimer = null;
+  }
+}
+
+function isStoredRow(value: unknown): value is StoredCapturedError {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Partial<CapturedError>;
+  return (
+    typeof row.id === "string" &&
+    typeof row.source === "string" &&
+    typeof row.message === "string" &&
+    typeof row.dedupeKey === "string" &&
+    typeof row.count === "number" &&
+    (row.tier === "red" || row.tier === "orange" || row.tier === "yellow")
+  );
+}
+
+function restoreSession(): void {
+  try {
+    if (typeof window === "undefined") return;
+    const text = window.sessionStorage.getItem(SESSION_KEY);
+    if (!text) return;
+    const parsed = JSON.parse(text) as { v?: unknown; entries?: unknown };
+    if (parsed?.v !== 1 || !Array.isArray(parsed.entries)) return;
+    const rows = parsed.entries.filter(isStoredRow).slice(0, SESSION_MAX_ENTRIES);
+    entries = rows.map(({ unseen: rowUnseen, ...row }) => {
+      const restored: CapturedError = { ...row, restoredFromPreviousPage: true };
+      const n = typeof rowUnseen === "number" && rowUnseen > 0 ? rowUnseen : 0;
+      if (n > 0) {
+        unseen += n;
+        unseenById.set(restored.id, n);
+        if (restored.tier === "red") unseenRed += n;
+        else if (restored.tier === "orange") unseenOrange += n;
+      }
+      occurrences += restored.count;
+      return restored;
+    });
+    refreshStats();
+  } catch {
+    /* unreadable or blocked storage — start empty, as before */
+  }
+}
+
+function installSessionPersistence(): void {
+  try {
+    if (typeof window === "undefined") return;
+    restoreSession();
+    window.addEventListener("pagehide", saveSessionNow);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") saveSessionNow();
+    });
+  } catch {
+    /* never let persistence break the store's module init */
+  }
 }
 
 function makeId(): string {
@@ -671,6 +814,7 @@ export function captureError(input: CaptureInput): string {
       // matching request. Unknown current identity must not inherit an old one.
       requestId: input.requestId,
       conversationId: input.conversationId,
+      restoredFromPreviousPage: undefined,
     };
     bumpUnseen(existing.id, existing.tier);
     const next = entries.slice();
@@ -875,3 +1019,5 @@ export function markAllSeen(): void {
   unseenById.clear();
   emit();
 }
+
+installSessionPersistence();

@@ -138,6 +138,8 @@ async function flush(): Promise<void> {
   for (const entry of getSnapshot()) {
     if (
       entry.durable === false ||
+      // Filed by the page that captured it; a reload only restored it.
+      entry.restoredFromPreviousPage ||
       !shouldPersistCapturedTier({
         tier: entry.tier,
         isGuest: !isAuthenticated || isGuest,
@@ -204,6 +206,7 @@ async function flush(): Promise<void> {
     if (
       !e ||
       e.durable === false ||
+      e.restoredFromPreviousPage ||
       !shouldPersistCapturedTier({
         tier: e.tier,
         isGuest: !isAuthenticated || isGuest,
