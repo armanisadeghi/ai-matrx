@@ -256,7 +256,7 @@
       "label": "Hidden primary actions (a page's main job only behind a drawer, sidebar, or menu)",
       "class": "repo-only",
       "cmd": "pnpm check:hidden-primary-actions",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "unpinned-identity-credential-columns-on-client-writable-tabl": {
@@ -397,7 +397,7 @@
       "label": "Unified-data campaign entry points are registered and gated",
       "class": "repo-only",
       "cmd": "pnpm check:campaign-entry-points",
-      "reason": "no database access in 5 file(s) reached",
+      "reason": "no database access in 6 file(s) reached",
       "evidence": []
     },
     "inverses-leave-the-ground-standing": {
@@ -595,7 +595,7 @@
       "label": "Scroll-chain (clipped tables/lists)",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-scroll-chain.ts --strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "no-blocking-dialogs-ai-stays-reachable": {
@@ -804,28 +804,28 @@
       "label": "Gate database sessions go through the gate helper",
       "class": "repo-only",
       "cmd": "pnpm check:gate-db-sessions",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "and-that-guard-can-still-fail-pnpm-check-gate-db-s": {
       "label": "…and that guard can still fail",
       "class": "repo-only",
       "cmd": "pnpm check:gate-db-sessions:self-test",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "release-row-classes-match-what-each-row-s-code-reaches": {
       "label": "Release row classes match what each row's code reaches",
       "class": "repo-only",
       "cmd": "pnpm check:release-row-classes",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "and-that-guard-can-still-fail-pnpm-check-release-r": {
       "label": "…and that guard can still fail",
       "class": "repo-only",
       "cmd": "pnpm check:release-row-classes:self-test",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "door-rows-a-door-returns-only-what-its-caller-may-read-dd-19": {
@@ -1249,7 +1249,7 @@
       "label": "Surface write targets without a handler",
       "class": "repo-only",
       "cmd": "pnpm check:surface-write-handlers",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "admin-dashboard-catalog": {
@@ -1556,14 +1556,14 @@
       "label": "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)",
       "class": "repo-only",
       "cmd": "pnpm check:menu-naming",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "menu-items-that-cannot-act-the-live-item-law": {
       "label": "Menu items that cannot act (THE LIVE-ITEM LAW)",
       "class": "repo-only",
       "cmd": "pnpm check:menu-live-items",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "no-ui-flag-aimed-at-a-headless-mode": {
@@ -1584,7 +1584,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 178 file(s) reached",
+      "reason": "no database access in 179 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1645,14 +1645,14 @@
       "label": "No dead ends (Door Law)",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/dead-ends/check-dead-ends.ts",
-      "reason": "no database access in 8 file(s) reached",
+      "reason": "no database access in 9 file(s) reached",
       "evidence": []
     },
     "unwired-work-finish-purpose-built-artifacts": {
       "label": "Unwired work (finish purpose-built artifacts)",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/unwired/check-unwired.ts --limit=15",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "cross-repo-skills-in-sync-with-common-docs": {
@@ -1673,7 +1673,7 @@
       "label": "Access errors (surfaces that guess why a read failed)",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/access-errors/check-access-errors.ts",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "media-durability-mismatch-class": {
@@ -1827,14 +1827,14 @@
       "label": "Unbounded reads: the detector can still fail (self-test)",
       "class": "repo-only",
       "cmd": "pnpm check:unbounded-reads --self-test",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 5 file(s) reached",
       "evidence": []
     },
     "complete-list-reads-postgrest-silently-caps-at-1000": {
       "label": "Complete-list reads PostgREST silently caps at 1000",
       "class": "repo-only",
       "cmd": "pnpm check:unbounded-reads",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 5 file(s) reached",
       "evidence": []
     },
     "settings-registry-rows-no-code-reads": {
