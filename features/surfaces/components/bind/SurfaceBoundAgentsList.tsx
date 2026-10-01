@@ -73,6 +73,15 @@ export function SurfaceBoundAgentsList({
   const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
   const openBind = useOpenSurfaceAgentBindWindow();
   const openSettings = useOpenAgentSettingsWindow();
+  // A launch reads the page's live scope and the agent before anything opens
+  // (~3 s on a phone, PB-08 2026-10-01) — the pressed row spins meanwhile and
+  // a second press is ignored instead of the tap looking dead.
+  const [startingId, setStartingId] = useState<string | null>(null);
+  const run = (agentId: string) => {
+    if (runDisabled || startingId) return;
+    setStartingId(agentId);
+    void Promise.resolve(onRunAgent(agentId)).finally(() => setStartingId(null));
+  };
   const { sections, loading, settled, error, hasAgents, refresh } = useSurfaceBoundAgents(
     surfaceName,
     { isEditable, includeDefaults },
@@ -163,7 +172,7 @@ export function SurfaceBoundAgentsList({
                 <div
                   key={`role:${view.role.name}`}
                   onClick={() => {
-                    if (!runDisabled) void onRunAgent(agentId);
+                    run(agentId);
                   }}
                   className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5"
                 >
@@ -174,11 +183,16 @@ export function SurfaceBoundAgentsList({
                     disabled={runDisabled}
                     onClick={(event) => {
                       event.stopPropagation();
-                      void onRunAgent(agentId);
+                      run(agentId);
                     }}
+                    aria-busy={startingId === agentId}
                     className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-primary hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    <Play className="h-3 w-3 fill-current" />
+                    {startingId === agentId ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Play className="h-3 w-3 fill-current" />
+                    )}
                   </button>
                   <EntityRef
                     token="agent"
@@ -188,7 +202,7 @@ export function SurfaceBoundAgentsList({
                     fill
                     disablePeek
                     onOpen={() => {
-                      if (!runDisabled) void onRunAgent(agentId);
+                      run(agentId);
                     }}
                     className="min-w-0 flex-1 text-xs font-medium leading-none"
                   >
@@ -233,7 +247,7 @@ export function SurfaceBoundAgentsList({
               <div
                 key={`${section.key}:${a.agentId}`}
                 onClick={() => {
-                  if (!runDisabled) void onRunAgent(a.agentId);
+                  run(a.agentId);
                 }}
                 className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5"
               >
@@ -244,11 +258,16 @@ export function SurfaceBoundAgentsList({
                   disabled={runDisabled}
                   onClick={(event) => {
                     event.stopPropagation();
-                    void onRunAgent(a.agentId);
+                    run(a.agentId);
                   }}
+                  aria-busy={startingId === a.agentId}
                   className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-primary hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  <Play className="h-3 w-3 fill-current" />
+                  {startingId === a.agentId ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Play className="h-3 w-3 fill-current" />
+                  )}
                 </button>
                 <EntityRef
                   token="agent"
@@ -258,7 +277,7 @@ export function SurfaceBoundAgentsList({
                   fill
                   disablePeek
                   onOpen={() => {
-                    if (!runDisabled) void onRunAgent(a.agentId);
+                    run(a.agentId);
                   }}
                   className="min-w-0 flex-1 text-xs font-medium leading-none"
                 />
