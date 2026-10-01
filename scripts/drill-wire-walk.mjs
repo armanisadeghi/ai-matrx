@@ -94,8 +94,9 @@ try {
   );
   out.legend = legend;
   const declared = { human: "--matrx-chart-1", client_auto: "--matrx-chart-9", api: "--matrx-chart-7", child_agent: "--matrx-chart-3", workflow: "--matrx-chart-4", scheduled: "--matrx-chart-5", system: "--matrx-chart-6" };
-  const judged = legend.filter((s) => declared[s.key]);
-  check("chart series keep the origin colours", judged.length > 0 && judged.every((s) => s.color.includes(`${declared[s.key]})`)), legend.map((s) => `${s.key}:${(s.color.match(/--matrx-chart-[\w]+/) ?? [""])[0]}`).join(" | "));
+  const keyOf = (s) => String(s.key ?? "").replace(/^v:/, "");
+  const judged = legend.filter((s) => declared[keyOf(s)]);
+  check("chart series keep the origin colours", judged.length > 0 && judged.every((s) => s.color.includes(`${declared[keyOf(s)]})`)), legend.map((s) => `${s.key}:${(s.color.match(/--matrx-chart-[\w]+/) ?? [""])[0]}`).join(" | "));
   const bars = await page.locator("[data-matrx-drill-share-bar]").evaluateAll((els) => els.map((e) => e.getAttribute("style") ?? ""));
   check("share bars draw in the origin colours", bars.some((s) => /--matrx-chart-\d/.test(s)), bars.slice(0, 6).join(" | "));
   await page.screenshot({ path: `${SHOTS}/origin_colours.png` });
