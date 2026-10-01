@@ -188,11 +188,10 @@ export interface OrgResourceEntry {
   /** When set, the org's own rows exclude rows where this timestamp column is set (soft-deleted). */
   deletedAtColumn?: string;
   /**
-   * THE NEW SYSTEM HOLDS SOME OF THIS KIND TOO (lane MOVER-DELETIONS, 2026-09-26). After an
-   * organization switches its Data tables, its pick lists live in the record store as Tables of
-   * choices (same ids) and the older rows are archived. `"pick_lists"`: the org's own rows also come
-   * from `custom.organization_pick_lists` (features/user-lists/where-lists-live.ts), counted and
-   * listed once per id.
+   * THE RECORD STORE HOLDS THIS KIND (lane MOVER-DELETIONS, 2026-09-26). `"pick_lists"`: the
+   * org's pick lists are Tables of choices in the record store, read from
+   * `custom.organization_pick_lists` (features/user-lists/where-lists-live.ts), counted and listed
+   * once per id.
    */
   alsoInTheNewSystem?: "pick_lists";
   /**
@@ -393,12 +392,11 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "hybrid",
     icon: Table,
     description: "Structured tables of org data.",
-    table: "udt_datasets",
-    schemaName: "workbench",
-    deletedAtColumn: "deleted_at",
-    hasOrgColumn: true,
-    shareKey: "udt_datasets",
-    titleColumn: "description",
+    // A table lives in the record store; the org's Tables page lists them (`orgRoute`).
+    table: null,
+    hasOrgColumn: false,
+    shareKey: null,
+    titleColumn: null,
     orgRoute: "tables",
     scopeable: true,
   },
@@ -410,16 +408,13 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: STRUCTURED_LIST_INFO.contentRole,
     icon: STRUCTURED_LIST_INFO.Icon,
     description: "Reusable, optionally grouped lists of editable option objects.",
-    table: STRUCTURED_LIST_INFO.table,
-    schemaName: STRUCTURED_LIST_INFO.schema,
-    // udt_structured_lists DOES carry organization_id (verified live 2026-06-27);
-    // the prior `false` was stale catalogue drift that hid org-owned lists from
-    // both the inventory count and the org shared-items list.
-    hasOrgColumn: true,
-    deletedAtColumn: "deleted_at",
+    // A list lives in the record store as a Table of choices, read through
+    // `custom.organization_pick_lists` (`alsoInTheNewSystem`).
+    table: null,
+    hasOrgColumn: false,
     alsoInTheNewSystem: "pick_lists",
     shareKey: "structured_list",
-    titleColumn: STRUCTURED_LIST_INFO.titleColumn,
+    titleColumn: null,
     orgRoute: null,
     scopeable: STRUCTURED_LIST_INFO.scopeable,
   },

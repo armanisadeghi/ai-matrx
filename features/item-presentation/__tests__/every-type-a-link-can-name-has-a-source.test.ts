@@ -11,7 +11,10 @@ import { getItemConfig } from "../registry";
 import type { KnownItemType } from "../types";
 
 /** The types the round-3 census found sourceless. */
-const CENSUS: KnownItemType[] = ["agent", "note", "structured_list", "picklist"];
+const CENSUS: KnownItemType[] = ["agent", "note"];
+
+/** Read through the record store's own door (`refineDetail` supplies the loader), never a table. */
+const STORE_READ: KnownItemType[] = ["structured_list", "picklist", "table"];
 
 /**
  * `session` is the one type with genuinely no single canonical table (war-room,
@@ -31,27 +34,28 @@ describe("the sourceless census", () => {
     });
   }
 
+  for (const type of STORE_READ) {
+    it(`${type} loads through the record store's door`, () => {
+      const { config, recognized } = getItemConfig(type);
+      expect(recognized).toBe(true);
+      expect(config.detailSource).toBeUndefined();
+      expect(typeof config.refineDetail).toBe("function");
+    });
+  }
+
   for (const type of DELIBERATELY_SOURCELESS) {
     it(`${type} stays sourceless on purpose, and the reason is written down`, () => {
       expect(getItemConfig(type).config.detailSource).toBeUndefined();
     });
   }
 
-  it("agent, note and the structured lists point at the tables they are stored in", () => {
+  it("agent and note point at the tables they are stored in", () => {
     expect(getItemConfig("agent").config.detailSource).toMatchObject({
       table: "definition",
       schemaName: "agent",
     });
     expect(getItemConfig("note").config.detailSource).toMatchObject({
       table: "notes",
-      schemaName: "workbench",
-    });
-    expect(getItemConfig("structured_list").config.detailSource).toMatchObject({
-      table: "udt_structured_lists",
-      schemaName: "workbench",
-    });
-    expect(getItemConfig("picklist").config.detailSource).toMatchObject({
-      table: "udt_structured_lists",
       schemaName: "workbench",
     });
   });

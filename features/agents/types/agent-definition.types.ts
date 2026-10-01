@@ -85,7 +85,7 @@ export function isMediaVariableType(
 export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];
 
 /**
- * Binding of a variable to a Structured List (`workbench.udt_structured_lists`). When set, the
+ * Binding of a variable to a Structured List (a Table of choices in the record store). When set, the
  * variable's options are hydrated at runtime from the list (labels only — the secret `description`
  * never reaches the client) and the emitted value is a ```matrx reference fence string
  * (`kind:"reference"`, `type:"structured_list_item"`), not text. Orthogonal to `type`, so a
@@ -93,7 +93,7 @@ export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];
  * in the dropdown-projection sense).
  */
 export interface StructuredListBinding {
-  /** udt_structured_lists.id */
+  /** The list's id. */
   listId: string;
   /** Optional: restrict to a single group; otherwise all groups render as sections. */
   groupName?: string;

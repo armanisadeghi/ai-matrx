@@ -14,6 +14,7 @@
  * free.
  */
 
+import { ENTITY_TYPE_METADATA } from "@ai-matrx/associations";
 import { getItemConfig, itemTypeForRecordTable } from "../registry";
 
 describe("V-22's attack: a calendar payload stamped with a foreign table", () => {
@@ -75,9 +76,10 @@ describe("it never guesses", () => {
   );
 
   it("prefers the canonical registration when two types share a table", () => {
-    // `structured_list` and its legacy read-only alias `picklist` both read
-    // `workbench.udt_structured_lists`; the canonical word must win.
-    expect(itemTypeForRecordTable("workbench.udt_structured_lists")).toBe(
+    // `structured_list` and its legacy read-only alias `picklist` share one
+    // entity token, so one record table; the canonical word must win.
+    const meta = ENTITY_TYPE_METADATA.structured_list;
+    expect(itemTypeForRecordTable(`${meta.schema}.${meta.table}`)).toBe(
       "structured_list",
     );
   });

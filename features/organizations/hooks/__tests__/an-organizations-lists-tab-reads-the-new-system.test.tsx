@@ -1,17 +1,13 @@
 /**
- * Lane MOVER-DELETIONS — an organization's Lists tab after Data tables → new system.
+ * Lane MOVER-DELETIONS — an organization's Lists tab reads the record store.
  *
- * The switch archives an organization's older pick lists and each lives on in the record store as a
- * Table of choices under the same id; a new list in a switched organization is born there. The
- * organization's Lists tab (the resource catalogue's `structured_list` entry: useOrgSharedItems for
- * the tab, useContainerInventory for its count, ContainerResourceSheet) read only the older list
- * table, filtered by organization and NOT by archive — so after Harbor Dental Group switched, the tab
- * listed nothing it could open (or the archived older row), and its count said 0. Now:
+ * Every pick list lives in the record store as a Table of choices. The organization's Lists tab
+ * (the resource catalogue's `structured_list` entry: useOrgSharedItems for the tab,
+ * useContainerInventory for its count) must:
  *
- *   A. the tab lists the organization's lists that live in the new system
- *      (`custom.organization_pick_lists`), once per id, beside the live older lists;
- *   B. an archived older list row is never listed (`deleted_at is null`);
- *   C. the tile counts them.
+ *   A. list the organization's lists from the store's list index, once per id;
+ *   B. read no workbench table for them;
+ *   C. count them on the tile.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -40,7 +36,7 @@ const rpcs: string[] = [];
 const client = {
   rpc: jest.fn(async (fn: string) => {
     rpcs.push(fn);
-    // The older-table count: Harbor Dental's older list was archived by the press, so it counts none.
+    // The container count holds no list: lists are counted from the store.
     if (fn === "container_resource_counts") return { data: [{ resource_key: "structured_list", n: 0 }], error: null };
     return { data: [], error: null };
   }),
@@ -48,6 +44,12 @@ const client = {
     from: (table: string) => builder(`${schema}.${table}`, []),
     rpc: async (fn: string) => {
       rpcs.push(`${schema}.${fn}`);
+      if (schema === "custom" && fn === "pick_list_index") {
+        return {
+          data: { lists: [{ id: STORE_LIST, list_name: "Insurance Carriers", description: "Dental plans we bill", updated_at: "2026-09-26T16:26:44Z", item_count: 4 }], archived_ids: [] },
+          error: null,
+        };
+      }
       if (schema === "custom" && fn === "organization_pick_lists") {
         return {
           data: [{ id: STORE_LIST, list_name: "Insurance Carriers", description: "Dental plans we bill", updated_at: "2026-09-26T16:26:44Z", lives_in: "record" }],
@@ -113,19 +115,17 @@ afterEach(() => {
   host.remove();
 });
 
-test("A. the tab lists the organization's lists that live in the new system, once each", () => {
-  expect(rpcs).toContain("custom.organization_pick_lists");
+test("A. the tab lists the organization's lists from the record store, once each", () => {
+  expect(rpcs.some((fn) => fn === "custom.pick_list_index" || fn === "custom.organization_pick_lists")).toBe(true);
   expect(seen.items.filter((i) => i.id === STORE_LIST)).toEqual([
     expect.objectContaining({ id: STORE_LIST, title: "Insurance Carriers" }),
   ]);
 });
 
-test("B. an archived older list row is never listed", () => {
-  const older = calls.find((c) => c.table.endsWith("udt_structured_lists"));
-  expect(older).toBeDefined();
-  expect(older?.chain).toContainEqual(["is", ["deleted_at", null]]);
+test("B. no workbench table is read for the lists", () => {
+  expect(calls.filter((c) => c.table.startsWith("workbench."))).toEqual([]);
 });
 
-test("C. the Lists tile counts the lists in the new system", () => {
+test("C. the Lists tile counts the lists in the record store", () => {
   expect(seen.count).toBe(1);
 });

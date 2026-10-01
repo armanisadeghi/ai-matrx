@@ -1,10 +1,7 @@
 "use client";
 
 /**
- * ListPeek — peek preview for a udt_structured_lists row.
- *
- * Note: udt_structured_lists has no name/title column — the user-facing label is
- * stored in the `description` column, which doubles as the dialog title.
+ * ListPeek — peek preview of a list, read through the list door (`get_user_list_with_items`).
  */
 
 import React from "react";
@@ -27,23 +24,10 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .schema("workbench")
-        .from("udt_structured_lists")
-        .select("description, created_at")
-        .eq("id", id)
-        .is("deleted_at", null)
-        .maybeSingle();
-      let found = (data as ListRow) ?? null;
-      if (!found) {
-        // lane LISTS-AFTER-SWITCH: a list that lives in the new system (its organization
-        // switched its Data tables) is answered by the list door from its Table of choices.
-        const moved = await supabase.rpc("get_user_list_with_items", { p_list_id: id });
-        const doc = (moved.data ?? null) as { lives_in?: string; description?: string | null; list_name?: string | null; created_at?: string } | null;
-        if (!moved.error && doc?.lives_in === "record") {
-          found = { description: doc.description ?? doc.list_name ?? null, created_at: doc.created_at ?? null } as ListRow;
-        }
-      }
+      const read = await supabase.rpc("get_user_list_with_items", { p_list_id: id });
+      const doc = (read.data ?? null) as { description?: string | null; list_name?: string | null; created_at?: string } | null;
+      const found: ListRow | null =
+        !read.error && doc ? { description: doc.list_name ?? doc.description ?? null, created_at: doc.created_at ?? null } : null;
       if (!cancelled) {
         setRow(found);
         setLoading(false);

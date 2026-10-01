@@ -220,6 +220,72 @@ async function fetchRow(
   return map(data as unknown as Record<string, unknown>);
 }
 
+
+// ---------------------------------------------------------------------------
+// The record store's Tables and lists
+// ---------------------------------------------------------------------------
+//
+// A table and a list live in the record store. A table names its OWN organization
+// (`locateTable` → `custom.where_id_opens`) and is read through the data seam; a list
+// through the list door (`get_user_list_with_items`). Loaded on demand: the registry
+// reaches every surface, the seam does not need to.
+
+type StoreRow = { id: string; name: string | null; description: string | null };
+
+async function readStoreTable(id: string): Promise<StoreRow | "unopenable"> {
+  const [{ locateTable }, { readTableDetails }] = await Promise.all([
+    import("@/features/data-tables/data-source/locate-table"),
+    import("@/features/data-tables/service"),
+  ]);
+  const where = await locateTable(id);
+  if (!where.ok) return "unopenable";
+  const details = await readTableDetails(id);
+  if (!details.success) throw new Error(details.error ?? "The table could not be read.");
+  if (!details.table) return "unopenable";
+  return { id, name: details.table.name ?? null, description: details.table.description ?? null };
+}
+
+async function readStoreList(client: SupabaseClient, id: string): Promise<StoreRow | "unopenable"> {
+  const { data, error } = await client.rpc("get_user_list_with_items", { p_list_id: id });
+  if (error) throw new Error(error.message);
+  const doc = (data ?? null) as { list_name?: string | null; description?: string | null } | null;
+  if (!doc) return "unopenable";
+  return { id, name: doc.list_name ?? null, description: doc.description ?? null };
+}
+
+function storeEnrich(
+  read: (client: SupabaseClient, id: string) => Promise<StoreRow | "unopenable">,
+): (client: SupabaseClient, id: string) => Promise<EnrichedItem> {
+  return async (client, id) => {
+    try {
+      const row = await read(client, id);
+      if (row === "unopenable") return { notFound: true };
+      return { name: clip(row.name, 80), about: clip(row.description) };
+    } catch {
+      return {}; // soft-fail — keep the agent-provided fields
+    }
+  };
+}
+
+function storeDetail(
+  read: (client: SupabaseClient, id: string) => Promise<StoreRow | "unopenable">,
+): (base: DetailRecordType) => DetailRecordType {
+  return (base) => ({
+    ...base,
+    load: async (id) => {
+      const { supabase } = await import("@/utils/supabase/client");
+      const row = await read(supabase as unknown as SupabaseClient, id);
+      if (row === "unopenable") return { notFound: true };
+      return { row };
+    },
+    title: (row, seed) =>
+      (typeof row?.name === "string" && row.name.trim()) || seed?.name?.trim() || base.title(null, seed),
+  });
+}
+
+const STORE_TABLE_DETAIL = storeDetail((_client, id) => readStoreTable(id));
+const STORE_LIST_DETAIL = storeDetail(readStoreList);
+
 // ---------------------------------------------------------------------------
 // The registry
 // ---------------------------------------------------------------------------
@@ -619,7 +685,6 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   },
   table: {
     type: "table",
-    // workbench.udt_datasets — same table as the `dataset` token.
     entityToken: "dataset",
     label: "Table",
     icon: Table2,
@@ -629,23 +694,8 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-cyan-500/20",
     },
     open: { kind: "table" },
-    detailSource: {
-      table: "udt_datasets",
-      schemaName: "workbench",
-      titleField: "table_name",
-    },
-    enrich: (s, id) =>
-      fetchRow(
-        s,
-        "udt_datasets",
-        id,
-        "table_name, description",
-        (r) => ({
-          name: clip(r.table_name, 80),
-          about: clip(r.description),
-        }),
-        "workbench",
-      ),
+    refineDetail: STORE_TABLE_DETAIL,
+    enrich: storeEnrich((_client, id) => readStoreTable(id)),
   },
   structured_list: {
     type: "structured_list",
@@ -657,31 +707,14 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-lime-500/20",
     },
     open: { kind: "structured_list" },
-    // NEW-9 — `workbench.udt_structured_lists`, as the enrichment below reads it.
-    detailSource: {
-      table: "udt_structured_lists",
-      schemaName: "workbench",
-      titleField: "list_name",
-    },
-    enrich: (s, id) =>
-      fetchRow(
-        s,
-        "udt_structured_lists",
-        id,
-        "list_name, description",
-        (r) => ({
-          name: clip(r.list_name, 80),
-          about: clip(r.description),
-        }),
-        "workbench",
-      ),
+    refineDetail: STORE_LIST_DETAIL,
+    enrich: storeEnrich(readStoreList),
   },
   // Legacy read-only alias: pre-rename payloads with type "picklist" still open.
   // New payloads use "structured_list". See common-docs/projects/structured-lists-rename.
   picklist: {
     type: "picklist",
-    // workbench.udt_structured_lists — the pre-rename spelling of the
-    // `structured_list` token, reading the identical table.
+    // The pre-rename spelling of the `structured_list` token.
     entityToken: "structured_list",
     label: "Structured List",
     icon: ListChecks,
@@ -691,24 +724,8 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-lime-500/20",
     },
     open: { kind: "structured_list" },
-    // NEW-9 — `workbench.udt_structured_lists`, as the enrichment below reads it.
-    detailSource: {
-      table: "udt_structured_lists",
-      schemaName: "workbench",
-      titleField: "list_name",
-    },
-    enrich: (s, id) =>
-      fetchRow(
-        s,
-        "udt_structured_lists",
-        id,
-        "list_name, description",
-        (r) => ({
-          name: clip(r.list_name, 80),
-          about: clip(r.description),
-        }),
-        "workbench",
-      ),
+    refineDetail: STORE_LIST_DETAIL,
+    enrich: storeEnrich(readStoreList),
   },
   workbook: {
     type: "workbook",
@@ -1033,8 +1050,8 @@ const RECORD_TABLE_TO_ITEM_TYPE: ReadonlyMap<string, KnownItemType> = (() => {
   const map = new Map<string, KnownItemType>();
   const add = (key: string, type: KnownItemType): void => {
     // FIRST registration wins, which is the canonical one: `structured_list` is
-    // declared before its legacy read-only alias `picklist`, and both point at
-    // `workbench.udt_structured_lists`.
+    // declared before its legacy read-only alias `picklist`, and both carry the
+    // same entity token.
     if (!map.has(key.toLowerCase())) map.set(key.toLowerCase(), type);
   };
   for (const [type, config] of Object.entries(REGISTRY) as [

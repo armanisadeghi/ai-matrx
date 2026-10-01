@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * DatasetPeek — quick read-only preview for a udt_datasets row.
+ * DatasetPeek — quick read-only preview of a record-store Table.
  *
- * The table has no "name" column; the human label is "description".
+ * The table names its own organization (`locateTable`), then the data seam reads its details.
  * Same pattern as FilePeek: fetch the row, fill <PeekDialog>.
  */
 
 import React from "react";
 import { Table } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { readTableDetails } from "@/features/data-tables/service";
 import { peekHref } from "../peekHref";
@@ -17,8 +16,7 @@ import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
 interface DatasetRow {
-  description: string | null;
-  created_at: string | null;
+  title: string | null;
 }
 
 export default function DatasetPeek({ id, open, onClose }: PeekProps) {
@@ -29,30 +27,14 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      // A record-store table (born there, or moved there with this same id) is read from the
-      // store; its older copy is archived (lane INTEG-CLIENTS, F12).
       const where = await locateTable(id);
-      if (where.ok && where.store === "record") {
-        const details = await readTableDetails(id);
-        if (!cancelled) {
-          setRow(
-            details.success && details.table
-              ? { description: details.table.description || details.table.name, created_at: null }
-              : null,
-          );
-          setLoading(false);
-        }
-        return;
-      }
-      const { data } = await supabase
-        .schema("workbench")
-        .from("udt_datasets")
-        .select("description, created_at")
-        .eq("id", id)
-        .is("deleted_at", null)
-        .maybeSingle();
+      const details = where.ok ? await readTableDetails(id) : null;
       if (!cancelled) {
-        setRow((data as DatasetRow) ?? null);
+        setRow(
+          details?.success && details.table
+            ? { title: details.table.name || details.table.description || null }
+            : null,
+        );
         setLoading(false);
       }
     })();
@@ -61,8 +43,7 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
     };
   }, [id]);
 
-  const title =
-    row?.description && row.description.trim() ? row.description.trim() : "Dataset";
+  const title = row?.title?.trim() || "Table";
 
   return (
     <PeekDialog
@@ -73,15 +54,7 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
       href={peekHref("dataset", id)}
       loading={loading}
     >
-      {row ? (
-        <>
-          <PeekField label="Created">
-            {row.created_at ? new Date(row.created_at).toLocaleString() : "—"}
-          </PeekField>
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">Dataset not found.</p>
-      )}
+      {row ? null : <p className="text-sm text-muted-foreground">Table not found.</p>}
     </PeekDialog>
   );
 }

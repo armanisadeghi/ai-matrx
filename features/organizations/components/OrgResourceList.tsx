@@ -8,8 +8,10 @@
  *   - `resourceType` drives the permissions-table join (`note`, `agent`, etc.)
  *   - `ownedQuery` returns rows owned by the org directly (where the table
  *     has an `organization_id` column). Pass `null` if the resource table
- *     has no `organization_id` (e.g. `udt_datasets`).
- *   - `tableName` is the canonical Postgres table for hydrating shared rows.
+ *     has no `organization_id`.
+ *   - `tableName` is the canonical Postgres table for hydrating shared rows;
+ *     `hydrateShared` replaces it for a kind read through its own door (the
+ *     record store's Tables).
  *   - `selectColumns` is the projection used by both queries.
  *   - `mapRow` turns a row into a `ResourceCardData` for rendering.
  *
@@ -63,7 +65,10 @@ export interface ResourceCardData {
 export interface OrgResourceListProps {
   orgId: string;
   resourceType: ResourceType;
-  tableName: string;
+  /** Omit only with `hydrateShared`. */
+  tableName?: string;
+  /** Reads the shared rows by id through the kind's own door, instead of `tableName`. */
+  hydrateShared?: (ids: string[]) => Promise<Array<Record<string, unknown>>>;
   selectColumns: string;
   ownedQuery:
     ((orgId: string) => Promise<Array<Record<string, unknown>>>) | null;
@@ -92,6 +97,7 @@ export function OrgResourceList({
   orgId,
   resourceType,
   tableName,
+  hydrateShared,
   selectColumns,
   ownedQuery,
   mapRow,
@@ -129,7 +135,9 @@ export function OrgResourceList({
           .filter((id) => !ownedIds.has(id));
 
         let sharedRows: Array<Record<string, unknown>> = [];
-        if (sharedIds.length > 0) {
+        if (sharedIds.length > 0 && hydrateShared) {
+          sharedRows = await hydrateShared(sharedIds);
+        } else if (sharedIds.length > 0) {
           // Hydrate shared rows from the canonical physical table. For most
           // resources `tableName` IS the physical table in `public`. But some
           // (files/folders, post-2026 canonicalization) live in a non-public
@@ -139,6 +147,7 @@ export function OrgResourceList({
           // `tableName` prop for any unregistered type.
           const entry = getShareableResource(resourceType);
           const physicalTable = entry?.tableName ?? tableName;
+          if (!physicalTable) throw new Error(`No table to read shared ${resourceType} rows from.`);
           const base = (
             entry?.schemaName
               ? supabase.schema(entry.schemaName as never)
@@ -173,7 +182,7 @@ export function OrgResourceList({
     return () => {
       cancelled = true;
     };
-  }, [orgId, resourceType, tableName, selectColumns, ownedQuery, mapRow]);
+  }, [orgId, resourceType, tableName, hydrateShared, selectColumns, ownedQuery, mapRow]);
 
   if (loading) {
     return (
