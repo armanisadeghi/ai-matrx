@@ -42,7 +42,9 @@ Every stream item below adds its case there.
       `~~~` is a real fence in the prefilter, accumulator (FenceReader closer) and static splitter.
 - [x] A5. Kind object on the same line as prose → raw until stream end.
       Split live the moment `__kind` is visible (fragment) or the line completes; reload trims prose pieces the same way.
-- [ ] A6. Array of kinds → raw mid-stream; leftover `[` `,` `]` render as tiny JSON cards after.
+- [x] A6. Array of kinds → raw mid-stream; leftover `[` `,` `]` render as tiny JSON cards after.
+      Bare: each element is its own live region (`kind_array` substate, held until the first key). Fenced: the
+      first-key gate holds a kindless/errored envelope. `[` `,` `]` are `chrome` pieces, never blocks (both hosts).
 - [ ] A7. Kind nested inside a non-kind object → whole region should show as could-be-kind; wrapper
       fragments left broken after recovery.
 - [ ] A8. Kind inside a simple XML tag → rescued only at tag close.
