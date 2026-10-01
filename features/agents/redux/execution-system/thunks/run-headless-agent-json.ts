@@ -126,7 +126,14 @@ export interface HeadlessAgentJsonOptions {
   expect?: "json" | "text";
   /** Let the extractor fuzzy-parse at finalize. Default true. */
   fuzzyOnFinalize?: boolean;
-  /** Overall ceiling for the run + extraction. Default 120s. */
+  /**
+   * Ceiling on waiting for the extraction once the launch returns. Default
+   * 120s. NOT an end-to-end bound: a direct/background launch awaits the whole
+   * stream first, which only heartbeat loss ends — so a run whose server
+   * never answers is not bounded by this. Need a real deadline? Race the call
+   * against your own timer and cancel the run (`convert/runAgentExtraction`
+   * `signal`, used by `segmentedGenerate`'s per-section deadline).
+   */
   timeoutMs?: number;
   /** Poll cadence (floored to 100ms). Default 250ms. */
   pollIntervalMs?: number;

@@ -21,6 +21,16 @@
 // through `ctx.onProgress` instead of a token stream. A single-section run
 // (a short paste) keeps the old live behaviour, and its conversationId is
 // returned so the caller can still go through the single-writer dedupe path.
+//
+// THE NO-FREEZE RULE (2026-09-30). A 4-card deck from an 87k-character
+// transcript sat on "Making 4 cards" for 20+ minutes: the section calls were
+// awaited with no end-to-end bound (the agent launch awaits the whole stream,
+// so the old 120s "ceiling" only covered extraction after it), and a section
+// whose server never answered held the run forever while the line never
+// moved. Now every attempt has a deadline and is cancelled when it passes; a
+// stalled or failed section is tried ONCE more; a section that still fails is
+// reported the moment it fails; and progress ticks from the start. The run
+// always ends, with whatever the sections that answered produced.
 
 import {
   describeGaps,
@@ -70,7 +80,11 @@ export interface SegmentedGenerateArgs<T> {
    * `isNearDuplicateQA` for the question/answer rule every list target uses.
    */
   sameAs?: (a: T, b: T) => boolean;
-  /** Per-section ceiling. Defaults to 120s (one section is a small ask). */
+  /**
+   * Deadline for ONE attempt at one section, end to end (launch, stream and
+   * extraction). Defaults to 120s — one section is a small ask. A section that
+   * misses it is cancelled and tried once more (see THE NO-FREEZE RULE).
+   */
   timeoutMs?: number;
 }
 
@@ -89,6 +103,11 @@ export interface SegmentedGenerateResult<T> {
   /** Sections that produced nothing. */
   missedCount: number;
 }
+
+/** One section's end-to-end deadline per attempt, when the caller names none. */
+export const SECTION_ATTEMPT_DEADLINE_MS = 120_000;
+/** A section is tried this many times before it is reported missed. */
+export const SECTION_MAX_ATTEMPTS = 2;
 
 const STOPWORDS = new Set(
   "a an and are as at be by can do does did for from how in into is it its of on or the this that to was were what when where which who whom why will with you your".split(
@@ -185,31 +204,90 @@ export async function segmentedGenerate<T>({
   let conversationId: string | null = null;
   let settled = 0;
   let itemCount = 0;
+  let failed = 0;
+  let retrying = 0;
+  const deadlineMs = timeoutMs ?? SECTION_ATTEMPT_DEADLINE_MS;
+  const total = plan.segments.length;
+  const report = (label: string) =>
+    ctx.onProgress?.({ done: settled, total, label, items: itemCount, failed, retrying });
+
+  // Ticks from the start: the person sees the run is under way before the
+  // first section answers (a long source can take a minute to its first).
+  report("");
+
+  /** One attempt at one section, bounded end to end by `deadlineMs`. */
+  const attempt = async (segment: SourceSegment) => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        // Cancels the stalled call (server told to stop, local read closed).
+        controller.abort();
+        reject(
+          new Error(
+            `No answer within ${Math.round(deadlineMs / 1000)}s for section ${segment.index} of ${segment.total}`,
+          ),
+        );
+      }, deadlineMs);
+    });
+    try {
+      return await Promise.race([
+        runAgentExtraction(ctx.dispatch, ctx.store, {
+          mandateKey,
+          surfaceKey,
+          sourceFeature,
+          organizationId: ctx.orgId,
+          // THE COUNT LAW's spare: with an explicit count each section is asked
+          // for one more than its share, so a dropped duplicate or a short
+          // answer elsewhere is filled from the spares instead of shipping
+          // fewer than the person asked for. The merge still keeps only shares
+          // first and trims to the total.
+          variables: variables(
+            options?.count ? { ...segment, items: segment.items + 1 } : segment,
+            plan,
+          ),
+          timeoutMs: deadlineMs,
+          signal: controller.signal,
+          live,
+          // Only a single-pass run has a stream worth showing; a fan-out reports
+          // sections instead (see THE SINGLE-WRITER RULE above).
+          onRequestId: live ? ctx.onRequestId : undefined,
+          onConversationCreated: live ? ctx.onConversationCreated : undefined,
+        }),
+        deadline,
+      ]);
+    } finally {
+      clearTimeout(timer);
+      // A call that lost the race is no longer anyone's (THE NO-FREEZE RULE).
+      deadline.catch(() => {});
+    }
+  };
 
   const { results, missed } = await runOverSegments(
     plan.segments,
     async (segment) => {
-      const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-        mandateKey,
-        surfaceKey,
-        sourceFeature,
-        organizationId: ctx.orgId,
-        // THE COUNT LAW's spare: with an explicit count each section is asked
-        // for one more than its share, so a dropped duplicate or a short
-        // answer elsewhere is filled from the spares instead of shipping
-        // fewer than the person asked for. The merge still keeps only shares
-        // first and trims to the total.
-        variables: variables(
-          options?.count ? { ...segment, items: segment.items + 1 } : segment,
-          plan,
-        ),
-        timeoutMs: timeoutMs ?? 120_000,
-        live,
-        // Only a single-pass run has a stream worth showing; a fan-out reports
-        // sections instead (see THE SINGLE-WRITER RULE above).
-        onRequestId: live ? ctx.onRequestId : undefined,
-        onConversationCreated: live ? ctx.onConversationCreated : undefined,
-      });
+      let extracted: Awaited<ReturnType<typeof attempt>> | null = null;
+      for (let n = 1; extracted === null; n++) {
+        try {
+          extracted = await attempt(segment);
+        } catch (error) {
+          if (n >= SECTION_MAX_ATTEMPTS) {
+            if (n > 1) retrying -= 1;
+            settled += 1;
+            failed += 1;
+            // Reported the moment it fails, never held to the end of the run.
+            report(segment.label);
+            throw error;
+          }
+          console.warn(
+            `[convert/segmentedGenerate] section ${segment.id} (${segment.label}) attempt ${n} failed — retrying:`,
+            error,
+          );
+          if (n === 1) retrying += 1;
+          report(segment.label);
+        }
+        if (extracted !== null && n > 1) retrying -= 1;
+      }
       if (firstValue === null) {
         firstValue = extracted.value;
         if (live) conversationId = extracted.conversationId;
@@ -222,27 +300,11 @@ export async function segmentedGenerate<T>({
       // most its own share, and the running total never passes the request —
       // the merge below keeps exactly that many.
       itemCount = progressItemCount(itemCount, items.length, segment.items, options?.count ? plan.total : undefined);
-      ctx.onProgress?.({
-        done: settled,
-        total: plan.segments.length,
-        label: segment.label,
-        items: itemCount,
-      });
+      report(segment.label);
       return items;
     },
     concurrency,
   );
-
-  // A failed section still advances the counter the student is watching.
-  for (const m of missed) {
-    settled += 1;
-    ctx.onProgress?.({
-      done: settled,
-      total: plan.segments.length,
-      label: m.label,
-      items: itemCount,
-    });
-  }
 
   // An explicit count is a promise (THE COUNT LAW); a source-scaled run keeps
   // everything its sections wrote.

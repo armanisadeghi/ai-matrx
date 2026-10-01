@@ -185,6 +185,10 @@ export interface ConvertProgress {
   label: string;
   /** Items produced so far across the whole artifact. */
   items: number;
+  /** Sections that settled without an answer (after their retry). */
+  failed?: number;
+  /** Sections being tried again right now after a stall or a failure. */
+  retrying?: number;
 }
 
 /**

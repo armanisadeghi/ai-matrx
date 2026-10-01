@@ -334,8 +334,10 @@ function AddMoreCardsDialog({
         });
         if (made.cards.length === 0) {
           throw new Error(
-            made.gapNote ??
-              "Nothing new came out of this material — the deck already covers it. Add other material and try again.",
+            made.missed > 0 && made.missed >= made.sections
+              ? "The AI did not answer in time, so no cards were made. Try again."
+              : (made.gapNote ??
+                  "Nothing new came out of this material — the deck already covers it. Add other material and try again."),
           );
         }
         setStatus("Adding them to your deck…");

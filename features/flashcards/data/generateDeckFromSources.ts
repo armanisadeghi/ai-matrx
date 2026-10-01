@@ -279,6 +279,8 @@ export interface CardsFromSourcesOutcome {
   sources: ResolvedSource[];
   gapNote: string | null;
   sections: number;
+  /** Sections that produced nothing (stalled or failed, after their retry). */
+  missed: number;
   singlePass: boolean;
   conversationId: string | null;
   firstValue: unknown;
@@ -380,6 +382,7 @@ export async function generateCardsFromSources({
     sources,
     gapNote: covered.gapNote,
     sections: covered.plan.segments.length,
+    missed: covered.missedCount,
     singlePass: covered.plan.singlePass,
     conversationId: covered.conversationId,
     firstValue: covered.firstValue,
@@ -428,9 +431,11 @@ export async function generateDeckFromSources({
   });
   const { cards, sources } = covered;
   if (cards.length === 0) {
+    // No deck exists, so the gap note's "Add more" remedy points at nothing.
     throw new Error(
-      covered.gapNote ??
-        "The flashcard job finished but returned no usable cards. Try again, or pick different parts.",
+      covered.missed > 0 && covered.missed >= covered.sections
+        ? "The AI did not answer in time, so no cards were made. Try again."
+        : "The flashcard job finished but returned no usable cards. Try again, or pick different parts.",
     );
   }
 

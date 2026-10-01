@@ -15,4 +15,19 @@ describe("cardProgressLine", () => {
     expect(cardProgressLine({ done: 0, total: 1, label: "", items: 0 }, 5)).toBeNull();
     expect(cardProgressLine(null, 5)).toBeNull();
   });
+  it("shows a slow part being retried and a missed part as state, never a frozen line", () => {
+    expect(cardProgressLine({ done: 0, total: 4, label: "", items: 0 }, 4)).toBe("Making 4 cards — 0 ready");
+    expect(cardProgressLine({ done: 2, total: 4, label: "", items: 2, retrying: 1 }, 4)).toBe(
+      "Making 4 cards — 2 ready · retrying 1 part",
+    );
+    expect(cardProgressLine({ done: 4, total: 4, label: "", items: 3, failed: 1 }, 4)).toBe(
+      "Making 4 cards — 3 ready · 1 part missed",
+    );
+    for (const p of [
+      { done: 1, total: 40, label: "", items: 49, retrying: 12 },
+      { done: 40, total: 40, label: "", items: 38, failed: 12 },
+    ]) {
+      expect((cardProgressLine(p, 50, "new cards") ?? "").length).toBeLessThanOrEqual(60);
+    }
+  });
 });
