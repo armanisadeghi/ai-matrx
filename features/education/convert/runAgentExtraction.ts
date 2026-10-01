@@ -38,6 +38,8 @@ export interface RunAgentExtractionOpts {
   pollIntervalMs?: number;
   /** Fires with the live requestId the moment it is known (for live UI). */
   onRequestId?: (requestId: string) => void;
+  /** Fires with the run's conversation id before the stream starts. */
+  onConversationCreated?: (conversationId: string) => void;
   /**
    * Whether this run is a VISIBLE one the caller renders.
    *
@@ -100,6 +102,7 @@ export async function runAgentExtraction(
     // race-lost duplicate of a single live run (both seen live 2026-09-28).
     surfaceOwnsOutput: true,
     onRequestId: opts.onRequestId,
+    ...(opts.onConversationCreated ? { onConversationCreated: opts.onConversationCreated } : {}),
     failureMessages: {
       streamError: "The generation agent failed before returning a result",
       noJson:

@@ -238,6 +238,12 @@ export interface DeckFromSourcesInput {
    * "saving" here so a reload after it is never redone blind (useTabBoundRun).
    */
   beforeSave?: () => Promise<void>;
+  /**
+   * A retry of a run that stopped with its page: that run's conversations.
+   * The save continues a deck already made for them instead of adding a
+   * second one (`fcService.createGeneratedSetForConversation`).
+   */
+  continues?: readonly string[];
 }
 
 export interface DeckFromSourcesOutcome {
@@ -406,6 +412,7 @@ export async function generateDeckFromSources({
   name,
   ctx,
   beforeSave,
+  continues,
 }: DeckFromSourcesInput): Promise<DeckFromSourcesOutcome> {
   const live = resolved.sources.filter((s) => s.text.trim().length > 0);
   const baseTitle = name?.trim() || defaultDeckName(live);
@@ -446,6 +453,7 @@ export async function generateDeckFromSources({
       orgId: ctx.orgId,
     },
     cards,
+    { continues },
   );
   if (created.error || !created.data) {
     throw new Error(

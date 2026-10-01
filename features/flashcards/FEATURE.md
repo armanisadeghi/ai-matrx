@@ -83,6 +83,14 @@ own fresh conversation):
   chat behavior is unchanged.
 - Pinned by [`data/__tests__/generated-set-single-writer.test.ts`](./data/__tests__/generated-set-single-writer.test.ts).
 
+- **One run, one deck — Try again continues the stopped run's deck (2026-09-30).** A
+  tab-bound run records every conversation it runs in (`useTabBoundRun` → `attach`); after a
+  reload, Try again passes them as `continues`, and `createGeneratedSetForConversation(…, { continues })`
+  continues a deck already made for them (`findGeneratedSetForConversations` →
+  `continueGeneratedSet`: half-made cards archived, the retry's cards added, renamed, restamped
+  with the retry's conversation + `continued_from`) instead of saving a second one. Pinned by
+  [`data/__tests__/try-again-continues-the-stopped-runs-deck.test.ts`](./data/__tests__/try-again-continues-the-stopped-runs-deck.test.ts).
+
 ### Known limits (single-writer)
 
 - The dedupe is look-before-write, not a DB constraint (a global unique on

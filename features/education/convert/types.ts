@@ -161,6 +161,12 @@ export interface ConvertContext {
    */
   onRequestId?: (requestId: string) => void;
   /**
+   * Optional: called with the live run's conversation id as soon as it exists
+   * (before the stream), so a tab-bound run can record it and a retry can
+   * continue whatever was already made for it. Safe to ignore.
+   */
+  onConversationCreated?: (conversationId: string) => void;
+  /**
    * Optional live hook for a SEGMENTED generation (`coverage.ts`): fires as each
    * coverage section settles, so the kit board can say "section 3 of 8 -
    * Measurements" instead of showing one spinner for a run that is deliberately

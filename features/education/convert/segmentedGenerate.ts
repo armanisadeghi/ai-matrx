@@ -208,6 +208,7 @@ export async function segmentedGenerate<T>({
         // Only a single-pass run has a stream worth showing; a fan-out reports
         // sections instead (see THE SINGLE-WRITER RULE above).
         onRequestId: live ? ctx.onRequestId : undefined,
+        onConversationCreated: live ? ctx.onConversationCreated : undefined,
       });
       if (firstValue === null) {
         firstValue = extracted.value;

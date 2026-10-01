@@ -623,6 +623,88 @@ export const fcService = {
   },
 
   /**
+   * The oldest live deck made for any of these conversations, by either
+   * writer (the chat adapter or a surface save) — the deck an interrupted
+   * attempt of a run left behind.
+   */
+  async findGeneratedSetForConversations(
+    conversationIds: readonly string[],
+  ): Promise<FcResult<FcSetRow | null>> {
+    if (conversationIds.length === 0) return { data: null, error: null };
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .select("*")
+        .in("metadata->>conversation_id", [...conversationIds])
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      if (error) return fail("findGeneratedSetForConversations", error);
+      const row = (data ?? [])[0] as FcSetRow | undefined;
+      return { data: row ? withDisplayTitle(row, "name") : null, error: null };
+    } catch (e) {
+      return fail("findGeneratedSetForConversations", e);
+    }
+  },
+
+  /**
+   * Make an earlier attempt's deck the run's deck: its half-made cards are
+   * archived, the run's cards become its cards, it takes the run's name, and
+   * it is restamped with the run's conversation (so the single-writer dedupe
+   * finds it) plus `continued_from`. A twin the adapter made for THIS
+   * attempt's conversation is archived — one run, one deck.
+   */
+  async continueGeneratedSet(
+    earlier: FcSetRow,
+    conversationId: string | null,
+    continues: readonly string[],
+    input: NewSetInput,
+    cards: NewCardInput[],
+  ): Promise<FcResult<SetWithCards>> {
+    const current = await this.getSetWithCards(earlier.id);
+    if (!current.data) return { data: null, error: current.error };
+    for (const card of current.data.cards) {
+      const archived = await this.deleteCard(card.id, card.version);
+      if (archived.error) return { data: null, error: archived.error };
+    }
+    const added = await this.addCards(earlier.id, cards, {
+      orgId: earlier.organization_id,
+    });
+    if (added.error) return { data: null, error: added.error };
+    const updated = await this.updateSet(earlier.id, {
+      name: input.name,
+      topic: input.topic ?? null,
+      difficulty: input.difficulty ?? null,
+      ...(input.description !== undefined ? { description: input.description } : {}),
+    });
+    if (!updated.data) return { data: null, error: updated.error };
+    const stamped = await this.mergeSetMetadata(earlier.id, (meta) => ({
+      ...meta,
+      ...(conversationId
+        ? {
+            source_system: "cx_conversation",
+            source_id: conversationId,
+            conversation_id: conversationId,
+          }
+        : {}),
+      generation: "surface_save",
+      continued_from: [...continues],
+    }));
+    if (stamped.error) return { data: null, error: stamped.error };
+    if (conversationId) {
+      const twin = await this.findChatGeneratedSetForConversation(conversationId);
+      if (twin.data && twin.data.id !== earlier.id) {
+        console.warn(
+          "[fcService.continueGeneratedSet] archiving this attempt's twin deck; the run continues its earlier deck:",
+          { twin: twin.data.id, deck: earlier.id },
+        );
+        await this.deleteSet(twin.data.id);
+      }
+    }
+    return this.getSetWithCards(earlier.id);
+  },
+
+  /**
    * THE canonical surface-save path for an agent-generated deck. Adopt the
    * adapter's set when it already exists for this run's conversation
    * (enriching it with the surface's name/topic/difficulty — the cards are
@@ -634,7 +716,19 @@ export const fcService = {
     conversationId: string | null,
     input: NewSetInput,
     cards: NewCardInput[],
+    opts: { continues?: readonly string[] } = {},
   ): Promise<FcResult<SetWithCards>> {
+    // ONE RUN, ONE DECK. A retry of a run that stopped with its page passes
+    // that run's conversations: a deck already made for them (the chat
+    // renderer can materialize one mid-generation) is THIS run's deck, so it
+    // is continued — never left behind as an orphan beside a second deck.
+    const continues = (opts.continues ?? []).filter((id) => id && id !== conversationId);
+    if (continues.length > 0) {
+      const earlier = await this.findGeneratedSetForConversations(continues);
+      if (earlier.data) {
+        return this.continueGeneratedSet(earlier.data, conversationId, continues, input, cards);
+      }
+    }
     if (conversationId) {
       const twin =
         await this.findChatGeneratedSetForConversation(conversationId);

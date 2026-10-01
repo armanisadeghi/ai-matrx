@@ -94,6 +94,12 @@ const resolution = resolveWizardStep<1 | 2>({
 
 ## Change Log
 
+- 2026-09-30 — `useTabBoundRun` records the run's conversations (`attach`, third
+  argument of `work`); `stopped.conversationIds` hands them back and
+  `track(…, { continues })` carries them into a retry, so Try again continues a
+  deck already made for them (flashcards: one run, one deck). Guard: the last
+  case in `__tests__/tab-bound-run.test.tsx`.
+
 - `2026-09-30` — Two data-loss/duplication fixes. (1) Nothing reaches storage
   before the saved drafts are read: `wizardDraftPolicy.holdUntilHydrated` (new
   sync policy flag) — a `?source=` link on /education/flashcards/new used to

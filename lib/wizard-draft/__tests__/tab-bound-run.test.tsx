@@ -218,3 +218,51 @@ test("a run whose save resolves while the page is closing leaves nothing to redo
   mount(reloadedStore(bytes));
   expect(latest!.stopped).toBeNull();
 });
+
+// ── ONE RUN, ONE DECK (2026-09-30) ──────────────────────────────────────────
+// A deck can be created for a run's conversation before the run's own save
+// (the chat renderer). If the page reloads then, "Try again" must continue
+// THAT deck, so the stopped run hands back every conversation it ran in, and
+// the retry carries them forward (a retry interrupted again still knows them).
+test("a stopped run hands back the conversations it ran in, and a retry carries them on", async () => {
+  const store = makeStore();
+  mount(store);
+  act(() => {
+    void latest!.track({ count: 3, material: "chapter 4" }, (_settle, _saving, attach) => {
+      attach("conv-first");
+      return new Promise<never>(() => {});
+    });
+  });
+  act(() => {
+    window.dispatchEvent(new Event("beforeunload"));
+  });
+  const bytes = persisted(store);
+  unmount();
+  forgetRunsInThisPageForTest();
+
+  const reloaded = reloadedStore(bytes);
+  mount(reloaded);
+  expect(latest!.stopped?.conversationIds).toEqual(["conv-first"]);
+
+  // Try again: the retry continues the stopped run's conversations, and adds its own.
+  const continues = latest!.stopped!.conversationIds;
+  act(() => latest!.dismiss());
+  act(() => {
+    void latest!.track(
+      { count: 3, material: "chapter 4" },
+      (_settle, _saving, attach) => {
+        attach("conv-second");
+        return new Promise<never>(() => {});
+      },
+      { continues },
+    );
+  });
+  act(() => {
+    window.dispatchEvent(new Event("beforeunload"));
+  });
+  const again = persisted(reloaded);
+  unmount();
+  forgetRunsInThisPageForTest();
+  mount(reloadedStore(again));
+  expect(latest!.stopped?.conversationIds).toEqual(["conv-first", "conv-second"]);
+});

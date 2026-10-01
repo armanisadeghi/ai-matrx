@@ -215,6 +215,9 @@ export function CreateDeckPage() {
   // request is kept so the page says so and repeats it in one click.
   const tabRun = useTabBoundRun(CREATE_DECK_RUN_KEY, restoreCardRunRequest);
   const [redoCount, setRedoCount] = useState<number | null>(null);
+  // One run, one deck: Try again hands the stopped run's conversations to the
+  // next run, whose save continues a deck already made for them.
+  const continuesRef = useRef<readonly string[]>([]);
 
   // ── A Source handed over in the link (old "from a document" links) ───────
   const seeded = useRef(false);
@@ -304,16 +307,24 @@ export function CreateDeckPage() {
     startNavigation(() => router.push(`${EDU_BASE}/${setId}`));
   };
 
-  const runFromTopic = async (saving: () => Promise<void>) => {
+  const runFromTopic = async (
+    saving: () => Promise<void>,
+    attach: (conversationId: string) => void,
+    continues: readonly string[],
+  ) => {
     setPhase("generating");
-    const extracted = await topicRun.generate(FC_MANDATES.generateCards, {
-      topic,
-      count: safeCount,
-      difficulty,
-      grade_level: gradeLevel.trim() || undefined,
-      user_request: focus.trim() || undefined,
-      depth,
-    });
+    const extracted = await topicRun.generate(
+      FC_MANDATES.generateCards,
+      {
+        topic,
+        count: safeCount,
+        difficulty,
+        grade_level: gradeLevel.trim() || undefined,
+        user_request: focus.trim() || undefined,
+        depth,
+      },
+      { onConversationCreated: attach },
+    );
     setPhase("saving");
     // The envelope that drove the live preview is the persistence source.
     const fromEnvelope = envelopeRef.current
@@ -335,6 +346,7 @@ export function CreateDeckPage() {
         difficulty,
       },
       result.cards,
+      { continues },
     );
     if (saved.error || !saved.data) {
       throw new Error(saved.error ?? "The cards were made but the deck could not be saved. Try again.");
@@ -342,7 +354,11 @@ export function CreateDeckPage() {
     await finish(saved.data.set.id, saved.data.set.name, saved.data.cards.length, null);
   };
 
-  const runFromSources = async (saving: () => Promise<void>) => {
+  const runFromSources = async (
+    saving: () => Promise<void>,
+    attach: (conversationId: string) => void,
+    continues: readonly string[],
+  ) => {
     setPhase("reading");
     const orgId = await ensureOrgId(undefined);
     // What the deck is made from, exactly as chosen (parts, form, limit) and as
@@ -378,9 +394,11 @@ export function CreateDeckPage() {
         store,
         orgId,
         onRequestId: setLiveRequestId,
+        onConversationCreated: attach,
         onProgress: setProgress,
       },
       beforeSave: saving,
+      continues,
     });
     setPhase("saving");
     const notRecorded = await saveDeckSourceSet(outcome.setId, chosen, chosenNames);
@@ -396,13 +414,16 @@ export function CreateDeckPage() {
     setNotes([]);
     setProgress(null);
     setLiveRequestId(null);
+    const continues = continuesRef.current;
+    continuesRef.current = [];
     try {
       await tabRun.track(
         cardRunRequest(safeCount, set.toSourceSet(), sourceNamesOf(set.sources), topic),
-        async (_settle, saving) => {
-          if (hasSources) await runFromSources(saving);
-          else await runFromTopic(saving);
+        async (_settle, saving, attach) => {
+          if (hasSources) await runFromSources(saving, attach, continues);
+          else await runFromTopic(saving, attach, continues);
         },
+        { continues },
       );
     } catch (e) {
       // "Not now" at the organization picker: nothing happened, nothing to say.
@@ -441,6 +462,7 @@ export function CreateDeckPage() {
   const redoStopped = () => {
     const req = stoppedRun?.request;
     if (!req) return;
+    continuesRef.current = stoppedRun?.conversationIds ?? [];
     tabRun.dismiss();
     for (const s of set.sources) set.remove(s.id);
     for (const draft of req.drafts) set.addReady(draft);

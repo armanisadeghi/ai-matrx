@@ -74,6 +74,11 @@ export interface RunMarker {
   closedAt?: number;
   /** Set (and flushed to disk) just before the run's save was sent. */
   savingAt?: number;
+  /**
+   * Every conversation the run (and the attempts it continues) ran in — so a
+   * retry can find and continue a deck already made for one of them.
+   */
+  conversationIds?: string[];
   request: Record<string, unknown>;
 }
 
@@ -106,6 +111,9 @@ export function readRunMarker(data: unknown): RunMarker | null {
     beatAt: d.beatAt,
     ...(typeof d.closedAt === "number" ? { closedAt: d.closedAt } : {}),
     ...(typeof d.savingAt === "number" ? { savingAt: d.savingAt } : {}),
+    ...(Array.isArray(d.conversationIds)
+      ? { conversationIds: d.conversationIds.filter((c): c is string => typeof c === "string") }
+      : {}),
     request: d.request as Record<string, unknown>,
   };
 }
@@ -134,18 +142,32 @@ export interface TabBoundRun<R> {
    * `whileSaving`: it had already sent its save, which may have landed —
    * never offer the same request again in one click.
    */
-  stopped: { request: R; startedAt: number; whileSaving: boolean } | null;
+  stopped: {
+    request: R;
+    startedAt: number;
+    whileSaving: boolean;
+    /** The conversations it ran in — pass as `continues` to its retry. */
+    conversationIds: string[];
+  } | null;
   /** Another open tab is running this right now. */
   runningElsewhere: boolean;
   /**
    * Run `work` as a tab-bound run of `request`: the marker is written before it
    * starts and cleared when it settles (resolve or throw). Use `settle()` to
    * clear it earlier, once the result is safely stored. `await saving()`
-   * immediately before sending the save (see the file header).
+   * immediately before sending the save (see the file header). Call
+   * `attach(conversationId)` as soon as each conversation of the run exists.
+   * A retry passes `continues` (the stopped run's `conversationIds`), so the
+   * marker keeps them if the retry is interrupted too.
    */
   track: <T>(
     request: Record<string, unknown>,
-    work: (settle: () => void, saving: () => Promise<void>) => Promise<T>,
+    work: (
+      settle: () => void,
+      saving: () => Promise<void>,
+      attach: (conversationId: string) => void,
+    ) => Promise<T>,
+    opts?: { continues?: readonly string[] },
   ) => Promise<T>;
   /** "Seen it" — drop the stopped run (the person dismissed or redid it). */
   dismiss: () => void;
@@ -186,16 +208,22 @@ export function useTabBoundRun<R>(
 
   const track = async <T,>(
     request: Record<string, unknown>,
-    work: (settle: () => void, saving: () => Promise<void>) => Promise<T>,
+    work: (
+      settle: () => void,
+      saving: () => Promise<void>,
+      attach: (conversationId: string) => void,
+    ) => Promise<T>,
+    opts: { continues?: readonly string[] } = {},
   ): Promise<T> => {
     const runId = newRunId();
     const startedAt = Date.now();
+    const conversationIds = [...(opts.continues ?? [])];
     liveHere.add(runId);
     dispatch(clearWizardDraft(draftId));
     dispatch(
       patchWizardDraft({
         wizardId: draftId,
-        patch: { runId, startedAt, beatAt: startedAt, request },
+        patch: { runId, startedAt, beatAt: startedAt, request, conversationIds: [...conversationIds] },
       }),
     );
     let settled = false;
@@ -238,6 +266,14 @@ export function useTabBoundRun<R>(
       dispatch(clearWizardDraft(draftId));
     };
     const settle = () => finish(true);
+    const attach = (conversationId: string) => {
+      if (!conversationId || conversationIds.includes(conversationId)) return;
+      conversationIds.push(conversationId);
+      if (ours())
+        dispatch(
+          patchWizardDraft({ wizardId: draftId, patch: { conversationIds: [...conversationIds] } }),
+        );
+    };
     const saving = async () => {
       if (!ours()) return;
       dispatch(patchWizardDraft({ wizardId: draftId, patch: { savingAt: Date.now() } }));
@@ -247,7 +283,7 @@ export function useTabBoundRun<R>(
     };
     let result: T;
     try {
-      result = await work(settle, saving);
+      result = await work(settle, saving, attach);
     } catch (err) {
       finish(false);
       throw err;
@@ -259,7 +295,12 @@ export function useTabBoundRun<R>(
   return {
     stopped:
       restored && marker
-        ? { request: restored, startedAt: marker.startedAt, whileSaving: marker.savingAt !== undefined }
+        ? {
+            request: restored,
+            startedAt: marker.startedAt,
+            whileSaving: marker.savingAt !== undefined,
+            conversationIds: marker.conversationIds ?? [],
+          }
         : null,
     runningElsewhere: state === "elsewhere",
     track,
