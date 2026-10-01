@@ -95,6 +95,8 @@ const PROMO = [
 ];
 /** Developer demo pages — scanned only with --include-dev. */
 const DEV = [/^app\/\(dev\)\//, /\/demos?\//, /\.dev\.tsx$/, /\/lab\//, /\/test-bench\//, /\/bakeoff\//];
+/** .ts files that never hold rendered copy. */
+const TS_SKIP = /(\.d\.ts|\/types?\.ts|\/service\.ts|\/api\/|\/server\/|\/redux\/|\/hooks?\/|route\.ts|\.generated\.ts|\/schemas?\/|\/prompts?\/|\/tools?\/)$|\/(api|server|redux|schemas?|prompts?|mcp|manifests|registry|mocks?|fixtures?)\/|\/(kinds|handlers|runtime)\/|\.manifest\.ts$|mock(-data)?\.ts$|AdminMap\.ts$|\/copy\.ts$/;
 const SKIP = [
   /\.test\.tsx$/, /\.spec\.tsx$/, /\.stories\.tsx$/, /\/__tests__\//, /\/__fixtures__\//,
   /^scripts\//, /\/self-test\//, /^packages\/.*\/test\//,
@@ -262,7 +264,8 @@ function isKept(file, text) {
 }
 
 export function scanSource(file, source) {
-  const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const isTs = file.endsWith(".ts");
+  const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, isTs ? ts.ScriptKind.TS : ts.ScriptKind.TSX);
   collectConsts(sf);
   const findings = [];
   const lineOf = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
@@ -411,7 +414,9 @@ export function scanSource(file, source) {
 // ---------------------------------------------------------------------------
 
 function trackedTsx() {
-  const out = execFileSync("git", ["ls-files", "*.tsx"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  // .ts files too — UI copy kept in data files (round-2 confirm: mandates admin `tables.ts` blurbs);
+  // in a .ts file only the data-array rule runs (no JSX there).
+  const out = execFileSync("git", ["ls-files", "*.tsx", "features/**/*.ts", "components/**/*.ts", "app/**/*.ts"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   return out.split("\n").filter(Boolean);
 }
 
@@ -432,7 +437,7 @@ function resolveTargets() {
       .filter((f) => f.endsWith(".tsx"));
     files = files.filter((f) => changed.includes(f)).concat(changed.filter((f) => !files.includes(f) && existsSync(resolve(ROOT, f))));
   }
-  return files.filter((f) => !SKIP.some((re) => re.test(f))
+  return files.filter((f) => !(f.endsWith(".ts") && TS_SKIP.test(f))).filter((f) => !SKIP.some((re) => re.test(f))
     && (FLAGS.has("--include-promo") || !PROMO.some((re) => re.test(f)))
     && (FLAGS.has("--include-dev") || PATHS.length > 0 || !DEV.some((re) => re.test(f))));
 }
