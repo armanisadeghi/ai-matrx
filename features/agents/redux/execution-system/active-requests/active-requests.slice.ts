@@ -114,6 +114,51 @@ function closeOpenTextRun(request: ActiveRequest, timestamp: number): void {
 }
 
 /**
+ * Timeline kinds that place content (or a new run) after a closed text run.
+ * Once one of these follows the last `text_end`, a later block can no longer
+ * belong to that run.
+ */
+const CONTENT_AFTER_TEXT_RUN_KINDS: ReadonlySet<TimelineEntry["kind"]> =
+  new Set([
+    "text_start",
+    "reasoning_start",
+    "reasoning_end",
+    "tool_event",
+    "render_block",
+    "data",
+    "error",
+  ] satisfies TimelineEntry["kind"][]);
+
+/**
+ * A block the client accumulator emits AFTER its text run closed belongs to
+ * that run (W-33). The accumulator holds an unterminated last line — a pipe
+ * row may still become a table — so a status entry (`phase`, `info`,
+ * `completion`) can close the run before `finalize()` emits that line. The
+ * run's `text_end` already carries the line in `rawText`; without widening
+ * its block range the commit walker emitted the text twice ("…NONEDoor
+ * line: …") and the live walker not at all. Accumulator text only ever enters
+ * through a text run, so the widening is exact: it applies only to a
+ * `client_block_*` pushed while no run is open, directly after the last
+ * run's range, with no content entry since.
+ */
+function adoptLateAccumulatorBlock(
+  request: ActiveRequest,
+  blockId: string,
+): void {
+  if (request.isTextStreaming || !blockId.startsWith("client_block_")) return;
+  for (let i = request.timeline.length - 1; i >= 0; i--) {
+    const entry = request.timeline[i];
+    if (entry.kind === "text_end") {
+      if (entry.blockEndIndex !== request.renderBlockOrder.length) return;
+      entry.blockEndIndex += 1;
+      entry.blockCount += 1;
+      return;
+    }
+    if (CONTENT_AFTER_TEXT_RUN_KINDS.has(entry.kind)) return;
+  }
+}
+
+/**
  * Close an open reasoning run: emit its `reasoning_end` with the chunk range
  * AND the render-block snapshot (`blockEndIndex`) — the snapshot is what lets
  * `selectUnifiedSlots` bound its sweep instead of hoovering every later block
@@ -756,6 +801,7 @@ const activeRequestsSlice = createSlice({
       request.renderBlocks[block.blockId] = block;
 
       if (isNew) {
+        adoptLateAccumulatorBlock(request, block.blockId);
         request.renderBlockOrder.push(block.blockId);
       }
     },
