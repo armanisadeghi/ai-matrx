@@ -48,6 +48,13 @@ stale text. By construction a batched tile renders once per interval instead of 
   `useRetainRequestForViewer(requestId, …)` (LIVE-RUN-RETENTION.md).
 - **No per-frame React.** The camera never goes through React state; only coarse channels do.
   `will-change: transform` is set only while the camera moves (permanently on = blurry text).
+- **The board model is never host React state.** It lives in a `BoardStore` (`board/board-store.ts`)
+  outside React; a tile reads its own record (`useBoardTile`), a host reads structure only
+  (`useBoardLayout` — tile ids, shelf, frames, shapes, connections, undo-ability). A drag or resize
+  wakes the one tile it touches; a tile body's props never include the rect, so moving a tile never
+  re-renders what it shows. Persistence subscribes to the store, never to a render. A host's
+  `useState` board re-rendered every tile and body per pointer frame and locked `/board` on the
+  first resize (`__tests__/board-store.test.tsx` holds the class).
 - **Generated HTML is `sandbox="allow-scripts"` with no `allow-same-origin`**, inert until its
   tile is selected, and unloads 20 s after leaving the viewport.
 - **Every element placed in world space carries `max-w-none`.** World items sit in a zero-width
@@ -157,7 +164,7 @@ hardware with a production build before tuning further.
   come first (`primary`), then Board (fit, 100%, Scrolling, Parked).
 - **Keys:** shift+1 fit all · shift+2 fit selection · shift+0 100% · +/- zoom · arrows nudge · esc
   leaves focus, then deselects.
-- **Board model (`board/useBoard.ts`):** tiles, positions, shelf, frames, shapes, connections, one
+- **Board model (`board/board-store.ts`, hooks in `board/useBoard.ts`):** tiles, positions, shelf, frames, shapes, connections, one
   undo stack, remove-with-undo, `moveMany` (an arrangement = one step), and `addTile` with
   auto-placement in the nearest free space clear of tiles AND frames (`engine/placement.ts`;
   `within` lets it join one frame) — the one path gestures, the menu and agents change a board
@@ -294,6 +301,14 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-09-30 — The board model moved out of React into `BoardStore` with per-tile, layout and
+  whole-board subscriptions; `/board` renders tiles by id (`useBoardTile`), the body sits behind a
+  rect-free `TileContent`, edges follow their two tiles, the layers list reads the whole board only
+  while open, and autosave subscribes to the store. `useBoard` keeps its API with stable operations
+  (the old per-render closures defeated the React Compiler, so every tile re-rendered on every
+  frame) — the demo, meeting and workflow boards inherit that. `DocumentDraftBody`'s create moved
+  out of the component so the compiler compiles it.
 
 - 2026-09-30 — What has focus stays on screen (`engine/reveal.ts`): keyboard focus moving to an element
   inside a tile that is off the visible board (tabbing grid cells, find-next) or a contenteditable

@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, memo } from "react";
 import { createRoot } from "react-dom/client";
 import { BoardStore } from "../board/board-store";
 import { type Board, useBoard, useBoardLayout, useBoardStore, useBoardTile } from "../board/useBoard";
@@ -19,11 +19,13 @@ describe("board store — a change wakes only who reads it", () => {
   function mountBoard(ids: string[]) {
     const renders: Record<string, number> = { host: 0 };
     let store!: BoardStore<T>;
-    function Tile({ board, id }: { board: BoardStore<T>; id: string }) {
+    // memo() stands in for the React Compiler, which jest does not run: in the
+    // app, a tile element whose props did not change is reused the same way.
+    const Tile = memo(function Tile({ board, id }: { board: BoardStore<T>; id: string }) {
       renders[id] = (renders[id] ?? 0) + 1;
       const t = useBoardTile(board, id);
       return <div data-x={t?.rect.x} data-w={t?.rect.w} />;
-    }
+    });
     function Host() {
       renders.host++;
       store = useBoardStore<T>(() => ids.map((id, i) => tile(id, i * 200)));
