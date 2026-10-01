@@ -60,8 +60,7 @@ import {
   RESUME_STREAM_CLOSING_MAX_RETRIES,
 } from "./resume-claims";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
-import { surfaceWritesNoteSource } from "../utils/surface-writes-note";
-import { buildRequestContext } from "../context-rules/request-context";
+import { buildResumeRequestContext } from "../context-rules/request-context";
 import { ensureContextRulesReady } from "../context-rules/context-rules.thunks";
 import { resolveMandateKillSwitch } from "../context-rules/mandate-kill-switch";
 import { setExpectedContextRows } from "../instance-context/instance-context.slice";
@@ -241,22 +240,21 @@ export const resumeInstance = createAsyncThunk<
         );
       await (dispatch as AppDispatch)(ensureContextRulesReady(conversationId));
       const freshState = getState() as RootState;
-      // THE ONE DOOR, with the system values on every resume and — THE LABEL
-      // ON THE RE-READ — the note that the page values were read AFTER the
-      // writes this conversation made, or the model reads its own write as a
-      // value that was already there (2026-09-27).
-      const writesNote = surfaceWritesNoteSource(freshState, conversationId);
+      // THE ONE DOOR — the same rows the chip shows for this conversation
+      // (system values only on a first turn, like every send path) plus the
+      // note that the page values were read AFTER this conversation's writes,
+      // or the model reads its own write as a value already there (2026-09-27).
       const {
         rows: contextRows,
         context,
         context_withheld,
-      } = buildRequestContext(freshState, conversationId, {
-        includeAmbient: true,
-        mandateKillSwitch: await resolveMandateKillSwitch(
+      } = buildResumeRequestContext(
+        freshState,
+        conversationId,
+        await resolveMandateKillSwitch(
           freshState.conversations.byConversationId[conversationId]?.mandateKey,
         ),
-        extraSources: writesNote ? [writesNote] : [],
-      });
+      );
 
       // USER-layer apply policy — keep the resumed loop's directive handling
       // aligned with the user's preference (highest-priority cascade leg).

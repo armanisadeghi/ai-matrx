@@ -14,6 +14,7 @@ import type { RootState } from "@/lib/redux/store";
 import {
   ambientIncluded,
   buildRequestContext,
+  buildResumeRequestContext,
   selectDisplayContextRows,
   selectResolvedContextRows,
 } from "../request-context";
@@ -614,5 +615,33 @@ describe("on load, server-added values come from the last persisted receipt", ()
     expect(selectDisplayContextRows("c1")(reloaded()).map((r) => [r.key, r.label])).toEqual([
       ["resource_file_a73a", "harbor-street-cost-sheet-q4.pdf"],
     ]);
+  });
+});
+
+// Break this catches: resume forcing the first turn's system values on every
+// resume (includeAmbient: true) — values the chip never showed for the turn.
+describe("a resume sends exactly what the chip shows", () => {
+  function conversation(orderedIds: string[]): RootState {
+    const state = makeState({
+      surfaceName: "matrx-user/demo",
+      entries: [{ key: "plain", value: "Draft agenda for the Harbor Dental review" }],
+    }) as unknown as Record<string, unknown>;
+    state.messages = { byConversationId: { c1: { orderedIds, apiEndpointMode: "agent" } } };
+    state.userAuth = { id: "u1", email: "admin@admin.com" };
+    state.userProfile = {};
+    state.appContext = { scope_selections: {} };
+    state.activeRequests = { byConversationId: {}, byRequestId: {} };
+    return state as unknown as RootState;
+  }
+
+  it.each([
+    ["a later turn", ["m1", "m2"], ["plain"]],
+    ["the first turn", [], expect.arrayContaining(["plain", "user", "client"])],
+  ])("on %s", (_name, ids, keys) => {
+    const state = conversation(ids as string[]);
+    const resumed = buildResumeRequestContext(state, "c1", false).rows.map((r) => r.key);
+    const shown = selectResolvedContextRows("c1")(state).map((r) => r.key);
+    expect(resumed).toEqual(shown);
+    expect(resumed).toEqual(keys);
   });
 });

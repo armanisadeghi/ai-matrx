@@ -48,13 +48,14 @@ import {
 import { selectSavedContextRuleRows } from "./context-rules.thunks";
 import { toContextReceipt } from "./receipt-check";
 import { resolveClientSurface } from "../utils/build-tool-injection";
+import { surfaceWritesNoteSource } from "../utils/surface-writes-note";
 
 export interface RequestContextOptions {
   /**
    * Include the first turn's system values (user, client, route brief,
    * organization…). Leave it unset: `ambientIncluded` decides from the
-   * conversation itself, so the table and every send path agree. Only the
-   * resume path forces it on (it re-sends them every resume).
+   * conversation itself, so the table and EVERY send path — resume included —
+   * agree. Tests only; `check:context-single-door` refuses it elsewhere.
    */
   includeAmbient?: boolean;
   /**
@@ -294,6 +295,23 @@ export function collectContextRowSources(
   for (const source of opts.extraSources ?? []) byKey.set(source.key, source);
 
   return [...byKey.values()];
+}
+
+/**
+ * The resume path's context: the same rows the chip shows for this
+ * conversation (one rule for system values: `ambientIncluded`), plus the note
+ * that the page values were read AFTER the writes this conversation made.
+ */
+export function buildResumeRequestContext(
+  state: RootState,
+  conversationId: string,
+  mandateKillSwitch: boolean,
+): RequestContext {
+  const writesNote = surfaceWritesNoteSource(state, conversationId);
+  return buildRequestContext(state, conversationId, {
+    mandateKillSwitch,
+    extraSources: writesNote ? [writesNote] : [],
+  });
 }
 
 /** The inline cap the server last reported (a platform knob), else the default. */
