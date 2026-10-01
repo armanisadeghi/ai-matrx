@@ -61,6 +61,30 @@ describe("run step titles", () => {
     for (const t of titles) expect(t.charAt(0)).toBe(t.charAt(0).toUpperCase());
   });
 
+  // Cold walk 23 (friction): "Checking your The Recoat/Resand/Replace
+  // Verdict rules". The Expert named her section "The …"; the compiler put
+  // "your" in front of it. Stored definitions keep that label, so the one
+  // reader repairs it.
+  it("never stacks a possessive on a name's own article", () => {
+    expect(titles).toContain("Checking your Three Verdicts rules");
+    expect(
+      presentStepTitles([
+        "Checking your The Recoat/Resand/Replace Verdict rules",
+        "Checking your A Quick Sniff Test rules",
+        "Checking your An Owner's Eye rules",
+        "Checking your Grading rules",
+        "Check the A/B rules",
+      ]),
+    ).toEqual([
+      "Checking your Recoat/Resand/Replace Verdict rules",
+      "Checking your Quick Sniff Test rules",
+      "Checking your Owner's Eye rules",
+      "Checking your Grading rules",
+      "Check the A/B rules",
+    ]);
+    for (const t of titles) expect(t).not.toMatch(/\byour (the|a|an) /i);
+  });
+
   it("a title's own closing word is never 'completed' into a sibling's", () => {
     expect(presentStepTitles(["Apply rule", "Apply rules"])).toEqual([
       "Apply rule",

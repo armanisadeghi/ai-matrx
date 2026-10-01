@@ -235,10 +235,30 @@ function completeCutTailWord(title: string, siblings: readonly string[]): string
   return title;
 }
 
+/**
+ * "Checking your The Three Verdicts rules" → "Checking your Three Verdicts
+ * rules". A template puts a possessive before a name the Expert wrote, and
+ * her name may open with its own article (cold walk 23). Only a capitalised
+ * article followed by a space is dropped: it starts the interpolated name,
+ * and "A/B" or a lowercase word the template itself wrote is never touched.
+ */
+const POSSESSIVE_THEN_ARTICLE =
+  /\b(your|my|our|their|his|her|its)\s+(?:The|A|An)\s+(?=\S)/gi;
+
+export function dropArticleAfterPossessive(title: string): string {
+  return title.replace(POSSESSIVE_THEN_ARTICLE, (match, possessive: string) => {
+    const article = match.slice(possessive.length).trim();
+    // The article must be capitalised — the start of a quoted name.
+    return /^[A-Z]/.test(article) ? `${possessive} ` : match;
+  });
+}
+
 /** Every step title of one run, repaired against the run's own words. */
 export function presentStepTitles(titles: readonly string[]): string[] {
   return titles.map((title) =>
-    sentenceCaseTitle(completeCutTailWord(title.trim(), titles)),
+    sentenceCaseTitle(
+      dropArticleAfterPossessive(completeCutTailWord(title.trim(), titles)),
+    ),
   );
 }
 
