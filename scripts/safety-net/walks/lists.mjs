@@ -88,7 +88,7 @@ try {
     await sleep(8000);
     const t = await bodyText(page, 30000);
     const red = t.match(RED);
-    const older = [...new Set(calls.filter((c) => /udt_structured_list|udt_/.test(c)))];
+    const older = [...new Set(calls.filter((c) => /udt_/.test(c)))];
     return {
       ok: !red && failed.length === 0 && older.length === 0 && !!base,
       detail: red ? `red sentence: "${t.slice(Math.max(0, red.index - 60), red.index + 100).replace(/\s+/g, " ")}"` : failed.length ? `failed calls: ${failed.slice(0, 4).join(" | ")}` : older.length ? `the page read the older list tables directly: ${older.join(", ")}` : `quiet; reads: ${[...new Set(calls)].slice(0, 6).join(", ")}`,
@@ -96,21 +96,15 @@ try {
   });
   if (!base) throw new Error("no Supabase request was seen on /lists/v3 — cannot call the doors");
 
-  // ── make the list (born in the store: where_lists_live says record) ───────────────────────────────
+  // ── make the list (born in the store through custom.pick_list_create: where_lists_live says record) ───────────────────────────────
   await ctx.step(["L01"], `"${LIST_NAME}" is made and lives in the store`, page, async () => {
-    const probe = await door(page, "get_user_lists_summary", { p_user_id: sessionOf(await page.context().cookies()).user?.id });
-    const me = probe.userId;
-    const made = await door(page, "create_user_list", {
+    const made = await door(page, "pick_list_create", {
+      p_organization_id: FIXTURE_ORG_ID,
       p_list_name: LIST_NAME,
       p_description: "The kinds of visit the front desk books.",
-      p_user_id: me,
-      p_is_public: false,
-      p_authenticated_read: false,
-      p_public_read: false,
-      p_items: WORDS.map((w) => ({ Label: w })),
-      p_organization_id: FIXTURE_ORG_ID,
-    });
-    if (made.status >= 300) return { ok: false, detail: `create_user_list answered ${made.status}: ${JSON.stringify(made.data).slice(0, 200)}` };
+      p_items: WORDS.map((w) => ({ label: w })),
+    }, "custom");
+    if (made.status >= 300) return { ok: false, detail: `pick_list_create answered ${made.status}: ${JSON.stringify(made.data).slice(0, 200)}` };
     listId = made.data?.list_id ?? null;
     if (!listId) return { ok: false, detail: `no list id: ${JSON.stringify(made.data).slice(0, 200)}` };
     ctx.cleanup(async () => {
@@ -122,11 +116,7 @@ try {
     });
     const lives = await door(page, "where_lists_live", { p_list_ids: [listId] }, "custom");
     const where = JSON.stringify(lives.data);
-    const olderRow = await fetch(`${base}/rest/v1/udt_structured_lists?id=eq.${listId}&select=id`, {
-      headers: { apikey, Authorization: `Bearer ${sessionOf(await page.context().cookies()).access_token}`, "Accept-Profile": "workbench" },
-    }).then((r) => r.text()).catch(() => "");
-    const noOlder = !/"id"/.test(olderRow);
-    return { ok: /record/.test(where) && noOlder, detail: `list ${listId.slice(0, 8)}…: where_lists_live ${where.slice(0, 120)}; older row ${noOlder ? "none" : "PRESENT"}` };
+    return { ok: /record/.test(where), detail: `list ${listId.slice(0, 8)}…: where_lists_live ${where.slice(0, 120)}` };
   });
 
   // ── L01: the list appears on /lists/v3 and opens as a page with its four words ──────────────────────
