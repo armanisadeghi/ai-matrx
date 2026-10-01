@@ -3,7 +3,7 @@
 //
 // ONE DEV SERVER MACHINE-WIDE (Arman, 2026-09-24): every lane that booted its own `next dev`
 // brought 70-130 Turbopack workers and 15-25 GB, and the Mac rebooted twice. A second "clone"
-// server on port 3002 (2026-09-27) ran beside it until 2026-09-30, when the two together held
+// server on another port (2026-09-27) ran beside it until 2026-09-30, when the two together held
 // ~41 GB and ~75 workers and stalled the 256 GB Mac again. Ruling (Arman, 2026-09-30): ONE
 // server, on port 3001, whose DATABASE is a mode:
 //

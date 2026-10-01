@@ -3,7 +3,7 @@
  *
  * Why (lane F1/X1 of the Mandate Candidates campaign, 2026-09-30): a process wired to the nightly
  * clone holds production's provider keys (Resend, Twilio, Slack) while the copy holds production's
- * real people. The clone preview (`pnpm preview:start --clone`) is exactly such a process. The
+ * real people. The dev server in clone mode (`pnpm preview:start`) is exactly such a process. The
  * clone's quarantine stops the DATABASE calling out; it cannot stop this server.
  *
  * THE RULE (the same one aidream enforces in `aidream/services/clone_connection/outbound_guard.py`):

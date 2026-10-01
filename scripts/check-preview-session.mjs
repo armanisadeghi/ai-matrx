@@ -196,7 +196,7 @@ await check("a managed preview from THIS checkout is reused without a new PID", 
     source ${JSON.stringify(DEV_SERVER)}
     META="$REPO_ROOT/scripts/agent-dev-server.sh"
     alive() { [[ "$1" == 4242 ]]; }
-    meta_value() { case "$1" in PID) echo 4242;; PORT) echo 3001;; ROOT) echo "$REPO_ROOT";; esac; }
+    meta_value() { case "$1" in PID) echo 4242;; PORT) echo 3001;; ROOT) echo "$REPO_ROOT";; MODE) echo live;; esac; }
     reuse_managed_meta
   `;
   const out = execFileSync("bash", ["-c", script], {
@@ -204,7 +204,7 @@ await check("a managed preview from THIS checkout is reused without a new PID", 
     encoding: "utf8",
     env: { ...process.env, MATRX_PREVIEW_SESSION: "mysess" },
   });
-  assert.match(out, /reusing the managed live preview \(pid 4242, port 3001\)/);
+  assert.match(out, /reusing the managed preview \(pid 4242, port 3001, live mode\)/);
   assert.match(out, /http:\/\/mysess\.localhost:3001/);
 });
 

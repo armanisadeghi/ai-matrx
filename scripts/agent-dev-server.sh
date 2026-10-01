@@ -8,7 +8,7 @@
 #   pnpm preview:stop | pnpm preview:status
 #
 # ONE Next.js dev server on this machine, ever (Arman, 2026-09-24; reaffirmed 2026-09-30, when a
-# second "clone" server on port 3002 beside the live one helped hold ~41 GB and ~75 Turbopack
+# second "clone" server on another port beside the live one helped hold ~41 GB and ~75 Turbopack
 # workers and stalled the Mac). The database is the server's MODE. Tests never run against the
 # live database (Arman, 2026-09-29), so clone is the default. Clone mode REFUSES to start unless
 # the local aidream it bakes in as its Python server (http://localhost:8200) proves it is wired
@@ -1056,6 +1056,7 @@ cmd_status_one() {
     log "UNMANAGED/BLOCKING pid=$pid port=$port owner=$owner cwd=${cwd:-unknown}"
     if [[ -n "$cwd" && "$cwd" == "$REPO_ROOT" && "$port" == "$PORT" ]]; then
       log "it serves THIS checkout, so you can use it — at your own hostname:"
+      use_mode unknown
       announce_session_url "$port"
     fi
   elif [[ -f "$FAILED" ]]; then

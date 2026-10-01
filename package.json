@@ -45,6 +45,8 @@
     "check:ship-stage:self-test": "bash scripts/release-stage.sh --self-test",
     "check:install-gate:self-test": "node scripts/check-install-gate.mjs --self-test",
     "check:preview-session": "node scripts/check-preview-session.mjs --self-test",
+    "check:one-dev-server": "node scripts/check-one-dev-server.mjs",
+    "check:one-dev-server:self-test": "node scripts/check-one-dev-server.mjs --self-test",
     "check:release-outcome:self-test": "bash scripts/release-outcome.sh --self-test",
     "worktree:janitor": "bash scripts/worktree-janitor.sh",
     "worktree:janitor:self-test": "bash scripts/worktree-janitor.sh --self-test",

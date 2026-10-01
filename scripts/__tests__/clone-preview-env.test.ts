@@ -3,7 +3,7 @@
  * never call a Python server wired to the live database). Pure logic of
  * scripts/clone-preview/clone-preview-env.cjs — no network, no database. The live half (a real
  * clone-wired aidream answering /health/database-identity) is exercised by
- * `pnpm preview:start --clone` itself.
+ * `pnpm preview:start` (clone mode) itself.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";

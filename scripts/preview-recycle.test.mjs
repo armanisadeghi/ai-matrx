@@ -78,7 +78,7 @@ function sourced(dir, body, env = {}) {
 function writeLease(dir, { pid, usedAgoSec, root = "/some/other/checkout", port = 1, ready = true }) {
   writeFileSync(
     join(dir, "shared-next-dev.meta"),
-    `SESSION_ID=shared-next-dev\nPORT=${port}\nPID=${pid}\nDISTDIR=.next-preview\nROOT=${root}\nOWNER_SESSION=old-session\nSERVER=live\n`,
+    `SESSION_ID=shared-next-dev\nPORT=${port}\nPID=${pid}\nDISTDIR=.next-preview\nROOT=${root}\nOWNER_SESSION=old-session\nMODE=live\n`,
   );
   writeFileSync(join(dir, "shared-next-dev.log"), " GET /old 200 in 5ms\n");
   if (usedAgoSec !== undefined) writeFileSync(join(dir, "shared-next-dev.used"), `${now() - usedAgoSec}\n`);
@@ -105,27 +105,27 @@ test("stops a preview nobody used for 30 min, worded as a recycle", () => {
 });
 
 test("recycles a bloated preview once idle 5 min", () => {
-  const out = reason(52 * GB, 6 * 60);
-  assert.match(out, /^RECYCLED: recycled at 52\.0 GB real memory after 6 min idle/);
+  const out = reason(44 * GB, 6 * 60);
+  assert.match(out, /^RECYCLED: recycled at 44\.0 GB real memory after 6 min idle/);
 });
 
 test("never recycles a bloated preview that is in use", () => {
-  assert.equal(reason(52 * GB, 60), "");
+  assert.equal(reason(44 * GB, 60), "");
 });
 
 test("leaves a small idle-for-10-min preview alone", () => {
   assert.equal(reason(10 * GB, 10 * 60), "");
 });
 
-test("hard cap is 128 GB of real memory, and is a watchdog stop, not a recycle", () => {
-  const out = reason(130 * GB, 0);
-  assert.match(out, /^preview stopped at 130\.0 GB real memory \(cap 128 GB\)/);
-  assert.equal(reason(127 * GB, 0), "");
+test("hard cap is 48 GB of real memory, and is a watchdog stop, not a recycle", () => {
+  const out = reason(50 * GB, 0);
+  assert.match(out, /^preview stopped at 50\.0 GB real memory \(cap 48 GB\)/);
+  assert.equal(reason(47 * GB, 0), "");
 });
 
 test("the idle limits are knobs", () => {
   assert.match(reason(1 * GB, 11 * 60, { MATRX_PREVIEW_IDLE_STOP_MIN: "10" }), /stopped after 11 min unused/);
-  assert.equal(reason(52 * GB, 6 * 60, { MATRX_PREVIEW_RECYCLE_GB: "60" }), "");
+  assert.equal(reason(44 * GB, 6 * 60, { MATRX_PREVIEW_RECYCLE_GB: "60" }), "");
 });
 
 // ── real memory ──────────────────────────────────────────────────────────────
@@ -182,7 +182,8 @@ test("the monitor stops a preview unused for 30 min and says so in log, FAILED a
     const failed = readFileSync(join(dir, "shared-next-dev.failed"), "utf8");
     assert.match(failed, /^RECYCLED: stopped after 31 min unused/);
     assert.match(readFileSync(join(dir, "shared-next-dev.log"), "utf8"), /\[preview\] RECYCLED: stopped after 31 min unused/);
-    const status = sourced(dir, "cmd_status_one").out;
+    // Isolated from any real server running on this machine: only the lease in `dir` counts.
+    const status = sourced(dir, "running_server() { :; }; cmd_status_one").out;
     assert.match(status, /recycled \(normal\)/);
     assert.doesNotMatch(status, /WATCHDOG STOPPED/, "a recycle must not print as a crash");
   } finally {

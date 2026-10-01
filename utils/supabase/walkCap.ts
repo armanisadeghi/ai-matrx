@@ -36,7 +36,6 @@ const CAP_KEY = "production_concurrent_cap";
 const WINDOW_KEY = "activity_window_minutes";
 const SEED_FILE = "migrations/ops_agent_walks_production_cap_2026_09_26.sql";
 const KNOB_TTL_MS = 60_000;
-const CLONE_PORT = 3002;
 
 export interface WalkKnobs {
   cap: number;
@@ -241,7 +240,7 @@ code{background:#f1f1f1;padding:1px 5px;border-radius:4px}
 <p>${active.length} agent sessions are already signed in against production (the cap is ${knobs.cap}):</p>
 <ul>${list}</ul>
 <p>Wait until one of them goes idle for ${knobs.windowMinutes} minutes, then reload this page.</p>
-<p>Or work on the clone instead — a nightly copy of production with no cap: run <code>pnpm preview:start --clone</code> (port ${CLONE_PORT}), then <code>pnpm dev-login --clone</code> and open the URL it prints. If it refuses, it names the one command that starts its paired server.</p>
+<p>Or work on the clone instead — a nightly copy of production with no cap: once this server has been idle 5 minutes, <code>pnpm preview:start --clone</code> switches the one server to clone mode; then <code>pnpm dev-login</code> and open the URL it prints. If it refuses, it names the one command that starts its paired server.</p>
 <p><small>Host refused: <code>${escapeHtml(host)}</code>. Knobs: <code>${WALK_CAP_FEATURE}.${CAP_KEY}</code> and <code>${WALK_CAP_FEATURE}.${WINDOW_KEY}</code>. This check runs only in local development against the live database.</small></p>
 </body></html>`;
 }

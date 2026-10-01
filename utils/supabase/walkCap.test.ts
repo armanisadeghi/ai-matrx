@@ -394,7 +394,8 @@ describe("walkCapGate refusal page — names the way out", () => {
     expect(response?.status).toBe(503);
     const html = (await response?.text()) ?? "";
     expect(html).toContain("pnpm preview:start --clone");
-    expect(html).toContain("pnpm dev-login --clone");
+    expect(html).toContain("pnpm dev-login");
+    expect(html).not.toMatch(/3002/);
     expect(html).not.toMatch(/not built|waiting is the only path/);
   });
 });
