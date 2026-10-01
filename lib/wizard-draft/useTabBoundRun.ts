@@ -48,6 +48,11 @@ import {
 export const RUN_BEAT_MS = 3_000;
 /** A marker this long past its last beat (and never closed) belongs to a dead page. */
 export const RUN_STALE_MS = 10_000;
+/**
+ * A page that said it was closing but is still here this long later stayed
+ * (a "Leave site?" answered Stay): its run is live again.
+ */
+export const RUN_CLOSE_GRACE_MS = 2_000;
 /** A stopped run older than this is no longer worth offering again. */
 export const RUN_FORGET_MS = 24 * 60 * 60 * 1000;
 
@@ -177,8 +182,19 @@ export function useTabBoundRun<R>(
     const beat = setInterval(() => {
       if (ours()) dispatch(patchWizardDraft({ wizardId: draftId, patch: { beatAt: Date.now() } }));
     }, RUN_BEAT_MS);
+    // Set when the page starts to unload. From then on the run's own ending
+    // (the page aborts its streams, the work rejects) is the page dying, not
+    // the run's outcome: the marker must reach the pagehide flush intact.
+    let closing = false;
     const onClose = () => {
-      if (ours()) dispatch(patchWizardDraft({ wizardId: draftId, patch: { closedAt: Date.now() } }));
+      if (!ours()) return;
+      closing = true;
+      dispatch(patchWizardDraft({ wizardId: draftId, patch: { closedAt: Date.now() } }));
+      setTimeout(() => {
+        // Still here: the unload was refused and the run lives on.
+        closing = false;
+        if (ours()) dispatch(patchWizardDraft({ wizardId: draftId, patch: { closedAt: null } }));
+      }, RUN_CLOSE_GRACE_MS);
     };
     window.addEventListener("beforeunload", onClose);
     const settle = () => {
@@ -188,7 +204,15 @@ export function useTabBoundRun<R>(
       clearInterval(beat);
       window.removeEventListener("beforeunload", onClose);
       liveHere.delete(runId);
-      if (mine) dispatch(clearWizardDraft(draftId));
+      if (!mine) return;
+      if (closing) {
+        // Kept for the next page; dropped only if this page turns out to stay.
+        setTimeout(() => {
+          if (currentRunId() === runId) dispatch(clearWizardDraft(draftId));
+        }, RUN_CLOSE_GRACE_MS);
+        return;
+      }
+      dispatch(clearWizardDraft(draftId));
     };
     try {
       return await work(settle);

@@ -124,6 +124,31 @@ test("a reload mid-run comes back as a stopped run with its exact request", asyn
   expect(latest!.stopped).toBeNull();
 });
 
+test("a run the closing page aborts is still reported after the reload", async () => {
+  // Live walk, 2026-09-30: the unloading page aborts its streams, the run
+  // rejects, and the error path cleared the marker before the pagehide flush —
+  // the reload then showed nothing at all.
+  const store = makeStore();
+  mount(store);
+  let abort: (e: Error) => void = () => {};
+  const running = latest!.track(
+    { count: 3, material: "chapter 4" },
+    () => new Promise<never>((_, reject) => (abort = reject)),
+  );
+  act(() => {
+    window.dispatchEvent(new Event("beforeunload"));
+  });
+  await act(async () => {
+    abort(new Error("The user aborted a request."));
+    await running.catch(() => undefined);
+  });
+  const bytes = persisted(store);
+  unmount();
+  forgetRunsInThisPageForTest();
+  mount(reloadedStore(bytes));
+  expect(latest!.stopped?.request).toEqual({ count: 3, material: "chapter 4" });
+});
+
 test("a run that finishes, or fails in place, leaves nothing behind", async () => {
   const store = makeStore();
   mount(store);
