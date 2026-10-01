@@ -322,6 +322,8 @@ try {
   });
   if (!tid) throw new Error("no table to walk");
 
+  // TED_LAYOUT=grid walks the same steps on records-ui's own Grid layout instead of the Sheet.
+  const GRID = process.env.TED_LAYOUT === "grid";
   await open("?view=sheet");
   await sheet();
   const made = {};
@@ -337,6 +339,10 @@ try {
 
   // ── T28: a typed edit ended by a click on another cell saves, every kind ──
   if (ONLY.includes("T28")) {
+    if (GRID) {
+      await open("?view=grid", { needRows: true });
+      await probe("grid-layout");
+    }
     // A choice is not walked here: words typed into an open choice list are its SEARCH, not a value,
     // and a click elsewhere closes the list choosing nothing (Airtable, Notion). A pick saves at once;
     // several choices commit on click-off (jest a-several-choice-click-off-asks).
