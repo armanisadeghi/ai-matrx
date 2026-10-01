@@ -220,9 +220,10 @@ def main() -> int:
         refused = refused + RUN.get("tool_errors", [])
         step(["A12"], "the dataset tool took the write (applied, or held for a person)", bool(writes),
              f"{len(writes)} write answers, {len(held)} held for approval; tool errors on the way: {json.dumps(refused)[:300] if refused else 'none'}")
+        approve = PLANT != "approval-refused"  # the plant: the seat REFUSES the held write, so nothing may land
         for h in held:
-            s, body = rpc(jwt, "work_approval_decide", {"p_organization_id": ORG, "p_approval_id": h["approval_id"], "p_approve": True, "p_note": None})
-            step(["A12"], "the seat approves the held write", s == 200, f"{s} {json.dumps(body)[:200]}")
+            s, body = rpc(jwt, "work_approval_decide", {"p_organization_id": ORG, "p_approval_id": h["approval_id"], "p_approve": approve, "p_note": None})
+            step(["A12"], "the seat approves the held write" if approve else "PLANT: the seat refuses the held write", s == 200, f"{s} {json.dumps(body)[:200]}")
         s, n = rows_with(jwt, table, marker)
         step(["A12"], "the row the agent wrote is in the store table, exactly once (read back as the seat)", s == 200 and n == 1,
              f"read door {s}; marker rows {n}" + ("" if n == 1 else f"; the agent said: {text[:300]}"))

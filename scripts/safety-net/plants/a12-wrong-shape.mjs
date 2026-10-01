@@ -1,4 +1,4 @@
-// A12's planted wrong-shape argument: the agent is told to pass the row's values to the dataset tool as a
+// A12 planted wrong-shape argument (11:06 PT: the model IGNORED the instruction and the add still landed, so this plant does not turn the add half red; the add half is proven red by a12-approval-refused). The agent is told to pass the row's values to the dataset tool as a
 // JSON ARRAY instead of field -> value pairs. The tool must refuse it, no row lands, and A12 goes RED.
 // liveSafe: it changes only what the probe ASKS the agent; no server, table or row is touched by the plant.
 export default {
