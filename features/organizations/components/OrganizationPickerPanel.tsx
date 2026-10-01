@@ -4,15 +4,15 @@
 // It is the platform's ONE shared control (`OrganizationPicker` from
 // `@ai-matrx/design-system`, identical in Workflow Studio's sidebar and the
 // admin dashboard's settings) bound to THIS app's state: active org from
-// appContextSlice, memberships from the scope tree, the default from user
-// preferences, writes via the sanctioned switcher. Rendered inside the header
+// appContextSlice, memberships from the scope tree, favorites from the
+// canonical favorites store, writes via the sanctioned switcher. Rendered inside the header
 // reminder's popover and the user menu; reusable anywhere an org chooser is
 // needed. The choice also lands in the shared apex cookie (via
 // `activeOrgCookieMiddleware`), so Studio wakes up in the same organization.
 
 import { OrganizationPicker } from "@ai-matrx/design-system";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
-import { useDefaultOrganization } from "@/features/organizations/hooks/useDefaultOrganization";
+import { useOrganizationFavorites } from "@/features/organizations/hooks/useOrganizationFavorites";
 
 export function OrganizationPickerPanel({
   hideHeading = false,
@@ -23,8 +23,7 @@ export function OrganizationPickerPanel({
 }) {
   const { activeOrgId, organizations, loading, loadFailed, selectOrganization } =
     useActiveOrganizationPicker();
-  const { defaultOrganizationId, setDefaultOrganization } =
-    useDefaultOrganization();
+  const { favoriteIds, toggleFavorite } = useOrganizationFavorites();
 
   return (
     <OrganizationPicker
@@ -32,11 +31,11 @@ export function OrganizationPickerPanel({
       itemClassName={itemClassName}
       organizations={toPickerOrganizations(organizations)}
       activeOrganizationId={activeOrgId}
-      defaultOrganizationId={defaultOrganizationId}
+      favoriteOrganizationIds={favoriteIds}
       loading={loading}
       loadFailed={loadFailed}
       onSelect={(org) => selectOrganization(org.id, org.name)}
-      onSetDefault={setDefaultOrganization}
+      onToggleFavorite={toggleFavorite}
     />
   );
 }

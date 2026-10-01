@@ -16,7 +16,6 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import { useDefaultOrganization } from "./useDefaultOrganization";
 import { useActiveOrganizationAutoSelect } from "./useActiveOrganizationAutoSelect";
 
 export function useActiveOrganizationPicker() {
@@ -25,7 +24,6 @@ export function useActiveOrganizationPicker() {
   const activeOrgName = useAppSelector(selectOrganizationName);
   const promptForOrg = useAppSelector(selectShouldPromptForOrganization);
   const { organizations, status } = useScopeTree();
-  const { isDefault } = useDefaultOrganization();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   useEffect(() => {
@@ -58,7 +56,6 @@ export function useActiveOrganizationPicker() {
     // indefinitely. Not authenticated = not loading, nothing to pick.
     loading: isAuthenticated && (status === "idle" || status === "loading"),
     loadFailed: status === "error",
-    isDefault,
     selectOrganization,
   };
 }

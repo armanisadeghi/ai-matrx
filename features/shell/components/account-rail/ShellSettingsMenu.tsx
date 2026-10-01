@@ -35,9 +35,14 @@ import { setMode } from "@/styles/themes/themeSlice";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { SETTINGS_BASE } from "@/features/settings/route-shell/routing";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
+import {
+  MENU_ITEM_CLASS,
+  USER_MENU_PANEL_CLASS,
+} from "@/features/shell/components/header/header-right-menu/menuItemClass";
+import { RailMenuHeader, RAIL_MENU_DIVIDER } from "./RailMenuHeader";
 
-const ROW =
-  "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-foreground transition-colors hover:bg-accent [&>svg]:h-4 [&>svg]:w-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground";
+// The account rail's one menu look: the account menu's own row class.
+const ROW = MENU_ITEM_CLASS;
 
 /** The list itself — one copy for the rail popover and the phone sheet. */
 function SettingsMenuList({ onDone }: { onDone: () => void }) {
@@ -50,12 +55,21 @@ function SettingsMenuList({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div className="flex flex-col gap-0.5 p-1" role="menu" aria-label="Settings">
-      <AppLink href={SETTINGS_BASE} onClick={onDone} className={ROW} role="menuitem">
-        <Settings />
-        <span className="min-w-0 flex-1 truncate">All settings</span>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-      </AppLink>
+    <div className="flex flex-col" role="menu" aria-label="Settings">
+      {/* The same header row the Organization and account menus open with; it
+          opens the Settings page. */}
+      <RailMenuHeader
+        mark={
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-600 text-white dark:bg-slate-500">
+            <Settings className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          </span>
+        }
+        title="Settings"
+        subtitle="All settings"
+        href={SETTINGS_BASE}
+        onNavigate={onDone}
+      />
+      {RAIL_MENU_DIVIDER}
       <button type="button" className={ROW} role="menuitem" onClick={() => open("userPreferences")}>
         <SlidersHorizontal />
         <span className="min-w-0 flex-1 truncate">Preferences</span>
@@ -143,7 +157,7 @@ export function ShellSettingsMenu({ variant = "rail" }: { variant?: "rail" | "dr
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent side={variant === "rail" ? "right" : "top"} align="end" sideOffset={8} sizing="content" className="w-56 p-0">
+      <PopoverContent side={variant === "rail" ? "right" : "top"} align="end" sideOffset={8} className={USER_MENU_PANEL_CLASS}>
         <SettingsMenuList onDone={done} />
       </PopoverContent>
     </Popover>

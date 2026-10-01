@@ -56,7 +56,6 @@ export function DefaultOrganizationChooser({
       <PopoverContent align="end" className="matrx-touch-targets w-80 max-w-[calc(100vw-2rem)] p-1">
         <OrganizationPicker
           hideHeading
-          hideStatus
           organizations={toPickerOrganizations(organizations)}
           // The picker marks the row it is choosing; here that is the default.
           activeOrganizationId={defaultOrganizationId}

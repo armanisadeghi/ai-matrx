@@ -23,10 +23,9 @@
 // (rendered by the shell root), so every item's `<label htmlFor>` close keeps
 // working. Geometry lives in styles/shell.css § 15b.
 
-import { User } from "lucide-react";
 import UserMenuPanel from "../header/header-right-menu/UserMenuPanel";
 import GuestUserMenuTrigger from "../header/header-right-menu/GuestUserMenuTrigger";
-import { ShellUserAvatarImage } from "../header/header-right-menu/ShellUserAvatarImage";
+import { RailUserAvatar } from "./RailUserAvatar";
 import { ShellSettingsMenu } from "../account-rail/ShellSettingsMenu";
 import { ShellOrgSwitcher } from "../account-rail/ShellOrgSwitcher";
 import type { UserData } from "@/utils/userDataMapper";
@@ -59,17 +58,12 @@ export default function ShellUserBlock({
             data-shell-user-trigger
           >
             <span className="shell-nav-icon">
-              <span className="relative flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
-                {avatarUrl ? (
-                  <ShellUserAvatarImage src={avatarUrl} alt={displayName} sizes="24px" />
-                ) : userData.userMetadata?.name ? (
-                  <span className="text-[11px] font-semibold leading-none text-foreground">
-                    {userData.userMetadata.name.charAt(0).toUpperCase()}
-                  </span>
-                ) : (
-                  <User className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
-                )}
-              </span>
+              <RailUserAvatar
+                id={userData.id}
+                name={userData.userMetadata?.name}
+                avatarUrl={avatarUrl}
+                displayName={displayName}
+              />
             </span>
             <span className="shell-nav-label">{displayName}</span>
           </label>

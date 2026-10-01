@@ -42,7 +42,9 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
-import { OrganizationMark } from "@/features/organizations/components/OrganizationMark";
+import { OrganizationMark } from "@ai-matrx/design-system";
+import { RailMenuHeader, RAIL_MENU_DIVIDER } from "./RailMenuHeader";
+import { MENU_ITEM_CLASS, USER_MENU_PANEL_CLASS } from "@/features/shell/components/header/header-right-menu/menuItemClass";
 import { usePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 
 type Variant = "rail" | "drawer";
@@ -93,6 +95,7 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
     <span className="relative flex shrink-0 items-center justify-center">
       {name ? (
         <OrganizationMark
+          id={active?.id ?? activeOrgId}
           name={name}
           abbreviation={active?.abbreviation}
           logoUrl={active?.logo_url}
@@ -123,7 +126,34 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
     </span>
   );
 
-  const header = viewingIn ? (
+  // The menu's header — the same row the Settings and account menus open with.
+  // It names the active organization and opens its page; the list below
+  // highlights the same row.
+  const menuHeader = (
+    <RailMenuHeader
+      mark={
+        name ? (
+          <OrganizationMark
+            id={active?.id ?? activeOrgId}
+            name={name}
+            abbreviation={active?.abbreviation}
+            logoUrl={active?.logo_url}
+            size={28}
+          />
+        ) : (
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Building2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          </span>
+        )
+      }
+      title={name ?? "No organization"}
+      subtitle={name ? "Organization" : "Pick one below"}
+      href={active ? `/organizations/${active.slug || active.id}` : "/organizations"}
+      onNavigate={() => setOpen(false)}
+    />
+  );
+
+  const notice = viewingIn ? (
     <p
       className="mb-1 flex items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground"
       data-page-object-organization-viewing=""
@@ -144,7 +174,15 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
       <ArrowRightLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="min-w-0 flex-1 truncate">Switch to {offer.name}</span>
     </button>
-  ) : undefined;
+  ) : null;
+
+  const header = (
+    <>
+      {menuHeader}
+      {notice}
+      {RAIL_MENU_DIVIDER}
+    </>
+  );
 
   const trigger =
     variant === "rail" ? (
@@ -179,6 +217,9 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
       align="end"
       header={header}
       trigger={trigger}
+      // The account rail's one menu look (owner, 2026-10-01: "make all 3 identical").
+      contentClassName={USER_MENU_PANEL_CLASS}
+      panelProps={{ hideHeading: true, itemClassName: MENU_ITEM_CLASS }}
     />
   );
 }

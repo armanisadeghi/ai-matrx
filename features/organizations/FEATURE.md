@@ -410,6 +410,8 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
   stand-in carrying `selectOrganizationId` alone — 5 tests, all five RED on the
   prior bytes with `TypeError: selector is not a function`, all five green on
   these.
+- `2026-10-01` — **Favorites replace the default star.** The picker's "Keep it at the top" switch and "Working in …" line are gone (design-system 0.50.0); every row carries a star, any number of organizations can be favorites, drawn first. Stored in the canonical favorites store (`platform.user_entity_state` via `ues_set`/`ues_list`, entity_type `organization`) through `hooks/useOrganizationFavorites.ts`; the preference `organization.defaultOrganizationId` is read once to carry an old star over. `OrganizationMark` (logo or coloured abbreviation tile) now comes from the package; the local copy is deleted.
+
 - `2026-09-30` — **One organization control: `ShellOrgSwitcher` in the sidebar account rail.** The header chip, the avatar menu's Organization group and the canvas nav's drop-up are deleted (their tests with them; `features/shell/__tests__/ShellOrgSwitcher.test.tsx` pins the states). The scope tree's organization read carries `logo_url` for `OrganizationMark`.
 
 - `2026-09-20` — **The header org control stopped contradicting its own open

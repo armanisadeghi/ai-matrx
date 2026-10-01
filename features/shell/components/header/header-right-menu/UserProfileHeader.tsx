@@ -1,4 +1,5 @@
-import AppLink from "@/components/navigation/AppLink";
+import { organizationColor } from "@ai-matrx/design-system";
+import { RailMenuHeader } from "@/features/shell/components/account-rail/RailMenuHeader";
 import {
   tabIdToHref,
   SETTINGS_BASE,
@@ -14,38 +15,34 @@ interface UserProfileHeaderProps {
 export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
   const displayName = userData.userMetadata.name ?? userData.email ?? "You";
   const initial = displayName.charAt(0).toUpperCase() || "?";
+  // The same header row the Settings and Organization menus open with
+  // (RailMenuHeader): a 28px mark, the name, the email beneath — printed only
+  // when a separate name holds the first line, never twice (cold walk 13).
   return (
     <MenuItemCloseLabel>
-      <AppLink
-        href={tabIdToHref(SETTINGS_BASE, "account.identity")}
-        className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--matrx-glass-bg-hover)] transition-colors"
-      >
-        {userData.userMetadata.avatarUrl ? (
-          <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full">
-            <ShellUserAvatarImage
-              src={userData.userMetadata.avatarUrl}
-              alt={displayName}
-              sizes="28px"
-            />
-          </span>
-        ) : (
-          <span className="w-7 h-7 rounded-full bg-[var(--matrx-glass-bg-active)] flex items-center justify-center text-xs font-semibold text-[var(--shell-nav-text)] shrink-0">
-            {initial}
-          </span>
-        )}
-        <span className="flex flex-col min-w-0">
-          <span className="text-base font-medium text-foreground truncate">
-            {displayName}
-          </span>
-          {/* The email is the fallback display name; print it beneath only when a
-              separate name holds the first line, never twice (cold walk 13). */}
-          {userData.email && userData.userMetadata.name && (
-            <span className="text-xs text-foreground truncate">
-              {userData.email}
+      <RailMenuHeader
+        mark={
+          userData.userMetadata.avatarUrl ? (
+            <span className="relative block h-7 w-7 overflow-hidden rounded-full">
+              <ShellUserAvatarImage
+                src={userData.userMetadata.avatarUrl}
+                alt={displayName}
+                sizes="28px"
+              />
             </span>
-          )}
-        </span>
-      </AppLink>
+          ) : (
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+              style={organizationColor(userData.id ?? displayName)}
+            >
+              {initial}
+            </span>
+          )
+        }
+        title={displayName}
+        subtitle={userData.email && userData.userMetadata.name ? userData.email : null}
+        href={tabIdToHref(SETTINGS_BASE, "account.identity")}
+      />
     </MenuItemCloseLabel>
   );
 }

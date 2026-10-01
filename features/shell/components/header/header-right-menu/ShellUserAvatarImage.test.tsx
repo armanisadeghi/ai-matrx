@@ -20,9 +20,9 @@ describe("ShellUserAvatarImage", () => {
 
   it("keeps both shell avatar callers on the canonical image boundary", () => {
     const directory = __dirname;
-    // The account rail's avatar (ShellUserBlock) and the menu's profile header.
+    // The account rail's avatar (RailUserAvatar) and the menu's profile header.
     const triggerSource = fs.readFileSync(
-      path.join(directory, "..", "..", "user-block", "ShellUserBlock.tsx"),
+      path.join(directory, "..", "..", "user-block", "RailUserAvatar.tsx"),
       "utf8",
     );
     const profileSource = fs.readFileSync(

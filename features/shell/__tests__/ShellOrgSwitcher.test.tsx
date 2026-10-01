@@ -45,10 +45,6 @@ let pathname = "/notes";
 const dispatch = jest.fn();
 
 jest.mock("next/navigation", () => ({ usePathname: () => pathname }));
-jest.mock("next/image", () => ({
-  __esModule: true,
-  default: ({ alt }: { alt: string }) => <span data-testid="org-logo">{alt}</span>,
-}));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
 jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
   chooseActiveOrganization: (payload: { id: string; name: string }) => ({ type: "choose", payload }),
@@ -68,7 +64,15 @@ jest.mock("@/features/organizations/components/OrganizationPickerPopover", () =>
     </div>
   ),
 }));
-jest.mock("@ai-matrx/design-system", () => ({ SelectChevron: () => null }));
+jest.mock("@ai-matrx/design-system", () => ({
+  SelectChevron: () => null,
+  OrganizationMark: ({ name, abbreviation, logoUrl }: { name: string; abbreviation?: string | null; logoUrl?: string | null }) =>
+    logoUrl ? <span data-testid="org-logo">{name}</span> : <span data-slot="organization-mark">{abbreviation || name.slice(0, 1)}</span>,
+}));
+jest.mock("@/components/navigation/AppLink", () => ({
+  __esModule: true,
+  default: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a>,
+}));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ShellOrgSwitcher } = require("../components/account-rail/ShellOrgSwitcher") as typeof import("../components/account-rail/ShellOrgSwitcher");

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 
 export interface OrganizationPickerPopoverProps {
@@ -45,6 +46,10 @@ export interface OrganizationPickerPopoverProps {
   side?: "top" | "right" | "bottom" | "left";
   /** Drawn above the list, e.g. the page's own organization offer. */
   header?: ReactNode;
+  /** Desktop popover surface classes — the account rail draws its own menu look. */
+  contentClassName?: string;
+  /** Passed to the canonical panel (heading off, a host menu's row class). */
+  panelProps?: { hideHeading?: boolean; itemClassName?: string };
 }
 
 export function OrganizationPickerPopover({
@@ -54,6 +59,8 @@ export function OrganizationPickerPopover({
   align = "start",
   side = "bottom",
   header,
+  contentClassName,
+  panelProps,
 }: OrganizationPickerPopoverProps) {
   const isMobile = useIsMobile();
   const [ownOpen, setOwnOpen] = useState(false);
@@ -76,7 +83,7 @@ export function OrganizationPickerPopover({
             </DrawerHeader>
             <div className="matrx-touch-targets overflow-y-auto px-2 pb-4">
               {header}
-              <OrganizationPickerPanel />
+              <OrganizationPickerPanel {...panelProps} />
             </div>
           </DrawerContent>
         </Drawer>
@@ -92,10 +99,10 @@ export function OrganizationPickerPopover({
         align={align}
         side={side}
         sideOffset={8}
-        className="w-80 p-1"
+        className={contentClassName ?? "w-80 p-1"}
       >
         {header}
-        <OrganizationPickerPanel />
+        <OrganizationPickerPanel {...panelProps} />
       </PopoverContent>
     </Popover>
   );
