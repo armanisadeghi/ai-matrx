@@ -26,6 +26,25 @@ import { NEW_DOCUMENT_NAME, documentSource } from "./document-items.logic";
 
 type Failure = { reason: string; cancelled: boolean };
 
+/** Create the document. Outside the component: a `try` inside one makes the
+ * React Compiler skip it (no memoisation at all). */
+async function createDraftDocument(
+  organizationId: string | null,
+): Promise<{ id: string; name: string } | { failure: Failure }> {
+  try {
+    const organization = await ensureOrganizationContext({ organizationId });
+    const res = await createDocument({ name: NEW_DOCUMENT_NAME, organizationId: organization });
+    if (isServiceFailure(res)) throw new Error(res.error);
+    return { id: res.data.id, name: res.data.document_name };
+  } catch (err) {
+    if (isOrganizationSelectionCancelled(err)) {
+      return { failure: { reason: "Choose the workspace this document belongs to, then try again.", cancelled: true } };
+    }
+    console.error("[spatial/document] could not create the document", err);
+    return { failure: { reason: err instanceof Error ? err.message : String(err), cancelled: false } };
+  }
+}
+
 export function DocumentDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
   // The workspace the person is in — the same hint the /documents page hands
   // the gate. The gate decides; this never picks one by itself.
@@ -40,22 +59,11 @@ export function DocumentDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">)
     busy.current = true;
     setCreating(true);
     setFailure(null);
-    try {
-      const organization = await ensureOrganizationContext({ organizationId });
-      const res = await createDocument({ name: NEW_DOCUMENT_NAME, organizationId: organization });
-      if (isServiceFailure(res)) throw new Error(res.error);
-      onSource(documentSource(res.data.id), res.data.document_name);
-    } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) {
-        setFailure({ reason: "Choose the workspace this document belongs to, then try again.", cancelled: true });
-      } else {
-        console.error("[spatial/document] could not create the document", err);
-        setFailure({ reason: err instanceof Error ? err.message : String(err), cancelled: false });
-      }
-    } finally {
-      busy.current = false;
-      setCreating(false);
-    }
+    const result = await createDraftDocument(organizationId);
+    busy.current = false;
+    setCreating(false);
+    if ("failure" in result) setFailure(result.failure);
+    else onSource(documentSource(result.id), result.name);
   };
 
   return (

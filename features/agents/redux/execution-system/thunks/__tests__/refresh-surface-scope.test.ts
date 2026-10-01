@@ -293,4 +293,37 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
       unregisterPage();
     }
   });
+
+  // Break this catches: refreshSurfaceScope writing `surface_closed` ("Chat …
+  // has been closed") into the page's OWN conversation while a route swap
+  // (/chat/new → /chat/<id>) has the page's provider momentarily unmounted —
+  // seen live on the clone (receipts of conversations 04f6c64c…, 6fedadd6…).
+  test("a page's own conversation never hears its page closed during a route swap", async () => {
+    const store = makeStore();
+    seedConversation(store);
+    store.dispatch(
+      patchConversation({ conversationId: CONVERSATION_ID, surfaceName: "matrx-user/chat" }),
+    );
+    // /chat/new's provider owned this conversation, then unmounted for the swap.
+    const newChatPage = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/chat",
+        getScope: () => ({ conversation: { title: "Thanksgiving question" } }),
+        getOwnConversationId: () => CONVERSATION_ID,
+      },
+      1,
+    );
+    // The page registers → the platform learns it owns this conversation.
+    const { isPageOwnConversation } = await import("@/features/surfaces/runtime/SurfaceRuntimeContext");
+    expect(isPageOwnConversation(CONVERSATION_ID)).toBe(true);
+    newChatPage();
+
+    const result = await (store.dispatch as unknown as AppDispatch)(
+      refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
+    ).unwrap();
+    const entries =
+      (store.getState() as unknown as RootState).instanceContext.byConversationId[CONVERSATION_ID] ?? {};
+    expect(entries.surface_closed).toBeUndefined();
+    expect(result.reason).toBe("own_page_conversation");
+  });
 });

@@ -18,6 +18,7 @@ import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-map
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import {
   getSurfaceRuntimeForName,
+  wasPageOwnConversationOf,
   wasSurfaceMountedThisSession,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { getManifest } from "@/features/surfaces/manifests/registry";
@@ -88,6 +89,16 @@ export const refreshSurfaceScope = createAsyncThunk<
       // that the conversation's own screen is gone (register ARE-010). A
       // surface that never mounted a provider in this session (server-emitted)
       // keeps its launch context, as before.
+      // A page's OWN conversation never hears that its page "closed": its page
+      // is never its context. A route swap (/chat/new → /chat/<id>) unmounts
+      // the page's provider and mounts the next one, and in between the
+      // provider is simply absent — never a closed screen. Whatever page tier
+      // it carries is dropped instead of being replaced by a closing notice.
+      if (wasPageOwnConversationOf(conversationId, surfaceName)) {
+        dispatch(replaceSurfaceContextEntries({ conversationId, entries: [] }));
+        dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));
+        return { refreshed: false, surfaceName, reason: "own_page_conversation" };
+      }
       if (wasSurfaceMountedThisSession(surfaceName)) {
         const label = getManifest(surfaceName)?.label ?? surfaceName;
         const live = await withLiveSurfaceContext(surfaceName, {

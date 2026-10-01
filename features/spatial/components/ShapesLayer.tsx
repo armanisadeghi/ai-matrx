@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import type { BoardShape } from "../board/useBoard";
 import { useSelectedTile, useSpatialStore } from "../engine/react";
 
-export function ShapesLayer({ shapes }: { shapes: BoardShape[] }) {
+export function ShapesLayer({ shapes }: { shapes: readonly BoardShape[] }) {
   const store = useSpatialStore();
   const selected = useSelectedTile();
   if (shapes.length === 0) return null;

@@ -29,7 +29,8 @@ import { SurfaceActivity, createSurfaceCapture } from "@/features/surfaces/runti
 import type { SpatialStore } from "../engine/spatial-store";
 import type { ThrowAction, ThrowDirection } from "../engine/throw";
 import { DEFAULT_THROW_ACTIONS } from "../engine/throw";
-import { useBoard } from "../board/useBoard";
+import { type BoardStore, useBoardLayout, useBoardStore, useBoardTile, useBoardView } from "../board/useBoard";
+import type { PaceTier } from "../engine/lod";
 import { useBoardKeys } from "../board/useBoardKeys";
 import { useWheelModePreference } from "../board/useWheelModePreference";
 import type { BoardDocument, NodeSource } from "../board/document";
@@ -67,6 +68,13 @@ export interface UserBoardTile {
 const BOARD_THROWS: Record<ThrowDirection, ThrowAction> = { ...DEFAULT_THROW_ACTIONS, up: "none", down: "remove" };
 const CAMERA_SAVE_MS = 1200;
 
+/**
+ * The board re-renders only on STRUCTURE (`useBoardLayout`): a tile moving,
+ * resizing or changing its content wakes that tile alone (`useBoardTile`).
+ * Every prop a tile receives is stable (the store's methods, `onThrow`), so the
+ * compiler's memoization holds and the page's save-status flips never reach a
+ * tile body.
+ */
 export function UserBoard({
   title,
   doc,
@@ -78,13 +86,14 @@ export function UserBoard({
   /** Every change, as the saved form. */
   onChange: (doc: BoardDocument) => void;
 }) {
-  const board = useBoard<UserBoardTile>(() => ({
+  const board = useBoardStore<UserBoardTile>(() => ({
     tiles: doc.nodes.map((n) => ({ id: n.id, rect: n.rect, title: n.title, source: n.source })),
     parked: doc.nodes.filter((n) => n.parked).map((n) => n.id),
     frames: doc.groups,
     shapes: doc.shapes,
     connections: doc.edges,
   }));
+  const layout = useBoardLayout(board);
   const [store, setStore] = useState<SpatialStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
   const [layersOpen, setLayersOpen] = useState(false);
@@ -114,22 +123,23 @@ export function UserBoard({
       shapes: board.shapes,
     };
   };
-  const cameraNow = () => store?.getCamera() ?? doc.camera;
-  const serialized = JSON.stringify([board.tiles, board.parked, board.frames, board.shapes, board.connections]);
-  const reported = useRef(serialized);
-  useEffect(() => {
-    if (reported.current === serialized) return;
-    reported.current = serialized;
-    onChange(toDoc(cameraNow()));
-    // toDoc/cameraNow read live state; the serialized content is the trigger.
-  });
-
   const onChangeRef = useRef(onChange);
   const toDocRef = useRef(toDoc);
+  const storeRef = useRef(store);
   useEffect(() => {
     onChangeRef.current = onChange;
     toDocRef.current = toDoc;
+    storeRef.current = store;
   });
+
+  // Every change to the model is reported straight from the store — not from
+  // a render — so saving never depends on (or causes) a board re-render. The
+  // autosaver debounces; a drag reports each step and only the last is written.
+  const [startCamera] = useState(doc.camera);
+  useEffect(
+    () => board.subscribe(() => onChangeRef.current(toDocRef.current(storeRef.current?.getCamera() ?? startCamera))),
+    [board, startCamera],
+  );
 
   // The camera is saved once it settles (the URL hash follows it live).
   useEffect(() => {
@@ -284,7 +294,7 @@ export function UserBoard({
   }, []);
 
   // ── what a throw, a menu item or a key does ──────────────────────────────
-  const tileOf = (id: string) => [...board.tiles, ...board.parked].find((t) => t.id === id);
+  const tileOf = (id: string) => board.getTile(id);
   const park = (id: string) => {
     const undo = board.parkTile(id);
     toast(`Parked "${tileOf(id)?.title ?? "tile"}"`, { action: { label: "Undo", onClick: undo } });
@@ -300,11 +310,17 @@ export function UserBoard({
       action: { label: "Undo", onClick: undo },
     });
   };
-  const onThrow = (id: string, direction: ThrowDirection) => {
+  const handleThrow = (id: string, direction: ThrowDirection) => {
     const action = BOARD_THROWS[direction];
     if (action === "park") park(id);
     else if (action === "remove") takeOff(id);
   };
+  const throwRef = useRef(handleThrow);
+  useEffect(() => {
+    throwRef.current = handleThrow;
+  });
+  // Stable (it closes over a ref only), so a tile never re-renders because its host did.
+  const onThrow = (id: string, direction: ThrowDirection) => throwRef.current(id, direction);
   const deleteSelected = () => {
     const id = store?.getSelected();
     if (!id) return;
@@ -336,15 +352,19 @@ export function UserBoard({
     },
   };
 
-  const byId = new Map(board.tiles.map((t) => [t.id, t]));
-  const empty = board.tiles.length === 0 && board.parked.length === 0;
+  const onBoard = new Set(layout.tileIds);
+  const empty = layout.tileIds.length === 0 && layout.parkedIds.length === 0;
+  const parkedTiles = layout.parkedIds.flatMap((id) => {
+    const t = board.getTile(id);
+    return t ? [t] : [];
+  });
 
   return (
     <SpatialBoardSurface host={agentHost}>
       <SpatialBoardMenu
         store={store}
         actions={{ park, remove: takeOff, removeLabel: "Take off this board" }}
-        parked={board.parked.map((t) => ({ id: t.id, title: t.title }))}
+        parked={parkedTiles.map((t) => ({ id: t.id, title: t.title }))}
         onUnpark={unpark}
         wheelMode={wheelMode}
         onWheelMode={setWheelMode}
@@ -386,28 +406,14 @@ export function UserBoard({
                     <PanelRight className="h-4 w-4" />
                   </button>
                   <span className="mx-0.5 h-5 w-px bg-border" />
-                  <ZoomMenu history={board} />
-                </div>
-                {layersOpen && (
-                  <LayersPanel
-                    frames={board.frames.map((f) => ({ id: f.id, title: f.title, rect: f.rect }))}
-                    tiles={board.tiles.map((t) => ({
-                      id: t.id,
-                      title: t.title,
-                      rect: t.rect,
-                      icon: itemTypeFor(t.source)?.icon ?? PanelRight,
-                    }))}
-                    shapeCount={board.shapes.length}
-                    onRename={(id, next) => {
-                      if (board.frames.some((f) => f.id === id)) board.updateFrame(id, { title: next });
-                      else board.updateTile(id, { title: next });
-                    }}
-                    onClose={() => setLayersOpen(false)}
+                  <ZoomMenu
+                    history={{ canUndo: layout.canUndo, canRedo: layout.canRedo, undo: board.undo, redo: board.redo }}
                   />
-                )}
+                </div>
+                {layersOpen && <BoardLayers board={board} onClose={() => setLayersOpen(false)} />}
                 <ParkedShelf
                   className={layersOpen ? "right-72 top-16" : "top-16"}
-                  parked={board.parked.map((t) => ({
+                  parked={parkedTiles.map((t) => ({
                     id: t.id,
                     title: t.title,
                     icon: itemTypeFor(t.source)?.icon ?? PanelRight,
@@ -427,28 +433,17 @@ export function UserBoard({
               </>
             }
           >
-            {board.frames.map((f) => (
+            {layout.frames.map((f) => (
               <SpatialFrame key={f.id} {...f} />
             ))}
-            <ShapesLayer shapes={board.shapes} />
-            {board.connections.map((c) => {
-              const from = byId.get(c.from);
-              const to = byId.get(c.to);
-              if (!from || !to) return null;
-              return <SpatialEdge key={c.id} from={from.rect} to={to.rect} />;
-            })}
-            {board.tiles.map((t) => (
-              <BoardItemTile
-                key={t.id}
-                tile={t}
-                itemSurfaces={itemSurfaces}
-                onMove={board.moveTile}
-                onResize={board.resizeTile}
-                onThrow={onThrow}
-                onSource={(source, nextTitle) =>
-                  board.updateTile(t.id, nextTitle ? { source, title: nextTitle } : { source }, { history: false })
-                }
-              />
+            <ShapesLayer shapes={layout.shapes} />
+            {layout.connections.map((c) =>
+              onBoard.has(c.from) && onBoard.has(c.to) ? (
+                <BoardEdge key={c.id} board={board} from={c.from} to={c.to} />
+              ) : null,
+            )}
+            {layout.tileIds.map((id) => (
+              <BoardItemTile key={id} id={id} board={board} itemSurfaces={itemSurfaces} onThrow={onThrow} />
             ))}
           </SpatialViewport>
         </div>
@@ -473,44 +468,79 @@ export function UserBoard({
   );
 }
 
-/** One tile: the item type's canonical body, or an honest stand-in. */
+/** The edge between two tiles; follows both as they move, without waking the board. */
+function BoardEdge({ board, from, to }: { board: BoardStore<UserBoardTile>; from: string; to: string }) {
+  const a = useBoardTile(board, from);
+  const b = useBoardTile(board, to);
+  if (!a || !b) return null;
+  return <SpatialEdge from={a.rect} to={b.rect} />;
+}
+
+/** The layers list reads every tile, so it alone re-renders on every change — only while open. */
+function BoardLayers({ board, onClose }: { board: BoardStore<UserBoardTile>; onClose: () => void }) {
+  const view = useBoardView(board);
+  return (
+    <LayersPanel
+      frames={view.frames.map((f) => ({ id: f.id, title: f.title, rect: f.rect }))}
+      tiles={view.tiles.map((t) => ({
+        id: t.id,
+        title: t.title,
+        rect: t.rect,
+        icon: itemTypeFor(t.source)?.icon ?? PanelRight,
+      }))}
+      shapeCount={board.shapes.length}
+      onRename={(id, next) => {
+        if (board.frames.some((f) => f.id === id)) board.updateFrame(id, { title: next });
+        else board.updateTile(id, { title: next });
+      }}
+      onClose={onClose}
+    />
+  );
+}
+
+/**
+ * One tile, subscribed to ITS record only: a drag or resize re-renders this
+ * frame and nothing else. The body depends on the tile's source and title, not
+ * its rect, so moving a tile never re-renders what it shows.
+ */
 function BoardItemTile({
-  tile,
+  id,
+  board,
   itemSurfaces,
-  onMove,
-  onResize,
   onThrow,
-  onSource,
 }: {
-  tile: UserBoardTile;
+  id: string;
+  board: BoardStore<UserBoardTile>;
   itemSurfaces: ItemSurfaceIndex;
-  onMove: (id: string, x: number, y: number) => void;
-  onResize: (id: string, rect: Rect) => void;
   onThrow: (id: string, direction: ThrowDirection) => void;
-  onSource: (source: NodeSource, title?: string) => void;
 }) {
-  const type = itemTypeFor(tile.source);
-  const interacting = useEditingTile() === tile.id;
+  const tile = useBoardTile(board, id);
+  const interacting = useEditingTile() === id;
   // The LIVE tile — selected, worked in or focused — is the only one whose
   // feature surface registers; every other copy stays dormant.
-  const selected = useSelectedTile() === tile.id;
-  const focused = useFocusedTile() === tile.id;
+  const selected = useSelectedTile() === id;
+  const focused = useFocusedTile() === id;
   const live = interacting || selected || focused;
   // The tile's own copy of its surface, registered live or dormant, so an
   // agent can read and act on it without the person switching to it.
   const [capture] = useState(createSurfaceCapture);
-  useEffect(() => itemSurfaces.set(tile.id, capture), [itemSurfaces, tile.id, capture]);
-  const Host = type && "name" in type.surface ? type.surface.Host : undefined;
-  const href = type?.href?.(tile.source) ?? null;
+  useEffect(() => itemSurfaces.set(id, capture), [itemSurfaces, id, capture]);
+  if (!tile) return null;
+  const source = tile.source;
+  const title = tile.title;
+  const type = itemTypeFor(source);
+  const href = type?.href?.(source) ?? null;
+  const onSource = (next: NodeSource, nextTitle?: string) =>
+    board.updateTile(id, nextTitle ? { source: next, title: nextTitle } : { source: next }, { history: false });
   return (
     <SpatialTile
-      id={tile.id}
+      id={id}
       rect={tile.rect}
-      title={tile.title}
+      title={title}
       subtitle={type?.label ?? "Unavailable"}
       icon={type?.icon}
-      onMove={onMove}
-      onResize={onResize}
+      onMove={board.moveTile}
+      onResize={board.resizeTile}
       onThrow={onThrow}
       throwActions={BOARD_THROWS}
       actions={
@@ -520,7 +550,7 @@ function BoardItemTile({
             target="_blank"
             rel="noreferrer"
             title="Open in its own page"
-            aria-label={`Open ${tile.title} in its own page`}
+            aria-label={`Open ${title} in its own page`}
             className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <ExternalLink className="h-3.5 w-3.5" />
@@ -528,22 +558,53 @@ function BoardItemTile({
         ) : undefined
       }
     >
-      {(tier) =>
-        type ? (
-          <SurfaceActivity active={live} capture={capture}>
-            {Host ? (
-              <Host source={tile.source}>
-                <type.Body tileId={tile.id} source={tile.source} title={tile.title} tier={tier} interacting={interacting} onSource={onSource} />
-              </Host>
-            ) : (
-              <type.Body tileId={tile.id} source={tile.source} title={tile.title} tier={tier} interacting={interacting} onSource={onSource} />
-            )}
-          </SurfaceActivity>
-        ) : (
-          <UnavailableItemBody source={tile.source} />
-        )
-      }
+      {(tier) => (
+        <TileContent
+          tileId={id}
+          source={source}
+          title={title}
+          tier={tier}
+          interacting={interacting}
+          live={live}
+          capture={capture}
+          onSource={onSource}
+        />
+      )}
     </SpatialTile>
+  );
+}
+
+/** What a tile shows. Its props never include the rect, so a move or resize
+ * re-renders the frame around it and this returns its cached output. */
+function TileContent({
+  tileId,
+  source,
+  title,
+  tier,
+  interacting,
+  live,
+  capture,
+  onSource,
+}: {
+  tileId: string;
+  source: NodeSource;
+  title: string;
+  tier: PaceTier;
+  interacting: boolean;
+  live: boolean;
+  capture: ReturnType<typeof createSurfaceCapture>;
+  onSource: (source: NodeSource, title?: string) => void;
+}) {
+  const type = itemTypeFor(source);
+  if (!type) return <UnavailableItemBody source={source} />;
+  const Host = "name" in type.surface ? type.surface.Host : undefined;
+  const body = (
+    <type.Body tileId={tileId} source={source} title={title} tier={tier} interacting={interacting} onSource={onSource} />
+  );
+  return (
+    <SurfaceActivity active={live} capture={capture}>
+      {Host ? <Host source={source}>{body}</Host> : body}
+    </SurfaceActivity>
   );
 }
 

@@ -34,7 +34,7 @@ import { replaceSurfaceContextEntries } from "@/features/agents/redux/execution-
 import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { refreshSurfaceScope } from "@/features/agents/redux/execution-system/thunks/refresh-surface-scope.thunk";
-import { isPageOwnConversation } from "./SurfaceRuntimeContext";
+import { isPageOwnConversation, useIsPageOwnConversation } from "./SurfaceRuntimeContext";
 import { useActivePageSurface } from "./useActivePageSurface";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 
@@ -68,14 +68,29 @@ export function useConversationFollowsPage(
   }, [dispatch, conversationId, turnedOff, rememberedPage, pageSurfaceName]);
 
   // The page's OWN conversation is the page: it never receives itself.
-  const ownConversation = isPageOwnConversation(conversationId);
+  // Reactive (re-renders when a provider registers or changes what it owns),
+  // and re-read live inside each effect: the page's provider registers in a
+  // layout effect of this same commit, after this render already ran.
+  const ownConversation = useIsPageOwnConversation(conversationId);
+
+  // ...and never keeps a page stamp or page values from before it was known
+  // to be the page's own (an older launch, or a read made in the instant a
+  // route swap had no provider mounted).
+  useEffect(() => {
+    if (!conversationId || !conversationReady || stampedSurfaceName === null) return;
+    if (!ownConversation && !isPageOwnConversation(conversationId)) return;
+    dispatch(patchConversation({ conversationId, surfaceName: null }));
+    dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));
+    dispatch(replaceSurfaceContextEntries({ conversationId, entries: [] }));
+  }, [dispatch, conversationId, conversationReady, ownConversation, stampedSurfaceName]);
 
   // A composer showing a conversation that ALREADY carries the right stamp
   // (loaded from history, reopened in a window) reads the page once, now —
   // so the chip shows what the next turn will carry instead of nothing.
   const readOnShow = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationId || !conversationReady || ownConversation) return;
+    if (!conversationId || !conversationReady) return;
+    if (ownConversation || isPageOwnConversation(conversationId)) return;
     if (!desiredSurfaceName || stampedSurfaceName !== desiredSurfaceName) return;
     if (readOnShow.current === conversationId) return;
     readOnShow.current = conversationId;
@@ -83,7 +98,8 @@ export function useConversationFollowsPage(
   }, [dispatch, conversationId, conversationReady, ownConversation, desiredSurfaceName, stampedSurfaceName]);
 
   useEffect(() => {
-    if (!conversationId || !conversationReady || ownConversation) return;
+    if (!conversationId || !conversationReady) return;
+    if (ownConversation || isPageOwnConversation(conversationId)) return;
     // An unregistered page has nothing to follow: a conversation launched with
     // its own surface keeps it. Only the person's switch clears a stamp.
     if (!turnedOff && !pageSurfaceName) return;

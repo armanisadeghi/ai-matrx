@@ -29,6 +29,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   type ReactNode,
 } from "react";
@@ -517,10 +518,15 @@ function useRegistrationIn(
   add: (registry: SurfaceRegistry) => () => void,
 ): void {
   const addRef = useRef(add);
-  useEffect(() => {
+  useLayoutEffect(() => {
     addRef.current = add;
   });
-  useEffect(() => {
+  // A LAYOUT effect, deliberately: every layout effect in a commit runs
+  // before any passive effect, so a descendant's passive effect (the
+  // composer's `useConversationFollowsPage`) always sees its page registered.
+  // As a passive effect the parent registered AFTER its children's effects
+  // ran — the child read "no provider, not my page's own conversation".
+  useLayoutEffect(() => {
     if (!registry || identity === null) return;
     return addRef.current(registry);
   }, [registry, identity]);
@@ -605,11 +611,100 @@ export function isPageOwnConversation(
   conversationId: string | null | undefined,
 ): boolean {
   if (!conversationId) return false;
-  return getSurfaceRuntimeStack().some(
+  const owner = getSurfaceRuntimeStack().find(
     (runtime) =>
       (runtime.getOwnConversationId?.() ?? runtime.ownConversationId) ===
         conversationId || runtime.isOwnConversation?.(conversationId) === true,
   );
+  if (owner) rememberOwnConversation(conversationId, owner.surfaceName);
+  return Boolean(owner);
+}
+
+// ---------------------------------------------------------------------------
+// Own-conversation reactivity
+// ---------------------------------------------------------------------------
+//
+// `isPageOwnConversation` is a live READ. A component that decides from it in
+// render (the composer chip's label, the follow hook's "leave it alone") must
+// re-render when the answer changes — a provider registering, unregistering,
+// or changing which conversation it owns — or it keeps the answer it had at
+// first render. On /chat/new → /chat/<id> that was "not own" (the new page's
+// provider had not registered yet), so the chat was stamped with its own page,
+// read a page that was not mounted, and sent itself "Chat … has been closed".
+
+const ownListeners = new Set<() => void>();
+
+/** Tell every own-conversation reader that a provider's ownership changed. */
+function notifyOwnConversationChange(): void {
+  for (const listener of ownListeners) listener();
+}
+
+function subscribeOwnConversation(listener: () => void): () => void {
+  const unsubscribeRegistry = globalRegistry.subscribe(listener);
+  ownListeners.add(listener);
+  return () => {
+    unsubscribeRegistry();
+    ownListeners.delete(listener);
+  };
+}
+
+/**
+ * Reactive `isPageOwnConversation`: re-renders when any provider registers,
+ * unregisters, or changes the conversation it owns. Effects that ACT on the
+ * answer should still re-read `isPageOwnConversation` live inside the effect.
+ */
+export function useIsPageOwnConversation(
+  conversationId: string | null | undefined,
+): boolean {
+  return useSyncExternalStore(
+    subscribeOwnConversation,
+    () => isPageOwnConversation(conversationId),
+    () => false,
+  );
+}
+
+/** conversationId → every surface that declared it as its OWN this session. */
+const ownedThisSession = new Map<string, Set<string>>();
+
+function rememberOwnConversation(conversationId: string, surfaceName: string): void {
+  const surfaces = ownedThisSession.get(conversationId);
+  if (surfaces) surfaces.add(surfaceName);
+  else ownedThisSession.set(conversationId, new Set([surfaceName]));
+}
+
+/**
+ * True when `surfaceName`'s provider declared `conversationId` as its own at
+ * some point in this page session. Such a conversation IS that page: when the
+ * page's provider is momentarily gone (a route swap remounting it), the
+ * conversation's screen did not "close" — it never received the page at all.
+ */
+export function wasPageOwnConversationOf(
+  conversationId: string,
+  surfaceName: string,
+): boolean {
+  return ownedThisSession.get(conversationId)?.has(surfaceName) === true;
+}
+
+/**
+ * Keep a provider's own-conversation readers current: the refs are updated
+ * before any passive effect (a child's follow hook) reads them, and every
+ * change is announced so `useIsPageOwnConversation` re-renders.
+ */
+function useOwnConversationDeclaration(
+  surfaceName: string | null,
+  ownConversationId: string | null | undefined,
+  isOwnConversation: ((conversationId: string) => boolean) | undefined,
+  apply: () => void,
+): void {
+  const applyRef = useRef(apply);
+  useLayoutEffect(() => {
+    applyRef.current = apply;
+  });
+  useLayoutEffect(() => {
+    applyRef.current();
+    if (surfaceName && ownConversationId) rememberOwnConversation(ownConversationId, surfaceName);
+    notifyOwnConversationChange();
+  }, [surfaceName, ownConversationId, isOwnConversation]);
 }
 
 /**
@@ -905,6 +1000,8 @@ export function SurfaceRuntimeProvider({
   useEffect(() => {
     beforeExecuteRef.current = beforeExecute;
     getWriteHandlersRef.current = getWriteHandlers;
+  });
+  useOwnConversationDeclaration(surfaceName, ownConversationId, isOwnConversation, () => {
     ownConversationIdRef.current = ownConversationId;
     isOwnConversationRef.current = isOwnConversation;
   });
@@ -965,6 +1062,14 @@ export function useSurfaceRuntimeRegistration(
   });
 
   const surfaceName = value?.surfaceName ?? null;
+  useOwnConversationDeclaration(
+    surfaceName,
+    value?.ownConversationId,
+    value?.isOwnConversation,
+    () => {
+      valueRef.current = value;
+    },
+  );
   const { live, capture } = useRegistrationTargets();
   const transferHandle = useAlchemySurfaceHandle(
     surfaceName ?? "__unbound_surface_runtime__",

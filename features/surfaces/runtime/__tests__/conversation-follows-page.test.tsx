@@ -34,6 +34,7 @@ jest.mock("../useActivePageSurface", () => ({
 }));
 jest.mock("../SurfaceRuntimeContext", () => ({
   isPageOwnConversation: () => ownConversation,
+  useIsPageOwnConversation: () => ownConversation,
 }));
 jest.mock("@/features/surfaces/utils/surface-display", () => ({
   getSurfaceDisplayLabel: (n: string) => n,
