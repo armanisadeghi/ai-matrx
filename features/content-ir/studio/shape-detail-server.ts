@@ -71,14 +71,14 @@ export const getShapeDetail = cache(async function getShapeDetail(
   if (!session.isAuthenticated) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
-        .schema("content_ir")
-        .from("kind_definition")
-        .select(
-          "id,kind,label,is_active,published_to_web,version,updated_at,data,emitted_json_schema,metadata,created_by",
-        )
-        .eq("kind", kindSlug)
-        .is("deleted_at", null)
-        .maybeSingle();
+    .schema("content_ir")
+    .from("kind_definition")
+    .select(
+      "id,kind,label,is_active,published_to_web,version,updated_at,data,emitted_json_schema,metadata,created_by",
+    )
+    .eq("kind", kindSlug)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error) {
     throw new Error(`Failed to load shape "${kindSlug}": ${error.message}`);
   }
