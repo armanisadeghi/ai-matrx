@@ -188,7 +188,10 @@ describe("the Rulebook page and the notice agree with the controls", () => {
       page.indexOf('data-surface-value="rulebook_name"'),
       page.indexOf('data-surface-value="rulebook_name"') + 900,
     );
-    expect(nameBlock).toContain("editing={nameEditing}");
-    expect(nameBlock).toContain("onEditingChange={setNameEditing}");
+    // The arrival presses the primitive's own rename button on the heading.
+    expect(page).toMatch(
+      /useDeepLinkArrival\(searchParams\.get\("rename"\) === "1", canEdit,[\s\S]{0,160}nameHeadingRef\.current[\s\S]{0,120}Click to rename/,
+    );
+    expect(page).toContain("ref={nameHeadingRef}");
   });
 });

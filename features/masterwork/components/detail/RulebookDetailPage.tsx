@@ -921,8 +921,10 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // one `approachLane.ts` exists to stop happening a second time.
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
-  // The title's inline rename, controlled so a deep link can open it.
-  const [nameEditing, setNameEditing] = useState(false);
+  // The title's inline rename opens from a deep link through the primitive's
+  // own door (its "Click to rename" button) — EditableLabel's click mode has
+  // no prop to open it, and a hand-rolled display beside it would be a copy.
+  const nameHeadingRef = useRef<HTMLHeadingElement>(null);
   const dumpParam = searchParams.get("dump") === "1";
   /**
    * 🚨 THE INGEST DIALOG SESSION. One lane, resolved at open time and latched
@@ -1578,7 +1580,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // opens the inline title rename (cold walk 23): the control rides in the
   // notice, so the notice can never cover the thing it asks her to click.
   useDeepLinkArrival(searchParams.get("rename") === "1", canEdit, () =>
-    setNameEditing(true),
+    nameHeadingRef.current
+      ?.querySelector<HTMLButtonElement>('button[title="Click to rename"]')
+      ?.click(),
   );
 
 
@@ -2373,14 +2377,13 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                       leaving the field saves through the Rulebook's one meta
                       door, Esc cancels, an empty name is refused. */}
                   <h2
+                    ref={nameHeadingRef}
                     className="line-clamp-2 min-w-0 text-base font-semibold text-foreground sm:truncate"
                     data-surface-value="rulebook_name"
                   >
                     {canEdit ? (
                       <EditableLabel
                         value={rulebook.name}
-                        editing={nameEditing}
-                        onEditingChange={setNameEditing}
                         commitMode="await"
                         ariaLabel="Rulebook name"
                         truncate={false}
