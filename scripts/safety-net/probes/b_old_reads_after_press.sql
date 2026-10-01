@@ -112,14 +112,14 @@ begin
   foreach v_door in array array[
     format('select public.get_full_table(%L::jsonb)::text', jsonb_build_object('table_id', v_table)),
     format('select public.get_table_row(%L::jsonb)::text', jsonb_build_object('table_id', v_table, 'row_id', v_row)),
-    format('select public.get_table_cell(%L::jsonb)::text', jsonb_build_object('table_id', v_table, 'row_id', v_row, 'field_name', 'work_order')),
-    format('select public.get_table_column(%L::jsonb)::text', jsonb_build_object('table_id', v_table, 'field_name', 'work_order')),
+    format('select public.get_table_cell(%L::jsonb)::text', jsonb_build_object('table_id', v_table, 'row_id', v_row, 'column_name', 'work_order')),
+    format('select public.get_table_column(%L::jsonb)::text', jsonb_build_object('table_id', v_table, 'column_name', 'work_order')),
     format('select public.list_table_rows(%L::jsonb, 500)::text', jsonb_build_object('table_id', v_table)),
     format('select public.list_table_columns(%L::jsonb)::text', jsonb_build_object('table_id', v_table)),
     format('select public.get_user_table_complete(%L::uuid)::text', v_table),
     format('select public.get_user_table_data_paginated(%L::uuid, 500)::text', v_table),
     format('select public.get_user_table_data_paginated_v2(%L::uuid, 500)::text', v_table),
-    format('select public.export_user_table_as_csv(%L::uuid)', v_table),
+    format('select public.export_user_table_as_csv(%L::uuid, null::text, ''asc''::text)', v_table),
     format('select public.udt_column_facets(%L::uuid, %L)::text', v_table, 'work_order'),
     format('select public.udt_table_profile(%L::uuid)::text', v_table),
     'select public.get_user_tables()::text',
@@ -129,8 +129,11 @@ begin
       execute v_door into v_ans;
       if v_ans is null then
         v_ok := v_ok || (split_part(split_part(v_door, 'public.', 2), '(', 1) || ': nothing');
-      elsif position(v_marker in v_ans) > 0 or position('moved_to' in v_ans) > 0 or position('moved to the new system' in v_ans) > 0 then
-        v_ok := v_ok || (split_part(split_part(v_door, 'public.', 2), '(', 1) || ': new value or marked moved');
+      elsif position(v_marker in v_ans) > 0 then
+        v_ok := v_ok || (split_part(split_part(v_door, 'public.', 2), '(', 1) || ': the NEW value');
+      elsif position('moved_to' in v_ans) > 0 or position('moved to the new system' in v_ans) > 0 then
+        -- The old value WITH the pointer: every client that reads the mark goes to the copy (FINAL-SWITCH's design).
+        v_ok := v_ok || (split_part(split_part(v_door, 'public.', 2), '(', 1) || ': marked moved (pointer to the copy)');
       elsif position(v_old in v_ans) > 0 then
         v_frozen := v_frozen || (split_part(split_part(v_door, 'public.', 2), '(', 1));
       else

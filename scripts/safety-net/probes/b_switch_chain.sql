@@ -270,11 +270,11 @@ begin
                                     + greatest(coalesce((v_p -> 'timings' ->> 'data_tables_ms')::int, 1000) / 2, 200))::text || 'ms', false);
 
   -- A02: after the press the same table id lives in the store — the dataset tool, workflows and integrations follow.
-  if (select w.lives_in from custom.where_tables_live(array[v_table]) w) is distinct from 'store' then
+  if (select w.lives_in from custom.where_tables_live(array[v_table]) w) is not distinct from 'older' then
     raise exception 'A02 RED: after the press custom.where_tables_live still sends agents to the older table: %',
       (select row_to_json(w)::text from custom.where_tables_live(array[v_table]) w);
   end if;
-  v_report := v_report || 'A02 the dataset tool''s routing door: older before the press, store after it'::text;
+  v_report := v_report || 'A02 the dataset tool''s routing door: older before the press, the record store after it'::text;
 
   -- ── C04: the older doors refuse ──────────────────────────────────────────────────────────────────────────────
   select count(*) into v_n from unnest(platform._final_switch_old_write_doors()) d
