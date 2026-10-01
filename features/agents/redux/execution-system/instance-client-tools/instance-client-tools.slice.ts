@@ -57,8 +57,10 @@ const instanceClientToolsSlice = createSlice({
             action: PayloadAction<{ conversationId: string; toolName: string }>,
         ) {
             const { conversationId, toolName } = action.payload;
-            const tools = state.byConversationId[conversationId];
-            if (tools && !tools.includes(toolName)) {
+            // A conversation restored from the database has no entry yet —
+            // registering a tool there must not silently do nothing.
+            const tools = (state.byConversationId[conversationId] ??= []);
+            if (!tools.includes(toolName)) {
                 tools.push(toolName);
             }
         },
@@ -94,7 +96,10 @@ const instanceClientToolsSlice = createSlice({
     extraReducers: (builder) => {
         builder.addCase(createInstanceFull, (state, action) => {
             const { conversationId, clientTools } = action.payload;
-            state.byConversationId[conversationId] = clientTools?.tools ?? [];
+            const earlier = state.byConversationId[conversationId] ?? [];
+            state.byConversationId[conversationId] = [
+                ...new Set([...(clientTools?.tools ?? []), ...earlier]),
+            ];
         });
 
         builder.addCase(destroyInstance, (state, action) => {

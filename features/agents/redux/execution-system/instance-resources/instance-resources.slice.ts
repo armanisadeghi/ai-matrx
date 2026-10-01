@@ -68,6 +68,22 @@ const defaultOptions: ResourceOptions = {
   optionalContext: false,
 };
 
+/**
+ * The one way a conversation's resources bucket comes into being. Idempotent
+ * and MERGING: whichever arrives first — an attach, an instance init, or a
+ * restore — creates it, and nothing that arrives later wipes what is there
+ * (the attachment twin of instance-user-input's pre-init capture, D60).
+ */
+function ensureConversationBucket(
+  state: InstanceResourcesState,
+  conversationId: string,
+): Record<string, ManagedResource> {
+  state.submittedIds[conversationId] ??= [];
+  state.handoffInheritedIds[conversationId] ??= [];
+  state.handoffRemovedIds[conversationId] ??= [];
+  return (state.byConversationId[conversationId] ??= {});
+}
+
 // =============================================================================
 // Slice
 // =============================================================================
@@ -83,10 +99,7 @@ const instanceResourcesSlice = createSlice({
       state,
       action: PayloadAction<{ conversationId: string }>,
     ) {
-      state.byConversationId[action.payload.conversationId] = {};
-      state.submittedIds[action.payload.conversationId] = [];
-      state.handoffInheritedIds[action.payload.conversationId] = [];
-      state.handoffRemovedIds[action.payload.conversationId] = [];
+      ensureConversationBucket(state, action.payload.conversationId);
     },
 
     /**
@@ -110,8 +123,12 @@ const instanceResourcesSlice = createSlice({
         resourceId = generateResourceId(),
       } = action.payload;
 
-      const resources = state.byConversationId[conversationId];
-      if (resources) {
+      // Never drop an attachment: a conversation restored from the database
+      // (`loadConversation` → `hydrateConversation`) reaches Redux without a
+      // resources bucket, and a no-op here made a picked note or task attach
+      // nothing in a restored window panel (2026-10-01, /notes).
+      const resources = ensureConversationBucket(state, conversationId);
+      {
         const existingCount = Object.keys(resources).length;
         resources[resourceId] = {
           resourceId,
@@ -367,10 +384,7 @@ const instanceResourcesSlice = createSlice({
 
   extraReducers: (builder) => {
     builder.addCase(createInstanceFull, (state, action) => {
-      state.byConversationId[action.payload.conversationId] = {};
-      state.submittedIds[action.payload.conversationId] = [];
-      state.handoffInheritedIds[action.payload.conversationId] = [];
-      state.handoffRemovedIds[action.payload.conversationId] = [];
+      ensureConversationBucket(state, action.payload.conversationId);
     });
 
     builder.addCase(destroyInstance, (state, action) => {
