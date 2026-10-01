@@ -628,19 +628,24 @@ export const selectShouldShowVariables =
 /**
  * Is the variables form actually on screen for this instance right now?
  *
- * The exact gate the form renderers (AgentVariablesInline, AgentVariableCards)
- * apply: the surface shows the panel (`showVariablePanel`, the "Hide/Show Form
- * Inputs" toggle) AND the form phase is open (`selectShouldShowVariables`).
- * Anything that talks ABOUT the form ("Fill in the fields below") reads this,
- * never the definition count alone — a surface may hide pre-filled variables.
+ * The gates the form renderers apply, together: the style draws a form at all
+ * (`variablesPanelStyle` "hidden" makes SmartAgentVariables render null — the
+ * host supplies every value; SmartAgentInput writes a host's style here), the
+ * panel is on (`showVariablePanel`, the "Hide/Show Form Inputs" toggle), and
+ * the form phase is open (`selectShouldShowVariables`). Anything that talks
+ * ABOUT the form ("Fill in the fields below") reads this, never the
+ * definition count alone — a surface may hide pre-filled variables.
  */
 export const selectIsVariableFormShown =
   (conversationId: string) =>
-  (state: RootState): boolean =>
-    (state.instanceUIState?.byConversationId[conversationId]
-      ?.showVariablePanel ??
-      false) &&
-    selectShouldShowVariables(conversationId)(state);
+  (state: RootState): boolean => {
+    const ui = state.instanceUIState?.byConversationId[conversationId];
+    if (ui?.variablesPanelStyle === "hidden") return false;
+    return (
+      (ui?.showVariablePanel ?? false) &&
+      selectShouldShowVariables(conversationId)(state)
+    );
+  };
 
 /**
  * THE ONE "is there something to send" rule — the Send button shows exactly

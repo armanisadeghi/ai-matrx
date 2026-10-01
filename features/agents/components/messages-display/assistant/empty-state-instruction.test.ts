@@ -61,3 +61,37 @@ describe("emptyStateInstruction", () => {
     ).toBeNull();
   });
 });
+
+// The gate itself: what the empty state reads must be what the renderers do.
+// Review of the first fix found the interview hides its form with
+// `variablesPanelStyle: "hidden"` (SmartAgentVariables renders null), so a
+// "Show Form Inputs" press flipped `showVariablePanel` and brought the
+// sentence back over a chat box with nothing in it.
+import { selectIsVariableFormShown } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import type { RootState } from "@/lib/redux/store";
+
+function stateWith(ui: Record<string, unknown>): RootState {
+  return {
+    instanceVariableValues: {
+      byConversationId: { c1: { definitions: [{ name: "rulebook_id" }] } },
+    },
+    messages: { byConversationId: { c1: { orderedIds: [] } } },
+    conversations: { byConversationId: { c1: { status: "ready" } } },
+    instanceUIState: { byConversationId: { c1: ui } },
+  } as unknown as RootState;
+}
+
+describe("selectIsVariableFormShown", () => {
+  it("is true only when the panel is on and the style draws a form", () => {
+    expect(selectIsVariableFormShown("c1")(stateWith({ showVariablePanel: true }))).toBe(true);
+    expect(selectIsVariableFormShown("c1")(stateWith({ showVariablePanel: false }))).toBe(false);
+  });
+
+  it("a 'hidden' style draws no form, whatever the panel toggle says", () => {
+    expect(
+      selectIsVariableFormShown("c1")(
+        stateWith({ showVariablePanel: true, variablesPanelStyle: "hidden" }),
+      ),
+    ).toBe(false);
+  });
+});

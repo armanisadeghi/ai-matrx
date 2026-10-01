@@ -16,7 +16,9 @@
  * Required prop: conversationId.
  */
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setVariablesPanelStyle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
@@ -101,6 +103,20 @@ export function SmartAgentInput({
 }: SmartAgentInputProps) {
   const isAmbient = presentation === "ambient";
   const touchOnly = useTouchOnlyDevice();
+  const dispatch = useAppDispatch();
+  // A host's style is the instance's style: written to the slice so every
+  // reader (the empty state's "Fill in the fields below", the form gate
+  // `selectIsVariableFormShown`) sees what the composer actually draws.
+  useEffect(() => {
+    if (conversationId && variablesPanelStyle) {
+      dispatch(
+        setVariablesPanelStyle({ conversationId, style: variablesPanelStyle }),
+      );
+    }
+  }, [dispatch, conversationId, variablesPanelStyle]);
+  // A "Show Form Inputs" toggle over a style that never draws a form is a
+  // dead control (cold walk 23, defect C review).
+  const variableIconShown = showVariableIcon && variablesPanelStyle !== "hidden";
   // Queued-while-running message cards render above EITHER variant, so every
   // surface that mounts a composer also sees / edits / withdraws its queue
   // (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md). Renders null when the queue is empty.
@@ -123,7 +139,7 @@ export function SmartAgentInput({
           uploadPath={uploadPath}
           enablePasteImages={enablePasteImages}
           showSendButton={showSendButton}
-          showVariableIcon={showVariableIcon}
+          showVariableIcon={variableIconShown}
           surfaceKey={surfaceKey}
           draftAlias={draftAlias}
           disableSend={disableSend}
@@ -151,7 +167,7 @@ export function SmartAgentInput({
         enablePasteImages={enablePasteImages}
         compact={compact}
         showSendButton={showSendButton}
-        showVariableIcon={showVariableIcon}
+        showVariableIcon={variableIconShown}
         surfaceKey={surfaceKey}
           draftAlias={draftAlias}
         disableSend={disableSend}
