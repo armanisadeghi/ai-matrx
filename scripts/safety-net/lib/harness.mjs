@@ -280,7 +280,12 @@ export const interceptHits = [];
 async function installIntercepts(context) {
   for (const rule of INTERCEPTS) {
     const re = new RegExp(rule.match);
-    await context.route(re, async (route) => {
+    // A route callback still running when the browser closes rejects; swallow it (said once) so the
+    // walk's own result stands — an unhandled rejection here used to crash node and grade every item FAIL.
+    await context.route(re, (route) => handle(route).catch((e) => {
+      if (!/closed|Target page|has been closed/i.test(String(e))) console.log(`[harness] intercept handler error: ${String(e).slice(0, 160)}`);
+    }));
+    async function handle(route) {
       const req = route.request();
       if (rule.method && req.method() !== rule.method) return route.continue();
       interceptHits.push({ rule: rule.match, action: rule.action, url: req.url().slice(0, 160) });
@@ -303,7 +308,7 @@ async function installIntercepts(context) {
       }
       if (rule.action === "rewrite") body = body.split(rule.from).join(rule.to);
       return route.fulfill({ response: res, body });
-    });
+    }
   }
 }
 
