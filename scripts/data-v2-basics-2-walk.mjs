@@ -683,7 +683,7 @@ try {
     }
     await shot("h01-data-home");
     step("data home", { buttons: (await page.getByRole("button").allInnerTexts()).map((b) => b.trim()).filter(Boolean).slice(0, 40) });
-    const nt = page.getByRole("button", { name: /^New table/ }).first();
+    const nt = page.getByRole("button", { name: "New table", exact: true }).first();
     if (await nt.count()) {
       await nt.click();
       await sleep(2500);
@@ -796,7 +796,7 @@ try {
         await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
         await sleep(6000);
       }
-      await page.getByRole("button", { name: /^New table/ }).first().click();
+      await page.getByRole("button", { name: "New table", exact: true }).first().click();
       await sleep(1200);
       await page.getByPlaceholder("Table name").fill(name);
       await page.getByRole("button", { name: "Create", exact: true }).click();
@@ -1327,7 +1327,7 @@ try {
           await page.locator("[data-radix-popper-content-wrapper]").getByText("Cedar Ridge Physical Therapy", { exact: true }).first().click();
           await sleep(6000);
         }
-        await page.getByRole("button", { name: /^New table/ }).first().click();
+        await page.getByRole("button", { name: "New table", exact: true }).first().click();
         await sleep(1200);
         await page.getByPlaceholder("Table name").fill(name);
         await page.getByRole("button", { name: "Create", exact: true }).click();

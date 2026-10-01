@@ -103,7 +103,7 @@ async function open(page, tid, query = "?view=grid", opts = {}) {
 }
 async function newTable(name) {
   await ctx.goto(admin, "/data-v2");
-  const nt = admin.getByRole("button", { name: /^New table/ }).first();
+  const nt = admin.getByRole("button", { name: "New table", exact: true }).first();
   await until("New table", async () => (await nt.count()) > 0, 90000);
   await nt.click();
   await sleep(1200);

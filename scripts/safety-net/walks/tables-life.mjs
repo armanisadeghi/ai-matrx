@@ -342,7 +342,7 @@ try {
   // ── T01 create a table ─────────────────────────────────────────────────────────────────────────
   await step(["T01"], "New table from the data home", async () => {
     await ctx.goto(page, "/data-v2");
-    const nt = page.getByRole("button", { name: /^New table/ }).first();
+    const nt = page.getByRole("button", { name: "New table", exact: true }).first();
     await until("New table", async () => (await nt.count()) > 0, 90000);
     await nt.click();
     await sleep(1200);

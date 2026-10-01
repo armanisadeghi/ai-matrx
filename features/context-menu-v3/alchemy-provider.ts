@@ -22,7 +22,7 @@
 //     a surface section's own label, the surface's display label).
 
 import { fieldPreview } from "./utils/field-menu-header";
-import type { Action, ActionCategory, ClickTarget, Eligibility } from "@ai-matrx/alchemy/actions";
+import type { Action, ActionCategory, ActionProvider, ClickTarget, Eligibility } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
@@ -328,6 +328,22 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
     });
   });
   return out;
+}
+
+/**
+ * THE provider one open menu registers (AlchemyMenuContent). Every menu
+ * instance yields the same baseline ids (`cm:copy`, `cm:find`, …) and the
+ * Alchemy registry refuses an id a second provider yields — so an instance
+ * answers ONLY a target it opened. Two menus mounted at once (a message's menu
+ * nested in the page's, PB-06 2026-10-01: 18 `DuplicateActionError`s per
+ * open) each contribute to their own target and nothing to the other's.
+ */
+export function contextMenuProvider(instanceId: string, actions: () => readonly Action[]): ActionProvider {
+  return {
+    id: `context-menu:${instanceId}`,
+    tier: "T1",
+    actions: () => actions(),
+  };
 }
 
 /** A cheap fingerprint of what the menu would draw (re-resolve when it moves). */

@@ -102,7 +102,7 @@ try {
   await ctx.step([], "setup: New table", page, async () => {
     await ctx.goto(page, "/data-v2");
     await sleep(6000);
-    const nt = page.getByRole("button", { name: /^New table/ }).first();
+    const nt = page.getByRole("button", { name: "New table", exact: true }).first();
     await nt.waitFor({ timeout: 90000 });
     await nt.click();
     await sleep(1200);
