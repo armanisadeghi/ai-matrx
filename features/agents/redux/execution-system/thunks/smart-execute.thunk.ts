@@ -29,7 +29,10 @@ import {
   enqueueInboxMessage,
   returnQueuedToComposer,
 } from "../inbox/inbox.thunks";
-import { settleAfterStop } from "./settle-after-stop.thunk";
+import {
+  selectInFlightRequestIds,
+  settleAfterStop,
+} from "./settle-after-stop.thunk";
 import { cancelAgentRunRequest } from "@/lib/api/matrx-transport";
 import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
@@ -745,6 +748,9 @@ export const cancelExecution = createAsyncThunk<
 
     abortConversation(conversationId);
 
+    // Only the requests the Stop actually interrupted are settled — never an
+    // answer that had already finished earlier in the conversation.
+    const stoppedRequestIds = selectInFlightRequestIds(state, conversationId);
     const requestIds = state.activeRequests?.byConversationId[conversationId];
     if (requestIds && requestIds.length > 0) {
       const latestRequestId = requestIds[requestIds.length - 1];
@@ -766,7 +772,7 @@ export const cancelExecution = createAsyncThunk<
       settleAfterStop({
         conversationId,
         serverRequestId,
-        localRequestIds: [...(requestIds ?? [])],
+        localRequestIds: stoppedRequestIds,
       }),
     );
   },

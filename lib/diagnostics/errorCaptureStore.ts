@@ -80,6 +80,12 @@ export type CapturedErrorSource =
    * fail_all_pending. The wire payload can't distinguish the two yet.
    */
   | "agent-stream-record-failed"
+  /**
+   * After a Stop, the persisted answer holds less text than the screen showed
+   * (settleAfterStop). A Stop is `cancelled`, never a failed record — this has
+   * its own source so the inspector never names a Stop a failure.
+   */
+  | "agent-stop-save-shorter"
   /** A typed `data` event carrying an error (search_error, memory_error, …). */
   | "agent-stream-data-error"
   /**

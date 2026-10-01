@@ -77,6 +77,29 @@ export function pickStoppedOperation(
 const visibleChars = (text: string) => text.replace(/\s+/g, "");
 
 /**
+ * Statuses a request can hold only if it ended BEFORE the Stop. Such an answer
+ * was never stopped and is never compared (PB-05 run 2, prod ac170b56…: an
+ * earlier finished 40-stop answer was compared and reported "saved shorter").
+ */
+const FINISHED_BEFORE_STOP: ReadonlySet<string> = new Set([
+  "complete",
+  "error",
+  "timeout",
+]);
+
+/** The conversation's requests that were still running when Stop was pressed. */
+export function selectInFlightRequestIds(
+  state: RootState,
+  conversationId: string,
+): string[] {
+  const ids = state.activeRequests?.byConversationId[conversationId] ?? [];
+  return ids.filter((id) => {
+    const status = state.activeRequests.byRequestId[id]?.status;
+    return status !== undefined && !FINISHED_BEFORE_STOP.has(status) && status !== "cancelled";
+  });
+}
+
+/**
  * Split the stopped requests into those whose persisted rows hold at least
  * the text the stream showed (safe to render from the database) and those
  * saved SHORTER than shown (keep the stream render; report the gap).
@@ -93,6 +116,11 @@ export function classifyStoppedRequests(
   const release: string[] = [];
   const shorter: Array<{ requestId: string; shownChars: number; savedChars: number }> = [];
   for (const requestId of requestIds) {
+    const status = state.activeRequests?.byRequestId[requestId]?.status;
+    if (status && FINISHED_BEFORE_STOP.has(status)) {
+      // Finished before the Stop: not the stopped answer — left as it is.
+      continue;
+    }
     const shownChars = visibleChars(selectAnswerText(requestId)(state)).length;
     const savedChars = visibleChars(
       (entry?.orderedIds ?? [])
@@ -195,7 +223,7 @@ export const settleAfterStop = createAsyncThunk<
     dispatch(releaseStreamAnchors({ conversationId, requestIds: release }));
     for (const gap of shorter) {
       captureError({
-        source: "agent-stream-record-failed",
+        source: "agent-stop-save-shorter",
         message: "A stopped answer was saved shorter than it was shown",
         conversationId,
         requestId: gap.requestId,

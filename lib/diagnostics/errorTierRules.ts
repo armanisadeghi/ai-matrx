@@ -540,6 +540,16 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "stop-save-shorter",
+    tier: "orange",
+    reason:
+      "After a Stop the saved answer holds less than the screen showed. The screen keeps what was read, so nothing is lost to the person; the server persisted too little and should be fixed, which is worth a glance, not an alarm.",
+    addedAt: "2026-10-01",
+    match: {
+      source: "agent-stop-save-shorter",
+    },
+  },
+  {
     id: "record-failed-terminal-status",
     tier: "orange",
     reason:

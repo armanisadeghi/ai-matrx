@@ -125,7 +125,23 @@ function op(requestId: string, status: "running" | "cancelled") {
 const SHOWN_AT_STOP =
   "Stop 1 — Whitcombe residence, Tacoma WA\n\nStop 2 — Public Storage, Tacoma WA";
 
-function makeStore(status: "cancelled" | "running", shown = SHOWN_AT_STOP) {
+/**
+ * PB-05 run 2 (prod ac170b56…): the conversation already held a FINISHED
+ * answer from earlier in the session (24b5c145, the 40-stop Halvorsen run).
+ * Stop handed every request id of the conversation to the settle, so that
+ * finished answer was compared too — 16,639 characters on screen against the
+ * 1,900 attributed to it after the re-read — and the Error Inspector reported a
+ * stopped answer "saved shorter than it was shown" that was never stopped.
+ */
+const EARLIER_FINISHED_REQ = "req_halvorsen_finished";
+const EARLIER_FINISHED_TEXT =
+  "Stop 1 — Halvorsen residence, Portland OR … Stop 40 — Denver CO. Itinerary complete — 40 stops.";
+
+function makeStore(
+  status: "cancelled" | "running",
+  shown = SHOWN_AT_STOP,
+  { withEarlierFinishedAnswer = false } = {},
+) {
   const conversations = createSlice({
     name: "conversations",
     initialState: { byConversationId: { [CONV]: { status } } },
@@ -137,12 +153,29 @@ function makeStore(status: "cancelled" | "running", shown = SHOWN_AT_STOP) {
     initialState: {
       byRequestId: {
         [LOCAL_REQ]: {
+          status: "cancelled",
           renderBlockOrder: ["b0"],
           renderBlocks: { b0: { id: "b0", type: "text", content: shown } },
           editedText: null,
         },
+        ...(withEarlierFinishedAnswer
+          ? {
+              [EARLIER_FINISHED_REQ]: {
+                status: "complete",
+                renderBlockOrder: ["b0"],
+                renderBlocks: {
+                  b0: { id: "b0", type: "text", content: EARLIER_FINISHED_TEXT },
+                },
+                editedText: null,
+              },
+            }
+          : {}),
       },
-      byConversationId: { [CONV]: [LOCAL_REQ] },
+      byConversationId: {
+        [CONV]: withEarlierFinishedAnswer
+          ? [EARLIER_FINISHED_REQ, LOCAL_REQ]
+          : [LOCAL_REQ],
+      },
     },
     reducers: {},
   });
@@ -233,6 +266,21 @@ describe("after Stop the screen shows what persisted", () => {
     expect(outcome).toBe("superseded_by_new_run");
     expect(answer(store)).toEqual({ streamAnchor: LOCAL_REQ, text: "" });
   });
+  it("compares only the stopped answer, never an answer that had already finished", async () => {
+    spine.push(op(SERVER_REQ, "cancelled"));
+    const store = makeStore("cancelled", SHOWN_AT_STOP, {
+      withEarlierFinishedAnswer: true,
+    });
+    await settle(store, {
+      conversationId: CONV,
+      serverRequestId: SERVER_REQ,
+      localRequestIds: [EARLIER_FINISHED_REQ, LOCAL_REQ],
+      pollMs: 1,
+    });
+    expect(getSnapshot()).toEqual([]);
+    expect(answer(store)).toEqual({ streamAnchor: null, text: PERSISTED_ANSWER });
+  });
+
   it("keeps what was shown when the save is shorter, and reports the gap", async () => {
     spine.push(op(SERVER_REQ, "cancelled"));
     const longerOnScreen = `${PERSISTED_ANSWER}\n\nStop 11 — Cle Elum WA rest area\n\nStop 12 — Vantage WA fuel`;

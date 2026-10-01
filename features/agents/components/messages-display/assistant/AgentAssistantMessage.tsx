@@ -44,6 +44,7 @@ import { annotationRecordOf } from "@/features/rich-document/annotations/record-
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { PrefillNote } from "@/features/agents/message-flags/PrefillNote";
+import { StoppedNote } from "@/features/agents/message-flags/StoppedNote";
 import { useDebugContext } from "@/hooks/useDebugContext";
 import {
   selectErrorIsFatal,
@@ -52,6 +53,7 @@ import {
   selectAnswerBlockCount,
   selectHasInlineError,
   selectProviderRetry,
+  selectRequestStatus,
   selectLiveCitationSources,
   selectVisibleWarnings,
   selectRequestAwaitingPerson,
@@ -251,6 +253,11 @@ export function AgentAssistantMessage({
   const visibleWarnings = useAppSelector(visibleWarningsSelector);
   const providerRetry = useAppSelector(
     requestId ? selectProviderRetry(requestId) : () => null,
+  );
+  // A person's Stop: live from this request's status, after a reload from the
+  // saved row's metadata.stopped (StoppedNote).
+  const requestStatus = useAppSelector(
+    requestId ? selectRequestStatus(requestId) : () => undefined,
   );
   const phase = useAppSelector(selectStreamPhase(conversationId));
   const agentIdForDoor = useAppSelector(
@@ -716,6 +723,9 @@ export function AgentAssistantMessage({
             <MessageSourcesRow sources={displaySources} className="mt-2" />
           )}
           {!isStreamActive && <PrefillNote metadata={record?.metadata} />}
+          {!isStreamActive && (
+            <StoppedNote metadata={record?.metadata} requestStatus={requestStatus} />
+          )}
           {/* While content is streaming, the breathing orb trails just below
               it, moving down as the message grows, then unmounts at completion
               (its slot becomes the action bar). The pre-token / "waiting for
