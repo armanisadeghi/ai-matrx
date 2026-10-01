@@ -626,6 +626,23 @@ export const selectShouldShowVariables =
   };
 
 /**
+ * Is the variables form actually on screen for this instance right now?
+ *
+ * The exact gate the form renderers (AgentVariablesInline, AgentVariableCards)
+ * apply: the surface shows the panel (`showVariablePanel`, the "Hide/Show Form
+ * Inputs" toggle) AND the form phase is open (`selectShouldShowVariables`).
+ * Anything that talks ABOUT the form ("Fill in the fields below") reads this,
+ * never the definition count alone — a surface may hide pre-filled variables.
+ */
+export const selectIsVariableFormShown =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    (state.instanceUIState?.byConversationId[conversationId]
+      ?.showVariablePanel ??
+      false) &&
+    selectShouldShowVariables(conversationId)(state);
+
+/**
  * THE ONE "is there something to send" rule — the Send button shows exactly
  * when this is true, and Enter sends exactly when this is true. Text, an
  * attachment not yet sent, a variables form (an agent whose inputs ARE the

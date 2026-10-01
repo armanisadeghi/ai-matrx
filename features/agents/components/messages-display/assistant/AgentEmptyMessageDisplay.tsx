@@ -9,6 +9,7 @@ import type { RootState } from "@/lib/redux/store";
 // duplicated the whole rich-document engine into a second chunk group.
 import MarkdownStream from "@/components/MarkdownStream";
 import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { selectIsVariableFormShown } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { emptyStateInstruction } from "./empty-state-instruction";
 
 const IconResolver = dynamic(
@@ -56,6 +57,9 @@ export function AgentEmptyMessageDisplay({
   const formFields = useAppSelector(
     selectVisibleInputDefinitions(conversationId),
   );
+  // ...but only when this surface shows the form. A hidden form (pre-filled
+  // variables, "Hide Form Inputs") leaves the composer as the only input.
+  const formShown = useAppSelector(selectIsVariableFormShown(conversationId));
 
   const displayName = nameOverride || agentName;
   const displayDescription =
@@ -65,6 +69,7 @@ export function AgentEmptyMessageDisplay({
 
   const instruction = emptyStateInstruction({
     formFieldCount: formFields.length,
+    formShown,
     hasDescription: !!displayDescription,
   });
 
