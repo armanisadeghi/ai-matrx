@@ -69,9 +69,13 @@ Every stream item below adds its case there.
       `selectAnswerText`, `selectLatestAnswerText`, `selectResultText`, `selectLatestAccumulatedText`).
       PARTIAL — selectors stay faithful to stored data by design (`__kind` is data; thunks/JSON parsers/scopes
       read them). Display/export consumers fixed: rich-document actions + copy, conversation export, hover
-      preview, Pro text actions, agent toast, AI code editor. Not yet audited: agent-app `selectResultText`
-      readers beyond the custom shell, `useAgentRunSurfaceScope`, comparison snapshots, code-editor modal
-      readers of `selectLatestAccumulatedText` (all appear to be machine/scope consumers).
+      preview, Pro text actions, agent toast, AI code editor. Audited one by one: agent-app — shells render
+      `response` through `MarkdownStream`; the public renderer's copy now converts (`kindTextToMarkdown`);
+      `AgentAppSurfaceRuntime` feeds the workspace SCOPE (machine, kept). Run scope (`useAgentRunSurfaceScope`,
+      `agent-run-history-scope`) and the model-battle scope are agent context (kept). Comparison
+      `battleMarkdown` → people get `battleMarkdownForPeople` (copy + .md export); the agent payload keeps the
+      data. Still open: "Open in canvas" on agent apps sends a kind answer as an `html` canvas; battle CSV/sheet
+      rows carry the raw answer cell; code-editor modal readers of `selectLatestAccumulatedText` not audited.
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
       PARTIAL — kept (stored/passed text). Its display reader, the cleanup pad, previews through `MarkdownStream`;
       transcript studio reattach is a data path.

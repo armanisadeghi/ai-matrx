@@ -1,4 +1,4 @@
-import { battleMarkdown, battleRows, type BattleSnapshot } from "../battleSnapshot";
+import { battleMarkdown, battleMarkdownForPeople, battleRows, type BattleSnapshot } from "../battleSnapshot";
 
 function snapshot(overrides: Partial<BattleSnapshot> = {}): BattleSnapshot {
   return {
@@ -124,5 +124,26 @@ describe("battleMarkdown", () => {
     // The rest of the report still renders.
     expect(md).toContain("Claude Sonnet");
     expect(md).toContain("GPT-5");
+  });
+});
+
+describe("battleMarkdownForPeople — a kind answer never reaches a person as JSON", () => {
+  const SET_JSON = JSON.stringify({
+    __kind: "flashcard_set",
+    title: "Return policy cards",
+    cards: [{ __kind: "flashcard", front: "Window?", back: "30 days" }],
+  });
+
+  it("converts a column's kind answer to markdown; the scope markdown keeps the data", () => {
+    const snap = snapshot();
+    snap.columns[0] = { ...snap.columns[0], answer: SET_JSON };
+    const forPeople: string = battleMarkdownForPeople(snap);
+    expect(forPeople).not.toContain("__kind");
+    expect(forPeople).toContain("30 days");
+    expect(battleMarkdown(snap)).toContain("__kind");
+  });
+
+  it("leaves a kindless battle unchanged", () => {
+    expect(battleMarkdownForPeople(snapshot())).toBe(battleMarkdown(snapshot()));
   });
 });

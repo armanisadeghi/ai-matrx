@@ -40,6 +40,7 @@ import {
   type BattleColumnDescriptor,
 } from "./activeBattleColumns";
 import { currentCostUnit } from "@/components/cost/costUnit";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 export const MODE_LABELS: Record<BattleModeId, string> = {
   open: "Open battle",
@@ -460,6 +461,18 @@ function fmtVariant(v: Record<string, unknown> | undefined): string {
       return `- **${k.replace(/_/g, " ")}:** ${text}`;
     })
     .join("\n");
+}
+
+/**
+ * `battleMarkdown` for a PERSON (copy, .md export): every `__kind` answer
+ * reads as its kind's markdown, never its JSON. The scope/agent payload keeps
+ * `battleMarkdown` — there the kind is data (kind-never-raw R1).
+ */
+export function battleMarkdownForPeople(
+  snap: BattleSnapshot,
+  opts: { answers?: boolean; scores?: boolean; setup?: boolean } = {},
+): string {
+  return kindTextToMarkdown(battleMarkdown(snap, opts));
 }
 
 export function battleMarkdown(

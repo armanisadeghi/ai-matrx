@@ -28,6 +28,7 @@ import { fetchModelIdentityById } from "@/features/ai-models/redux/modelRegistry
 import { selectActiveBattleColumns } from "./activeBattleColumns";
 import {
   battleMarkdown,
+  battleMarkdownForPeople,
   battleModelIds,
   battleRows,
   buildBattleSnapshot,
@@ -128,7 +129,7 @@ export function BattleAlchemy({
       size="sm"
       triggerVariant="glass"
       controllerRef={controllerRef}
-      human={() => battleMarkdown(snapshot())}
+      human={() => battleMarkdownForPeople(snapshot())}
       json={() => snapshot()}
       agent={() => payload(snapshot(), "everything")}
       agentVariant={{
@@ -153,7 +154,7 @@ export function BattleAlchemy({
       ]}
       export={{
         items: [
-          textExportItem(() => battleMarkdown(snapshot()), "Markdown (.md)", "md"),
+          textExportItem(() => battleMarkdownForPeople(snapshot()), "Markdown (.md)", "md"),
           jsonExportItem(() => snapshot(), "JSON (full battle)"),
           csvExportItem(() => battleRows(snapshot()), "CSV (scores and run numbers)"),
         ],

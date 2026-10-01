@@ -53,6 +53,7 @@ import {
   AgentAppStreamProvider,
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -656,7 +657,8 @@ function CustomComponentRenderer({
   const handleCopy = useCallback(async () => {
     if (!responseText) return;
     try {
-      await navigator.clipboard.writeText(responseText);
+      // A person's copy reads a kind as its markdown (kind-never-raw R1).
+      await navigator.clipboard.writeText(kindTextToMarkdown(responseText));
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {
