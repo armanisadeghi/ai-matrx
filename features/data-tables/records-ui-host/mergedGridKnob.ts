@@ -5,7 +5,7 @@
  * (one-grid merge, steps 7-8).
  *
  * On (the platform default since the switch-on, 2026-09-30): the merged grid — the one grid,
- * carrying the older /data grid's controls (column menu, undo, add row, bulk edit, colour rules).
+ * carrying the Sheet's controls (column menu, undo, add row, bulk edit, colour rules).
  * Off: records-ui's classic grid, kept only as an organization's or a person's explicit override.
  * The platform default is set in the admin dashboard (Limits & Knobs → Feature knobs); the row was
  * seeded by `migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql` and its declared

@@ -1,9 +1,7 @@
 /**
- * useRecordStoreTableRealtime — the grid's live updates for a table the RECORD STORE holds.
+ * useRecordStoreTableRealtime — the grid's live updates for a table.
  *
- * The twin of `useTableRealtime` (which listens to `workbench.udt_dataset_rows`
- * through postgres_changes) with the SAME event shape, so `UserTableViewer`'s one
- * handler serves both stores. The record store cannot be reached by
+ * The record store cannot be reached by
  * postgres_changes at all — schema `custom` is doors-only — so this joins the
  * store's own broadcast port, `createRecordsRealtimePort`
  * (`features/unified-data/realtime/recordsRealtimePort.ts`), and nothing else.
@@ -31,7 +29,21 @@ import { createRecordsRealtimePort } from "@/features/unified-data/realtime/reco
 import { readRowsById } from "../service";
 import { recordStoreHomeOf } from "../data-source/table-home";
 import { invalidateRecordStoreTable } from "../data-source/record-store";
-import type { TableRealtimeEvent } from "./useTableRealtime";
+
+export type TableRealtimeRow = {
+  id?: string;
+  data?: Record<string, unknown>;
+  updated_at?: string;
+  /** Set when the row was moved to Trash (delete means archive). */
+  deleted_at?: string | null;
+};
+
+export type TableRealtimeEvent = {
+  kind: "INSERT" | "UPDATE" | "DELETE";
+  rowId: string | null;
+  /** The row as the store now holds it (empty on DELETE). */
+  row: TableRealtimeRow | null;
+};
 
 export function useRecordStoreTableRealtime(
   tableId: string | null | undefined,

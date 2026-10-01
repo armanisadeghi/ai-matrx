@@ -1,6 +1,5 @@
 import {
   agentActionOffer,
-  buildRowActionOps,
   compileRowAction,
   describeRowAction,
   readRowActions,
@@ -81,19 +80,6 @@ describe("row actions", () => {
   it("a blank date cell makes DATEADD fail honestly instead of inventing a date", () => {
     const out = compileRowAction(newWeek, { id: "r2", data: { account: "Spare" } }, fields);
     expect(out.ok).toBe(false);
-  });
-
-  it("builds ONE merge op per row and stops on the first row it cannot compile", () => {
-    const ok = buildRowActionOps(newWeek, [row, { ...row, id: "r3" }], fields);
-    expect(ok.ok).toBe(true);
-    if (ok.ok) {
-      expect(ok.ops).toHaveLength(2);
-      expect(ok.ops[0]).toMatchObject({ op: "merge", row_id: "r1" });
-      expect(ok.patches.get("r3")?.status).toBe("AVAILABLE");
-    }
-    const bad = buildRowActionOps(newWeek, [row, { id: "r2", data: {} }], fields);
-    expect(bad.ok).toBe(false);
-    if (!bad.ok) expect(bad.rowId).toBe("r2");
   });
 
   it("reads stored actions defensively", () => {

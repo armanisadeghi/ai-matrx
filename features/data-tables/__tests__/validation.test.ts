@@ -92,8 +92,7 @@ describe("hasValidationRules / serializeValidationRules", () => {
   });
 
   it("stores {} when everything is cleared — the only way to clear the column", () => {
-    // `update_user_table_config` COALESCEs validation_rules, so null would keep
-    // the old rules forever. An empty object is what actually clears them.
+    // A null would keep the old rules forever. An empty object is what actually clears them.
     expect(serializeValidationRules({})).toEqual({});
     expect(serializeValidationRules(null)).toEqual({});
   });

@@ -61,8 +61,8 @@ interface TableField {
   metadata?: Record<string, unknown> | null;
   /**
    * The column's validation rules, as the field row carries them. Optional
-   * because the shape is declared locally here while the rows arrive from
-   * `get_full_table`, which has always returned this column.
+   * because the shape is declared locally here while the rows arrive from the
+   * seam's `getTableMetadata`, which always returns this column.
    */
   validation_rules?: unknown;
 }
@@ -242,9 +242,8 @@ export default function EditRowModal({
       setLoading(true);
       setError(null);
 
-      // udt_upsert_row scopes by both table_id and row_id, fires the validation
-      // and version triggers, and routes through the owner-or-editor permission
-      // gate — replaces the legacy update_data_row_in_user_table RPC.
+      // The seam's `upsertRow` scopes by both table and row, is judged by the
+      // columns' rules, versioned, and permission-gated.
       const result = await upsertRow({ tableId, rowId, data: typed.data });
       if (isServiceFailure(result)) {
         throw rowWriteError(result);

@@ -18,8 +18,8 @@
  *  2. The store's answer is shown verbatim. "Applied", "already there" and a
  *     refusal are three different sentences, and the refusal is the store's,
  *     not a paraphrase.
- *  3. Accepting a removal DESTROYS the row — `udt_bulk_write` issues a real
- *     DELETE — so the confirm says exactly that rather than "cannot be undone".
+ *  3. Accepting a removal moves the row to Trash (delete means archive), and the
+ *     confirm says exactly that.
  *
  * STATE AFTER A RELOAD comes from two places on purpose: what the store now
  * says (an accepted add is settled because the row is THERE) and what the
@@ -233,14 +233,8 @@ export function ListChangeProposalView({
   }, [openProposals, runReject]);
 
   const listLabel = target.label ?? snapshot?.label ?? "this list";
-  // A Record table archives a removed row (custom.record_delete sets deleted_at).
-  // A scope dataset's row store (udt_bulk_write op "delete") still removes the row
-  // itself until the Data-table row archive migration lands
-  // (migrations/udt_dataset_rows_delete_archives_and_trash_restores.sql) — say so.
-  const removalGoesToTrash = target.kind === "table";
-  const removalFate = removalGoesToTrash
-    ? "moves to Trash, where it can be restored"
-    : "is removed from the list store and does not go to Trash";
+  // Both kinds of list live in the record store, which archives a removed row.
+  const removalFate = "moves to Trash, where it can be restored";
 
   return (
     <div className={cn("flex w-full min-w-0 flex-col gap-2.5", className)}>
@@ -366,9 +360,7 @@ export function ListChangeProposalView({
         title={
           pendingConfirm?.scope === "all"
             ? `Apply ${openProposals.length} changes to ${listLabel}?`
-            : removalGoesToTrash
-              ? `Move this row from ${listLabel} to Trash?`
-              : `Remove this row from ${listLabel}?`
+            : `Move this row from ${listLabel} to Trash?`
         }
         // read-gate-exempt: counts of this message's own proposals; the dialog opens only while deciding is allowed (decisions read succeeded)
         description={
@@ -379,9 +371,7 @@ export function ListChangeProposalView({
         confirmLabel={
           pendingConfirm?.scope === "all"
             ? "Apply all"
-            : removalGoesToTrash
-              ? "Move to Trash"
-              : "Remove"
+            : "Move to Trash"
         }
         variant="destructive"
         busy={busyId !== null}

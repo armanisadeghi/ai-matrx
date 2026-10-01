@@ -327,8 +327,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
         }),
       );
 
-      // The seam's one birth (lane INTEG-CLIENTS): the record store for an organization
-      // whose tables moved, the older store otherwise — and the rows follow the table.
+      // The seam's one birth (lane INTEG-CLIENTS): the record store — and the rows follow the table.
       const createResult = await createTable({
         tableName: tableName.trim(),
         description: tableDescription.trim(),

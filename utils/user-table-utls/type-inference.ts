@@ -12,7 +12,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}/;
 
 /**
- * Infer a `udt_datasets` data type for a single value. Used by both the
+ * Infer a table column's data type for a single value. Used by both the
  * CSV/Excel import path and the JSON-to-table path. The returned strings
  * align with `VALID_DATA_TYPES` in `table-utils.ts`.
  */

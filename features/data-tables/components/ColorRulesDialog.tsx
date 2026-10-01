@@ -11,7 +11,7 @@
  *
  * This component never talks to Supabase. Every change leaves through
  * `onSetPath(path, value)`, one surgical path at a time, exactly as
- * `udt_set_table_style` expects — so two people editing different parts of a
+ * the seam's `setTableStyle` expects — so two people editing different parts of a
  * table's style never overwrite each other.
  */
 "use client";

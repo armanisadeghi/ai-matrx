@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { deleteRow, isRecordStoreTable, restoreArchivedRow } from "@/features/data-tables/service";
+import { deleteRow, restoreArchivedRow } from "@/features/data-tables/service";
 import { toast as notify } from "@/lib/toast";
 import { isServiceFailure } from "@/features/data-tables/types";
 // A CONFIRMATION of an irreversible act is an AlertDialog: it blocks the page on
@@ -38,7 +38,6 @@ export default function DeleteRowModal({
 }: DeleteRowModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const archives = isRecordStoreTable(tableId);
 
   // Handle delete
   const handleDelete = async () => {
@@ -58,30 +57,28 @@ export default function DeleteRowModal({
       onClose();
       // THE WAY BACK, WHERE THE PERSON IS LOOKING (DATA-V2-BASICS-2 F34). The row went to the
       // archive; the only way back used to be Trash, two pages away. Undo restores it in place.
-      if (archives) {
-        const archivedId = rowId;
-        const named = rowLabel ? `"${rowLabel}"` : "The row";
-        notify.success(`${named} was archived`, {
-          description: "It is in this table's archive and in Trash. Undo puts it back here.",
-          duration: 10000,
-          action: {
-            label: "Undo",
-            onClick: () => {
-              void (async () => {
-                const back = await restoreArchivedRow({ tableId, rowId: archivedId });
-                if (isServiceFailure(back)) {
-                  notify.error(`${named} could not be put back: ${back.error}`, {
-                    description: "It is still in Trash, where Restore brings it back.",
-                  });
-                  return;
-                }
-                notify.success(`${named} is back`);
-                onSuccess();
-              })();
-            },
+      const archivedId = rowId;
+      const named = rowLabel ? `"${rowLabel}"` : "The row";
+      notify.success(`${named} was archived`, {
+        description: "It is in this table's archive and in Trash. Undo puts it back here.",
+        duration: 10000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              const back = await restoreArchivedRow({ tableId, rowId: archivedId });
+              if (isServiceFailure(back)) {
+                notify.error(`${named} could not be put back: ${back.error}`, {
+                  description: "It is still in Trash, where Restore brings it back.",
+                });
+                return;
+              }
+              notify.success(`${named} is back`);
+              onSuccess();
+            })();
           },
-        });
-      }
+        },
+      });
     } catch (err) {
       console.error("Error deleting row:", err);
       setError(
@@ -102,13 +99,9 @@ export default function DeleteRowModal({
         <AlertDialogHeader>
           <AlertDialogTitle>{rowLabel ? `Delete "${rowLabel}"?` : "Delete Row"}</AlertDialogTitle>
           <AlertDialogDescription>
-            {archives
-              ? // THE RECORD STORE ARCHIVES — it never destroys a row (REC-23), so
-                // "cannot be undone" would be a false sentence here.
-                `${rowLabel ? `The row "${rowLabel}"` : "This row"} will be archived: it leaves this table, and it stays restorable from the table's archive for the table's retention period.`
-              : // The older store archives too (delete means archive, 2026-09-27): the
-                // row leaves the table and is kept, never destroyed.
-                `${rowLabel ? `The row "${rowLabel}"` : "This row"} will be archived: it leaves this table and is kept, not destroyed.`}
+            {/* THE RECORD STORE ARCHIVES — it never destroys a row (REC-23), so
+                "cannot be undone" would be a false sentence here. */}
+            {`${rowLabel ? `The row "${rowLabel}"` : "This row"} will be archived: it leaves this table, and it stays restorable from the table's archive for the table's retention period.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
 

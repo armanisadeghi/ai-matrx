@@ -1,12 +1,11 @@
 /**
- * Domain types for the data-tables (UDT) system.
- *
- * Everything here is derived from the generated Supabase types
- * (`types/database.types.ts`). Do not define ad-hoc shapes for `udt_*`
- * tables/columns elsewhere — extend this file.
+ * Domain types for the data-tables system: the workbook and document rows (generated Supabase
+ * types), and the GRID's shapes — a table, its columns, its rows and a row's versions — which the
+ * data seam builds from the record store (`data-source/record-store.ts`). Extend this file rather
+ * than defining ad-hoc shapes elsewhere.
  */
 import type { RecordsError } from "@ai-matrx/records";
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
 type T = Database["workbench"]["Tables"];
@@ -40,65 +39,106 @@ export type DocumentSnapshotInsert = T["udt_document_snapshots"]["Insert"];
 /** Same advisory enum as workbooks — string column in the DB. */
 export type DocumentSnapshotOrigin = WorkbookSnapshotOrigin;
 
-export type Dataset = T["udt_datasets"]["Row"];
-export type DatasetInsert = T["udt_datasets"]["Insert"];
-export type DatasetUpdate = T["udt_datasets"]["Update"];
+// ─── The grid's shapes (built by the data seam from the record store) ────────
 
-export type DatasetField = T["udt_dataset_fields"]["Row"];
-export type DatasetFieldInsert = T["udt_dataset_fields"]["Insert"];
-export type DatasetFieldUpdate = T["udt_dataset_fields"]["Update"];
-
-export type DatasetRow = T["udt_dataset_rows"]["Row"];
-export type DatasetRowInsert = T["udt_dataset_rows"]["Insert"];
-export type DatasetRowUpdate = T["udt_dataset_rows"]["Update"];
-
-export type RowVersion = T["udt_dataset_row_versions"]["Row"];
-
-/**
- * The `public.get_full_table(jsonb)` payload — a dataset's schema and size with
- * NO row data. Note the key is `columns`, not `fields`: the row-loading RPC
- * (`get_user_table_complete`) calls the same thing `fields`.
- */
-export type TableMetadata = {
-  /** Complete `udt_datasets` row (carries row_ordering_config, validation_mode). */
-  table: Dataset;
-  /** Complete `udt_dataset_fields` rows, ordered by `field_order`. */
-  columns: DatasetField[];
-  /** Real `COUNT(*)`, not the length of a materialized row array. */
-  row_count: number;
+/** A table as the grid reads it. */
+export type Dataset = {
+  id: string;
+  table_name: string;
+  description: string | null;
+  organization_id: string;
+  user_id: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string | null;
+  deleted_at: string | null;
+  is_public: boolean;
+  metadata: Json;
+  custom_fields: Json;
+  row_ordering_config: Json | null;
+  validation_mode: string;
+  version: number;
+  project_id: string | null;
+  task_id: string | null;
+  template_id: string | null;
+  template_version: number | null;
+  workbook_id: string | null;
+  sheet_index: number | null;
+  sync_source: Json | null;
+  published_to_web: boolean;
+  published_to_web_at: string | null;
+  published_to_web_by: string | null;
+  shown_to: Database["platform"]["Enums"]["shown_to"] | null;
+  visibility: Database["platform"]["Enums"]["visibility"];
 };
 
-/**
- * Shape-parse a `get_full_table` payload.
- *
- * Lives here rather than in `service.ts` so callers that bring their own
- * Supabase client (`utils/user-table-utls/table-utils`) can share the one
- * parser without pulling in the browser client singleton.
- *
- * Throws on anything that is not the documented shape — a silently-empty
- * column list is the exact failure this exists to prevent. Note that
- * `get_full_table` has no `{success:false}` envelope either: it RAISES, so a
- * PostgREST error from it means the dataset is missing or its name did not
- * match, never that it has no columns.
- */
-export function parseTableMetadata(payload: unknown): TableMetadata {
-  const isRecord = (v: unknown): v is Record<string, unknown> =>
-    typeof v === "object" && v !== null && !Array.isArray(v);
+/** A column as the grid draws it. */
+export type DatasetField = {
+  id: string;
+  table_id: string;
+  field_name: string;
+  display_name: string;
+  data_type: FieldDataType;
+  field_order: number;
+  is_required: boolean;
+  is_public: boolean;
+  default_value: Json | null;
+  validation_rules: Json | null;
+  metadata: Json;
+  custom_fields: Json;
+  organization_id: string;
+  user_id: string;
+  created_at: string;
+  created_by: string | null;
+  updated_at: string;
+  updated_by: string | null;
+  deleted_at: string | null;
+  version: number;
+};
 
-  if (
-    !isRecord(payload) ||
-    !isRecord(payload.table) ||
-    !Array.isArray(payload.columns) ||
-    typeof payload.row_count !== "number"
-  ) {
-    throw new Error("get_full_table: unexpected response shape");
-  }
-  return {
-    table: payload.table as unknown as Dataset,
-    columns: payload.columns as unknown as DatasetField[],
-    row_count: payload.row_count,
-  };
-}
+/** A row as the grid holds it. */
+export type DatasetRow = {
+  id: string;
+  table_id: string;
+  data: Json;
+  metadata: Json;
+  custom_fields: Json;
+  is_public: boolean;
+  organization_id: string;
+  user_id: string;
+  source_row_ref: string | null;
+  created_at: string;
+  created_by: string | null;
+  updated_at: string;
+  updated_by: string | null;
+  deleted_at: string | null;
+  version: number;
+};
+
+/** One version of a row, rebuilt from the store's history (`custom.record_history`). */
+export type RowVersion = {
+  id: number;
+  row_id: string;
+  table_id: string;
+  change_kind: E["row_change_kind"];
+  changed_at: string;
+  changed_by: string | null;
+  data: Json | null;
+  prior_data: Json | null;
+  reason: string | null;
+  custom_fields: Json;
+};
+
+/** A table's schema and size with NO row data. */
+export type TableMetadata = {
+  /** The table (carries row_ordering_config). */
+  table: Dataset;
+  /** Its columns, ordered by `field_order`. */
+  columns: DatasetField[];
+  /** A real count, not the length of a materialized row array. */
+  row_count: number;
+};
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -119,7 +159,7 @@ export const FIELD_DATA_TYPES: readonly FieldDataType[] = [
   "array",
 ] as const;
 
-// ─── Bulk-write op shapes (the contract of `udt_bulk_write`) ─────────────────
+// ─── Bulk-write op shapes (the seam's `bulkWrite`) ──────────────────────────
 
 export type BulkInsertOp = {
   op: "insert";
@@ -164,7 +204,7 @@ export type BulkOp =
   | BulkDeleteOp;
 
 /**
- * Per-op result envelope returned inside `udt_bulk_write.results[]`.
+ * Per-op result envelope returned inside `bulkWrite`'s `results[]`.
  *
  * Note: insert / update / cell / delete that succeed return the full row.
  * Update / cell / delete against a row that is gone return `row_not_found`;
@@ -240,7 +280,7 @@ export type ChangeFieldTypeResponse = {
   history_reason: string;
 };
 
-// ─── Validation modes (mirrors the CHECK constraint on udt_datasets) ─────────
+// ─── Validation modes ────────────────────────────────────────────────────────
 
 export type ValidationMode = "permissive" | "strict";
 
@@ -248,21 +288,13 @@ export type ValidationMode = "permissive" | "strict";
 
 export type ServiceOk<T> = { success: true; data: T };
 /**
- * A machine-readable reason, for the few failures a CALLER has to act on
- * differently rather than print. `dataset_not_here` is the only one so far: the
- * older table store has no such dataset for this person, which is NOT proof the
- * id is nothing — `/data-v2` may hold it, and telling somebody their table was
- * deleted when it is one route along is a screen lying.
- */
-export type ServiceErrCode = "dataset_not_here";
-/**
  * THE STORE'S OWN REFUSAL, kept whole (lane FIX-15, 2026-09-23).
  *
  * `error` is `PostgrestError.message` and nothing else, so a refusal written as
  * three parts — what happened, what the column is, what to do instead — reached
  * the screen as one third of itself, and the other two thirds (DETAIL and HINT)
  * were thrown away in this envelope. On production a name typed into a relation
- * column was refused by `custom.udt_upsert_cell` with a perfectly good sentence
+ * column was refused by the store with a perfectly good sentence
  * and the person saw nothing usable.
  *
  * `refusal` carries the whole thing in the shape every Matrx screen already
@@ -270,7 +302,7 @@ export type ServiceErrCode = "dataset_not_here";
  * which run it through `plainWords` so no machine identity is ever printed at a
  * person). `error` stays exactly what it was for the callers that print a line.
  */
-export type ServiceErr = { success: false; error: string; code?: ServiceErrCode; refusal?: RecordsError };
+export type ServiceErr = { success: false; error: string; refusal?: RecordsError };
 export type ServiceResult<T> = ServiceOk<T> | ServiceErr;
 
 /**
@@ -282,7 +314,7 @@ export function isServiceFailure<T>(r: ServiceResult<T>): r is ServiceErr {
   return r.success === false;
 }
 
-// ─── Column shape (udt_column_facets / udt_table_profile) ────────────────────
+// ─── Column shape (column facets / the table profile) ───────────────────────
 //
 // THE COLUMN KNOWS ITSELF. One shape, two granularities: `ColumnFacets` answers
 // "what is in THIS column" and `TableProfile` answers it for every column at
@@ -319,7 +351,7 @@ export type ColumnFacets = {
 };
 
 /**
- * Per-column evidence from `udt_table_profile`.
+ * Per-column evidence from the table profile (`getTableProfile`).
  *
  * The `looks_*` fields are COUNTS, never verdicts — "19 of 20 values are URLs"
  * is a different situation from "20 of 20", and only the caller knows which one

@@ -12,7 +12,6 @@ jest.mock("../service", () => ({
   upsertCell: jest.fn(),
   upsertCellAddingChoice: jest.fn(),
   readChoiceNudge: jest.fn(async () => "ask"),
-  isRecordStoreTable: () => true,
 }));
 jest.mock("@/components/ui/use-toast", () => ({ toast: jest.fn() }));
 

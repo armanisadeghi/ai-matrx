@@ -315,17 +315,15 @@ const surfaceSpecific: SurfaceValue[] = [
  *    because writing it is a chore, an agent that has just read the columns
  *    and a page of rows can write it better than a blank field, and it is
  *    metadata — nothing downstream computes on it. It persists to one column
- *    through the RPC that COALESCEs every other field, so it cannot disturb
+ *    through the seam's `updateTableMetadata`, which leaves every other field alone, so it cannot disturb
  *    the table's name or its web state.
  *  - `cell_value` is the operation this surface exists for ("clean this
  *    value", "reformat this date", "fill in the category"). It is ONE cell,
  *    identified by an explicit `{row_id, field_name}` pair the agent must have
  *    READ off the page, and it lands through the data seam's `upsertCell` —
  *    one cell, which structurally cannot touch another cell, another row, or
- *    the column definitions: `udt_upsert_cell` for an older table,
- *    `custom.record_update` for a record-store one (the seam decides by where
- *    the table lives; lane INTEG-CLIENTS, CUTOVER-PLAN F15). Row history (the
- *    older row versions, or the store's own history) makes it revertible.
+ *    the column definitions (`custom.record_update`; lane INTEG-CLIENTS,
+ *    CUTOVER-PLAN F15). The store's own row history makes it revertible.
  *
  * WHY COORDINATES TRAVEL WITH THE VALUE, as one object rather than three
  * targets: row + column + value are ONE decision. Split apart, an agent that

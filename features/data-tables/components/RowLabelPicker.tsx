@@ -3,7 +3,7 @@
 /**
  * RowLabelPicker — choose what NAMES a row of this table everywhere it is
  * referred to: one column, or a formula that merges columns
- * (`{First name} & " " & {Last name}`). Writes through `udt_set_table_row_label`
+ * (`{First name} & " " & {Last name}`). Writes through the seam's `setTableRowLabel`
  * immediately (it is a table property, like colors — not part of the settings
  * dialog's save/cancel draft), and says what happened.
  */

@@ -103,9 +103,3 @@ export function cellTextForReader(
 export function isWithheldWords(words: string | undefined | null): boolean {
   return typeof words === "string" && words.trim() === RELATION_WITHHELD_LABEL;
 }
-
-/** A relation column's declared display spec, for a caller that has only the format. */
-export function relationDisplayOf(format: FieldFormatConfig | null | undefined): unknown {
-  if (!isRelationFormat(format?.id)) return null;
-  return (format?.options as Record<string, unknown> | undefined)?.display ?? null;
-}

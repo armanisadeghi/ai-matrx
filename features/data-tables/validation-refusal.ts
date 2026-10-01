@@ -60,7 +60,7 @@ export interface ColumnRuleRefusal {
    * The refusal in the shape every other refusal on this platform arrives in, so
    * `RefusalNotice` draws it identically to a store refusal. `refused_by_rule` is
    * the store's own code for "a Rule refused this value" — the same code
-   * `custom.udt_upsert_cell` answers with when the database backstop catches what
+   * the store answers with when the database backstop catches what
    * this caught first, so the person reads ONE sentence shape either way.
    */
   error: RecordsError;

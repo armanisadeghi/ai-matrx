@@ -14,7 +14,6 @@ const restoreArchivedRow = jest.fn(async () => ({ success: true, data: null }));
 jest.mock("@/features/data-tables/service", () => ({
   deleteRow: (...a: unknown[]) => deleteRow(...(a as [])),
   restoreArchivedRow: (...a: unknown[]) => restoreArchivedRow(...(a as [])),
-  isRecordStoreTable: () => true,
 }));
 const success = jest.fn();
 jest.mock("@/lib/toast", () => ({ toast: { success: (...a: unknown[]) => success(...a), error: jest.fn(), info: jest.fn() } }));

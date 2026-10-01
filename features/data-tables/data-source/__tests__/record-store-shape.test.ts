@@ -13,13 +13,13 @@ import type { Field } from "@ai-matrx/records";
 import {
   choiceFromOption,
   jsonbText,
-  olderColumnFromField,
-  olderDataType,
-  olderFormat,
-  olderRowData,
-  olderRowOrdering,
+  gridColumnFromField,
+  gridDataType,
+  gridFormat,
+  gridRowData,
+  gridRowOrdering,
   withHandOrder,
-  olderValidationRules,
+  gridValidationRules,
   searchRowsLikeTheOlderStore,
   sortRowsLikeTheOlderStore,
   storeDefaultSort,
@@ -63,13 +63,13 @@ describe("a store Field reads back as the column the older grid drew", () => {
     [{ type: "formula", format: "formula", expression: "{Amount} * {Qty}" }, "string", "formula"],
   ])("%j → %s / %s", (shape, dataType, formatId) => {
     const f = field(shape as Record<string, unknown>);
-    expect(olderDataType(f)).toBe(dataType);
-    expect(olderFormat(f, null)?.id ?? null).toBe(formatId);
+    expect(gridDataType(f)).toBe(dataType);
+    expect(gridFormat(f, null)?.id ?? null).toBe(formatId);
   });
 
   it("carries a relation's target and cardinality in the older option names", () => {
     const f = field({ type: "relation", format: "relation", relation_target: "415c", relation_max: 1, on_target_delete: "set_null" } as never);
-    expect(olderFormat(f, null)).toEqual({
+    expect(gridFormat(f, null)).toEqual({
       id: "relation",
       options: { relation_target: "415c", relation_max: 1, on_delete: "set_null" },
     });
@@ -80,7 +80,7 @@ describe("a store Field reads back as the column the older grid drew", () => {
     expect(choices).toEqual([{ value: "Queued", color: "amber" }, { value: "Done" }]);
     // An option Table the store made itself for a `select` column keys its words `title`.
     expect(choiceFromOption({ data: { title: "Complete" } })).toEqual({ value: "Complete" });
-    expect(olderFormat(field({ type: "list", format: "choice" } as never), choices)).toEqual({
+    expect(gridFormat(field({ type: "list", format: "choice" } as never), choices)).toEqual({
       id: "choice",
       // allow-other is said out loud: the store's default is off, the grid's is on.
       options: { choices, allowOther: false },
@@ -89,31 +89,31 @@ describe("a store Field reads back as the column the older grid drew", () => {
 
   it("reads a formula's TEXT from formula_text first — what the store keeps beside its expression", () => {
     const f = field({ type: "formula", format: "formula", expression: "{A}+{B}", config: { formula_text: "{A} + {B}" } } as never);
-    expect(olderFormat(f, null)).toEqual({ id: "formula", options: { formula: { expression: "{A} + {B}" } } });
+    expect(gridFormat(f, null)).toEqual({ id: "formula", options: { formula: { expression: "{A} + {B}" } } });
   });
 
   it("takes a display format set on the store whole, options and all", () => {
     const f = field({ type: "text", format: "text", display_format: { id: "currency", options: { currency: "EUR" } } } as never);
-    expect(olderFormat(f, null)).toEqual({ id: "currency", options: { currency: "EUR" } });
+    expect(gridFormat(f, null)).toEqual({ id: "currency", options: { currency: "EUR" } });
   });
 
   it("drops a format word the grid does not draw instead of casting it", () => {
-    expect(olderFormat(field({ type: "text", format: "hologram" } as never), null)).toBeNull();
+    expect(gridFormat(field({ type: "text", format: "hologram" } as never), null)).toBeNull();
   });
 
   it("turns the store's rules back into the older rule keys", () => {
     expect(
-      olderValidationRules([
+      gridValidationRules([
         { kind: "pattern", value: "^WO-[0-9]{4}$" },
         { kind: "length", value: 8 },
         { kind: "min", value: 0 },
       ]),
     ).toEqual({ pattern: "^WO-[0-9]{4}$", maxLength: 8, min: 0 });
-    expect(olderValidationRules([])).toBeNull();
+    expect(gridValidationRules([])).toBeNull();
   });
 
-  it("builds the whole udt_dataset_fields row the grid reads a column from", () => {
-    const col = olderColumnFromField(
+  it("builds the whole column row the grid reads a column from", () => {
+    const col = gridColumnFromField(
       field({ id: "378f", key: "work_order", label: "Work order", sort: 0, required: false, rules: [{ kind: "pattern", value: "^WO-" }] } as never),
       "dbc7",
       null,
@@ -140,7 +140,7 @@ describe("a record document reads back as the row the older grid held", () => {
 
   it("leaves the store's own keys out and gives a json column its object back", () => {
     expect(
-      olderRowData(
+      gridRowData(
         { status: "Queued", payload: '{"index": 119, "owner": "Esme"}', _choices: { status: { id: "x" } } },
         columns,
       ),
@@ -148,7 +148,7 @@ describe("a record document reads back as the row the older grid held", () => {
   });
 
   it("keeps json text that is not JSON exactly as stored", () => {
-    expect(olderRowData({ payload: "not json" }, columns)).toEqual({ payload: "not json" });
+    expect(gridRowData({ payload: "not json" }, columns)).toEqual({ payload: "not json" });
   });
 
   it("writes a json column's object as the canonical text the store takes, and nothing else changes", () => {
@@ -214,24 +214,24 @@ describe("a table's saved default sort is read and written in the store's own wo
   const fields = [{ key: "account" }, { key: "reset_date" }];
 
   it("reads the stored {field} sort as the grid's default sort", () => {
-    expect(olderRowOrdering(stored, fields)).toEqual({ default_sort: { field: "reset_date", direction: "asc" } });
+    expect(gridRowOrdering(stored, fields)).toEqual({ default_sort: { field: "reset_date", direction: "asc" } });
   });
 
   it("writes Save as default as {field}, which reads back as the same sort", () => {
     const written = storeDefaultSort("reset_date", "desc");
     expect(written).toEqual([{ field: "reset_date", direction: "desc" }]);
-    expect(olderRowOrdering(written, fields)).toEqual({ default_sort: { field: "reset_date", direction: "desc" } });
+    expect(gridRowOrdering(written, fields)).toEqual({ default_sort: { field: "reset_date", direction: "desc" } });
   });
 
   it("still reads a {key} entry this seam wrote before the fix", () => {
-    expect(olderRowOrdering([{ key: "account", direction: "desc" }], fields)).toEqual({
+    expect(gridRowOrdering([{ key: "account", direction: "desc" }], fields)).toEqual({
       default_sort: { field: "account", direction: "desc" },
     });
   });
 
   it("answers no sort for a column the table no longer has, or no saved sort", () => {
-    expect(olderRowOrdering([{ field: "gone", direction: "asc" }], fields)).toBeNull();
-    expect(olderRowOrdering([], fields)).toBeNull();
+    expect(gridRowOrdering([{ field: "gone", direction: "asc" }], fields)).toBeNull();
+    expect(gridRowOrdering([], fields)).toBeNull();
     expect(storeDefaultSort(undefined, undefined)).toEqual([]);
   });
 });
@@ -261,16 +261,16 @@ describe("an entity reference in the Sheet reads as its things' words (lane REFE
   const model = field({ key: "model", label: "Model", type: "relation", multi: false, config: { target_mode: "any", allowed_types: ["ai_model"] } } as never);
 
   it("has no older look (the older grid's relation is ids of one table)", () => {
-    expect(olderFormat(model, null)).toBeNull();
+    expect(gridFormat(model, null)).toBeNull();
   });
 
   it("a cell holding {token, id, label} reads as the label, and a list as its labels", () => {
     const one = { token: "ai_model", id: "eabcd5b0-53dc-4cef-bcd0-067d4bac56ed", label: "gemini-3.5-flash-lite" };
     const two = { token: "ai_model", id: "8c3c4436-d3b1-489d-b802-29456fb7f659", label: "claude-opus-5-5" };
     const cols = [{ field_name: "model", data_type: "string" }] as never;
-    expect(olderRowData({ model: one }, cols)).toEqual({ model: "gemini-3.5-flash-lite" });
-    expect(olderRowData({ model: [one, two] }, cols)).toEqual({ model: "gemini-3.5-flash-lite, claude-opus-5-5" });
+    expect(gridRowData({ model: one }, cols)).toEqual({ model: "gemini-3.5-flash-lite" });
+    expect(gridRowData({ model: [one, two] }, cols)).toEqual({ model: "gemini-3.5-flash-lite, claude-opus-5-5" });
     // Anything else is exactly as stored.
-    expect(olderRowData({ purpose: "Cheap, high-volume simple work", tags: ["a", "b"] }, cols)).toEqual({ purpose: "Cheap, high-volume simple work", tags: ["a", "b"] });
+    expect(gridRowData({ purpose: "Cheap, high-volume simple work", tags: ["a", "b"] }, cols)).toEqual({ purpose: "Cheap, high-volume simple work", tags: ["a", "b"] });
   });
 });

@@ -216,7 +216,7 @@ export function defaultFilterMode(args: {
 // column" is a loop over an array, not a round trip. Computing it locally is
 // instant, works offline, cannot fail, and shows no spinner at all.
 //
-// The server RPC (`udt_column_facets`) is the fallback for the ONLY case the
+// The store's facets door (the seam's `getColumnFacets`) is the fallback for the ONLY case the
 // browser genuinely cannot answer: a table with more rows than we hold. Then a
 // count derived from a partial set would be a confident wrong answer, and
 // asking the database is the honest move.

@@ -1151,8 +1151,8 @@ export async function POST(request: NextRequest) {
 
       // ── Items: what is actually IN one column ───────────────────────
       //
-      // THE COLUMN KNOWS ITSELF, for collections. Same payload shape the
-      // `udt_column_facets` RPC returns, so the shared ColumnHeaderMenu needs
+      // THE COLUMN KNOWS ITSELF, for collections. Same payload shape the data
+      // seam's `getColumnFacets` returns (`ColumnFacets`), so the shared ColumnHeaderMenu needs
       // no second code path — and the counts are over every row the tab and
       // search select, never over the page the browser holds.
       case "items_facets": {

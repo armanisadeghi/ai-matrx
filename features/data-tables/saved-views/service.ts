@@ -21,7 +21,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 
-import { recordStoreHomeOf } from "../data-source/table-home";
+import { locateTable } from "../data-source/locate-table";
 
 import {
   DATA_TABLE_SURFACE_KEY,
@@ -108,26 +108,10 @@ export async function listSavedViews(args: {
 export async function getTableOrganizationId(
   tableId: string,
 ): Promise<ServiceResult<string>> {
-  // A table the RECORD STORE holds (data seam) belongs to the organization it
-  // was opened in — the store is keyed (organization, id) and has no dataset row.
-  const home = recordStoreHomeOf(tableId);
-  if (home) return { success: true, data: home.organizationId };
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_datasets")
-    .select("organization_id")
-    .eq("id", tableId)
-    .maybeSingle();
-
-  if (error) return { success: false, error: error.message };
-  const org = (data as { organization_id?: unknown } | null)?.organization_id;
-  if (typeof org !== "string") {
-    return {
-      success: false,
-      error: "This table has no organization, so a view cannot be saved to it.",
-    };
-  }
-  return { success: true, data: org };
+  // The table names its own organization (the store is keyed (organization, id)).
+  const located = await locateTable(tableId);
+  if (!located.ok) return { success: false, error: located.error };
+  return { success: true, data: located.home.organizationId };
 }
 
 /**

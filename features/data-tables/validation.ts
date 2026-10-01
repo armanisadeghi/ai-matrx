@@ -1,7 +1,7 @@
 /**
  * Column validation rules for user data tables — THE one rule model.
  *
- * A rule lives on `workbench.udt_dataset_fields.validation_rules` (jsonb) and
+ * A rule lives on the column's `validation_rules` (jsonb) and
  * answers one question: may this value be written into this column? The
  * champions are Excel's data validation (a rule per column; an invalid entry is
  * refused WITH the reason) and Airtable (type-level only). We take Excel's
@@ -176,8 +176,7 @@ export function hasValidationRules(rules: ValidationRules | null | undefined): b
 /**
  * The object to STORE. Strips `required` (law 1) and every empty key, so a
  * column whose rules were all cleared stores `{}` rather than a husk of nulls
- * — which also matters because `update_user_table_config` COALESCEs the column,
- * so `{}` is the only way to clear it.
+ * — and `{}` is the only way to clear them.
  */
 export function serializeValidationRules(
   rules: ValidationRules | null | undefined,

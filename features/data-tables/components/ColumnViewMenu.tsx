@@ -2,7 +2,7 @@
  * ColumnViewMenu — which columns this VIEW shows, and in what order.
  *
  * 🚨 PER-VIEW, NOT PER-TABLE. Hiding or reordering here changes only what YOU
- * are looking at; it never touches `udt_dataset_fields.field_order`, which is
+ * are looking at; it never touches the column's `field_order`, which is
  * the table's shared default and belongs to everyone who opens it. Table
  * Settings still owns that. Two people can hold two different views of the same
  * table at the same time, and neither disturbs the other.

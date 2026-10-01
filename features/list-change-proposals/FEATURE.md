@@ -22,9 +22,9 @@ and the `list_change_proposal` entry in `block-dispatch.tsx`.
 
 ## Invariants
 
-- **The port is the only seam.** `{kind:"scope_dataset"}` writes `workbench.udt_dataset_rows`
-  through `udt_bulk_write` under the person's own authority; `{kind:"table"}` — a Table homed in
-  a Record in the unified record store — refuses BY NAME until that store lands. Swapping the
+- **The port is the only seam.** `{kind:"scope_dataset"}` writes the scope's Table through the
+  data seam's `bulkWrite` under the person's own authority; `{kind:"table"}` writes a Table homed
+  in a Record in the unified record store. Swapping the
   target changes this one module and nothing else: not the kind, not the component, not the
   skill agents were taught, not a conversation already on screen.
 - **What the STORE says is read from the store.** An accepted `add` shows as settled because
@@ -35,13 +35,8 @@ and the `list_change_proposal` entry in `block-dispatch.tsx`.
   per-message place, writable by a conversation editor under RLS (`std_update`), merged through
   the canonical optimistic-concurrency primitive. There is no generic message-interaction store
   to use instead — this is it.
-- **Where a removed row goes depends on the store, and the confirm says which.** A Record
-  table (`target.kind === "table"`) archives: `custom.record_delete` sets `deleted_at`, the
-  row moves to Trash. A scope dataset still loses the row: `udt_bulk_write`'s delete op issues
-  a real `DELETE FROM workbench.udt_dataset_rows` until the rehearsed draft
-  `migrations/udt_dataset_rows_delete_archives_and_trash_restores.sql` is applied — then both
-  archive and the scope-dataset branch of the confirm copy goes. Tracked in
-  [FOUND_DEFECTS.md](../../FOUND_DEFECTS.md).
+- **A removed row moves to Trash, and the confirm says so.** Both kinds of list live in the
+  record store, which archives (`deleted_at`); Trash restores it.
 - **A control that would do nothing is ABSENT with the reason in words** — no message id, a
   store that refuses to be read, or a read-only host each say so.
 

@@ -1,8 +1,7 @@
 // features/data-tables/data-source/record-store.ts — THE GRID'S DATA SEAM, OVER THE RECORD STORE.
 //
-// The second implementation of the interface `service.ts` exports (the first is
-// the older store's `udt_*` doors, which stay exactly where they were). A table
-// reaches this file only when `table-home.ts` says the record store holds it.
+// The implementation of the interface `service.ts` exports. Every call carries the
+// table's home (`table-home.ts`): its organization and the reader.
 //
 // Every read and write goes through `@ai-matrx/records`' client — the store's own
 // doors, the store's own ladder, the store's own refusals — and comes back in the
@@ -77,9 +76,9 @@ import {
   jsonbText,
   liveOptionsInOrder,
   lookFitsKind,
-  olderColumnFromField,
-  olderRowData,
-  olderRowOrdering,
+  gridColumnFromField,
+  gridRowData,
+  gridRowOrdering,
   storeDefaultSort,
   storeFormatWrite,
   storeRulesFromOlder,
@@ -272,7 +271,7 @@ function gridRowsOf(rows: readonly ReadRow[], snap: Snapshot): GridRow[] {
     const withheld = withheldCells(row.hidden, snap.fields);
     return {
       id: row.id,
-      data: olderRowData(row.document as Record<string, unknown>, snap.columns),
+      data: gridRowData(row.document as Record<string, unknown>, snap.columns),
       ...(withheld ? { withheld } : {}),
     };
   });
@@ -453,7 +452,7 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   if (!fieldsRead.ok) return refused(fieldsRead.error);
   const fields = fieldsRead.data;
   const choiceSets = await Promise.all(fields.map((f) => choicesFor(client, f)));
-  const columns = fields.map((f, i) => olderColumnFromField(f as Field & { expression?: unknown }, tableId, choiceSets[i] ?? null));
+  const columns = fields.map((f, i) => gridColumnFromField(f as Field & { expression?: unknown }, tableId, choiceSets[i] ?? null));
   const level = levelRead.ok ? (levelRead.data.find((l) => l.id === tableId)?.level ?? null) : null;
   const document = tableRead.data.document as Record<string, unknown>;
   const [decorations, actions] = await Promise.all([
@@ -464,7 +463,7 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   // THE TABLE'S COLOURS, TRANSLATED BY THE ONE RESOLVER the grid, the kanban, the calendar and the
   // gallery read (records-ui `resolveTableStyle`); the Sheet has no view style of its own.
   if (decorations.ok) metadata.style = resolveTableStyle(decorations.data, fields, undefined);
-  if (actions.ok) metadata.row_actions = olderRowActions(actions.data.actions, fields);
+  if (actions.ok) metadata.row_actions = gridRowActions(actions.data.actions, fields);
   const hand = await readHandOrder(home, client, tableId);
   const titleField = typeof document.title_field === "string" ? document.title_field : null;
   if (titleField && fields.some((f) => f.key === titleField)) {
@@ -482,7 +481,7 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
     data: {
       table: asDataset(tableId, home, document, level ? String(level) : null, {
         metadata,
-        rowOrdering: withHandOrder(olderRowOrdering(document.default_sort, fields), hand),
+        rowOrdering: withHandOrder(gridRowOrdering(document.default_sort, fields), hand),
       }),
       fields,
       columns,
@@ -525,7 +524,7 @@ export async function getTableMetadata(
 /**
  * ONE PAGE, ONE CALL (DOOR-SPEED). The store sorts (a column sort, or the hand-set order when the
  * Table's view keeps one and no column sort is asked), searches, pages and counts —
- * `custom.read_records_page`, the twin of the older `get_user_table_data_paginated_v2`.
+ * `custom.read_records_page`.
  */
 export async function getTablePage(
   home: RecordStoreHome,
@@ -895,8 +894,7 @@ export async function archiveTable(
 /**
  * A paste, a fill, a bulk edit or clear, a bulk delete — ONE call to the store's many-changes door
  * (`custom.record_change_many`), ONE transaction: every change lands or none does, and a refused
- * one comes back with the store's own sentence naming its position. The older door's contract
- * (`udt_bulk_write`), kept.
+ * one comes back with the store's own sentence naming its position.
  */
 export async function bulkWrite(
   home: RecordStoreHome,
@@ -985,7 +983,7 @@ function storeDecorationWrite(
   }
 }
 
-function olderRowActions(actions: readonly StoreRowAction[], fields: readonly Field[]): unknown[] {
+function gridRowActions(actions: readonly StoreRowAction[], fields: readonly Field[]): unknown[] {
   return actions.map((a) => ({
     id: a.id,
     name: a.name,
@@ -1071,7 +1069,7 @@ export async function setTableRowActions(
   invalidateRecordStoreTable(args.tableId);
   if (!answer.ok) return doorRefused(answer);
   const read = await clientFor(home).rowActions({ table_id: args.tableId });
-  return { success: true, data: { row_actions: read.ok ? olderRowActions(read.data.actions, fields.data) : mapped } };
+  return { success: true, data: { row_actions: read.ok ? gridRowActions(read.data.actions, fields.data) : mapped } };
 }
 
 /**
@@ -1398,7 +1396,7 @@ export async function changeFieldType(
   // stores is cleared in the same change — "Patient Notes" changed back to text kept its Number look,
   // and every word typed into it afterwards was read as a number and dropped. Read before the retype.
   // One read of the columns (not the whole table snapshot). The look rides the Field's
-  // `display_format` ({id, options}), as `olderColumnFromField` reads it. A failed read leaves the
+  // `display_format` ({id, options}), as `gridColumnFromField` reads it. A failed read leaves the
   // look as it is — the retype itself is the person's ask and still goes.
   const columnsNow = await clientFor(home).fields({ table_id: args.tableId });
   const before = columnsNow.ok ? columnsNow.data.find((f) => f.id === args.fieldId) : undefined;
@@ -1508,14 +1506,14 @@ export async function rowsById(
   if (!read.ok) return refused(read.error);
   return {
     success: true,
-    data: read.data.map((r) => ({ id: r.id, data: olderRowData(r.document as Record<string, unknown>, columns.data) })),
+    data: read.data.map((r) => ({ id: r.id, data: gridRowData(r.document as Record<string, unknown>, columns.data) })),
   };
 }
 
 // ─── history ────────────────────────────────────────────────────────────────
 //
-// The older grid's history panel reads `udt_dataset_row_versions`: one row per
-// change carrying the WHOLE row after (`data`) and before (`prior_data`). The
+// The grid's history panel reads one version per
+// change, carrying the WHOLE row after (`data`) and before (`prior_data`). The
 // store keeps each version as the fields that moved, with before and after —
 // so the whole-row snapshots are rebuilt here, oldest to newest, from exactly
 // what the store recorded. Nothing is guessed: a key the store never recorded
@@ -1573,8 +1571,8 @@ export async function rowHistory(
       change_kind: kind,
       changed_at: entry.occurred_at,
       changed_by: entry.actor?.user_id ?? null,
-      data: kind === "delete" ? null : olderRowData({ ...current }, columns.data),
-      prior_data: kind === "insert" ? null : olderRowData(prior, columns.data),
+      data: kind === "delete" ? null : gridRowData({ ...current }, columns.data),
+      prior_data: kind === "insert" ? null : gridRowData(prior, columns.data),
       reason: entry.operation_label ?? null,
       custom_fields: {},
     });
@@ -1615,9 +1613,9 @@ export async function restoreArchivedRow(
   return { success: true, data: null };
 }
 
-// ─── table settings: the older `update_user_table_config` shape ─────────────
+// ─── table settings: the settings dialogs' shape ────────────────────────────
 
-/** The column settings this seam carries (`update_user_table_config`'s field keys it has a door for). */
+/** The column settings this seam carries (the settings dialogs' field keys it has a door for). */
 const FIELD_SETTINGS_CARRIED = new Set(["id", "display_name", "field_order", "is_required", "validation_rules", "field_name", "default_value"]);
 /** The table settings it carries. */
 const TABLE_SETTINGS_CARRIED = new Set(["table_name", "description"]);

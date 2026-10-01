@@ -246,7 +246,7 @@ export function useRecordsUiPorts({
     [launchMandate, organizationId, userId],
   );
 
-  /** A TABLE'S AGENT BUTTON (`runAgentAction`): the same `data.row_action` job the older grid starts. */
+  /** A TABLE'S AGENT BUTTON (`runAgentAction`): the same `data.row_action` job the Sheet starts. */
   const runAgentAction = useCallback(
     (target: RowAgentActionTarget) => {
       if (!organizationId) return;

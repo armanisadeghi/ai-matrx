@@ -1,9 +1,8 @@
 /**
  * A bulk edit that hits a row in Trash says "in Trash", never "could not be found".
  *
- * `udt_bulk_write` answers `row_in_trash` for update / cell / merge on an
- * archived row (migration udt_dataset_rows_delete_archives_and_trash_restores),
- * and `row_not_found` for a row that is gone. Use case: a clinic's intake
+ * `bulkWrite` answers `row_in_trash` for update / cell / merge on an
+ * archived row, and `row_not_found` for a row that is gone. Use case: a clinic's intake
  * coordinator fills a column across a selection that includes a patient row a
  * colleague moved to Trash an hour earlier.
  */

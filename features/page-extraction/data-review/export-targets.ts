@@ -6,8 +6,8 @@
  *
  *   • Workbook  → the Excel / Google-Sheets equivalent (`udt_workbooks`),
  *                 via the canonical workbook-service + a Univer snapshot.
- *   • Dataset   → a typed user data table (`udt_datasets`), via the canonical
- *                 create_new_user_table_dynamic RPC family.
+ *   • Dataset   → a typed user data table, born through the data seam's
+ *                 `createTable` (the record store).
  *
  * Both reuse the existing services — this module only adapts an extraction
  * (columns, rows) view into each target's input shape. No new persistence

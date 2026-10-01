@@ -6,7 +6,7 @@
  * "Clear selection". Selecting rows led nowhere: the user made a selection and
  * the surface had nothing to offer them. This module is the answer.
  *
- * Every action compiles to ONE `udt_bulk_write` call, which is one transaction.
+ * Every action compiles to ONE `bulkWrite` call, which is one transaction.
  * That matters more than it looks: deleting 40 rows as 40 requests can half-
  * succeed, and a half-finished bulk delete is unrecoverable by hand because the
  * user no longer knows which 17 went. One op list, one transaction, one result.

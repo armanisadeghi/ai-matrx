@@ -824,7 +824,7 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
-  // Same entity as `dataset` (udt_datasets). Backend currently broken — the
+  // Same entity as `dataset` (a user table). Backend currently broken — the
   // renderer degrades to a summary when table_id isn't a real id.
   usertable_create: {
     toolName: "usertable_create",

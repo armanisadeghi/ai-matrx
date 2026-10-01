@@ -1,21 +1,17 @@
 /**
- * useRowVersions — read-only history for a single dataset row.
+ * useRowVersions — read-only history for a single table row.
  *
- * Queries the `udt_dataset_row_versions` append-only log via Supabase. RLS
- * scopes results to versions of rows in datasets the current user can view.
- *
- * Returns versions newest-first. Each version has the full `data` and
- * `prior_data` snapshots, so the caller can diff or replay without further
- * fetches. `changed_by` is NULL for system writes (service_role / cron / admin
- * tools) — render that case explicitly rather than falsely attributing it.
+ * Reads the store's own history (`custom.record_history`, through the data seam's
+ * `readRowHistory`), rebuilt into the grid's version shape. Returns versions newest-first. Each
+ * version has the full `data` and `prior_data` snapshots, so the caller can diff without further
+ * fetches. `changed_by` is NULL for system writes — render that case explicitly rather than
+ * falsely attributing it.
  */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 
-import { supabase } from "@/utils/supabase/client";
-
-import { isRecordStoreTable, readRowHistory } from "../service";
+import { readRowHistory } from "../service";
 import type { RowVersion } from "../types";
 
 type UseRowVersionsState = {
@@ -28,11 +24,7 @@ export function useRowVersions(
   rowId: string | null | undefined,
   options?: {
     limit?: number;
-    /**
-     * The row's table. A table the RECORD STORE holds reads the store's own
-     * history (`custom.record_history`, via the data seam) instead of
-     * `udt_dataset_row_versions`, in the same shape.
-     */
+    /** The row's table; its history is asked of the table's store. */
     tableId?: string | null;
   },
 ): UseRowVersionsState & { refresh: () => void } {
@@ -47,7 +39,7 @@ export function useRowVersions(
   const lastRowIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!rowId) {
+    if (!rowId || !tableId) {
       lastRowIdRef.current = null;
       setState({ versions: [], loading: false, error: null });
       return undefined;
@@ -65,54 +57,20 @@ export function useRowVersions(
       error: null,
     }));
 
-    if (tableId && isRecordStoreTable(tableId)) {
-      void readRowHistory({ tableId, rowId, limit }).then((read) => {
+    readRowHistory({ tableId, rowId, limit }).then(
+      (read) => {
         if (cancelled) return;
         setState(
           read.success
             ? { versions: read.data, loading: false, error: null }
             : { versions: [], loading: false, error: read.error },
         );
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    supabase
-      .schema("workbench")
-      .from("udt_dataset_row_versions")
-      .select("*")
-      .eq("row_id", rowId)
-      .order("changed_at", { ascending: false })
-      .limit(limit)
-      .then(({ data, error }) => {
+      },
+      (err: unknown) => {
         if (cancelled) return;
-        if (error) {
-          setState({ versions: [], loading: false, error: error.message });
-          return;
-        }
-        setState({
-          versions: (data ?? []) as RowVersion[],
-          loading: false,
-          error: null,
-        });
-      })
-      // Supabase's PostgrestBuilder resolves with {data, error}, but a
-      // pre-response network throw bypasses .then entirely. Guard so the
-      // hook can never get stuck in `loading: true`.
-      .then(
-        () => {},
-        (err: unknown) => {
-          if (cancelled) return;
-          setState({
-            versions: [],
-            loading: false,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        },
-      );
-
+        setState({ versions: [], loading: false, error: err instanceof Error ? err.message : String(err) });
+      },
+    );
     return () => {
       cancelled = true;
     };

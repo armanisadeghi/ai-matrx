@@ -10,7 +10,6 @@ import AddRowModal from "./AddRowModal";
 import EditRowModal from "./EditRowModal";
 import DeleteRowModal from "./DeleteRowModal";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { isRecordStoreTable } from "@/features/data-tables/service";
 import TableConfigModal from "./TableConfigModal";
 import TableReferenceOverlay from "./TableReferenceOverlay";
 import RowOrderingModal from "./RowOrderingModal";
@@ -251,9 +250,8 @@ export default function TableToolbar({
   const onEditSuccess = onEditSuccessProp ?? (() => loadTableData());
   const onDeleteSuccess = onDeleteSuccessProp ?? (() => loadTableData());
   const isMobile = useIsMobile();
-  /** An older table always keeps a hand order; a record-store one only once G13's doors answer. */
-  const handOrderAvailable =
-    !isRecordStoreTable(tableId) || tableInfo?.metadata?.record_store?.hand_order === "served";
+  /** A hand order is offered once the store's G13 doors answer for this table. */
+  const handOrderAvailable = tableInfo?.metadata?.record_store?.hand_order === "served";
   // Show toast when trying to use edit features in read-only mode
   const showReadOnlyToast = () => {
     toast({
@@ -441,9 +439,9 @@ export default function TableToolbar({
 
           {!pageOwnsShareAndExport && (
           <ShareButton
-            // A record-store table is shared as the record it is (data seam).
-            resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
-            {...(isRecordStoreTable(tableId) && tableInfo?.organization_id
+            // A table is shared as the record it is (data seam).
+            resourceType="record"
+            {...(tableInfo?.organization_id
               ? { organizationId: tableInfo.organization_id as string }
               : {})}
             resourceId={tableId}
@@ -496,9 +494,9 @@ export default function TableToolbar({
           ) : null}
           {!pageOwnsShareAndExport && (
           <ShareButton
-            // A record-store table is shared as the record it is (data seam).
-            resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
-            {...(isRecordStoreTable(tableId) && tableInfo?.organization_id
+            // A table is shared as the record it is (data seam).
+            resourceType="record"
+            {...(tableInfo?.organization_id
               ? { organizationId: tableInfo.organization_id as string }
               : {})}
             resourceId={tableId}

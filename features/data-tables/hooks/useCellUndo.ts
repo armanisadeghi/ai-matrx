@@ -8,9 +8,8 @@
  * is recoverable. Shipping the easier editing without the undo would be trading
  * the user's safety for our convenience.
  *
- * WHAT IT IS NOT. This is not a general document history — `udt_dataset_rows`
- * already versions every write into `udt_dataset_row_versions`, and the Row
- * History viewer is still the authority for "what did this row look like last
+ * WHAT IT IS NOT. This is not a general document history — the store already
+ * versions every write (`custom.record_history`), and the Row History viewer is still the authority for "what did this row look like last
  * Tuesday". This stack is the SESSION-LOCAL memory of what *you* just did, so
  * Cmd-Z means what it means everywhere else.
  *
@@ -80,7 +79,7 @@ export function describeCellGroup(edits: readonly CellEdit[]): string {
  * An entry is ONE thing the person did. A cell edit is one cell; a row action
  * ("New Week" on 12 rows) is every cell it wrote, recorded with `recordGroup`
  * as ONE entry — one Cmd-Z, one toolbar Undo, or the "Undo" on the action's own
- * toast puts every one of those cells back in ONE transaction (`udt_bulk_write`
+ * toast puts every one of those cells back in ONE transaction (`bulkWrite`
  * merge ops), so a half-restored row cannot happen (Arman, 2026-09-21: "an easy
  * undo that would guarantee a full recovery"). There is exactly one undo system:
  * the toast's button and Cmd-Z pop the same stack.
@@ -160,7 +159,7 @@ export function useCellUndo(options: {
 
   /**
    * Write one side of an entry. One cell goes through `upsertCell` exactly as a
-   * hand edit; several go as ONE `udt_bulk_write` (one merge op per row), so a
+   * hand edit; several go as ONE `bulkWrite` (one merge op per row), so a
    * group is restored all together or not at all.
    */
   const applySide = useCallback(

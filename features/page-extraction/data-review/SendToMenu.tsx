@@ -8,7 +8,7 @@
  *
  *   • Workbook   → udt_workbooks (our spreadsheet system). Routing-only, so the
  *                  open chooser offers Here / New tab.
- *   • Data table → udt_datasets (typed user table). Has a window-panel surface
+ *   • Data table → a typed user table (the record store). Has a window-panel surface
  *                  (`quickDataWindow`), so the chooser ALSO offers Open as window.
  *
  * On success it never silently navigates — it raises OpenDestinationDialog so

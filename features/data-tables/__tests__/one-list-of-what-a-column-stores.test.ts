@@ -14,8 +14,8 @@ it("no storage word or engineer's word reaches a person", () => {
 });
 
 it("on a record-store table a column is offered only what the store can change it into", () => {
-  const offered = storageTypesToChangeInto({ onTheRecordStore: true, changeInto: ["string", "number", "integer", "boolean", "date", "datetime"], current: "string" });
+  const offered = storageTypesToChangeInto({ changeInto: ["string", "number", "integer", "boolean", "date", "datetime"], current: "string" });
   expect(offered.map((t) => t.label)).toEqual(["Text", "Number", "Whole number", "Yes / No", "Date", "Date & time"]);
-  const moved = storageTypesToChangeInto({ onTheRecordStore: true, changeInto: ["string"], current: "json" });
+  const moved = storageTypesToChangeInto({ changeInto: ["string"], current: "json" });
   expect(moved.map((t) => t.value)).toEqual(["string", "json"]);
 });

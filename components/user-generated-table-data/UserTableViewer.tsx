@@ -83,7 +83,6 @@ import {
 import {
   cellTextForReader,
   relationCellText,
-  relationDisplayOf,
   relationIdsInColumn,
   type RelationWordsByField,
 } from "@/features/data-tables/relation-words";
@@ -130,7 +129,6 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
 import {
   agentActionOffer,
-  buildRowActionOps,
   describeRowAction,
   readRowActions,
 } from "@/features/data-tables/row-actions";
@@ -143,10 +141,9 @@ import {
   summaryKindsFor,
 } from "@/features/data-tables/column-summaries";
 import {
-  useTableRealtime,
+  useRecordStoreTableRealtime,
   type TableRealtimeEvent,
-} from "@/features/data-tables/hooks/useTableRealtime";
-import { useRecordStoreTableRealtime } from "@/features/data-tables/hooks/useRecordStoreTableRealtime";
+} from "@/features/data-tables/hooks/useRecordStoreTableRealtime";
 import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection";
 import {
   describeCellGroup,
@@ -159,14 +156,13 @@ import {
   type CellAddress,
 } from "@ai-matrx/design-system/data-table/grid-selection";
 import { classifyEcho } from "@/features/data-tables/realtime-echo";
-import { computedColumnsFor } from "@/features/data-tables/data-source/computed-columns";
+import { computeColumns } from "@/features/data-tables/data-source/computed-columns";
 import {
   bulkWrite,
   deleteField,
   restoreField,
   getCompleteTable,
   getRowsForClientSort,
-  isRecordStoreTable,
   readRowsById,
   rowChangeScheduleFor,
   runRowAction as runRowActionInTheStore,
@@ -339,7 +335,7 @@ export interface TableInfo {
   row_ordering_config?: RowOrderingConfig;
   /** `permissive` | `strict` — read by TableConfigModal's Strict Validation switch. */
   validation_mode?: string;
-  /** The full `udt_datasets.metadata` blob; `metadata.style` is the table's colors (`table-style.ts`). */
+  /** The table's metadata; `metadata.style` is the table's colors (`table-style.ts`). */
   metadata?: unknown;
 }
 
@@ -484,16 +480,6 @@ interface UserTableViewerProps {
   /** Trailing controls in the data-table toolbar row. */
   toolbarTrailing?: React.ReactNode;
   /**
-   * Fires when this id is not a dataset of the OLDER store for this person —
-   * `get_full_table` answered P0002. It is not "deleted" and it is not "no
-   * access": the record store (`/data-v2`) holds tables with exactly this shape
-   * of id, so a host that can look there takes the screen over. When it is
-   * supplied the viewer paints NO error of its own for that one case, because
-   * two answers on one screen is worse than the wrong one. Every other failure
-   * is shown here exactly as before.
-   */
-  onDatasetNotHere?: (tableId: string) => void;
-  /**
    * Fires whenever the loaded table's identity changes — lets an outer
    * route header (e.g. the `/data/[id]` shell header) show the table's
    * name without a second fetch of the same RPC.
@@ -541,12 +527,6 @@ interface UserTableViewerProps {
    * person holds, and every refused edit says it is a preview.
    */
   previewOnly?: boolean;
-  /**
-   * A host's one-line notice about WHERE this table runs (a table in both stores still runs in the
-   * older store until its organization is switched over) — drawn beside the read-only chip, never
-   * in the toolbar's pinned controls and never as a second grid.
-   */
-  storeNotice?: React.ReactNode;
 }
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
@@ -566,20 +546,18 @@ const UserTableViewer = ({
   renderCellMarkdown = false,
   hideHeader = false,
   toolbarTrailing,
-  onDatasetNotHere,
   onTableInfoChange,
   onTablesChange,
   emitSurfaceScope = false,
   pageOwnsShareAndExport,
   toolbarSlot,
   previewOnly = false,
-  storeNotice,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [scheduleNavigationPending, startScheduleNavigation] = React.useTransition();
   // Whether "When a row changes, run an agent…" can be offered here (data seam).
   const [rowChangeSchedule, setRowChangeSchedule] = useState<Awaited<ReturnType<typeof rowChangeScheduleFor>>>(
-    () => (isRecordStoreTable(tableId) ? null : { entityType: "user_table_row", actions: [] }),
+    null,
   );
   useEffect(() => {
     let live = true;
@@ -800,7 +778,7 @@ const UserTableViewer = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Row history sheet state. historyRowId is the udt_dataset_rows.id whose
+  // Row history sheet state. historyRowId is the row id whose
   // version log is currently visible; null = sheet closed.
   const [historyRowId, setHistoryRowId] = useState<string | null>(null);
 
@@ -870,13 +848,10 @@ const UserTableViewer = ({
     fetchCurrentUser();
   }, []);
 
-  // WHO WORKS A FORMULA OUT: the browser for an older table, the store for a
-  // record-store table (data-source/computed-columns.ts). One shape either way.
-  const computeColumns = computedColumnsFor(tableId);
 
   // The ORGANIZATION's layout defaults for this table (three knobs); a person's
   // own Layout choice overrides them, and `default` in the view means "theirs".
-  const layoutDefaults = useTableLayoutDefaults(tableInfo?.organization_id ?? null, tableId);
+  const layoutDefaults = useTableLayoutDefaults(tableId);
   const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -949,11 +924,9 @@ const UserTableViewer = ({
         ? "This is a preview. Open the table to change it."
         : isExampleTable
         ? "This is one of the platform's example tables, so it is read-only for everyone. Create a table of your own to try this out."
-        : isRecordStoreTable(tableId)
         // AN ORGANIZATION'S TABLE IS NOT "A SHARED TABLE TO DUPLICATE" (BREAKER-2 B2-20): it says what the
         // person can do here and who can change that — the same words the records grid uses.
-        ? "You can look at this table but not change it: it takes Editor to change anything here. Ask somebody who is Admin on it to move you up."
-        : "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
+        : "You can look at this table but not change it: it takes Editor to change anything here. Ask somebody who is Admin on it to move you up.",
       variant: "default",
     });
   };
@@ -995,9 +968,8 @@ const UserTableViewer = ({
         return;
       }
 
-      // Surgical single-field write via udt_upsert_cell — uses jsonb_set so
-      // it cannot accidentally drop other fields, fires validation + version
-      // triggers, and is permission-gated by owner-or-editor.
+      // Surgical single-field write — it cannot accidentally drop other fields,
+      // is judged by the column's rules, versioned, and permission-gated.
       const result = await upsertCell({
         tableId,
         rowId,
@@ -1068,20 +1040,9 @@ const UserTableViewer = ({
 
       if (!tableInfo || !fields.length || forceReload) {
         // Metadata only — schema + a real COUNT(*), no rows. The page of rows
-        // this surface actually renders is fetched below. (Until 2026-08-14
-        // this called get_user_table_complete, which has no LIMIT: opening any
-        // dataset shipped every row to the browser to read three facts.)
+        // this surface actually renders is fetched below.
         const meta = await getTableMetadata({ tableId });
-        if (isServiceFailure(meta)) {
-          // THE ID MAY BELONG TO THE OTHER STORE. Hand it to the host rather
-          // than printing "it may have been deleted" over a table that exists.
-          if (meta.code === "dataset_not_here" && onDatasetNotHere) {
-            onDatasetNotHere(tableId);
-            setLoading(false);
-            return;
-          }
-          failWith(meta.error);
-        }
+        if (isServiceFailure(meta)) failWith(meta.error);
 
         currentTableInfo = meta.data.table as unknown as TableInfo;
         currentFields = asTableFields(meta.data.columns);
@@ -1199,13 +1160,12 @@ const UserTableViewer = ({
         format: resolveFieldFormat(field.data_type, field.metadata),
       }));
   // THE WORDS EVERY `relation` CELL ON THIS PAGE READS — one call per relation
-  // column, through the older store's own door. `fullDatasetCache` is the
+  // column, through the store's own door. `fullDatasetCache` is the
   // superset once a column filter has loaded it, so resolving over it keeps the
   // filtered page's chips resolved too; without it the visible page is the set.
   // See features/data-tables/relation-words.tsx for the three states, including
   // why an id the store answers nothing for is deliberately absent here.
   const { choicesByField: relationChoicesRead, wordsByField: relationWords } = useRelationWordsFor(
-    tableInfo?.organization_id ?? null,
     formatFields,
     fullDatasetCache ?? data,
     tableId,
@@ -1249,11 +1209,9 @@ const UserTableViewer = ({
         byField.set(
           f.field_name,
           await fetchRelationWords({
-            organizationId: tableInfo?.organization_id ?? null,
-            display: relationDisplayOf(f.format),
-            rowIds: relationIdsInColumn(rows, f.field_name),
             tableId,
             fieldName: f.field_name,
+            rowIds: relationIdsInColumn(rows, f.field_name),
           }),
         );
       }
@@ -1285,7 +1243,6 @@ const UserTableViewer = ({
       );
 
   // ─── Colors (table-style.ts) ─────────────────────────────────────────────
-  const onTheRecordStoreForColors = isRecordStoreTable(tableId);
   const serverStyle = tableStyleFromMetadata(tableInfo?.metadata);
   const tableStyle: TableStyle =
     localStyle && localStyle.base === tableInfo?.metadata
@@ -1293,11 +1250,10 @@ const UserTableViewer = ({
       : serverStyle;
 
   /**
-   * What color-by paints with. A RECORD-STORE table paints with the SAME lookup as the default
-   * grid and every card (`sheet-colors.ts`, VERIFIER-18 H3); the older store keeps its option colors.
+   * What color-by paints with: the SAME lookup as the default grid and every card
+   * (`sheet-colors.ts`, VERIFIER-18 H3).
    */
   const choiceColorFor: ChoiceColorLookup = sheetChoiceColorLookup(
-    onTheRecordStoreForColors,
     (fieldName) => choiceMap.get(fieldName)?.choices,
   );
 
@@ -1481,12 +1437,10 @@ const UserTableViewer = ({
       if (!local || !incomingData) {
         // The record store's port names ids, not what happened to them, so a
         // row this page does not hold may be one somebody just ADDED: re-read.
-        if (isRecordStoreTable(tableId)) {
-          if (realtimeRefetchTimer.current) clearTimeout(realtimeRefetchTimer.current);
-          realtimeRefetchTimer.current = setTimeout(() => {
-            void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
-          }, 400);
-        }
+        if (realtimeRefetchTimer.current) clearTimeout(realtimeRefetchTimer.current);
+        realtimeRefetchTimer.current = setTimeout(() => {
+          void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+        }, 400);
         return;
       }
 
@@ -1542,36 +1496,12 @@ const UserTableViewer = ({
       );
     };
 
-  // ONE HANDLER, TWO WIRES: postgres_changes for an older table, the record
-  // store's broadcast port for a record-store table — each off for the other.
-  const onTheRecordStore = isRecordStoreTable(tableId);
+  // ONE HANDLER: the record store's broadcast port for this table.
   useRecordStoreTableRealtime(tableId, handleRealtime, {
-    enabled: onTheRecordStore,
     // A column, the table's name or its colors moved: only a metadata read redraws that.
     onShapeChange: () => {
       void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
     },
-  });
-  useTableRealtime(tableId, handleRealtime, {
-    enabled: !onTheRecordStore,
-    // Another editor renamed the table, rewrote its description or changed
-    // its colors: adopt the row. `metadata` arriving as a NEW object is what
-    // retires any optimistic local style patch in favour of the server's.
-    onTableChange: (row) =>
-      setTableInfo((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...(typeof row.table_name === "string"
-                ? { table_name: row.table_name }
-                : {}),
-              ...(row.description !== undefined
-                ? { description: row.description ?? undefined }
-                : {}),
-              ...(row.metadata !== undefined ? { metadata: row.metadata } : {}),
-            }
-          : prev,
-      ),
   });
 
   useEffect(
@@ -1763,11 +1693,10 @@ const UserTableViewer = ({
     const fieldDataType = getFieldDataType(field);
 
     // For small datasets without search, use client-side sorting for correct type handling.
-    // A RECORD-STORE table is sorted by the store itself (`custom.read_records_page`, one page,
+    // The table is sorted by the store itself (`custom.read_records_page`, one page,
     // the same rules) — reading every row to sort in the browser was the Sheet's slow sort. Only a
     // column the store works out on every read (a formula) keeps the browser sort there.
-    const storeSorts =
-      isRecordStoreTable(tableId) && !(sortTarget && isComputedColumn(sortTarget));
+    const storeSorts = !(sortTarget && isComputedColumn(sortTarget));
     if (totalCount <= CLIENT_SORT_THRESHOLD && !searchTerm && !storeSorts) {
       // Check if we already have all data cached, just resort it
       if (allSortedData && allSortedData.length === totalCount) {
@@ -1957,7 +1886,7 @@ const UserTableViewer = ({
     try {
       setSavingExpandedText(true);
 
-      // Surgical single-field write via udt_upsert_cell.
+      // Surgical single-field write.
       const result = await upsertCell({
         tableId,
         rowId: expandedRowId,
@@ -2144,7 +2073,7 @@ const UserTableViewer = ({
   // Backs the toolbar's <CellCleanupButton>. The button owns the operation
   // choice and the review; this side owns only "give me every row" and
   // "write these patches" — the two things that need the table's own
-  // canonical paths (paginated RPC in, udt_bulk_write out).
+  // canonical paths (a page in, one many-changes transaction out).
 
   /** Every row, not just the current page — cleaning only what you can see is
    *  the wrong answer for a table that paginates. */
@@ -2293,12 +2222,10 @@ const UserTableViewer = ({
   const handleDeleteColumn = async (field: TableField) => {
     const ok = await confirmDialog({
       title: `Remove "${field.display_name}"?`,
-      description: isRecordStoreTable(tableId)
-        ? // The record store RETIRES a column (custom.field_retire): it leaves the
-          // table and every screen, and its values stay on each record's history.
-          "This column leaves the table and every screen that shows it. Its values are kept on every row, and Undo on the notice brings it back with them."
-        : // The older store archives the column too (delete means archive, 2026-09-27).
-          "This column leaves the table and every screen that shows it. Its values are kept on every row, and adding a column with the same name brings it back with them.",
+      // The store RETIRES a column (custom.field_retire): it leaves the table and every screen,
+      // and its values stay on each record's history.
+      description:
+        "This column leaves the table and every screen that shows it. Its values are kept on every row, and Undo on the notice brings it back with them.",
       confirmLabel: "Remove column",
       variant: "destructive",
     });
@@ -2314,37 +2241,28 @@ const UserTableViewer = ({
       return;
     }
 
-    if (isRecordStoreTable(tableId)) {
-      // A RETIRED COLUMN KEEPS ITS VALUES AND COMES BACK WITH UNDO (DATA-V2-BASICS-2 F18). The
-      // notice used to say "No rows carried a value for it." — false: the store keeps every value.
-      const removedName = result.data.display_name;
-      const removedId = field.id;
-      notify.success(`Removed "${removedName}"`, {
-        description: "Its values are kept on every row. Undo brings the column back with them.",
-        duration: 10000,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            void (async () => {
-              const back = await restoreField({ tableId, fieldId: removedId });
-              if (isServiceFailure(back)) {
-                notify.error(back.error);
-                return;
-              }
-              notify.success(`"${removedName}" is back`);
-              await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
-            })();
-          },
+    // A RETIRED COLUMN KEEPS ITS VALUES AND COMES BACK WITH UNDO (DATA-V2-BASICS-2 F18). The
+    // notice used to say "No rows carried a value for it." — false: the store keeps every value.
+    const removedName = result.data.display_name;
+    const removedId = field.id;
+    notify.success(`Removed "${removedName}"`, {
+      description: "Its values are kept on every row. Undo brings the column back with them.",
+      duration: 10000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          void (async () => {
+            const back = await restoreField({ tableId, fieldId: removedId });
+            if (isServiceFailure(back)) {
+              notify.error(back.error);
+              return;
+            }
+            notify.success(`"${removedName}" is back`);
+            await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+          })();
         },
-      });
-    } else {
-      toast({
-        title: `Removed "${result.data.display_name}"`,
-        // udt_delete_field archives the column and keeps its values (rows_cleared is 0).
-        description: "Its values are kept on every row. Adding a column with the same name brings it back.",
-        variant: "success",
-      });
-    }
+      },
+    });
 
     setAllSortedData(null);
     await loadTableData(
@@ -2613,8 +2531,8 @@ const UserTableViewer = ({
    * answer — going back to the network to learn what we just wrote is both
    * slower and worse.
    *
-   * The write is already authoritative: `udt_upsert_cell` is a surgical
-   * jsonb_set that cannot touch another field, and it returns the stored row.
+   * The write is already authoritative: `upsertCell` writes one cell, cannot
+   * touch another field, and returns the stored row.
    * So this is not an optimistic guess that might diverge — it is applying the
    * result we were handed.
    *
@@ -2908,7 +2826,7 @@ const UserTableViewer = ({
         });
         return false;
       }
-      // udt_bulk_write reports per-op failures inside a successful envelope, so
+      // The many-changes write reports per-op failures inside a successful envelope, so
       // a green result is NOT proof every row landed. Say what actually
       // happened rather than claiming the whole batch.
       const failed = result.data.results.filter(isBulkOpError);
@@ -3066,83 +2984,43 @@ const UserTableViewer = ({
         });
         if (!ok) return;
       }
-      if (isRecordStoreTable(tableId)) {
-        // THE STORE RUNS IT (G2): the whole selection in one transaction, every
-        // formula step worked out by the store, the whole run refused by rule
-        // if any row is refused. The browser computes nothing; it reads the
-        // rows back and records each changed cell for Undo, as before.
-        const priorById = new Map(rows.map((r) => [r.id, { ...(r.data ?? {}) }] as const));
-        const ran = await runRowActionInTheStore({ tableId, actionId: action.id, rowIds: rows.map((r) => r.id) });
-        if (isServiceFailure(ran)) {
-          toast({
-            title: `"${action.name}" was not run`,
-            description: `${ran.error} Nothing was changed.`,
-            variant: "destructive",
-          });
-          return;
-        }
-        const after = await readRowsById({ tableId, rowIds: rows.map((r) => r.id) });
-        const changed: CellEdit[] = [];
-        if (!isServiceFailure(after)) {
-          for (const row of after.data) {
-            const prior = priorById.get(row.id) ?? {};
-            for (const f of fields) {
-              if (isComputedColumn(f)) continue;
-              const next = row.data[f.field_name] ?? null;
-              const was = prior[f.field_name] ?? null;
-              if (JSON.stringify(next) === JSON.stringify(was)) continue;
-              patchLocalCell(row.id, f.field_name, next);
-              changed.push({
-                tableId,
-                rowId: row.id,
-                fieldName: f.field_name,
-                fieldDisplayName: f.display_name,
-                priorValue: was,
-                nextValue: next,
-              });
-            }
-          }
-        }
-        announceRowActionRun(action.name, rows.length, changed, isServiceFailure(after) ? after.error : null);
-        return;
-      }
-      const built = buildRowActionOps(action, rows, fields);
-      if (!built.ok) {
-        const failing = displayRows.find((r) => r.id === built.rowId);
-        const name = failing
-          ? rowLabelText(failing, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text || "one row"
-          : "one row";
+      // THE STORE RUNS IT (G2): the whole selection in one transaction, every
+      // formula step worked out by the store, the whole run refused by rule
+      // if any row is refused. The browser computes nothing; it reads the
+      // rows back and records each changed cell for Undo, as before.
+      const priorById = new Map(rows.map((r) => [r.id, { ...(r.data ?? {}) }] as const));
+      const ran = await runRowActionInTheStore({ tableId, actionId: action.id, rowIds: rows.map((r) => r.id) });
+      if (isServiceFailure(ran)) {
         toast({
           title: `"${action.name}" was not run`,
-          description: `${name}: ${built.error} Nothing was changed.`,
+          description: `${ran.error} Nothing was changed.`,
           variant: "destructive",
         });
         return;
       }
-      const priorByRow = new Map(rows.map((r) => [r.id, { ...(r.data ?? {}) }] as const));
-      const landed = await runBulkOps(
-        built.ops,
-        `${action.name}: ${rows.length} row${rows.length === 1 ? "" : "s"} updated`,
-        false,
-        false,
-      );
-      if (!landed) return;
+      const after = await readRowsById({ tableId, rowIds: rows.map((r) => r.id) });
       const changed: CellEdit[] = [];
-      for (const [rowId, patch] of built.patches) {
-        const prior = priorByRow.get(rowId) ?? {};
-        for (const [fieldName, value] of Object.entries(patch)) {
-          patchLocalCell(rowId, fieldName, value);
-          changed.push({
-            tableId,
-            rowId,
-            fieldName,
-            fieldDisplayName: fields.find((f) => f.field_name === fieldName)?.display_name ?? fieldName,
-            priorValue: prior[fieldName] ?? null,
-            nextValue: value,
-          });
+      if (!isServiceFailure(after)) {
+        for (const row of after.data) {
+          const prior = priorById.get(row.id) ?? {};
+          for (const f of fields) {
+            if (isComputedColumn(f)) continue;
+            const next = row.data[f.field_name] ?? null;
+            const was = prior[f.field_name] ?? null;
+            if (JSON.stringify(next) === JSON.stringify(was)) continue;
+            patchLocalCell(row.id, f.field_name, next);
+            changed.push({
+              tableId,
+              rowId: row.id,
+              fieldName: f.field_name,
+              fieldDisplayName: f.display_name,
+              priorValue: was,
+              nextValue: next,
+            });
+          }
         }
       }
-      announceRowActionRun(action.name, rows.length, changed, null);
+      announceRowActionRun(action.name, rows.length, changed, isServiceFailure(after) ? after.error : null);
     };
 
   /**
@@ -3577,7 +3455,6 @@ const UserTableViewer = ({
     // The colours by their SOURCE: `tableStyle` is parsed and `choiceColorFor` built afresh on
     // every render, so their identities say nothing.
     localStyle && localStyle.base === tableInfo?.metadata ? localStyle.style : tableInfo?.metadata,
-    onTheRecordStoreForColors,
     columnWidths,
     [...computedPage.formulaFieldNames].sort().join("\u0000"),
     ...Array.from(validationByField.keys()),
@@ -4399,7 +4276,7 @@ const UserTableViewer = ({
           `${row.id}::${field.field_name}`,
         );
         const relationStoreField =
-          fieldFormat.id === "relation" && isRecordStoreTable(S().tableId)
+          fieldFormat.id === "relation"
             ? storeFieldForRelationColumn({ id: field.id, field_name: field.field_name, display_name: field.display_name, format: fieldFormat })
             : null;
         const kindInCell =
@@ -5120,11 +4997,10 @@ const UserTableViewer = ({
         </div>
       )}
 
-      {/* Read-only banner for shared tables (in the page's row the toolbar says View Only), and
-          the host's store notice beside it — one band, only when either has something to say. */}
-      {((isReadOnly && !inPageRow) || storeNotice) && (
+      {/* Read-only banner for shared tables (in the page's row the toolbar says View Only). */}
+      {isReadOnly && !inPageRow && (
         <div className="flex flex-wrap items-center gap-2">
-          {isReadOnly && !inPageRow && (
+          {(
             <div
               data-surface-value="is_read_only"
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm"
@@ -5136,7 +5012,6 @@ const UserTableViewer = ({
               </span>
             </div>
           )}
-          {storeNotice}
         </div>
       )}
 
@@ -5585,7 +5460,7 @@ const UserTableViewer = ({
                             if (scheduleNavigationPending) return;
                             startScheduleNavigation(() => {
                               router.push(
-                                `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}${rowChangeSchedule.entityType !== "user_table_row" ? `&entityType=${encodeURIComponent(rowChangeSchedule.entityType)}` : ""}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`,
+                                `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&entityType=${encodeURIComponent(rowChangeSchedule.entityType)}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`,
                               );
                             });
                           }}
@@ -6038,13 +5913,12 @@ const UserTableViewer = ({
               searchTerm,
             );
           }}
-          onRowReplaced={(newRowId) => setHistoryRowId(newRowId)}
         />
       </MatrxDynamicPanelHost>
     </div>
   );
 
-  // Only the `/data/[id]` route opts in (see `emitSurfaceScope`). The loading
+  // Only the table page's Sheet opts in (see `emitSurfaceScope`). The loading
   // and "no table found" early returns above deliberately mount no provider:
   // there is genuinely nothing to emit yet, and a surface that promises values
   // it does not have is the read lie this wiring exists to remove.

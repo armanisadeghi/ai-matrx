@@ -26,20 +26,13 @@ import {
 } from "@/components/ui/select";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { GripVertical, ArrowUp, ArrowDown, Save, X } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
-import {
-  unwrapGetUserTableDataPaginatedRows,
-  unwrapUserTableMutation,
-} from "@/utils/user-tables-rpc";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 import {
   getTablePage,
-  isRecordStoreTable,
   setRowOrdering,
 } from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import { toast } from "@/components/ui/use-toast";
-import { MovedTableError, olderDoorError } from "@/features/data-tables/moved-door-refusal";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface RowOrderingModalProps {
@@ -142,37 +135,15 @@ export default function RowOrderingModal({
   const loadAllRows = useCallback(async () => {
     setLoading(true);
     try {
-      // Get all rows without pagination. v2 is the same RPC the grid itself
-      // reads through — the v1 variant this used to call can disagree with the
-      // grid about which rows exist.
-      // A record-store table reads through the data seam (lane GRID-PORT): the store's
-      // rows, never the older door, which holds only the archived copy the move left.
-      let rowList: any[];
-      if (isRecordStoreTable(tableId)) {
-        const page = await getTablePage({
-          tableId,
-          limit: 10000,
-          offset: 0,
-          ...(startSort ? { sortField: startSort.field, sortDirection: startSort.direction } : {}),
-        });
-        if (isServiceFailure(page)) throw new Error(page.error);
-        rowList = page.data.rows;
-      } else {
-        const { data: allData, error } = await supabase.rpc(
-          "get_user_table_data_paginated_v2",
-          {
-            p_table_id: tableId,
-            p_limit: 10000, // Large limit to get all rows
-            p_offset: 0,
-            p_sort_field: startSort?.field ?? undefined,
-            p_sort_direction: startSort?.direction ?? "asc",
-            p_search_term: undefined,
-          },
-        );
-
-        if (error) throw error;
-        rowList = unwrapGetUserTableDataPaginatedRows(allData ?? null);
-      }
+      // Every row, through the data seam, in the order the grid is drawn in right now.
+      const page = await getTablePage({
+        tableId,
+        limit: 10000,
+        offset: 0,
+        ...(startSort ? { sortField: startSort.field, sortDirection: startSort.direction } : {}),
+      });
+      if (isServiceFailure(page)) throw new Error(page.error);
+      const rowList: any[] = page.data.rows;
 
       // Keep the raw row data — the label is derived at render time from the
       // schema-resolved label column, so switching columns needs no refetch.
@@ -310,46 +281,22 @@ export default function RowOrderingModal({
     try {
       const newOrder = rows.map((row) => row.id);
 
-      if (isRecordStoreTable(tableId)) {
-        // The store keeps the order on the Table's hand-ordered view (G13, through the seam).
-        const saved = await setRowOrdering({ tableId, enabled: true, order: newOrder });
-        if (isServiceFailure(saved)) {
-          toast({ title: "The row order was not saved", description: saved.error, variant: "destructive" });
-          return;
-        }
-        setHasChanges(false);
-        onSuccess();
-        onClose();
+      // The store keeps the order on the Table's hand-ordered view (G13, through the seam).
+      const saved = await setRowOrdering({ tableId, enabled: true, order: newOrder });
+      if (isServiceFailure(saved)) {
+        toast({ title: "The row order was not saved", description: saved.error, variant: "destructive" });
         return;
       }
-
-      const { data, error } = await supabase.rpc(
-        "update_user_table_row_ordering",
-        {
-          p_table_id: tableId,
-          p_enabled: true,
-          p_order: newOrder,
-          // Persist an explicit override alongside the order so the next open
-          // shows the same column instead of re-resolving; the default
-          // sentinel persists nothing, so the next open re-reads the table's
-          // actual (possibly changed) row label.
-          ...(labelSelection !== DEFAULT_LABEL_OPTION
-            ? { p_label_field: labelSelection }
-            : {}),
-        },
-      );
-
-      if (error) throw olderDoorError(error, tableId);
-      unwrapUserTableMutation(data ?? null);
-
       setHasChanges(false);
       onSuccess();
       onClose();
     } catch (err) {
       console.error("Error saving row order:", err);
-      if (err instanceof MovedTableError) {
-        toast({ title: "The row order was not saved", description: err.message, variant: "destructive" });
-      }
+      toast({
+        title: "The row order was not saved",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }

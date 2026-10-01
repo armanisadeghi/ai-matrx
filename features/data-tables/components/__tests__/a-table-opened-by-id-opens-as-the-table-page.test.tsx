@@ -1,13 +1,11 @@
 /**
- * ONE-GRID MERGE, STEP 7 — A RECORD-STORE TABLE NEVER MOUNTS THE OLDER GRID.
+ * A TABLE OPENED BY ID OPENS AS THE TABLE PAGE, IN ITS OWN ORGANIZATION.
  *
  * `LocatedTableViewer` is the one door every host outside the table page opens a table by id
  * through (the table window, the dataset overlay, a chat table artifact, the quick data sheet, the
- * tables picker, the chat "view table" modal). Before step 7 it located the table and then mounted
- * `UserTableViewer` for EVERY table, so a record-store table was drawn by the older grid through
- * the lossy shape seam. Now a record-store table mounts records-ui's table page through the one
- * shared host binding (`RecordStoreTableHost`), in the table's own organization; an older table
- * mounts `UserTableViewer` exactly as before, with every prop it was handed.
+ * tables picker, the chat "view table" modal). It locates the table and mounts records-ui's table
+ * page through the one shared host binding (`RecordStoreTableHost`), in the table's own
+ * organization; a table it cannot open is said in words.
  */
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -17,17 +15,6 @@ import { createRoot, type Root } from "react-dom/client";
 const locateTable = jest.fn();
 jest.mock("@/features/data-tables/data-source/locate-table", () => ({
   locateTable: (...args: unknown[]) => locateTable(...args),
-  // An older table with no copy in the new store (the both-store notice has its own test).
-  recordStoreCopyOf: async () => false,
-}));
-
-const viewerProps: Array<Record<string, unknown>> = [];
-jest.mock("@/components/user-generated-table-data/UserTableViewer", () => ({
-  __esModule: true,
-  default: (props: Record<string, unknown>) => {
-    viewerProps.push(props);
-    return <div data-testid="older-grid" />;
-  },
 }));
 
 const hostProps: Array<Record<string, unknown>> = [];
@@ -70,35 +57,22 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   locateTable.mockReset();
-  viewerProps.length = 0;
   hostProps.length = 0;
 });
 
 describe("LocatedTableViewer", () => {
-  it("mounts records-ui's table page for a record-store table, never the older grid", async () => {
+  it("mounts records-ui's table page in the table's own organization", async () => {
     locateTable.mockResolvedValue({ ok: true, store: "record", home: { store: "record", organizationId: ORG, userId: "u" } });
     const extras = [{ key: "w", label: "Open in a floating window", onSelect: () => undefined }];
-    await mount(<LocatedTableViewer tableId={TABLE} hideHeader renderCellMarkdown recordStoreMenuExtras={extras} />);
+    await mount(<LocatedTableViewer tableId={TABLE} recordStoreMenuExtras={extras} />);
     expect(byTestId("records-ui-table")).not.toBeNull();
-    expect(byTestId("older-grid")).toBeNull();
-    expect(viewerProps).toHaveLength(0);
     expect(hostProps[0]).toMatchObject({ tableId: TABLE, organizationId: ORG, menuExtras: extras });
   });
 
-  it("mounts the older grid, unchanged, for an older table", async () => {
-    locateTable.mockResolvedValue({ ok: true, store: "older" });
-    await mount(<LocatedTableViewer tableId={TABLE} hideHeader renderCellMarkdown />);
-    expect(byTestId("older-grid")).not.toBeNull();
-    expect(hostProps).toHaveLength(0);
-    expect(viewerProps[0]).toMatchObject({ tableId: TABLE, hideHeader: true, renderCellMarkdown: true });
-    expect(viewerProps[0]).not.toHaveProperty("recordStoreMenuExtras");
-  });
-
-  it("says a refusal in words, mounting neither grid", async () => {
+  it("says a refusal in words, mounting no table", async () => {
     locateTable.mockResolvedValue({ ok: false, error: "This table has not been shared with you." });
     await mount(<LocatedTableViewer tableId={TABLE} />);
     expect(container.querySelector('[role="status"]')?.textContent).toContain("not been shared");
-    expect(viewerProps).toHaveLength(0);
     expect(hostProps).toHaveLength(0);
   });
 });

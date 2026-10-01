@@ -5,14 +5,24 @@
  * 1. Last markdown heading (# …) in the source message before this table
  * 2. Canvas artifact title
  * 3. Short label from column headers
- * 4. Generic fallback (caller may still pass through resolveUniqueDatasetName)
+ * 4. Generic fallback
  */
 
 import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { supabase } from "@/utils/supabase/client";
 import { convertCxContentToDisplay } from "@/features/cx-chat/utils/cx-content-converter";
-import { normalizeDatasetDisplayName } from "@/features/data-tables/resolve-unique-dataset-name";
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+
+const MAX_NAME_LENGTH = 120;
+
+/** Trim and cap length; preserve readable punctuation. */
+export function normalizeDatasetDisplayName(name: string): string {
+  return name
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_NAME_LENGTH);
+}
 
 const HEADING_RE = /^(#{1,6})[ \t]+(.+?)\s*#*\s*$/;
 

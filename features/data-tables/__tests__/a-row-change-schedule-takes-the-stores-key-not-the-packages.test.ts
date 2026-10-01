@@ -30,12 +30,8 @@ jest.mock("@/features/data-tables/data-source/table-home", () => ({
 
 import { rowChangeScheduleFor } from "../service";
 
-it("answers record:<table id> for a record-store table even when the installed package says custom_record:", async () => {
+it("answers record:<table id> for a table even when the installed package says custom_record:", async () => {
   const answer = await rowChangeScheduleFor({ tableId: SERVICE_CALLS });
   expect(answer?.entityType).toBe(`record:${SERVICE_CALLS}`);
 });
 
-it("answers user_table_row for an older table", async () => {
-  const answer = await rowChangeScheduleFor({ tableId: "5b0c3f0e-8a7e-4d8e-9d52-2f6f3c1f1a90" });
-  expect(answer?.entityType).toBe("user_table_row");
-});

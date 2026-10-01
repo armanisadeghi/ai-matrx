@@ -20,8 +20,6 @@ const DIALOGS = [
   "components/user-generated-table-data/TableConfigModal.tsx",
   "components/user-generated-table-data/TableReferenceModal.tsx",
   "components/user-generated-table-data/TableReferenceOverlay.tsx",
-  "components/user-generated-table-data/CreateTableModal.tsx",
-  "components/user-generated-table-data/CreateTemplateModal.tsx",
   "components/user-generated-table-data/DeleteRowModal.tsx",
   "components/user-generated-table-data/RowOrderingModal.tsx",
   "components/user-generated-table-data/PasteRowsDialog.tsx",

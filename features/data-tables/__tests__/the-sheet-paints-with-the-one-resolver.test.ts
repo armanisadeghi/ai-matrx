@@ -40,7 +40,7 @@ const ROOMS = [
 describe("Birchwood Rooms · the Sheet paints every room the colour the grid does", () => {
   const gridStyle = STYLE;
   const sheetStyle = STYLE;
-  const sheetLookup = sheetChoiceColorLookup(true, (field) => (field === "status" ? STATUS_CHOICES : undefined));
+  const sheetLookup = sheetChoiceColorLookup((field) => (field === "status" ? STATUS_CHOICES : undefined));
 
   it.each(ROOMS)("$data.room_name ($data.status)", (room) => {
     const grid = resolveRowColor(gridStyle, room, colorFromTheValue);
@@ -56,9 +56,9 @@ describe("Birchwood Rooms · the Sheet paints every room the colour the grid doe
     expect(resolveRowColor(sheetStyle, ROOMS[3]!, sheetLookup)).not.toBe("red");
   });
 
-  it("a table on the older store keeps its own option colors", () => {
-    const older = sheetChoiceColorLookup(false, () => [{ value: "Complete", color: "green" }]);
-    expect(older("status", "Complete")).toBe("green");
+  it("an option keeps the colour its owner gave it", () => {
+    const kept = sheetChoiceColorLookup(() => [{ value: "Complete", color: "green" }]);
+    expect(kept("status", "Complete")).toBe("green");
   });
 });
 
@@ -78,7 +78,7 @@ describe("Harbor Dental insurance plans · coloured by Status, a row wears its S
     { value: "Appeal", color: "violet" },
     { value: "Awaiting card" }, // an option its owner never painted
   ];
-  const lookup = sheetChoiceColorLookup(true, (field) => (field === "status" ? STATUS : undefined));
+  const lookup = sheetChoiceColorLookup((field) => (field === "status" ? STATUS : undefined));
   const style: TableStyle = { version: 1, colorBy: { field: "status", target: "row" } };
   const plan = (status: string) => ({ id: status, data: { account: "Aetna Dental Access", status } });
 

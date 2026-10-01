@@ -8,7 +8,7 @@
  * Airtable's button field + automation "Update record", Notion's database
  * button (2023): a named button on the row that applies a fixed set of
  * changes. Stored on the table as `metadata.row_actions` (an array), set
- * through `udt_set_table_row_actions`:
+ * through the seam's `setTableRowActions`:
  *
  *   {
  *     id: "a1b2", name: "New Week", color: "green", confirm: false,
@@ -32,10 +32,10 @@
  * tables) is deliberately NOT here — it belongs to the workflow / automation
  * primitives, never inside data-tables (FEATURE.md, "what stays out").
  *
- * Pure module. `compileRowAction` turns one action + one row into the patch to
- * write, or the reason it cannot be applied; `buildRowActionOps` maps it over a
- * selection into ONE `udt_bulk_write` transaction, so a 40-row "New Week"
- * either happens or does not. Computed columns (formula, created/modified
+ * Pure module. `compileRowAction` turns one action + one row into the patch it
+ * would write, or the reason it cannot be applied (the preview reads it; the
+ * store runs the action itself, the whole selection in one transaction, so a
+ * 40-row "New Week" either happens or does not). Computed columns (formula, created/modified
  * time, autonumber) are refused at compile time: nothing is ever written to
  * them and the action editor never offers them.
  */
@@ -48,7 +48,6 @@ import {
   type ComputedColumnField,
   type ResolveCell,
 } from "@ai-matrx/design-system/formulas";
-import type { BulkOp } from "./types";
 import { isStyleColor, type StyleColor } from "@ai-matrx/design-system/data-table/table-style";
 
 // ─── model ───────────────────────────────────────────────────────────────────
@@ -289,28 +288,6 @@ export function coerceForColumn(value: unknown, dataType: string): unknown {
     default:
       return value;
   }
-}
-
-/**
- * One `merge` op per row: only the columns the action names change, every
- * other cell is preserved. One list = one transaction. A row the action cannot
- * be compiled for is reported, and NOTHING is written — a button that changed
- * 39 of 40 rows and said nothing is worse than one that refused.
- */
-export function buildRowActionOps(
-  action: RowAction,
-  rows: readonly { id: string; data: Record<string, unknown> }[],
-  fields: readonly RowActionField[],
-): { ok: true; ops: BulkOp[]; patches: Map<string, Record<string, unknown>> } | { ok: false; error: string; rowId: string } {
-  const ops: BulkOp[] = [];
-  const patches = new Map<string, Record<string, unknown>>();
-  for (const row of rows) {
-    const compiled = compileRowAction(action, row, fields);
-    if (!compiled.ok) return { ok: false, error: compiled.error, rowId: row.id };
-    ops.push({ op: "merge", row_id: row.id, data: compiled.patch });
-    patches.set(row.id, compiled.patch);
-  }
-  return { ok: true, ops, patches };
 }
 
 // ─── the whole-row preview (Arman, 2026-09-21) ───────────────────────────────

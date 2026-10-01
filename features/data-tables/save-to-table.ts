@@ -2,10 +2,10 @@
  * Save-to-existing-table engine.
  *
  * One place that knows how to write incoming tabular data (from a markdown
- * table, a JSON block, etc.) into an EXISTING `udt_datasets` table. Handles:
+ * table, a JSON block, etc.) into an EXISTING table. Handles:
  *   - creating new columns for incoming-only headers (opt-in by the caller)
  *   - shallow duplicate detection + skip/update on a chosen identifier column
- *   - atomic commit via the new `udt_bulk_write` RPC (one transaction)
+ *   - atomic commit via the seam's `bulkWrite` (one transaction)
  *
  * Callers compute the column reconciliation first (see `reconcile.ts`) and then
  * tell the engine which incoming-only columns to add and how to dedupe. This
@@ -40,8 +40,7 @@ export interface ExistingRow {
 export async function fetchExistingRows(
   tableId: string,
 ): Promise<ExistingRow[]> {
-  // Through the seam (lane INTEG-CLIENTS): a moved table's rows are read from the
-  // record store, never from the archived older copy the move left behind.
+  // Through the seam (lane INTEG-CLIENTS): located first, in the table's own organization.
   const located = await locateTable(tableId);
   if (!located.ok) throw new Error(located.error);
   const page = await getTablePage({ tableId, limit: EXISTING_ROW_FETCH_CAP, offset: 0 });
@@ -135,7 +134,7 @@ export interface AppendToTableArgs {
 
 /**
  * Append incoming rows to an existing table. New columns (if requested) are
- * created first, then rows are written in a single `udt_bulk_write`
+ * created first, then rows are written in a single `bulkWrite`
  * transaction. Duplicates (when `dedupe` is set) are either skipped or merged
  * into the existing row.
  */
@@ -231,7 +230,7 @@ export interface ReplaceTableArgs {
 /**
  * Replace the entire contents of a table: archive every existing row (a
  * `delete` op archives — delete means archive) and insert the incoming rows,
- * all in one `udt_bulk_write` transaction (archives run before inserts). New columns (if requested) are created
+ * all in one `bulkWrite` transaction (archives run before inserts). New columns (if requested) are created
  * first. The caller is responsible for confirming this destructive action.
  */
 export async function replaceTable(

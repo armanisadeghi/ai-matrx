@@ -7,7 +7,7 @@
  * THE USE CASE. The front desk has "Front desk callback log" open in two tabs. In one tab
  * somebody archives Marcus Oyelaran's callback; in the other the row editor is still open on
  * it, and the receptionist adds "wants it emailed" and presses Save Changes. The store refuses:
- * "This row is in Trash. Restore it from Trash to edit it." (udt_upsert_row, SQLSTATE 55000).
+ * "This row is in Trash. Restore it from Trash to edit it." (code row_in_trash).
  *
  * The editor already shows that sentence. Before this, the save ALSO called console.error, which
  * lit the Next dev overlay's red "1 Issue" and is what lib/diagnostics/globalErrorCapture files
@@ -95,25 +95,13 @@ function saveErrors(): unknown[][] {
   return errorSpy.mock.calls.filter((args: unknown[]) => args.some((a: unknown) => String(a).includes("updating row") || String(a).includes("in Trash")));
 }
 
-it("a refused save of a row in Trash shows the sentence and logs no console.error", async () => {
-  upsertRow.mockResolvedValue({
-    success: false,
-    error: TRASH,
-    refusal: { code: "internal", message: TRASH, sqlstate: "55000", hint: "Open Trash, restore the row, then edit it." },
-  });
-  await saveOnce();
-  expect(document.body.textContent).toContain(TRASH);
-  expect(saveErrors()).toEqual([]);
-  expect(infoSpy).toHaveBeenCalled();
-});
-
-it("the 409 shape (code row_in_trash, udt_row_in_trash_refusal_is_a_conflict.sql) is the same expected refusal", async () => {
+it("a refused save of a row in Trash (code row_in_trash) shows the sentence and logs no console.error", async () => {
   // What supabase-js hands the service for PostgREST's custom 409: the JSON MESSAGE's fields.
   const pgError = { code: "row_in_trash", message: TRASH, details: null, hint: "Open Trash, restore the row, then edit it." };
   upsertRow.mockResolvedValue({
     success: false,
     error: TRASH,
-    refusal: mapPgError(pgError as never, "the older data tables"),
+    refusal: mapPgError(pgError as never, "the table"),
   });
   await saveOnce();
   expect(document.body.textContent).toContain(TRASH);
@@ -124,8 +112,8 @@ it("the 409 shape (code row_in_trash, udt_row_in_trash_refusal_is_a_conflict.sql
 it("any other refused save still logs a console.error", async () => {
   upsertRow.mockResolvedValue({
     success: false,
-    error: "permission denied for table udt_dataset_rows",
-    refusal: { code: "forbidden", message: "permission denied for table udt_dataset_rows", sqlstate: "42501" },
+    error: "You can look at this table but not change it.",
+    refusal: { code: "forbidden", message: "You can look at this table but not change it.", sqlstate: "42501" },
   });
   await saveOnce();
   expect(saveErrors().length).toBeGreaterThan(0);

@@ -1,31 +1,23 @@
 "use client";
 
 /**
- * useTableLayoutDefaults — the ORGANIZATION's layout defaults for a data table.
+ * useTableLayoutDefaults — the layout defaults for a data table, from the store's own knob
+ * (`custom/grid_layout`, via `custom.grid_layout`), resolved for the TABLE's organization (not
+ * whichever one the person has active — a shared table looks the way its owners set it up):
+ * layout (auto | fit | scroll), how many columns still share the width under auto, and row height.
  *
- * Three knobs (migrations/udt_layout_default_knobs.sql), resolved for the
- * organization the TABLE belongs to (not whichever one the person has active —
- * a shared table looks the way its owners set it up):
+ * Precedence: a person's own per-view Layout choice (URL / saved view) wins over these; these win
+ * over nothing else — they ARE the default.
  *
- *   extensibility.user_tables.default_layout      auto | fit | scroll
- *   extensibility.user_tables.fit_max_columns     how many columns still share the width under auto
- *   extensibility.user_tables.default_row_height  compact | normal | tall
- *
- * Precedence: a person's own per-view Layout choice (URL / saved view) wins
- * over these; these win over nothing else — they ARE the default.
- *
- * Until the knobs answer, the grid renders with the platform's seeded values
- * (the same literals the migration seeds), so there is no flash of a different
- * layout for the overwhelmingly common organization that never changed them.
- * A failed read is logged with its cause and the seeded values stay in force.
+ * Until the knob answers, the grid renders with the platform's seeded values, so there is no flash
+ * of a different layout for the overwhelmingly common organization that never changed them. A
+ * failed read is logged with its cause and the seeded values stay in force.
  */
 
 import { useEffect, useState } from "react";
 
-import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
-
 import { gridLayoutDefaults } from "../data-source/record-store";
-import { recordStoreHomeOf } from "../data-source/table-home";
+import { locateTable } from "../data-source/locate-table";
 
 import {
   parseLayoutMode,
@@ -40,7 +32,7 @@ export type TableLayoutDefaults = {
   rowHeight: TableRowDensity;
 };
 
-/** The values the knob migration seeds — the render-before-answer placeholder. */
+/** The platform's seeded values — the render-before-answer placeholder. */
 export const SEEDED_TABLE_LAYOUT_DEFAULTS: TableLayoutDefaults = {
   layout: "auto",
   fitMaxColumns: 8,
@@ -49,54 +41,10 @@ export const SEEDED_TABLE_LAYOUT_DEFAULTS: TableLayoutDefaults = {
 
 const cache = new Map<string, Promise<TableLayoutDefaults>>();
 
-/**
- * 🚨 THREE KNOBS, ONE ROUND TRIP. These used to be three `platform.knob_resolve`
- * calls, one per value (check:knob-snapshot-adoption, 2026-09-22). Every read
- * here now goes through `ensureEffectiveKnob`, which answers from the one cached
- * `platform.knob_snapshot` for this organization — so the three below share a
- * single request, the request is shared with every other knob any screen in this
- * tab has already read, and adding a fourth layout knob costs nothing at run
- * time. `userId` is null on purpose: a shared table looks the way its OWNERS set
- * it up, so no personal rung may narrow it (the file header's precedence rule).
- */
-async function load(organizationId: string): Promise<TableLayoutDefaults> {
-  // The three addresses are written out as string literals rather than built
-  // from a constant or a parameter: `every-knob-read-addresses-a-real-row.test.ts`
-  // matches every read in the repo against the declared seed rows, and an
-  // address it cannot read statically is one nothing checks.
-  const [layout, fitMax, rowHeight] = await Promise.all([
-    ensureEffectiveKnob(organizationId, null, {
-      feature: "extensibility",
-      key: "user_tables.default_layout",
-    }),
-    ensureEffectiveKnob(organizationId, null, {
-      feature: "extensibility",
-      key: "user_tables.fit_max_columns",
-    }),
-    ensureEffectiveKnob(organizationId, null, {
-      feature: "extensibility",
-      key: "user_tables.default_row_height",
-    }),
-  ]);
-  const n = Number(fitMax);
-  return {
-    layout: parseLayoutMode(typeof layout === "string" ? layout : null),
-    fitMaxColumns:
-      Number.isFinite(n) && n >= 2 && n <= 30
-        ? Math.round(n)
-        : SEEDED_TABLE_LAYOUT_DEFAULTS.fitMaxColumns,
-    rowHeight: parseRowDensity(typeof rowHeight === "string" ? rowHeight : null),
-  };
-}
-
-/**
- * A table the RECORD STORE holds reads its defaults from the store's own knob
- * (`custom/grid_layout`, via `custom.grid_layout`) — the same three answers,
- * where the store keeps them. A store that cannot answer keeps the seeded values.
- */
-async function loadForRecordStore(tableId: string): Promise<TableLayoutDefaults> {
-  const home = recordStoreHomeOf(tableId);
-  const answer = home ? await gridLayoutDefaults(home, tableId) : null;
+/** The store's answer for this table; a store that cannot answer keeps the seeded values. */
+async function load(tableId: string): Promise<TableLayoutDefaults> {
+  const located = await locateTable(tableId);
+  const answer = located.ok ? await gridLayoutDefaults(located.home, tableId) : null;
   if (!answer) return SEEDED_TABLE_LAYOUT_DEFAULTS;
   const n = Number(answer.fitMaxColumns);
   return {
@@ -106,38 +54,27 @@ async function loadForRecordStore(tableId: string): Promise<TableLayoutDefaults>
   };
 }
 
-export function useTableLayoutDefaults(
-  organizationId: string | null | undefined,
-  /** The table — a record-store table reads the store's own layout knob. */
-  tableId?: string | null,
-): TableLayoutDefaults {
-  const [defaults, setDefaults] = useState<TableLayoutDefaults>(
-    SEEDED_TABLE_LAYOUT_DEFAULTS,
-  );
-  const onTheRecordStore = Boolean(tableId && recordStoreHomeOf(tableId));
+export function useTableLayoutDefaults(tableId: string | null | undefined): TableLayoutDefaults {
+  const [defaults, setDefaults] = useState<TableLayoutDefaults>(SEEDED_TABLE_LAYOUT_DEFAULTS);
   useEffect(() => {
-    if (!organizationId) return;
+    if (!tableId) return;
     let cancelled = false;
-    const key = onTheRecordStore && tableId ? `record:${tableId}` : organizationId;
-    let pending = cache.get(key);
+    let pending = cache.get(tableId);
     if (!pending) {
-      pending = onTheRecordStore && tableId ? loadForRecordStore(tableId) : load(organizationId);
-      cache.set(key, pending);
+      pending = load(tableId);
+      cache.set(tableId, pending);
     }
     pending
       .then((value) => {
         if (!cancelled) setDefaults(value);
       })
       .catch((err) => {
-        cache.delete(key);
-        console.error(
-          "Table layout defaults could not be read; the platform's seeded defaults stay in force.",
-          err,
-        );
+        cache.delete(tableId);
+        console.error("Table layout defaults could not be read; the platform's seeded defaults stay in force.", err);
       });
     return () => {
       cancelled = true;
     };
-  }, [organizationId, onTheRecordStore, tableId]);
+  }, [tableId]);
   return defaults;
 }

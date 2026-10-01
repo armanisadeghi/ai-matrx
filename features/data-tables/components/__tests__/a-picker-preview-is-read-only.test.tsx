@@ -1,10 +1,10 @@
 /**
- * A PICKER PREVIEW IS READ-ONLY IN EITHER GRID (merged-grid review 2, fix lane F item 3).
+ * A PICKER PREVIEW IS READ-ONLY (merged-grid review 2, fix lane F item 3).
  *
  * Review 2 opened the tables picker's preview and got a near-full-screen, FULLY EDITABLE merged
  * grid: a person choosing a reference could rewrite the table by accident. `readOnly` on the one
- * located viewer reaches both grids — records-ui's `rights` port (bound → its answer is the whole
- * answer, per row too) for a record-store table, `previewOnly` for an older one.
+ * located viewer reaches records-ui's `rights` port (bound → its answer is the whole answer, per
+ * row too).
  */
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -14,15 +14,6 @@ import { createRoot, type Root } from "react-dom/client";
 const locateTable = jest.fn();
 jest.mock("@/features/data-tables/data-source/locate-table", () => ({
   locateTable: (...args: unknown[]) => locateTable(...args),
-  recordStoreCopyOf: async () => false,
-}));
-const viewerProps: Array<Record<string, unknown>> = [];
-jest.mock("@/components/user-generated-table-data/UserTableViewer", () => ({
-  __esModule: true,
-  default: (props: Record<string, unknown>) => {
-    viewerProps.push(props);
-    return <div data-testid="older-grid" />;
-  },
 }));
 const hostProps: Array<Record<string, unknown>> = [];
 jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
@@ -48,7 +39,6 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   locateTable.mockReset();
-  viewerProps.length = 0;
   hostProps.length = 0;
 });
 afterEach(() => {
@@ -63,16 +53,9 @@ describe("LocatedTableViewer readOnly (the picker's preview)", () => {
     expect(hostProps[0]).toMatchObject({ tableId: TABLE, readOnly: true });
   });
 
-  it("an older table's preview is previewOnly", async () => {
-    locateTable.mockResolvedValue({ ok: true, store: "older" });
-    await mount(<LocatedTableViewer tableId={TABLE} readOnly />);
-    expect(viewerProps[0]).toMatchObject({ previewOnly: true });
-    expect(viewerProps[0]).not.toHaveProperty("readOnly");
-  });
-
-  it("without readOnly, neither grid is narrowed", async () => {
-    locateTable.mockResolvedValue({ ok: true, store: "older" });
+  it("without readOnly, the table is not narrowed", async () => {
+    locateTable.mockResolvedValue({ ok: true, store: "record", home: { store: "record", organizationId: "o", userId: "u" } });
     await mount(<LocatedTableViewer tableId={TABLE} />);
-    expect(viewerProps[0]).not.toHaveProperty("previewOnly");
+    expect(hostProps[0]).toMatchObject({ tableId: TABLE, readOnly: false });
   });
 });

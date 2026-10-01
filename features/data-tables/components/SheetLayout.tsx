@@ -7,13 +7,11 @@
  * /data-v2/[tableId] draws Grid, Kanban, Calendar and Gallery from records-ui's
  * TablePage; the classic grid becomes a fifth layout beside them, "Sheet",
  * rendered through the same data seam (`features/data-tables/service.ts`) over
- * the record store only. The older-store half of the seam stays solely so /data
- * keeps working until the one flip.
+ * the record store.
  *
  * The host hands this component the table id (records-ui `HostLayout.render`).
- * It places the table in the record store BEFORE the grid mounts, so the very
- * first read goes through the record-store half and never touches an older door
- * (guarded by `a-record-store-table-never-reaches-an-older-door.test.ts`).
+ * It places the table (its organization, the reader) BEFORE the grid mounts, so
+ * the very first read needs no further question.
  */
 
 import { useCallback, useLayoutEffect, useState } from "react";
@@ -32,7 +30,7 @@ export interface SheetLayoutProps {
   userId: string | null;
   /**
    * The table page's own export, handed to a host layout by records-ui 0.85+ (the export is a
-   * rail of the page's one menu there, so there is no button to find). Absent on an older page.
+   * rail of the page's one menu there, so there is no button to find).
    */
   openExport?: (() => void) | undefined;
   /**

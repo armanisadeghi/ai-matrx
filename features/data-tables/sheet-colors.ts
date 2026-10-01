@@ -8,9 +8,8 @@
  * (`colorForChoice`: the option's place in the palette); the grid, kanban, calendar and gallery
  * paint with `@ai-matrx/records-ui`'s `colorFromTheValue`.
  *
- * For a RECORD-STORE table the Sheet now paints with records-ui's lookup, and rule precedence
- * is the design system's `resolveRowColor` / `resolveCellColor` — the function records-ui's
- * grid calls. The older store (tables not on the record store) keeps its own option colors.
+ * The Sheet now paints with records-ui's lookup, and rule precedence is the design system's
+ * `resolveRowColor` / `resolveCellColor` — the function records-ui's grid calls.
  *
  * The decorations themselves (Field ids → keys, rule ids) are translated by records-ui's
  * `resolveTableStyle` in `record-store.ts` — the one translation the grid and every card read
@@ -19,7 +18,6 @@
 import { colorFromTheValue } from "@ai-matrx/records-ui";
 import {
   STYLE_COLORS,
-  colorForChoice,
   type ChoiceColorLookup,
   type StyleColor,
 } from "@ai-matrx/design-system/data-table/table-style";
@@ -57,11 +55,7 @@ function storedChoiceColor(
 
 /** The color-by lookup the Sheet paints with. */
 export function sheetChoiceColorLookup(
-  onTheRecordStore: boolean,
   choicesFor: (fieldName: string) => readonly { value: string; label?: string; color?: string }[] | undefined,
 ): ChoiceColorLookup {
-  if (onTheRecordStore) {
-    return (fieldName, value) => storedChoiceColor(choicesFor(fieldName), value) ?? colorFromTheValue(fieldName, value);
-  }
-  return (fieldName, value) => colorForChoice(choicesFor(fieldName), value);
+  return (fieldName, value) => storedChoiceColor(choicesFor(fieldName), value) ?? colorFromTheValue(fieldName, value);
 }

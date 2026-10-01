@@ -1,9 +1,7 @@
 /**
  * THE USER-DATA-TABLE GRID'S RIGHT-CLICK MENU — one definition of what you can
- * do to a CELL, a ROW and a COLUMN of a `udt_datasets` grid, shared by every
- * host that mounts `UserTableViewer` (the `/data/[id]` route, the floating
- * `UserTableWindow`, `QuickDataSheet`, the dataset tool-call overlay, the
- * canvas table artifact, the resource picker). The grid mounts ONE
+ * do to a CELL, a ROW and a COLUMN of a user table's grid, shared by every
+ * host that mounts `UserTableViewer` (the table page's Sheet). The grid mounts ONE
  * `NonEditableContextMenu` around its scroll container and resolves the
  * clicked cell / row / column on open (`resolveGridMenuTarget`), so the same
  * menu says "Cut cell" on a value and "Sort A to Z" on a header.

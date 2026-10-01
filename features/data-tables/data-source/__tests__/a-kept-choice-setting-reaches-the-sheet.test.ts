@@ -6,7 +6,7 @@
  * (config.list_kept_allow_other); the Sheet's column must carry it so Column settings starts strict
  * again — it started from "Anyone can type a value that isn't listed" and saved the column open.
  */
-import { olderColumnFromField } from "../record-store-shape";
+import { gridColumnFromField } from "../record-store-shape";
 
 const base = {
   id: "f0000000-0000-4000-8000-0000000000b1",
@@ -20,11 +20,11 @@ const base = {
 } as never;
 
 test("a Text column that was a strict choice column carries list_kept_allow_other: false", () => {
-  const col = olderColumnFromField({ ...(base as object), config: { list_kept: "6d82210c-47cf-4a0a-ad13-a35daa88b09e", list_kept_allow_other: false } } as never, "t", null);
+  const col = gridColumnFromField({ ...(base as object), config: { list_kept: "6d82210c-47cf-4a0a-ad13-a35daa88b09e", list_kept_allow_other: false } } as never, "t", null);
   expect((col.metadata as { list_kept_allow_other?: unknown }).list_kept_allow_other).toBe(false);
 });
 
 test("a column with nothing kept carries nothing extra", () => {
-  const col = olderColumnFromField({ ...(base as object), config: {} } as never, "t", null);
+  const col = gridColumnFromField({ ...(base as object), config: {} } as never, "t", null);
   expect(col.metadata as object).not.toHaveProperty("list_kept_allow_other");
 });

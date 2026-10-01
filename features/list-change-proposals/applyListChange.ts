@@ -11,9 +11,9 @@
  *
  * TWO IMPLEMENTATIONS, ONE SHAPE:
  *   - `scope_dataset` (today) — a context item bound to a table template,
- *     provisioned once per scope by `context.provision_scope_dataset`, rows in
- *     `workbench.udt_dataset_rows`. Writes go through the dataset service's
- *     `udt_bulk_write` door under the person's own authority; the store's own
+ *     provisioned once per scope by `context.provision_scope_dataset`, a Table
+ *     in the record store. Writes go through the data seam's `bulkWrite` under
+ *     the person's own authority; the store's own
  *     refusal is carried back verbatim, never translated into a shrug.
  *   - `table` (live) — a Table homed in a Record in the unified record store
  *     (`custom.record`, the client doors `record_write` / `record_update` /
@@ -166,7 +166,7 @@ const scopeDatasetStore: ListStore<
       return { status: "refused", detail: describeBulkFailures([slot]) };
     }
     if (isBulkOpError(slot)) {
-      // `udt_bulk_write` soft-fails a miss rather than raising. A row that is
+      // `bulkWrite` soft-fails a miss rather than raising. A row that is
       // not there can only mean the change already happened (or someone else
       // made it), which is a no-op, not a failure.
       return {

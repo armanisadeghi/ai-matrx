@@ -2,7 +2,7 @@
  * row-label.ts — THE value that names a row wherever the row is referred to.
  *
  * Airtable's "primary field", Notion's title. Stored on the table as
- * `metadata.row_label`, set through `udt_set_table_row_label`:
+ * `metadata.row_label`, set through the seam's `setTableRowLabel`:
  *
  *   { kind: "field", field: "<field_name>" }           one column
  *   { kind: "formula", expression: '{First} & " " & {Last}' }  columns merged

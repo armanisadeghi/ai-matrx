@@ -29,14 +29,12 @@ export function storageTypeLabel(value: string | null | undefined): string {
 }
 
 /**
- * The kinds a column may be CHANGED into. On a record-store table only those the store can convert
- * to (`changeInto`), plus the column's current kind; anywhere else, all of them.
+ * The kinds a column may be CHANGED into: only those the store can convert to (`changeInto`), plus
+ * the column's current kind.
  */
 export function storageTypesToChangeInto(args: {
-  onTheRecordStore: boolean;
   changeInto: readonly string[];
   current: string;
 }): readonly ColumnStorageType[] {
-  if (!args.onTheRecordStore) return COLUMN_STORAGE_TYPES;
   return COLUMN_STORAGE_TYPES.filter((t) => args.changeInto.includes(t.value) || t.value === args.current);
 }

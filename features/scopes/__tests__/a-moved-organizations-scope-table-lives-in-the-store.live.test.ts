@@ -50,7 +50,7 @@ jest.mock("@/lib/organizations/ensureOrgId", () => ({
 import { scopesService } from "../service/scopesService";
 import { isScopesRpcErr } from "../types";
 import * as service from "@/features/data-tables/service";
-import { forgetAllTablePlacements } from "@/features/data-tables/data-source/table-home";
+import { forgetAllTablePlacements, recordStoreHomeOf } from "@/features/data-tables/data-source/table-home";
 
 const describeLive = READY ? describe : describe.skip;
 if (!READY) {
@@ -78,8 +78,8 @@ describeLive("a moved organization's scope table is its record-store Table", () 
     // The scope was provisioned BEFORE the move: the answer is that same table, now in the store.
     expect(tableId).toBe(PRE_MOVE_TABLE);
 
-    // RED before the repoint: unplaced, so the engine read the archived older copy.
-    expect(service.isRecordStoreTable(tableId)).toBe(true);
+    // The scope's table is placed in the record store by the scope service itself.
+    expect(recordStoreHomeOf(tableId)).not.toBeNull();
     const table = await service.getCompleteTable({ tableId });
     expect(table.success).toBe(true);
 

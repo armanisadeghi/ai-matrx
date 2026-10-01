@@ -2,21 +2,14 @@
  * @jest-environment node
  *
  * LIVE, DEV CLONE ONLY. EVERY "SAVE THIS AS A TABLE" AND "APPEND TO A TABLE" OUTSIDE THE
- * GRID REACHES THE STORE THE ORGANIZATION'S TABLES LIVE IN (lane INTEG-CLIENTS,
- * CUTOVER-PLAN rev 3 rows F4, F5, F6).
+ * GRID REACHES THE RECORD STORE (lane INTEG-CLIENTS, CUTOVER-PLAN rev 3 rows F4, F5, F6).
  *
- * The real use case: Rincon Plumbing (admin's Workspace on the clone, whose tables
- * OLD-TABLES-4 moved into the record store) asks the chat what parts came in this week,
- * then clicks "Save as table" on the answer — and, the next morning, appends two more
- * deliveries to the "Parts on order" table it already keeps.
+ * The real use case: Rincon Plumbing (admin's Workspace on the clone) asks the chat what parts
+ * came in this week, then clicks "Save as table" on the answer — and, the next morning, appends
+ * two more deliveries to the "Parts on order" table it already keeps.
  *
- * RED before the repoint: the chat-table save helper (since replaced by the saveToTable overlay) called `create_new_user_table_dynamic`,
- * so the new table was a `workbench.udt_datasets` row the organization's screens no longer
- * read; and `appendToTable` reached the seam UNPLACED, so the two deliveries were written
- * into the archived older copy of "Parts on order" and reported as saved.
- * GREEN after: the table is a record-store Table (no older row with its id), its rows are
- * readable through the seam, and the appended rows are records of the moved Table while
- * the archived older copy is untouched.
+ * The table is born a record-store Table, its rows are readable through the seam, and the
+ * appended rows are records of "Parts on order", found by the seam with no placement handed in.
  *
  * Needs GRID_PORT_SUPABASE_URL + GRID_PORT_SUPABASE_PUBLISHABLE_KEY (the clone — the
  * suite refuses any other project) and AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD. Without them
@@ -51,7 +44,7 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: async (id: string | null | undefined) => id ?? ORG,
 }));
-// `resolveUniqueDatasetName` reads the signed-in id from the Redux session.
+// The signed-in id, as the Redux session would answer it.
 jest.mock("@/utils/auth/getUserId", () => ({
   getUserId: () => userId,
   requireUserId: () => userId,
@@ -83,16 +76,6 @@ async function isStoreTable(id: string): Promise<boolean> {
   } as never);
   if (found.error) throw new Error(found.error.message);
   return ((found.data ?? []) as Array<{ id: string }>).some((r) => r.id === id);
-}
-
-async function olderRowCount(tableId: string): Promise<number> {
-  const { count, error } = await client
-    .schema("workbench" as never)
-    .from("udt_dataset_rows" as never)
-    .select("id", { count: "exact", head: true })
-    .eq("table_id", tableId);
-  if (error) throw new Error(error.message);
-  return count ?? 0;
 }
 
 async function storeRows(tableId: string): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
@@ -133,8 +116,7 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
   });
 
   it("a chat answer saved as a table is born in the record store, rows and all", async () => {
-    // The seam every birth outside the grid takes (the `saveToTable` overlay's older-store branch
-    // and every older caller): `service.createTable`, then one `bulkWrite` of the rows.
+    // The seam every birth outside the grid takes: `service.createTable`, then one `bulkWrite` of the rows.
     const headers = ["Part", "Supplier", "Qty", "For job"];
     const born = await service.createTable({
       tableName: "Rincon Plumbing — Parts received this week",
@@ -163,15 +145,8 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     });
     expect(written.success ? null : written.error).toBeNull();
 
-    // RED before the repoint: this was a `workbench.udt_datasets` row.
     expect(await isStoreTable(tableId)).toBe(true);
     made.push(tableId);
-    const older = await client
-      .schema("workbench" as never)
-      .from("udt_datasets" as never)
-      .select("id")
-      .eq("id", tableId);
-    expect(older.data ?? []).toHaveLength(0);
 
     const rows = await storeRows(tableId);
     expect(rows.map((r) => r.data.part).sort()).toEqual([
@@ -183,8 +158,7 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     made.push(...rows.map((r) => r.id));
   });
 
-  it("appending deliveries to a moved table writes the store, never the archived older copy", async () => {
-    const olderBefore = await olderRowCount(PARTS_ON_ORDER);
+  it("appending deliveries to a table nobody placed writes the store", async () => {
     const storeBefore = (await storeRows(PARTS_ON_ORDER)).map((r) => r.id);
     forgetAllTablePlacements(); // the append must FIND the table's home itself
 
@@ -200,8 +174,6 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     expect(result.success).toBe(true);
     expect(result.inserted).toBe(2);
 
-    // RED before the repoint: the older copy grew by two and the store did not.
-    expect(await olderRowCount(PARTS_ON_ORDER)).toBe(olderBefore);
     const after = await storeRows(PARTS_ON_ORDER);
     const added = after.filter((r) => !storeBefore.includes(r.id));
     expect(added.map((r) => r.data.part).sort()).toEqual([
@@ -211,41 +183,12 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     made.push(...added.map((r) => r.id));
   });
 
-  it("the save-into pickers offer a moved table once, from the store, with its real row count", async () => {
+  it("the save-into pickers offer the table once, with its real row count", async () => {
     const listed = await service.listTablesEverywhere({ organizationId: ORG });
     if (!listed.success) throw new Error(listed.error);
     const parts = listed.data.filter((t) => t.id === PARTS_ON_ORDER);
     expect(parts).toHaveLength(1);
     expect(parts[0]!.row_count).toBe((await storeRows(PARTS_ON_ORDER)).length);
     expect(parts[0]!.row_count).toBeGreaterThan(0);
-  });
-
-  it("an organization whose tables have not moved keeps its births and its tables in the older store", async () => {
-    // The clone moves organizations as lanes work, so the unmoved organization is FOUND, not named:
-    // the first organization holding a live older dataset admin can reach whose tables have not moved.
-    const where = { ...(await import("../where-a-table-is-born")), ...(await import("../locate-table")) };
-    const { data } = await client
-      .schema("workbench" as never)
-      .from("udt_datasets" as never)
-      .select("id, organization_id")
-      .is("deleted_at", null)
-      .neq("organization_id", ORG)
-      .limit(200);
-    let proved = false;
-    for (const row of (data ?? []) as Array<{ id: string; organization_id: string }>) {
-      const born = await where.whereANewTableIsBorn(row.organization_id);
-      if (!born.ok || born.store !== "older") continue;
-      const located = await where.locateTable(row.id);
-      if (!located.ok) continue; // not a member there: the store will not answer for it
-      expect(born).toEqual({ ok: true, store: "older", organizationId: row.organization_id });
-      expect(located).toEqual({ ok: true, store: "older" });
-      expect(service.isRecordStoreTable(row.id)).toBe(false);
-      proved = true;
-      break;
-    }
-    if (!proved) console.warn("no unmoved organization with a reachable older table on the clone; the older arm was not exercised");
-    // And the moved organization answers the other way, always.
-    const moved = await where.whereANewTableIsBorn(ORG);
-    expect(moved.ok && moved.store).toBe("record");
   });
 });

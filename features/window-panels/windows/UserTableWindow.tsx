@@ -1,11 +1,10 @@
 "use client";
 
-// UserTableWindow — view a saved, live UDT dataset table at full size inside a
-// floating WindowPanel.
+// UserTableWindow — view a saved, live table at full size inside a floating WindowPanel.
 //
 // Sibling of TableViewerWindow: that one hosts a markdown table string; THIS one
-// hosts a persisted `udt_datasets` table by id via the realtime UserTableViewer
-// (edit, sort, filter, paginate — the real thing). Opened from the converted
+// hosts a saved table by id through the table page (edit, sort, filter, paginate —
+// the real thing). Opened from the converted
 // chat-artifact table's "Open in window" action, which passes the table id
 // through overlay data.
 
@@ -19,7 +18,7 @@ import {
   type DatasetTableMenuRow,
 } from "@/features/data-tables/dataset-table-actions";
 
-// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+// Located first: the table opens in its own organization.
 const LocatedTableViewer = lazy(
   () => import("@/features/data-tables/components/LocatedTableViewer"),
 );
@@ -28,7 +27,7 @@ export interface UserTableWindowProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  /** The `udt_datasets` table id to render. */
+  /** The table id to render. */
   tableId?: string;
 }
 
@@ -78,7 +77,7 @@ function UserTableWindowBody({
             <Suspense fallback={<MatrxMiniLoader />}>
               {/* The window's chrome already names the table, so suppress the
                   viewer's own title header (no double title). */}
-              <LocatedTableViewer tableId={tableId} renderCellMarkdown hideHeader />
+              <LocatedTableViewer tableId={tableId} />
             </Suspense>
           ) : (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">

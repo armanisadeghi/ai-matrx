@@ -34,11 +34,10 @@
  *
  * THE TARGET SURVIVES THE STORE CHANGEOVER. `kind:"scope_dataset"` addresses
  * today's live path (a context item bound to a dataset template, provisioned
- * once per scope — `context.provision_scope_dataset`, rows in
- * `workbench.udt_dataset_rows`). `kind:"table"` addresses the unified record
- * store's Table-homed-in-a-Record (v5 CONTRACT AGT-4/AGT-8, `record_write` /
- * `record_delete` behind one door) and is implemented as an honest refusal
- * naming the store by name until it lands. Swapping the target does not
+ * once per scope — `context.provision_scope_dataset`, a Table in the record
+ * store). `kind:"table"` addresses the unified record store's
+ * Table-homed-in-a-Record (v5 CONTRACT AGT-4/AGT-8, `record_write` /
+ * `record_delete` behind one door). Swapping the target does not
  * change this kind, the component, or anything an agent was taught.
  *
  * Complete-only bridge: accept / reject on a half-parsed list would apply a

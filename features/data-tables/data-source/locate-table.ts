@@ -1,63 +1,36 @@
-// features/data-tables/data-source/locate-table.ts — WHICH STORE AN EXISTING TABLE LIVES IN,
-// asked of the record store's own Table kernel by id (`whereThisTableLives`, the same answer
-// /data/[id] uses), and PLACED there when the store holds it so every seam export that follows
-// dispatches to the store. Lane INTEG-CLIENTS (CUTOVER-PLAN rev 3 §2 Steps 1–4).
+// features/data-tables/data-source/locate-table.ts — WHERE AN EXISTING TABLE IS READ FROM: the
+// record store, in the table's OWN organization (`whereThisTableLives`, the same answer /data/[id]
+// uses), remembered in `table-home.ts` so every seam export that follows reaches the store.
 
 import { createClient } from "@/utils/supabase/client";
 import { whereThisTableLives } from "@/features/unified-data/whereThisTableLives";
-import { resolveObjectOrganization } from "@/features/unified-data/objectOrganization";
 
-import { placeTableInRecordStore, recordStoreHomeOf, type RecordStoreHome } from "./table-home";
-import { signedInUserId } from "./where-a-table-is-born";
+import { placeTableInRecordStore, recordStoreHomeOf, signedInUserId, type RecordStoreHome } from "./table-home";
 
 export type Located =
   | { ok: true; store: "record"; home: RecordStoreHome }
-  | { ok: true; store: "older" }
   | { ok: false; error: string };
 
 /**
- * Where an EXISTING table lives, and — when it is the record store — place it there so the
- * seam's next call about it dispatches correctly. Idempotent: a table already placed answers
- * from the registry without a round trip.
+ * Where an EXISTING table lives, remembered for the seam's next call about it. Idempotent: a table
+ * already placed answers from the registry without a round trip.
  */
 export async function locateTable(tableId: string): Promise<Located> {
   const placed = recordStoreHomeOf(tableId);
   if (placed) return { ok: true, store: "record", home: placed };
   // ACCESS IS PERSONAL (owner, 2026-09-23). The table names its own organization
-  // (`custom.where_id_opens`, inside `whereThisTableLives`). No organization is passed in and the
-  // active one is never used: a table that exists has an organization, and asking the person to
-  // pick one is asking the wrong question.
+  // (`custom.where_id_opens`, inside `whereThisTableLives`); the active one is never used.
   const where = await whereThisTableLives(createClient(), tableId);
   if (where.kind === "unknown") {
     return {
       ok: false,
-      error: `Could not ask the record store where this table lives, so nothing was written to it. Try again. (${where.why})`,
+      error: `Could not ask where this table lives, so nothing was read or written. Try again. (${where.why})`,
     };
   }
-  if (where.kind === "record_store") {
-    const home = { organizationId: where.organizationId, userId: await signedInUserId() };
-    placeTableInRecordStore(tableId, home);
-    return { ok: true, store: "record", home: { store: "record", ...home } };
+  if (where.kind === "nowhere") {
+    return { ok: false, error: "This table is not one you can open. It may have been deleted, or it was never shared with you." };
   }
-  return { ok: true, store: "older" };
-}
-
-/**
- * Whether the record store ALSO holds a copy of an older table that this person may open
- * (`custom.where_id_opens`, the one "which organization is this in?" door). It never changes where
- * the table resolves — an older table stays the older table until the custom-data lead's one flip —
- * it only lets a consumer SAY that the table it draws in the older grid also exists in the new store
- * (merged-grid review 2, fix lane F item 2). Could not ask → false: the notice is a courtesy, and
- * its absence claims nothing.
- */
-export async function recordStoreCopyOf(tableId: string): Promise<boolean> {
-  const client = createClient();
-  const answer = await resolveObjectOrganization(
-    {
-      rpc: (fn, args, opts) =>
-        client.schema((opts?.schema ?? "custom") as never).rpc(fn as never, args as never) as never,
-    },
-    tableId,
-  ).catch(() => null);
-  return answer?.state === "found" && answer.kind === "table";
+  const home = { organizationId: where.organizationId, userId: await signedInUserId() };
+  placeTableInRecordStore(tableId, home);
+  return { ok: true, store: "record", home: { store: "record", ...home } };
 }

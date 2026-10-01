@@ -10,7 +10,7 @@
  * Saves through the SAME services every other path uses — a rename runs the
  * formula rewrite (`renameColumn`), a type change walks the rows
  * (`changeFieldType`), the format is additive (`setFieldFormat`), required and
- * validation ride `update_user_table_config`, the row label goes through its
+ * validation ride `updateTableConfig`, the row label goes through its
  * door, the summary is view state. Nothing here is a second write path.
  */
 "use client";
@@ -62,7 +62,6 @@ import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import { effectiveRowLabel, isRowLabelField } from "@/features/data-tables/row-label";
 import {
   changeFieldType,
-  isRecordStoreTable,
   RECORD_STORE_COLUMN_TYPES,
   getChoiceUsage,
   getColumnFacets,
@@ -165,7 +164,7 @@ function ColumnSettingsForm({
   const [saving, setSaving] = useState(false);
   const original = field;
   // REMOVING A CHOICE RECORDS STILL HOLD (lane CHOICE-TAILS): how many records hold each choice
-  // (a record-store table only; the older store answers null and nothing is asked), and where the
+  // and where the
   // records of each removed choice go — sent in the same save as the list.
   const [choiceUsage, setChoiceUsage] = useState<Record<string, ChoiceUsage> | null>(null);
   const [rehome, setRehome] = useState<Record<string, ChoiceRehome>>({});
@@ -241,7 +240,7 @@ function ColumnSettingsForm({
   // THE KINDS THIS COLUMN MAY BECOME (DATA-V2-BASICS-2 T2), now asked of each look: a look whose storage
   // the store cannot convert into is not offered, the column's own kind always is.
   const allowedBases = new Set<string>(
-    storageTypesToChangeInto({ onTheRecordStore: isRecordStoreTable(tableId), changeInto: RECORD_STORE_COLUMN_TYPES, current: field.data_type }).map((t) => t.value),
+    storageTypesToChangeInto({ changeInto: RECORD_STORE_COLUMN_TYPES, current: field.data_type }).map((t) => t.value),
   );
   // A COLUMN THAT IS A CHOICE COLUMN AGAIN TAKES BACK ITS "OTHER VALUES" SETTING (BREAKER-3 B3-15): a strict
   // Priority changed to Text and back came back open, because the editor started from "anyone can type".
@@ -255,7 +254,6 @@ function ColumnSettingsForm({
     const base = getFieldFormat(formatId)?.base;
     return !base || base === dataType || allowedBases.has(base);
   };
-  const onTheRecordStore = isRecordStoreTable(tableId);
 
   const save = async () => {
     if (!original) return;
@@ -287,12 +285,10 @@ function ColumnSettingsForm({
         const toLabel = DATA_TYPES.find((t) => t.value === dataType)?.label ?? dataType;
         const ok = await confirmDialog({
           title: `Change "${original.display_name}" to ${toLabel}?`,
-          // THE WHOLE TRUTH ABOUT A TYPE CHANGE (DATA-V2-BASICS-2 T1): on the record store a value
-          // that does not fit is set aside on its row, never deleted, and comes back when the column
-          // is changed back (custom._field_type_converts_values) — which Undo on the notice does.
-          description: onTheRecordStore
-            ? `Every value is converted to ${toLabel.toLowerCase()}. A value that does not fit is set aside on its row — never deleted — and comes back if you change the column back; Undo on the notice does that in one click.`
-            : "Every stored value is converted. A value that cannot be converted becomes empty; row history keeps the old one.",
+          // THE WHOLE TRUTH ABOUT A TYPE CHANGE (DATA-V2-BASICS-2 T1): a value that does not fit is
+          // set aside on its row, never deleted, and comes back when the column is changed back
+          // (custom._field_type_converts_values) — which Undo on the notice does.
+          description: `Every value is converted to ${toLabel.toLowerCase()}. A value that does not fit is set aside on its row — never deleted — and comes back if you change the column back; Undo on the notice does that in one click.`,
           confirmLabel: "Change type",
           variant: "destructive",
         });
@@ -337,7 +333,7 @@ function ColumnSettingsForm({
         if (isServiceFailure(label)) throw new Error(label.error);
       }
       const undo = rehomedUndo;
-      const typedFrom = typeChanged && onTheRecordStore ? original.data_type : null;
+      const typedFrom = typeChanged ? original.data_type : null;
       toast({
         title: `Saved "${trimmed}"`,
         ...(typedFrom && !(undo && rehomedCells > 0)

@@ -8,10 +8,8 @@ import {
   deleteField,
   getTableProfile,
   rewriteFormulasForRename,
-  isRecordStoreTable,
   RECORD_STORE_COLUMN_TYPES,
   setFieldFormat,
-  setValidationMode,
   updateTableConfig,
 } from "@/features/data-tables/service";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
@@ -34,7 +32,6 @@ import {
   isServiceFailure,
   type FieldDataType,
   type TableProfile,
-  type ValidationMode,
 } from "@/features/data-tables/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -70,8 +67,6 @@ import {
   Loader2,
   Plus,
   Save,
-  Shield,
-  ShieldCheck,
   Trash2,
   X,
 } from "lucide-react";
@@ -110,22 +105,13 @@ interface TableField {
 }
 
 interface TableInfo {
-  /** The full `udt_datasets.metadata` blob; `metadata.row_label` names rows (row-label.ts). */
+  /** The table's metadata; `metadata.row_label` names rows (row-label.ts). */
   metadata?: unknown;
   id: string;
   table_name: string;
   description: string;
   version: number;
-  /**
-   * Optional because the callsites hand this component a cast of the full
-   * `udt_datasets` row, whose TS shape is narrower than what it carries at
-   * runtime. Absent/unknown reads as "permissive", which is the column default.
-   */
-  validation_mode?: string;
 }
-
-const toValidationMode = (raw: unknown): ValidationMode =>
-  raw === "strict" ? "strict" : "permissive";
 
 interface TableConfigModalProps {
   isOpen: boolean;
@@ -176,9 +162,6 @@ export default function TableConfigModal({
     setActiveTab(defaultTab ?? "fields");
   }
   const onActionsTab = activeTab === "actions";
-  // Which store holds this table (data seam) — decides the two controls a
-  // record-store table does not have in the older form.
-  const onTheRecordStore = isRecordStoreTable(tableId);
   const [error, setError] = useState<string | null>(null);
 
   // Table metadata state
@@ -518,10 +501,8 @@ export default function TableConfigModal({
       }
 
       // Prepare field updates AND collect type-change candidates.
-      // Type changes are split off because they need to walk every row in the
-      // table and rewrite the JSONB cell value via udt_change_field_type —
-      // the legacy update_user_table_config RPC only flips the declared type
-      // on udt_dataset_fields and leaves rows mis-shapen.
+      // Type changes are split off because they walk every row in the table and
+      // rewrite each value (`changeFieldType`); the settings write only names things.
       const typeChanges: Array<{
         fieldId: string;
         displayName: string;
@@ -561,7 +542,7 @@ export default function TableConfigModal({
             updates.display_name = field.display_name;
           if (field.data_type !== originalField.data_type) {
             // DD-260: `data_type` deliberately does NOT ride this metadata write.
-            // `udt_change_field_type` below flips the declared type ITSELF, in the
+            // `changeFieldType` below changes the declared type ITSELF, in the
             // same transaction as the row rewrite and the row-history proof — and
             // it reads the OLD type to stamp `type_change:<from>→<to>` on that
             // history. Flipping it here first made the function read the NEW type
@@ -583,13 +564,9 @@ export default function TableConfigModal({
             updates.field_order = field.field_order;
           if (field.is_required !== originalField.is_required)
             updates.is_required = field.is_required;
-          if (field.is_public !== originalField.is_public)
-            updates.is_public = field.is_public;
 
           // Validation rules ride the SAME write every other field property
-          // uses — `update_user_table_config` has always accepted
-          // `validation_rules` in p_field_updates. It COALESCEs the column, so
-          // an empty object is the only way to CLEAR rules; that is exactly
+          // uses. An empty object is the only way to CLEAR rules; that is exactly
           // what `serializeValidationRules` returns for an empty rule set.
           const editedRules = validationChanges[field.id];
           if (editedRules !== undefined) {
@@ -629,8 +606,7 @@ export default function TableConfigModal({
         }
       }
 
-      // The table-and-column settings write, through the data seam (older
-      // `update_user_table_config`, or the record store's own field doors).
+      // The table-and-column settings write, through the data seam (the store's own field doors).
       const saved = await updateTableConfig({
         tableId,
         tableUpdates: cleanTableUpdates as Record<string, unknown>,
@@ -638,30 +614,8 @@ export default function TableConfigModal({
       });
       if (isServiceFailure(saved)) throw new Error(saved.error);
 
-      // `validation_mode` is not part of update_user_table_config's table
-      // updates — it goes through its own service (direct RLS UPDATE). Only
-      // sent when it actually changed, and a refusal is surfaced, never
-      // swallowed: arming strict mode is the whole point of this control.
-      const nextMode = toValidationMode(tableInfo.validation_mode);
-      if (nextMode !== toValidationMode(initialTableInfo.validation_mode)) {
-        const modeResult = await setValidationMode({ tableId, mode: nextMode });
-        if (isServiceFailure(modeResult)) throw new Error(modeResult.error);
-        toast({
-          title:
-            nextMode === "strict"
-              ? "Strict validation is on"
-              : "Strict validation is off",
-          description:
-            nextMode === "strict"
-              ? "New and edited rows must match the column types and carry every required field."
-              : "Rows are accepted even when they do not match the column types.",
-          variant: "success",
-        });
-      }
-
-      // Now the type changes. This RPC owns BOTH halves — it walks every row and
-      // coerces the JSONB cell values AND flips `udt_dataset_fields.data_type`, in
-      // one transaction, stamping the real `type_change:<from>→<to>` on the row
+      // Now the type changes. The store owns BOTH halves — it walks every row and
+      // converts the values AND changes the column's declared type, in one transaction, stamping the real `type_change:<from>→<to>` on the row
       // history it produces (DD-260: nothing above may flip the declared type
       // first, or the "from" it records is a lie). cast_or_null is the safer
       // default — un-castable values become null rather than silently keeping the
@@ -817,7 +771,6 @@ export default function TableConfigModal({
               table_details_draft: {
                 table_name: tableInfo.table_name,
                 description: tableInfo.description,
-                validation_mode: toValidationMode(tableInfo.validation_mode),
               },
               ...(Object.keys(pending).length ? { pending_column_changes: pending } : {}),
             });
@@ -827,15 +780,13 @@ export default function TableConfigModal({
             // nothing is saved until Save Changes (register ARE-011).
             table_details: (value) => {
               const next = (value && typeof value === "object" ? value : null) as Record<string, unknown> | null;
-              if (!next) throw new Error('table_details expects { "table_name"?, "description"?, "validation_mode"? }.');
+              if (!next) throw new Error('table_details expects { "table_name"?, "description"? }.');
               const problems: string[] = [];
               if ("table_name" in next && (typeof next.table_name !== "string" || !next.table_name.trim())) problems.push("table_name must be a non-empty name");
               if ("description" in next && typeof next.description !== "string") problems.push("description must be text");
-              if ("validation_mode" in next && next.validation_mode !== "permissive" && next.validation_mode !== "strict") problems.push('validation_mode must be "permissive" or "strict"');
               if (problems.length) throw new Error(`Nothing was staged: ${problems.join("; ")}.`);
               if (typeof next.table_name === "string") handleTableInfoChange("table_name", next.table_name.trim());
               if (typeof next.description === "string") handleTableInfoChange("description", next.description);
-              if (typeof next.validation_mode === "string") handleTableInfoChange("validation_mode", next.validation_mode);
             },
             column_changes: (value) => {
               const changes = (value as { changes?: unknown } | null)?.changes;
@@ -1001,7 +952,6 @@ export default function TableConfigModal({
                           </SelectTrigger>
                           <SelectContent>
                             {storageTypesToChangeInto({
-                              onTheRecordStore: isRecordStoreTable(tableId),
                               changeInto: RECORD_STORE_COLUMN_TYPES,
                               current: field.data_type,
                             }).map((type) => (
@@ -1135,25 +1085,6 @@ export default function TableConfigModal({
                             Req
                           </Label>
                         </div>
-                        {/* A record-store column has no per-column "public" mark —
-                            who sees what is the table's sharing — so the box is absent. */}
-                        {!onTheRecordStore && (
-                        <div className="flex items-center gap-1.5">
-                          <Checkbox
-                            id={`public-${field.id}`}
-                            checked={field.is_public}
-                            onCheckedChange={(checked) =>
-                              handleFieldChange(field.id, "is_public", checked)
-                            }
-                          />
-                          <Label
-                            htmlFor={`public-${field.id}`}
-                            className="text-[11px]"
-                          >
-                            Pub
-                          </Label>
-                        </div>
-                        )}
                       </div>
 
                       <div className="col-span-2 col-start-3 row-start-3 flex h-8 items-center justify-end sm:col-span-1 sm:col-start-4 sm:row-start-1 lg:col-start-7 lg:row-start-1 lg:justify-start">
@@ -1258,49 +1189,6 @@ export default function TableConfigModal({
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Data Validation</h3>
-                <div className="flex items-center justify-between gap-4 p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {toValidationMode(tableInfo.validation_mode) ===
-                    "strict" ? (
-                      <ShieldCheck className="h-4 w-4 shrink-0 text-green-600" />
-                    ) : (
-                      <Shield className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <div>
-                      <Label
-                        htmlFor="strict-validation"
-                        className="font-medium text-sm"
-                      >
-                        Strict Validation
-                      </Label>
-                      <div className="text-xs text-muted-foreground">
-                        {onTheRecordStore
-                          ? "Always on for this table: every change is checked against its columns' types, rules and required marks."
-                          : "Reject writes that violate the column types or drop a required field. Existing rows are grandfathered (their other fields stay editable). Recommended for newly imported tables where column types are well-defined."}
-                      </div>
-                    </div>
-                  </div>
-                  <Switch
-                    id="strict-validation"
-                    checked={
-                      toValidationMode(tableInfo.validation_mode) === "strict"
-                    }
-                    // A record-store table is strict by construction: every
-                    // change is judged by its columns' rules. The switch shows
-                    // that truth and cannot be turned off.
-                    disabled={onTheRecordStore}
-                    onCheckedChange={(checked) =>
-                      handleTableInfoChange(
-                        "validation_mode",
-                        checked ? "strict" : "permissive",
-                      )
-                    }
-                  />
-                </div>
-              </div>
-
               {/* Row label — saved immediately (a table property, like colors),
                   so it is deliberately outside this dialog's Save / Cancel. */}
               <RowLabelPicker
@@ -1372,10 +1260,9 @@ export default function TableConfigModal({
             </div>
             <div className="flex shrink-0 flex-wrap justify-end gap-2">
               <ShareButton
-                // A record-store table is shared as the record it is (data seam).
-                resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
-                {...(isRecordStoreTable(tableId) &&
-                (tableInfo as { organization_id?: string } | null)?.organization_id
+                // A table is shared as the record it is (data seam).
+                resourceType="record"
+                {...((tableInfo as { organization_id?: string } | null)?.organization_id
                   ? { organizationId: (tableInfo as { organization_id?: string }).organization_id as string }
                   : {})}
                 resourceId={tableId}

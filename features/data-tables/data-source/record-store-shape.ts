@@ -1,7 +1,7 @@
 // features/data-tables/data-source/record-store-shape.ts — THE RECORD STORE, IN THE GRID'S WORDS.
 //
-// Pure translation, no I/O. The grid speaks the older store's shapes (a
-// `udt_dataset_fields` row per column, `{id, data}` per row, `metadata.format`
+// Pure translation, no I/O. The grid speaks its own shapes (a column row with
+// `data_type` per column, `{id, data}` per row, `metadata.format`
 // for what a column MEANS); the record store speaks Fields and documents. This
 // module is the dictionary between them, and it is the inverse of the mover that
 // carried the older tables across (`aidream/packages/matrx-records/matrx_records/
@@ -39,7 +39,7 @@ function rangeKind(field: Pick<Field, "config">): string | null {
 }
 
 /** The older storage type for a store Field. Total over the five behaviours plus boolean. */
-export function olderDataType(field: Pick<Field, "type" | "config" | "format" | "multi">): FieldDataType {
+export function gridDataType(field: Pick<Field, "type" | "config" | "format" | "multi">): FieldDataType {
   const behaviour = String(field.type);
   const format = field.format ?? null;
   switch (behaviour) {
@@ -80,7 +80,7 @@ const GRID_FORMAT_IDS = new Set<string>([
  * pieces the store keeps elsewhere (a relation's target, a list's options, a
  * formula's text). `choices` is the list's option Table, already read.
  */
-export function olderFormat(
+export function gridFormat(
   field: Pick<Field, "type" | "format" | "multi" | "relation_target" | "relation_max" | "on_target_delete"> & {
     expression?: unknown;
     config?: Record<string, unknown>;
@@ -100,7 +100,7 @@ export function olderFormat(
 
   // AN ENTITY REFERENCE (a column pointing at platform things — an agent, a note, an AI model)
   // has no look in the older grid, which draws a relation as ids of ONE table. It reads as its
-  // things' words (`olderRowData`) and edits on the table page's picker (lane REFERENCE-CARRY:
+  // things' words (`gridRowData`) and edits on the table page's picker (lane REFERENCE-CARRY:
   // the Sheet drew "[object Object]" in every Model cell of admin's Model Picks).
   if (behaviour === "relation" && config.target_mode === "any") return null;
   if (behaviour === "relation") {
@@ -178,7 +178,7 @@ function displayFormatOf(field: object): FieldFormatConfig | null {
 }
 
 /** The store's executable rules → the older `validation_rules` keys (`validation.ts`). */
-export function olderValidationRules(
+export function gridValidationRules(
   rules: Field["rules"] | null | undefined,
   unique?: boolean | null,
 ): Record<string, unknown> | null {
@@ -212,23 +212,23 @@ export function olderValidationRules(
   return Object.keys(out).length > 0 ? out : null;
 }
 
-/** A store Field as the `udt_dataset_fields` row the grid draws a column from. */
-export function olderColumnFromField(
+/** A store Field as the column row the grid draws a column from. */
+export function gridColumnFromField(
   field: Field & { expression?: unknown },
   tableId: string,
   choices: FieldChoice[] | null,
 ): DatasetField {
-  const format = olderFormat(field, choices);
+  const format = gridFormat(field, choices);
   return {
     id: field.id,
     table_id: tableId,
     field_name: field.key,
     display_name: field.label || field.key,
-    data_type: olderDataType(field),
+    data_type: gridDataType(field),
     field_order: typeof field.sort === "number" ? field.sort : 0,
     is_required: Boolean(field.required),
     default_value: (field.default ?? null) as DatasetField["default_value"],
-    validation_rules: olderValidationRules(field.rules, (field as { unique?: boolean | null }).unique) as DatasetField["validation_rules"],
+    validation_rules: gridValidationRules(field.rules, (field as { unique?: boolean | null }).unique) as DatasetField["validation_rules"],
     metadata: ({
       ...(format ? { format } : {}),
       // A column that was a choice column and will be one again: its "take other values" setting,
@@ -390,7 +390,7 @@ export function storeFormatWrite(
     const display = format ? { id: format.id, ...(hasKeys(format.options ?? null) ? { options: format.options } : {}) } : null;
     if (kindNow === null) return { ok: true, patches: [{ display_format: display }] };
     // The column IS a list, a link or a worked-out column; showing it plainly means it stops being one.
-    const base = format ? getFieldFormat(format.id)?.base : olderDataType(field);
+    const base = format ? getFieldFormat(format.id)?.base : gridDataType(field);
     const plain = base ? PLAIN_KIND_FOR_BASE[base] : undefined;
     if (!plain) {
       return {
@@ -584,7 +584,7 @@ export function choiceFromOption(option: { id?: unknown; data?: Record<string, u
  * `json` column the store keeps as canonical JSON TEXT comes back as the object
  * the grid always held there.
  */
-export function olderRowData(
+export function gridRowData(
   document: Record<string, unknown>,
   columns: ReadonlyArray<Pick<DatasetField, "field_name" | "data_type">>,
 ): Record<string, unknown> {
@@ -654,7 +654,7 @@ export function storeValue(
 
 // ─── sort and search, exactly as the older page door did them ───────────────
 //
-// `public.get_user_table_data_paginated_v2` sorted IN SQL: a number/integer
+// The grid's page door sorted IN SQL: a number/integer
 // column numerically (text that is not a number sorts as null), a date/datetime
 // column as an instant, anything else as LOWER(text); NULLS LAST both ways; `id`
 // as the tie-breaker that makes the order total. It searched with
@@ -759,7 +759,7 @@ export function searchRowsLikeTheOlderStore<T extends Sortable>(rows: readonly T
  * the seam reading and writing `{key}`, so a moved table's saved sort never applied). A
  * `{key}` entry — written by this seam before the fix — is still read, so no saved sort is lost.
  */
-export function olderRowOrdering(
+export function gridRowOrdering(
   defaultSort: unknown,
   fields: readonly Pick<Field, "key">[],
 ): { default_sort: { field: string; direction: "asc" | "desc" } } | null {

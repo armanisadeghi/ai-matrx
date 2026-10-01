@@ -4,7 +4,7 @@
  * It used to offer "Select this page" and "Clear selection" and nothing else,
  * which made selecting rows a dead end: the user did the work of picking rows
  * and the surface had no answer. Every action here compiles to ONE
- * `udt_bulk_write` transaction (see `bulk-row-actions.ts`), so a 40-row delete
+ * `bulkWrite` transaction (see `bulk-row-actions.ts`), so a 40-row delete
  * either happens or does not — never half.
  *
  * DESTRUCTION IS CONFIRMED, EVERYTHING ELSE IS UNDOABLE. Delete cannot be

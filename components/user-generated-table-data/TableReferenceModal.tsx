@@ -25,7 +25,7 @@ interface TableField {
 }
 
 interface TableInfo {
-  /** The full `udt_datasets.metadata` blob; `metadata.row_label` names rows (row-label.ts). */
+  /** The table's metadata; `metadata.row_label` names rows (row-label.ts). */
   metadata?: unknown;
   table_name: string;
   description?: string;

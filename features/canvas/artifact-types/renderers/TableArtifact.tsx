@@ -1,10 +1,8 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { Undo2, ExternalLink, Maximize2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { Button } from "@/components/ui/button";
 import { isMaterializedArtifactId } from "../artifactId";
 import {
   useCanvasItem,
@@ -17,9 +15,10 @@ import { deriveDatasetNameForChatTable, isPlaceholderTableTitle } from "@/featur
 import { readTableDetails } from "@/features/data-tables/service";
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
 import { StreamingTableRenderer as StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
-// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import type { ArtifactRendererProps } from "../types";
+// The word a canvas link stores for "this artifact became a table" (canvas_items.external_system).
+// Stored data, kept as written: changing it is a data change on the linked canvas rows.
 const UDT_SYSTEM = "udt_datasets";
 
 /**
@@ -30,8 +29,7 @@ const UDT_SYSTEM = "udt_datasets";
  * sort, export CSV/JSON, etc.) and inline-edit write-back to `cx_message.content`
  * (+ server-cache bust, so the model's next-turn history matches what the user
  * sees). The artifact layer only ADDS: a one-click **Convert to table** that
- * links a real `udt_datasets` row, after which the live realtime `UserTableViewer`
- * renders from the dataset (the markdown stays in the message for the agent's
+ * links a real table, after which the live table page renders from it (the markdown stays in the message for the agent's
  * history; further table edits flow to the agent as context, not history).
  *
  * No appearance/behavior change in the normal view beyond the Convert button.
@@ -192,10 +190,8 @@ function TableArtifactMaterialized({
     return <MatrxMiniLoader />;
   }
 
-  // Linked → the real, live, realtime two-way UDT table is the source of truth.
-  // It carries markdown from the chat table, so render cells as rich text; the
-  // chat artifact provides the context, so suppress the table's own title header
-  // (no double title). A quiet Revert action unlinks it back to the text table.
+  // Linked → the real, live table is the source of truth. A quiet Revert action
+  // unlinks it back to the text table.
   if (linkedTableId) {
     // THE WINDOW IS TITLED BY THE TABLE (lane HANDOVER, 2026-09-29): the chat artifact's own title
     // is the canvas placeholder "Table 1", while the table it became is named for the conversation.
@@ -206,10 +202,7 @@ function TableArtifactMaterialized({
       <Suspense fallback={<MatrxMiniLoader />}>
         <LocatedTableViewer
           tableId={linkedTableId}
-          renderCellMarkdown
-          hideHeader
-          // A record-store table draws records-ui's page: the same three actions sit in its one
-          // menu rather than a second toolbar (one-grid merge, step 7).
+          // The table draws records-ui's page: the three actions sit in its one menu.
           recordStoreMenuExtras={[
             {
               key: "artifact-window",
@@ -225,50 +218,6 @@ function TableArtifactMaterialized({
               ? []
               : [{ key: "artifact-revert", label: "Revert to text", onSelect: () => void handleRevert() }]),
           ]}
-          toolbarTrailing={
-            <>
-              {/* Pop the live table into a full-size floating window. */}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
-                onClick={() =>
-                  openTableWindow({ tableId: linkedTableId, title: tableTitle })
-                }
-                title="Open in a floating window"
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-                <span className="hidden md:inline">Window</span>
-              </Button>
-              {/* Open the full table page in a new browser tab. */}
-              <Button
-                asChild
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
-                title="Open the full table in a new tab"
-              >
-                <a
-                  href={`/data/${linkedTableId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span className="hidden md:inline">New tab</span>
-                </a>
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
-                onClick={handleRevert}
-                disabled={reverting}
-              >
-                <Undo2 className="h-3.5 w-3.5" />
-                {reverting ? "Reverting…" : "Revert to text"}
-              </Button>
-            </>
-          }
         />
       </Suspense>
     );

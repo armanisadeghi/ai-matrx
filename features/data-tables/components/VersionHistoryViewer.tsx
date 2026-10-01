@@ -1,16 +1,14 @@
 /**
  * VersionHistoryViewer — audit log for a single dataset row, with restore.
  *
- * Renders the append-only history written to `udt_dataset_row_versions` by
- * the P1 row-version trigger. Self-contained: drop it into a sheet, dialog,
- * inline panel, or debug surface and pass a rowId.
+ * Renders the row's history as the store keeps it (`custom.record_history`). Self-contained:
+ * drop it into a sheet, dialog, inline panel, or debug surface and pass a rowId and its tableId.
  *
- * Read-only by default (backwards compatible). Pass `tableId` +
- * `editable` to unlock write actions, all of which go through the typed
- * service layer (`upsertRow` / `upsertCell`) so they are themselves
- * versioned, validated, and permission-gated:
- *   - Restore a version — rewrites the whole row to that snapshot.
- *   - Restore a deleted row — re-inserts the last data as a new row.
+ * Read-only by default. Pass `editable` to unlock write actions, all of which are the store's
+ * own verbs through the data seam, so they are themselves versioned, validated, and
+ * permission-gated:
+ *   - Restore a version — the row as it was at that version.
+ *   - Restore a deleted row — the archived record back under its own id.
  *   - Revert one field — per-diff-line undo back to the prior value.
  *
  * - Newest-first, "Load more" pagination past the first `limit` (default 50).
@@ -46,12 +44,9 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 
 import {
-  isRecordStoreTable,
   restoreArchivedRow,
   restoreRowVersion,
   revertRowField,
-  upsertCell,
-  upsertRow,
 } from "../service";
 import { isServiceFailure } from "../types";
 import { useRowVersions } from "../hooks/useRowVersions";
@@ -72,11 +67,6 @@ type Props = {
   fieldLabels?: Record<string, string>;
   /** Fires after any successful restore/revert so the owner can refetch. */
   onRowChanged?: () => void;
-  /**
-   * Fires when restoring a DELETED row re-inserts it under a new id. The
-   * owner should re-point the panel at `newRowId` — the old id is gone.
-   */
-  onRowReplaced?: (newRowId: string) => void;
 };
 
 const PAGE_SIZE_STEP = 50;
@@ -89,7 +79,6 @@ export function VersionHistoryViewer({
   editable,
   fieldLabels,
   onRowChanged,
-  onRowReplaced,
 }: Props) {
   const initialLimit = limit ?? PAGE_SIZE_STEP;
   const [effectiveLimit, setEffectiveLimit] = useState(initialLimit);
@@ -97,10 +86,9 @@ export function VersionHistoryViewer({
     limit: effectiveLimit,
     tableId,
   });
-  // A record-store row is put back by the STORE's own verbs — the version, the
-  // column at a version, or the archived record under its own id — never by
-  // writing a snapshot over it. Same buttons, same words.
-  const onTheRecordStore = isRecordStoreTable(tableId);
+  // A row is put back by the STORE's own verbs — the version, the column at a
+  // version, or the archived record under its own id — never by writing a
+  // snapshot over it.
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const canWrite = Boolean(editable && tableId);
@@ -136,24 +124,14 @@ export function VersionHistoryViewer({
         title: "Restore deleted row",
         description:
           // access-errors: ok — deletion is proven by the row's own version history (a delete version exists)
-          "The row was deleted, so this snapshot will be re-inserted as a new row (with a fresh history).",
+          "The row was deleted. It comes back under its own id, with its history.",
         confirmLabel: "Restore row",
       });
       if (!ok) return;
       await runWrite(`restore-${version.id}`, async () => {
-        if (onTheRecordStore) {
-          const back = await restoreArchivedRow({ tableId, rowId });
-          if (isServiceFailure(back)) throw new Error(back.error);
-          toast.success("Row restored.");
-          return;
-        }
-        const result = await upsertRow({ tableId, data: snapshot });
-        if (isServiceFailure(result)) throw new Error(result.error);
-        toast.success("Row restored as a new row.");
-        // The old rowId is dead now. Follow the restored row so the panel
-        // keeps showing the thing the user is looking at instead of the
-        // history of a row that no longer exists.
-        if (result.data?.id) onRowReplaced?.(result.data.id);
+        const back = await restoreArchivedRow({ tableId, rowId });
+        if (isServiceFailure(back)) throw new Error(back.error);
+        toast.success("Row restored.");
       });
       return;
     }
@@ -164,14 +142,8 @@ export function VersionHistoryViewer({
     });
     if (!ok) return;
     await runWrite(`restore-${version.id}`, async () => {
-      if (onTheRecordStore) {
-        const back = await restoreRowVersion({ tableId, rowId, version: Number(version.id) });
-        if (isServiceFailure(back)) throw new Error(back.error);
-        toast.success("Version restored.");
-        return;
-      }
-      const result = await upsertRow({ tableId, rowId, data: snapshot });
-      if (isServiceFailure(result)) throw new Error(result.error);
+      const back = await restoreRowVersion({ tableId, rowId, version: Number(version.id) });
+      if (isServiceFailure(back)) throw new Error(back.error);
       toast.success("Version restored.");
     });
   };
@@ -183,24 +155,10 @@ export function VersionHistoryViewer({
   ) => {
     if (!tableId || !rowId) return;
     await runWrite(`revert-${version.id}-${fieldName}`, async () => {
-      if (onTheRecordStore) {
-        // "Revert" puts the column back to what it said BEFORE this change —
-        // the store's value at the previous version.
-        const back = await revertRowField({ tableId, rowId, fieldName, version: Number(version.id) - 1 });
-        if (isServiceFailure(back)) throw new Error(back.error);
-        recordToast.success(
-          { type: "row", id: rowId },
-          `"${label(fieldName)}" reverted. This is recorded in history too.`,
-        );
-        return;
-      }
-      const result = await upsertCell({
-        tableId,
-        rowId,
-        fieldName,
-        value: prev ?? null,
-      });
-      if (isServiceFailure(result)) throw new Error(result.error);
+      // "Revert" puts the column back to what it said BEFORE this change —
+      // the store's value at the previous version.
+      const back = await revertRowField({ tableId, rowId, fieldName, version: Number(version.id) - 1 });
+      if (isServiceFailure(back)) throw new Error(back.error);
       recordToast.success(
         { type: "row", id: rowId },
         `"${label(fieldName)}" reverted. This is recorded in history too.`,

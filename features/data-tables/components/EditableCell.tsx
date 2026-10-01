@@ -17,7 +17,7 @@
  * double-click, Enter, or just typing. Select-and-copy must never become an
  * accidental edit.
  *
- * Writes go through `udt_upsert_cell` (surgical jsonb_set — cannot touch
+ * Writes go through the seam's `upsertCell` (one cell — cannot touch
  * another field). A declared format owns the coercion; without one the storage
  * type does, so an unformatted column behaves exactly as it always has.
  *
@@ -59,7 +59,7 @@ import { RatingInput } from "./RatingInput";
 import { AttachmentInput } from "./AttachmentInput";
 import { DateCellEditor } from "./DateCellEditor";
 import { isDirectClickEditor, type GridMove } from "@ai-matrx/design-system/data-table/grid-selection";
-import { isRecordStoreTable, readChoiceNudge, upsertCell, upsertCellAddingChoice } from "../service";
+import { readChoiceNudge, upsertCell, upsertCellAddingChoice } from "../service";
 import { decideTypedChoice } from "../choice-option-nudge";
 import { readCellWord } from "../cell-word";
 import { readDateCellWords } from "../date-cell-words";
@@ -181,7 +181,7 @@ export function EditableCell({
    * measured on production 2026-09-22, build 93970125f9).
    *
    * Typing a customer's NAME into a relation column — an id column — is refused by
-   * `custom.udt_upsert_cell` with a good three-part sentence: what happened, what the
+   * the store with a good three-part sentence: what happened, what the
    * column actually is, and what to do instead. All the person got was a destructive
    * toast carrying one third of it, which then timed out; the rejected text stayed in
    * the cell until the page was reloaded, so the screen showed a value the store had
@@ -799,7 +799,7 @@ export function EditableCell({
   // "New …" — never a choice list that offers to keep typed words. One pick saves (a single
   // reference); several are saved when the cell is left, like a several-choice cell.
   const relationField =
-    format?.id === "relation" && fieldId && isRecordStoreTable(tableId)
+    format?.id === "relation" && fieldId
       ? storeFieldForRelationColumn({ id: fieldId, field_name: fieldName, display_name: fieldDisplayName, format })
       : null;
   if (relationField) {
@@ -1261,7 +1261,7 @@ export function normalizeCellValue(
   // the difference: a relation column is a `string` column, so the old switch
   // fell to `default` and stringified whatever it was handed.
   //
-  // The database refuses this too (workbench.udt_relation_cells_take_ids), and
+  // The store refuses this too, and
   // that refusal is the boundary. This is the half that keeps a person from
   // watching a paste half-land: it throws HERE, before the write is sent,
   // naming the column and what it expected — the same sentence, one round trip

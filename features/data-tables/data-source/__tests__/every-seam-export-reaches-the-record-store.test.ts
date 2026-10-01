@@ -1,29 +1,43 @@
 /**
- * THE SEAM'S ONE PROMISE: a table the record store holds never reaches an older door.
+ * THE SEAM'S ONE PROMISE: every table-scoped export of `service.ts` reaches the record store and
+ * nothing else.
  *
- * A moved table's older copy is ARCHIVED, not deleted, and the older doors still
- * answer for it — so a seam export that forgot to ask `table-home.ts` would read
- * yesterday's copy, or worse, WRITE to it and report success over a table nobody
- * is looking at. This drives every table-scoped export of `service.ts` with a
- * placed table and fails if any of them touches `supabase.rpc` / `.from` (the
- * older store's only ways in); and drives the same exports with an unplaced
- * table to prove the older half still runs its own door, unchanged.
+ * Drives every export twice: with the table already placed (no question asked at all), and
+ * unplaced (the one question is the store's own `custom.where_id_opens`, which names the table's
+ * organization). Neither may touch a public `supabase.rpc` or a direct `.from` read, and each must
+ * land in `data-source/record-store.ts`.
  */
-const rpc = jest.fn(async () => ({ data: { success: true, tables: [], data: [], pagination: {} }, error: null }));
+const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
+const rpc = jest.fn(async () => ({ data: null, error: { message: "a public door was called" } }));
 const from = jest.fn(() => {
-  throw new Error("an older table was read directly");
+  throw new Error("a table was read directly");
 });
-const schema = jest.fn(() => ({ rpc, from }));
+const storeRpc = jest.fn(async (fn: string) =>
+  fn === "where_id_opens"
+    ? { data: { kind: "table", organization_id: ORG, path: "/data-v2/t", live: true }, error: null }
+    : { data: null, error: { message: `unexpected store door ${fn}` } },
+);
+const schema = jest.fn(() => ({ rpc: storeRpc, from }));
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { rpc, from, schema },
-  createClient: () => ({ rpc, from, schema }),
+  supabase: { rpc, from, schema, auth: { getSession: async () => ({ data: { session: null } }) } },
+  createClient: () => ({ rpc, from, schema, auth: { getSession: async () => ({ data: { session: null } }) } }),
 }));
 
 const ok = { success: true, data: {} };
+const storeCalls: string[] = [];
 jest.mock("../record-store", () => {
-  const handler = { get: () => jest.fn(async () => ok) };
-  return new Proxy({}, handler);
+  const fns = new Map<string, jest.Mock>();
+  return new Proxy(
+    {},
+    {
+      get: (_t, key) => {
+        const name = String(key);
+        if (!fns.has(name)) fns.set(name, jest.fn(async () => (storeCalls.push(name), ok)));
+        return fns.get(name);
+      },
+    },
+  );
 });
 
 import * as service from "../../service";
@@ -48,7 +62,6 @@ const CALLS: Array<[string, () => Promise<unknown>]> = [
   ["setTableStyle", () => service.setTableStyle({ tableId: TABLE, path: ["rows", "r"], value: "amber" })],
   ["renumberFields", () => service.renumberFields({ tableId: TABLE, updates: [{ id: FIELD.id, field_order: 2 }] })],
   ["updateTableMetadata", () => service.updateTableMetadata({ tableId: TABLE, description: "Calls by day." })],
-  ["setValidationMode", () => service.setValidationMode({ tableId: TABLE, mode: "strict" })],
   ["getColumnFacets", () => service.getColumnFacets({ tableId: TABLE, fieldName: "stage" })],
   ["getTableProfile", () => service.getTableProfile({ tableId: TABLE })],
   ["setTableRowLabel", () => service.setTableRowLabel({ tableId: TABLE, rowLabel: { kind: "field", field: "stage" } })],
@@ -68,32 +81,28 @@ beforeEach(() => {
   rpc.mockClear();
   from.mockClear();
   schema.mockClear();
+  storeRpc.mockClear();
+  storeCalls.length = 0;
   forgetAllTablePlacements();
 });
 
-describe("a table the record store holds", () => {
-  it.each(CALLS)("%s never calls an older door", async (_name, call) => {
-    placeTableInRecordStore(TABLE, { organizationId: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f", userId: "87a6e699" });
+describe("a placed table", () => {
+  it.each(CALLS)("%s reaches the record store and no other door", async (_name, call) => {
+    placeTableInRecordStore(TABLE, { organizationId: ORG, userId: "87a6e699" });
     await call().catch(() => undefined);
     expect(rpc).not.toHaveBeenCalled();
     expect(from).not.toHaveBeenCalled();
+    expect(storeRpc).not.toHaveBeenCalled();
+    expect(storeCalls.length).toBeGreaterThan(0);
   });
 });
 
-describe("an older table", () => {
-  it.each([
-    ["getTableMetadata", "get_full_table"],
-    ["getTablePage", "get_user_table_data_paginated_v2"],
-    ["upsertCell", "udt_upsert_cell"],
-    ["bulkWrite", "udt_bulk_write"],
-    ["setTableStyle", "udt_set_table_style"],
-    ["hasEditorAccess", "has_access"], // the access kernel (canActOn → iam.has_access), never the direct-share check
-    ["setRowOrdering", "update_user_table_row_ordering"],
-    ["deleteRow", "delete_data_row_from_user_table"],
-    ["updateTableConfig", "update_user_table_config"],
-  ])("%s still runs its own older door (%s)", async (name, door) => {
-    const call = CALLS.find(([n]) => n === name)![1];
+describe("a table nobody placed", () => {
+  it.each(CALLS)("%s asks the store where the table opens, then reaches the record store", async (_name, call) => {
     await call().catch(() => undefined);
-    expect(rpc.mock.calls.map((c) => (c as unknown[])[0])).toContain(door);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
+    expect(storeRpc.mock.calls.map((c) => (c as unknown[])[0])).toEqual(["where_id_opens"]);
+    expect(storeCalls.length).toBeGreaterThan(0);
   });
 });

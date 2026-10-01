@@ -830,7 +830,7 @@ export const CmsCollectionService = {
 
   /**
    * What is actually IN one column, counted over every row the tab + search
-   * select. Same payload the `udt_column_facets` RPC returns, so the shared
+   * select. Same payload the data seam's `getColumnFacets` returns, so the shared
    * ColumnHeaderMenu consumes it with no second code path.
    */
   async itemColumnFacets(
