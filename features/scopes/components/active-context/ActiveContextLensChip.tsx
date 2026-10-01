@@ -6,7 +6,7 @@
 // ContextTree). Clear lives in the tree footer. Writes appContextSlice via
 // the same bridge as ContextDocsMenu / PlusAttachMenu.
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Popover,
   PopoverContent,
@@ -14,7 +14,7 @@ import {
 } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ContextSheet } from "@/features/scopes/components/context-assignment/ContextSheet";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectActiveScopeTypeIds,
   selectOrganizationId,
@@ -25,6 +25,26 @@ import {
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { ActiveContextTree } from "./ActiveContextTree";
+import {
+  ensureEntityScopes,
+  entityScopesKey,
+} from "@/features/scopes/redux/thunks/ensureEntityScopes";
+import { displayedSendScopeIds } from "@/features/scopes/utils/scopeMismatch";
+import type { RootState } from "@/lib/redux/rootReducer";
+
+const NO_IDS: readonly string[] = [];
+
+/** A conversation the server has confirmed — its organization is frozen. */
+function persistedConversationOrg(
+  state: RootState,
+  conversationId: string | undefined,
+): string | null {
+  if (!conversationId) return null;
+  const record = state.conversations.byConversationId[conversationId];
+  return record && record.cacheOnly === false
+    ? (record.organizationId ?? null)
+    : null;
+}
 import { LensChip, type LensChipNode } from "./LensChip";
 
 export interface ActiveContextLensChipProps {
@@ -42,15 +62,41 @@ export function ActiveContextLensChip({
   const [open, setOpen] = useState(false);
   const { organizations } = useScopeTree();
 
-  const orgId = useAppSelector(selectOrganizationId);
+  const dispatch = useAppDispatch();
+  // KEYED TO THE CONVERSATION, NOT THE SHELL (W-62). A persisted chat's
+  // organization never moves, so switching the shell's active organization
+  // must not change what this chip names: the org node is the chat's own, and
+  // the scopes are what the next send carries — the sidebar selection, or,
+  // when the switch cleared it, the chat's own durable tags (the gate sends
+  // those; the chip used to drop them and read `ASW` while `COM · 1 scope`
+  // still went out). A brand-new chat follows the shell as before.
+  const activeOrgId = useAppSelector(selectOrganizationId);
+  const conversationOrgId = useAppSelector((state) =>
+    persistedConversationOrg(state, conversationId),
+  );
+  const orgId = conversationOrgId ?? activeOrgId;
   const projectId = useAppSelector(selectProjectId);
   const taskId = useAppSelector(selectTaskId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const activeScopeTypeIds = useAppSelector(selectActiveScopeTypeIds);
+  const chatScopeIds = useAppSelector((state) => {
+    if (!conversationOrgId || !conversationId) return NO_IDS;
+    const entry =
+      state.scopesTree.entityScopesByKey[
+        entityScopesKey("conversation", conversationId)
+      ];
+    return entry?.status === "ready" ? entry.scope_ids : NO_IDS;
+  });
+  useEffect(() => {
+    if (conversationOrgId && conversationId) {
+      void dispatch(ensureEntityScopes("conversation", conversationId));
+    }
+  }, [dispatch, conversationOrgId, conversationId]);
 
-  const scopeIds = Object.values(scopeSelections).filter(
+  const activeScopeIds = Object.values(scopeSelections).filter(
     (value): value is string => Boolean(value),
   );
+  const scopeIds = displayedSendScopeIds(activeScopeIds, chatScopeIds);
 
   const chipNodes: LensChipNode[] = [];
   if (orgId) {

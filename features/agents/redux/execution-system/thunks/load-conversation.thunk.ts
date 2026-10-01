@@ -85,6 +85,7 @@ import {
 } from "./conversation-bundle";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { canActOn } from "@/features/access-gate/service/canActOn";
 // =============================================================================
 // Thunk
 // =============================================================================
@@ -311,10 +312,23 @@ export const loadConversation = createAsyncThunk<
       dispatch(setAutoRun({ conversationId, value: false }));
     }
 
+    // ── 0b. Can THIS viewer reply? — the share level reaches the composer ──
+    // A screen never lies (W-65): a view-level sharee used to get a live
+    // "Reply" box that failed only after sending. The owner always may; anyone
+    // else is asked of the ONE access kernel (`iam.has_access` at editor) —
+    // never a created_by or organization comparison. Awaited BEFORE the record
+    // lands so the composer never flashes a control the door would refuse.
+    // `canActOn` answers false on a failed check and says so in the console.
+    const viewerCanReply =
+      authedUserId && conv.created_by !== authedUserId
+        ? await canActOn("conversation", conversationId, "editor")
+        : undefined;
+
     // ── 1. Conversation record (includes sidebar + scope + relation fields) ──
     dispatch(
       hydrateConversation({
         conversationId,
+        ...(viewerCanReply !== undefined ? { viewerCanReply } : {}),
         agentId: conv.initial_agent_id ?? "",
         agentType: "user",
         origin: "manual",

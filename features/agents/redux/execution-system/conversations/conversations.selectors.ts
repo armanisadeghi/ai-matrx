@@ -165,3 +165,22 @@ export const selectConversationScopeIds = (conversationId: string) =>
       taskId: record?.taskId ?? null,
     }),
   );
+
+/**
+ * May the signed-in viewer add a turn to this conversation? The share level
+ * reaching the composer (W-65): `false` only when `loadConversation` asked the
+ * access kernel and the viewer holds less than editor. Unknown → true (the
+ * viewer's own or a brand-new conversation; the server door still rules).
+ */
+export const selectViewerCanReply =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.conversations.byConversationId[conversationId]?.viewerCanReply !==
+    false;
+
+/** The conversation's own organization — frozen at creation, never the shell's. */
+export const selectConversationOrganizationId =
+  (conversationId: string) =>
+  (state: RootState): string | null =>
+    state.conversations.byConversationId[conversationId]?.organizationId ??
+    null;

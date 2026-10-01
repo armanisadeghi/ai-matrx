@@ -133,3 +133,17 @@ export function buildScopeDisplayItems(
       byId.get(id) ?? { id, name: "Unknown scope", typeLabel: "Scope" },
   );
 }
+
+/**
+ * The scope ids the NEXT send of this chat will carry before any dialog —
+ * what the composer's context chip must show (W-62). Same rule as the gate,
+ * one producer: an empty sidebar shows the chat's own tags (they ARE what is
+ * sent), otherwise the sidebar's selection (a mismatch is asked at Send).
+ */
+export function displayedSendScopeIds(
+  activeIds: readonly string[],
+  chatIds: readonly string[],
+): string[] {
+  const gate = evaluateScopeMismatchGate(activeIds, chatIds);
+  return gate.kind === "use-chat" ? gate.scopeIds : [...activeIds];
+}

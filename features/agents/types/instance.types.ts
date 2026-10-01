@@ -246,6 +246,15 @@ export interface ExecutionInstance {
    * dropped from `cx_conversation` in favor of `created_by`.)
    */
   createdBy?: string | null;
+  /**
+   * May the signed-in viewer ADD a turn here? The access kernel's answer
+   * (`iam.has_access('conversation', id, 'editor')`), asked by
+   * `loadConversation` when the viewer is not the owner. `undefined` means
+   * the conversation is the viewer's own (or brand new) — a reply is allowed.
+   * `false` = a view-level share: the composer is replaced by an honest
+   * view-only bar (W-65). Read only through `selectViewerCanReply`.
+   */
+  viewerCanReply?: boolean;
   /** Canonical DB column name for the agent that started this conversation. */
   initialAgentId?: string | null;
   /** Agent version that started this conversation (pinned for shortcuts/apps). */

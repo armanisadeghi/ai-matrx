@@ -26,6 +26,8 @@ import type { VariablesPanelStyle } from "@/features/agents/types/instance.types
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 import type { ComposerPresentation } from "./composer/composer-types";
 import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
+import { selectViewerCanReply } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { ViewOnlyComposerBar } from "./ViewOnlyComposerBar";
 
 export interface SmartAgentInputSurfaceValueAnchors {
   variables?: string;
@@ -123,6 +125,9 @@ export function SmartAgentInput({
       );
     }
   }, [dispatch, conversationId, variablesPanelStyle, sliceStyle]);
+  const viewerCanReply = useAppSelector((state) =>
+    conversationId ? selectViewerCanReply(conversationId)(state) : true,
+  );
   // A "Show Form Inputs" toggle over a style that never draws a form is a
   // dead control (cold walk 23, defect C review).
   const variableIconShown = showVariableIcon && variablesPanelStyle !== "hidden";
@@ -133,6 +138,13 @@ export function SmartAgentInput({
     conversationId && !isAmbient ? (
       <InboxQueueStrip conversationId={conversationId} />
     ) : null;
+
+  // A view-level share reads, never writes: the composer is ABSENT and the bar
+  // says why (W-65). Unknown access reads as "may reply" — the server door
+  // still rules, and an owner never waits on a check.
+  if (conversationId && !viewerCanReply) {
+    return <ViewOnlyComposerBar />;
+  }
 
   if (
     !composer &&
