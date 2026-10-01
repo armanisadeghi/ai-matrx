@@ -30,7 +30,13 @@ Every stream item below adds its case there.
 - [ ] C4. Bottom-layer refusal: the JSON code card, code block, plain markdown renderers, JSON tree viewer and
       the generic value grid each run the detector themselves and render the kind (or its loader) when handed
       kind data, and report the caller to the Error Inspector.
-- [ ] C5. One value renderer for every non-stream surface, routing `__kind` at any depth.
+      PARTIAL (2026-09-30): markdown leaves (`KindTextGate`), value grid (`ResultValue`/`KeyValueGrid`/`ResultJson`
+      via `KindValueNode`), JSON viewers (`JsonInspector`/`JsonTreeViewer`/`RawJsonExplorer`/`JsonViewer` via
+      `KindDataGate`, `showSource` for deliberate raw views) and the settled `JsonBlock` all refuse and report
+      (`report-kind-at-raw-renderer.ts`). Still open: the plain `CodeBlock` (BlockFallback's B1 path).
+- [x] C5. One value renderer for every non-stream surface, routing `__kind` at any depth.
+      Bottom layer: every raw renderer above routes kind data through `AnswerValueView` (text through
+      `MarkdownStream`), nested kinds at any depth; surfaces above it are their own items.
 
 ## A. Live stream
 
@@ -58,7 +64,9 @@ Every stream item below adds its case there.
 
 - [ ] B1. Kind component crash → JSON code block fallback (`BlockFallback.tsx`).
 - [ ] B2. Unregistered block type → `UnknownDataEventBlock` prints JSON.
-- [ ] B3. Nested search/rank/rag/scraper/seo-ruling helpers drop to the JSON card when the route declines.
+- [x] B3. Nested search/rank/rag/scraper/seo-ruling helpers drop to the JSON card when the route declines.
+      Closed at the leaf: `renderJsonFallback` → `JsonBlock` now draws a settled kind through `AnswerValueView`
+      (a loop back to the same value keeps the code card).
 - [ ] B4. `AgentResultBlock` turns unparseable / nested output into a ```json fence.
 - [x] B5. "Show data" toggles on workflow-step, function, fetch, search, categorization result blocks. (→ `data-events/ToggledDataBody`: a payload carrying `__kind` at any depth → `AnswerValueView`; kindless stays JSON)
 - [x] B6. Invalid-payload fallbacks on decision-answers, list-change-proposal, map-topic-proposal blocks. (→ alert heading over `StructuredValueView` with the kind + "could not be read"; raw data behind its explicit toggle)
@@ -92,7 +100,8 @@ Every stream item below adds its case there.
 
 ## D. Tool calls
 
-- [ ] T1. Generic tool renderer (`ResultValue`) never routes kinds → grid / raw JSON tree.
+- [x] T1. Generic tool renderer (`ResultValue`) never routes kinds → grid / raw JSON tree.
+      `detectResultShape` → `kindInstance`/`kindList`; `ResultValue` routes them via `KindValueNode`.
 - [x] T2. Reloaded tool call with only `output_preview` → unparseable raw text. (→ `previewResult`: whole JSON parses; truncated kind JSON → "<Kind> · full output not saved")
 - [x] T3. Sub-agent call results; collaboration cards on plain markdown. (→ `AnswerValueView` for the child's answer; live child text → `MarkdownStream` content mode — the child has no request of its own, it streams inside the parent's)
 - [x] T4. Search / research / scrape / random-wheel / SQL renderers on plain markdown.
@@ -104,7 +113,8 @@ Every stream item below adds its case there.
 - [x] W1. Run board emissions call `DbEmitRenderer` directly, skipping the kind route. (→ `EmissionRender`)
 - [x] W2. Seven bakeoff run-page variants do the same. (→ `EmissionRender`; guard `kind-emissions/__tests__/emissions-route-through-the-kind-door.test.tsx`)
 - [x] W3. `SettledOutputBody` sends `__kind` output to the generic grid when no output kind is declared. (→ `AnswerValueView` by the value's own `__kind`; truncated kind text → json region)
-- [ ] W4. `StructuredValueView` strips nested kinds instead of rendering them.
+- [x] W4. `StructuredValueView` strips nested kinds instead of rendering them.
+      Only the root marker is dropped; a nested kind routes to its component (`KindValueNode`).
 - [x] W5. Readout summary table prints 80 chars of stringified output. (→ `invocation-summary.ts`: kind name · instance title)
 
 ## F. Screens rendering answer text outside the pipeline
@@ -133,7 +143,8 @@ Every stream item below adds its case there.
 
 ## G. Window panels
 
-- [ ] P1. Extraction cell editor window shows AI-extracted values in a raw JSON viewer.
+- [x] P1. Extraction cell editor window shows AI-extracted values in a raw JSON viewer.
+      Closed at the viewer: `JsonViewer` draws kind data through `AnswerValueView` (`KindDataGate`).
 
 ## H. Answers sent elsewhere
 
