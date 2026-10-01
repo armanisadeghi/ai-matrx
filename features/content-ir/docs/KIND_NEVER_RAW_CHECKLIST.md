@@ -58,7 +58,9 @@ Every stream item below adds its case there.
 - [x] A8. Kind inside a simple XML tag → rescued only at tag close.
       A JSON object in a simple section leaves it the moment `__kind` is visible (line or fragment) and the
       section resumes after it; recovered section pieces are trimmed on both hosts so live = reload.
-- [ ] A9. Transport drop mid-fence (no `finalize`) → block stuck `streaming` forever.
+- [x] A9. Transport drop mid-fence (no `finalize`) → block stuck `streaming` forever.
+      `processStream` finalizes on every exit: the commit path, an unexpected throw, and a retained processor
+      discarded without a rejoin (`dispose`). Only the live hand-off to a rejoin keeps the region open.
 - [ ] A10. Fence closes on truncated/invalid JSON with `__kind` → should be the kind's broken state, not raw.
 - [ ] A11. Cold registry at stream end → raw until the registry repaints.
 - [x] A12. Static splitter: ```JSON (capital) gets no envelope (`content-splitter-core.ts` case-sensitive check).

@@ -571,6 +571,21 @@ export async function processStream({
     requestId,
     upsertRenderBlock,
   );
+  /**
+   * EVERY EXIT FINALIZES (A9, the never-raw law). A block left `streaming`
+   * never settles: its kind loader spins forever and nothing ever routes it.
+   * The commit path finalizes; a transport loss handed to the rejoin path
+   * keeps the accumulator open for the next reader; when that reader never
+   * comes (the retained processor is discarded) or the commit path is left by
+   * an unexpected throw, this closes the open region instead.
+   */
+  let accumulatorFinalized = false;
+  const finalizeAccumulator = () => {
+    if (accumulatorFinalized) return;
+    accumulatorFinalized = true;
+    dispatchBatch();
+    blockAccumulator.finalize(dispatch);
+  };
 
   // ── Streaming partial kinds: the per-block staleness gate ────────────────
   // `seq` is monotonic PER BLOCK and is the ordering key. Events can be
@@ -738,6 +753,7 @@ export async function processStream({
       );
     }
     retainedEntry.busy = true;
+    let handedToRejoin = false;
     try {
     activeAbortController = nextAbortController;
       // Each transport has its own watchdog observer. Keep all lexical stream
@@ -3081,6 +3097,7 @@ export async function processStream({
       isStreamTransportLost(streamFailure));
   if (recoverableTransportFailure) {
     dispatchBatch();
+    handedToRejoin = true;
     throw streamFailure;
   }
 
@@ -3106,8 +3123,7 @@ export async function processStream({
   }
 
   // Final flush of any trailing buffers after the loop ends
-  dispatchBatch();
-  blockAccumulator.finalize(dispatch);
+  finalizeAccumulator();
 
   // The terminal user-message refresh is part of this stream's transcript
   // commit, not background best effort. Its bounded retry covers a server
@@ -3867,6 +3883,9 @@ export async function processStream({
   };
     } finally {
       retainedEntry.busy = false;
+      // Left by anything but the rejoin hand-off (an unexpected throw in the
+      // commit path): the open region still settles (A9).
+      if (!handedToRejoin) finalizeAccumulator();
     }
   };
   retainedEntry = {
@@ -3877,6 +3896,8 @@ export async function processStream({
         clearTimeout(postTerminalGraceTimer);
         postTerminalGraceTimer = null;
       }
+      // No reader will ever resume this processor: settle what it streamed.
+      finalizeAccumulator();
     },
   };
   // Store before consuming the first transport so a mid-body loss preserves

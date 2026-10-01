@@ -25,6 +25,19 @@ import { renderBlockToContentBlock } from "@/components/mardown-display/chat-mar
 import { pendingStructuredEnvelope } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { applyIrKindRoute } from "../react/kind-route";
 import { hasKindKey } from "../surfaces/json-kind-signal";
+import {
+  TextDecoder as NodeTextDecoder,
+  TextEncoder as NodeTextEncoder,
+} from "node:util";
+import activeRequestsReducer, {
+  createRequest,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import {
+  discardRetainedTransportConsumer,
+  hasRetainedTransportConsumer,
+  processStream,
+} from "@/features/agents/redux/execution-system/thunks/process-stream";
+import type { RootState } from "@/lib/redux/store";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 type Upsert = { requestId: string; block: RenderBlockPayload };
@@ -374,5 +387,92 @@ describe("never raw: a kind inside a simple XML tag (A8)", () => {
     const reloaded = splitContentIntoBlocksV2(stream).filter((b) => b.content.trim()).map(shape);
     expect(blocks).toEqual(reloaded);
     expect(blocks.filter((b) => b.startsWith("code:{"))).toHaveLength(1);
+  });
+});
+
+describe("never stuck: a transport drop mid-fence still settles every block (A9)", () => {
+  const globals = globalThis as { TextEncoder?: unknown; TextDecoder?: unknown };
+  if (typeof globals.TextEncoder !== "function") globals.TextEncoder = NodeTextEncoder;
+  if (typeof globals.TextDecoder !== "function") globals.TextDecoder = NodeTextDecoder;
+
+  const REQUEST_ID = "req_a9_transport_drop";
+  const CONVERSATION_ID = "a9a9a9a9-a9a9-4a9a-8a9a-a9a9a9a9a9a9";
+
+  /** Delivers the events, then the socket drops mid-body. */
+  function droppedResponse(events: unknown[]): Response {
+    const encoder = new TextEncoder();
+    const chunks = events.map((e) => encoder.encode(`${JSON.stringify(e)}\n`));
+    const reader = {
+      read(): Promise<{ value?: Uint8Array; done: boolean }> {
+        const value = chunks.shift();
+        if (value) return Promise.resolve({ value, done: false });
+        return Promise.reject(new Error("socket dropped"));
+      },
+      releaseLock() {},
+    };
+    return { body: { getReader: () => reader }, headers: new Headers() } as unknown as Response;
+  }
+
+  function harness() {
+    let activeRequests = activeRequestsReducer(
+      undefined,
+      createRequest({ requestId: REQUEST_ID, conversationId: CONVERSATION_ID }),
+    );
+    const getState = () =>
+      ({
+        activeRequests,
+        conversations: { byConversationId: { [CONVERSATION_ID]: { status: "running", agentId: null } } },
+        instanceUserInput: { byConversationId: {} },
+        instanceUIState: { byConversationId: {} },
+        instanceResources: { byConversationId: {} },
+        instanceVariableValues: { byConversationId: {} },
+        messages: { byConversationId: {} },
+        observability: { toolCalls: {}, userRequests: {}, requests: {} },
+        agentDefinition: { agents: {} },
+      }) as unknown as RootState;
+    const dispatch = (action: unknown) => {
+      if (typeof action === "object" && action !== null && "type" in action) {
+        activeRequests = activeRequestsReducer(activeRequests, action as never);
+      }
+      return action;
+    };
+    const blocks = () =>
+      Object.values(activeRequests.byRequestId[REQUEST_ID]?.renderBlocks ?? {}) as RenderBlockPayload[];
+    return { getState, dispatch, blocks };
+  }
+
+  it("a retained processor discarded without a rejoin finalizes its open fence", async () => {
+    const h = harness();
+    await expect(
+      processStream({
+        requestId: REQUEST_ID,
+        conversationId: CONVERSATION_ID,
+        response: droppedResponse([
+          { event: "phase", stream_seq: 1, data: { phase: "processing" } },
+          {
+            event: "chunk",
+            stream_seq: 2,
+            data: { text: `Here you go:\n\n\`\`\`json\n${KIND_PAYLOAD_ONE_LINE.slice(0, 120)}` },
+          },
+        ]),
+        submitAt: 0,
+        conversationIdAt: null,
+        dispatch: h.dispatch as never,
+        getState: h.getState,
+        abortController: new AbortController(),
+        allowTransportResume: true,
+      }),
+    ).rejects.toThrow();
+    expect(hasRetainedTransportConsumer(REQUEST_ID)).toBe(true);
+    const fence = h.blocks().find((b) => (b.content ?? "").includes('"__kind"'));
+    expect(fence?.status).toBe("streaming"); // still rejoinable here
+
+    // The rejoin is refused / impossible — run-ai-stream discards the processor.
+    discardRetainedTransportConsumer(REQUEST_ID);
+    expect(
+      h.blocks()
+        .filter((b) => b.status === "streaming")
+        .map((b) => `${b.blockId}: ${(b.content ?? "").slice(0, 30)}`),
+    ).toEqual([]);
   });
 });
