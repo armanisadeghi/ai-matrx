@@ -295,9 +295,8 @@ function FedSide({
 function NoDelivered() {
   return (
     <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground" data-fed-missing>
-      The server answering is older than this page: it does not yet report the exact bytes the
-      model is fed. They appear here once that version is live; the values below are the
-      resolvers&apos; answers.
+      {/* Once the server reports the fed bytes they appear here; until then the values below are the resolvers' answers. */}
+      This server version doesn&apos;t report what the model is fed yet
     </p>
   );
 }
@@ -373,10 +372,9 @@ function DiffTab({
           The values each system answered
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
+          {/* The current system's resolver beside the record store's, rendered the same way. */}
           {focus ? `${focus.label} only. ` : ""}
-          The current system&apos;s resolver beside the record store&apos;s, rendered the same way.
-          With an organization this rendering is not in the prompt; it is what the agent can reach
-          through its bound variables and context tools.
+          With an organization, reachable by tools, not in the prompt
         </p>
         {compare.old.available && compare.new.available ? (
           shownOld === shownNew ? (
@@ -451,14 +449,11 @@ function SelectionTab({
 }) {
   return (
     <div className="flex flex-col gap-3 px-4 pt-3" data-compare-selection>
-      <p className="text-[11px] leading-snug text-muted-foreground" data-provenance="selection">
-        Sent to POST /ai/context/preview. The server hands{" "}
-        {delivered?.today.provenance?.function ?? "assemble_turn_context"} a chat&apos;s arguments for
-        this pick (a scope type travels as the type alone and the run path resolves it) — the same
-        arguments an agent run passes for a new conversation, on both sides. The values compare reads
-        its scopes from what that function delivered: a delivered type becomes every scope of it you
-        can read.
-      </p>
+      {/* Provenance: the pick is sent to POST /ai/context/preview; the server hands
+          assemble_turn_context (delivered.today.provenance.function) a chat's arguments for it —
+          a scope type travels as the type alone and the run path resolves it — the same arguments
+          an agent run passes for a new conversation, on both sides. The values compare reads its
+          scopes from what that function delivered: a delivered type becomes every readable scope. */}
       {sent && <JsonBlock label="What this page sent" value={sent} slot="sent" />}
       <JsonBlock label="The scopes the values compare read" value={compare.selection} slot="expanded" />
       {delivered ? (
@@ -723,8 +718,8 @@ function AnswerBoth({
         {heading}
         <p className="mt-1 text-xs text-muted-foreground">
           {picker
-            ? "Choose the agent whose answer you want to compare, then ask it one question on both systems."
-            : "Answering needs the agent whose answer you want to compare. Open this panel from a chat with that agent, and the question box appears here."}
+            ? "Choose the agent to compare"
+            : "Open this from a chat with the agent to compare"}
         </p>
         {picker && <div className="mt-1.5">{picker}</div>}
       </section>
@@ -773,8 +768,8 @@ function AnswerBoth({
       {heading}
       {picker && <div className="mt-1.5">{picker}</div>}
       <p className="mt-1 text-xs text-muted-foreground">
-        One real turn of this agent per system, built by the run path&apos;s own functions from a
-        chat&apos;s arguments — same instructions and model, tools off, nothing saved to the chat.
+        {/* Each turn is built by the run path's own functions from a chat's arguments — same instructions and model. */}
+        One real turn per system, tools off, nothing saved
       </p>
       <Textarea
         value={question}
@@ -1007,8 +1002,7 @@ export function ContextCompareView({
         )}
         {data && !compare && (
           <div className="mx-4 mt-4 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-xs text-foreground">
-            The server answered without a comparison, so it is running a version without compare
-            mode. It appears here once that version is live.
+            This server version has no compare mode yet
           </div>
         )}
         {compare && (
@@ -1032,8 +1026,8 @@ export function ContextCompareView({
               </div>
               {focus && (
                 <p className="px-4 pt-2 text-xs text-muted-foreground" data-compare-focus={focus.key}>
-                  Showing {focus.label} only where a block names it. The summary counts the whole
-                  scope, and what the model is fed is always the whole turn.
+                  {/* Filters blocks that name the focus; the summary still counts the whole scope. */}
+                  Showing {focus.label} only; the model always gets the whole turn
                 </p>
               )}
               <TabsContent value="diff" className="mt-0">

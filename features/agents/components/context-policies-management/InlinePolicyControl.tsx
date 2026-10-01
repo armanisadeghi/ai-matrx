@@ -119,13 +119,13 @@ export function InlinePolicyControl({
         value="default"
         currentValue={value.mode}
         label="Default"
-        description={`Inline if content fits in ${INLINE_DEFAULT_CHARS} characters.`}
+        description={`Inline if content fits in ${INLINE_DEFAULT_CHARS} characters`}
       />
       <RadioRow
         value="custom"
         currentValue={value.mode}
         label="Custom ceiling"
-        description={`Inline up to N characters. Hard cap is ${INLINE_HARD_CAP}.`}
+        description={`Inline up to N characters, capped at ${INLINE_HARD_CAP}`}
         right={
           <div className="flex items-center gap-1.5">
             <Input
@@ -153,7 +153,7 @@ export function InlinePolicyControl({
         value="never"
         currentValue={value.mode}
         label="Never inline"
-        description="Always deferred — retrieved on demand, never injected inline."
+        description="Always deferred; fetched on demand"
       />
     </RadioGroup>
   );

@@ -42,6 +42,7 @@
 
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
+import { InfoHint } from "@/components/official/InfoHint";
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
@@ -114,16 +115,15 @@ export function ConversationRoomNotice({ conversationId }: { conversationId?: st
   return (
     <span
       className="flex min-w-0 items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-      title={
-        `This chat is personal, and it also sits inside ${where ?? "a shared room"}. ` +
-        `Being in that room does not share it: only you can open it. ` +
-        `Share it with the room's members if you want them to read it.`
-      }
     >
       <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span className="truncate">
         Personal — only you can see this, even inside a shared room{where ? ` (${where})` : ""}
       </span>
+      <InfoHint
+        label="About this chat"
+        text={`Personal chat in ${where ?? "a shared room"}; only you can open it until you share it with the room.`}
+      />
     </span>
   );
 }

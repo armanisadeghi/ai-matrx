@@ -42,7 +42,7 @@ export function WebpageBody({ item, setTitle }: ContextItemBodyProps) {
         <div className="max-w-md space-y-2">
           <p className="text-sm font-medium text-foreground">No saved text for this older attachment</p>
           <p className="text-xs text-muted-foreground">
-            The message preserved the source link, but it predates webpage snapshots.
+            Saved before page snapshots; only the link was kept
           </p>
         </div>
       </div>

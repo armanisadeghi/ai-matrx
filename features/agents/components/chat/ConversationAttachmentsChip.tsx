@@ -137,7 +137,7 @@ export function ConversationAttachmentsChip({
         </ul>
 
         <p className="mt-2 text-[11px] leading-tight text-muted-foreground">
-          Add or remove these from the Connections line under the message box.
+          Edit these in the Connections line under the message box
         </p>
       </PopoverContent>
     </Popover>

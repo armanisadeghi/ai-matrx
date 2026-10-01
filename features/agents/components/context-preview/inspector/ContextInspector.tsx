@@ -286,7 +286,7 @@ export function ContextInspector({
         {
           id: "compare-selection",
           title: "Selection sent to both sides",
-          description: "The server's ContextSelection, identical for the current system and the record store.",
+          // The server's ContextSelection — identical for the current system and the record store.
           role: "data",
           value: request ? { depth: request.depth, selection: request.selection, focus: focus ?? null } : "Nothing chosen yet; no compare runs.",
         },
@@ -337,8 +337,7 @@ export function ContextInspector({
       </div>
       {outsideTree && (
         <p className="text-xs text-muted-foreground" data-inspector-outside-tree>
-          This scope belongs to an organization you are not a member of, so the columns cannot
-          show it; the preview below still reads it from the scope.
+          Not your organization: columns can&apos;t show it, preview can
         </p>
       )}
 
@@ -350,8 +349,8 @@ export function ContextInspector({
 
       {!selection.org && !needsHome && (
         <p className="text-xs text-muted-foreground" data-inspector-empty>
-          Choose an organization and the preview shows what its agents are handed; each choice
-          after it narrows the preview.
+          {/* Each choice after the organization narrows the preview. */}
+          Choose an organization to preview what its agents get
         </p>
       )}
       {universe.treeStatus === "ready" && typeIsEmpty && (

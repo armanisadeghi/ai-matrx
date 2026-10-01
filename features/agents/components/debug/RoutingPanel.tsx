@@ -164,9 +164,8 @@ export function RoutingPanel({ conversationId }: { conversationId: string }) {
               {sandboxToolsMissing && (
                 <div className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                  Box is bound but no fs_/shell_ tools were sent — the agent
-                  can't act in it. Check that the sandbox-fs capability arms
-                  tools (or the client stopgap).
+                  Box bound but no fs_/shell_ tools sent, so the agent can&apos;t
+                  act — check the sandbox-fs capability.
                 </div>
               )}
             </div>

@@ -259,7 +259,7 @@ describe("ContextCompareView", () => {
   it("offers 'answer on both paths' only when there is an agent to answer", async () => {
     const without = await mount({});
     expect(without.host.querySelector("textarea")).toBeNull();
-    expect(without.host.textContent).toContain("Open this panel from a chat");
+    expect(without.host.textContent).toContain("Open this from a chat with the agent");
     await without.unmount();
 
     const withAgent = await mount({ agentId: "agent-1" });
@@ -340,11 +340,8 @@ describe("the four tabs — what the model is fed, exactly (lane INSPECTOR-DIFF)
       expect(JSON.parse(sent)).toEqual(selection);
       const args = view.host.querySelector('[data-selection-block="arguments"] pre')?.textContent ?? "";
       expect(JSON.parse(args)).toEqual(ARGUMENTS);
-      const said = view.host.querySelector('[data-provenance="selection"]')?.textContent ?? "";
-      expect(said).toContain("assemble_turn_context");
-      // Lane INSPECTOR-DIFF-2: the type travels as a chat sends it — never "expanded" first.
-      expect(said).toContain("a chat's arguments");
-      expect(said).not.toContain("expanded it once");
+      // P14: the endpoint/function provenance paragraph is author-facing and no longer rendered.
+      expect(view.host.querySelector('[data-provenance="selection"]')).toBeNull();
     } finally {
       await view.unmount();
     }
@@ -354,7 +351,7 @@ describe("the four tabs — what the model is fed, exactly (lane INSPECTOR-DIFF)
     door.mockResolvedValue({ data: { compare, injected_block: null } });
     const view = await mount({});
     try {
-      expect(view.host.querySelector("[data-fed-missing]")?.textContent).toContain("older than this page");
+      expect(view.host.querySelector("[data-fed-missing]")?.textContent).toContain("doesn't report what the model is fed");
       expect(view.host.querySelector('[data-diff-viewer="fed"]')).toBeNull();
     } finally {
       await view.unmount();
@@ -488,7 +485,7 @@ describe("the inspector's selection and agent (lane CONTEXT-INSPECTOR-2)", () =>
     const picker = view.host.querySelector('[data-agent-picker="context-inspector-answer-both"]');
     expect(picker?.textContent).toBe("Choose an agent");
     expect(view.host.querySelector("textarea")).toBeNull();
-    expect(view.host.textContent).not.toContain("Open this panel from a chat");
+    expect(view.host.textContent).not.toContain("Open this from a chat with the agent");
     await act(async () => (picker as HTMLButtonElement).click());
     expect(chosen).toEqual([INTAKE_AGENT]);
     await view.unmount();

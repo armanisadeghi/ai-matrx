@@ -1154,7 +1154,7 @@ function ConversationSearchStatus({
         {firstSearchPending && <Loader2 className="h-3 w-3 animate-spin" />}
         <span>
           {firstSearchPending
-            ? `Searching ${rangeLabel} on the server${
+            ? `Searching ${rangeLabel}${
                 cachedCount > 0 ? ` · ${cachedCount} cached first` : ""
               }`
             : state.status === "failed"

@@ -27,6 +27,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
+import { InfoHint } from "@/components/official/InfoHint";
 import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
 import { contextItemValueTypeToPolicyType } from "@/features/agents/utils/context-item-policy-mapping";
 import {
@@ -313,7 +314,8 @@ function PolicyEditorFields({
       {/* ──────────────────── Scope binding ──────────────────── */}
       <Section
         title="Scope binding"
-        subtitle="Bind to a context item to fill this policy's key, label, description, and type from it automatically — you can still edit any of them below. Leave unbound to configure a fully custom policy."
+        subtitle="Fill key, label, description and type from a context item"
+        hint="Every filled field stays editable; leave unbound for a fully custom policy."
       >
         <Field>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -410,7 +412,7 @@ function PolicyEditorFields({
           )}
           {form.key.trim() && !keyRulesOk && (
             <p className="text-xs text-muted-foreground">
-              Use letters, numbers, and underscores only. Start with a letter.
+              Letters, numbers and underscores; start with a letter
             </p>
           )}
         </Field>
@@ -472,7 +474,7 @@ function PolicyEditorFields({
             id="policy-desc"
             value={form.description}
             onChange={(e) => onChange({ description: e.target.value })}
-            placeholder="What this policy provides at runtime. The model uses this to decide whether to fetch via ctx_get…"
+            placeholder="Customer's open orders and their status"
             className="min-h-[72px] resize-y"
             style={{ fontSize: "16px" }}
           />
@@ -482,7 +484,8 @@ function PolicyEditorFields({
       {/* ──────────────────── Inline policy ──────────────────── */}
       <Section
         title="Inline policy"
-        subtitle="Controls when content is rendered inline in the manifest vs deferred behind ctx_get. The agent value is a ceiling — surfaces can lower but never raise it."
+        subtitle="When content is inlined vs fetched with ctx_get"
+        hint="The agent's value is a ceiling: surfaces can lower it but never raise it."
       >
         <InlinePolicyControl
           value={{ mode: form.inlineMode, customChars: form.inlineCustomChars }}
@@ -495,7 +498,7 @@ function PolicyEditorFields({
       {/* ──────────────────── Summary sub-agent ──────────────────── */}
       <Section
         title="Summary sub-agent"
-        subtitle="When set, the model can call ctx_get(mode='summary') and the policy content is routed through this agent. Optional."
+        subtitle="Optional agent that answers ctx_get summary calls"
       >
         <Field>
           <div className="flex items-stretch gap-2">
@@ -566,7 +569,7 @@ function PolicyEditorFields({
       {form.mutable && form.persist === "auto" && !form.ctxBound && (
         <Section
           title="Source record"
-          subtitle="Where the agent's edits are written back. Required when edits save to the source."
+          subtitle="Where the agent's edits are written back · required"
         >
           <Field>
             <Label htmlFor="src-kind" className="text-xs">
@@ -649,20 +652,25 @@ function PolicyEditorFields({
 function Section({
   title,
   subtitle,
+  hint,
   children,
 }: {
   title: string;
+  /** One line; clamps with `truncate`. Definitions go in `hint`. */
   subtitle?: string;
+  /** One-sentence definition shown via InfoHint beside the title. */
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="space-y-2.5">
-      <div>
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="min-w-0">
+        <h3 className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {title}
+          {hint && <InfoHint text={hint} label={`About ${title}`} />}
         </h3>
         {subtitle && (
-          <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+          <p className="truncate text-[11px] text-muted-foreground/80 mt-0.5">
             {subtitle}
           </p>
         )}
