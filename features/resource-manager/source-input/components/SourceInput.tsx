@@ -54,6 +54,7 @@ import {
   visibleSourceKinds,
   type SourceKindDef,
 } from "../sourceKinds";
+import { useSourceDraftAddresses } from "../sourceAddress";
 import { useSourceSet } from "../useSourceSet";
 import { useSourceIntake } from "../useSourceIntake";
 import { useSourceRecovery } from "../useSourceRecovery";
@@ -108,6 +109,9 @@ export function SourceInput({
       if (!card.draft.sourceKind) set.updateDraft(card.id, { sourceKind: kind });
     }
   }, [set]);
+  // Every card that points at a Source with no address (a web page picked from Use existing, a
+  // host's own picker) reads it from the Source row — the same line a page added by its link has.
+  useSourceDraftAddresses(set.sources, set.updateDraft);
   const runner = useProcessingRunner();
   const intake = useSourceIntake(set, { attachTo });
   const [threshold, setThreshold] = useState<number | null>(null);

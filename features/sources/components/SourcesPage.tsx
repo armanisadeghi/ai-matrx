@@ -62,6 +62,7 @@ import { formatRelativeTime, formatCount } from "@ai-matrx/kit/format";
 import { useEntityTitles } from "@ai-matrx/associations/react";
 import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Badge } from "@/components/ui/badge";
+import { SourceStageCell } from "@/features/sources/components/SourceStageCell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -138,7 +139,6 @@ import { useTranscriptEnds } from "@/features/sources/hooks/useTranscriptEnds";
 import {
   DEFAULT_SAVED_FILTER,
   SOURCE_KIND_LABEL,
-  SOURCE_STAGE_LABEL,
   applySavedFilter,
   attachmentTypeWords,
   captureClientLabel,
@@ -151,6 +151,7 @@ import {
   sourceStage,
   type SourcesLane,
   stageCellState,
+  stageCellLabel,
   STAGE_CELL_LABEL,
   transcriptLengthWords,
   transcriptSegmentCount,
@@ -233,84 +234,6 @@ function toLibrarySummary(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-/**
- * The stage of the version people read. "Index stale" carries its remedy: one
- * click indexes the current version (the old chunks are replaced when it
- * finishes).
- */
-function StageCell({
-  facts,
-  read,
-  busy,
-  onReindex,
-  onRetryRead,
-}: {
-  facts: SourceFacts | undefined;
-  read: { loading: boolean; failed: boolean; retrying: boolean };
-  busy: boolean;
-  onReindex: () => void;
-  onRetryRead: () => void;
-}) {
-  const state = stageCellState(facts, read);
-  if (state === "checking")
-    return (
-      <span className="text-xs text-muted-foreground">
-        {STAGE_CELL_LABEL.checking}
-      </span>
-    );
-  if (state === "read_failed")
-    return (
-      <span className="flex items-center gap-1.5 text-xs text-warning">
-        <span title="This row's status could not be read from the server. Other rows are unaffected.">
-          {STAGE_CELL_LABEL.read_failed}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-6 px-2 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            onRetryRead();
-          }}
-        >
-          Retry
-        </Button>
-      </span>
-    );
-  if (state !== "stale")
-    return (
-      <span
-        className={cn(
-          "text-xs",
-          state === "not_searchable" && "text-muted-foreground",
-        )}
-      >
-        {SOURCE_STAGE_LABEL[state]}
-      </span>
-    );
-  return (
-    <span className="flex items-center gap-1.5 text-xs text-warning">
-      <span title="Searches still answer with this Source's previous text; its current version is not indexed yet.">
-        Index stale
-      </span>
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-6 px-2 text-xs"
-        disabled={busy}
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onReindex();
-        }}
-      >
-        Re-index
-      </Button>
-    </span>
-  );
 }
 
 function AttachedList({ attachments }: { attachments: SourceAttachment[] }) {
@@ -570,8 +493,24 @@ export function SourcesPage() {
   const countWords = (n: number | null) => formatCount(n, { unknown: "…" });
   const refresh = () => setRefreshKey((n) => n + 1);
   const byId = new Map(rows.map((r) => [r.id, r]));
+  // THE SELECTION IS WHAT THE ACTIONS ACT ON (V6-B, 2026-10-01). The list is searched and paged
+  // by the server, so a row selected under one search is no longer loaded under the next — the
+  // bar said "2 Sources selected" while Archive acted on 1. Each selected row is kept as it was
+  // when it was ticked (it was on screen then), and every action takes the whole selection.
+  const [keptSelection, setKeptSelection] = useState<Map<string, SourceListRow>>(new Map());
+  const changeSelection = (ids: string[]) => {
+    setSelectedIds(ids);
+    setKeptSelection((prev) => {
+      const next = new Map<string, SourceListRow>();
+      ids.forEach((id) => {
+        const r = byId.get(id) ?? prev.get(id);
+        if (r) next.set(id, r);
+      });
+      return next;
+    });
+  };
   const selectedRows = selectedIds
-    .map((id) => byId.get(id))
+    .map((id) => byId.get(id) ?? keptSelection.get(id))
     .filter((r): r is SourceListRow => !!r);
 
   // ── Add ──────────────────────────────────────────────────────────────────
@@ -908,19 +847,16 @@ export function SourcesPage() {
     {
       id: "stage",
       header: "Stage",
-      accessorFn: (r) => {
-        const st = stageCellState(facts.get(r.id), readOf(r.id));
-        return st === "checking" || st === "read_failed"
-          ? STAGE_CELL_LABEL[st]
-          : SOURCE_STAGE_LABEL[st];
-      },
+      accessorFn: (r) =>
+        stageCellLabel(stageCellState(facts.get(r.id), readOf(r.id), isSourceArchived(r))),
       cell: (r) => (
-        <StageCell
+        <SourceStageCell
           facts={facts.get(r.id)}
           read={readOf(r.id)}
           busy={bulkBusy}
           onReindex={() => void reindex(r)}
           onRetryRead={() => retryFacts([r.id])}
+          archived={isSourceArchived(r)}
         />
       ),
       filter: "select",
@@ -1198,12 +1134,12 @@ export function SourcesPage() {
           defaultSort={{ id: "created_at", direction: "desc" }}
           searchText={(r) => `${r.name} ${r.canonical_identity ?? ""}`}
           facets={{ enabled: true, totalRows: visibleRows.length }}
-          // The pager pages the rows LOADED so far (100 capture records at a time, recaptures
-          // folded into one Source). Its total is the real one for the current lane and filters:
-          // when more remain on the server the label says how many match, never a bare "of 97".
+          // The pager pages the rows LOADED so far (100 Sources at a time). Every read — list,
+          // lane tabs, Saved / All captures — counts one row per Source on the server
+          // (`applyOneRowPerSource`), so the total is the same unit as the rows and the tabs.
           paginationLabelFormat={(start, end, shown) =>
             hasMore && total !== null
-              ? `${start.toLocaleString()}–${end.toLocaleString()} of ${shown.toLocaleString()} loaded · ${total.toLocaleString()} matching capture records`
+              ? `${start.toLocaleString()}–${end.toLocaleString()} of ${shown.toLocaleString()} loaded · ${total.toLocaleString()} Sources`
               : `${start.toLocaleString()}–${end.toLocaleString()} of ${shown.toLocaleString()}`
           }
           toolbar={{
@@ -1228,9 +1164,11 @@ export function SourcesPage() {
           }}
           selection={{
             selectedIds,
-            onSelectedIdsChange: setSelectedIds,
+            onSelectedIdsChange: changeSelection,
             noun: "Source",
-            actions: (sel) => (
+            actions: () => {
+              const sel = selectedRows;
+              return (
               <div className="flex flex-wrap items-center gap-1">
                 <Button
                   size="sm"
@@ -1285,7 +1223,8 @@ export function SourcesPage() {
                   <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                 ) : null}
               </div>
-            ),
+              );
+            },
           }}
           getRowHref={(r) => sourceHref(r.id)}
           onRowOpen={(r) => router.push(sourceHref(r.id))}
@@ -1321,7 +1260,7 @@ export function SourcesPage() {
                   {f ? (
                     <>
                       <span>·</span>
-                      <span>{SOURCE_STAGE_LABEL[sourceStage(f)]}</span>
+                      <span>{stageCellLabel(isSourceArchived(r) ? "archived" : sourceStage(f))}</span>
                       {f.attachments.length ? (
                         <>
                           <span>·</span>
@@ -1358,12 +1297,12 @@ export function SourcesPage() {
           }}
         />
         )}
-        {/* ONE paging model: the table's "of N" counts the Sources loaded so far (recaptures
-            are grouped into one Source), so the footer never quotes a second, raw capture-record
-            total beside it — it only says there is more and offers the next page. */}
+        {/* ONE paging model: the table's "of N" counts the Sources loaded so far, so the footer
+            never quotes a second total beside it — it only says there is more and offers the
+            next page. */}
         {rows.length > 0 && total !== null && hasMore ? (
           <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
-            <span title="Sources are listed newest first, a page at a time. The count above is the Sources loaded so far; recaptures of the same page are grouped into one Source.">
+            <span title="Sources are listed newest first, a page at a time. A page read again is one Source.">
               Showing the newest {formatCount(visibleRows.length)} Sources — more available
             </span>
             <Button
@@ -1538,7 +1477,7 @@ export function SourcesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Archive (the one archive; Restore from Trash or the Archived filter) */}
+      {/* Archive (the one archive; Restore from this page's Archived only filter, or Trash) */}
       <AlertDialog
         open={!!deleteRows}
         onOpenChange={(o) => !o && !deleting && setDeleteRows(null)}
@@ -1555,6 +1494,7 @@ export function SourcesPage() {
             <AlertDialogDescription>
               {archiveConfirmSentence(
                 deleteRows?.length === 1 ? `"${deleteRows[0].name}"` : "these Sources",
+                { count: deleteRows?.length ?? 1, restoreFrom: "archive_filter" },
               )}
               {deleteRows?.some(isFileCanonicalExtract)
                 ? " An uploaded file's Source is archived together with its file."

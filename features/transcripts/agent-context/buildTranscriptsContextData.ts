@@ -1,5 +1,6 @@
 import type { PlacementMode } from "@/features/context-menu-v3/types";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { transcriptDurationSeconds } from "@/features/transcripts/format";
 import { createTranscriptsScope } from "@/features/surfaces/manifests/transcripts.manifest";
 import type { Transcript, TranscriptSegment } from "@/features/transcripts/types";
 
@@ -150,10 +151,7 @@ export function buildTranscriptsContextData(
         ? currentSegment.text
         : joinedText;
 
-  const durationFromMetadata =
-    typeof transcript?.metadata?.duration === "number"
-      ? transcript.metadata.duration
-      : undefined;
+  const durationFromMetadata = transcriptDurationSeconds(transcript) ?? undefined;
 
   const editorMode: "view" | "edit-metadata" | "edit-segments" =
     isEditingContent

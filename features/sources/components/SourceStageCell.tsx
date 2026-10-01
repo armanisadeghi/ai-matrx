@@ -7,6 +7,7 @@
  */
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
@@ -22,19 +23,28 @@ export function SourceStageCell({
   busy,
   onReindex,
   onRetryRead,
+  archived = false,
 }: {
   facts: SourceFacts | undefined;
   read: { loading: boolean; failed: boolean; retrying: boolean };
   busy: boolean;
   onReindex: () => void;
   onRetryRead: () => void;
+  /** The Source is archived: its cell says so instead of a search stage (`stageCellState`). */
+  archived?: boolean;
 }) {
-  const state = stageCellState(facts, read);
+  const state = stageCellState(facts, read, archived);
   const stop = (e: React.MouseEvent, fn: () => void) => {
     e.stopPropagation();
     e.preventDefault();
     fn();
   };
+  if (state === "archived")
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        {STAGE_CELL_LABEL.archived}
+      </Badge>
+    );
   if (state === "checking") return <span className="text-xs text-muted-foreground">{STAGE_CELL_LABEL.checking}</span>;
   if (state === "read_failed")
     return (

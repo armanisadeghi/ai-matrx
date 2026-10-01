@@ -46,6 +46,7 @@ import {
 } from "./studioService";
 import { supabase } from "@/utils/supabase/client";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { transcriptDurationSeconds } from "@/features/transcripts/format";
 import {
   DEFAULT_MODULE_ID,
   NEW_SESSION_DEFAULT_TITLE,
@@ -146,10 +147,7 @@ export async function promoteTranscriptToStudio(
       started_at: transcript.created_at,
       ended_at: transcript.updated_at,
       audio_storage_path: transcript.audio_file_path ?? null,
-      total_duration_ms:
-        typeof transcript.metadata?.duration === "number"
-          ? Math.round(transcript.metadata.duration * 1000)
-          : 0,
+      total_duration_ms: Math.round((transcriptDurationSeconds(transcript) ?? 0) * 1000),
     })
     .select("id")
     .single();

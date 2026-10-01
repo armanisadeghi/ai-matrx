@@ -27,6 +27,8 @@ import {
   appendSourcePage,
   applySourcesScope,
   SOURCE_LIST_ORDER_COLUMN,
+  applyOneRowPerSource,
+  withNewerVersionEmbed,
   sourcesListFilter,
   sourcesScopeIsEmpty,
   type SourcesLane,
@@ -207,9 +209,10 @@ export async function readSourcesCounts(
       let q = supabase
         .schema("docproc")
         .from("processed_documents")
-        .select("id", { count: "exact", head: true })
+        .select(withNewerVersionEmbed("id"), { count: "exact", head: true })
         .or(sourcesListFilter({ saved, search }));
       q = applySourcesArchiveAxis(q, archived);
+      q = applyOneRowPerSource(q, archived);
       q = applySourcesScope(q, scope, userId);
       const { count, error } = await q;
       return error ? null : count;
@@ -253,9 +256,10 @@ export async function readSourceLaneCounts(
         let q = supabase
           .schema("docproc")
           .from("processed_documents")
-          .select("id", { count: "exact", head: true })
+          .select(withNewerVersionEmbed("id"), { count: "exact", head: true })
           .or(sourcesListFilter({ saved: narrowing.saved, search: "" }));
         q = applySourcesArchiveAxis(q, narrowing.archived);
+        q = applyOneRowPerSource(q, narrowing.archived);
         q = applySourcesScope(q, scope, userId);
         const { count, error } = await q;
         out[kind] = error ? null : count;
@@ -352,9 +356,10 @@ export function useSources(
       let q = supabase
         .schema("docproc")
         .from("processed_documents")
-        .select(SOURCE_LIST_COLUMNS, { count: "exact" })
+        .select(withNewerVersionEmbed(SOURCE_LIST_COLUMNS), { count: "exact" })
         .or(sourcesListFilter({ saved: options.saved, search: options.search }));
       q = applySourcesArchiveAxis(q, archived);
+      q = applyOneRowPerSource(q, archived);
       q = applySourcesScope(q, scope, userId);
       const { data, error, count } = await q
         .order(SOURCE_LIST_ORDER_COLUMN, { ascending: false })

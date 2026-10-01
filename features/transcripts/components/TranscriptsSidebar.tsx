@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Transcript } from "../types";
 import { formatDurationSeconds, formatTranscriptAge } from "../utils/dateFormatting";
+import { transcriptDurationSeconds } from "../format";
 import { DraftIndicator } from "./DraftIndicator";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -354,10 +355,10 @@ export function TranscriptsSidebar({
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                          {transcript.metadata?.duration && (
+                          {transcriptDurationSeconds(transcript) != null && (
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {formatDurationSeconds(transcript.metadata.duration)}
+                              {formatDurationSeconds(transcriptDurationSeconds(transcript) ?? 0)}
                             </span>
                           )}
                           {transcript.updated_at && (

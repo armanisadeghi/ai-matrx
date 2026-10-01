@@ -982,20 +982,6 @@ export function SetDetailView({
                         </div>
                       </DropdownMenuItem>
                     ))}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() =>
-                        navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
-                      }
-                    >
-                      <History className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="flex flex-col">
-                        <span>History</span>
-                        <span className="text-xs text-muted-foreground">
-                          Past study sessions and results
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <FlashcardStudyWindowDevTrigger
@@ -1014,6 +1000,24 @@ export function SetDetailView({
                 >
                   <Zap className="mr-1.5 h-4 w-4" />
                   Fast Fire
+                </Button>
+                {/* History is its own button on desktop. It was folded into
+                    the Study menu on 2026-09-28 to fit one line at 1280, and
+                    verify-6 (2026-10-01) read that as "History is gone" a
+                    second time (4f050ab276 had restored it). Guard:
+                    __tests__/deck-desktop-actions.test.ts. */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  data-deck-action="history"
+                  onClick={() =>
+                    navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
+                  }
+                  disabled={isPending}
+                  className={cn(pendingAction === "sessions" && "opacity-70")}
+                >
+                  <History className="mr-1.5 h-4 w-4" />
+                  History
                 </Button>
                 </>)}
                 {canEdit && (

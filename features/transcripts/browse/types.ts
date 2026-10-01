@@ -59,8 +59,11 @@ export function primaryRowHref(row: TranscriptListRow): string {
   }
 }
 
-/** A zero-length transcript is an UNKNOWN length here, not "0s". */
+/**
+ * A zero-length transcript is an UNKNOWN length here, not "0s". Floored, like the
+ * Knowledge library's clock for the same transcript, so both screens agree.
+ */
 export function formatDuration(seconds: number | null): string {
   if (seconds == null || seconds <= 0) return "—";
-  return formatDurationSeconds(seconds, { style: "compact" });
+  return formatDurationSeconds(seconds, { style: "compact", round: "down" });
 }

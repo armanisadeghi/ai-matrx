@@ -26,7 +26,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { createSourceRef } from "@ai-matrx/agents/sources";
-import { Input } from "@ai-matrx/design-system";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -431,14 +431,12 @@ function AddMoreCardsDialog({
       />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="fc-add-count">How many new cards</Label>
-        <Input
+        <ClampedNumberInput
           id="fc-add-count"
-          type="number"
-          inputMode="numeric"
           min={MIN_CARDS_PER_RUN}
-          max={cardLimit.max ?? undefined}
+          max={cardLimit.max}
           value={count}
-          onChange={(e) => setCount(Number.parseInt(e.target.value, 10) || 0)}
+          onChange={setCount}
           className="h-11 w-32 text-base sm:h-9"
           disabled={busy}
         />

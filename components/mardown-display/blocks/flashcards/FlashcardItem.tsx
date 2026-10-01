@@ -25,6 +25,7 @@ import type { ReviewResult } from "@/features/flashcards/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
+import { SHOW_DEV_CONTROLS } from "@/lib/dev/devControls";
 
 const centeredParagraph = ({
   node,
@@ -239,7 +240,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
       // toggles cancel out, so Enter looks like it does nothing.
       data-flashcard-card
     >
-      {showDevWindowTrigger && isAdmin && (
+      {SHOW_DEV_CONTROLS && showDevWindowTrigger && isAdmin && (
         <div
           className="absolute top-0 left-0 z-20"
           onClick={(e) => e.stopPropagation()}

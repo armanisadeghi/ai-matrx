@@ -480,22 +480,37 @@ export function indexingIds(facts: ReadonlyMap<string, SourceFacts>): string[] {
 }
 
 /** What one row's Stage cell shows: the stage, or the state of reading it. */
-export type StageCellState = SourceStage | "checking" | "read_failed";
+export type StageCellState = SourceStage | "checking" | "read_failed" | "archived";
 
-export const STAGE_CELL_LABEL: Record<"checking" | "read_failed", string> = {
+export const STAGE_CELL_LABEL: Record<"checking" | "read_failed" | "archived", string> = {
   checking: "Checking…",
   read_failed: "Couldn't read status",
+  archived: "Archived",
 };
+
+/** The words for any Stage cell state. */
+export function stageCellLabel(state: StageCellState): string {
+  return state === "checking" || state === "read_failed" || state === "archived"
+    ? STAGE_CELL_LABEL[state]
+    : SOURCE_STAGE_LABEL[state];
+}
 
 /**
  * A row with facts shows its stage — whatever happened to other batches. A row
  * without facts is "checking" while its read (or retry) runs, and otherwise a
  * failed read with a retry: never a bare "Unknown".
+ *
+ * An ARCHIVED Source says "Archived" (V6-B, 2026-10-01). Archiving takes its index out of search
+ * with it (`platform.soft_delete_edge` → `rag.kg_chunks`, restored with the Source), so its facts
+ * read zero chunks and the stage would claim "Not yet searchable" — a Source that was searchable
+ * a moment ago and will be again on restore. The archive is the state; the stage is not.
  */
 export function stageCellState(
   facts: SourceFacts | undefined,
   read: { loading: boolean; failed: boolean; retrying: boolean },
+  archived = false,
 ): StageCellState {
+  if (archived) return "archived";
   if (facts) return sourceStage(facts);
   if (read.retrying || (read.loading && !read.failed)) return "checking";
   return "read_failed";
@@ -623,6 +638,38 @@ export function appendSourcePage<
 
 /** One row per Source: originals and recaptures, never derived copies. */
 export const ONE_ROW_PER_SOURCE_OR = "parent_processed_id.is.null,derivation_kind.eq.recapture";
+
+/**
+ * ONE ROW PER SOURCE, ON THE SERVER (V6-B, 2026-10-01). A re-read web page is one Source with
+ * versions: the capture and each recapture (`derivation_kind = recapture`, parent = the version it
+ * replaced). Counting the rows `ONE_ROW_PER_SOURCE_OR` admits counted every version — "All 79"
+ * over a list of 73 — so every Source read also embeds the row's newer versions and keeps only
+ * rows that have none in the same archive state (a PostgREST anti-join: `newer_version=is.null`).
+ * Archive and restore move a Source's whole version chain together (DB triggers
+ * `docproc.trash_the_whole_source` / `restore_the_whole_source`), so an archived Source is listed
+ * once in the archived view, as its newest version. Select with `withNewerVersionEmbed`, narrow
+ * with `applyOneRowPerSource` — a read that does one without the other is refused by the server.
+ */
+export const NEWER_VERSION_EMBED = "newer_version:processed_documents!parent_processed_id(id)";
+
+export function withNewerVersionEmbed(columns: string): string {
+  return `${columns},${NEWER_VERSION_EMBED}`;
+}
+
+export function applyOneRowPerSource<
+  Q extends {
+    eq: (column: string, value: string) => Q;
+    is: (column: string, value: null) => Q;
+    or: (filters: string, options?: { referencedTable?: string }) => Q;
+  },
+>(q: Q, archived: "active" | "archived" | "all" = "active"): Q {
+  let out = q.eq("newer_version.derivation_kind", "recapture");
+  if (archived === "active")
+    out = out.is("newer_version.deleted_at", null).is("newer_version.archived_at", null);
+  else if (archived === "archived")
+    out = out.or("deleted_at.not.is.null,archived_at.not.is.null", { referencedTable: "newer_version" });
+  return out.is("newer_version", null);
+}
 
 /**
  * The list's whole narrowing as ONE PostgREST `or` value (PostgREST takes a

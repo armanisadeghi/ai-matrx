@@ -21,7 +21,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCrawlsScope } from "@/features/surfaces/manifests/marketing-crawls.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
-import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { LiveCrawlFeed } from "@/features/marketing/components/crawls/LiveCrawlFeed";
 import { CrawlScheduleCard } from "@/features/marketing/components/crawls/CrawlScheduleCard";
 import {

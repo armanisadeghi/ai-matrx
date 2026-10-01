@@ -41,6 +41,7 @@ import {
   SAVED_SOURCE_TOKEN,
   type SavedSourceGroup,
 } from "@/features/resource-manager/source-input/savedWebPages";
+import { MiddleTruncate } from "@/components/official/MiddleTruncate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadGate, type ReadStatus } from "@/components/read-state/ReadGate";
 import { useKindItemStages } from "@/features/resource-manager/source-input/itemStage";
@@ -422,7 +423,8 @@ function Rows({
               >
                 {picked ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{item.title}</span>
+              {/* One line; the official primitive keeps the tail and carries the full name as its tooltip. */}
+              <MiddleTruncate text={item.title} className="flex-1 text-sm text-foreground" />
               {(() => {
                 const stage = stageFor(item.id);
                 return stage ? (

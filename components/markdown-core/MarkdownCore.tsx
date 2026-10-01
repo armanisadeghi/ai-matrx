@@ -31,9 +31,26 @@ import { healStreamingMarkdown } from "./stream-heal";
 import { useMarkdownStreaming } from "./streaming-context";
 export type { MarkdownCoreProps, MarkdownPreset } from "./markdown-core-types";
 
+// While the markdown engine's chunk loads (and on the server, where it never
+// renders) the slot shows a one-line pulse. It used to render nothing, so a
+// deck page painted every card with an empty face until the chunk arrived
+// (verify-6 #2, 2026-10-01). A <span>: this sits inside <p>, <button> and
+// table cells. A failed load renders nothing here — the route's error
+// boundary reports it.
+export function MarkdownCoreLoading({ error }: { error?: Error | null }) {
+  if (error) return null;
+  return (
+    <span
+      aria-hidden
+      data-markdown-loading
+      className="inline-block h-[1em] w-2/3 max-w-full animate-pulse rounded bg-muted align-middle"
+    />
+  );
+}
+
 const MarkdownCoreLeaf = dynamic(() => import("./MarkdownCoreImpl"), {
   ssr: false,
-  loading: () => null,
+  loading: MarkdownCoreLoading,
 });
 
 export default function MarkdownCore({

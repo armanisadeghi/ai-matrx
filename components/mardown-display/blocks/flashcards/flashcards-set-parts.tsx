@@ -28,6 +28,7 @@ import { usePrintOptions } from "@ai-matrx/print/react";
 import { useLinkedFlashcardSet } from "@/features/flashcards/data/useLinkedFlashcardSet";
 import { flashcardSetHref } from "@/features/flashcards/routes";
 import { parseFlashcards } from "./flashcard-parser";
+import { SHOW_DEV_CONTROLS } from "@/lib/dev/devControls";
 import {
   GENERIC_FLASHCARD_TITLE,
   isGenericFlashcardTitle,
@@ -408,7 +409,7 @@ export function FlashcardsSetControls({
           </Link>
         </Button>
       )}
-      {showDevWindow && isAdmin && onOpenInWindow && (
+      {SHOW_DEV_CONTROLS && showDevWindow && isAdmin && onOpenInWindow && (
         <div
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}

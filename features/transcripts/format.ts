@@ -34,6 +34,38 @@ function formatDuration(seconds: number | undefined | null): string | null {
   return formatDurationSeconds(seconds);
 }
 
+// ── Duration ────────────────────────────────────────────────────────────────
+
+function num(v: unknown): number | null {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/**
+ * THE one duration of a transcript, in seconds — the client twin of the SQL
+ * `transcripts.duration_seconds(metadata, segments)` that `trx_list_scoped`
+ * reads: the stored recording length, else the last segment's end (`end_ms`,
+ * `end`, else its start), which is what the Source's last page `t1_ms` is
+ * built from. A YouTube transcript stores no `metadata.duration`, so reading
+ * that field alone showed "—" where the Knowledge library showed 12:44.
+ * `null` when neither is known.
+ */
+export function transcriptDurationSeconds(
+  t: { metadata?: { duration?: unknown } | null; segments?: unknown } | null | undefined,
+): number | null {
+  const stored = num(t?.metadata?.duration);
+  if (stored && stored > 0) return stored;
+  const segments = Array.isArray(t?.segments) ? t.segments : [];
+  const last = segments[segments.length - 1] as Record<string, unknown> | undefined;
+  if (!last || typeof last !== "object") return null;
+  const endMs = num(last.end_ms);
+  const end = endMs != null ? endMs / 1000 : num(last.end);
+  const startMs = num(last.start_ms);
+  const start = startMs != null ? startMs / 1000 : (num(last.start) ?? num(last.seconds));
+  const length = Math.max(end ?? 0, start ?? 0);
+  return length > 0 ? length : null;
+}
+
 // ── Segments ────────────────────────────────────────────────────────────────
 
 /** One segment as the viewer renders it: "[00:01:23] Speaker: text". */
@@ -90,7 +122,7 @@ export function transcriptHeaderSummary(t: Transcript): string {
     ["Folder", t.folder_name],
     ["Tags", (t.tags ?? []).join(", ")],
     ["Segments", t.segments?.length ?? 0],
-    ["Duration", formatDuration(t.metadata?.duration)],
+    ["Duration", formatDuration(transcriptDurationSeconds(t))],
     ["Words", t.metadata?.wordCount],
     ["Speakers", Array.isArray(speakers) ? speakers.join(", ") : null],
     ["Draft", t.is_draft ? "yes" : null],
@@ -117,7 +149,7 @@ export function transcriptMetaData(t: Transcript) {
     tags: t.tags ?? [],
     is_draft: t.is_draft,
     segment_count: t.segments?.length ?? 0,
-    duration_seconds: t.metadata?.duration ?? null,
+    duration_seconds: transcriptDurationSeconds(t),
     word_count: t.metadata?.wordCount ?? null,
     speakers: t.metadata?.speakers ?? [],
     created_at: t.created_at,

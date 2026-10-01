@@ -28,7 +28,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { updateSiteSettings } from "@/features/marketing/data/settings-service";
 import { useDeleteSite } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import {
   cancelCrawl,
   type CrawlStartOptions,

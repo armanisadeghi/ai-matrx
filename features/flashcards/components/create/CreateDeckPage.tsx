@@ -41,6 +41,7 @@ import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { Button } from "@/components/ui/button";
 import { Input, SegmentedControl } from "@ai-matrx/design-system";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -561,18 +562,14 @@ export function CreateDeckPage() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="fc-count">Number of cards</Label>
-                      <Input
+                      <ClampedNumberInput
                         id="fc-count"
-                        type="number"
-                        inputMode="numeric"
                         min={MIN_CARDS_PER_RUN}
-                        max={countMax ?? undefined}
+                        max={countMax}
                         value={count}
-                        onChange={(e) => {
-                          const n = Number.parseInt(e.target.value, 10) || 0;
+                        onChange={(n) => {
                           setCount(n);
-                          if (n >= MIN_CARDS_PER_RUN && (countMax === null || n <= countMax))
-                            keep({ count: n });
+                          keep({ count: n });
                         }}
                         className="h-11 text-base sm:h-9"
                         disabled={busy}

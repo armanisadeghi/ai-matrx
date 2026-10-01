@@ -20,6 +20,18 @@ describe("archiveConfirmSentence", () => {
     );
   });
 
+  it("speaks of several things in the plural (V6-B: 'restore it' for 2 Sources)", () => {
+    expect(archiveConfirmSentence("these Sources", { count: 2 })).toBe(
+      "This archives these Sources. They leave this list, and you can restore them from Trash.",
+    );
+  });
+
+  it("names the page's archive filter when that is where restore lives (V6-B)", () => {
+    expect(archiveConfirmSentence("these Sources", { count: 2, restoreFrom: "archive_filter" })).toBe(
+      "This archives these Sources. They leave this list, and you can restore them from Archived only.",
+    );
+  });
+
   it("points at the one trash route", () => {
     expect(TRASH_HREF).toBe("/trash");
   });

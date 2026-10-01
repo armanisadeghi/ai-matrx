@@ -15,10 +15,12 @@
 
 import { supabase } from "@/utils/supabase/client";
 import {
+  applyOneRowPerSource,
   applySourcesScope,
   SOURCE_KIND_GROUP_KINDS,
   SOURCE_LIST_ORDER_COLUMN,
   sourcesListFilter,
+  withNewerVersionEmbed,
   type SourceKindGroup,
 } from "@/features/sources/sourceRows";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
@@ -43,12 +45,12 @@ function groupQuery(group: SavedSourceGroup, scope: KindScope, userId: string, s
   const q = supabase
     .schema("docproc")
     .from("processed_documents")
-    .select("id,name,updated_at", { count: "exact", head })
+    .select(withNewerVersionEmbed("id,name,updated_at"), { count: "exact", head })
     .is("deleted_at", null)
     .is("archived_at", null)
     .in("source_kind", [...SOURCE_KIND_GROUP_KINDS[group]])
     .or(sourcesListFilter({ saved: true, search }));
-  return applySourcesScope(q, savedSourcesLane(scope), userId);
+  return applySourcesScope(applyOneRowPerSource(q, "active"), savedSourcesLane(scope), userId);
 }
 
 /** How many times a transiently failed count is tried again, and the first wait before it. */

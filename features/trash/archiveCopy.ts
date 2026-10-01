@@ -29,7 +29,33 @@ export function trashConfirmSentence(what: string): string {
   return `This moves ${subject} to Trash. It leaves this list, and you can restore it from Trash.`;
 }
 
-export function archiveConfirmSentence(what: string): string {
+/**
+ * Where a person restores what they archived — the place the page actually offers.
+ *   trash          — /trash (the default: every soft-deleted kind it lists).
+ *   archive_filter — the page's own ArchiveFilter ("Archived only", THE ARCHIVED-ITEMS LAW); a
+ *                    list that carries the filter restores in place, so its confirm names it
+ *                    (V6-B 2026-10-01: the Sources page said "Trash" while offering the filter).
+ */
+export type ArchiveRestorePlace = "trash" | "archive_filter";
+
+const RESTORE_PLACE_WORDS: Record<ArchiveRestorePlace, string> = {
+  trash: "Trash",
+  // The filter's own label (`ARCHIVE_FILTER_LABELS.archived` in @ai-matrx/design-system).
+  archive_filter: "Archived only",
+};
+
+export interface ArchiveConfirmOptions {
+  /** How many things are archived; more than one says "They … them". Default 1. */
+  count?: number;
+  /** Where the page lets the person restore them. Default Trash. */
+  restoreFrom?: ArchiveRestorePlace;
+}
+
+export function archiveConfirmSentence(what: string, options: ArchiveConfirmOptions = {}): string {
   const subject = what.trim() || "it";
-  return `This archives ${subject}. It leaves this list, and you can restore it from Trash.`;
+  const many = (options.count ?? 1) > 1;
+  const place = RESTORE_PLACE_WORDS[options.restoreFrom ?? "trash"];
+  return many
+    ? `This archives ${subject}. They leave this list, and you can restore them from ${place}.`
+    : `This archives ${subject}. It leaves this list, and you can restore it from ${place}.`;
 }

@@ -4,6 +4,7 @@ import { TriangleAlertTapButton } from "@ai-matrx/tap-target/buttons";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminDebugger } from "@/lib/redux/slices/userSlice";
 import { useOpenFlashcardStudyWindow } from "@/features/overlays/openers/flashcardStudyWindow";
+import { SHOW_DEV_CONTROLS } from "@/lib/dev/devControls";
 
 interface FlashcardStudyWindowDevTriggerProps {
   setId: string;
@@ -11,7 +12,7 @@ interface FlashcardStudyWindowDevTriggerProps {
   disabled?: boolean;
 }
 
-/** Admin-only dev trigger — opens the sidebar study WindowPanel. */
+/** Dev-only trigger (development builds, admin seat) — opens the sidebar study WindowPanel. */
 export function FlashcardStudyWindowDevTrigger({
   setId,
   title,
@@ -20,7 +21,7 @@ export function FlashcardStudyWindowDevTrigger({
   const isAdmin = useAppSelector(selectIsAdminDebugger);
   const openStudyWindow = useOpenFlashcardStudyWindow();
 
-  if (!isAdmin) return null;
+  if (!SHOW_DEV_CONTROLS || !isAdmin) return null;
 
   return (
     <TriangleAlertTapButton
