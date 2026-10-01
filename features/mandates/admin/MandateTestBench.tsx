@@ -71,7 +71,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { OutputPreview } from "./bench-output-preview";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { TryItNowPanel } from "./TryItNowPanel";
 import {
   clearMandateBenchSnapshot,
@@ -616,7 +616,13 @@ function CandidateEditor({
   );
 }
 
-function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
+function ReferenceRow({
+  exemplar,
+  outputKind,
+}: {
+  exemplar: MandateExemplarRow;
+  outputKind: string | null;
+}) {
   if (!exemplar.reference_output && !exemplar.reference_artifact)
     return <PropertyRow label="Reference output" value="Not set" />;
   return (
@@ -628,6 +634,7 @@ function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
         <OutputPreview
           output={exemplar.reference_output ?? ""}
           artifact={exemplar.reference_artifact}
+          outputKind={outputKind}
           title="Reference output"
         />
       </div>
@@ -800,14 +807,18 @@ export function MandateTestBench({
     }
     setRunning(true);
     try {
-      const response = await runMandateTests(dispatch, storedMandateKey(mandate.mandate_key), {
-        baseline: {
-          candidate_id: "baseline",
-          label: baselineLabel,
-          selection: "current",
+      const response = await runMandateTests(
+        dispatch,
+        storedMandateKey(mandate.mandate_key),
+        {
+          baseline: {
+            candidate_id: "baseline",
+            label: baselineLabel,
+            selection: "current",
+          },
+          candidates: parsedCandidates,
         },
-        candidates: parsedCandidates,
-      });
+      );
       setBatch(response);
       await loadExemplars();
       toast.success(
@@ -1270,15 +1281,20 @@ export function MandateTestBench({
                         ]}
                         cells={{
                           input: displayLabelForKey(name),
-                          value: (
-                            value !== null && typeof value === "object" ? (
-                              <StructuredValueView value={value} density="inline" footer={false} />
+                          value:
+                            value !== null &&
+                            (typeof value === "object" ||
+                              typeof value === "string") ? (
+                              <AnswerValueView
+                                value={value}
+                                density="inline"
+                                emptyText="Empty"
+                              />
                             ) : (
                               <span className="whitespace-pre-wrap break-words">
                                 {value === "" ? "Empty" : String(value)}
                               </span>
-                            )
-                          ),
+                            ),
                         }}
                       />
                     ),
@@ -1302,7 +1318,10 @@ export function MandateTestBench({
                 </ConfigurationTable>
 
                 <div className="space-y-1.5">
-                  <ReferenceRow exemplar={exemplar} />
+                  <ReferenceRow
+                    exemplar={exemplar}
+                    outputKind={mandate.output_kind}
+                  />
                   {currentGroup?.results.map((result) => (
                     <ResultRow
                       key={result.id ?? result.candidate_id}

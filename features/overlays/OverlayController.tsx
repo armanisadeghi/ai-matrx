@@ -6299,6 +6299,7 @@ export default function OverlayController() {
               )
             }
             value={data?.value}
+            kind={typeof data?.kind === "string" ? data.kind : null}
             title={typeof data?.title === "string" ? data.title : null}
             subtitle={typeof data?.subtitle === "string" ? data.subtitle : null}
           />

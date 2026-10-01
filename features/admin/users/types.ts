@@ -28,6 +28,11 @@ export interface AdminUserRow {
   created_at: string | null;
   last_sign_in_at: string | null;
   organizations: AdminUserOrganizationMembership[];
+  /** Exact claimed_by join in the AI Matrx CRM tenant; never name/email matching. */
+  party_id?: string | null;
+  party_integrity?: "resolved" | "missing" | "ambiguous" | "anonymous";
+  ai_requests_since_june?: number;
+  ai_cost_since_june?: number;
   /** Who this account is — derived by `lib/personSegments.ts`. */
   kind: PersonKind;
   /** Short reason `kind` was chosen (tooltip). */

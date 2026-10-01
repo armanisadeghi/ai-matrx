@@ -39,7 +39,7 @@ ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 ORG = "7cd12da2-2213-4378-8fba-a9e2dc4ea657"            # Castellano & Reyes, LLP
 EMPLOYEE = "2e7c819d-16b1-4161-9203-fb7549ad7699"       # Marguerite Doyle, EMP-00002
 EMPLOYMENT = "22e13bc7-1cb5-427b-aaba-281f68fd3ca2"
-EMAIL = "marguerite.doyle@example.test"
+PERSONA_ID = "cb0142b1-86bd-4d09-b2f8-3085c3ea360f"   # Marguerite Doyle, the permanent hr-demo persona (renames.md)
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin here
 EXPECTED_AMOUNT = 132500
 
@@ -79,27 +79,10 @@ async def main() -> None:  # noqa: C901
 
     try:
         # ---- 1. the purpose-made auth user (idempotent) ------------------------------
-        r = await http.get(
-            f"{base}/auth/v1/admin/users", headers=admin_hdr, params={"page": 1, "per_page": 200}
+        user_id, EMAIL = await resolve_demo_persona(
+            http, base, admin_hdr, PERSONA_ID, purpose="hrb013 pay walk employee"
         )
-        r.raise_for_status()
-        user_id = next(
-            (u["id"] for u in r.json().get("users", []) if (u.get("email") or "").lower() == EMAIL),
-            None,
-        )
-        if user_id:
-            print(f"auth user  REUSED   {user_id}  {EMAIL}")
-        else:
-            r = await http.post(
-                f"{base}/auth/v1/admin/users",
-                headers=admin_hdr,
-                json={"email": EMAIL, "email_confirm": True, "password": throwaway_password()},
-            )
-            if r.status_code >= 400:
-                print(f"auth user  FAILED {r.status_code}: {r.text[:400]}")
-                raise SystemExit(1)
-            user_id = r.json()["id"]
-            print(f"auth user  CREATED  {user_id}  {EMAIL}")
+        print(f"auth user  RESOLVED {user_id}  {EMAIL}")
 
         # ---- 2. the employee record and its starting compensation --------------------
         row = await conn.fetchrow(

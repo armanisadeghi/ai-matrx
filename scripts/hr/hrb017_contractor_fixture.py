@@ -44,7 +44,7 @@ ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin in this org
-EMAIL = "jonas.whitfield@example.test"
+PERSONA_ID = "381213e9-a1d5-459e-809d-956447f47ca5"    # Jonas Whitfield, the permanent hr-demo persona (renames.md)
 LEGAL_FIRST, LEGAL_LAST = "Jonas", "Whitfield"
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"     # Operations Specialist
 LOCATION = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"      # Sandbox HQ (US)
@@ -86,25 +86,11 @@ async def main() -> None:  # noqa: C901
 
     try:
         # ---- 1. the auth user (idempotent)
-        r = await http.get(
-            f"{base}/auth/v1/admin/users",
-            headers={"apikey": service, "Authorization": f"Bearer {service}"},
-            params={"page": 1, "per_page": 200},
+        admin_hdr = {"apikey": service, "Authorization": f"Bearer {service}"}
+        user_id, EMAIL = await resolve_demo_persona(
+            http, base, admin_hdr, PERSONA_ID, purpose="hrb017 leave walk contractor"
         )
-        existing = next((u for u in r.json().get("users", []) if u.get("email") == EMAIL), None)
-        if existing:
-            user_id = existing["id"]
-            print(f"auth user exists      : {EMAIL} -> {user_id}")
-        else:
-            r = await http.post(
-                f"{base}/auth/v1/admin/users",
-                headers={"apikey": service, "Authorization": f"Bearer {service}"},
-                json={"email": EMAIL, "email_confirm": True,
-                      "password": throwaway_password()},
-            )
-            r.raise_for_status()
-            user_id = r.json()["id"]
-            print(f"auth user created     : {EMAIL} -> {user_id}")
+        print(f"auth user resolved    : {EMAIL} -> {user_id}")
 
         # ---- 1b. clear a half-made fixture from the linked-at-create attempt described below,
         # which leaves an employee who can sign in but is not an org member and cannot be invited.

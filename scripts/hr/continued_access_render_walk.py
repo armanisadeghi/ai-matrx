@@ -10,7 +10,7 @@ own income, and that when the employer has not opted in they are told so in a se
 🚨 WHY A SYNTHETIC ACCOUNT AND A REAL TOKEN. The house pattern (hrb008_postgrest_door_walk.py):
 set the password of a SYNTHETIC test account through the admin API, then exchange it for a real
 Supabase-issued session. No real person's credential is ever touched, and nothing is typed into a
-login form by hand. The account here — rowan.whitaker@example.test — exists only for this
+login form by hand. The account here — Rowan Whitaker, the departed alumnus — exists only for this
 fixture.
 
 🚨 WHAT THIS MUTATES. It flips the employer org's two continued-access knobs (to walk portal-OFF
@@ -28,7 +28,6 @@ load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
 ORIGIN   = "http://localhost:3000"
 ORG      = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
-ALUMNI_EMAIL = "rowan.whitaker@example.test"
 ALUMNI_UID   = "0c2f61fa-6d3d-4705-bee9-fb8cd1280c4a"
 ADMIN_UID    = "87a6e699-3622-4869-8843-d0867456c0dd"
 EMPLOYMENT   = "0b4eec20-97a0-45fd-9078-8dfc899fec1f"       # Rowan Whitaker, terminated 2026-08-20
@@ -54,12 +53,13 @@ async def main():
         password=os.environ["SUPABASE_MATRIX_PASSWORD"], statement_cache_size=0)
     http = httpx.AsyncClient(timeout=90)
 
-    async def mint(uid, email):
+    async def mint(uid):
         r = await http.put(f"{base}/auth/v1/admin/users/{uid}",
                            headers={"apikey": service, "Authorization": f"Bearer {service}"},
                            json={"password": PROOF_PW, "email_confirm": True})
         if r.status_code >= 300:
             raise RuntimeError(f"could not set fixture password: {r.status_code} {r.text[:200]}")
+        email = r.json()["email"]  # read back from the admin API, never typed here
         r = await http.post(f"{base}/auth/v1/token?grant_type=password",
                             headers={"apikey": anon, "Content-Type": "application/json"},
                             json={"email": email, "password": PROOF_PW})
@@ -130,7 +130,7 @@ async def main():
         chunks = [value[i:i + 3180] for i in range(0, len(value), 3180)]
         return [{"name": f"{name}.{i}", "value": c, **common} for i, c in enumerate(chunks)]
 
-    alumni = await mint(ALUMNI_UID, ALUMNI_EMAIL)
+    alumni = await mint(ALUMNI_UID)
     rec("a real Supabase session is minted for the departed fixture account",
         bool(alumni.get("access_token")), f"user={alumni['user']['email']}")
 

@@ -19,7 +19,9 @@ console.log("after login:", page.url());
 async function shot(name, path, w, h, theme) {
   await page.setViewportSize({ width: w, height: h });
   await page.goto(host + path, { waitUntil: "networkidle", timeout: 120000 }).catch(() => {});
-  await page.waitForTimeout(2500);
+  await page.waitForSelector("main h1, h1", { timeout: 90000 }).catch(() => {});
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(2000);
   await page.evaluate((t) => { const r = document.documentElement; r.classList.toggle("dark", t === "dark"); r.setAttribute("data-theme", t); r.style.colorScheme = t; }, theme);
   const tall = await page.evaluate(() => {
     let m = 0;

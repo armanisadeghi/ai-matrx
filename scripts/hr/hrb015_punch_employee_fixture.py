@@ -52,9 +52,8 @@ ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Oak Street Studio (the studio scenario org)
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin in this org
 
-# 🚨 A RESERVED, NON-DELIVERABLE ADDRESS. `.invalid` is reserved by RFC 2606 and can never be
-# registered, so this fixture can never mail a real person and can never collide with a real signup.
-EMAIL = "marcus.tillman@example.test"
+# The permanent hr-demo persona, by id (renames.md). Its mailbox is read back from the admin API.
+PERSONA_ID = "ab94c16c-b4a5-49f0-a068-e2a11db34a2c"   # Marcus Tillman
 LEGAL_FIRST, LEGAL_LAST = "Marcus", "Tillman"
 
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"     # Operations Specialist
@@ -94,27 +93,10 @@ async def main() -> None:  # noqa: C901
 
     try:
         # ---- 1. the purpose-made auth user, with NO password (idempotent) ---------------
-        r = await http.get(
-            f"{base}/auth/v1/admin/users", headers=admin_hdr, params={"page": 1, "per_page": 200}
+        user_id, EMAIL = await resolve_demo_persona(
+            http, base, admin_hdr, PERSONA_ID, purpose="hrb015 punch walk employee"
         )
-        r.raise_for_status()
-        user_id = next(
-            (u["id"] for u in r.json().get("users", []) if (u.get("email") or "").lower() == EMAIL),
-            None,
-        )
-        if user_id:
-            print(f"auth user       REUSED    {user_id}  {EMAIL}")
-        else:
-            r = await http.post(
-                f"{base}/auth/v1/admin/users",
-                headers=admin_hdr,
-                json={"email": EMAIL, "email_confirm": True},   # no `password` key, on purpose
-            )
-            if r.status_code >= 400:
-                print(f"auth user       FAILED {r.status_code}: {r.text[:400]}")
-                raise SystemExit(1)
-            user_id = r.json()["id"]
-            print(f"auth user       CREATED   {user_id}  {EMAIL}  (passwordless)")
+        print(f"auth user       RESOLVED  {user_id}  {EMAIL}  (passwordless)")
 
         # ---- 2. the employee, employment and primary assignment, THROUGH THE DOOR -------
         # Found by NAME, not by login: created unlinked, because the invitation is what links a

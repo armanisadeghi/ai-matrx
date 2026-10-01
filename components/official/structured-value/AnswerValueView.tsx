@@ -30,7 +30,8 @@ import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 
 /** The kind a structured value claims for itself, when it carries one. */
 export function kindOfValue(value: unknown): string | null {
-  if (value == null || typeof value !== "object" || Array.isArray(value)) return null;
+  if (value == null || typeof value !== "object" || Array.isArray(value))
+    return null;
   const kind = (value as Record<string, unknown>)[KIND_KEY];
   return typeof kind === "string" && kind.trim() ? kind : null;
 }
@@ -55,6 +56,20 @@ export function AnswerValueView({
   density,
   emptyText = "The run finished with an empty answer.",
 }: AnswerValueViewProps) {
+  // Saved inputs can carry marked JSON as a string. Give its ORIGINAL text
+  // to the canonical JSON detector: parsing it into a value here would lose
+  // duplicate-key diagnostics before the Shape System can examine it.
+  const serialized =
+    typeof value === "string" ? value : value == null ? text : null;
+  let kindJsonText = false;
+  if (serialized?.trim().startsWith("{")) {
+    try {
+      const parsed: unknown = JSON.parse(serialized);
+      kindJsonText = kindOfValue(parsed) !== null;
+    } catch {
+      // Ordinary or incomplete text continues through the markdown renderer.
+    }
+  }
   if (value != null && typeof value === "object") {
     const routeKind = kind ?? kindOfValue(value);
     return routeKind ? (
@@ -64,7 +79,11 @@ export function AnswerValueView({
         showRoutingNote={false}
         variant="bare"
         unroutableFallback={
-          <StructuredValueView value={value} kind={routeKind} density={density} />
+          <StructuredValueView
+            value={value}
+            kind={routeKind}
+            density={density}
+          />
         }
       />
     ) : (
@@ -75,8 +94,19 @@ export function AnswerValueView({
   const fileId = shown ? fileIdFromUserFilesUrl(shown) : null;
   if (fileId) return <InlineMediaRef ref={fileId} size="xl" fit="cover" />;
   if (!shown) {
-    if (value != null) return <StructuredValueView value={value} density={density} />;
+    if (value != null)
+      return <StructuredValueView value={value} density={density} />;
     return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   }
-  return <MarkdownStream imagePolicy="ai" content={shown} hideCopyButton={false} />;
+  return (
+    <MarkdownStream
+      imagePolicy="ai"
+      content={
+        kindJsonText
+          ? `\u0060\u0060\u0060json\n${shown}\n\u0060\u0060\u0060`
+          : shown
+      }
+      hideCopyButton={false}
+    />
+  );
 }

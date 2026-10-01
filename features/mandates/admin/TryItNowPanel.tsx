@@ -1,6 +1,6 @@
 "use client";
 
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
@@ -358,24 +358,30 @@ export function TryItNowPanel({
         });
         return;
       }
-      const result = await runMandateAdHocTest(dispatch, storedMandateKey(mandate.mandate_key), {
-        variables,
-        userInput: message,
-        candidate: {
-          candidate_id: crypto.randomUUID(),
-          label:
-            testContext === "system" ? "System default" : "My effective Mandate Holder",
-          selection: "current",
+      const result = await runMandateAdHocTest(
+        dispatch,
+        storedMandateKey(mandate.mandate_key),
+        {
+          variables,
+          userInput: message,
+          candidate: {
+            candidate_id: crypto.randomUUID(),
+            label:
+              testContext === "system"
+                ? "System default"
+                : "My effective Mandate Holder",
+            selection: "current",
+          },
+          ...(testContext === "viewer"
+            ? {
+                principal: {
+                  user_id: viewerUserId,
+                  organization_id: viewerOrgId,
+                },
+              }
+            : {}),
         },
-        ...(testContext === "viewer"
-          ? {
-              principal: {
-                user_id: viewerUserId,
-                organization_id: viewerOrgId,
-              },
-            }
-          : {}),
-      });
+      );
       setCompleted({ result, variables, userInput: message });
       if (result.error) toast.error(`Test failed: ${result.error}`);
     } catch (error: unknown) {
@@ -520,24 +526,24 @@ export function TryItNowPanel({
           adminSeat ? (
             "Server test"
           ) : (
-          <Select
-            value={testMode}
-            onValueChange={(value: "server" | "display") => {
-              setTestMode(value);
-              setSampleSource(null);
-              setSampleError(null);
-            }}
-          >
-            <SelectTrigger
-              className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+            <Select
+              value={testMode}
+              onValueChange={(value: "server" | "display") => {
+                setTestMode(value);
+                setSampleSource(null);
+                setSampleError(null);
+              }}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="server">Server test</SelectItem>
-              <SelectItem value="display">My display preview</SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectTrigger
+                className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="server">Server test</SelectItem>
+                <SelectItem value="display">My display preview</SelectItem>
+              </SelectContent>
+            </Select>
           )
         }
       />
@@ -647,11 +653,18 @@ export function TryItNowPanel({
                 <PropertyRow
                   label="Value"
                   value={
-                    field.pinnedValue == null
-                      ? "Provided at run time"
-                      : typeof field.pinnedValue === "object"
-                        ? <StructuredValueView value={field.pinnedValue} density="inline" footer={false} />
-                        : String(field.pinnedValue)
+                    field.pinnedValue == null ? (
+                      "Provided at run time"
+                    ) : typeof field.pinnedValue === "object" ||
+                      typeof field.pinnedValue === "string" ? (
+                      <AnswerValueView
+                        value={field.pinnedValue}
+                        density="inline"
+                        emptyText="Empty"
+                      />
+                    ) : (
+                      String(field.pinnedValue)
+                    )
                   }
                 />
               ) : structured ? (
@@ -825,8 +838,14 @@ export function TryItNowPanel({
                           ) : (
                             "No"
                           )
-                        ) : value !== null && typeof value === "object" ? (
-                          <StructuredValueView value={value} density="inline" footer={false} />
+                        ) : value !== null &&
+                          (typeof value === "object" ||
+                            typeof value === "string") ? (
+                          <AnswerValueView
+                            value={value}
+                            density="inline"
+                            emptyText="Empty"
+                          />
                         ) : (
                           String(value)
                         ),

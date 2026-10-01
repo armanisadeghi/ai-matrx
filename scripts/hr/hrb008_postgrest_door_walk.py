@@ -23,7 +23,6 @@ from dotenv import load_dotenv
 import asyncpg
 
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
-WALKER_EMAIL = "tomas.iversen@example.test"
 WALKER_UID   = "daeb6d44-a7dd-4085-aba2-5025fb711b79"
 WALKER_EMP   = "11dfa190-8762-4bca-b131-ee13ed397f72"
 PROOF_PW     = "Hrb008DoorWalk2026!"
@@ -66,9 +65,10 @@ async def main():
                        headers={"apikey": service, "Authorization": f"Bearer {service}"},
                        json={"password": PROOF_PW})
     rec("the synthetic test account's password is set", r.status_code < 300, f"{r.status_code} {r.text[:150]}")
+    walker_email = r.json().get("email") if r.status_code < 300 else None  # read back, never typed here
     r = await http.post(f"{base}/auth/v1/token?grant_type=password",
                         headers={"apikey": anon, "Content-Type": "application/json"},
-                        json={"email": WALKER_EMAIL, "password": PROOF_PW})
+                        json={"email": walker_email, "password": PROOF_PW})
     rec("a non-admin employee signs in and gets a real access token", r.status_code < 300,
         f"{r.status_code} {r.text[:150]}")
     if r.status_code >= 300:

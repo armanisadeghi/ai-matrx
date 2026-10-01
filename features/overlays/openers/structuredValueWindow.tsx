@@ -25,6 +25,8 @@ const OVERLAY_ID = "structuredValueWindow" as const;
 export interface OpenStructuredValueWindowOptions {
   /** Any JSON value. It travels through Redux, so it must be serializable. */
   value: unknown;
+  /** Declared shape when the value does not carry its own marker. */
+  kind?: string | null;
   /** What the structure IS, in the reader's words (e.g. the column name). */
   title?: string | null;
   /** Where it came from — e.g. "Row 4 · seo.serp_opportunity". */
@@ -52,6 +54,7 @@ export function useOpenStructuredValueWindow() {
           data: {
             windowInstanceId: instanceId,
             value: opts.value,
+            kind: opts.kind ?? null,
             title: opts.title ?? null,
             subtitle: opts.subtitle ?? null,
           },

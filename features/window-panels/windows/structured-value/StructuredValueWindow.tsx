@@ -42,6 +42,7 @@ export interface StructuredValueWindowProps {
   onClose: () => void;
   /** Any JSON value. Carried through Redux, so always serializable. */
   value: unknown;
+  kind?: string | null;
   /** What this structure IS, in the reader's words (usually a column name). */
   title?: string | null;
   /** Where it came from — the row and table a cell belongs to. */
@@ -52,6 +53,7 @@ export default function StructuredValueWindow({
   windowInstanceId,
   onClose,
   value,
+  kind,
   title,
   subtitle,
 }: StructuredValueWindowProps) {
@@ -78,7 +80,7 @@ export default function StructuredValueWindow({
           {subtitle ? (
             <p className="mb-2 text-[11px] text-muted-foreground">{subtitle}</p>
           ) : null}
-          <AnswerValueView value={value} density="full" />
+          <AnswerValueView value={value} kind={kind} density="full" />
         </div>
       </NonEditableContextMenu>
     </WindowPanel>

@@ -34,8 +34,8 @@ from datetime import date, timedelta
 
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # Oak Street Studio
-EMPLOYEE = "11dfa190-8762-4bca-b131-ee13ed397f72"      # EMP-00012, tomas.iversen@example.test
-APPROVER = "ca9e12da-35bb-402d-8bda-1b76fa4c678d"      # EMP-00004, priya.raman@example.test
+EMPLOYEE = "11dfa190-8762-4bca-b131-ee13ed397f72"      # EMP-00012, Tomas Iversen
+APPROVER = "ca9e12da-35bb-402d-8bda-1b76fa4c678d"      # EMP-00004, Priya Raman
 EMPLOYEE_USER = "daeb6d44-a7dd-4085-aba2-5025fb711b79"
 PROOF_PW = "L5-proof-" + os.urandom(6).hex()
 # Fixed so a page open across a run cannot go stale — see the note at the fixture insert.
@@ -325,10 +325,11 @@ async def main() -> None:  # noqa: C901
             json={"password": PROOF_PW},
         )
         check("test employee password set", r.status_code < 300, f"{r.status_code} {r.text[:200]}")
+        employee_email = r.json().get("email") if r.status_code < 300 else None  # read back, never typed here
         r = await http.post(
             f"{base}/auth/v1/token?grant_type=password",
             headers={"apikey": anon, "Content-Type": "application/json"},
-            json={"email": "tomas.iversen@example.test", "password": PROOF_PW},
+            json={"email": employee_email, "password": PROOF_PW},
         )
         check("employee signed in", r.status_code < 300, f"{r.status_code} {r.text[:200]}")
         if r.status_code >= 300:
@@ -430,10 +431,11 @@ async def main() -> None:  # noqa: C901
             headers={"apikey": service, "Authorization": f"Bearer {service}"},
             json={"password": PROOF_PW},
         )
+        approver_email = r.json().get("email") if r.status_code < 300 else None  # read back, never typed here
         r = await http.post(
             f"{base}/auth/v1/token?grant_type=password",
             headers={"apikey": anon, "Content-Type": "application/json"},
-            json={"email": "priya.raman@example.test", "password": PROOF_PW},
+            json={"email": approver_email, "password": PROOF_PW},
         )
         check("approver signed in", r.status_code < 300, f"{r.status_code} {r.text[:200]}")
         mgr_token = r.json()["access_token"] if r.status_code < 300 else None

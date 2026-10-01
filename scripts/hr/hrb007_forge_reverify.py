@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 ATTACKER_UID = "2ee422b1-dbca-4cde-ae1e-b44d83384c02"     # member of e0ca14f8 ONLY
-ATTACKER_EMAIL = "quentin.aldridge@example.test"
 ATTACKER_ORG = "e0ca14f8-f5c0-4b82-86a4-a7e9f5379bef"
 
 R = []
@@ -48,8 +47,10 @@ async def main():
 
     # ---- mint a REAL non-member session, no password (magiclink -> verify) ----
     admin_hdr = {"apikey": service, "Authorization": f"Bearer {service}", "Content-Type": "application/json"}
+    who = await http.get(f"{base}/auth/v1/admin/users/{ATTACKER_UID}", headers=admin_hdr)  # the mailbox is read back, never typed here
+    attacker_email = who.json()["email"]
     r = await http.post(f"{base}/auth/v1/admin/generate_link", headers=admin_hdr,
-                        json={"type": "magiclink", "email": ATTACKER_EMAIL})
+                        json={"type": "magiclink", "email": attacker_email})
     hashed = (r.json().get("hashed_token") or (r.json().get("properties") or {}).get("hashed_token")) if r.status_code < 400 else None
     r2 = await http.post(f"{base}/auth/v1/verify",
                          headers={"apikey": anon, "Content-Type": "application/json"},

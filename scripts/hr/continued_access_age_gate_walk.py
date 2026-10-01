@@ -24,7 +24,6 @@ from playwright.async_api import async_playwright
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
 ORIGIN       = "http://localhost:3001"
-ALUMNI_EMAIL = "rowan.whitaker@example.test"
 ALUMNI_UID   = "0c2f61fa-6d3d-4705-bee9-fb8cd1280c4a"
 PROOF_PW     = "ContinuedAccessRenderWalk2026!"
 MODAL_TEXT   = "How old are you?"
@@ -59,9 +58,10 @@ async def main():
                        headers={"apikey": service, "Authorization": f"Bearer {service}"},
                        json={"password": PROOF_PW, "email_confirm": True})
     assert r.status_code < 300, r.text[:200]
+    alumni_email = r.json()["email"]  # the account's own mailbox, read back from the admin API, never typed here
     r = await http.post(f"{base}/auth/v1/token?grant_type=password",
                         headers={"apikey": anon, "Content-Type": "application/json"},
-                        json={"email": ALUMNI_EMAIL, "password": PROOF_PW})
+                        json={"email": alumni_email, "password": PROOF_PW})
     assert r.status_code < 300, r.text[:200]
     session = r.json()
     rec("a real Supabase session is minted for the departed fixture account",

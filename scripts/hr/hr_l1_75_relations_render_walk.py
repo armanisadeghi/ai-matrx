@@ -35,9 +35,9 @@ ORIGIN = os.environ.get("HR_WALK_ORIGIN", "http://localhost:3001")
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"  # Oak Street Studio
 
 # uid, email, employment_id — read live from hr.employment on 2026-08-30.
-TOMO = ("daeb6d44-a7dd-4085-aba2-5025fb711b79", "tomas.iversen@example.test",
+TOMO = ("daeb6d44-a7dd-4085-aba2-5025fb711b79", None,
         "11dfa190-8762-4bca-b131-ee13ed397f72")   # employee, ZERO capabilities. Priya is his manager.
-PRIYA = ("20149d3f-6572-4263-b43c-7e52f0e42058", "priya.raman@example.test",
+PRIYA = ("20149d3f-6572-4263-b43c-7e52f0e42058", None,
          "ca9e12da-35bb-402d-8bda-1b76fa4c678d")  # hr_admin WITHOUT incident.read — the accused
 ARMANI = ("87a6e699-3622-4869-8843-d0867456c0dd", "admin@admin.com",
           "9c0b1d0c-a3d2-4ea1-b66b-0c45e5b0027a")  # incident.read + incident.investigate
@@ -65,12 +65,13 @@ async def main():
         password=os.environ["SUPABASE_MATRIX_PASSWORD"], statement_cache_size=0)
     http = httpx.AsyncClient(timeout=90)
 
-    async def mint(uid, email):
+    async def mint(uid, email=None):  # email is read back from the admin API, never typed here
         r = await http.put(f"{base}/auth/v1/admin/users/{uid}",
                            headers={"apikey": service, "Authorization": f"Bearer {service}"},
                            json={"password": PROOF_PW, "email_confirm": True})
         if r.status_code >= 300:
             raise RuntimeError(f"could not set fixture password: {r.status_code} {r.text[:200]}")
+        email = r.json()["email"]
         r = await http.post(f"{base}/auth/v1/token?grant_type=password",
                             headers={"apikey": anon, "Content-Type": "application/json"},
                             json={"email": email, "password": PROOF_PW})
@@ -288,8 +289,7 @@ async def main():
         await ctx.close()
 
         # ── THE VETO FIRES ON THE NEXT REQUEST ────────────────────────────────────────────────
-        punch = await mint("ab94c16c-b4a5-49f0-a068-e2a11db34a2c",
-                           "marcus.tillman@example.test")
+        punch = await mint("ab94c16c-b4a5-49f0-a068-e2a11db34a2c")
         sessions["PUNCH"] = punch
         page, ctx, body, errs, _ = await open_as(
             "PUNCH", f"/hr/people/relations/{CASE}?org={ORG}&kind=incident", "11-new-accused.png")

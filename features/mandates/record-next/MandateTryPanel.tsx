@@ -23,7 +23,6 @@
 //     output kind's own component, the structured-value floor, markdown for
 //     text, inline media for a file — never a JSON dump.
 
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, Loader2 } from "lucide-react";
@@ -129,7 +128,9 @@ function fieldLabel(field: ServedInput): string {
 }
 
 function isStructured(field: ServedInput): boolean {
-  return !SCALAR_VALUE_KINDS.has(field.kind) && !MEDIA_VALUE_KINDS.has(field.kind);
+  return (
+    !SCALAR_VALUE_KINDS.has(field.kind) && !MEDIA_VALUE_KINDS.has(field.kind)
+  );
 }
 
 /** Served values → the `variables` body. Pure — exported for tests. */
@@ -266,7 +267,9 @@ export function MandateTryPanel({
 
   const setValue = (name: string, value: unknown) => {
     setValues((current) => ({ ...current, [name]: value }));
-    setInputProblem((current) => (current?.fieldName === name ? null : current));
+    setInputProblem((current) =>
+      current?.fieldName === name ? null : current,
+    );
   };
 
   return (
@@ -317,9 +320,14 @@ export function MandateTryPanel({
           <p className="text-xs text-muted-foreground">Reading what this job takes…</p>
         ) : null}
         {surfaceState.status === "error" ? (
-          <p className="text-xs text-destructive">{surfaceState.message} <ErrorAlchemyMenu error={surfaceState.message} /></p>
+          <p className="text-xs text-destructive">
+            {surfaceState.message}{" "}
+            <ErrorAlchemyMenu error={surfaceState.message} />
+          </p>
         ) : null}
-        {surface ? <ServerNotes heading="About these inputs" notes={surface.notes} /> : null}
+        {surface ? (
+          <ServerNotes heading="About these inputs" notes={surface.notes} />
+        ) : null}
         {fields.map((field) => {
           const label = fieldLabel(field);
           const value = values[field.name] ?? "";
@@ -346,11 +354,18 @@ export function MandateTryPanel({
                 <PropertyRow
                   label="Value"
                   value={
-                    field.pinnedValue == null
-                      ? "Provided at run time"
-                      : typeof field.pinnedValue === "object"
-                        ? <StructuredValueView value={field.pinnedValue} density="inline" footer={false} />
-                        : String(field.pinnedValue)
+                    field.pinnedValue == null ? (
+                      "Provided at run time"
+                    ) : typeof field.pinnedValue === "object" ||
+                      typeof field.pinnedValue === "string" ? (
+                      <AnswerValueView
+                        value={field.pinnedValue}
+                        density="inline"
+                        emptyText="Empty"
+                      />
+                    ) : (
+                      String(field.pinnedValue)
+                    )
                   }
                 />
               ) : isStructured(field) ? (
@@ -400,7 +415,10 @@ export function MandateTryPanel({
         {surface?.acceptsUserInput ? (
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">
-              Your message <span className="font-normal text-muted-foreground">(optional)</span>
+              Your message{" "}
+              <span className="font-normal text-muted-foreground">
+                (optional)
+              </span>
             </label>
             <ProTextarea
               aria-label="Your message"
@@ -436,7 +454,9 @@ export function MandateTryPanel({
         </div>
       </div>
 
-      {failure ? <RunFailureCard failure={failure} testId="mandate-try-failure" /> : null}
+      {failure ? (
+        <RunFailureCard failure={failure} testId="mandate-try-failure" />
+      ) : null}
       {result ? <TryResult result={result} /> : null}
     </div>
   );

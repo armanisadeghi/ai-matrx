@@ -45,6 +45,7 @@ export function OutputPreview({
           onClick={() =>
             openWindow({
               value: hasStructure ? artifact : output,
+              kind: outputKind,
               title,
             })
           }

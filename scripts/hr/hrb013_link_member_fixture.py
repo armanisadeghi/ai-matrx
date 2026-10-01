@@ -27,8 +27,9 @@ import sys
 ENV = pathlib.Path("/Users/armanisadeghi/code/aidream/.env")
 
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"  # Oak Street Studio (G2)
-# Optional argv[1] picks the address, so several purpose-made members can be staged.
-EMAIL = (sys.argv[1] if len(sys.argv) > 1 else "theo.lindgren@example.test")
+# Optional argv[1] picks the persona BY ID, so several purpose-made members can be staged. Default:
+# Theo Lindgren, the permanent hr-demo persona (renames.md); Anika Joshi is 403e3bf6-4d4b-4303-82af-79b8b2ba090f.
+PERSONA_ID = (sys.argv[1] if len(sys.argv) > 1 else "58d01ef4-0be2-45d4-b56e-83a78537a7ea")
 # admin@admin.com — owner/admin of the G2 org, so mbr_add's has_org_access gate passes.
 ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"
 
@@ -63,27 +64,10 @@ async def main() -> None:
 
     try:
         # 1. the purpose-made auth user (idempotent)
-        r = await http.get(
-            f"{base}/auth/v1/admin/users", headers=admin_hdr, params={"page": 1, "per_page": 200}
+        user_id, EMAIL = await resolve_demo_persona(
+            http, base, admin_hdr, PERSONA_ID, purpose="hrb013 link-member walk"
         )
-        r.raise_for_status()
-        user_id = next(
-            (u["id"] for u in r.json().get("users", []) if (u.get("email") or "").lower() == EMAIL),
-            None,
-        )
-        if user_id:
-            print(f"auth user   REUSED   {user_id}  {EMAIL}")
-        else:
-            r = await http.post(
-                f"{base}/auth/v1/admin/users",
-                headers=admin_hdr,
-                json={"email": EMAIL, "email_confirm": True, "password": throwaway_password()},
-            )
-            if r.status_code >= 400:
-                print(f"auth user   FAILED {r.status_code}: {r.text[:300]}")
-                raise SystemExit(1)
-            user_id = r.json()["id"]
-            print(f"auth user   CREATED  {user_id}  {EMAIL}")
+        print(f"auth user   RESOLVED {user_id}  {EMAIL}")
 
         # 2. make them an org member through the canonical door, acting as the HR admin.
         #    set_config in the SAME transaction as the call (asyncpg auto-commits each stmt).
