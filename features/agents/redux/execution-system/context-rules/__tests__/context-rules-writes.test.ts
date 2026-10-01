@@ -62,11 +62,11 @@ function table() {
       return { data: [structuredClone(existing)], error: null };
     }
     const created: Row = {
+      ...(row as Row),
       id: `row-${db.nextId++}`,
       version: 1,
-      deleted_at: null,
-      state: {},
-      ...(row as Row),
+      deleted_at: row.deleted_at ?? null,
+      state: row.state ?? {},
     };
     db.rows.push(created);
     return { data: [structuredClone(created)], error: null };
