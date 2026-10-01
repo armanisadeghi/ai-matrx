@@ -112,9 +112,10 @@ One file per playbook, two halves under one id, template beside this skill: `pla
   through the product, or seeded on the clone by you before the run and named here.
 - The steps in the language a person would use: what to open, what to type, what to attach, what to
   click, what to wait for.
-- What to **capture** afterward, as raw observations: the exact text of this note, the result of this
-  query on the clone, the list of tool calls in this conversation, a screenshot of this panel. Capture,
-  never judge.
+- What to **capture** afterward, as raw observations: the exact text of this note, the list of tool calls
+  shown in the conversation, a screenshot of this panel, and **every entry in the Error Inspector** (copy all)
+  at the end of the run. Capture, never judge. Database reads belong to the GRADER, run right after the run:
+  a browser-only runner has no database, and a human runner should not need one (learned 2026-10-01).
 
 **SEALED CHECKS — the half the runner never gets.**
 - One **marker** per channel the change touches: a unique, realistic fact from the use-case library,
@@ -122,6 +123,11 @@ One file per playbook, two halves under one id, template beside this skill: `pla
 - For each marker: the sink where it **must** appear, and the sinks where it **must not** appear. The
   second half is what catches a swap, a leak, or content delivered through the wrong door.
 - Which weakness ids each marker covers.
+
+**Every link must be addressable by the agent under test.** If the chain needs an agent to call another
+agent, the skill or context it reads must carry that agent's id, because the agent-call tool takes an id and
+nothing finds an agent by name (round 1, 2026-10-01: the tool arrived, the agent could not connect "lane
+planner" to it). A link the agent cannot reach is a flaw in the playbook, not a finding against the product.
 
 **Design for the chain.** Put the deciding marker at the end of the longest chain the change
 touches. "The note now contains the pickup time from the attached file" is one check that cannot be
@@ -160,6 +166,11 @@ reply as the sink. Not expanded here.
 - The preview serves the **clone**, never live (`pnpm preview:status` shows the mode). Never
   Arman's Chrome. Never a sign-in or sign-out on a Matrx host outside the runner's own hostname.
 
+**The fix loop is cheap or it does not happen.** After the first run that reaches the end, the runner's own
+transcript is the script: a browser-only `quick` agent replays the same sheet for every fix and every fault
+run, and the owner grades from captures without re-reading the product. A fresh, unscripted runner is used
+twice only: the baseline and the final after-run. Never let the expensive owner model drive the browser.
+
 ## 5. Fault proof — a test is trusted only after it catches a break it was not told about
 
 - **One per playbook**, each aimed at a different channel, so that across the set every channel's
@@ -180,6 +191,12 @@ reply as the sink. Not expanded here.
   the channel the fault hit. A PASS, or a FAIL for a different reason, means the playbook cannot see
   that channel: rewrite it before anything else counts.
 - **Every attempt is a ledger row**, caught or missed.
+
+**Where the fixtures live.** A chat or agent run goes through the production server whatever database the
+preview reads, so a real test of chat runs against production, as the test admin, on disposable records in a
+test-fixture organization (the nightly clone also wipes anything created on it). Faults that touch data stay on
+the clone or on those disposable records only. Check the organization is not archived before installing
+(a 2026-10-01 install went into an archived twin; the server admitted it and the doors refused it).
 
 ## 6. Where it lives
 
