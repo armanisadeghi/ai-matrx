@@ -1580,10 +1580,16 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // `?rename=1` — the duplicate-name notice's Rename button lands here and
   // opens the inline title rename (cold walk 23): the control rides in the
   // notice, so the notice can never cover the thing it asks her to click.
-  useDeepLinkArrival(searchParams.get("rename") === "1", canEdit, () =>
-    nameHeadingRef.current
-      ?.querySelector<HTMLButtonElement>('button[title="Click to rename"]')
-      ?.click(),
+  // The link is SPENT on arrival (`consume`): left in the address it reopened
+  // the rename on every reload (cold walk 24).
+  useDeepLinkArrival(
+    searchParams.get("rename") === "1",
+    canEdit,
+    () =>
+      nameHeadingRef.current
+        ?.querySelector<HTMLButtonElement>('button[title="Click to rename"]')
+        ?.click(),
+    { consume: "rename" },
   );
 
 

@@ -52,10 +52,12 @@ export function useDeepLinkArrival(
   asking: boolean,
   ready: boolean,
   onArrive: () => void,
+  options?: DeepLinkArrivalOptions,
 ): void {
   const handled = useRef(false);
   const latest = useRef(onArrive);
   latest.current = onArrive;
+  const consume = options?.consume;
 
   useEffect(() => {
     // THE RE-ARM. The URL stopped asking, so the next time it asks is a new
@@ -68,5 +70,26 @@ export function useDeepLinkArrival(
     if (handled.current || !ready) return;
     handled.current = true;
     latest.current();
-  }, [asking, ready]);
+    if (consume) dropSearchParam(consume);
+  }, [asking, ready, consume]);
+}
+
+export interface DeepLinkArrivalOptions {
+  /**
+   * A ONE-SHOT ACTION link (`?rename=1` opens the title's inline rename) is
+   * spent by its arrival: this param leaves the address once it fires, so a
+   * reload or a copied link never re-runs it (cold walk 24). A link to a
+   * SURFACE (`?drip=1`) omits this — that one stays to be revisited.
+   */
+  consume?: string;
+}
+
+/** Remove one search param in place — no navigation, no history entry. */
+function dropSearchParam(param: string): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(param)) return;
+  url.searchParams.delete(param);
+  // Next's App Router syncs `useSearchParams` with native history calls.
+  window.history.replaceState(window.history.state, "", url.toString());
 }

@@ -190,8 +190,10 @@ describe("the Rulebook page and the notice agree with the controls", () => {
     );
     // The arrival presses the primitive's own rename button on the heading.
     expect(page).toMatch(
-      /useDeepLinkArrival\(searchParams\.get\("rename"\) === "1", canEdit,[\s\S]{0,160}nameHeadingRef\.current[\s\S]{0,120}Click to rename/,
+      /useDeepLinkArrival\(\s*searchParams\.get\("rename"\) === "1",\s*canEdit,[\s\S]{0,160}nameHeadingRef\.current[\s\S]{0,120}Click to rename/,
     );
+    // …and SPENDS the link, so a reload does not reopen it (cold walk 24).
+    expect(page).toMatch(/Click to rename[\s\S]{0,120}\{ consume: "rename" \}/);
     expect(page).toContain("ref={nameHeadingRef}");
   });
 });

@@ -23,7 +23,10 @@ import { useDeepLinkArrival } from "./useDeepLinkArrival";
   .IS_REACT_ACT_ENVIRONMENT = true;
 
 /** Render the hook with props we can change, the way a URL changes. */
-async function drive(initial: { asking: boolean; ready: boolean }) {
+async function drive(
+  initial: { asking: boolean; ready: boolean },
+  options?: { consume?: string },
+) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   let root!: Root;
@@ -33,9 +36,14 @@ async function drive(initial: { asking: boolean; ready: boolean }) {
   function Probe() {
     const [props, set] = React.useState(initial);
     setProps = set;
-    useDeepLinkArrival(props.asking, props.ready, () => {
-      opened += 1;
-    });
+    useDeepLinkArrival(
+      props.asking,
+      props.ready,
+      () => {
+        opened += 1;
+      },
+      options,
+    );
     return null;
   }
 
@@ -88,6 +96,27 @@ describe("useDeepLinkArrival", () => {
     const h = await drive({ asking: false, ready: true });
     await h.set({ asking: false, ready: true });
     expect(h.opens()).toBe(0);
+    await h.unmount();
+  });
+
+  // Cold walk 24: `?rename=1` stayed in the address after the rename it opened,
+  // so every reload reopened the rename field.
+  it("spends a one-shot action link: its param leaves the address on arrival", async () => {
+    window.history.replaceState(null, "", "/masterwork/abc?interview=1&rename=1#rules");
+    const h = await drive({ asking: true, ready: false }, { consume: "rename" });
+    // Held, not spent, until it can fire.
+    expect(window.location.search).toContain("rename=1");
+    await h.set({ asking: true, ready: true });
+    expect(h.opens()).toBe(1);
+    expect(window.location.search).toBe("?interview=1");
+    expect(window.location.hash).toBe("#rules");
+    await h.unmount();
+  });
+
+  it("leaves a surface link in the address", async () => {
+    window.history.replaceState(null, "", "/masterwork/abc?drip=1");
+    const h = await drive({ asking: true, ready: true });
+    expect(window.location.search).toBe("?drip=1");
     await h.unmount();
   });
 });
