@@ -41,6 +41,16 @@ declare
   v_old text; v_ans text; v_door text; v_frozen text[] := '{}'; v_ok text[] := '{}';
 begin
   -- ── stand-ins (named; rolled back with everything else) ─────────────────────────────────────────────────────
+  -- (b0) W1, the other half (READINESS-PARITY's, not this chain's): a scope live in the current tables with NO live
+  -- Record in the store, in an organization that writes scopes to the store (clone: Alex Hart's Workspace →
+  -- "Biology 101 — Live Test"; production 0 at 03:15 PT). Set aside here by archiving that current-table row, counted.
+  perform set_config('app.actor_system', 'safety-net-b stand-in (clone, rolled back)', true);
+  update context.scopes s set deleted_at = clock_timestamp()
+   where s.deleted_at is null and custom.context_writer(s.organization_id) = 'store'
+     and not exists (select 1 from custom.record r where r.id = s.id and r.organization_id = s.organization_id and r.deleted_at is null);
+  get diagnostics v_n = row_count;
+  perform set_config('app.actor_system', '', true);
+  if v_n > 0 then v_report := v_report || format('stand-in: %s current-table scopes with no store Record set aside (W1)', v_n); end if;
   update custom.io_outbox set consumed_at = clock_timestamp()
    where event_key = 'context.follow' and consumed_at is null and deleted_at is null;
   get diagnostics v_lag = row_count;
