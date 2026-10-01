@@ -282,7 +282,7 @@ function MemorySidebar({
           No conversations with memory yet.
         </span>
         <span className="text-[10px] text-center opacity-70">
-          Enable Observational Memory on a conversation from the Creator Panel.
+          Turn on memory for a conversation in the Creator Panel
         </span>
       </div>
     );
@@ -352,8 +352,7 @@ function EmptyPane() {
         No conversation selected
       </p>
       <p className="text-xs opacity-60 text-center max-w-xs">
-        Pick a conversation from the sidebar to inspect its Observational Memory
-        state, cost, and live activity.
+        Pick a conversation to inspect its memory state and cost.
       </p>
     </div>
   );

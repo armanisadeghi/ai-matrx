@@ -344,7 +344,7 @@ function BrowserWorkbenchWindowInner({
       <ScrollArea className="min-h-0 flex-1">
         {allBookmarks.length === 0 ? (
           <p className="px-2 py-2 text-[11px] text-muted-foreground">
-            Save the current page with +. Click a bookmark to open a tab.
+            No bookmarks — save the current page with +
           </p>
         ) : (
           <>

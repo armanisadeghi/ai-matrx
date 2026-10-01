@@ -488,8 +488,9 @@ export function StorageSourcePickerWindow({
             <AlertCircle className="h-8 w-8 text-warning" />
             <div>
               <p className="text-sm font-medium">No eligible {PROVIDER_LABEL[provider]} account</p>
+              {/* OneDrive needs the Files.Read scope. */}
               <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                Connect this provider in Integrations, then retry here. OneDrive requires Files.Read.
+                Connect it in Integrations with read access, then retry
               </p>
             </div>
             <div className="flex gap-2">

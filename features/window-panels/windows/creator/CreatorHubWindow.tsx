@@ -118,8 +118,7 @@ function HubEmptyConversation() {
         No active conversation
       </p>
       <p className="max-w-xs text-xs text-muted-foreground">
-        Open an agent run or chat to populate this tab. The hub reflects the
-        conversation you were last working in.
+        Start an agent run or chat to fill this tab
       </p>
     </div>
   );

@@ -123,8 +123,8 @@ export function CuratedIconPickerWindow({
       footerLeft={
         <p className="truncate px-2 text-[10px] text-muted-foreground">
           {tab === "lucideWeb"
-            ? "Browse Lucide here, then enter the icon name in the field. Search Lucide in the form still opens the full site frame."
-            : "AI tiles match the button demo; stored id may differ from artwork — use Icons tab to refine."}
+            ? "Browse Lucide, then enter the icon name in the field"
+            : "Stored id may differ from the art; refine in Icons"}
         </p>
       }
     >

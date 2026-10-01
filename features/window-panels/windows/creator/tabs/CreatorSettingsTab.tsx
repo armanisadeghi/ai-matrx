@@ -2,6 +2,7 @@
 
 import { RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { InfoHint } from "@/components/official/InfoHint";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsCreatorMode,
@@ -18,18 +19,24 @@ import {
 function SettingRow({
   label,
   description,
+  hint,
   checked,
   onCheckedChange,
 }: {
   label: string;
   description: string;
+  /** Optional definition shown behind an info icon beside the label. */
+  hint?: string;
   checked: boolean;
   onCheckedChange: (value: boolean) => void;
 }) {
   return (
     <label className="flex cursor-pointer items-start justify-between gap-3 rounded-md px-2 py-2 hover:bg-accent/40">
       <span className="flex flex-col">
-        <span className="text-xs font-medium text-foreground">{label}</span>
+        <span className="flex items-center gap-1 text-xs font-medium text-foreground">
+          {label}
+          {hint ? <InfoHint text={hint} label={`About ${label}`} /> : null}
+        </span>
         <span className="text-[11px] text-muted-foreground">{description}</span>
       </span>
       <Switch
@@ -81,7 +88,7 @@ export default function CreatorSettingsTab() {
         />
         <SettingRow
           label="Show creator panel"
-          description="The run-control panel above the agent input (Actions, Payload, …)"
+          description="Run controls above the agent input (Actions, Payload)"
           checked={showCreatorPanel}
           onCheckedChange={() => dispatch(toggleShowCreatorPanel())}
         />
@@ -125,7 +132,8 @@ export default function CreatorSettingsTab() {
         </p>
         <SettingRow
           label="Disable tool injection"
-          description="Stop surfaces from auto-attaching their default tools. Agents run with only their own saved tools. Affects every agent and run."
+          description="Stop surfaces auto-attaching their default tools"
+          hint="Applies to every agent and run: each uses only its own saved tools."
           checked={settings.disableToolInjection}
           onCheckedChange={(value) =>
             dispatch(setCreatorSetting({ key: "disableToolInjection", value }))

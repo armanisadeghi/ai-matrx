@@ -477,7 +477,7 @@ function ListenVoiceSettings() {
       <SettingsSection title="Read-aloud voice">
         <SettingsSelect
           label="Voice"
-          description="Reads this panel, the speaker on chat replies, and spoken replies. Live voice conversation has its own voice."
+          description="Used for read-aloud, not live voice"
           value={effectiveVoiceId}
           onValueChange={(v) => void update({ voice: v })}
           options={VOICE_OPTIONS}
@@ -510,9 +510,9 @@ function ListenVoiceSettings() {
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
+          {/* The personal default wins over organization and system defaults. */}
           <p className="text-[11px] leading-snug text-muted-foreground">
-            Saved as your personal default automatically — it wins over your
-            organization and system defaults. Applies from the next playback.
+            Saved as your default; applies from the next playback
           </p>
           <SettingDoor target={VOICE_SETTING_DOORS.readAloud} label="All voices" />
         </div>

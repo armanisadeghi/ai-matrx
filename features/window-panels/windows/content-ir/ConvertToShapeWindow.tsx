@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoHint } from "@/components/official/InfoHint";
 import { useEffect, useState } from "react";
 import {
   Braces,
@@ -204,14 +205,15 @@ function ConvertToShapeWindowContent({
         />
 
         <div>
-          <h2 className="text-sm font-semibold text-foreground">
+          {/* The creator receives the exact JSON plus every existing registry,
+              schema, and component detail found above. */}
+          <h2 className="flex items-center gap-1 text-sm font-semibold text-foreground">
             Name the Shape
+            <InfoHint
+              text="You can review the name prompt before sending."
+              label="About naming the Shape"
+            />
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            The creator receives the exact JSON plus every existing registry,
-            schema, and component detail found above. You can review the short
-            name prompt before sending it.
-          </p>
         </div>
 
         <label className="block text-xs font-medium text-foreground">
@@ -386,9 +388,6 @@ function ShapeReadinessSummary({
           <h2 className="text-sm font-semibold text-foreground">
             Shape readiness
           </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Live status for the exact root payload before the creator opens.
-          </p>
         </div>
         {!loading && readiness.focus === "review_shape" ? (
           <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />

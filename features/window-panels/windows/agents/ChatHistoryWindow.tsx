@@ -210,9 +210,7 @@ function ChatHistoryMain({
           <Flame className="w-10 h-10 mb-3 opacity-20" />
           <p className="text-sm font-medium">Select a conversation</p>
           <p className="text-xs opacity-60 mt-1">
-            Pick any past run from the list to view it here. Switch between
-            grouping by <strong>date</strong> or <strong>agent</strong> and
-            filter by source in the sidebar.
+            Pick a past run to view it here.
           </p>
         </div>
       )}

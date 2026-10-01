@@ -657,8 +657,7 @@ function AgentRunHistoryWindowInner({
                 No agent selected
               </p>
               <p className="text-xs opacity-60">
-                Use the sidebar to pick an agent and browse its conversation
-                history.
+                Pick an agent in the sidebar.
               </p>
             </div>
           </div>

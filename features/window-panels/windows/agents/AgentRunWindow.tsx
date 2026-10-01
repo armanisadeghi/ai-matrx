@@ -1002,9 +1002,7 @@ function AgentRunWindowInner({
               Pick an agent to start
             </p>
             <p className="text-xs opacity-60">
-              Use the agent dropdown in the title bar to choose an agent. Its
-              past conversations appear in the sidebar, and every chat from
-              this window stays listed under &quot;In this window&quot;.
+              Use the title bar&apos;s agent menu to choose one.
             </p>
           </div>
         </div>
