@@ -334,7 +334,7 @@ const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
  * the bare-JSON opener's, never this.
  */
 function proseKindObjectStart(line: string): number {
-  if (!line.includes('"__kind"')) return -1;
+  if (!hasKindKey(line)) return -1;
   for (
     let at = indexOutsideInlineCode(line, "{", 1);
     at > 0;

@@ -531,3 +531,34 @@ describe("never raw: a settled region whose kind the cold registry cannot answer
     expect(rendersRawJson(kindBlock as RenderBlockPayload)).toBe(false);
   });
 });
+
+describe("never raw: the frames before a LATER __kind key's colon (V6)", () => {
+  const LATER = [
+    ["array, second element", `[{"x":1}, ${KIND_PAYLOAD_ONE_LINE}]`],
+    ["nested under a data key", `{"data":${KIND_PAYLOAD_ONE_LINE}}`],
+  ] as const;
+  const WRAPS: Array<[string, (b: string) => string]> = [
+    ["```json", (b) => `Here you go:\n\n\`\`\`json\n${b}`],
+    ["bare", (b) => `Here you go:\n\n${b}`],
+  ];
+  const CASES = LATER.flatMap(([label, body]) =>
+    WRAPS.map(([wrapLabel, wrap]) => [`${wrapLabel} ${label}`, wrap(body)] as const),
+  );
+
+  it.each(CASES)("%s: no frame between `\"__k` and the colon draws raw", (_label, stream) => {
+    const frames = jsonFrames(streamCharByChar(stream, `req-v6-${_label}`));
+    const preColon = frames.filter((b) => /"__k(?:i(?:n(?:d"?)?)?)?$/.test(b.content ?? ""));
+    expect(preColon.length).toBeGreaterThan(0);
+    expect(preColon.filter(rendersRawJson).map((b) => (b.content ?? "").slice(-30))).toEqual([]);
+  });
+
+  it("kindless JSON with underscore keys never flickers to a loader", () => {
+    const body = JSON.stringify({ _id: 7, __type: "row", __key: "k", _rows: [{ _n: 1 }] });
+    const frames = jsonFrames(streamCharByChar(`\`\`\`json\n${body}`, "req-v6-kindless"));
+    // Once its first key is known, a kindless region is JSON on every frame —
+    // except the single frame `"__k` of `"__key"` (the threshold the rule names).
+    const afterFirstKey = frames.filter((b) => (b.content ?? "").length > 8);
+    const held = afterFirstKey.filter((b) => !rendersRawJson(b)).map((b) => b.content);
+    expect(held).toEqual([expect.stringMatching(/"__k$/)]);
+  });
+});

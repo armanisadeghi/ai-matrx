@@ -29,14 +29,34 @@ export type JsonKindSignal = "undecided" | "kind" | "not_kind";
  */
 const UNDECIDED_LIMIT_CHARS = 2000;
 
+/**
+ * The key `__kind` as JSON may spell it: every character literal or as its
+ * `\uXXXX` escape (`"\u005f_kind"` IS the key `__kind` to `JSON.parse` — V7).
+ */
+const KIND_KEY_BODY = [..."__kind"]
+  .map((ch) => {
+    const hex = ch.charCodeAt(0).toString(16).padStart(4, "0");
+    const escaped = [...hex]
+      .map((d) => (/[a-f]/.test(d) ? `[${d}${d.toUpperCase()}]` : d))
+      .join("");
+    return `(?:${ch}|\\\\u${escaped})`;
+  })
+  .join("");
+
 /** A `"__kind"` KEY (not an escaped occurrence inside a string value). */
-const KIND_KEY = /(?<!\\)"__kind"\s*:/;
+const KIND_KEY = new RegExp(String.raw`(?<!\\)"${KIND_KEY_BODY}"\s*:`);
 
 export function hasKindKey(text: string): boolean {
   return KIND_KEY.test(text);
 }
 
-const KIND_SLUG = /(?<!\\)"__kind"\s*:\s*"([A-Za-z0-9_.:-]+)"/;
+/** The key, then its string value (escapes allowed), captured whole. */
+const KIND_SLUG = new RegExp(
+  String.raw`(?<!\\)"${KIND_KEY_BODY}"\s*:\s*("(?:[^"\\]|\\.)*")`,
+);
+
+/** A slug the loader may name: letters, digits and `_.:-` only. */
+const SLUG_TEXT = /^[A-Za-z0-9_.:-]+$/;
 
 /**
  * The first complete `__kind` slug in the text, or null. For a LOADER only —
@@ -44,7 +64,64 @@ const KIND_SLUG = /(?<!\\)"__kind"\s*:\s*"([A-Za-z0-9_.:-]+)"/;
  * the parser owns which kind a region actually is.
  */
 export function firstKindSlug(text: string): string | null {
-  return KIND_SLUG.exec(text)?.[1] ?? null;
+  const literal = KIND_SLUG.exec(text)?.[1];
+  if (!literal) return null;
+  let slug: unknown;
+  try {
+    slug = JSON.parse(literal);
+  } catch {
+    return null;
+  }
+  return typeof slug === "string" && SLUG_TEXT.test(slug) ? slug : null;
+}
+
+/**
+ * A text that ENDS in an object key that has reached `"__k` and is still a
+ * prefix of `"__kind"` (or is `"__kind"` waiting for its colon) — V6: the
+ * frames before the colon of a LATER `__kind` key (`[{"x":1}, {"__kind`,
+ * `{"data":{"__kind`) could be a kind, so they hold the loader instead of
+ * flashing raw. Key position only (after `{` or `,` inside an object): a
+ * string VALUE that starts `"__k` is never a key. `"_id"`, `"__type"` never
+ * reach the threshold; `"__key"` holds for the one frame before its `e`.
+ */
+const PARTIAL_KIND_KEY_TAIL = /"__k(?:i(?:n(?:d(?:"\s*)?)?)?)?$/;
+
+export function endsInPartialKindKey(text: string): boolean {
+  const tail = PARTIAL_KIND_KEY_TAIL.exec(text);
+  if (!tail) return false;
+  return isObjectKeyPosition(text, tail.index);
+}
+
+/** Whether the `"` at `quoteAt` opens an object key (structural scan, strings opaque). */
+function isObjectKeyPosition(text: string, quoteAt: number): boolean {
+  const stack: string[] = [];
+  let expectKey = false;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < quoteAt; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      expectKey = false;
+    } else if (ch === "{" || ch === "[") {
+      stack.push(ch);
+      expectKey = ch === "{";
+    } else if (ch === "}" || ch === "]") {
+      stack.pop();
+      expectKey = false;
+    } else if (ch === ",") {
+      expectKey = stack[stack.length - 1] === "{";
+    } else if (ch === ":") {
+      expectKey = false;
+    }
+  }
+  return !inString && expectKey;
 }
 
 export function jsonKindSignal(text: string | null | undefined): JsonKindSignal {
@@ -58,13 +135,14 @@ export function jsonKindSignal(text: string | null | undefined): JsonKindSignal 
   if (source[i] === "[") {
     i = skipWs(source, i + 1);
     if (i >= source.length) return capped(source);
-    if (source[i] !== "{") return "not_kind";
+    if (source[i] !== "{") return notKindUnlessPartialKey(source);
   }
-  if (source[i] !== "{") return "not_kind";
+  if (source[i] !== "{") return notKindUnlessPartialKey(source);
 
   i = skipWs(source, i + 1);
   if (i >= source.length) return capped(source);
-  if (source[i] !== '"') return "not_kind"; // `{}` or not an object key
+  // `{}` or not an object key
+  if (source[i] !== '"') return notKindUnlessPartialKey(source);
 
   // Read the first key, honouring escapes; unterminated → still arriving.
   let j = i + 1;
@@ -75,12 +153,28 @@ export function jsonKindSignal(text: string | null | undefined): JsonKindSignal 
       continue;
     }
     if (ch === '"') {
-      const key = source.slice(i + 1, j);
-      return key === "__kind" ? "kind" : "not_kind";
+      return decodedKey(source.slice(i, j + 1)) === "__kind"
+        ? "kind"
+        : notKindUnlessPartialKey(source);
     }
     j++;
   }
   return capped(source);
+}
+
+/** A first key decided against `__kind` — unless a later key is arriving as one (V6). */
+function notKindUnlessPartialKey(source: string): JsonKindSignal {
+  return endsInPartialKindKey(source) ? "undecided" : "not_kind";
+}
+
+/** A complete JSON key literal (quotes included), decoded; the raw body if it will not parse. */
+function decodedKey(literal: string): string {
+  try {
+    const key: unknown = JSON.parse(literal);
+    return typeof key === "string" ? key : literal.slice(1, -1);
+  } catch {
+    return literal.slice(1, -1);
+  }
 }
 
 function capped(source: string): JsonKindSignal {
