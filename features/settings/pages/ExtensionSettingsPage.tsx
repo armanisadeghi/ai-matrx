@@ -46,8 +46,7 @@ function InstalledHere() {
       <Card className="flex items-center gap-3 p-3 md:p-4">
         <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
         <p className="text-sm text-muted-foreground">
-          The Matrx extension is installed in this browser. If it is asking
-          you to sign in, follow the steps below.
+          Installed in this browser — sign in below if it asks
         </p>
       </Card>
     );
@@ -62,8 +61,7 @@ function InstalledHere() {
         </a>
       </Button>
       <p className="text-sm text-muted-foreground">
-        The Matrx extension is not in this browser yet. Add it, then sign in
-        from the extension as described below.
+        Not in this browser yet — add it, then sign in below
       </p>
     </Card>
   );
@@ -85,13 +83,9 @@ export default function ExtensionAuthPage() {
       <InstalledHere />
       <Card className="p-4 md:p-6">
         <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-1">
+          <h2 className="text-xl font-semibold">
             Connect the Chrome extension
           </h2>
-          <p className="text-sm text-muted-foreground">
-            The extension signs in to your AI Matrx account on its own — no code
-            to copy.
-          </p>
         </div>
         <div className="bg-muted/50 p-4 rounded-lg space-y-2">
           <h3 className="font-medium text-sm">How it works</h3>

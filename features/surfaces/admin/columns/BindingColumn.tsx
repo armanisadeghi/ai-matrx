@@ -413,8 +413,7 @@ function BindingForm({
         />
         {existing && (
           <p className="-mt-3 text-[11px] text-muted-foreground">
-            Scope is fixed once a binding exists. Delete and re-create to change
-            it.
+            Fixed once created; delete and re-create to change
           </p>
         )}
 

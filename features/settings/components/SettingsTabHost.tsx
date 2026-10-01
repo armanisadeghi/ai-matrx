@@ -108,9 +108,6 @@ function EmptyState() {
         <h2 className="mt-3 text-base font-semibold text-foreground">
           Choose a setting
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Pick a category from the sidebar to view its settings.
-        </p>
       </div>
     </div>
   );
@@ -154,8 +151,7 @@ class TabErrorBoundary extends Component<
               <ErrorAlchemyMenu error={this.state.error.message} />
             </div>
             <div className="mt-1 text-xs">
-              The other settings tabs still work. Check the browser console for
-              the full stack trace.
+              Other settings tabs still work.
             </div>
           </SettingsCallout>
         </div>

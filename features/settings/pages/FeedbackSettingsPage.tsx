@@ -233,11 +233,11 @@ function FeedbackProgressStepper({ status }: { status: FeedbackStatus }) {
           <p className="text-sm font-medium">{config.label}</p>
           <p className="text-xs opacity-75">
             {status === "wont_fix" &&
-              "Our team reviewed this and decided not to proceed at this time."}
+              "Reviewed and not planned for now"}
             {status === "deferred" &&
-              "This has been added to our backlog and will be addressed in a future update."}
+              "In the backlog for a future update"}
             {status === "split" &&
-              "This has been broken into smaller tasks to be handled individually."}
+              "Split into smaller tasks"}
           </p>
         </div>
       </div>
@@ -802,7 +802,7 @@ function FeedbackItem({
                   <ProTextarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Type your response... Does the fix work? Any remaining issues?"
+                    placeholder="Does the fix work, or is anything left?"
                     className="min-h-[80px] text-sm"
                   />
                   <div className="flex items-center justify-between">
@@ -964,9 +964,6 @@ export default function UserFeedbackPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-foreground">My Feedback</h2>
-        <p className="text-sm text-muted-foreground">
-          Track the status of your bug reports and feature requests.
-        </p>
       </div>
 
       {items.length === 0 ? (

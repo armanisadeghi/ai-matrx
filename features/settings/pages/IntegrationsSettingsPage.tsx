@@ -89,6 +89,7 @@ import {
   type ManualHeaderInput,
 } from "./manual-mcp-credentials";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { InfoHint } from "@/components/official/InfoHint";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   ensureOrganizationForRequest,
@@ -696,7 +697,7 @@ export function IntegrationsWorkspace({
     const confirmed = await confirm({
       title: `Disconnect ${entry.name}?`,
       description:
-        "Agents will lose access to this server until you reconnect. AI Matrx will remove the saved connection and its stored credentials; the external provider account is not deleted.",
+        "Agents lose access until you reconnect. The saved connection and credentials are removed; your provider account is untouched.",
       confirmLabel: `Disconnect ${entry.name}`,
       variant: "destructive",
     });
@@ -1299,9 +1300,7 @@ function ServerCard({
               }}
             />
             <p className="text-[11px] text-muted-foreground">
-              Locked to this project with read-only Docs, Database, and
-              Debugging tools. AI Matrx cannot create, update, or delete data
-              through this connection.
+              Read-only and locked to this project
             </p>
             {supabaseError && (
               <ErrorNotice size="inline" className="text-[11px]" message={supabaseError} />
@@ -1416,9 +1415,8 @@ function ServerCard({
               <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-2 rounded-md mt-1">
                 <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>
-                  Local servers run on your machine. Add this to an agent via
-                  the agent builder&apos;s MCP Tools tab, then configure
-                  environment variables.
+                  Runs on your machine. Add it in the agent builder&apos;s MCP
+                  Tools tab, then set its environment variables.
                 </span>
               </div>
             )}
@@ -1494,11 +1492,12 @@ function ManualCredentialsForm({
   return (
     <div className="mt-3 space-y-3 border-t border-border pt-3">
       <div>
-        <p className="text-xs font-medium text-foreground">Token and headers</p>
+        <div className="flex items-center gap-1">
+          <p className="text-xs font-medium text-foreground">Token and headers</p>
+          <InfoHint text="Values are sealed in Vault and never sent back to this browser; OAuth is preferred." />
+        </div>
         <p className="text-[11px] text-muted-foreground">
-          OAuth remains recommended. Use this only when the provider issued a
-          personal token or requires workspace headers. Values are sealed in
-          Vault and never returned to this browser.
+          Only if the provider needs a token or headers
         </p>
       </div>
       <div className="space-y-1">

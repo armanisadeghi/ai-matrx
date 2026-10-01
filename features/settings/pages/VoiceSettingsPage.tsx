@@ -1,16 +1,14 @@
 "use client";
 
 import React from "react";
-import { Mic, HelpCircle } from "lucide-react";
+import { Mic } from "lucide-react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { VoiceDiagnosticsDisplay } from "@/features/audio/components/VoiceDiagnosticsDisplay";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function VoiceSettingsPage() {
   return (
@@ -21,28 +19,12 @@ export default function VoiceSettingsPage() {
           <Mic className="h-7 w-7 text-primary" />
           Voice & Microphone
         </h1>
-        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-2">
-          Test your microphone and troubleshoot voice input issues
-        </p>
       </div>
-
-      {/* Info Alert */}
-      <Alert className="mb-6">
-        <HelpCircle className="h-4 w-4" />
-        <AlertDescription>
-          Use this page to check if your microphone is working correctly and get
-          help fixing any issues. Voice input is used throughout the app for
-          transcription and AI assistance.
-        </AlertDescription>
-      </Alert>
 
       {/* Diagnostics Card */}
       <Card>
         <CardHeader>
           <CardTitle>Microphone Diagnostics</CardTitle>
-          <CardDescription>
-            Check your microphone status and permissions
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <VoiceDiagnosticsDisplay autoRun={true} />

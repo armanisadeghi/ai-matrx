@@ -98,14 +98,12 @@ export default function SandboxStoragePage() {
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">Sandbox Storage</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Persistent storage for your Matrx sandboxes in{" "}
             <span className="font-medium text-foreground">
               {organizationName ?? "the organization you have selected"}
             </span>
-            . Anything you save under <code className="font-mono">/home/agent</code>{" "}
-            is preserved here and re-mounted on every new sandbox you create in
-            this organization on the same tier. Each organization has its own
-            storage — switch organizations in the header to see another one.
+            {" · "}
+            <code className="font-mono">/home/agent</code> persists across new
+            sandboxes
           </p>
         </div>
         <Button
@@ -134,13 +132,6 @@ export default function SandboxStoragePage() {
         </div>
       )}
 
-      {persistence.info?.partial && !persistence.error && (
-        <div className="text-xs text-muted-foreground">
-          Storage totals are incomplete because one or more tiers are
-          unavailable or have not reported a byte count.
-        </div>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -160,7 +151,7 @@ export default function SandboxStoragePage() {
                 <ErrorAlchemyMenu error={persistence.error} />
               </>
             ) : persistence.info?.partial ? (
-              "Storage total unavailable until every tier reports a byte count."
+              "Total unavailable until every tier reports"
             ) : (
               `${formatFileSize(persistence.info?.total_size_bytes ?? 0)} stored across ${tierEntries.length} tier${tierEntries.length === 1 ? "" : "s"}.`
             )}
