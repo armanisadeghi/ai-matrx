@@ -125,10 +125,9 @@ it("a value the server's safety check removed keeps its reason and is worded as 
   expect(mismatch?.details).toBe("note_bundle: removed by the server's safety check");
 });
 
-// verify-7 #4: Add more cards on /education/flashcards ran with its dialog open, so the request
-// carried `window_forms`; the server pops that key and expands it (`window::<title>`), so a
-// receipt never lists it by name — every such turn raised `window_forms.missing`.
-it("the platform keys the server expands are never expected back by name", () => {
+// verify-7 #4, then verify-9: a receipt with no row for an envelope the screen sent means the
+// server lost it (Add more cards: the model answered "no dialog is open"). It is never skipped.
+it("an envelope the receipt leaves out is a missing value, never skipped", () => {
   const platformRow = (key: string, label: string) => ({
     ...resolveContextRow(
       {
@@ -148,8 +147,10 @@ it("the platform keys the server expands are never expected back by name", () =>
     platformRow("surface_chain", "Open screens"),
   ]);
   expect(entry.checked).toBe(true);
-  expect(entry.mismatches).toEqual([]);
-  expect(captured).toEqual([]);
+  expect(entry.mismatches).toEqual([
+    expect.objectContaining({ key: "window_forms", field: "missing" }),
+    expect.objectContaining({ key: "surface_chain", field: "missing" }),
+  ]);
 });
 
 // RULES.md §5 `consumed_as`: a server that keeps a row for the envelope it expanded is held to
