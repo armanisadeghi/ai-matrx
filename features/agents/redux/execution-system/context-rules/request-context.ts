@@ -387,6 +387,19 @@ export function contextRowsForRequest(request: object): ResolvedContextRow[] {
 
 // ── What the table DISPLAYS ─────────────────────────────────────────────────
 
+/** The receipt persisted on the conversation's most recent sent message, if any. */
+function lastPersistedReceipt(state: RootState, conversationId: string) {
+  const entry = state.messages?.byConversationId?.[conversationId];
+  const ids = entry?.orderedIds ?? [];
+  for (let i = ids.length - 1; i >= 0; i--) {
+    const record = entry?.byId?.[ids[i]];
+    if (record?.role !== "user") continue;
+    const receipt = record.modelContext?.delivery?.receipt;
+    if (receipt) return receipt;
+  }
+  return undefined;
+}
+
 const displayMemo = new Map<
   string,
   {
@@ -414,9 +427,14 @@ export const selectDisplayContextRows =
   (conversationId: string, mandateKillSwitch = false) =>
   (state: RootState): ResolvedContextRow[] => {
     const rows = selectResolvedContextRows(conversationId, mandateKillSwitch)(state);
-    const receipt = state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt;
+    // This session's latest receipt; on a fresh load, the receipt persisted on
+    // the conversation's last sent message — so values the server adds every
+    // turn (a durable attachment) show on load, not only after a send.
+    const live = state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt;
+    const receipt = live ?? lastPersistedReceipt(state, conversationId);
     if (!receipt) return rows;
-    const expected = state.instanceContext?.expectedByConversationId?.[conversationId];
+    // Request rows belong to the live receipt only.
+    const expected = live ? state.instanceContext?.expectedByConversationId?.[conversationId] : undefined;
     const saved = selectSavedContextRuleRows(state);
     const hit = displayMemo.get(conversationId);
     if (
@@ -431,8 +449,9 @@ export const selectDisplayContextRows =
     const actual = toContextReceipt(receipt);
     const shown = new Set(rows.map((row) => row.key));
     // The rows nobody on this screen sent. Normally `compareReceipt` against
-    // the rows the request was built from; when those are not held (a send
-    // path that recorded none), every row the client did not supply.
+    // the rows the request was built from; when those are not held (a
+    // persisted receipt, a send path that recorded none), every row the
+    // client did not supply. Rows the client's CURRENT rows hold are its own.
     const unsent = expected
       ? compareReceipt(expected.rows, actual).systemRows
       : actual.rows.filter((row) => row.origin !== "client");

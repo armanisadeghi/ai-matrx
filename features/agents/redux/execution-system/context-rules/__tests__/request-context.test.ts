@@ -553,3 +553,66 @@ describe("the agent's layer counts only from a record that read it", () => {
     expect(rows[0]).toMatchObject({ max_inline_chars: limit, decided_by: { max_inline_chars: by } });
   });
 });
+
+// Break this catches (F3, on load): a chat's durable attachments, which the
+// server adds on every turn, missing from the chip after a reload until the
+// next send — there is no live receipt yet, only the persisted one.
+describe("on load, server-added values come from the last persisted receipt", () => {
+  const persistedRow = (key: string, label: string, origin: string) => ({
+    key,
+    label,
+    surface_key: "_default",
+    origin,
+    chars: 2400,
+    include: true,
+    max_inline_chars: 200,
+    delivery: "on_request",
+    decided_by: { include: "default", max_inline_chars: "default" },
+    user_rule: null,
+    clamped: false,
+    client_sent_excluded: false,
+    blocked_by: null,
+  });
+  function reloaded(): RootState {
+    const state = makeState({ entries: [] }) as unknown as Record<string, unknown>;
+    const receipt = (rows: unknown[]) => ({
+      type: "context_receipt",
+      version: 1,
+      surface: "matrx-user/chat",
+      cap: 50000,
+      model_reads_context: true,
+      rules_error: null,
+      rows,
+    });
+    state.messages = {
+      byConversationId: {
+        c1: {
+          orderedIds: ["u1", "a1", "u2", "a2"],
+          byId: {
+            u1: { role: "user", modelContext: { delivery: { receipt: receipt([persistedRow("resource_file_old", "last-years-menu.png", "server")]) } } },
+            a1: { role: "assistant" },
+            u2: {
+              role: "user",
+              modelContext: {
+                delivery: {
+                  receipt: receipt([
+                    persistedRow("user", "User", "client"),
+                    persistedRow("resource_file_a73a", "harbor-street-cost-sheet-q4.pdf", "server"),
+                  ]),
+                },
+              },
+            },
+            a2: { role: "assistant" },
+          },
+        },
+      },
+    };
+    return state as unknown as RootState;
+  }
+
+  it("lists the attachments of the LAST sent message, never values the client sent", () => {
+    expect(selectDisplayContextRows("c1")(reloaded()).map((r) => [r.key, r.label])).toEqual([
+      ["resource_file_a73a", "harbor-street-cost-sheet-q4.pdf"],
+    ]);
+  });
+});
