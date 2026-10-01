@@ -402,6 +402,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-30 — `useKindCounts` / `useKindItems` pass the person's `files.show_system_files` (via `useShowSystemFiles`) as `p_show_system_files`; system files and folders are counted and listed only while it is on (V5-B).
+
 - 2026-09-30 — `EntityScopeTagger` `variant="dropdown"` is one self-labelled select per type (icon + value, "No class" for none; type name is the aria-label) with no header — "CLASSES / Class / None" stacked three labels over one choice (copy law R9, V4-F).
 
 - 2026-09-29 — **Resource inventory primitives** (A5-P, one source input). `useKindCounts` / `useKindItems`
