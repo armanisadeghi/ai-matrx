@@ -1,13 +1,12 @@
 # Quick Actions Feature
 
-A consolidated feature providing quick access to Notes, Tasks, Chat, and Data through a dropdown menu and full-screen utilities hub.
+The quick sheets (Chat, Data) and the full-screen utilities hub. Their door is the account menu's **Quick Access** group (`QUICK_ACCESS_ITEMS` in `features/shell/components/header/header-right-menu/userMenuItems.constants.ts`); the header dropdown that duplicated it was deleted on 2026-09-30.
 
 ## 📁 Structure
 
 ```
 features/quick-actions/
 ├── components/
-│   ├── QuickActionsMenu.tsx    # Main dropdown menu with quick access
 │   ├── UtilitiesOverlay.tsx    # Full-screen tabbed utilities hub
 │   ├── QuickChatSheet.tsx      # AI chat interface
 │   └── QuickDataSheet.tsx      # Data tables viewer
@@ -16,24 +15,6 @@ features/quick-actions/
 ```
 
 ## 🎯 Components
-
-### QuickActionsMenu
-
-The main dropdown menu accessible via the ⚡ (Zap) icon in the application header.
-
-**Features:**
-- Notes quick access
-- Tasks management
-- AI Chat assistant
-- Data tables viewer
-- Full Utilities Hub launcher
-
-**Usage:**
-```tsx
-import { QuickActionsMenu } from '@/features/quick-actions';
-
-<QuickActionsMenu className="optional-class" />
-```
 
 ### UtilitiesOverlay
 

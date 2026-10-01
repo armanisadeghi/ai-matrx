@@ -71,7 +71,6 @@
   "components/image/unsplash/desktop/EnhancedImageViewer.tsx": 1,
   "components/image/unsplash/desktop/EnhancedUnsplashGallery.tsx": 1,
   "components/image/unsplash/mobile/MobileUnsplashGallery.tsx": 1,
-  "components/layout/adaptive-layout/AdaptiveLayout.tsx": 1,
   "components/layout/AuthSessionWatcher.tsx": 1,
   "components/layout/new-layout/PageSpecificHeader.tsx": 1,
   "components/mardown-display/blocks/audio/AudioOutputBlock.tsx": 1,

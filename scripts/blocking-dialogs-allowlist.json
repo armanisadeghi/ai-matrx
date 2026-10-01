@@ -7,11 +7,6 @@
       "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
     },
     {
-      "file": "components/ui/sidebar.tsx",
-      "kind": "blocking-sheet",
-      "reason": "phone-only presentation of the shell sidebar (rendered only when useIsMobile() is true) — a drawer is allowed as the phone presentation, never the desktop host"
-    },
-    {
       "file": "features/canvas/core/CanvasSideSheetImpl.tsx",
       "kind": "blocking-sheet",
       "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"

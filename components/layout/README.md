@@ -1,38 +1,12 @@
 # Quick Actions & Utilities Hub
 
-## Quick Actions Menu
+## Quick access
 
-Dropdown menu in header (⚡ icon) for fast access to common tools.
-
-### Adding New Actions
-
-Edit `features/quick-actions/components/QuickActionsMenu.tsx`:
-
-```typescript
-// 1. Add state
-const [isMyActionOpen, setIsMyActionOpen] = useState(false);
-
-// 2. Add menu item
-<DropdownMenuItem onClick={() => setIsMyActionOpen(true)}>
-    <Icon className="h-4 w-4 mr-2" />
-    <div>
-        <span>My Action</span>
-        <span className="text-xs text-zinc-500">Description</span>
-    </div>
-</DropdownMenuItem>
-
-// 3. Add sheet/modal
-<FloatingSheet isOpen={isMyActionOpen} onClose={() => setIsMyActionOpen(false)}>
-    <MyComponent />
-</FloatingSheet>
-```
-
-### Current Actions
-- **Notes**: Side sheet for quick note capture
-- **Tasks**: Side sheet for task management
-- **Chat**: AI conversation assistant
-- **Data**: User-generated table viewer
-- **Utilities Hub**: Full-screen overlay with tabs
+The header Quick Actions menu is gone (2026-09-30) — it duplicated the
+account menu. Quick tools (Scratchpad, Quick Note/Task/Chat/Scribe/Data,
+Files, Chat History, Utilities Hub) live in the account menu's **Quick
+Access** group: add one to `QUICK_ACCESS_ITEMS` in
+`features/shell/components/header/header-right-menu/userMenuItems.constants.ts`.
 
 ---
 
