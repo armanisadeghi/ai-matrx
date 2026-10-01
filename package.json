@@ -19,7 +19,7 @@
     "postinstall": "node scripts/install-typecheck-entrypoints.mjs && tsx scripts/copy-pdfjs-worker.ts && node scripts/check-matrx-packages.mjs --duplicates",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "build:types": "ts-node scripts/generate-manifest.ts && bash scripts/fix-encoding.sh && next build",
-    "type-check": "bash scripts/tsc-capped.sh tsc6 --noEmit -p tsconfig.typecheck.json",
+    "type-check": "bash scripts/tsc-capped.sh tsc --noEmit -p tsconfig.typecheck.json",
     "type-check:queue:test": "python3 scripts/test_tsc_queue.py -v",
     "tsc": "bash scripts/tsc-capped.sh tsc",
     "tsc6": "bash scripts/tsc-capped.sh tsc6",

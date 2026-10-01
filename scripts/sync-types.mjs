@@ -373,7 +373,7 @@ if (fastMode || noTypecheck) {
     console.log('\n  Step 3: Running TypeScript type-check...\n');
     try {
         execSync(
-            'bash scripts/tsc-capped.sh tsc6 --noEmit -p tsconfig.typecheck.json',
+            'bash scripts/tsc-capped.sh tsc --noEmit -p tsconfig.typecheck.json',
             {
                 stdio: 'inherit',
                 cwd: PROJECT_ROOT,

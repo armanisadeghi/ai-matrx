@@ -86,7 +86,7 @@ function report(rows) {
 function runTypecheck() {
   const result = spawnSync(
     "bash",
-    ["scripts/tsc-capped.sh", "tsc6", "--noEmit", "-p", "tsconfig.typecheck.json"],
+    ["scripts/tsc-capped.sh", "tsc", "--noEmit", "-p", "tsconfig.typecheck.json"],
     { cwd: ROOT, encoding: "utf8" },
   );
   // tsc writes its diagnostics to stdout; a launch failure (missing binary,

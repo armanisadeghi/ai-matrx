@@ -166,13 +166,9 @@ returning name;
 
 - **Type check only what you touched** (the full `pnpm type-check` needs ~13 GB and is killed in a
   cloud container):
-  1. Write `tsconfig.focused.<your-short-name>.tmp.json` IN THE REPO ROOT (outside it, `types`
-     cannot resolve and every file errors; a name of your own, because parallel workers delete a
-     shared one mid-run) with
-     `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`.
-  2. Run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p tsconfig.focused.<your-short-name>.tmp.json`. One run covers the
-     whole batch, in about 3 minutes.
-  3. Delete the temporary file.
+  Run `pnpm type-check` once for the whole batch (TypeScript 7, whole repo, ~30 s; the
+  machine-wide queue folds parallel workers' calls into one run). Never a focused tsconfig and
+  never a direct compiler call — both bypass the queue and cannot be shared.
 
   Errors in files you did not touch are pre-existing: list them and don't fix them. CI runs the full
   type check on every push.

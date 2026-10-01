@@ -124,10 +124,10 @@ session, never you.
   (six at a time, ~3 min) and prints CLEAN / FINDINGS / ERROR per check for
   YOUR files only; red on other files is not yours. The per-area check lists
   below say what each covers.
-- Type check only your files: write `tsconfig.focused.<you>.tmp.json` at the
-  repo root — `{"extends":"./tsconfig.json","compilerOptions":{"noEmit":true,"incremental":false},"include":["global.d.ts","cartesia.d.ts","types/typecheck-env.d.ts", <your files>]}`
-  — run `node --max-old-space-size=11000 node_modules/typescript/bin/tsc6 -p <it>`,
-  delete it. Errors in files you didn't touch are not yours; list them.
+- Type check: `pnpm type-check` (TypeScript 7, whole repo, ~30 s; the machine-wide
+  queue folds your call into any other waiting one). Never a focused tsconfig and
+  never a direct compiler call — both bypass the queue and cannot be shared.
+  Errors in files you didn't touch are not yours; list them.
 - **Every commit parses.** Before each commit run `pnpm -s check:parse` (~20s, whole tree; red outside your files is not yours) — a quote inside a string once broke a manifest on main between two commits. Committing early never means committing unparsed.
 - **Commit right after each coherent edit, before running checks** — a sync sweeps the shared
   checkout every ~30 minutes and commits any dirty file under its own message,
