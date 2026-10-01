@@ -155,7 +155,9 @@ try {
   // ── 3. S03 edit: the scope's context value ──────────────────────────────────────────────
   await ctx.step(["S03"], "set the scope's context value", admin, async () => {
     await scopesPage(admin);
-    await admin.getByText(SCOPE, { exact: true }).first().click({ timeout: 30000 });
+    const link = admin.getByRole("link", { name: SCOPE, exact: true }).first();
+    if (await link.count()) await link.click({ timeout: 30000 });
+    else await admin.locator(`text="${SCOPE}"`).locator("visible=true").first().click({ timeout: 30000 });
     await until("scope page", async () => (await text(admin)).includes(ITEM) && !admin.url().endsWith("/scopes"), 90000);
     await sleep(3000);
     state.scopeHref = new URL(admin.url()).pathname;
@@ -185,7 +187,8 @@ try {
     void plural;
     const box = admin.locator("input").filter({ has: admin.locator("xx") });
     void box;
-    const inputs = admin.locator('[role="dialog"] input, [data-dynamic-panel] input, aside input');
+    await sleep(2500);
+    const inputs = admin.locator("input:visible");
     let filled = false;
     for (let i = 0; i < (await inputs.count()); i += 1) {
       const el = inputs.nth(i);
@@ -207,6 +210,40 @@ try {
     }
     return { ok: renamed, detail: `card says "${PLURAL2}" after reload ${renamed}${dbNote}` };
   });
+
+  // ── 6. S09 / S10: manage's context inspector, picked the way a person picks (Miller columns) ──
+  await ctx.step(["S09", "S10"], "context inspector says byte-identical", admin, async () => {
+    const label = (await text(admin)).includes(PLURAL2) ? PLURAL2 : PLURAL;
+    await go(admin, `${ctx.manageOrigin}/administration/scopes-context/context-inspector?org=${FIXTURE_ORG_ID}`);
+    const col = (n) => admin.locator("[data-context-inspector] .min-w-\\[560px\\] > div").nth(n - 1);
+    const pick = async (n, name) => {
+      const r = await until(`column ${n} lists ${name}`, async () => (await col(n).locator("button[aria-pressed]", { hasText: name }).count()) > 0, 120000);
+      if (!r.v) return false;
+      await col(n).locator("button[aria-pressed]", { hasText: name }).first().click();
+      await sleep(2500);
+      return true;
+    };
+    const typeOk = (await pick(2, PLURAL2)) || (await pick(2, PLURAL));
+    if (!typeOk) return { ok: false, detail: `the inspector's type column never listed "${label}": ${(await text(admin)).replace(/\s+/g, " ").slice(0, 300)}` };
+    if (!(await pick(3, SCOPE))) return { ok: false, detail: `the inspector's scope column never listed "${SCOPE}"` };
+    const r = await until("compare", async () => /Byte-identical|difference|Comparison unavailable/i.test(await text(admin)), 180000);
+    const body = await text(admin);
+    const says = (body.match(/Byte-identical[^\n]{0,160}|\d+ difference[^\n]{0,160}|Comparison unavailable[^\n]{0,160}/) ?? [""])[0];
+    return { ok: Boolean(r.v) && /Byte-identical/.test(body), detail: says || body.replace(/\s+/g, " ").slice(0, 300) };
+  });
+
+  // ── 7. S11: a plain member of Cedar Ridge sees the type and the scope ─────────────────────
+  const member = await seat("member");
+  await ctx.step(["S11"], "a member sees the scope type and the scope", member, async () => {
+    await go(member, `/organizations/${ORG_SLUG}/scopes`);
+    const r = await until("member scopes", async () => {
+      const t = await text(member);
+      if (t.includes("This preview was paused")) await resumeIfPaused(member);
+      return (t.includes(PLURAL2) || t.includes(PLURAL)) && t.includes(SCOPE);
+    }, 180000);
+    const t = await text(member);
+    return { ok: Boolean(r.v), detail: `test@test.com on Cedar Ridge's scopes: type listed ${t.includes(PLURAL2) || t.includes(PLURAL)}, scope listed ${t.includes(SCOPE)}` };
+  });
 } finally {
   // ── cleanup: archive the type (hides its scopes and items) through its edit sheet ─────────
   ctx.cleanup(async () => {
@@ -226,6 +263,24 @@ try {
       let dbNote = "";
       if (CLONE_DSN && state.typeId) dbNote = ` · clone: old archived / store archived ${db(`select (select deleted_at is not null from context.scope_types where id = ${q(state.typeId)})::text || ' / ' || coalesce((select (deleted_at is not null)::text from custom.record where id = ${q(state.typeId)}), '∅')`)}`;
       return { ok: gone, detail: `"${label}" gone from the page ${gone}${dbNote}` };
+    });
+  });
+  // ── cleanup, first: the scope moved to Trash through its own edit page (S02 archive) ───────
+  ctx.cleanup(async () => {
+    if (!state.scopeHref) return;
+    const admin = await seat("admin");
+    await ctx.step(["S02"], "move the scope to Trash", admin, async () => {
+      await go(admin, `${state.scopeHref}/edit`);
+      await admin.getByRole("button", { name: "Move to Trash" }).first().click({ timeout: 120000 });
+      const dlg = admin.locator('[role="alertdialog"]').last();
+      await dlg.waitFor({ timeout: 30000 });
+      await dlg.getByRole("button", { name: "Move to Trash" }).click();
+      await sleep(4000);
+      await scopesPage(admin);
+      const gone = !(await text(admin)).includes(SCOPE);
+      let dbNote = "";
+      if (CLONE_DSN && state.scopeId) dbNote = ` · clone: old archived / store archived ${db(`select coalesce((select (deleted_at is not null)::text from context.scopes where id = ${q(state.scopeId)}), '∅') || ' / ' || coalesce((select (deleted_at is not null)::text from custom.record where id = ${q(state.scopeId)}), '∅')`)}`;
+      return { ok: gone, detail: `"${SCOPE}" gone from the scopes page ${gone}${dbNote}` };
     });
   });
   await ctx.finish();

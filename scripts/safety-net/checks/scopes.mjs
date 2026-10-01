@@ -35,6 +35,10 @@ export default [
   sql("sc1p_the_context_copy_fence_red_green", ["S10"], { short: "handoff-fence" }),
   // S11: a member edits a scope in the store as she does today; a members-see-shared-only organization unchanged.
   sql("scopesaccess_a_member_edits_a_scope_as_she_does_today_red_green", ["S11"], { short: "member-edits" }),
+  // S11–S14 on the fixture organization (Cedar Ridge PT · Patients · Dana Whitfield, test@test.com): shared-only
+  // hides her, an archived clinic refuses her edit through the scopes write door, a creator who left is
+  // refused by the organization wall, a restricted field gives members no default level. Written by SN-SCOPES.
+  sql("safetynet_scopes_member_visibility_red_green", ["S11", "S12", "S13", "S14"], { short: "member-visibility" }),
   // S13: a person of no organization reads only the platform's tags, nothing else of Matrx System (the org wall).
   sql("scopesaccess_platform_tags_are_read_through_the_scopes_door_red_green", ["S13"], { short: "platform-tags-wall" }),
   // S14 (closest real check): a field kept out of what an agent sees stays kept out, through formulas and rollups.
