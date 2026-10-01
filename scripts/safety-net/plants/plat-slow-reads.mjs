@@ -1,2 +1,2 @@
 // Every database read is held 3.5 s in the test browser: the timings P08 (table) and P09 (scope tree) must go RED.
-export default { id: "plat-slow-reads", check: "platform.walk-platform", items: ["P07", "P08", "P09"], description: "every /rest/v1/ call held 3.5 s in the test browser", mode: "intercept", rules: [{ match: "/rest/v1/", action: "delay", ms: 3500 }] };
+export default { id: "plat-slow-reads", check: "platform.walk-platform", items: ["P07", "P08", "P09"], description: "every /rest/v1/ call and the /scopes page itself held 3.5 s in the test browser", mode: "intercept", rules: [{ match: "/rest/v1/", action: "delay", ms: 3500 }, { match: "/scopes(\\?|$)", action: "delay", ms: 3500 }] };

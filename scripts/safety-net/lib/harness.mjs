@@ -205,6 +205,7 @@ export async function openWalk(name, { headless = true } = {}) {
       return page;
     },
     async shot(page, label) {
+      if (!page) return null;
       n += 1;
       const file = `${name}-${String(n).padStart(2, "0")}-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
       await page.screenshot({ path: join(shotsDir, file), fullPage: false }).catch(() => null);
