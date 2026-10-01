@@ -61,6 +61,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 type TabKey = "clients" | "surfaces" | "executors";
 
@@ -498,11 +499,11 @@ function UiClientDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Sort order</Label>
-              <Input
-                type="number"
+              <ClampedNumberInput
                 value={sortOrder}
-                onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
-                style={{ fontSize: "16px" }}
+                min={Number.MIN_SAFE_INTEGER}
+                className="text-base"
+                onChange={setSortOrder}
               />
             </div>
             <div className="space-y-1.5">
@@ -778,11 +779,11 @@ function UiSurfaceDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Sort order</Label>
-              <Input
-                type="number"
+              <ClampedNumberInput
                 value={sortOrder}
-                onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
-                style={{ fontSize: "16px" }}
+                min={Number.MIN_SAFE_INTEGER}
+                className="text-base"
+                onChange={setSortOrder}
               />
             </div>
             <div className="space-y-1.5">

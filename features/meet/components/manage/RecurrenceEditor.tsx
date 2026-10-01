@@ -8,6 +8,7 @@
 // day-of-month or Nth-weekday, and ends never / on a date / after N times. The
 // sentence under it is the one invitees will read in their email.
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Repeat } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import {
@@ -119,14 +120,11 @@ export function RecurrenceEditor({
         >
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span>Repeat every</span>
-            <Input
-              type="number"
+            <ClampedNumberInput
               min={1}
               max={99}
               value={value.interval}
-              onChange={(e) =>
-                set({ interval: Math.max(1, Number(e.target.value) || 1) })
-              }
+              onChange={(interval) => set({ interval })}
               className="h-8 w-16"
               aria-label="Repeat interval"
             />
@@ -279,25 +277,13 @@ export function RecurrenceEditor({
                 }
               />
               After
-              <Input
-                type="number"
+              <ClampedNumberInput
                 min={1}
                 max={1000}
                 value={value.ends.kind === "after" ? value.ends.count : 10}
-                onChange={(e) =>
-                  set({
-                    ends: {
-                      kind: "after",
-                      count: Math.max(1, Number(e.target.value) || 1),
-                    },
-                  })
+                onChange={(count) =>
+                  set({ ends: { kind: "after", count } })
                 }
-                onFocus={() => {
-                  if (value.ends.kind !== "after")
-                    set({ ends: { kind: "after", count: 10 } });
-                }}
-                className="h-8 w-20"
-                aria-label="Ends after occurrences"
               />
               occurrences
             </label>

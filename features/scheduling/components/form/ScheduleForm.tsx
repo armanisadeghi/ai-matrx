@@ -56,6 +56,7 @@ import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface FormState {
   title: string;
@@ -646,15 +647,13 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt, initialTrigg
               htmlFor="runtime"
               error={errors.maxRuntimeSeconds}
             >
-              <Input
+              <ClampedNumberInput
                 id="runtime"
-                type="number"
                 min={5}
                 max={86400}
                 value={form.maxRuntimeSeconds}
-                onChange={(e) =>
-                  patch("maxRuntimeSeconds", Number(e.target.value) || 600)
-                }
+                onChange={(n) => patch("maxRuntimeSeconds", n)}
+                className="h-9"
               />
               <p className="text-xs text-muted-foreground mt-1">5 – 86,400</p>
             </Field>
@@ -663,15 +662,13 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt, initialTrigg
               htmlFor="concurrent"
               error={errors.maxConcurrent}
             >
-              <Input
+              <ClampedNumberInput
                 id="concurrent"
-                type="number"
                 min={1}
                 max={10}
                 value={form.maxConcurrent}
-                onChange={(e) =>
-                  patch("maxConcurrent", Number(e.target.value) || 1)
-                }
+                onChange={(n) => patch("maxConcurrent", n)}
+                className="h-9"
               />
               <p className="text-xs text-muted-foreground mt-1">1 – 10</p>
             </Field>

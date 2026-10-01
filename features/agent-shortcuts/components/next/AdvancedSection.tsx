@@ -23,6 +23,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { StoredModelOverridesField } from "@/features/agents/components/run-controls/StoredModelOverridesField";
 import type { RunConfigOverridesWords } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 /** The stored blob, or null when it is absent / not an object. */
 const asJsonObject = (value: unknown): Record<string, unknown> | null =>
@@ -302,13 +303,11 @@ export function AdvancedSection({
             {...fieldMeta?.("sortOrder")}
             hint="Lower numbers appear first."
           >
-            <Input
-              type="number"
+            <ClampedNumberInput
+              min={0}
               aria-label="Sort order"
               value={value.sortOrder}
-              onChange={(e) =>
-                onChange("sortOrder", Number(e.target.value) || 0)
-              }
+              onChange={(n) => onChange("sortOrder", n)}
               disabled={disabled}
               className="h-9 text-sm w-32"
             />
@@ -371,13 +370,11 @@ export function AdvancedSection({
               }
             >
               <div className="flex items-center gap-2">
-                <Input
-                  type="number"
+                <ClampedNumberInput
+                  min={0}
                   aria-label="Bypass gate after seconds"
                   value={value.bypassGateSeconds}
-                  onChange={(e) =>
-                    onChange("bypassGateSeconds", Number(e.target.value) || 0)
-                  }
+                  onChange={(n) => onChange("bypassGateSeconds", n)}
                   disabled={
                     disabled ||
                     Boolean(gateUnavailableReason) ||

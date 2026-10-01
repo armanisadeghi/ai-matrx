@@ -142,6 +142,7 @@ import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating"
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -571,22 +572,11 @@ function ScopeSidebar({
         </label>
         <label className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">Multi-query</span>
-          <input
-            type="number"
+          <ClampedNumberInput
             min={MULTI_QUERY_MIN}
             max={MULTI_QUERY_MAX}
             value={scope.multiQuery}
-            onChange={(e) =>
-              scope.setMultiQuery(
-                Math.max(
-                  MULTI_QUERY_MIN,
-                  Math.min(
-                    MULTI_QUERY_MAX,
-                    Number(e.target.value) || MULTI_QUERY_MIN,
-                  ),
-                ),
-              )
-            }
+            onChange={scope.setMultiQuery}
             className="w-14 px-1.5 py-1 text-base rounded border bg-background"
           />
         </label>

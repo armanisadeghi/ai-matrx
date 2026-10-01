@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ArrowDown,
@@ -678,16 +679,11 @@ export default function AgentAppsCategoriesAdminPage() {
                       </div>
                       <div>
                         <Label htmlFor="edit-sort">Sort Order</Label>
-                        <Input
+                        <ClampedNumberInput
                           id="edit-sort"
-                          type="number"
+                          min={Number.MIN_SAFE_INTEGER}
                           value={editData.sort_order ?? 0}
-                          onChange={(e) =>
-                            handleEditChange(
-                              "sort_order",
-                              parseInt(e.target.value) || 0,
-                            )
-                          }
+                          onChange={(n) => handleEditChange("sort_order", n)}
                           className="text-[16px]"
                         />
                       </div>
@@ -782,16 +778,11 @@ export default function AgentAppsCategoriesAdminPage() {
               </div>
               <div>
                 <Label htmlFor="create-sort">Sort Order</Label>
-                <Input
+                <ClampedNumberInput
                   id="create-sort"
-                  type="number"
+                  min={Number.MIN_SAFE_INTEGER}
                   value={createData.sort_order ?? categories.length * 10}
-                  onChange={(e) =>
-                    setCreateData({
-                      ...createData,
-                      sort_order: parseInt(e.target.value) || 0,
-                    })
-                  }
+                  onChange={(n) => setCreateData({ ...createData, sort_order: n })}
                   className="text-[16px]"
                 />
               </div>

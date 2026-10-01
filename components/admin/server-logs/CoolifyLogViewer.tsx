@@ -66,6 +66,7 @@ import {
 import { replaceAppHref } from "@/lib/deployment/navigate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 // ─── App registry ─────────────────────────────────────────────────────────────
 
@@ -832,18 +833,11 @@ function LineRangePanel({
       <span className="text-muted-foreground shrink-0">View range:</span>
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground">Start</span>
-        <Input
-          type="number"
+        <ClampedNumberInput
           min={0}
           max={maxOffset}
           value={startOffset}
-          onChange={(e) => {
-            const v = Math.max(
-              0,
-              Math.min(maxOffset, parseInt(e.target.value) || 0),
-            );
-            onStartOffset(v);
-          }}
+          onChange={onStartOffset}
           className="h-6 w-20 text-xs text-center"
         />
       </div>

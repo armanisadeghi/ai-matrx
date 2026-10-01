@@ -33,6 +33,7 @@ import { createContextItem } from "@/features/scopes/redux/thunks/contextItemMut
 import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { pluralize } from "@/features/scopes/utils/pluralize";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 type ContextItemDraft = { id: string; display_name: string };
 
@@ -404,16 +405,13 @@ export function AddScopeModal({
                 <Label htmlFor={sortOrderId} className="text-xs">
                   Sort order
                 </Label>
-                <Input
+                <ClampedNumberInput
                   id={sortOrderId}
-                  type="number"
                   value={sortOrder}
-                  onChange={(e) =>
-                    setSortOrder(parseInt(e.target.value, 10) || 0)
-                  }
                   min={0}
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
+                  className="text-base"
+                  onChange={setSortOrder}
                 />
               </div>
               <div className="space-y-1.5">

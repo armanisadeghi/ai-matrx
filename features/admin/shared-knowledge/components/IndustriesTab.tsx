@@ -60,6 +60,7 @@ import type { SharedKnowledgeDirectory } from "../types";
 import { IndustryCuratorsPanel } from "./IndustryCuratorsPanel";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface IndustryFormState {
   slug: string;
@@ -512,13 +513,14 @@ export function IndustriesTab({
                 <label className="text-xs font-medium text-muted-foreground">
                   Sort order
                 </label>
-                <Input
-                  type="number"
-                  value={String(form.sortOrder)}
-                  onChange={(e) =>
+                <ClampedNumberInput
+                  min={0}
+                  className="h-9"
+                  value={Number(form.sortOrder) || 0}
+                  onChange={(n) =>
                     setForm((f) => ({
                       ...f,
-                      sortOrder: Number(e.target.value) || 0,
+                      sortOrder: n,
                     }))
                   }
                 />

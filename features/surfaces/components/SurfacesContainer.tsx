@@ -80,6 +80,7 @@ import {
   NewSurfaceDialog,
   type NewSurfaceDraftScope,
 } from "@/features/surfaces/components/NewSurfaceDialog";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 import {
   bulkSetSurfacesActive,
@@ -804,12 +805,12 @@ function NewClientDialog({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Order in client lists (lower comes first)</Label>
-            <Input
-              type="number"
+            <ClampedNumberInput
               value={sortOrder}
-              onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
-              style={{ fontSize: "16px" }}
+              min={Number.MIN_SAFE_INTEGER}
               disabled={busy}
+              className="text-base"
+              onChange={setSortOrder}
             />
           </div>
         </div>

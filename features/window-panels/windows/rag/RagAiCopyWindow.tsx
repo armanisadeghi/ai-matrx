@@ -6,7 +6,6 @@ import { toast } from "@/lib/toast";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
@@ -22,6 +21,7 @@ import {
 } from "@/features/rag/components/search/ragAiCopy";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { cn } from "@/lib/utils";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 const OVERLAY_ID = "ragAiCopyWindow" as const;
 
@@ -262,20 +262,12 @@ function RagAiCopyWindowInner({
                     {value === 0 ? "Full" : value.toLocaleString()}
                   </Button>
                 ))}
-                <Input
+                <ClampedNumberInput
                   id="rag-ai-max-chars"
-                  type="number"
                   min={0}
                   step={1_000}
                   value={options.maxTextChars}
-                  onChange={(event) =>
-                    update({
-                      maxTextChars: Math.max(
-                        0,
-                        Number(event.target.value) || 0,
-                      ),
-                    })
-                  }
+                  onChange={(n) => update({ maxTextChars: n })}
                   className="h-7 w-24 text-xs tabular-nums"
                 />
               </div>
@@ -304,17 +296,12 @@ function RagAiCopyWindowInner({
                     {value === 0 ? "All" : value}
                   </Button>
                 ))}
-                <Input
+                <ClampedNumberInput
                   id="rag-ai-max-items"
-                  type="number"
                   min={0}
                   step={5}
                   value={options.maxItems}
-                  onChange={(event) =>
-                    update({
-                      maxItems: Math.max(0, Number(event.target.value) || 0),
-                    })
-                  }
+                  onChange={(n) => update({ maxItems: n })}
                   className="h-7 w-20 text-xs tabular-nums"
                 />
               </div>

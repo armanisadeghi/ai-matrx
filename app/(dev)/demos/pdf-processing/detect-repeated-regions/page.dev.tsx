@@ -1,7 +1,7 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
-import { Input } from "@ai-matrx/design-system";
 import {
   Field,
   FieldGroup,
@@ -64,33 +64,13 @@ export default function DetectRepeatedRegionsDemo() {
   const controls = (
     <FieldGroup>
       <Field label="Min pages ratio" hint="0.0–1.0 — fraction of pages a region must span">
-        <Input
-          type="number"
-          step={0.05}
-          min={0}
-          max={1}
-          value={minPagesRatio}
-          onChange={(e) => setMinPagesRatio(Number(e.target.value) || 0.3333)}
-        />
+        <ClampedNumberInput value={minPagesRatio} min={0} max={1} decimal step={0.05} onChange={setMinPagesRatio} />
       </Field>
       <Field label="Min confidence" hint="0.0–1.0 — drop weaker candidates">
-        <Input
-          type="number"
-          step={0.05}
-          min={0}
-          max={1}
-          value={minConfidence}
-          onChange={(e) => setMinConfidence(Number(e.target.value) || 0.5)}
-        />
+        <ClampedNumberInput value={minConfidence} min={0} max={1} decimal step={0.05} onChange={setMinConfidence} />
       </Field>
       <Field label="Overlay render DPI" hint="Quality of the page-thumbnails shown with region boxes overlaid">
-        <Input
-          type="number"
-          min={72}
-          max={300}
-          value={renderDpi}
-          onChange={(e) => setRenderDpi(Number(e.target.value) || 120)}
-        />
+        <ClampedNumberInput value={renderDpi} min={72} max={300} onChange={setRenderDpi} />
       </Field>
     </FieldGroup>
   );

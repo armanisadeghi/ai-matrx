@@ -10,6 +10,7 @@ import {
 import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { StripRepeatedRegionsResultSchema } from "@/features/pdf-extractor/types";
 import type { PdfRepeatedRegionsProgressData } from "@/types/python-generated/stream-events";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 const STAGE_LABELS: Record<PdfRepeatedRegionsProgressData["stage"], string> = {
   detect: "Detecting regions",
@@ -82,23 +83,25 @@ export default function StripRepeatedRegionsDemo() {
     >
       <FieldGroup>
         <Field label="Min pages ratio">
-          <Input
-            type="number"
+          <ClampedNumberInput
+            decimal
             step={0.05}
             min={0}
             max={1}
+            className="h-9"
             value={minPagesRatio}
-            onChange={(e) => setMinPagesRatio(Number(e.target.value) || 0.3333)}
+            onChange={setMinPagesRatio}
           />
         </Field>
         <Field label="Min confidence">
-          <Input
-            type="number"
+          <ClampedNumberInput
+            decimal
             step={0.05}
             min={0}
             max={1}
+            className="h-9"
             value={minConfidence}
-            onChange={(e) => setMinConfidence(Number(e.target.value) || 0.5)}
+            onChange={setMinConfidence}
           />
         </Field>
         <Field

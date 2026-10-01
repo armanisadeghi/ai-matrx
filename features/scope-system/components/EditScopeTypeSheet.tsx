@@ -40,6 +40,7 @@ import {
   updateScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { unwrapScopesRpc } from "@/features/scopes/types";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface EditScopeTypeSheetProps {
   open: boolean;
@@ -543,16 +544,13 @@ export function EditScopeTypeSheet({
                   <Label htmlFor={ids.sortOrder} className="text-xs">
                     Sort order
                   </Label>
-                  <Input
+                  <ClampedNumberInput
                     id={ids.sortOrder}
-                    type="number"
                     value={sortOrder}
-                    onChange={(e) =>
-                      setSortOrder(parseInt(e.target.value, 10) || 0)
-                    }
                     min={0}
-                    style={{ fontSize: "16px" }}
                     disabled={busy}
+                    className="text-base"
+                    onChange={setSortOrder}
                   />
                 </div>
                 <div className="space-y-1.5">

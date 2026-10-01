@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
@@ -77,12 +78,7 @@ export default function InsertPagesDemo() {
     >
       <FieldGroup>
         <Field label="Insert after page (0 = prepend)">
-          <Input
-            type="number"
-            min={0}
-            value={afterPage}
-            onChange={(e) => setAfterPage(Number(e.target.value) || 0)}
-          />
+          <ClampedNumberInput value={afterPage} min={0} onChange={setAfterPage} />
         </Field>
         <Field
           label="Source pages (optional)"

@@ -120,6 +120,7 @@ export function AgentAppFormToResultShell({
               overrides={overrides}
               code={slotCode}
               allowedImports={allowedImports}
+              appId={app.id}
               appName={app.name}
               fallback={
                 DefaultPreGate as unknown as React.ComponentType<
@@ -150,6 +151,7 @@ export function AgentAppFormToResultShell({
             overrides={overrides}
             code={slotCode}
             allowedImports={allowedImports}
+            appId={app.id}
             appName={app.name}
             fallback={
               DefaultHeader as unknown as React.ComponentType<
@@ -166,6 +168,7 @@ export function AgentAppFormToResultShell({
               overrides={overrides}
               code={slotCode}
               allowedImports={allowedImports}
+              appId={app.id}
               appName={app.name}
               fallback={
                 DefaultVariableInput as unknown as React.ComponentType<
@@ -224,6 +227,7 @@ export function AgentAppFormToResultShell({
                   overrides={overrides}
                   code={slotCode}
                   allowedImports={allowedImports}
+                  appId={app.id}
                   appName={app.name}
                   fallback={
                     DefaultResultRenderer as unknown as React.ComponentType<

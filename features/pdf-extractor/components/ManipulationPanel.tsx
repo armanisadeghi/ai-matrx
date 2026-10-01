@@ -19,6 +19,7 @@
  * or update extracted text against the new boundaries.
  */
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowDownToLine,
@@ -829,12 +830,11 @@ export function ManipulationPanel({
           />
         </Row>
         <Row label="Copies">
-          <Input
-            type="number"
+          <ClampedNumberInput
             min={1}
             max={10}
             value={dupCount}
-            onChange={(e) => setDupCount(Number(e.target.value) || 1)}
+            onChange={setDupCount}
             className="h-6 text-[11px] w-20"
           />
         </Row>
@@ -991,11 +991,10 @@ export function ManipulationPanel({
           />
         </Row>
         <Row label="After page">
-          <Input
-            type="number"
+          <ClampedNumberInput
             min={0}
             value={insertAt}
-            onChange={(e) => setInsertAt(Number(e.target.value) || 0)}
+            onChange={setInsertAt}
             className="h-6 text-[11px] w-20"
           />
         </Row>

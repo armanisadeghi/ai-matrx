@@ -1,7 +1,7 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
-import { Input } from "@ai-matrx/design-system";
 import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
 import {
   EMPTY_PDF_SOURCE,
@@ -59,21 +59,10 @@ export default function RenderThumbnailDemo() {
     >
       <FieldGroup>
         <Field label="Page (1-based)">
-          <Input
-            type="number"
-            min={1}
-            value={page}
-            onChange={(e) => setPage(Number(e.target.value) || 1)}
-          />
+          <ClampedNumberInput value={page} min={1} onChange={setPage} />
         </Field>
         <Field label="Max side (px)" hint="Longest edge of the output">
-          <Input
-            type="number"
-            min={32}
-            max={2048}
-            value={maxSide}
-            onChange={(e) => setMaxSide(Number(e.target.value) || 256)}
-          />
+          <ClampedNumberInput value={maxSide} min={32} max={2048} onChange={setMaxSide} />
         </Field>
         <Field label="Format">
           <select
@@ -89,13 +78,7 @@ export default function RenderThumbnailDemo() {
           </select>
         </Field>
         <Field label="JPEG / WebP quality">
-          <Input
-            type="number"
-            min={1}
-            max={100}
-            value={jpegQuality}
-            onChange={(e) => setJpegQuality(Number(e.target.value) || 80)}
-          />
+          <ClampedNumberInput value={jpegQuality} min={1} max={100} onChange={setJpegQuality} />
         </Field>
       </FieldGroup>
     </PdfDemoShell>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
@@ -63,13 +64,7 @@ export default function DuplicatePagesDemo() {
           />
         </Field>
         <Field label="Copies per page">
-          <Input
-            type="number"
-            min={1}
-            max={10}
-            value={count}
-            onChange={(e) => setCount(Number(e.target.value) || 1)}
-          />
+          <ClampedNumberInput value={count} min={1} max={10} onChange={setCount} />
         </Field>
       </FieldGroup>
     </PdfDemoShell>

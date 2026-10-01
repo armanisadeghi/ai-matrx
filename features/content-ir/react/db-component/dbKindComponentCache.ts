@@ -55,6 +55,17 @@ export {
   type ResolveKindValue,
 };
 
+/**
+ * The row being compiled. The package's compile port passes only
+ * `{ code, allowedImports }`, but `cache.getOrCompile` calls it synchronously,
+ * so `getOrCompileDbKindComponent` sets this around the call and an
+ * unresolved import is filed under the kind row (kind, platform, role) rather
+ * than the bare family.
+ * Row id: `ComponentResolution` carries no `kind_component.id`; naming it here
+ * needs `@ai-matrx/content-ir-react` to add `id` to `ComponentResolution`.
+ */
+let compilingOrigin: string | null = null;
+
 const cache = createDbKindComponentCache({
   // Every body this cache compiles comes out of `content_ir.kind_component`,
   // i.e. it was authored by an organization through the Studio or an agent —
@@ -63,11 +74,9 @@ const cache = createDbKindComponentCache({
   // that reaches for fetch/XHR/WebSocket/eval/storage throws a NAMED error the
   // error boundary shows, instead of quietly reading the reader's session.
   compile: (args) =>
-    // The package's compile port does not pass the kind, so the origin names
-    // the family only; the row's `route` narrows it to the page.
     compileSlotComponent({
       ...args,
-      origin: "kind-component",
+      origin: compilingOrigin ?? "kind-component",
       sandboxDangerousGlobals: true,
     }),
   defaultAllowedImports: getDefaultImportsForKindComponents,
@@ -91,7 +100,13 @@ export function getOrCompileDbKindComponent(
   platform = "web",
   role = "output",
 ): DbKindCompileResult {
-  return cache.getOrCompile(kind, resolution, platform, role);
+  const previous = compilingOrigin;
+  compilingOrigin = `kind-component:${kind}:${platform}:${role}`;
+  try {
+    return cache.getOrCompile(kind, resolution, platform, role);
+  } finally {
+    compilingOrigin = previous;
+  }
 }
 
 /** Apply the row's transform — loud on throw, never fatal (package policy). */

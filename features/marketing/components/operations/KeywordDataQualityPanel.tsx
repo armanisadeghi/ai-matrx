@@ -13,6 +13,7 @@
  * the run instead of losing it.
  */
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { ListChecks, Loader2, Tags } from "lucide-react";
 
@@ -101,17 +102,12 @@ function ClassifyCard() {
             <Label htmlFor="classify-limit" className="text-xs">
               Limit (≤{CLASSIFY_RUN_LIMIT})
             </Label>
-            <Input
+            <ClampedNumberInput
               id="classify-limit"
-              type="number"
               min={1}
               max={CLASSIFY_RUN_LIMIT}
               value={limit}
-              onChange={(event) =>
-                setLimit(
-                  Math.max(1, Math.min(CLASSIFY_RUN_LIMIT, Number(event.target.value) || 1)),
-                )
-              }
+              onChange={setLimit}
               className="w-28"
             />
           </div>
@@ -209,15 +205,12 @@ function AssignTopicsCard() {
             <Label htmlFor="assign-limit" className="text-xs">
               Limit (≤200)
             </Label>
-            <Input
+            <ClampedNumberInput
               id="assign-limit"
-              type="number"
               min={1}
               max={200}
               value={limit}
-              onChange={(event) =>
-                setLimit(Math.max(1, Math.min(200, Number(event.target.value) || 1)))
-              }
+              onChange={setLimit}
               className="w-28"
             />
           </div>

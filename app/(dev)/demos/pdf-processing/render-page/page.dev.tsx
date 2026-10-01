@@ -1,7 +1,7 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
-import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
@@ -68,21 +68,10 @@ export default function RenderPageDemo() {
     >
       <FieldGroup>
         <Field label="Page (1-based)">
-          <Input
-            type="number"
-            min={1}
-            value={page}
-            onChange={(e) => setPage(Number(e.target.value) || 1)}
-          />
+          <ClampedNumberInput value={page} min={1} onChange={setPage} />
         </Field>
         <Field label="DPI" hint="72 = screen, 150 = retina, 300 = print">
-          <Input
-            type="number"
-            min={36}
-            max={600}
-            value={dpi}
-            onChange={(e) => setDpi(Number(e.target.value) || 150)}
-          />
+          <ClampedNumberInput value={dpi} min={36} max={600} onChange={setDpi} />
         </Field>
         <Field label="Format">
           <select
@@ -98,13 +87,7 @@ export default function RenderPageDemo() {
           </select>
         </Field>
         <Field label="JPEG / WebP quality" hint="1–100, ignored for PNG/TIFF">
-          <Input
-            type="number"
-            min={1}
-            max={100}
-            value={jpegQuality}
-            onChange={(e) => setJpegQuality(Number(e.target.value) || 85)}
-          />
+          <ClampedNumberInput value={jpegQuality} min={1} max={100} onChange={setJpegQuality} />
         </Field>
       </FieldGroup>
       <div className="flex items-center gap-4 text-sm">

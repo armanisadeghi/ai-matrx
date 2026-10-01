@@ -59,6 +59,7 @@ import { VariationsColumn } from "./VariationsColumn";
 import { VariationsToolbar } from "./VariationsToolbar";
 import { VariationsEditorWindow } from "./VariationsEditorWindow";
 import type { VariationColumn as VariationColumnType } from "../types";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 const RUNS_WINDOW_ID = "agent-comparison-variations-runs";
 const EDITOR_WINDOW_ID = "agent-comparison-variations-editor";
@@ -285,14 +286,11 @@ function EmptyState({ sourceAgentReady }: { sourceAgentReady: boolean }) {
         </p>
         {sourceAgentReady && (
           <div className="flex items-center justify-center gap-2">
-            <input
-              type="number"
+            <ClampedNumberInput
               min={1}
               max={12}
               value={count}
-              onChange={(e) =>
-                setCount(Math.max(1, Math.min(12, Number(e.target.value) || 1)))
-              }
+              onChange={setCount}
               className="w-16 h-9 text-center text-sm bg-background border border-border rounded-md text-foreground focus:outline-none focus:border-primary"
             />
             <button

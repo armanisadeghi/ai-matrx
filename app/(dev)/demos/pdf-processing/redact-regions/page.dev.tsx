@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -111,52 +112,19 @@ export default function RedactRegionsDemo() {
               </div>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 <Field label="Page">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={r.page_number}
-                    onChange={(e) =>
-                      updateRegion(i, {
-                        page_number: Number(e.target.value) || 1,
-                      })
-                    }
-                  />
+                  <ClampedNumberInput value={r.page_number} min={1} onChange={(n) => updateRegion(i, { page_number: n })} />
                 </Field>
                 <Field label="x0">
-                  <Input
-                    type="number"
-                    value={r.x0}
-                    onChange={(e) =>
-                      updateRegion(i, { x0: Number(e.target.value) || 0 })
-                    }
-                  />
+                  <ClampedNumberInput value={r.x0} min={Number.MIN_SAFE_INTEGER} decimal onChange={(n) => updateRegion(i, { x0: n })} />
                 </Field>
                 <Field label="y0">
-                  <Input
-                    type="number"
-                    value={r.y0}
-                    onChange={(e) =>
-                      updateRegion(i, { y0: Number(e.target.value) || 0 })
-                    }
-                  />
+                  <ClampedNumberInput value={r.y0} min={Number.MIN_SAFE_INTEGER} decimal onChange={(n) => updateRegion(i, { y0: n })} />
                 </Field>
                 <Field label="x1">
-                  <Input
-                    type="number"
-                    value={r.x1}
-                    onChange={(e) =>
-                      updateRegion(i, { x1: Number(e.target.value) || 612 })
-                    }
-                  />
+                  <ClampedNumberInput value={r.x1} min={Number.MIN_SAFE_INTEGER} decimal onChange={(n) => updateRegion(i, { x1: n })} />
                 </Field>
                 <Field label="y1">
-                  <Input
-                    type="number"
-                    value={r.y1}
-                    onChange={(e) =>
-                      updateRegion(i, { y1: Number(e.target.value) || 100 })
-                    }
-                  />
+                  <ClampedNumberInput value={r.y1} min={Number.MIN_SAFE_INTEGER} decimal onChange={(n) => updateRegion(i, { y1: n })} />
                 </Field>
                 <Field label="Replacement">
                   <select

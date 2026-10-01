@@ -1,5 +1,6 @@
 'use client';
 
+import { ClampedNumberInput } from '@/components/official/ClampedNumberInput';
 import React, { useState, useEffect } from 'react';
 import { updateAnnouncement } from '@/actions/feedback.actions';
 import { AnnouncementType, SystemAnnouncement } from '@/types/feedback.types';
@@ -213,13 +214,12 @@ export default function EditAnnouncementDialog({ announcement, open, onOpenChang
                     {/* Min Display Seconds */}
                     <div className="space-y-2">
                         <Label htmlFor="displaySeconds">Minimum Display Time (seconds)</Label>
-                        <Input
+                        <ClampedNumberInput
                             id="displaySeconds"
-                            type="number"
                             min={1}
                             max={30}
                             value={minDisplaySeconds}
-                            onChange={(e) => setMinDisplaySeconds(parseInt(e.target.value) || 3)}
+                            onChange={setMinDisplaySeconds}
                             disabled={isSubmitting}
                         />
                         <p className="text-xs text-gray-500">

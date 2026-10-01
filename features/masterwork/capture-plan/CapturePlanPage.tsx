@@ -17,10 +17,10 @@
 // Expert's own goal, a method's one-line ask, or a fact with an arithmetic
 // derivation behind it.
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
@@ -587,15 +587,12 @@ export function CapturePlanPage({
                       which on a field holding "30" is a control with no purpose
                       that also sits in the keyboard tab order between every
                       other field on this form (jobs-bar-2026-09-16, item 3). */}
-                  <Input
+                  <ClampedNumberInput
                     id="cp-minutes"
-                    type="number"
-                    min={3}
+                    min={1}
                     max={480}
                     value={minutesPerDay}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setMinutesPerDay(Math.max(1, Number(e.target.value) || 0))
-                    }
+                    onChange={setMinutesPerDay}
                   />
                 </div>
                 <Picker
@@ -621,15 +618,12 @@ export function CapturePlanPage({
                 />
                 <div>
                   <Label htmlFor="cp-horizon">For how many days at most</Label>
-                  <Input
+                  <ClampedNumberInput
                     id="cp-horizon"
-                    type="number"
                     min={1}
                     max={90}
                     value={horizonDays ?? settings.defaults.horizonDays}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setHorizonDays(Math.max(1, Number(e.target.value) || 0))
-                    }
+                    onChange={setHorizonDays}
                   />
                 </div>
               </div>

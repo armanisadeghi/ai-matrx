@@ -40,6 +40,12 @@ interface SlotRendererProps<P extends Record<string, unknown>> {
   props: P;
   /** Default slot component used when there is no custom override. */
   fallback: React.ComponentType<P>;
+  /**
+   * The app row's id. Required: an unresolved import in this slot is reported
+   * under `agent-app:<id>:slot:<slot>`, and a report without the id names no
+   * row to fix.
+   */
+  appId: string;
   /** Optional error-display name for the boundary. */
   appName?: string;
 }
@@ -51,6 +57,7 @@ export function SlotRenderer<P extends Record<string, unknown>>({
   allowedImports,
   props,
   fallback: Fallback,
+  appId,
   appName,
 }: SlotRendererProps<P>) {
   const overrideMap = (overrides ?? {}) as Record<string, string | undefined>;
@@ -65,9 +72,9 @@ export function SlotRenderer<P extends Record<string, unknown>>({
     return compileSlotComponent({
       code: source,
       allowedImports,
-      origin: `agent-app:${appName ?? "unnamed"}:slot:${slot}`,
+      origin: `agent-app:${appId}:slot:${slot}`,
     });
-  }, [isCustom, source, allowedImports, appName, slot]);
+  }, [isCustom, source, allowedImports, appId, slot]);
 
   if (!isCustom || !Component) {
     if (isCustom && error) {

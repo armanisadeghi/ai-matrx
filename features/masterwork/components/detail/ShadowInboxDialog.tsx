@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FileUp, Inbox, Mail, X } from "lucide-react";
@@ -1008,15 +1009,12 @@ export function ShadowInboxDialog({
                 <Label htmlFor="shadow-inbox-days" className="text-xs">
                   Look back
                 </Label>
-                <Input
+                <ClampedNumberInput
                   id="shadow-inbox-days"
-                  type="number"
                   min={1}
                   max={365}
                   value={daysBack}
-                  onChange={(e) =>
-                    setDaysBack(Math.max(1, Number(e.target.value) || 1))
-                  }
+                  onChange={setDaysBack}
                   className="h-8 w-20"
                 />
                 <span className="text-xs text-muted-foreground">days</span>

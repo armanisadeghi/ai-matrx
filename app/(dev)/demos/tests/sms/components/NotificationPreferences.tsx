@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, CheckCircle2, AlertCircle, Settings } from 'lucide-react';
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface Preferences {
   phone_number: string | null;
@@ -324,16 +325,16 @@ export default function NotificationPreferences() {
 
             <div className="space-y-2">
               <Label htmlFor="hourly">Max Messages Per Hour</Label>
-              <Input
+              <ClampedNumberInput
                 id="hourly"
-                type="number"
-                min="1"
-                max="100"
+                min={1}
+                max={100}
+                className="h-9"
                 value={preferences.max_messages_per_hour}
-                onChange={(e) =>
+                onChange={(n) =>
                   setPreferences({
                     ...preferences,
-                    max_messages_per_hour: parseInt(e.target.value) || 10,
+                    max_messages_per_hour: n,
                   })
                 }
               />
@@ -341,16 +342,16 @@ export default function NotificationPreferences() {
 
             <div className="space-y-2">
               <Label htmlFor="daily">Max Messages Per Day</Label>
-              <Input
+              <ClampedNumberInput
                 id="daily"
-                type="number"
-                min="1"
-                max="500"
+                min={1}
+                max={500}
+                className="h-9"
                 value={preferences.max_messages_per_day}
-                onChange={(e) =>
+                onChange={(n) =>
                   setPreferences({
                     ...preferences,
-                    max_messages_per_day: parseInt(e.target.value) || 50,
+                    max_messages_per_day: n,
                   })
                 }
               />

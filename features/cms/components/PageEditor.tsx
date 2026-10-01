@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import React, {
   lazy,
   Suspense,
@@ -1192,12 +1193,10 @@ export default function PageEditor({
                         <label className="text-sm font-medium text-foreground block mb-1.5">
                           Sort Order
                         </label>
-                        <Input
-                          type="number"
+                        <ClampedNumberInput
                           value={sortOrder}
-                          onChange={(e) =>
-                            setSortOrder(parseInt(e.target.value) || 0)
-                          }
+                          min={Number.MIN_SAFE_INTEGER}
+                          onChange={setSortOrder}
                           className="text-sm"
                         />
                       </div>

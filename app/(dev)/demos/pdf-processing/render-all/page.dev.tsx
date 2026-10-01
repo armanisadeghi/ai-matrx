@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
@@ -61,13 +62,7 @@ export default function RenderAllDemo() {
     >
       <FieldGroup>
         <Field label="DPI">
-          <Input
-            type="number"
-            min={36}
-            max={600}
-            value={dpi}
-            onChange={(e) => setDpi(Number(e.target.value) || 150)}
-          />
+          <ClampedNumberInput value={dpi} min={36} max={600} onChange={setDpi} />
         </Field>
         <Field label="Format">
           <select
@@ -83,13 +78,7 @@ export default function RenderAllDemo() {
           </select>
         </Field>
         <Field label="JPEG / WebP quality">
-          <Input
-            type="number"
-            min={1}
-            max={100}
-            value={jpegQuality}
-            onChange={(e) => setJpegQuality(Number(e.target.value) || 85)}
-          />
+          <ClampedNumberInput value={jpegQuality} min={1} max={100} onChange={setJpegQuality} />
         </Field>
         <Field
           label="Pages (optional)"

@@ -3,7 +3,6 @@
 import { Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -30,6 +29,7 @@ import {
   familyWords,
   PRIMARY_FORM_CHOICES,
 } from "@/features/agents/components/inputs/resources/resource-family-words";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface ResourceFamilyPolicyEditorProps {
   fileId: string | null;
@@ -298,8 +298,7 @@ export function ResourceFamilyPolicyEditor({
                       ) : null}
                     </SelectContent>
                   </Select>
-                  <Input
-                    type="number"
+                  <ClampedNumberInput
                     min={1}
                     max={10_000}
                     className="h-8 text-xs"
@@ -307,10 +306,10 @@ export function ResourceFamilyPolicyEditor({
                     title="Most characters to copy in"
                     disabled={readonly}
                     value={promotion.max_chars ?? 5_000}
-                    onChange={(event) =>
+                    onChange={(n) =>
                       emit(
                         updateFamilyPromotion(policy, index, {
-                          max_chars: Number(event.target.value) || 5_000,
+                          max_chars: n,
                         }),
                       )
                     }

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { Field, SectionShell, StatusChip, announcePrintOutcome, byteLength, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_FORMAT_ROWS } from "./sample-data";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 const EC_LEVELS: QrEcLevel[] = ["L", "M", "Q"];
 
@@ -180,13 +181,12 @@ export function LabelsSection() {
                             </select>
                         </Field>
                         <Field label="Start at label" hint="Reuse a partially-used sheet">
-                            <input
-                                type="number"
+                            <ClampedNumberInput
                                 min={1}
                                 max={template.cols * template.rows}
                                 className={controlClass}
                                 value={startAtLabel}
-                                onChange={(e) => setStartAtLabel(Math.max(1, Number(e.target.value) || 1))}
+                                onChange={setStartAtLabel}
                             />
                         </Field>
                         <Field label="Preview mode">

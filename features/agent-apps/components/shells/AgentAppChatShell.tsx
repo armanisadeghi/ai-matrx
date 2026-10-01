@@ -137,6 +137,7 @@ export function AgentAppChatShell({ app, surface }: AgentAppChatShellProps) {
               overrides={app.slot_overrides}
               code={app.slot_code}
               allowedImports={app.allowed_imports}
+              appId={app.id}
               appName={app.name}
               fallback={
                 ChatDefaultPreGate as unknown as React.ComponentType<

@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileUp, Mic, Users } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -734,17 +735,12 @@ export function MeetingScavengerDialog({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Input
+                <ClampedNumberInput
                   id="meeting-min-words"
-                  type="number"
                   min={1}
                   max={200}
                   value={minWords}
-                  onChange={(event) =>
-                    setMinWords(
-                      Math.max(1, Math.min(200, Number(event.target.value) || 1)),
-                    )
-                  }
+                  onChange={setMinWords}
                   disabled={busy}
                   className="w-20"
                 />

@@ -32,9 +32,10 @@ second symptom instead of deduping the incident.
 - **Unresolved sandbox imports** — `captureUnresolvedImports.ts`
   (`sandbox-unresolved-import`, red). Every in-page compile of stored component
   code (`compileSlotComponent`) passes a required `origin` (`tool:<name>`,
-  `agent-app:<id>[:slot:<s>]`, `emit:<ref>`, `kind-component`); each name the
-  allowlisted scope could not supply is one row with that origin as `relation`
-  and the import path in `details`. The iframe kind sandbox reports the same
+  `agent-app:<id>[:slot:<s>]`, `emit:<ref>`,
+  `kind-component:<kind>:<platform>:<role>`); each name the allowlisted scope
+  could not supply is one row with that origin as `relation` and the import
+  path in `details`, filed once per page session and deferred out of render. The iframe kind sandbox reports the same
   gaps through `matrx:sandbox:error` (source `content-ir`).
 
 - **Messaging operations** — `captureMessagingError.ts` consumes the package's

@@ -17,6 +17,10 @@ type ClampedNumberInputProps = {
   min: number;
   /** Omit while the ceiling is still being read. */
   max?: number | null;
+  /** Fractional values (ratios, prices). Integers by default. */
+  decimal?: boolean;
+  /** HTML step; defaults to 1 for integers and "any" for decimals. */
+  step?: number | "any";
   disabled?: boolean;
   className?: string;
   "aria-label"?: string;
@@ -24,8 +28,13 @@ type ClampedNumberInputProps = {
 };
 
 /** The committed value for a typed draft, or null to restore the last value. */
-export function clampDraft(raw: string, min: number, max?: number | null): number | null {
-  const parsed = Number.parseInt(raw, 10);
+export function clampDraft(
+  raw: string,
+  min: number,
+  max?: number | null,
+  decimal = false,
+): number | null {
+  const parsed = decimal ? Number.parseFloat(raw) : Number.parseInt(raw, 10);
   if (Number.isNaN(parsed)) return null;
   const floored = Math.max(min, parsed);
   return max === undefined || max === null ? floored : Math.min(max, floored);
@@ -41,6 +50,8 @@ export function ClampedNumberInput({
   value,
   min,
   max,
+  decimal = false,
+  step,
   disabled,
   className,
   "aria-label": ariaLabel,
@@ -53,7 +64,7 @@ export function ClampedNumberInput({
   }, [value]);
 
   const commit = (raw: string) => {
-    const next = clampDraft(raw, min, max);
+    const next = clampDraft(raw, min, max, decimal);
     if (next === null) {
       setDraft(String(value));
       return;
@@ -66,7 +77,8 @@ export function ClampedNumberInput({
     <Input
       id={id}
       type="number"
-      inputMode="numeric"
+      inputMode={decimal ? "decimal" : "numeric"}
+      step={step ?? (decimal ? "any" : 1)}
       min={min}
       max={max ?? undefined}
       disabled={disabled}
@@ -78,7 +90,7 @@ export function ClampedNumberInput({
         setDraft(raw);
         // An in-range value is the value now (a "Make 10 cards" button must
         // not lag the field until blur); anything else waits for blur.
-        const next = clampDraft(raw, min, max);
+        const next = clampDraft(raw, min, max, decimal);
         if (next !== null && String(next) === raw.replace(/^0+(?=\d)/, "") && next !== value) onChange(next);
       }}
       onBlur={(event) => commit(event.target.value)}

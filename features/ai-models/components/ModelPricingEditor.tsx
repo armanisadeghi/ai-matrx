@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -89,13 +90,13 @@ function PriceInput({
         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
           $
         </span>
-        <Input
-          type="number"
-          step="0.000001"
-          min="0"
+        <ClampedNumberInput
           value={value ?? 0}
-          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          className={`h-7 text-xs pl-5 font-mono ${muted ? "opacity-50" : ""}`}
+          min={0}
+          decimal
+          step={0.000001}
+          onChange={onChange}
+          className={`text-xs pl-5 font-mono ${muted ? "opacity-50" : ""}`}
         />
       </div>
       {description && (

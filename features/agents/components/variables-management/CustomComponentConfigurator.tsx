@@ -45,6 +45,7 @@ import { StructuredListBindingEditor } from "./StructuredListBindingEditor";
 import { hasRandomOptionSource } from "@/features/agents/utils/auto-assignment";
 import { normalizeFileResourceId } from "@/features/files/api/resource-family";
 import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface CustomComponentConfiguratorProps {
   /** Current custom component config (undefined = bare textarea). */
@@ -267,11 +268,12 @@ export function CustomComponentConfigurator({
               <Label className="text-xs text-muted-foreground mb-1 block">
                 Step
               </Label>
-              <Input
-                type="number"
+              <ClampedNumberInput
+                decimal
+                min={0.001}
+                className="h-9"
                 value={effective.step}
-                onChange={(e) => handleStepChange(parseFloat(e.target.value) || 1)}
-                placeholder="1"
+                onChange={handleStepChange}
                 disabled={readonly}
               />
             </div>

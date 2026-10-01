@@ -107,6 +107,7 @@ import type {
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { isJsonObject } from "@/types/json";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 // Narrow an unknown error-response body (FastAPI-style `{detail}` or `{message}`) without `any`.
 function extractApiErrorMessage(body: unknown, fallback: string): string {
@@ -1482,16 +1483,12 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                       </div>
                       <div>
                         <Label htmlFor="edit-sort-order">Sort Order</Label>
-                        <Input
+                        <ClampedNumberInput
                           id="edit-sort-order"
-                          type="number"
+                          min={0}
+                          className="h-9"
                           value={editData.sort_order || 0}
-                          onChange={(e) =>
-                            handleEditChange(
-                              "sort_order",
-                              parseInt(e.target.value) || 0,
-                            )
-                          }
+                          onChange={(n) => handleEditChange("sort_order", n)}
                         />
                       </div>
                     </div>
@@ -1934,14 +1931,15 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
               </div>
               <div>
                 <Label htmlFor="create-sort-order">Sort Order</Label>
-                <Input
+                <ClampedNumberInput
                   id="create-sort-order"
-                  type="number"
+                  min={0}
+                  className="h-9"
                   value={createFormData.sort_order || 0}
-                  onChange={(e) =>
+                  onChange={(n) =>
                     setCreateFormData({
                       ...createFormData,
-                      sort_order: parseInt(e.target.value) || 0,
+                      sort_order: n,
                     })
                   }
                 />

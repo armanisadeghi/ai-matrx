@@ -3,7 +3,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -19,6 +18,7 @@ import {
   CAPABILITY_LABELS,
   CAPABILITY_GROUPS,
 } from "./auditTypes";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface AuditRulesConfigProps {
   rules: AuditRuleConfig;
@@ -183,13 +183,10 @@ export default function AuditRulesConfig({
               <Label className="text-xs whitespace-nowrap">
                 Minimum capabilities set to true
               </Label>
-              <Input
-                type="number"
+              <ClampedNumberInput
                 min={0}
                 value={rules.capabilities_min_true}
-                onChange={(e) =>
-                  set("capabilities_min_true", parseInt(e.target.value) || 0)
-                }
+                onChange={(n) => set("capabilities_min_true", n)}
                 className="h-7 text-xs w-20 font-mono"
               />
               <span className="text-xs text-muted-foreground">

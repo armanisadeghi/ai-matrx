@@ -11,10 +11,10 @@
 //                 simulating the real timed drill (no AI), then auto-ends.
 // Admin-gated (selectIsAdmin). No mock, no simulation — real audio, real playback.
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleStop, Mic, Radio, Square, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -219,25 +219,23 @@ export function CaptureTestSurface() {
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <label className="inline-flex items-center gap-1.5">
                 seconds/card
-                <Input
-                  type="number"
+                <ClampedNumberInput
                   min={1}
                   max={120}
                   value={autoSeconds}
                   disabled={capturing}
-                  onChange={(e) => setAutoSeconds(Number(e.target.value) || 1)}
+                  onChange={setAutoSeconds}
                   className="h-8 w-16"
                 />
               </label>
               <label className="inline-flex items-center gap-1.5">
                 cards
-                <Input
-                  type="number"
+                <ClampedNumberInput
                   min={1}
                   max={50}
                   value={autoCards}
                   disabled={capturing}
-                  onChange={(e) => setAutoCards(Number(e.target.value) || 1)}
+                  onChange={setAutoCards}
                   className="h-8 w-16"
                 />
               </label>

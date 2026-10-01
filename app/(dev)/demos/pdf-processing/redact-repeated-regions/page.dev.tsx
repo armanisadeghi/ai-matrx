@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -84,24 +85,10 @@ export default function RedactRepeatedRegionsDemo() {
           />
         </Field>
         <Field label="Min pages ratio">
-          <Input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={minPagesRatio}
-            onChange={(e) => setMinPagesRatio(Number(e.target.value) || 0.3333)}
-          />
+          <ClampedNumberInput value={minPagesRatio} min={0} max={1} decimal step={0.05} onChange={setMinPagesRatio} />
         </Field>
         <Field label="Min confidence">
-          <Input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={minConfidence}
-            onChange={(e) => setMinConfidence(Number(e.target.value) || 0.5)}
-          />
+          <ClampedNumberInput value={minConfidence} min={0} max={1} decimal step={0.05} onChange={setMinConfidence} />
         </Field>
       </FieldGroup>
       <label className="flex items-center gap-2 text-sm">

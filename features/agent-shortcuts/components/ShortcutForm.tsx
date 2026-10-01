@@ -95,6 +95,7 @@ import type {
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { extractErrorMessage } from "@ai-matrx/data/net";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 export interface ShortcutFormProps extends ScopeProps {
   /**
@@ -528,13 +529,11 @@ export function ShortcutForm({
           <Label htmlFor="sort-order" className="text-sm">
             Sort Order
           </Label>
-          <Input
+          <ClampedNumberInput
             id="sort-order"
-            type="number"
+            min={0}
             value={formData.sortOrder}
-            onChange={(e) =>
-              handleChange("sortOrder", parseInt(e.target.value, 10) || 0)
-            }
+            onChange={(n) => handleChange("sortOrder", n)}
             className="h-9 text-[16px]"
             disabled={saving}
           />
@@ -844,18 +843,12 @@ export function ShortcutForm({
             <Label htmlFor="bypass-gate-seconds" className="text-xs">
               Auto-bypass (s)
             </Label>
-            <Input
+            <ClampedNumberInput
               id="bypass-gate-seconds"
-              type="number"
-              min="0"
-              step="1"
+              min={0}
+              step={1}
               value={formData.bypassGateSeconds}
-              onChange={(e) =>
-                handleChange(
-                  "bypassGateSeconds",
-                  Math.max(0, Number.parseInt(e.target.value, 10) || 0),
-                )
-              }
+              onChange={(n) => handleChange("bypassGateSeconds", n)}
               disabled={saving || !formData.showPreExecutionGate}
               className="h-9 text-[16px]"
             />

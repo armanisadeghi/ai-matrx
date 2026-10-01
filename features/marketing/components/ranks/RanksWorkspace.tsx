@@ -7,6 +7,7 @@
  * table + competitive SERP landscape).
  */
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -344,12 +345,11 @@ function AddTargetForm({
         <span className="text-[11px] font-medium text-muted-foreground">
           Cadence (days)
         </span>
-        <Input
-          type="number"
+        <ClampedNumberInput
           min={1}
           max={90}
           value={cadenceDays}
-          onChange={(e) => setCadenceDays(Number(e.target.value) || 7)}
+          onChange={setCadenceDays}
         />
       </div>
       <Button

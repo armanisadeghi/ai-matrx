@@ -26,6 +26,7 @@ import {
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { unwrapScopesRpc } from "@/features/scopes/types";
 import { toast } from "@/lib/toast";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface ScopeTypeFormSheetProps {
   open: boolean;
@@ -230,13 +231,11 @@ export function ScopeTypeFormSheet({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Sort Order</Label>
-            <Input
-              type="number"
+            <ClampedNumberInput
               value={sortOrder}
-              onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 0)}
+              onChange={setSortOrder}
               min={0}
-              className="text-base"
-              style={{ fontSize: "16px" }}
+              className="h-9 text-base"
             />
           </div>
           <div className="space-y-1.5">

@@ -18,6 +18,7 @@ import {
   clearCapturedErrors,
   getSnapshot,
 } from "@/lib/diagnostics/errorCaptureStore";
+import { resetUnresolvedImportCaptures } from "@/lib/diagnostics/captureUnresolvedImports";
 
 function render(Component: unknown): string {
   if (typeof Component !== "function" && typeof Component !== "object") {
@@ -32,10 +33,18 @@ function unresolvedCaptures() {
   return getSnapshot().filter((e) => e.source === "sandbox-unresolved-import");
 }
 
-beforeEach(() => clearCapturedErrors());
+/** Captures are deferred out of render to a macrotask; let it run. */
+function flushCaptures(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+beforeEach(() => {
+  clearCapturedErrors();
+  resetUnresolvedImportCaptures();
+});
 
 describe("compileSlotComponent — unresolved imports announce themselves", () => {
-  it("shows a named stand-in that keeps its children and files the import path under the tool", () => {
+  it("shows a named stand-in that keeps its children and files the import path under the tool", async () => {
     const result = compileSlotComponent({
       origin: "tool:get_weather",
       code: `
@@ -63,6 +72,7 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
     // Wrapped content is not swallowed by the stand-in.
     expect(markup).toContain("Irvine, 72°F and sunny");
 
+    await flushCaptures();
     const captures = unresolvedCaptures();
     expect(captures).toHaveLength(1);
     expect(captures[0].relation).toBe("tool:get_weather");
@@ -70,7 +80,7 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
     expect(captures[0].message).toContain("@/features/weather/ForecastCard");
   });
 
-  it("files an icon the allowlisted module does not export", () => {
+  it("files an icon the allowlisted module does not export", async () => {
     const result = compileSlotComponent({
       origin: "agent-app:3f1c2a9e:slot:header",
       code: `
@@ -85,13 +95,14 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
     const markup = render(result.Component);
     expect(markup).toContain('data-unresolved-import="CloudSunRainbow"');
     expect(markup).toContain("Weekend forecast");
+    await flushCaptures();
     const captures = unresolvedCaptures();
     expect(captures).toHaveLength(1);
     expect(captures[0].relation).toBe("agent-app:3f1c2a9e:slot:header");
     expect(captures[0].message).toContain('"lucide-react"');
   });
 
-  it("files a JSX tag that is never imported or defined", () => {
+  it("files a JSX tag that is never imported or defined", async () => {
     const result = compileSlotComponent({
       origin: "emit:report_summary",
       code: `
@@ -105,25 +116,27 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
     expect(render(result.Component)).toContain(
       'data-unresolved-import="StatusPill"',
     );
+    await flushCaptures();
     expect(unresolvedCaptures().map((c) => c.relation)).toEqual([
       "emit:report_summary",
     ]);
   });
 
-  it("files an allowed_imports entry the allowlist does not know", () => {
+  it("files an allowed_imports entry the allowlist does not know", async () => {
     compileSlotComponent({
       origin: "tool:search_listings",
       code: `export default function Listings() { return <ul />; }`,
       allowedImports: ["react", "@/features/listings/private-client"],
     });
 
+    await flushCaptures();
     const captures = unresolvedCaptures();
     expect(captures).toHaveLength(1);
     expect(captures[0].relation).toBe("tool:search_listings");
     expect(captures[0].message).toContain("@/features/listings/private-client");
   });
 
-  it("files nothing for a component whose imports all resolve", () => {
+  it("files nothing for a component whose imports all resolve", async () => {
     const result = compileSlotComponent({
       origin: "tool:get_weather",
       code: `
@@ -139,6 +152,65 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
     const markup = render(result.Component);
     expect(markup).not.toContain("data-unresolved-import");
     expect(markup).toContain("Clear");
+    await flushCaptures();
     expect(unresolvedCaptures()).toHaveLength(0);
+  });
+});
+
+/**
+ * Several hosts compile in a per-mount `useMemo` (public renderer, template
+ * preview, slot renderer, custom shell): every re-mount re-runs the compile,
+ * and the compile runs INSIDE render. The gap is filed once per page session,
+ * and never from inside the compile call itself.
+ */
+describe("compileSlotComponent — unresolved-import filing is once and out of render", () => {
+  const HEADER = `
+    import { RainChance } from "@/features/weather/RainChance";
+    export default function Header() {
+      return <h2><RainChance /> Saturday in Irvine</h2>;
+    }
+  `;
+
+  it("files nothing synchronously inside the compile (it runs during render)", async () => {
+    compileSlotComponent({
+      origin: "agent-app:7b2e41d0:slot:header",
+      code: HEADER,
+      allowedImports: ["react"],
+    });
+    expect(unresolvedCaptures()).toHaveLength(0);
+
+    await flushCaptures();
+    expect(unresolvedCaptures()).toHaveLength(1);
+  });
+
+  it("re-mounting the same slot does not raise the count or the unseen badge", async () => {
+    for (let mount = 0; mount < 4; mount++) {
+      compileSlotComponent({
+        origin: "agent-app:7b2e41d0:slot:header",
+        code: HEADER,
+        allowedImports: ["react"],
+      });
+    }
+    await flushCaptures();
+
+    const captures = unresolvedCaptures();
+    expect(captures).toHaveLength(1);
+    expect(captures[0].count).toBe(1);
+    expect(captures[0].relation).toBe("agent-app:7b2e41d0:slot:header");
+  });
+
+  it("still files the same import separately for a different stored component", async () => {
+    for (const origin of [
+      "agent-app:7b2e41d0:slot:header",
+      "agent-app:c09a5f13:slot:header",
+    ]) {
+      compileSlotComponent({ origin, code: HEADER, allowedImports: ["react"] });
+    }
+    await flushCaptures();
+
+    expect(unresolvedCaptures().map((c) => c.relation).sort()).toEqual([
+      "agent-app:7b2e41d0:slot:header",
+      "agent-app:c09a5f13:slot:header",
+    ]);
   });
 });

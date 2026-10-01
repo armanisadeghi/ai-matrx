@@ -2,7 +2,6 @@
 
 "use client";
 
-import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface Props {
   value: { every_seconds?: number };
@@ -59,12 +59,11 @@ export function IntervalForm({
     <div className="space-y-2">
       <Label>{heartbeat ? "Heartbeat every" : "Run every"}</Label>
       <div className="flex items-center gap-2 max-w-md">
-        <Input
-          type="number"
+        <ClampedNumberInput
           min={1}
           value={display.n}
-          onChange={(e) => update(Number(e.target.value) || 0, display.unit)}
-          className="w-24"
+          onChange={(n) => update(n, display.unit)}
+          className="w-24 h-9"
         />
         <Select
           value={display.unit}

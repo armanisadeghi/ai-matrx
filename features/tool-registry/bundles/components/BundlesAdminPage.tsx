@@ -71,6 +71,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 type Filter = "active" | "all";
 
@@ -1000,12 +1001,11 @@ function AddMemberDialog({
                   <Label className="text-[11px] text-muted-foreground">
                     Sort order
                   </Label>
-                  <Input
-                    type="number"
+                  <ClampedNumberInput
                     value={sort}
-                    onChange={(e) => setSort(Number(e.target.value) || 0)}
-                    className="h-8"
-                    style={{ fontSize: "16px" }}
+                    min={Number.MIN_SAFE_INTEGER}
+                    className="h-8 text-base"
+                    onChange={setSort}
                   />
                 </div>
               </div>

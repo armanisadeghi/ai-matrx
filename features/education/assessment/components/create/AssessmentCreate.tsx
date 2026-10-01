@@ -13,6 +13,7 @@
 
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { recordToast, toast } from "@/lib/toast";
@@ -511,15 +512,12 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="as-count">Questions</Label>
-                <Input
+                <ClampedNumberInput
                   id="as-count"
-                  type="number"
                   min={1}
                   max={config.countMax}
                   value={count}
-                  onChange={(e) =>
-                    setCount(Number.parseInt(e.target.value, 10) || 0)
-                  }
+                  onChange={setCount}
                   className={FIELD}
                 />
               </div>
@@ -613,14 +611,11 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
               {config.timed && (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="as-time">Time limit (minutes)</Label>
-                  <Input
+                  <ClampedNumberInput
                     id="as-time"
-                    type="number"
                     min={0}
                     value={timeLimitMin}
-                    onChange={(e) =>
-                      setTimeLimitMin(Number.parseInt(e.target.value, 10) || 0)
-                    }
+                    onChange={setTimeLimitMin}
                     className={FIELD}
                   />
                 </div>

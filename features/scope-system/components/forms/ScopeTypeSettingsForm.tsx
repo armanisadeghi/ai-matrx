@@ -20,6 +20,7 @@ import {
   updateScopeType,
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { unwrapScopesRpc } from "@/features/scopes/types";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 interface ScopeTypeSettingsFormProps {
   typeId: string;
@@ -242,14 +243,13 @@ export function ScopeTypeSettingsForm({
             <Label htmlFor={ids.sortOrder} className="text-xs">
               Sort order
             </Label>
-            <Input
+            <ClampedNumberInput
               id={ids.sortOrder}
-              type="number"
               value={sortOrder}
-              onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 0)}
               min={0}
-              style={{ fontSize: "16px" }}
               disabled={busy}
+              className="text-base"
+              onChange={setSortOrder}
             />
             <p className="text-[10px] text-muted-foreground">
               Lower shows first

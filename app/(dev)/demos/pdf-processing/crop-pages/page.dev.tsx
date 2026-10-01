@@ -1,5 +1,6 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
@@ -66,32 +67,16 @@ export default function CropPagesDemo() {
         </Field>
         <div className="grid grid-cols-4 gap-2 sm:col-span-2">
           <Field label="x0">
-            <Input
-              type="number"
-              value={x0}
-              onChange={(e) => setX0(Number(e.target.value) || 0)}
-            />
+            <ClampedNumberInput value={x0} min={Number.MIN_SAFE_INTEGER} decimal onChange={setX0} />
           </Field>
           <Field label="y0">
-            <Input
-              type="number"
-              value={y0}
-              onChange={(e) => setY0(Number(e.target.value) || 0)}
-            />
+            <ClampedNumberInput value={y0} min={Number.MIN_SAFE_INTEGER} decimal onChange={setY0} />
           </Field>
           <Field label="x1">
-            <Input
-              type="number"
-              value={x1}
-              onChange={(e) => setX1(Number(e.target.value) || 612)}
-            />
+            <ClampedNumberInput value={x1} min={Number.MIN_SAFE_INTEGER} decimal onChange={setX1} />
           </Field>
           <Field label="y1">
-            <Input
-              type="number"
-              value={y1}
-              onChange={(e) => setY1(Number(e.target.value) || 792)}
-            />
+            <ClampedNumberInput value={y1} min={Number.MIN_SAFE_INTEGER} decimal onChange={setY1} />
           </Field>
         </div>
       </FieldGroup>

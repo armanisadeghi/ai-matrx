@@ -10,6 +10,7 @@
  * Cancel, the X, and Escape close this, and the body scrolls internally so the
  * actions stay reachable on a short screen. (Reported bug, fixed here too.)
  */
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
@@ -587,22 +588,20 @@ export function EnrollDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Review every N examples</Label>
-              <Input
-                type="number"
+              <ClampedNumberInput
                 min={1}
                 max={500}
                 value={everyN}
-                onChange={(e) => setEveryN(Number(e.target.value) || 10)}
+                onChange={setEveryN}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Max examples per review</Label>
-              <Input
-                type="number"
+              <ClampedNumberInput
                 min={1}
                 max={100}
                 value={maxExamples}
-                onChange={(e) => setMaxExamples(Number(e.target.value) || 25)}
+                onChange={setMaxExamples}
               />
             </div>
           </div>
@@ -677,12 +676,11 @@ export function EnrollDialog({
 
           <div className="space-y-1.5">
             <Label>Backfill — count runs from the last N days</Label>
-            <Input
-              type="number"
+            <ClampedNumberInput
               min={0}
               max={365}
               value={backfillDays}
-              onChange={(e) => setBackfillDays(Number(e.target.value) || 0)}
+              onChange={setBackfillDays}
             />
             <p className="text-xs text-muted-foreground">
               Starts the watermark in the past so a new enrollment has something

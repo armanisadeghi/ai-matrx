@@ -18,11 +18,11 @@
  * that query, which IS the competing-pages view.
  */
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useMemo, useState } from "react";
 import { Lightbulb, PanelTop } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { Input } from "@ai-matrx/design-system";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { cn } from "@/styles/themes/utils";
 import {
@@ -245,17 +245,11 @@ export function InsightsTab({
               : usesClicksThreshold
                 ? "Min clicks"
                 : "Min impressions"}
-            <Input
-              type="number"
+            <ClampedNumberInput
               min={1}
               className="h-6 w-20 text-xs"
               value={usesClicksThreshold ? minClicks : minImpressions}
-              onChange={(e) => {
-                // The RPC arg is a SQL int — "150.5" would fail PostgREST's cast.
-                const value = Math.max(
-                  1,
-                  Math.trunc(Number(e.target.value) || 1),
-                );
+              onChange={(value) => {
                 if (usesClicksThreshold) setMinClicks(value);
                 else setMinImpressions(value);
               }}

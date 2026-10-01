@@ -2,6 +2,7 @@
 
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useEffect, useRef, useState } from "react";
 import cronstrue from "cronstrue";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -125,13 +126,12 @@ export default function CronTesterPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cron-n">Show next N</Label>
-                <Input
+                <ClampedNumberInput
                   id="cron-n"
-                  type="number"
                   min={1}
                   max={50}
                   value={n}
-                  onChange={(e) => setN(Number(e.target.value) || 10)}
+                  onChange={setN}
                 />
               </div>
             </div>

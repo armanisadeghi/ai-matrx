@@ -129,6 +129,7 @@ export function AgentAppWidgetShell({
               overrides={app.slot_overrides}
               code={app.slot_code}
               allowedImports={app.allowed_imports}
+              appId={app.id}
               appName={app.name}
               fallback={
                 WidgetDefaultVariableInput as unknown as React.ComponentType<
@@ -171,6 +172,7 @@ export function AgentAppWidgetShell({
                   overrides={app.slot_overrides}
                   code={app.slot_code}
                   allowedImports={app.allowed_imports}
+                  appId={app.id}
                   appName={app.name}
                   fallback={
                     WidgetDefaultResultRenderer as unknown as React.ComponentType<

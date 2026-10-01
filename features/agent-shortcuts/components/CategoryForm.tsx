@@ -51,6 +51,7 @@ import type {
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 export interface CategoryFormProps extends ScopeProps {
   isOpen: boolean;
@@ -370,12 +371,10 @@ export function CategoryForm({
         </div>
         <div>
           <Label className="text-xs font-medium">Sort Order</Label>
-          <Input
-            type="number"
+          <ClampedNumberInput
+            min={0}
             value={formData.sortOrder}
-            onChange={(e) =>
-              handleChange("sortOrder", parseInt(e.target.value, 10) || 0)
-            }
+            onChange={(n) => handleChange("sortOrder", n)}
             disabled={saving}
             className="h-9 text-[16px]"
           />

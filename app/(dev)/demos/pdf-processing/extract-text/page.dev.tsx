@@ -1,8 +1,8 @@
 "use client";
 
+import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { useState } from "react";
 import { FileText, ScanText } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -169,12 +169,7 @@ export default function ExtractTextDemo() {
           label="OCR threshold (chars)"
           hint="Pages with fewer native chars get OCR'd"
         >
-          <Input
-            type="number"
-            min={0}
-            value={ocrThreshold}
-            onChange={(e) => setOcrThreshold(Number(e.target.value) || 100)}
-          />
+          <ClampedNumberInput value={ocrThreshold} min={0} onChange={setOcrThreshold} />
         </Field>
         <div className="flex flex-col gap-2 text-sm">
           <label className="flex items-center gap-2">
