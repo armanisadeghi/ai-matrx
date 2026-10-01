@@ -17,6 +17,7 @@
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { previewResult } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 
 /** One tool step as the database served it — already cleaned. */
 export interface SharedChatTool {
@@ -113,7 +114,9 @@ function readTool(raw: Record<string, unknown>, ordinal: number): SharedChatTool
     output: withheld
       ? null
       : truncated
-        ? (raw.output_preview ?? null)
+        ? // The preview of a kind is broken kind JSON: `previewResult` reads it
+          // as the kind's honest "not saved" state, never raw text.
+          previewResult(typeof raw.output_preview === "string" ? raw.output_preview : null)
         : parseOutput(raw.output),
     outputTruncated: !withheld && truncated,
     withheld,

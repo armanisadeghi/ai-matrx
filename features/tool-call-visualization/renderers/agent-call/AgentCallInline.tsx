@@ -5,7 +5,8 @@ import { Aperture, ImageIcon } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { isImageGenerationAgentCall } from "./agentCallKind";
-import { isCollaborationAgentCall } from "./collab";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { isCollaborationAgentCall, readAgentCallAnswer } from "./collab";
 import { CollabCallCard } from "./CollabCallCard";
 import { ImageGenerationResult } from "./ImageGenerationResult";
 import { findResultMedia } from "./findResultMedia";
@@ -107,6 +108,27 @@ export function AgentCallInline(props: ToolRendererProps) {
     findResultMedia(entry.result)
   ) {
     return <ImageGenerationResult {...props} />;
+  }
+
+  // The child agent's final answer is an ANSWER, not a field in a key/value
+  // grid: its text renders as markdown and a kind it returned renders as that
+  // kind (Arman, 2026-09-30: a kind is never drawn as raw JSON). A kindless
+  // structured answer keeps the generic body, which is the right floor.
+  if (entry.status === "completed") {
+    const answer = readAgentCallAnswer(entry.result);
+    const kindValue =
+      answer?.value && typeof answer.value.__kind === "string"
+        ? answer.value
+        : null;
+    if (kindValue || answer?.text) {
+      return (
+        <AnswerValueView
+          value={kindValue ?? undefined}
+          text={kindValue ? null : answer?.text}
+          density="inline"
+        />
+      );
+    }
   }
 
   return <GenericRenderer {...props} />;

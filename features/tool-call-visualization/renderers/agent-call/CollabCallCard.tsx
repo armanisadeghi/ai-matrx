@@ -11,6 +11,13 @@
  * `selectAgentCallChildStream` — the same text, attributed and contained.
  * Persisted turns have no live stream (the child text lives in the child
  * conversation); the card then shows the answer summary from the tool output.
+ *
+ * Both go through the canonical renderers, never plain markdown (Arman,
+ * 2026-09-30: a kind is never drawn as raw JSON): the live text through
+ * `MarkdownStream` (the child has no request of its own — it streams inside
+ * the parent's — so the card hands it the child's text), the settled answer
+ * through `AnswerValueView`, which routes a structured or kind answer to its
+ * kind component.
  */
 
 import React, { useMemo } from "react";
@@ -19,9 +26,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentCallChildStream } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useConversationTitle } from "@/features/agents/hooks/useConversationTitle";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import MarkdownStream from "@/components/MarkdownStream";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
-import { ResultMarkdown } from "../../result-fields/ResultMarkdown";
 import { cn } from "@/lib/utils";
 import type { ToolRendererProps } from "../../types";
 import { getCollabCallInfo, type CollabCallInfo } from "./collab";
@@ -76,7 +83,9 @@ export function CollabCallCard(props: ToolRendererProps) {
   const { visible: liveText } = stripThinkingStreaming(childStream?.text ?? "");
   const showLiveStream =
     childStream !== null && (childStream.status === "running" || isActive) && liveText.length > 0;
-  const answerText = !isActive ? (info.resultText ?? (liveText || null)) : null;
+  const answerValue = !isActive ? info.resultValue : null;
+  const answerText =
+    !isActive && !answerValue ? (info.resultText ?? (liveText || null)) : null;
 
   return (
     <div className="overflow-hidden rounded-xl border border-violet-500/20 bg-violet-500/[0.04] dark:bg-violet-400/[0.05]">
@@ -112,18 +121,23 @@ export function CollabCallCard(props: ToolRendererProps) {
       {/* Live child stream — the specialist's tokens, contained + attributed */}
       {showLiveStream && (
         <div className="mx-3 mb-2 max-h-64 overflow-y-auto rounded-md border border-border bg-background/60 px-3 py-2">
-          <BasicMarkdownContent imagePolicy="ai"
+          <MarkdownStream
+            imagePolicy="ai"
             content={liveText}
             isStreamActive={childStream?.status === "running"}
-            showCopyButton={false}
+            hideCopyButton
           />
         </div>
       )}
 
       {/* Answer summary once complete */}
-      {answerText && (
+      {(answerValue || answerText) && (
         <div className="px-3 pb-2">
-          <ResultMarkdown content={answerText} density="inline" />
+          <AnswerValueView
+            value={answerValue ?? undefined}
+            text={answerText}
+            density="inline"
+          />
         </div>
       )}
 

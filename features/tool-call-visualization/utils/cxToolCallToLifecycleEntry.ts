@@ -16,6 +16,11 @@ import type {
   ToolLifecycleEntry,
 } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
+import {
+  firstKindSlug,
+  jsonKindSignal,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 import { displayNameFromToolEvents } from "./toolDisplayName";
 
 function parseOutput(raw: string | null): unknown {
@@ -25,6 +30,25 @@ function parseOutput(raw: string | null): unknown {
   } catch {
     return raw;
   }
+}
+
+/**
+ * The slim-row `output_preview` as a renderable result. A preview that is
+ * whole JSON parses like the full output. A TRUNCATED preview of a kind is
+ * neither the kind nor readable text — drawing it would put raw, broken kind
+ * JSON on screen (Arman, 2026-09-30: a kind is never drawn as raw JSON) — so
+ * it reads as an honest one-line state naming the kind instead. Anything else
+ * (prose, kindless JSON) stays the text it is.
+ */
+export function previewResult(preview: string | null | undefined): unknown {
+  if (!preview) return null;
+  const parsed = parseOutput(preview);
+  if (parsed !== preview) return parsed;
+  if (jsonKindSignal(preview) !== "kind") return preview;
+  const slug = firstKindSlug(preview);
+  return slug
+    ? `${humanizeKind(slug)} \u00b7 full output not saved`
+    : "Full output not saved";
 }
 
 function parseEvents(raw: unknown): ToolEventPayload[] {
@@ -141,7 +165,7 @@ export function persistedToolEntry(input: {
           : base.arguments,
       // Full `output` (set by the converter) wins; `output_preview` is the
       // slim-row fallback when the full output wasn't persisted.
-      result: base.result ?? record.outputPreview ?? null,
+      result: base.result ?? previewResult(record.outputPreview),
     };
   }
 

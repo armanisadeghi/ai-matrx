@@ -71,11 +71,11 @@ Every stream item below adds its case there.
 ## D. Tool calls
 
 - [ ] T1. Generic tool renderer (`ResultValue`) never routes kinds → grid / raw JSON tree.
-- [ ] T2. Reloaded tool call with only `output_preview` → unparseable raw text.
-- [ ] T3. Sub-agent call results; collaboration cards on plain markdown.
+- [x] T2. Reloaded tool call with only `output_preview` → unparseable raw text. (→ `previewResult`: whole JSON parses; truncated kind JSON → "<Kind> · full output not saved")
+- [x] T3. Sub-agent call results; collaboration cards on plain markdown. (→ `AnswerValueView` for the child's answer; live child text → `MarkdownStream` content mode — the child has no request of its own, it streams inside the parent's)
 - [x] T4. Search / research / scrape / random-wheel / SQL renderers on plain markdown.
       Closed at the leaf: `BasicMarkdownContent` hands `__kind` text to `MarkdownStream` (`KindTextGate`).
-- [ ] T5. Shared public conversation tool steps.
+- [x] T5. Shared public conversation tool steps. (truncated `output_preview` → `previewResult`; the cards themselves are the chat's, so T1 covers the rest)
 
 ## E. Workflows
 

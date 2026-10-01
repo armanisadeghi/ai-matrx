@@ -37,6 +37,34 @@ export interface CollabCallInfo {
   remember: CollabRemember | null;
   /** The specialist's final answer text, when returned inline. */
   resultText: string | null;
+  /** The specialist's final answer when it is a structured value (a kind). */
+  resultValue: Record<string, unknown> | null;
+}
+
+/**
+ * The child agent's final answer on an `agent_call` output — `result` is the
+ * child's text, or its structured value (a kind carries `__kind`). Text
+ * wrapped as `{result|text|answer: "..."}` unwraps; a reference-mode call
+ * carries only the stored descriptor's preview. Null when there is none.
+ */
+export function readAgentCallAnswer(
+  result: unknown,
+): { text: string | null; value: Record<string, unknown> | null } | null {
+  const output = asRecord(result);
+  const direct = output?.result;
+  if (typeof direct === "string") return direct ? { text: direct, value: null } : null;
+  const directObj =
+    direct && typeof direct === "object" && !Array.isArray(direct)
+      ? (direct as Record<string, unknown>)
+      : null;
+  if (directObj) {
+    if (typeof directObj.__kind === "string") return { text: null, value: directObj };
+    const nested = directObj.result ?? directObj.text ?? directObj.answer;
+    if (typeof nested === "string") return { text: nested, value: null };
+    return { text: null, value: directObj };
+  }
+  const preview = asString(asRecord(output?.stored)?.preview);
+  return preview ? { text: preview, value: null } : null;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -93,16 +121,7 @@ export function getCollabCallInfo(
     };
   })();
 
-  const resultText = ((): string | null => {
-    const direct = output?.result;
-    if (typeof direct === "string") return direct;
-    const directObj = asRecord(direct);
-    const nested = directObj?.result ?? directObj?.text ?? directObj?.answer;
-    if (typeof nested === "string") return nested;
-    // reference-mode: the stored descriptor carries a preview
-    const stored = asRecord(output?.stored);
-    return asString(stored?.preview);
-  })();
+  const answer = readAgentCallAnswer(output);
 
   return {
     historyMode,
@@ -116,6 +135,7 @@ export function getCollabCallInfo(
         : null,
     agentName: asString(output?.agent_name),
     remember,
-    resultText,
+    resultText: answer?.text ?? null,
+    resultValue: answer?.value ?? null,
   };
 }
