@@ -1,6 +1,11 @@
 -- Run only after the task-assignment outbox base, in-app, and activation migrations on
 -- an isolated database clone. Uses admin@admin.com alone; rolls fixtures back.
 begin;
+-- Nightly clone connections default to replica mode. Without this line every
+-- task trigger is skipped and the test can accidentally certify no producer.
+-- The clone is quarantined (no pg_net or active cron) and this entire fixture
+-- rolls back, so enabling triggers here exercises the saved transition only.
+set local session_replication_role = origin;
 
 -- The producer has no carrier channel. Even if a user preference enables SMS,
 -- an assignment is not an enrolled text notification program.
@@ -16,12 +21,12 @@ declare
 begin
   select id into strict v_admin from auth.users where email = 'admin@admin.com';
   select id into strict v_org from iam.organizations
-   where is_personal is true and created_by = v_admin and archived_at is null
+   where name = 'admin''s Workspace' and created_by = v_admin and archived_at is null
    order by created_at limit 1;
 
   update communication.notification_event_type
      set enabled = true,
-         config = config || '{"assignment_outbox_active":true}'::jsonb
+         config = config || '{"assignment_outbox_active":true,"assignment_dm_outbox_active":true,"assignment_dm_replay_key_active":true}'::jsonb
    where event_key = 'task.assigned';
   update users.user_email_preferences
      set task_notifications = true where user_id = v_admin;
@@ -58,6 +63,14 @@ begin
   if v_count <> 1 then
     raise exception 'Expected one transactionally visible in-app assignment notice; got %', v_count;
   end if;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('task.assigned:%s:%s:dm', v_task, v_first_version)
+     and channel = 'task_assignment_dm' and recipient_user_id = v_admin
+     and organization_id = v_org and target_id = v_task
+     and payload ->> 'task_id' = v_task::text and status = 'pending';
+  if v_count <> 1 then
+    raise exception 'Expected one durable action-DM intent for the saved assignment; got %', v_count;
+  end if;
 
   update workspace.tasks set title = 'A revised title' where id = v_task;
   update workspace.tasks set assignee_id = v_admin where id = v_task;
@@ -72,6 +85,12 @@ begin
      and channel = 'in_app';
   if v_count <> 1 then
     raise exception 'A title edit or unchanged assignee replay created % in-app notices', v_count;
+  end if;
+  select count(*) into v_count from communication.notification
+   where target_id = v_task and event_key = 'task.assigned'
+     and channel = 'task_assignment_dm';
+  if v_count <> 1 then
+    raise exception 'A title edit or unchanged assignee replay created % action-DM intents', v_count;
   end if;
 
   update workspace.tasks set assignee_id = null where id = v_task;
@@ -92,6 +111,12 @@ begin
   if v_count <> 2 then
     raise exception 'A genuine second assignment should create a second in-app notice; got %', v_count;
   end if;
+  select count(*) into v_count from communication.notification
+   where target_id = v_task and event_key = 'task.assigned'
+     and channel = 'task_assignment_dm';
+  if v_count <> 2 then
+    raise exception 'A genuine second assignment should create a second action-DM intent; got %', v_count;
+  end if;
 
   -- The recipient's in-app switch is the nearest rung. A third saved
   -- assignment still produces email but must not expose a task title in-app.
@@ -107,6 +132,12 @@ begin
      and channel = 'in_app';
   if v_count <> 2 then
     raise exception 'The recipient disabled in-app notices but got %', v_count;
+  end if;
+  select count(*) into v_count from communication.notification
+   where target_id = v_task and event_key = 'task.assigned'
+     and channel = 'task_assignment_dm';
+  if v_count <> 2 then
+    raise exception 'The recipient disabled in-app notices but got % action-DM intents', v_count;
   end if;
   delete from communication.notification_preference
    where user_id = v_admin and organization_id = v_org
@@ -130,6 +161,12 @@ begin
      and channel = 'in_app';
   if v_count <> 2 then
     raise exception 'The organization disabled in-app notices but got %', v_count;
+  end if;
+  select count(*) into v_count from communication.notification
+   where target_id = v_task and event_key = 'task.assigned'
+     and channel = 'task_assignment_dm';
+  if v_count <> 2 then
+    raise exception 'The organization disabled in-app notices but got % action-DM intents', v_count;
   end if;
 
   perform set_config('request.jwt.claim.sub', v_admin::text, true);
@@ -158,6 +195,12 @@ begin
      and channel = 'in_app';
   if v_count <> 2 then
     raise exception 'The disabled event still enqueued an in-app notice';
+  end if;
+  select count(*) into v_count from communication.notification
+   where target_id = v_task and event_key = 'task.assigned'
+     and channel = 'task_assignment_dm';
+  if v_count <> 2 then
+    raise exception 'The disabled event still enqueued an action-DM intent';
   end if;
 
   select count(*) into v_count from communication.notification
