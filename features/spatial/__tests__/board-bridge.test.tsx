@@ -266,7 +266,10 @@ describe("the bridge — every board item in two requests", () => {
       { id: "colors", target: "note_title_set", value: "Nope" },
       { call: declined.call },
     );
-    expect((answer as { output: Record<string, unknown> }).output).toMatchObject({ ok: false, declined: true });
+    // A decline is the person's answer, never a failure: no `ok: false` (personDeclinedToolOutput).
+    const declinedOutput = (answer as { output: Record<string, unknown> }).output;
+    expect(declinedOutput).toMatchObject({ status: "declined_by_person", declined: true });
+    expect(declinedOutput).not.toHaveProperty("ok");
     expect(notes.colors.title).toBe("Colors");
 
     const refused = agentCall("approved");
