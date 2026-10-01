@@ -58,11 +58,18 @@ export function AgentCallChildTrace({
       requestId ? selectAgentCallTrace(requestId, entry.callId) : NO_LIVE_TRACE,
     [requestId, entry.callId],
   );
-  const live = useAppSelector(liveSelector);
+  const streamed = useAppSelector(liveSelector);
   const childId =
-    live?.childConversationId ?? childConversationIdFromResult(entry.result);
+    streamed?.childConversationId ??
+    childConversationIdFromResult(entry.result);
+  // Once the call has settled, the child's own rows are the truth — the wire
+  // never carries everything (a sub-agent's thinking text arrives only in its
+  // stored message: measured 2026-10-01, reasoning runs with zero chunks on
+  // the wire, 121 chars in chat.message). The final screen IS the reload.
+  const settled = entry.status === "completed" || entry.status === "error";
+  const live = settled && childId ? null : streamed;
 
-  // Reload (or a stream already gone from the store): the child's own rows.
+  // Reload, or a settled call: the child's own rows.
   const persistedId = !live && childId ? childId : null;
   const [failed, setFailed] = useState(false);
   useEffect(() => {
