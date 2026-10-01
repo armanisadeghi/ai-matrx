@@ -62,6 +62,10 @@ Slice: `app/(admin)`, `features/admin`, `features/administration` (855 candidate
 
 3 `standard` opus reviewers (agents `a4cd7f00fdacfea13`, `a2c05a134aa008314`, `aed3d00cb40ddc019`) overturned Discover on warnings deleted instead of cut to state (21), dialog text squeezed to 60 (25), live counts treated as prose (5) — but shipped 31 over-budget replacements of their own (→ `validate-discover.mjs` review mode). 12 fixers (2 sonnet, 10 opus) applied; one refused an untrue tooltip the code disproved. 12 independent opus confirms: **12/12 CERTIFIED, 11 with fixes** — misses harvested into `fix.md` § round-1 table (warnings about a control → its tooltip; subject kept; ternary branches are siblings; containers removed with their text; neighbours re-levelled). Measured: admin NOVEL 260 → 33.
 
+## Scenario E4 — round 2 with the owner-words guard (2026-09-30)
+
+563 units on the core product; `check-owner-words.mjs` held back 6 (reviewers kept 2 as Arman's guidance — one added to `keep.json` — and returned 4 he had only quoted while complaining). Discover sonnet 14/14 validator-clean; reviewers' outputs validator-clean (round 1 shipped 31 over-budget lines). 13 confirms all certified; misses harvested into `fix.md` (flipped consequences, surviving code names, definition placement, measured truncation, per-row hints, required props). Measured 362 → 145 NOVEL.
+
 ## Detector self-test
 
 `pnpm check:interface-text:self-test` (matrx-frontend) — all five rules fire on the kg-cost
