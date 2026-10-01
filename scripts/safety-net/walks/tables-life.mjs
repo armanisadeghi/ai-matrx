@@ -16,11 +16,10 @@
 // Runs unchanged on live (https://www.aimatrx.com) and on the clone preview:
 //   node scripts/safety-net/run.mjs --target clone --origin http://safety-net-t1.localhost:3001 --only tables.walk-life
 // On the clone it additionally reads the record store with psql for the deciding markers.
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { openWalk, bodyText, sleep, until, STAMP, TARGET, REPO, OUT } from "../lib/harness.mjs";
+import { openWalk, bodyText, sleep, until, cloneRead, STAMP, TARGET, OUT } from "../lib/harness.mjs";
 
 const ctx = await openWalk("tables-life");
 const TABLE_NAME = `Home Exercise Plans ${STAMP}`;
@@ -29,18 +28,13 @@ const R1 = "Clamshells, left hip";
 const R2 = "Wall angels";
 const R3 = "Bird dog";
 
-// ── the clone's record store, read for the deciding marker (clone only) ──────────────────────────
-const CLONE_DSN = (() => {
-  if (TARGET !== "clone") return null;
-  const f = join(REPO, ".env.local");
-  if (!existsSync(f)) return null;
-  return (readFileSync(f, "utf8").match(/^CLONE_DATABASE_URL=(.*)$/m)?.[1] ?? "").replace(/^"|"$/g, "") || null;
-})();
-const PSQL = ["/opt/homebrew/opt/libpq/bin/psql", "/opt/homebrew/opt/postgresql@17/bin/psql"].find(existsSync);
+// ── the clone's record store, read for the deciding marker (clone only; the harness's cloneRead:
+// session pooler, rollback always runs — never a read-only transaction left on a pooled connection).
+const CLONE_DSN = TARGET === "clone";
 function cloneSql(sql) {
-  if (!CLONE_DSN || !PSQL) return null;
-  const r = spawnSync(PSQL, [CLONE_DSN, "-At", "-v", "ON_ERROR_STOP=1", "-c", `begin read only; ${sql}; commit;`], { encoding: "utf8", timeout: 60000 });
-  return r.status === 0 ? r.stdout.split("\n").filter((l) => l && !/^(BEGIN|COMMIT)$/.test(l)).join("\n") : `ERR ${r.stderr.slice(0, 200)}`;
+  if (TARGET !== "clone") return null;
+  const r = cloneRead(sql);
+  return r == null ? null : [].concat(r).join("\n");
 }
 
 let page;
