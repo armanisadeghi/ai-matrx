@@ -9,6 +9,7 @@
 
 import { pgErrorToError } from "@ai-matrx/data";
 import { createClient } from "@/utils/supabase/client";
+import { withTransientRetry } from "@/lib/db/transientRetry";
 import type { Database } from "@/types/database.types";
 
 type AttentionRpcRow =
@@ -104,9 +105,15 @@ export function toDatedChange(row: AttentionRpcRow): DatedChange {
 /** `includeAll=false`: only what needs saying now. `true`: every change (the list page). */
 export async function fetchDatedChanges(includeAll: boolean): Promise<DatedChange[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("platform")
-    .rpc("dated_changes_for_attention", { p_include_all: includeAll });
+  // Polled by the super-admin attention dock: a transient refusal is asked
+  // again before it becomes a failure (same class as system_schedule_alarms).
+  const { data, error } = await withTransientRetry(
+    "platform.dated_changes_for_attention",
+    () =>
+      supabase
+        .schema("platform")
+        .rpc("dated_changes_for_attention", { p_include_all: includeAll }),
+  );
   if (error) throw pgErrorToError(error);
   return (data ?? []).map(toDatedChange);
 }

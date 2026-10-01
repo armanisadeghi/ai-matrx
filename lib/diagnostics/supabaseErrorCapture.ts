@@ -57,11 +57,19 @@ interface ChainContext {
   schema?: string;
   relation?: string;
   captureEnabled?: boolean;
+  /**
+   * Set by a retry owner for an attempt it may repeat: return `false` for a
+   * failure the owner WILL ask again about, so only the attempt that is
+   * handed back to the caller is captured. Any other failure — a 42501, a
+   * 23505, anything the owner returns untouched — still captures here.
+   */
+  captureFilter?: (failure: unknown) => boolean;
 }
 
 /** Marks a proxy so we never double-wrap. */
 const WRAPPED = Symbol.for("matrx.supabaseCaptureWrapped");
 const SET_CAPTURE_ENABLED = Symbol.for("matrx.supabaseCaptureEnabled");
+const SET_CAPTURE_FILTER = Symbol.for("matrx.supabaseCaptureFilter");
 const capturedErrorIds = new WeakMap<object, string>();
 
 /** Find the original capture through typed wrappers without copying an incident. */
@@ -87,6 +95,37 @@ export function suppressSupabaseErrorCapture<T>(builder: T): T {
     if (typeof setEnabled === "function") setEnabled(false);
   }
   return builder;
+}
+
+/**
+ * Defer capture of the failures a retry owner is about to retry. `keep` sees
+ * the PostgREST `error` (or the thrown value) and returns `false` only for a
+ * failure the owner will ask again about; every other failure still captures.
+ * No-op on anything that is not a wrapped builder (a plain Promise, a mock).
+ */
+export function filterSupabaseErrorCapture<T>(
+  builder: T,
+  keep: (failure: unknown) => boolean,
+): T {
+  if (
+    builder &&
+    (typeof builder === "object" || typeof builder === "function")
+  ) {
+    const setFilter = Reflect.get(builder as object, SET_CAPTURE_FILTER);
+    if (typeof setFilter === "function") setFilter(keep);
+  }
+  return builder;
+}
+
+/** Fail open: a filter that throws must never hide a failure. */
+function shouldCapture(ctx: ChainContext, failure: unknown): boolean {
+  if (ctx.captureEnabled === false) return false;
+  if (!ctx.captureFilter) return true;
+  try {
+    return ctx.captureFilter(failure) !== false;
+  } catch {
+    return true;
+  }
 }
 
 /** DML verbs whose presence in the chain tells us the operation type. */
@@ -290,6 +329,11 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
           ctx.captureEnabled = enabled;
         };
       }
+      if (prop === SET_CAPTURE_FILTER) {
+        return (keep: (failure: unknown) => boolean) => {
+          ctx.captureFilter = keep;
+        };
+      }
 
       // Track the operation verb as the chain is constructed.
       if (typeof prop === "string" && prop in OPERATION_METHODS) {
@@ -344,7 +388,10 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
                 }
                 try {
                   if (res && typeof res === "object" && "error" in res) {
-                    if (ctx.captureEnabled !== false) {
+                    if (
+                      (res as PostgrestLikeResult).error &&
+                      shouldCapture(ctx, (res as PostgrestLikeResult).error)
+                    ) {
                       captureResult(ctx, res as PostgrestLikeResult, caller);
                     }
                   }
@@ -355,7 +402,7 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
               },
               (err: unknown) => {
                 try {
-                  if (ctx.captureEnabled !== false) {
+                  if (shouldCapture(ctx, err)) {
                     captureException(ctx, err, caller);
                   }
                 } catch {

@@ -14,6 +14,7 @@ import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
+import { withTransientRetry } from "@/lib/db/transientRetry";
 import { mergeJsonColumn, readAllRows } from "@ai-matrx/data/db";
 import type { Database, Json } from "@/types/database.types";
 import type { TaskDetailResponse } from "./schedulerApi.types";
@@ -555,11 +556,16 @@ export async function fetchSystemScheduleAlarms(): Promise<
 > {
   // `p_overdue_grace_minutes: null` = the scheduler.alarms.overdue_grace_minutes
   // knob. The argument survives only so the function identity stays put.
-  const { data, error } = await schedulerDb(supabase).rpc(
-    "system_schedule_alarms",
-    {
-      p_overdue_grace_minutes: undefined,
-    },
+  //
+  // Polled every minute from every super-admin tab: a 33 ms read that a busy
+  // database cancels at the 8 s statement timeout (2026-10-01, during a live-DDL
+  // lock storm) is asked again before it is called a failure.
+  const { data, error } = await withTransientRetry(
+    "scheduler.system_schedule_alarms",
+    () =>
+      schedulerDb(supabase).rpc("system_schedule_alarms", {
+        p_overdue_grace_minutes: undefined,
+      }),
   );
   if (error) throw pgErrorToError(error);
   return (data ?? []).map((row) => ({

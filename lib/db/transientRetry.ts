@@ -47,6 +47,24 @@
 // that raises on failure) are probed the same way.
 
 /**
+ * The capture proxy's per-chain filter hook (`filterSupabaseErrorCapture` in
+ * `lib/diagnostics/supabaseErrorCapture.ts`), reached through the global symbol
+ * registry instead of an import: this helper also runs in server routes, which
+ * must not load the browser capture module. `transientRetry.capture.test.ts`
+ * fails if the two keys ever drift apart.
+ */
+const SET_CAPTURE_FILTER = Symbol.for("matrx.supabaseCaptureFilter");
+
+function deferRetriedCapture(
+  pending: unknown,
+  keep: (failure: unknown) => boolean,
+): void {
+  if (!pending || (typeof pending !== "object" && typeof pending !== "function")) return;
+  const setFilter = Reflect.get(pending as object, SET_CAPTURE_FILTER);
+  if (typeof setFilter === "function") setFilter(keep);
+}
+
+/**
  * SQLSTATE codes the server itself considers retryable, and what each one means
  * for a caller that asked once and was refused.
  *
@@ -234,7 +252,14 @@ export async function withTransientRetry<T>(
   for (let attempt = 1; attempt <= attempts; attempt++) {
     let outcome: T;
     try {
-      outcome = await run();
+      const pending = run();
+      // Every attempt but the last: a failure we are about to retry is not an
+      // incident yet. Only a wrapped Supabase builder reacts; anything else
+      // (a resolver's Promise) is untouched and captures as it always did.
+      if (attempt < attempts) {
+        deferRetriedCapture(pending, (failure) => mayRetry(failure) === null);
+      }
+      outcome = await pending;
     } catch (thrown) {
       const code = mayRetry(thrown);
       if (!code || attempt === attempts) {
