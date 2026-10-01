@@ -97,9 +97,21 @@ export function surfaceWriteToolOutput(
 ): SurfaceWriteToolOutput {
   if (result.ok) {
     const label = result.target.label;
+    // A draft write is only "unsaved" when the page waits for a Save press.
+    // An editor that autosaves (the target declares `savedBy: "autosave"`)
+    // saves it like the person's own typing — saying "the user still saves"
+    // there made the agent tell the person something false (2026-10-01).
+    const savedBy =
+      result.target.mode === "draft"
+        ? (result.target.savedBy ?? "user")
+        : result.target.mode === "entity"
+          ? "page"
+          : undefined;
     const base =
       result.target.mode === "draft"
-        ? `"${label}" staged into the page's draft — the user still reviews and saves.`
+        ? savedBy === "autosave"
+          ? `"${label}" written into the page's editor, which saves it automatically like the user's own typing (the user can undo it there). Tell the user it is saved; do not ask them to save it.`
+          : `"${label}" staged into the page's draft — the user still reviews and saves.`
         : result.target.mode === "entity"
           ? `"${label}" applied and saved.`
           : `"${label}" applied.`;
@@ -113,6 +125,7 @@ export function surfaceWriteToolOutput(
         surface_name: result.surfaceName,
         target: result.target.name,
         mode: result.target.mode,
+        ...(savedBy ? { saved_by: savedBy } : {}),
         message: [base, result.outcome?.summary, surfaceWriteReceiptSentence(change)]
           .filter(Boolean)
           .join(" "),

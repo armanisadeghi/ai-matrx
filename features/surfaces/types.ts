@@ -410,6 +410,16 @@ export interface SurfaceWriteTarget {
    */
   mode: "draft" | "entity" | "ui";
   /**
+   * WHO SAVES A `"draft"` WRITE. `"user"` (the default) — it waits in the
+   * page's draft until the person presses Save. `"autosave"` — it lands in an
+   * editor that saves it by itself, exactly like the person's own typing
+   * (notes, documents, diagram source). The agent's tool result follows this,
+   * so it never tells the person "you still need to save" about a change the
+   * page already saved (bench 2026-10-01, note f1284c78-… reached v7 while the
+   * agent said it was unsaved). Ignored for `"entity"` / `"ui"`.
+   */
+  savedBy?: "user" | "autosave";
+  /**
    * Who may apply this target WITHOUT a human in the loop.
    *
    * A user clicking a declared control is always allowed — the click IS the
