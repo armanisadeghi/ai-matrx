@@ -38,3 +38,17 @@ export const selectInboxItemStatus =
     state.conversationInbox?.byConversationId[conversationId]?.find(
       (i) => i.injectionId === injectionId,
     )?.status ?? null;
+
+/**
+ * The person's own line, accepted by the server and still waiting. What a
+ * completed turn must not leave behind (deliver-stranded-queue.thunk.ts).
+ * Server producers (agent_collab notes, deferred-tool answers) write
+ * `system_message` rows — never sent as the person's words.
+ */
+export function isStrandablePersonLine(item: ConversationInboxItem): boolean {
+  return (
+    item.kind === "user_message" &&
+    item.status === "pending" &&
+    item.isVisibleToUser
+  );
+}

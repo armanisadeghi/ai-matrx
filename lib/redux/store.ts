@@ -33,6 +33,7 @@ import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/p
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
 import { composerDraftMiddleware } from "@/features/agents/redux/execution-system/instance-user-input/composer-draft.middleware";
 import { unsentLaunchMiddleware } from "@/features/agents/redux/execution-system/instance-user-input/unsent-launch.middleware";
+import { inboxTurnEndMiddleware } from "@/features/agents/redux/execution-system/inbox/inbox-turn-end.middleware";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 import { activeOrgCookieMiddleware } from "@/lib/organizations/activeOrgCookieMiddleware";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
@@ -276,6 +277,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         agentCacheBustMiddleware,
         composerDraftMiddleware,
         unsentLaunchMiddleware,
+        inboxTurnEndMiddleware,
         mandateOrgSwitchCacheMiddleware,
         activeOrgCookieMiddleware,
         scopeTreeInvalidationMiddleware,
