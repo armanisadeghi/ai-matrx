@@ -16,6 +16,12 @@
 // picker on the chat surface shows it as the current model, and the turn's
 // request body carries it as `config_overrides.model`. A person picking a
 // different model in the chat picker for one conversation still wins there.
+//
+// IT NEVER LEAVES THE BASIC-CHAT CONVERSATION (W-81, 2026-10-01). The launch
+// writes it as a SEEDED override (`applyLaunchModelOverrides` →
+// `seedOverrides`), and an agent switch (`copyInstanceRequestDraft`) carries
+// only the person's own picks — so Search agents → Select from the default
+// chat never runs a named agent on this model.
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
