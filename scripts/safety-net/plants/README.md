@@ -8,7 +8,9 @@ export default {
   check: "tables.walk-life",                  // the ONE check it must turn red
   items: ["T26"],                             // the items that must FAIL with it (and only those, ideally)
   description: "the column door drops values on a retype (clone, Cedar Ridge only)",
-  mode: "in-transaction" | "committed",
+  mode: "in-transaction" | "committed" | "vars" | "env",
+  vars: { plant: "nolane" },                  // mode vars: switch on a suite's OWN built-in plant (-v plant=…)
+  env: { SN_PLANT_X: "1" },                   // mode env: only for a check whose fault is outside this repo's DB (say why)
   apply: "SQL",                               // as postgres on the clone
   restore: "SQL",                             // committed only; runs in finally
   captureRestore: "SQL whose output is the restore SQL", // optional, e.g. select pg_get_functiondef('custom.x(uuid)'::regprocedure)

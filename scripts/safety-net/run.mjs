@@ -166,7 +166,7 @@ async function runCheck(c) {
   const log = join(OUT, "logs", `${c.id}.log`);
   writeFileSync(log, `# ${c.id} (${c.kind}) target=${TARGET}${plant ? ` plant=${plant.id}` : ""}\n`);
   if (c.kind === "walk") {
-    const r = await run(process.execPath, [join(REPO, c.file)], { env: { ...walkEnv, ...(c.env ?? {}) }, log, timeoutMs: c.timeoutMs ?? 40 * 60 * 1000 });
+    const r = await run(process.execPath, [join(REPO, c.file)], { env: { ...walkEnv, ...(c.env ?? {}), ...(plant && plant.mode === "env" ? plant.env : {}) }, log, timeoutMs: c.timeoutMs ?? 40 * 60 * 1000 });
     const name = c.walkName ?? c.file.split("/").pop().replace(/\.mjs$/, "");
     const jf = join(OUT, `${name}.json`);
     const steps = existsSync(jf) ? JSON.parse(readFileSync(jf, "utf8")).results : [];
@@ -175,18 +175,30 @@ async function runCheck(c) {
   if (c.kind === "sql") {
     const readOnly = TARGET === "live";
     if (readOnly && !c.liveReadOnly) return { code: 0, skip: "SQL that writes runs on the clone only", steps: [] };
-    const vars = Object.entries(c.vars ?? {}).map(([k, v]) => `\\set ${k} '${v}'`).join("\n");
+    // A `vars` plant switches one of the suite's OWN built-in plants on (`-v plant=nolane` etc.).
+    const allVars = { ...(c.vars ?? {}), ...(plant && plant.mode === "vars" ? plant.vars : {}) };
+    const vars = Object.entries(allVars).map(([k, v]) => `\\set ${k} '${v}'`).join("\n");
     const plantSql = plant && plant.mode === "in-transaction" ? `begin;\n${plant.apply}\n` : "";
     const wrapped = readOnly
       ? `begin read only;\n${vars}\n\\i ${c.file}\ncommit;\n`
       : `\\set expect '${TARGET === "clone" ? "clone" : "main"}'\n${vars}\n${plantSql}\\i ${c.file}\n${plantSql ? "rollback;\n" : ""}`;
-    const r = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 20 * 60 * 1000 });
+    let r = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 20 * 60 * 1000 });
+    // The clone is shared by many lanes: a lock / statement timeout is the neighbours, not the
+    // product. Retry ONCE after a pause, and say so in the log; a second timeout is a FAIL.
+    if (r.code !== 0 && /canceling statement due to (lock|statement) timeout|deadlock detected/.test(r.out)) {
+      appendFileSync(log, "\n[runner] lock/statement timeout on the shared clone — retrying once in 20 s\n");
+      await new Promise((ok) => setTimeout(ok, 20000));
+      r = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 20 * 60 * 1000 });
+    }
     const skipped = /\bSKIPPED\b/.test(r.out) && r.code === 0;
     return { code: r.code, ms: r.ms, skip: skipped ? "suite SKIPPED (a dependency it declares is absent)" : null, steps: [], tail: r.out.slice(-1500) };
   }
   if (c.kind === "cmd") {
     const cwd = c.cwd ? resolve(REPO, c.cwd) : REPO;
-    const env = { ...(c.env ?? {}) };
+    // cmd env values may name $SN_ORIGIN, $SN_MANAGE_ORIGIN, $SN_OUT, $SN_TARGET.
+    const subst = (v) => String(v).replace(/\$SN_ORIGIN/g, ORIGIN).replace(/\$SN_MANAGE_ORIGIN/g, MANAGE).replace(/\$SN_OUT/g, OUT).replace(/\$SN_TARGET/g, TARGET);
+    const env = Object.fromEntries(Object.entries(c.env ?? {}).map(([k, v]) => [k, subst(v)]));
+    if (plant && plant.mode === "env") Object.assign(env, plant.env);
     if (c.dbEnv === "clone") {
       env.CLONE_DATABASE_URL = CLONE_DSN;
       env.DATABASE_URL = CLONE_DSN;
@@ -229,7 +241,7 @@ try {
   }
   // Walks run one at a time (browser load on the shared preview); SQL / cmd checks two at a time.
   const queue = [...selected];
-  const parallel = Number(opt("parallel", "2"));
+  const parallel = Number(opt("parallel", "1"));
   async function worker() {
     while (queue.length) {
       const c = queue.shift();
