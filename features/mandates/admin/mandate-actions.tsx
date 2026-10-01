@@ -344,8 +344,8 @@ export function PromoteToSystemMandateButton({
         </Button>
         <span className="text-[11px] leading-snug text-muted-foreground">
           {alreadySystem
-            ? "This job is already homed in the Matrx System organization, so it already decides for every user."
-            : "Copies this job into the Matrx System organization, where it decides for every user. The copy starts with no bindings, and this one is left exactly as it is."}
+            ? "Already in Matrx System; it decides for every user."
+            : "Copies it to Matrx System, with no bindings, for all users."}
         </span>
       </div>
       {refusal ? (

@@ -223,10 +223,7 @@ export function AdvancedMandateCrud() {
             No guardrails: writes bypass RLS and go straight to the table
           </span>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Every column the database has, exactly as stored. Database CHECK constraints, triggers
-          and foreign keys still apply — a refusal here is the database&apos;s own words.
-        </p>
+        {/* Every column as stored; CHECK constraints, triggers and foreign keys still apply — a refusal is the database's own words. */}
         <div className="mt-3 flex flex-wrap gap-1">
           {ADVANCED_RELATIONS.map((r) => {
             const key = relationKey(r);
@@ -372,9 +369,7 @@ export function AdvancedMandateCrud() {
           <DialogHeader>
             <DialogTitle>Insert into {relKey}</DialogTitle>
             <DialogDescription>
-              Supply only the columns you want to set — every other column keeps its database
-              default. Values are converted by Postgres, so uuid, jsonb, arrays and enums all
-              take their natural JSON form.
+              Set only the columns you need; the rest keep their defaults. Values take their natural JSON form.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

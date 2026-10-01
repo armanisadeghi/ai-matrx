@@ -103,8 +103,7 @@ export function WorkflowVerdictDetail({ verdict }: { verdict: WorkflowImpactVerd
       ) : null}
       {verdict.behind_latest ? (
         <p className="text-muted-foreground">
-          To move this pin, open the mandate and pick the newer version in the Mandate
-          Holder tab.
+          Move this pin in the mandate's Mandate Holder tab.
         </p>
       ) : null}
     </div>

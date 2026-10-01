@@ -223,10 +223,6 @@ export function useGuardedRebind({
                 tooltip="A paste-ready brief naming the mismatch and every call site to update"
                 size="sm"
               />
-              <span className="text-[11px] text-muted-foreground">
-                Paste it into a coding session to have the code and the agent
-                updated together.
-              </span>
             </div>
           )}
         </div>

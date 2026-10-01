@@ -250,9 +250,7 @@ export function ImpactGradeCell({
           <div className="space-y-2 border-t border-border pt-2">
             <div className="text-[11px] text-muted-foreground">
               {bindingVerdicts.length} binding rung
-              {bindingVerdicts.length === 1 ? "" : "s"} on this mandate, graded
-              separately. This table batches the mandate's own default pin;
-              open the mandate to review its bindings.
+              {bindingVerdicts.length === 1 ? "" : "s"}, graded separately in the mandate
             </div>
             {bindingVerdicts.map((verdict) => (
               <VerdictDetail
@@ -495,7 +493,7 @@ export function StandingImpactStrip({
             variant="outline"
             className="ml-auto h-7 gap-1 text-xs"
             disabled={busy || staleSafeCount === 0}
-            title="Every row that is green or identical, has no blocker, and the server marks eligible to auto-advance."
+            title="Advances eligible green or identical rows with no blocker."
             onClick={onAdvanceAllGreen}
           >
             {busy ? (
@@ -597,7 +595,7 @@ export function AdvanceResultsCard({
           variant="ghost"
           className={`h-7 w-7 p-0 ${latest.action === "advance" && stillRevertable(latest).length > 0 ? "" : "ml-auto"}`}
           aria-label="Dismiss batch results"
-          title="Hide these results (the server ledger keeps them)."
+          title="Hide results; they stay recorded"
           onClick={onDismiss}
         >
           <X className="h-3.5 w-3.5" />

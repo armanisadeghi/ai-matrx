@@ -400,12 +400,8 @@ export function useImpactSettingsFix({ onFixed }: UseImpactSettingsFixOptions) {
         description: (
           <div className="space-y-2 text-xs">
             <p>
-              This edits the {n === 1 ? "agent's" : "agents'"} settings and
-              saves {n === 1 ? "it" : "them"} — the same save as in the builder,
-              which creates a new version each. Jobs that track latest use the
-              new version from the moment it lands; pinned jobs stay where they
-              are until you advance them. The pins here are graded again
-              afterwards, and each row says whether the fix changed its pile.
+              Saves a new version of {n === 1 ? "the agent" : "each agent"}; jobs
+              tracking latest use it at once, pinned jobs wait until you advance.
             </p>
             <FixList plans={plans} />
           </div>

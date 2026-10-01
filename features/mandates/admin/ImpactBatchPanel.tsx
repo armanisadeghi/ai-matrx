@@ -691,7 +691,7 @@ export function ImpactBatchPanel({
                 variant="ghost"
                 disabled={busy}
                 className="h-6 gap-1 px-1.5 text-[11px]"
-                title="Repair the flagged settings on the agent's newest version and save it as a new version (the same fixer as the builder's Fix all), then grade this pin again. The pin does not move."
+                title="Repairs flagged settings as a new agent version and grades again; the pin does not move."
                 onClick={() => fixOne(r)}
               >
                 <Wrench className="h-3 w-3" />
@@ -764,7 +764,7 @@ export function ImpactBatchPanel({
             variant="ghost"
             className="ml-auto h-6 gap-1 px-1.5 text-[11px]"
             disabled={loading || !hasScope || !sessionReady}
-            title="Grade again against the server."
+            title="Grade these pins again"
             onClick={() => setEpoch((value) => value + 1)}
           >
             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
@@ -793,16 +793,14 @@ export function ImpactBatchPanel({
           </p>
         ) : loading && !impact ? (
           <p className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Grading against the server…
+            <Loader2 className="h-3 w-3 animate-spin" /> Grading pins…
           </p>
         ) : impact ? (
           <>
             <p className="font-medium">{describeBatch(counts)}</p>
             {mode === "dry_run" ? (
               <p className="text-muted-foreground">
-                Graded as if the change were already applied. Nothing can be advanced from a
-                preview — pick the pins to move, and this panel returns after the change with
-                those pre-selected.
+                Preview only; advance pins after the change lands.
               </p>
             ) : null}
             {/* ONE sentence each, from the merged counts (D1, D4) — never a
@@ -838,7 +836,7 @@ export function ImpactBatchPanel({
                     variant="outline"
                     className="h-7 gap-1 text-xs"
                     disabled={busy}
-                    title={`Repair the flagged settings on ${fixableAgents} agent${fixableAgents === 1 ? "" : "s"} (${fixableRows.length} pin${fixableRows.length === 1 ? "" : "s"} in the Check settings pile), each saved as a new version, then grade them again. Rows the fixer cannot help say so and keep their Advance door.`}
+                    title={`Repairs flagged settings on ${fixableAgents} agent${fixableAgents === 1 ? "" : "s"} as new versions and grades again; rows it can't fix keep Advance.`}
                     onClick={fixAllSettings}
                   >
                     {settingsFix.busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wrench className="h-3 w-3" />}

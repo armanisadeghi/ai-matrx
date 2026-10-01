@@ -150,7 +150,7 @@ export function MandateInputsCell({
     return (
       <span
         className="text-xs text-muted-foreground"
-        title="No required variables, no Provision, no described inputs, and nothing declared by the agent that fulfils this job — it runs on the user's message alone."
+        title="No inputs are declared; it runs on the user's message alone."
       >
         User text
       </span>
@@ -195,13 +195,13 @@ export function MandateOutputCell({
   }
   const keys = row.requiredOutputKeys;
   if (keys.length > 0) {
-    if (compact) return <CompactMandateText text={keys.map(plain).join(", ")} description={`No registered kind, but the contract requires these output keys: ${keys.join(", ")}.`} />;
+    if (compact) return <CompactMandateText text={keys.map(plain).join(", ")} description={`No registered kind; required output keys: ${keys.join(", ")}`} />;
     const shown = keys.slice(0, maxChips);
     const hidden = keys.length - shown.length;
     return (
       <div
         className="flex flex-wrap items-center gap-1"
-        title={`No registered kind, but the contract requires these output keys: ${keys.join(", ")}.`}
+        title={`No registered kind; required output keys: ${keys.join(", ")}`}
       >
         {shown.map((key) => (
           <Badge
@@ -222,7 +222,7 @@ export function MandateOutputCell({
     <Badge
       variant="outline"
       className={`${CONTRACT_BADGE_CLASS} border-amber-500/40 bg-amber-500/10 text-amber-600`}
-      title="This mandate promises nothing about its output — no registered kind and no required output keys. That is a contract gap: consumers can't know what they'll get."
+      title="Promises nothing about its output: no registered kind and no required keys."
     >
       Not declared
     </Badge>

@@ -99,11 +99,9 @@ export function describeWorkflowAdvance(verdicts: readonly WorkflowImpactVerdict
   return {
     title: `Advance ${verdicts.length} workflow pin${verdicts.length === 1 ? "" : "s"}?`,
     description:
-      `Each job below starts running the workflow's newest published version for everyone that rung serves. ` +
-      (warned > 0
-        ? `${warned} of them carry an orange or red grade — the change may break the job. `
-        : "") +
-      "Settings, input mappings and run-instantly stay exactly as stored. To undo, pin the old version again in the Binding tab.",
+      `Jobs below move to the newest published version; ` +
+      (warned > 0 ? `${warned} may break (orange or red grade); ` : "") +
+      "undo by re-pinning in the Binding tab.",
     moves: verdicts.map(rungWords),
   };
 }
