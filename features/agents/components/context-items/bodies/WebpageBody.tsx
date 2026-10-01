@@ -31,7 +31,7 @@ export function WebpageBody({ item, setTitle }: ContextItemBodyProps) {
   if (!webpage) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center text-xs italic text-muted-foreground">
-        This attachment is malformed and has no webpage URL or saved text.
+        Malformed attachment: no webpage URL or saved text
       </div>
     );
   }

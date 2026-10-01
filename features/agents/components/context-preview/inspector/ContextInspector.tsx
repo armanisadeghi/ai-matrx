@@ -355,7 +355,7 @@ export function ContextInspector({
       )}
       {universe.treeStatus === "ready" && typeIsEmpty && (
         <p className="text-xs text-muted-foreground">
-          This scope type has no scopes yet, so there is nothing more to preview for it.
+          This scope type has no scopes yet
         </p>
       )}
       {caption && (

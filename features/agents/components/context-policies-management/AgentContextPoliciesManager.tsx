@@ -482,9 +482,10 @@ function PolicyEditorFields({
       </Section>
 
       {/* ──────────────────── Inline policy ──────────────────── */}
+      {/* Inline = rendered in the manifest; otherwise deferred behind ctx_get. */}
       <Section
         title="Inline policy"
-        subtitle="When content is inlined vs fetched with ctx_get"
+        subtitle="When content is inlined vs fetched on demand"
         hint="The agent's value is a ceiling: surfaces can lower it but never raise it."
       >
         <InlinePolicyControl
@@ -496,9 +497,10 @@ function PolicyEditorFields({
       </Section>
 
       {/* ──────────────────── Summary sub-agent ──────────────────── */}
+      {/* The model's ctx_get(mode='summary') calls for this policy route through this agent. */}
       <Section
         title="Summary sub-agent"
-        subtitle="Optional agent that answers ctx_get summary calls"
+        subtitle="Optional agent that summarizes this content on request"
       >
         <Field>
           <div className="flex items-stretch gap-2">

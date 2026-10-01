@@ -374,7 +374,7 @@ function DiffTab({
         <p className="mt-1 text-xs text-muted-foreground">
           {/* The current system's resolver beside the record store's, rendered the same way. */}
           {focus ? `${focus.label} only. ` : ""}
-          With an organization, reachable by tools, not in the prompt
+          With an organization, agents fetch these with tools
         </p>
         {compare.old.available && compare.new.available ? (
           shownOld === shownNew ? (
