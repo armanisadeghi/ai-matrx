@@ -109,6 +109,14 @@ organizations" (`mineScope`), because the door counts the person's rows in every
 
 ## Invariants & gotchas
 
+- **ONE NAME BOOK (`drillNames.ts`).** Every relation value on the screen — answer, chart, trail,
+  records, glance columns, findings, a sibling's findings — reads its words from the explorer's one
+  book. A surface hands it the door rows it draws (`readRows`) or ids (`want`); the book keeps the
+  door's labels and asks the host resolver for exactly the unnamed ids, once each. A failed read
+  ends in the resolver's `unreadLabel`, never "Reading the name…". Never keep names in a surface.
+- **Only a declared definition is described.** Records over the definition's own fact are its own
+  rows; `records.fact` is described only when it is another definition's key (D2).
+
 - Import only what the PUBLISHED `@ai-matrx/design-system` / `@ai-matrx/records` export (lane
   DRILL-WIRE needs design-system 0.49.54+ and records 0.58.120+: `search`, Dimension `entity` /
   `colorFor`, Measure `moment`, `TableDoors.menu`, choice `color`).
@@ -190,3 +198,6 @@ organizations" (`mineScope`), because the door counts the person's rows in every
   searches its groups; a person row on an administration page carries the admin user menu (row ⋯ and
   right-click); choices keep their chart colours (origin); a time Measure is a moment; the explorer and
   its siblings share one Dimension/Measure mapping.
+- `2026-10-01` — Lane DRILL-D1: one name book for every surface (Findings rows on
+  ai_usage_executions read "Reading the name…" forever — their ids never reached the names door);
+  the records' noun never describes a raw fact token (`workflow_run_facts` 403).

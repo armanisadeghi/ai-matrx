@@ -26,18 +26,17 @@ const client = {
   }),
 };
 
-let noun: string | null = null;
 function Probe({ def, fact }: { def: Record<string, unknown>; fact: string }) {
-  noun = useRecordsNoun(client as never, def as never, { fact, columns: ["created_at"] });
-  return null;
+  const noun = useRecordsNoun(client as never, def as never, { fact, columns: ["created_at"] });
+  return <i data-noun={noun ?? ""} />;
 }
+const nounShown = () => document.querySelector("[data-noun]")?.getAttribute("data-noun") || null;
 
 describe("the records' noun", () => {
   let host: HTMLDivElement;
   let root: Root;
   beforeEach(() => {
     described.length = 0;
-    noun = null;
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
@@ -52,7 +51,7 @@ describe("the records' noun", () => {
     await act(async () => root.render(<Probe def={def} fact="workflow_run_facts" />));
     await act(async () => {});
     expect(described).toEqual([]);
-    expect(noun).toBe("workflow run");
+    expect(nounShown()).toBe("workflow run");
   });
 
   it("AI usage: records that are another declared definition's rows read that definition's grain", async () => {
@@ -60,6 +59,6 @@ describe("the records' noun", () => {
     await act(async () => root.render(<Probe def={def} fact="ai_usage_executions" />));
     await act(async () => {});
     expect(described).toEqual(["ai_usage_executions"]);
-    expect(noun).toBe("execution");
+    expect(nounShown()).toBe("execution");
   });
 });

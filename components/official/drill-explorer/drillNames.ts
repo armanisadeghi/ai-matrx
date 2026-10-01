@@ -14,7 +14,7 @@
 // Before this book each surface held its own names; the findings held none, so on production
 // 20 of 31 Findings rows on ai_usage_executions read "Reading the name…" forever (2026-10-01).
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { parseDimensionRef } from "@ai-matrx/design-system/data-table";
 
 import { drillDoorLabels } from "./dimensionWords";
@@ -45,10 +45,14 @@ export interface DrillNameBook {
   want: (dim: string, ids: Iterable<unknown>) => Promise<string | null>;
   /** Door rows on screen: keep their labels, then ask the resolver for every id still unnamed. */
   readRows: (rows: readonly DoorRow[]) => Promise<string[]>;
+  /** The host's resolvers as of its latest render (a host passes a fresh object each render). */
+  setResolvers: (resolvers: Record<string, DrillNameResolver> | undefined) => void;
 }
 
-/** A book over the host's resolvers (read through `current`, so a fresh object per render is fine). */
-export function createDrillNameBook(current: () => Record<string, DrillNameResolver> | undefined): DrillNameBook {
+/** A book over the host's resolvers (replaced by `setResolvers`, so a fresh object per render is fine). */
+export function createDrillNameBook(initial: Record<string, DrillNameResolver> | undefined): DrillNameBook {
+  let resolvers = initial;
+  const current = () => resolvers;
   let names: DrillNames = {};
   const listeners = new Set<() => void>();
   const asked = new Map<string, Set<string>>();
@@ -122,6 +126,9 @@ export function createDrillNameBook(current: () => Record<string, DrillNameResol
         }
       });
     },
+    setResolvers: (next) => {
+      resolvers = next;
+    },
     readRows: async (rows) => {
       book.learn(drillDoorLabels(rows));
       const ids: Record<string, Set<unknown>> = {};
@@ -138,11 +145,13 @@ export function createDrillNameBook(current: () => Record<string, DrillNameResol
   return book;
 }
 
-/** The host's book for one explorer, stable for its lifetime; resolvers are read as of each render. */
+/**
+ * The host's book for one explorer, stable for its lifetime. Its resolvers follow each commit in a
+ * layout effect, which runs before any surface's passive effect can ask for a name.
+ */
 export function useDrillNameBook(resolvers: Record<string, DrillNameResolver> | undefined): DrillNameBook {
-  const latest = useRef(resolvers);
-  latest.current = resolvers;
-  const [book] = useState(() => createDrillNameBook(() => latest.current));
+  const [book] = useState(() => createDrillNameBook(resolvers));
+  useLayoutEffect(() => book.setResolvers(resolvers));
   return book;
 }
 
