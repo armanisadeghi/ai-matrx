@@ -162,7 +162,21 @@ export async function openWalk(name, { headless = true } = {}) {
     async goto(page, pathOrUrl, opts = {}) {
       const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${ORIGIN}${pathOrUrl}`;
       if (FORBIDDEN.some((f) => url.includes(f))) throw new Error(`refused: ${url} names Arman's own organization or table`);
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 180000, ...opts });
+      // The shared preview recompiles under other agents' edits: an aborted load is retried, said.
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          await page.goto(url, { waitUntil: "domcontentloaded", timeout: 180000, ...opts });
+          break;
+        } catch (e) {
+          if (attempt >= 3 || !/ERR_ABORTED|interrupted|frame was detached/i.test(String(e))) throw e;
+          console.log(`[harness] ${url} load aborted (attempt ${attempt}); retrying`);
+          await sleep(3000);
+        }
+      }
+      if (!ORIGIN.includes("aimatrx.com")) {
+        const resume = page.getByRole("button", { name: /Resume/ });
+        if (await resume.count().catch(() => 0)) await resume.first().click().catch(() => {});
+      }
       return page;
     },
     async shot(page, label) {

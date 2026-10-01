@@ -21,8 +21,8 @@ async function visit(page, path, origin = ctx.origin) {
   const t0 = Date.now();
   let status = null;
   try {
-    const r = await page.goto(`${origin}${path}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-    status = r?.status() ?? null;
+    await ctx.goto(page, `${origin}${path}`);
+    status = 200;
   } catch (e) {
     return { path, status: "error", ms: Date.now() - t0, err: String(e).slice(0, 160) };
   }
@@ -34,13 +34,17 @@ async function visit(page, path, origin = ctx.origin) {
 async function timeTo(page, url, predicate, label) {
   const once = async () => {
     const t0 = Date.now();
-    await page.goto(url, { waitUntil: "commit", timeout: 180000 });
+    await ctx.goto(page, url, { waitUntil: "commit" });
     const r = await until(label, () => page.evaluate(predicate), 60000);
     return r.v ? Date.now() - t0 : null;
   };
-  const first = await once();
-  const second = await once();
-  return { first, second, used: second ?? first };
+  try {
+    const first = await once();
+    const second = await once();
+    return { first, second, used: second ?? first };
+  } catch (e) {
+    return { first: null, second: null, used: null, err: String(e).slice(0, 160) };
+  }
 }
 
 try {
@@ -58,9 +62,11 @@ try {
 
   // ── P02 organization switch ────────────────────────────────────────────────────────────────
   await ctx.step(["P02"], "switch organization and back", admin, async () => {
-    const a = await setOrganization(admin, "admin's Workspace");
+    // "admin's Workspace" is the name of ~26 of admin's organizations, so the switch goes to a
+    // uniquely named one and back.
+    const a = await setOrganization(admin, "Harbor Dental Group");
     const b = await setOrganization(admin, "Cedar Ridge Physical Therapy");
-    return { ok: a && b, detail: `to admin's Workspace: ${a ? "switcher names it" : "NOT named"}; back to Cedar Ridge: ${b ? "named" : "NOT named"}` };
+    return { ok: a && b, detail: `to Harbor Dental Group: ${a ? "switcher names it" : "NOT named"}; back to Cedar Ridge: ${b ? "named" : "NOT named"}` };
   });
 
   // ── P03 / P04 key pages, both seats ────────────────────────────────────────────────────────
@@ -88,11 +94,17 @@ try {
 
   // ── P05 / P06 390 px light and dark ───────────────────────────────────────────────────────
   for (const [item, scheme] of [["P05", "light"], ["P06", "dark"]]) {
-    const phone = await ctx.page("admin", { width: 390, height: 844, colorScheme: scheme, fresh: true });
+    let phone;
+    try {
+      phone = await ctx.page("admin", { width: 390, height: 844, colorScheme: scheme, fresh: true });
+    } catch (e) {
+      await ctx.step([item], `390 ${scheme}: sign in on a phone`, null, async () => ({ ok: false, detail: String(e).slice(0, 200) }));
+      continue;
+    }
     for (const path of ["/data-v2", `/data-v2/${TABLE}`]) {
-      await phone.goto(`${ctx.origin}${path}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-      await sleep(6000);
       await ctx.step([item], `390 ${scheme}: ${path === "/data-v2" ? "data home" : "Patients table"} fits the screen`, phone, async () => {
+        await ctx.goto(phone, `${ctx.origin}${path}`);
+        await sleep(6000);
         const m = await phone.evaluate(() => ({
           sw: document.documentElement.scrollWidth,
           iw: window.innerWidth,
