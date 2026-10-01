@@ -20,6 +20,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import { chromium } from "playwright";
 
 import { setOrganization as seatSetOrganization, signIn, sleep, until } from "../../lib/seat-browser.mjs";
@@ -99,6 +100,12 @@ for (const [k, s] of Object.entries(SEATS)) {
  * cleanup(); goto(); finish(). Console errors and 5xx/4xx responses are recorded per seat.
  */
 export async function openWalk(name, { headless = true } = {}) {
+  // A clone walk on the local preview must find the preview serving the clone (it switches modes).
+  if (TARGET === "clone" && /localhost/.test(ORIGIN)) {
+    const r = spawnSync("bash", [join(REPO, "scripts/agent-dev-server.sh"), "status"], { encoding: "utf8", cwd: REPO });
+    const mode = (`${r.stdout}${r.stderr}`.match(/mode=(\w+)/) ?? [])[1];
+    if (mode !== "clone") throw new Error(`refused: the preview is ${mode ? `in ${mode} mode` : "not running"}; a clone walk would ${mode === "live" ? "write to production" : "find nothing"} (pnpm preview:start)`);
+  }
   const shotsDir = join(OUT, "shots");
   mkdirSync(shotsDir, { recursive: true });
   const browser = await chromium.launch({ headless });
