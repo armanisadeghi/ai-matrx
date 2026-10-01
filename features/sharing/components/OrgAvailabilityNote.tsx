@@ -58,10 +58,9 @@ export function OrgAvailabilityNote({
     >
       <Building2 className="w-3 h-3 mt-0.5 flex-shrink-0" />
       <span>
+        {/* Not a share: it is chosen under "Who can see this" above. */}
         Everyone in {organizationDefault.organizationName} can{" "}
-        {DEFAULT_VERB[organizationDefault.level] ?? "open"} this through the
-        organization&apos;s default. That is not a share; it is chosen under
-        &ldquo;Who can see this&rdquo;.
+        {DEFAULT_VERB[organizationDefault.level] ?? "open"} this by default.
       </span>
     </p>
   ) : null;
@@ -78,9 +77,8 @@ export function OrgAvailabilityNote({
     >
       <Building2 className="w-3 h-3 mt-0.5 flex-shrink-0" />
       <span>
-        Also available to everyone in {names.join(", ")} through that
-        organization&apos;s settings. That is not a share, and it is changed
-        in the organization.
+        {/* Not a share: it is set, and changed, in that organization. */}
+        Also open to everyone in {names.join(", ")} by its settings.
       </span>
     </p>
     </>

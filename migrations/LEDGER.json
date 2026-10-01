@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T11:26:46.334Z",
+  "generated_at": "2026-10-01T11:41:53.365Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -49,6 +49,12 @@
       "filename": "allorgspaging_a_work_list_and_work_inbox_read_each_organization_within_its_page.sql",
       "checksum": "49cf8514f521992e1e092c5d78dc039831daafffc403ee2d4258f46ac41793c0",
       "applied_at": "2026-10-01 11:15:01.33996+00"
+    },
+    "migrations/campaign/allorgspaging_b_the_inbox_with_decided_items_asks_only_organizations_that_can_hold_one.sql": {
+      "source": "matrx-frontend",
+      "filename": "allorgspaging_b_the_inbox_with_decided_items_asks_only_organizations_that_can_hold_one.sql",
+      "checksum": "03af1524e3f71e2ac4b5b535924ccf13139d3fa4151bc2a3dd220cfe45ab6cf0",
+      "applied_at": "2026-10-01 11:30:44.013954+00"
     },
     "migrations/campaign/anonguard_a_supabase_owned_schema_keeps_its_default_privileges.sql": {
       "source": "matrx-frontend",

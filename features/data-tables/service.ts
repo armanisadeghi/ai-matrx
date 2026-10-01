@@ -70,6 +70,7 @@ import type {
   ValidationMode,
 } from "./types";
 import { canActOn } from "@/features/access-gate/service/canActOn";
+import { movedDoorRefusal } from "./moved-door-refusal";
 
 
 /**
@@ -85,7 +86,20 @@ import { canActOn } from "@/features/access-gate/service/canActOn";
  * already knows how to draw, and the SQLSTATE stays out of sight where it belongs.
  * `error` is untouched, so every existing caller that prints a line still works.
  */
-function refused(error: { message: string; code?: string; hint?: string; details?: string }): ServiceErr {
+function refused(
+  error: { message: string; code?: string; hint?: string; details?: string },
+  tableId?: string,
+): ServiceErr {
+  // After the final switch's press an older write door is closed to browsers and PostgREST
+  // answers a raw 42501; the person reads where the table lives now (moved-door-refusal.ts).
+  const moved = movedDoorRefusal(error, tableId);
+  if (moved) {
+    return {
+      success: false,
+      error: moved.message,
+      refusal: { code: "refused_by_rule", message: moved.message, detail: { moved_to: moved.href } },
+    };
+  }
   return { success: false, error: error.message, refusal: mapPgError(error, "the older data tables") };
 }
 
@@ -174,7 +188,7 @@ export async function getTableMetadata(
         code: "dataset_not_here",
       };
     }
-    return refused(error);
+    return refused(error, args.tableId);
   }
   try {
     return { success: true, data: parseTableMetadata(data) };
@@ -275,7 +289,7 @@ export async function getTablePage(
       p_search_term: args.searchTerm ? args.searchTerm : undefined,
     },
   );
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   if (!isRecord(data) || typeof data.success !== "boolean") {
     return { success: false, error: "Invalid response from table page RPC" };
   }
@@ -342,7 +356,7 @@ export async function getCompleteTable(args: {
     p_sort_field: args.sortField ?? undefined,
     p_sort_direction: args.sortDirection ?? "asc",
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   if (!isRecord(data) || data.success !== true || !isRecord(data.table)) {
     return {
       success: false,
@@ -393,7 +407,7 @@ export async function upsertRow(
     ...(args.rowId ? { p_row_id: args.rowId } : {}),
     p_data: args.data as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   return { success: true, data: data as unknown as DatasetRow };
 }
 
@@ -417,7 +431,7 @@ export async function upsertCell(
     p_field_name: args.fieldName,
     p_value: args.value as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   return { success: true, data: data as unknown as DatasetRow };
 }
 
@@ -515,7 +529,7 @@ export async function bulkWrite(
     p_table_id: args.tableId,
     p_operations: args.operations as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   return { success: true, data: data as unknown as BulkWriteResponse };
 }
 
@@ -551,7 +565,7 @@ export async function changeFieldType(
     p_new_type: args.newType,
     p_strategy: args.strategy ?? "cast_or_null",
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   return { success: true, data: data as unknown as ChangeFieldTypeResponse };
 }
 
@@ -591,7 +605,7 @@ export async function deleteField(
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
 
   const envelope = data as unknown as
     | ({ success?: boolean; error?: string } & Partial<DeleteFieldResponse>)
@@ -659,7 +673,7 @@ export async function setFieldFormat(
     p_field_id: args.fieldId,
     p_format: (args.format ?? null) as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
 
   const envelope = data as unknown as {
     success?: boolean;
@@ -702,7 +716,7 @@ export async function backfillAutonumber(args: {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const envelope = data as unknown as {
     success?: boolean;
     error?: string;
@@ -814,7 +828,7 @@ export async function renameColumn(args: {
     p_table_id: args.tableId,
     p_field_updates: [{ id: args.field.id, display_name: newName }] as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const envelope = data as unknown as { success?: boolean; error?: string } | null;
   if (!envelope || envelope.success !== true) {
     return { success: false, error: envelope?.error ?? "Failed to rename the column" };
@@ -854,7 +868,7 @@ export async function setTableStyle(
     p_path: [...args.path],
     p_value: (args.value ?? null) as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const envelope = data as unknown as {
     success?: boolean;
     error?: string;
@@ -886,7 +900,7 @@ export async function renumberFields(args: {
     p_table_id: args.tableId,
     p_field_updates: args.updates as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const envelope = data as unknown as { success?: boolean; error?: string } | null;
   if (!envelope || envelope.success !== true) {
     return { success: false, error: envelope?.error ?? "Failed to reorder columns" };
@@ -931,7 +945,7 @@ export async function archiveTable(tableId: string): Promise<ServiceResult<{ tab
     return done.success ? { success: true, data: { table_id: tableId } } : done;
   }
   const { data, error } = await supabase.rpc("delete_user_table", { p_table_id: tableId });
-  if (error) return refused(error);
+  if (error) return refused(error, tableId);
   const envelope = data as unknown as { success?: boolean; error?: string } | null;
   if (envelope && envelope.success === false) {
     return { success: false, error: envelope.error ?? operationFailed("delete this table").message };
@@ -990,7 +1004,7 @@ export async function updateTableMetadata(
       : {}),
     ...(args.isPublic !== undefined ? { p_is_public: args.isPublic } : {}),
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
 
   // The RPC returns its own {success,error} envelope inside a jsonb payload.
   const envelope = data as unknown as {
@@ -1047,7 +1061,7 @@ export async function setValidationMode(
     .select("id, validation_mode")
     .maybeSingle();
 
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   if (!data) {
     return {
       success: false,
@@ -1119,7 +1133,7 @@ export async function getColumnFacets(
         }).message,
       };
     }
-    return refused(error);
+    return refused(error, args.tableId);
   }
   if (!isRecord(data) || data.success !== true) {
     return {
@@ -1165,7 +1179,7 @@ export async function getTableProfile(
         }).message,
       };
     }
-    return refused(error);
+    return refused(error, args.tableId);
   }
   if (!isRecord(data) || data.success !== true) {
     return {
@@ -1193,7 +1207,7 @@ export async function setTableRowLabel(args: {
     p_table_id: args.tableId,
     p_row_label: (args.rowLabel ?? null) as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const envelope = data as unknown as { success?: boolean; error?: string; row_label?: unknown } | null;
   if (!envelope || envelope.success !== true) {
     return { success: false, error: envelope?.error ?? "Failed to save the row label" };
@@ -1215,7 +1229,7 @@ export async function setTableRowActions(args: {
     p_table_id: args.tableId,
     p_row_actions: args.rowActions as never,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const envelope = data as unknown as { success?: boolean; error?: string; row_actions?: unknown } | null;
   if (!envelope || envelope.success !== true) {
     return { success: false, error: envelope?.error ?? "Failed to save the row actions" };
@@ -1275,7 +1289,7 @@ export async function setRowOrdering(args: {
     p_enabled: args.enabled,
     p_order: args.order,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const failed = envelopeFailure(
     data,
     args.enabled ? "Failed to update row order" : "Failed to disable row ordering",
@@ -1296,7 +1310,7 @@ export async function setDefaultSort(args: {
     p_sort_field: args.sortField,
     ...(args.sortField ? { p_sort_direction: args.sortDirection } : {}),
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const failed = envelopeFailure(
     data,
     args.sortField ? "Failed to save sort preference" : "Failed to clear sort preference",
@@ -1314,7 +1328,7 @@ export async function deleteRow(args: {
   const { data, error } = await supabase.rpc("delete_data_row_from_user_table", {
     p_row_id: args.rowId,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const failed = mutationFailure(data);
   return failed ?? { success: true, data: data ?? null };
 }
@@ -1424,7 +1438,7 @@ export async function getRowsForClientSort(args: {
     p_sort_direction: "asc",
     p_search_term: undefined,
   });
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const failed = envelopeFailure(data, "Failed to load data");
   if (failed) return failed;
   const rows = (data as { data?: unknown }).data;
@@ -1535,7 +1549,7 @@ export async function updateTableConfig(args: {
   if (args.tableUpdates && Object.keys(args.tableUpdates).length > 0) params.p_table_updates = args.tableUpdates;
   if (args.fieldUpdates && args.fieldUpdates.length > 0) params.p_field_updates = args.fieldUpdates;
   const { data, error } = await supabase.rpc("update_user_table_config", params as never);
-  if (error) return refused(error);
+  if (error) return refused(error, args.tableId);
   const failed = mutationFailure(data);
   return failed ?? { success: true, data: null };
 }

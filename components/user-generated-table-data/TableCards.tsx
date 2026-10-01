@@ -70,6 +70,7 @@ import { cn } from "@/lib/utils";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { MovedTableError, olderDoorError } from "@/features/data-tables/moved-door-refusal";
 interface UserTable {
   id: string;
   table_name: string;
@@ -441,7 +442,7 @@ export default function TableCards() {
           p_table_id: tableToDelete.id,
         });
 
-        if (error) throw error;
+        if (error) throw olderDoorError(error, tableToDelete.id);
         unwrapUserTableMutation(data ?? null);
       }
 
@@ -456,7 +457,10 @@ export default function TableCards() {
       console.error("Error deleting table:", err);
       toast({
         title: "Error",
-        description: "Failed to delete the table. Please try again.",
+        description:
+          err instanceof MovedTableError
+            ? err.message
+            : "Failed to delete the table. Please try again.",
         variant: "destructive",
       });
     } finally {

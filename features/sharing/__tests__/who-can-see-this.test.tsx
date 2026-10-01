@@ -239,7 +239,7 @@ describe("the control and Current Access", () => {
       ),
     );
     expect(host.querySelector("[data-organization-default]")?.textContent).toContain(
-      "Everyone in Oak & River can view this through the organization's default.",
+      "Everyone in Oak & River can view this by default.",
     );
     expect(host.querySelector("[data-org-availability]")).toBeNull();
     act(() => root.render(<OrgAvailabilityNote permissions={[]} organizationDefault={null} />));

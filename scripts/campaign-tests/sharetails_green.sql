@@ -1,18 +1,21 @@
--- LANE SHARE-TAILS — THE GREEN SUITE. "Only people I share it with" means only the owner and the
--- people named, and an availability row only ever names an organization.
+-- LANE SHARE-TAILS — THE GREEN SUITE, re-ruled by lane SHARE-MINE-REGRESSION (chair ruling
+-- 2026-10-01). "Only me" (lane mine) HIDES and never locks — the access ladder law
+-- (common-docs/policies/access-ladder.md: "The per-item choice hides; it does not lock"), built by
+-- access ladder T-36 (2026-09-28). An availability row only ever names an organization.
 --
 -- THE REAL USE CASE: admin@admin.com runs Harbor Landscaping Crew, a throwaway organization in
 -- which test@test.com (Dana) is a plain member. Admin keeps a Table, "Irrigation bids", with one
--- bid in it. The organization's member default is the platform's own (every member reads), so
--- Dana reads the Table — until admin sets it to "Only people I share it with". From then on Dana
--- is refused with the honest not-found, the Share dialog stops saying "organization default",
--- naming Dana by hand lets her back in (Table and bid), taking the name back shuts her out again,
--- and "Everyone in this organization" opens it to every member.
+-- bid in it. Dana reads it through the member default. Admin sets it to "Only me": it leaves
+-- Dana's lists of Tables, yet Dana still opens it (and its bid) with the link; the door and the
+-- dialog say exactly that and never promise a lock. Naming Dana and taking the name back change
+-- nothing about whether she opens it; "Everyone in this organization" lists it for her again.
 --
 -- RUN IT (clone or branch; always ONE rolled-back transaction):
 --   cd matrx-frontend && psql "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/sharetails_green.sql
 -- ITS RED: before sharetails_* (and after their inverses) it fails at A1 (a person row can be
--- stamped availability) and, with A skipped, at B2 (Dana still reads the "mine" Table).
+-- stamped availability). With A skipped: a planted lock (the pre-T-36 member arm,
+-- `iam.member_lane_confers` ignoring p_personal_hides) fails B2 (Dana refused a Table she may
+-- open); the old door text (before sharemine_only_me_hides_and_says_so) fails B3.
 
 \set ON_ERROR_STOP on
 \timing off
@@ -136,43 +139,51 @@ begin
   end if;
   raise notice 'C1 PASSED — no lane row reads as the organization default, and the dialog says so.';
 end $t$;
-select custom.share_lane_set('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), 'mine') ->> 'message' as said;
+create temp table st_said (m text) on commit drop;
+grant insert, select on st_said to authenticated;
+insert into st_said select custom.share_lane_set('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), 'mine') ->> 'message';
 reset role;
+-- B3 (the toast): what the door says on "Only me" is the hide, never a lock.
+do $t$
+declare m text := (select st_said.m from st_said);
+begin
+  if m !~ 'with the link' or m ~* 'only the people' then
+    raise exception 'B3 FAILED — choosing Only me says: %', m;
+  end if;
+end $t$;
 
--- B2: Dana is refused with the honest not-found, the list omits it, and its bid is not read.
+-- B2 (the law): Dana still OPENS the "Only me" Table and its bid with the link, and the Table is
+-- gone from every list of Tables she is shown (T-36b's three list doors).
 select set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
 set local role authenticated;
 do $t$
-declare n int; v_state text; v_msg text;
+declare n int; v_msg text;
 begin
   begin
     perform custom.read_record('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), false);
-    raise exception 'B2 FAILED — a member of the organization read a Table its owner set to "mine".';
-  exception when others then
-    get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
-    if v_msg like 'B2 FAILED%' then raise; end if;
-    if v_state not in ('02000', '42501') then
-      raise exception 'B2 FAILED — the refusal is not a not-found / no-access: % %', v_state, v_msg;
-    end if;
-    raise notice 'B2: Dana is told: [%] %', v_state, v_msg;
-  end;
-  select count(*) into n from custom.read_records('5ba5aa1e-0000-4a00-8a00-000000000a01', custom.table_kernel_id(), true, 500, 0) r
-   where r.id = (select v from st_probe where k = 'tbl');
-  if n <> 0 then raise exception 'B2 FAILED — the "mine" Table is still in Dana''s list of Tables.'; end if;
-  begin
-    select count(*) into n from custom.read_records('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true, 50, 0);
-    if n <> 0 then raise exception 'B2 FAILED — Dana read % bid(s) of a "mine" Table.', n; end if;
   exception when others then
     get stacked diagnostics v_msg = message_text;
-    if v_msg like 'B2 FAILED%' then raise; end if;
+    raise exception 'B2 FAILED — "Only me" locked a member out of a Table she may open: %', v_msg;
   end;
+  select count(*) into n from custom.read_records('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true, 50, 0);
+  if n <> 1 then raise exception 'B2 FAILED — Dana opens % bid(s) of an "Only me" Table, not 1.', n; end if;
+  if exists (select 1 from custom.tables_i_can_open() t where t.table_id = (select v from st_probe where k = 'tbl')) then
+    raise exception 'B2 FAILED — the "Only me" Table is still in Dana''s tables_i_can_open list.';
+  end if;
+  if exists (select 1 from custom.data_home_tables('5ba5aa1e-0000-4a00-8a00-000000000a01') t where t.table_id = (select v from st_probe where k = 'tbl')) then
+    raise exception 'B2 FAILED — the "Only me" Table is still in Dana''s data home list.';
+  end if;
+  if strpos(custom.table_list_everywhere('5ba5aa1e-0000-4a00-8a00-000000000a01')::text, (select v from st_probe where k = 'tbl')::text) > 0 then
+    raise exception 'B2 FAILED — the "Only me" Table is still in Dana''s table_list_everywhere.';
+  end if;
+  raise notice 'B2 PASSED — Dana opens the "Only me" Table by link and no list of Tables shows it.';
 end $t$;
 reset role;
 -- (the ladder itself, asked by the store owner about Dana)
 do $t$
 begin
-  if custom.has_visibility('4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'record', (select v from st_probe where k = 'bid'), 'viewer') then
-    raise exception 'B2 FAILED — the ladder still lets Dana see a bid inside a "mine" Table.';
+  if not custom.has_visibility('4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'record', (select v from st_probe where k = 'bid'), 'viewer') then
+    raise exception 'B2 FAILED — the ladder locks Dana out of a bid inside an "Only me" Table.';
   end if;
 end $t$;
 
@@ -188,12 +199,20 @@ begin
     raise exception 'C2 FAILED — after mine the lane door says %', d;
   end if;
 end $t$;
--- B3: the Share dialog no longer says every member reaches it.
+-- B3 (the law): the door and the dialog name the hide and never promise a lock.
 do $t$
+declare l record;
 begin
+  select * into l from custom.share_lanes() x where x.choice = 'mine';
+  if l.label is distinct from 'Only me' then
+    raise exception 'B3 FAILED — the mine choice is called "%", not the Shown-to words "Only me".', l.label;
+  end if;
+  if l.means !~ 'with the link' or l.means ~* 'nobody reaches|only the people' then
+    raise exception 'B3 FAILED — the mine choice promises a lock: %', l.means;
+  end if;
   if exists (select 1 from custom.share_access('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl')) a
               where a.reason = 'organization default') then
-    raise exception 'B3 FAILED — the dialog still says every member reaches a "mine" Table.';
+    raise exception 'B3 FAILED — the dialog lists an organization-default share row on an "Only me" Table.';
   end if;
 end $t$;
 do $t$
@@ -217,7 +236,8 @@ begin
 end $t$;
 reset role;
 
--- B6: the name taken back shuts her out again; "Everyone in this organization" opens it to members.
+-- B6 (the law): taking the name back takes nothing — Dana still opens it, and it stays out of her
+-- lists; "Everyone in this organization" lists it for her again.
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 set local role authenticated;
 select custom.share_revoke('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'),
@@ -225,10 +245,19 @@ select custom.share_revoke('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v fro
 reset role;
 do $t$
 begin
-  if custom.has_visibility('4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'record', (select v from st_probe where k = 'tbl'), 'viewer') then
-    raise exception 'B6 FAILED — with her name taken back Dana still reaches the "mine" Table.';
+  if not custom.has_visibility('4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'record', (select v from st_probe where k = 'tbl'), 'viewer') then
+    raise exception 'B6 FAILED — with her name taken back "Only me" locked Dana out.';
   end if;
 end $t$;
+select set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
+set local role authenticated;
+do $t$
+begin
+  if exists (select 1 from custom.tables_i_can_open() t where t.table_id = (select v from st_probe where k = 'tbl')) then
+    raise exception 'B6 FAILED — with her name taken back the "Only me" Table is in Dana''s list.';
+  end if;
+end $t$;
+reset role;
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 set local role authenticated;
 select custom.share_lane_set('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), 'organization') ->> 'message' as said;
@@ -240,7 +269,10 @@ declare n int;
 begin
   select count(*) into n from custom.read_records('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true, 50, 0);
   if n <> 1 then raise exception 'B6 FAILED — on the organization lane Dana reads % bid(s).', n; end if;
-  raise notice 'PART B PASSED — mine is the owner and the people named; the organization lane is every member.';
+  if not exists (select 1 from custom.tables_i_can_open() t where t.table_id = (select v from st_probe where k = 'tbl')) then
+    raise exception 'B6 FAILED — on the organization lane the Table is missing from Dana''s list.';
+  end if;
+  raise notice 'PART B PASSED — Only me hides and never locks; the organization lane lists it for every member.';
 end $t$;
 reset role;
 -- C3: the organization lane (a mine row plus an availability row) reads as organization; a record

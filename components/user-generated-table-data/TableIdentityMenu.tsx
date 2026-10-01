@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { olderDoorError } from "@/features/data-tables/moved-door-refusal";
 
 export interface TableSummary {
   id: string;
@@ -107,7 +108,7 @@ export default function TableIdentityMenu({
         p_table_id: tableId,
         p_table_name: next,
       });
-      if (error) throw error;
+      if (error) throw olderDoorError(error, tableId);
       if (
         typeof data !== "object" ||
         data === null ||

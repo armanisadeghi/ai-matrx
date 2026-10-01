@@ -73,7 +73,7 @@ describe("a record-store thing with no lane row is the organization default", ()
         ),
       );
       const line = host.querySelector("[data-organization-default]");
-      expect(line?.textContent).toContain("Everyone in Oak & River can view this through the organization's default.");
+      expect(line?.textContent).toContain("Everyone in Oak & River can view this by default.");
     });
 
     it("says nothing when membership reaches nothing", () => {

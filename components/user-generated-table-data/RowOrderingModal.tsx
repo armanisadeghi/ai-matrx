@@ -39,6 +39,7 @@ import {
 } from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import { toast } from "@/components/ui/use-toast";
+import { MovedTableError, olderDoorError } from "@/features/data-tables/moved-door-refusal";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface RowOrderingModalProps {
@@ -338,7 +339,7 @@ export default function RowOrderingModal({
         },
       );
 
-      if (error) throw error;
+      if (error) throw olderDoorError(error, tableId);
       unwrapUserTableMutation(data ?? null);
 
       setHasChanges(false);
@@ -346,6 +347,9 @@ export default function RowOrderingModal({
       onClose();
     } catch (err) {
       console.error("Error saving row order:", err);
+      if (err instanceof MovedTableError) {
+        toast({ title: "The row order was not saved", description: err.message, variant: "destructive" });
+      }
     } finally {
       setSaving(false);
     }

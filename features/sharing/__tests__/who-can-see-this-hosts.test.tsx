@@ -99,7 +99,7 @@ const expectControlAndDefaultRow = () => {
   expect(control!.querySelector('[data-lane-choice="mine"]')?.textContent).toContain("Only me");
   // Current Access agrees with the control: the organization-default row is listed.
   expect(document.querySelector("[data-organization-default]")?.textContent).toContain(
-    "Everyone in Oak & River can view this through the organization's default.",
+    "Everyone in Oak & River can view this by default.",
   );
 };
 

@@ -1,3 +1,4 @@
+import { olderDoorErrorText } from "@/features/data-tables/moved-door-refusal";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizeFieldName, validateFieldName } from "./field-name-sanitizer";
 import { parseTableMetadata } from "@/features/data-tables/types";
@@ -248,7 +249,7 @@ export async function createTable(
 
     if (error) {
       console.error("Supabase RPC error:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: olderDoorErrorText(error) };
     }
 
     if (!data || !data.success) {
@@ -354,7 +355,7 @@ export async function addColumn(
 
     if (error) {
       console.error("Supabase RPC error:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: olderDoorErrorText(error, tableId) };
     }
 
     if (!data || !data.success) {
@@ -456,7 +457,7 @@ export async function addRow(
 
     if (error) {
       console.error("Supabase RPC error:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: olderDoorErrorText(error, tableId) };
     }
 
     if (!result || !result.success) {
