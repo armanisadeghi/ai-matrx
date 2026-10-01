@@ -139,7 +139,6 @@ export const INTEGRATIONS: Integration[] = [
         "features/scheduling/components/form/triggers/EventForm.tsx",
         "features/resource-manager/resource-picker/TablesResourcePicker.tsx",
         "app/(public)/free/zip-code-heatmap/components/TableDataSource.tsx",
-        "components/mardown-display/tables/SaveTableModal.tsx",
       ].map((file) => ({ kind: "contains" as const, repo: "matrx-frontend" as const, file, pattern: "listTablesEverywhere", says: `${file.split("/").pop()} lists both stores` })),
       { kind: "db", sql: exists("custom", "table_list_everywhere"), says: "the both-stores list door is live" },
     ],
@@ -191,18 +190,18 @@ export const INTEGRATIONS: Integration[] = [
     why: "INTEG-CLIENTS 66718c6afe: one birth, service.createTable, by where the organization keeps tables",
     plain: "saving something as a new table still creates it in the older tables",
     owner: "matrx-frontend features/data-tables/service.ts createTable",
-    claims: { "matrx-frontend": ["utils/user-table-utls/**", "features/page-extraction/data-review/export-targets.ts"] },
+    claims: { "matrx-frontend": ["features/page-extraction/data-review/export-targets.ts"] },
     proofs: [
       {
         kind: "nowhere", repo: "matrx-frontend",
         pattern: "import\\s+\\{[^}]*\\b(?:createTable|addRow|addColumn|getTableDetails)\\b[^}]*\\}\\s*from\\s*[\"'][^\"']*user-table-utls/table-utils[\"']",
-        except: ["features/data-tables/service.ts", "utils/user-table-utls/table-utils.ts", "components/user-generated-table-data/**", "app/(dev)/**"],
+        except: ["features/data-tables/service.ts", "components/user-generated-table-data/**", "app/(dev)/**"],
         says: "no runtime file imports an older birth or write door from table-utils",
       },
       {
         kind: "nowhere", repo: "matrx-frontend",
         pattern: "\\.rpc\\(\\s*[\"'`](?:create_new_user_table_dynamic|create_user_table_with_fields|add_data_row_to_user_table|append_rows_to_user_table|add_column_to_user_table)[\"'`]",
-        except: ["features/data-tables/service.ts", "features/data-tables/data-source/**", "utils/user-table-utls/table-utils.ts", "components/user-generated-table-data/**", "app/(dev)/**"],
+        except: ["features/data-tables/service.ts", "features/data-tables/data-source/**", "components/user-generated-table-data/**", "app/(dev)/**"],
         says: "no runtime file calls an older birth door by name",
       },
     ],
@@ -241,7 +240,7 @@ export const INTEGRATIONS: Integration[] = [
       {
         kind: "nowhere", repo: "matrx-frontend",
         pattern: "\\.rpc\\(\\s*[\"'`](?:get_user_table_complete|get_user_table_data_paginated(?:_v2)?|get_full_table|get_user_tables)[\"'`]",
-        except: ["features/data-tables/service.ts", "features/data-tables/data-source/**", "utils/user-table-utls/table-utils.ts", "components/user-generated-table-data/**", "app/(core)/data/**", "app/(dev)/**", "features/matrx-envelope/referenceResolvers.ts"],
+        except: ["features/data-tables/service.ts", "features/data-tables/data-source/**", "components/user-generated-table-data/**", "app/(core)/data/**", "app/(dev)/**", "features/matrx-envelope/referenceResolvers.ts"],
         says: "no runtime file outside the seam calls an older read door",
       },
     ],
@@ -430,12 +429,13 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: "A2", repo: "aidream", plan: "R", disposition: "repointed",
     what: "Workflow steps \"look up a row\" / \"save a row\"",
-    why: "INTEG-SERVER 11d9bbb891: route by id through table_home",
+    why: "INTEG-SERVER 11d9bbb891; OLD-READERS-REMOVAL f9495a8fe1: both nodes run on the record store only (table_home is deleted)",
     plain: "the workflow steps that look up or save a row still use the older tables",
     owner: "aidream aidream/graph_actions/data_table.py",
     claims: { aidream: ["aidream/graph_actions/data_table.py", "aidream/graph_actions/records.py"] },
     proofs: [
-      { kind: "contains", repo: "aidream", file: "aidream/graph_actions/data_table.py", pattern: "table_home", says: "routes by table id" },
+      { kind: "contains", repo: "aidream", file: "aidream/graph_actions/data_table.py", pattern: "def _store\\(", says: "both nodes run through the record store's doors" },
+      { kind: "lacks", repo: "aidream", files: ["aidream/graph_actions/data_table.py", "aidream/graph_actions/records.py"], pattern: "udt_dataset(?:s|_fields|_rows|_row_versions)\\b|get_full_table|get_user_tables|create_user_table_with_fields|append_rows_to_user_table|udt_bulk_write|UdtDataset", says: "no older table, model or door is named" },
     ],
   },
   {
@@ -446,7 +446,8 @@ export const INTEGRATIONS: Integration[] = [
     owner: "aidream aidream/services/google_sync/records.py",
     claims: { aidream: ["aidream/services/google_sync/**"] },
     proofs: [
-      { kind: "contains", repo: "aidream", file: "aidream/services/google_sync/records.py", pattern: "organization_is_moved", says: "a moved organization imports into the store" },
+      { kind: "contains", repo: "aidream", file: "aidream/services/google_sync/records.py", pattern: "table_sync", says: "a sheet tab is imported only through custom.table_sync" },
+      { kind: "lacks", repo: "aidream", files: ["aidream/services/google_sync/**"], pattern: "udt_dataset(?:s|_fields|_rows|_row_versions)\\b|get_full_table|get_user_tables|create_user_table_with_fields|append_rows_to_user_table|udt_bulk_write|UdtDataset", says: "the sync names no older table, model or door" },
       { kind: "db", sql: exists("custom", "table_sync"), says: "G10 is live" },
     ],
   },
@@ -473,7 +474,8 @@ export const INTEGRATIONS: Integration[] = [
     owner: "aidream aidream/services/references/resolvers.py",
     claims: { aidream: ["aidream/services/references/**"] },
     proofs: [
-      { kind: "contains", repo: "aidream", file: "aidream/services/references/resolvers.py", pattern: "table_home", says: "resolves by table home" },
+      { kind: "contains", repo: "aidream", file: "aidream/services/references/resolvers.py", pattern: "RecordStore", says: "a table reference resolves through the record store under the reader's principal" },
+      { kind: "lacks", repo: "aidream", files: ["aidream/services/references/**"], pattern: "udt_dataset(?:s|_fields|_rows|_row_versions)\\b|get_full_table|get_user_tables|create_user_table_with_fields|append_rows_to_user_table|udt_bulk_write|UdtDataset", says: "the resolvers name no older table, model or door" },
     ],
   },
   {
@@ -484,13 +486,12 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: "A8", repo: "aidream", plan: "R", disposition: "repointed",
     what: "The agent `data` tool's `dataset` resource",
-    why: "INTEG-SERVER 1e880f9e68: dataset_tables hands a store table to the store",
+    why: "OLD-READERS-REMOVAL 6381f11d7c: the dataset and structured_list resources left the data tool; tables are the dataset / records tools' (store only)",
     plain: "the agent data tool still lists and edits tables in the older store only",
     owner: "aidream aidream/services/agent_data/dataset_tables.py",
     claims: { aidream: ["aidream/services/agent_data/**"] },
     proofs: [
-      { kind: "contains", repo: "aidream", file: "aidream/services/agent_data/writes.py", pattern: "dataset_tables", says: "the writes hand datasets to the store-aware module" },
-      { kind: "contains", repo: "aidream", file: "aidream/services/agent_data/dataset_tables.py", pattern: "table_home", says: "per id, asks where it lives" },
+      { kind: "lacks", repo: "aidream", files: ["aidream/services/agent_data/**"], pattern: "udt_dataset(?:s|_fields|_rows|_row_versions)\\b|get_full_table|get_user_tables|create_user_table_with_fields|append_rows_to_user_table|udt_bulk_write|UdtDataset|udt_structured_list", says: "the data tool names no older table, model or door" },
     ],
   },
   {
@@ -566,7 +567,7 @@ export const INTEGRATIONS: Integration[] = [
     owner: "matrx-extend src/lib/supabase/user-tables.ts + src/lib/records/tables.ts",
     claims: { "matrx-extend": ["src/lib/supabase/user-tables.ts", "src/lib/records/tables.ts", "src/hooks/use-user-tables.ts"] },
     proofs: [
-      { kind: "contains", repo: "matrx-extend", file: "src/lib/supabase/user-tables.ts", pattern: "tablesLiveIn", says: "births by where the organization keeps tables" },
+      { kind: "contains", repo: "matrx-extend", file: "src/lib/supabase/user-tables.ts", pattern: "declareStoreTable", says: "a new table is born in the record store" },
       { kind: "contains", repo: "matrx-extend", file: "src/lib/supabase/user-tables.ts", pattern: "appendStoreRows", says: "appends into the store" },
       { kind: "released", repo: "matrx-extend", commit: "6caf145", says: "the repoint is in a released version" },
     ],
@@ -684,33 +685,26 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: "X1", repo: "aidream", plan: "found", disposition: "repointed",
     what: "Where a COPIED but not yet switched table is written",
-    why: "copy mode (owner, 2026-09-23) leaves the older table live beside its same-id copy, but every integration asks only \"does the store hold a Table with this id?\" (server table_home, the web app's whereThisTableLives, the extension's store list) — so agents, workflow steps, chat appends and the extension write the COPY while the owner still works in the older table, and the readiness check (older edits after the copy) cannot see it. The rule must be: a live older table with this id is the writer for every integration until the switch archives it (people may test the copy; the switch replaces their test edits with the older table's rows first — lane COPY-WRITABLE)",
+    why: "copy mode (owner, 2026-09-23) left the older table live beside its same-id copy and every integration had to choose a store; since step two (2026-10-01: the undo retired, the older tables in the graveyard) there is one store and no resolver chooses",
     plain: "for a table that has been copied but not switched, agents, workflow steps, chat and the browser extension write into the copy while you are still working in the older table",
-    owner: "aidream packages/matrx-records/matrx_records/server/table_home.py; matrx-frontend features/unified-data/whereThisTableLives.ts (+ data-source/locate-table.ts); matrx-extend src/lib/records/tables.ts",
+    owner: "matrx-frontend features/unified-data/whereThisTableLives.ts (+ data-source/locate-table.ts); matrx-extend src/lib/records/tables.ts",
     proofs: [
-      // Lane WHERE-LIVES-SWITCH (2026-09-25): every resolver asks the store's one door,
-      // custom.where_tables_live (read from the organization's switch), never a copy's existence;
-      // the copy of a live older table is read-only until the switch (the copy fence).
+      // Lane OLD-READERS-REMOVAL (2026-10-01): step two ran — the undo is retired and the older tables
+      // are in the graveyard — so no table is ever copied-but-not-switched again, and every resolver
+      // that once chose between the two stores knows only the record store.
       {
-        kind: "contains", repo: "aidream", file: "packages/matrx-records/matrx_records/server/table_home.py",
-        from: "async def table_home", to: "async def organization_is_moved",
-        pattern: "custom\\.where_tables_live",
-        says: "the server's table_home asks the store's one door, read from the organization's switch",
+        kind: "nowhere", repo: "aidream", pattern: "server\\.table_home|server import table_home", except: [],
+        says: "no server path asks 'older or store?' any more (matrx_records.server.table_home is deleted)",
       },
       {
-        kind: "contains", repo: "matrx-frontend", file: "features/unified-data/whereThisTableLives.ts",
-        pattern: "\\btableLivesIn\\(",
-        says: "the web app's whereThisTableLives (and locateTable through it) asks the switch before it looks for a copy",
+        kind: "lacks", repo: "matrx-frontend", files: ["features/unified-data/whereThisTableLives.ts", "features/data-tables/data-source/locate-table.ts", "features/data-tables/data-source/table-home.ts"],
+        pattern: "[\"']older[\"']",
+        says: "the web app's resolvers know one store",
       },
       {
-        kind: "contains", repo: "matrx-frontend", file: "features/unified-data/tableLivesIn.ts",
-        pattern: "where_tables_live",
-        says: "the web app's one helper asks the store's one door",
-      },
-      {
-        kind: "contains", repo: "matrx-extend", file: "src/lib/records/tables.ts",
-        pattern: "where_tables_live",
-        says: "the extension's one helper asks the store's one door",
+        kind: "lacks", repo: "matrx-extend", files: ["src/lib/records/tables.ts", "src/lib/supabase/user-tables.ts"],
+        pattern: "[\"']older[\"']",
+        says: "the extension's table helpers know one store",
       },
       {
         kind: "lacks", repo: "matrx-extend", files: ["src/lib/supabase/user-tables.ts"],
