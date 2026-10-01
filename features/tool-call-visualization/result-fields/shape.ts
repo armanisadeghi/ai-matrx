@@ -94,6 +94,12 @@ export type ResultShape =
      * points to (title + door), never as kind data or JSON.
      */
     | { kind: "recordRef"; token: string; id: string }
+    /**
+     * A sentence that embeds `resource_ref` pointers (a write receipt's
+     * "Before this call … was: {…}") — the prose stays prose, each pointer
+     * becomes the record's door.
+     */
+    | { kind: "textWithRecordRefs"; segments: RecordRefSegment[] }
     | { kind: "json"; value: unknown };
 
 // ─── Primitive guards ───────────────────────────────────────────────────────
@@ -562,6 +568,58 @@ export function coerceResourceRef(
     return { token: token.trim().toLowerCase(), id: id.trim() };
 }
 
+export type RecordRefSegment =
+    | { type: "text"; text: string }
+    | { type: "ref"; token: string; id: string };
+
+/** Index of the `}` closing the object that opens at `start`, or -1. */
+function closingBrace(text: string, start: number): number {
+    let depth = 0;
+    let inString = false;
+    for (let i = start; i < text.length; i++) {
+        const ch = text[i];
+        if (inString) {
+            if (ch === "\\") i++;
+            else if (ch === '"') inString = false;
+            continue;
+        }
+        if (ch === '"') inString = true;
+        else if (ch === "{") depth++;
+        else if (ch === "}") {
+            depth--;
+            if (depth === 0) return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * Split prose around the `resource_ref` objects written inline in it. Null
+ * when the text holds none (only a balanced object that parses to a
+ * resource_ref counts — a mention of the word does not).
+ */
+export function splitResourceRefs(text: string): RecordRefSegment[] | null {
+    if (!text.includes("resource_ref")) return null;
+    const segments: RecordRefSegment[] = [];
+    let cursor = 0;
+    let found = false;
+    for (let i = text.indexOf("{"); i !== -1; i = text.indexOf("{", i + 1)) {
+        if (i < cursor) continue;
+        const end = closingBrace(text, i);
+        if (end === -1) break;
+        const ref = coerceResourceRef(text.slice(i, end + 1));
+        if (!ref) continue;
+        if (i > cursor) segments.push({ type: "text", text: text.slice(cursor, i) });
+        segments.push({ type: "ref", ...ref });
+        cursor = end + 1;
+        i = end;
+        found = true;
+    }
+    if (!found) return null;
+    if (cursor < text.length) segments.push({ type: "text", text: text.slice(cursor) });
+    return segments;
+}
+
 export function detectResultShape(
     value: unknown,
     options: DetectResultShapeOptions = {},
@@ -610,6 +668,20 @@ export function detectResultShape(
     // 2c. A kind — after media/file (those already render as what they are,
     //     never as JSON), before every shape that would draw it as a grid,
     //     table, tree or text. The one detector decides.
+    // A sentence that writes resource_ref pointers inline, and no other
+    // kind: the pointers become doors, the prose stays as written.
+    if (typeof value === "string") {
+        const segments = splitResourceRefs(value);
+        if (
+            segments &&
+            !segments.some(
+                (segment) => segment.type === "text" && markdownCarriesKind(segment.text),
+            )
+        ) {
+            return { kind: "textWithRecordRefs", segments };
+        }
+    }
+
     const rootSlug = rootKindSlug(value);
     if (rootSlug) return { kind: "kindInstance", value, slug: rootSlug };
     if (typeof value === "string" && isKindJsonText(value)) {

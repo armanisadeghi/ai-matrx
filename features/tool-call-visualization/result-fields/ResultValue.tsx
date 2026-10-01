@@ -31,6 +31,7 @@ import { ResultTable } from "./ResultTable";
 import { ShortId, IdListChip } from "./ShortId";
 import { KindValueNode } from "./KindValueNode";
 import { ResultRecordRef } from "./ResultRecordRef";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { useReportKindAtRawRenderer } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
@@ -264,6 +265,24 @@ export const ResultValue: React.FC<ResultValueProps> = ({
 
             case "recordRef":
                 return <ResultRecordRef token={shape.token} id={shape.id} />;
+
+            case "textWithRecordRefs":
+                return (
+                    <p className="whitespace-pre-wrap break-words text-sm text-foreground">
+                        {shape.segments.map((segment, index) =>
+                            segment.type === "text" ? (
+                                // Position is the identity: a deterministic split of one string.
+                                <TextWithDoors key={`t${index}`} text={segment.text} />
+                            ) : (
+                                <ResultRecordRef
+                                    key={`r${index}`}
+                                    token={segment.token}
+                                    id={segment.id}
+                                />
+                            ),
+                        )}
+                    </p>
+                );
 
             case "kindList":
                 return (

@@ -52,6 +52,12 @@ const SURFACE_WRITE_RESULT = {
   surface_name: "matrx-user/notes",
   target: "note_content",
   mode: "draft",
+  // Verbatim shape of the production message: prose with the pointer inline.
+  // THIS field is what filed the RED entry (ResultMarkdown → BasicMarkdownContent).
+  message:
+    '"Note content" staged into the page\'s draft — the user still reviews and saves. ' +
+    `Before this call "current_note" was: ${JSON.stringify(REF)}. ` +
+    "Page values you receive after this result were re-read after the write.",
   change: {
     page_value: "current_note",
     before: JSON.stringify(REF),
@@ -106,9 +112,22 @@ describe("a resource_ref renders as the record it points to", () => {
     expect(text).not.toContain("resource_ref");
     expect(text).not.toContain("__kind");
     expect(text).not.toMatch(/not a registered shape/);
-    const door = container.querySelector(`a[href*="${NOTE_ID}"]`);
-    expect(door).not.toBeNull();
+    // Both the Before value and the pointer inside the message are doors.
+    expect(container.querySelectorAll(`a[href*="${NOTE_ID}"]`).length).toBe(2);
+    expect(text).toContain('Before this call "current_note" was:');
     expect(mockFetchTitles).toHaveBeenCalledWith("note", [NOTE_ID]);
+  });
+
+  it("splits prose around an inline pointer and leaves other text alone", () => {
+    expect(detectResultShape(`was: ${JSON.stringify(REF)}.`)).toEqual({
+      kind: "textWithRecordRefs",
+      segments: [
+        { type: "text", text: "was: " },
+        { type: "ref", token: "note", id: NOTE_ID },
+        { type: "text", text: "." },
+      ],
+    });
+    expect(detectResultShape("the word resource_ref alone").kind).not.toBe("textWithRecordRefs");
   });
 
   it("an unknown resource type still names itself without raw data or a report", async () => {
