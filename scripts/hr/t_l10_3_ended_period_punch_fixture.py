@@ -41,7 +41,7 @@ LOCATION   = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"
 DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"
 
 FIRST, LAST = "Greta", "Holloway"
-EMAIL       = "greta.holloway@example.test"
+EMAIL       = "greta.holloway@fixtures.aimatrx.com"
 HIRE_DATE   = "2026-08-01"
 PG_NAME     = "Hourly — Studio Crew"
 PG_FIRST    = "2026-08-01"
