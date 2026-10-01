@@ -22,6 +22,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { featureRoots } from "./lib/source-roots.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 
@@ -232,7 +233,7 @@ const files = args.length
       ...walk(join(ROOT, "styles"), [".css"]),
       join(ROOT, "app/globals.css"),
       ...walk(join(ROOT, "components"), [".css", ".tsx", ".ts"]),
-      ...walk(join(ROOT, "features"), [".css", ".tsx", ".ts"]),
+      ...featureRoots(ROOT).flatMap((r) => walk(join(ROOT, r), [".css", ".tsx", ".ts"])),
       ...walk(join(ROOT, "app"), [".tsx", ".ts"]),
       ...walk(join(ROOT, "lib"), [".tsx", ".ts"]),
     ];

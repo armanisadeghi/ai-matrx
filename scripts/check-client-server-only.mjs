@@ -26,6 +26,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const EXTS = [".ts", ".tsx", ".js", ".mjs", "/index.ts", "/index.tsx", "/index.js"];
 
@@ -52,7 +53,8 @@ function isServerOnlyMarker(src) {
 
 function resolve(root, importer, spec) {
   let base;
-  if (spec.startsWith("@/")) base = path.join(root, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = path.join(root, aliased);
   else if (spec.startsWith(".")) base = path.resolve(path.dirname(importer), spec);
   else return null;
   if (existsSync(base) && /\.[mc]?[jt]sx?$/.test(base)) return base;

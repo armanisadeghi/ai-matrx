@@ -3051,15 +3051,13 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
             {/* 🚨 A DEFAULT VIEW THAT IS NOT EVERYTHING says so, out loud —
             a screen that silently shows a subset is a screen that lies. */}
             {ruleFilter === "attention" && isLargeRulebook ? (
-              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                This Rulebook holds {rulebook.rules.length} rules, so it opens
-                on the ones worth your eyes first: where two sources disagree,
-                and where only one source holds the judgment. Everything else is
-                one click away under{" "}
-                <span className="font-medium text-foreground">
-                  All {rulebook.rules.length}
-                </span>
-                .
+              // One line in the secondary slot (cold walk 24: this was a
+              // 40-word paragraph). The "All N" chip beside it is the door.
+              <p
+                className="truncate text-xs text-muted-foreground"
+                data-rule-view-note="attention"
+              >
+                Showing disagreements and one-source rules first
               </p>
             ) : null}
 

@@ -76,6 +76,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SELF_TEST = process.argv.includes("--self-test");
@@ -209,7 +210,8 @@ function lineOf(sf: ts.SourceFile, node: ts.Node): number {
 
 function resolveModuleSpecifier(fromFile: string, spec: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = join(ROOT, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = join(ROOT, aliased);
   else if (spec.startsWith(".")) base = resolve(dirname(fromFile), spec);
   else return null; // package import — out of scope
   const candidates = [

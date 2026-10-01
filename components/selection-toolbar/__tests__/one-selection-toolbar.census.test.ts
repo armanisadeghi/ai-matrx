@@ -46,6 +46,7 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 
 const ROOT = join(__dirname, "..", "..", "..");
 
@@ -125,7 +126,8 @@ function isLogicModule(file: string): boolean {
 /** The repo-relative file a local import resolves to (`@/x`, `./x`, `../x`), or null. */
 function resolveLocal(from: string, spec: string, known: ReadonlySet<string>): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = spec.slice(2);
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = aliased;
   else if (spec.startsWith("./") || spec.startsWith("../")) base = join(dirname(from), spec);
   else return null;
   base = base.replace(/\\/g, "/");

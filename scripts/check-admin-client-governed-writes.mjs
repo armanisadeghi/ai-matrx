@@ -26,6 +26,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "lib", "utils", "components", "hooks"];
@@ -234,11 +235,12 @@ export async function readThings(sb) {
 }
 
 function resolveWritesFrom(spec, fn) {
-  if (!spec.startsWith("@/")) return false;
+  const target = aliasTarget(spec);
+  if (target === null) return false;
   for (const ext of [".ts", ".tsx", ".mjs", "/index.ts"]) {
     let src;
     try {
-      src = readFileSync(join(ROOT, spec.slice(2) + ext), "utf8");
+      src = readFileSync(join(ROOT, target + ext), "utf8");
     } catch {
       continue;
     }

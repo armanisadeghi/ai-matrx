@@ -55,6 +55,7 @@ import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 import {
   FLATTENING_REMEDY,
   isStructuredOutputKind,
@@ -191,7 +192,8 @@ function resolveImportPath(fromFile: string, spec: string): string | null {
   const cacheKey = `${fromFile}::${spec}`;
   if (importCache.has(cacheKey)) return importCache.get(cacheKey) ?? null;
   let base: string | null = null;
-  if (spec.startsWith("@/")) base = join(ROOT, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = join(ROOT, aliased);
   else if (spec.startsWith(".")) base = resolve(dirname(fromFile), spec);
   let found: string | null = null;
   if (base) {

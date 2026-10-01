@@ -1,8 +1,6 @@
 -- chair-step: this puts custom.data_home back to the one-argument body datahome2_g made (no p_search): the signature loses an argument, so custom.data_home(uuid, text) is dropped and custom.data_home(uuid) made again; its platform.client_callable_door row is moved back to the old identity and its EXECUTE grant to authenticated kept. No table, no permission change, no data row is touched.
 -- lane: DATA-HOME-3B
--- based-on: custom.data_home(uuid,text) 5029eb7ebd355fb8e43fcfe39e924e0bd680a9358517db1e55554e9f89c5a93a
-
-set local lock_timeout = '30s';
+-- based-on: custom.data_home(uuid,text) 9bfb6b26320d2fe8f89fc8358fa4d0388120befc2ba3f3eddafd6f88184beaaf
 
 drop function if exists custom.data_home(uuid, text);
 

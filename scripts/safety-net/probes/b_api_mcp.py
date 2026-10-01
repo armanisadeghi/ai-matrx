@@ -55,7 +55,7 @@ COMPARE = sys.argv[sys.argv.index("--compare") + 1] if "--compare" in sys.argv e
 ADMIN_ID = "87a6e699-3622-4869-8843-d0867456c0dd"
 SWITCHING = {"key": "switching", "id": "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f", "name": "admin's Workspace"}
 CONTROL = {"key": "control", "id": "0a54df90-eab8-4d07-ab29-81a45fb41e04", "name": "Cedar Ridge Physical Therapy"}
-NOT_A_MEMBER_OF = "235a6add-e8b5-43f9-883e-9dd0389c1759"  # Calder Approvals: admin owns it, test@test.com is not in it
+NOT_A_MEMBER_OF = "d3138341-5359-455e-8b27-70d538ec05f1"  # Maxwell's Org: neither admin@admin.com nor test@test.com is a member (read 2026-10-01)
 FORBIDDEN = {"3e790542-fdaf-40b2-8bf3-658bf94fe67f", "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7"}
 # Developer words a person must never read in a refusal (store door names, register codes, sqlstates).
 DEV_WORDS = re.compile(r"\b(custom|iam|platform|workbench|public)\.[a-z_]+|\bDOOR-\d+|\bREC-\d+|\bFLD-\d+|sqlstate|\bP0001\b|\b42501\b", re.I)
@@ -77,15 +77,22 @@ if TARGET == "live":
     ANON = ENV["SUPABASE_MATRIX_PUBLISHABLE_KEY"]
 elif TARGET == "clone":
     ref = re.search(r"^clone_ref\s*=\s*(\S+)", (CODE / "common-docs/operations/clone/CLONE-REF").read_text(), re.M).group(1)
-    shell = subprocess.run(["uv", "run", "python", "scripts/clone/server_env.py", "--shell"], cwd=CODE / "aidream",
-                           capture_output=True, text=True, timeout=120).stdout
-    clone_env = {m.group(1): m.group(2).strip("'\"") for m in re.finditer(r"^export (\w+)=(.*)$", shell, re.M)}
+    clone_env: dict[str, str] = {}
+    for _ in range(4):  # the clone's API-key lookup is slow when the clone is busy; ask again before refusing
+        shell = subprocess.run(["uv", "run", "python", "scripts/clone/server_env.py", "--shell"], cwd=CODE / "aidream",
+                               capture_output=True, text=True, timeout=180).stdout
+        clone_env = {m.group(1): m.group(2).strip("'\"") for m in re.finditer(r"^export (\w+)=(.*)$", shell, re.M)}
+        if "SUPABASE_MATRIX_PUBLISHABLE_KEY" in clone_env:
+            break
+        time.sleep(10)
+    if "SUPABASE_MATRIX_PUBLISHABLE_KEY" not in clone_env:
+        raise SystemExit("could not read the clone's keys (aidream: uv run python scripts/clone/server_env.py --check)")
     DB_URL = clone_env.get("SUPABASE_MATRIX_URL", f"https://{ref}.supabase.co").rstrip("/")
     ANON = clone_env["SUPABASE_MATRIX_PUBLISHABLE_KEY"]
     SERVER = os.environ.get("SN_CLONE_SERVER", "http://localhost:8200/api")
     if ref not in DB_URL:
         raise SystemExit(f"refused: the clone env does not name the current clone {ref}")
-    with urllib.request.urlopen(SERVER.removesuffix("/api") + "/health/clone-pairing", timeout=10) as r:  # noqa: S310
+    with urllib.request.urlopen(SERVER.removesuffix("/api") + "/health/database-identity", timeout=10) as r:  # noqa: S310
         pairing = json.loads(r.read() or b"{}")
     if pairing.get("database_project_ref") != ref:
         raise SystemExit(f"refused: the local server is not paired with the clone {ref}: {pairing}")
@@ -121,14 +128,21 @@ def http(method: str, url: str, body=None, headers: dict | None = None) -> tuple
         if bad in url or (body and bad in json.dumps(body)):
             raise SystemExit("refused: a call names Arman's organization or table")
     data = None if body is None else json.dumps(body).encode()
-    req = urllib.request.Request(url, data=data, method=method, headers={"content-type": "application/json", **UA, **(headers or {})})
-    try:
-        with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310
-            raw = r.read().decode() or "null"
-            status, hdrs = r.status, dict(r.headers)
-    except urllib.error.HTTPError as e:
-        raw = e.read().decode() or "null"
-        status, hdrs = e.code, dict(e.headers)
+    for attempt in range(8):
+        req = urllib.request.Request(url, data=data, method=method, headers={"content-type": "application/json", **UA, **(headers or {})})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310
+                raw = r.read().decode() or "null"
+                status, hdrs = r.status, dict(r.headers)
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode() or "null"
+            status, hdrs = e.code, dict(e.headers)
+        # PostgREST reloading its schema cache (PGRST002) answers 503 and says "Retrying": wait and ask again, said in the log.
+        if status == 503 and ("PGRST00" in raw or "schema cache" in raw) and attempt < 7:
+            bodies.append(f"(503 PGRST002 on {method} {url.split('?')[0].replace(DB_URL, '{db}')}; retry {attempt + 1} in 8 s)")
+            time.sleep(8)
+            continue
+        break
     try:
         parsed = json.loads(raw)
     except ValueError:
@@ -165,10 +179,18 @@ def api(token: str, method: str, path: str, body=None, org: str | None = None, i
 
 
 def msg(body: object) -> str:
+    """The sentence a person reads (ApiError.message; the MCP's says)."""
     if isinstance(body, dict):
         d = body.get("detail") if isinstance(body.get("detail"), dict) else body
-        return " ".join(str(d.get(k) or "") for k in ("message", "says", "hint", "error")).strip() or json.dumps(body)[:300]
+        return str(d.get("message") or d.get("says") or d.get("error") or json.dumps(body)[:300])
     return str(body)[:300]
+
+
+def hint(body: object) -> str:
+    if isinstance(body, dict):
+        d = body.get("detail") if isinstance(body.get("detail"), dict) else body
+        return str(d.get("hint") or "")
+    return ""
 
 
 # ── fixtures ────────────────────────────────────────────────────────────────────────────────
@@ -179,7 +201,7 @@ FIXTURES = {
         "fields": [
             {"key": "patient", "label": "Patient", "type": "text", "sort": 1, "required": True},
             {"key": "status", "label": "Status", "type": "select", "sort": 2, "options": ["Waiting", "Called back"]},
-            {"key": "callback_date", "label": "Callback date", "type": "date", "kind": "date", "sort": 3},
+            {"key": "callback_date", "label": "Callback date", "type": "datetime", "kind": "datetime", "sort": 3},
             {"key": "minutes", "label": "Minutes", "type": "number", "sort": 4},
         ],
         "seed": [{"patient": "Marisol Ortega — knee follow-up", "status": "Waiting", "callback_date": "2026-10-02", "minutes": 10}],
@@ -193,7 +215,7 @@ FIXTURES = {
         "fields": [
             {"key": "item", "label": "Item", "type": "text", "sort": 1, "required": True},
             {"key": "status", "label": "Status", "type": "select", "sort": 2, "options": ["To order", "Ordered"]},
-            {"key": "needed_by", "label": "Needed by", "type": "date", "kind": "date", "sort": 3},
+            {"key": "needed_by", "label": "Needed by", "type": "datetime", "kind": "datetime", "sort": 3},
             {"key": "quantity", "label": "Quantity", "type": "number", "sort": 4},
         ],
         "seed": [{"item": "Nitrile gloves, medium (box of 100)", "status": "To order", "needed_by": "2026-10-06", "quantity": 12}],
@@ -204,7 +226,7 @@ FIXTURES = {
 }
 
 
-def make_table(jwt: str, org: dict, spec: dict) -> str:
+def make_table(jwt: str, org: dict, spec: dict, made: dict) -> str:
     status, kernel = rpc(jwt, "custom", "person_kernel_id", {})
     assert status == 200, ("person_kernel_id", status, kernel)
     status, home = rpc(jwt, "custom", "record_write", {"p_organization_id": org["id"], "p_table_id": kernel, "p_data": {"name": f"{spec['name']} Home"}})
@@ -216,6 +238,7 @@ def make_table(jwt: str, org: dict, spec: dict) -> str:
              "parent_id": home}
     status, table = rpc(jwt, "custom", "table_declare", {"p_organization_id": org["id"], "p_spec": tspec})
     assert status == 200, ("table_declare", status, table)
+    made[org["key"]] = str(table)  # archived in `finally` even if a column below is refused
     for f in spec["fields"]:
         status, fid = rpc(jwt, "custom", "field_declare", {"p_organization_id": org["id"], "p_table_id": table, "p_spec": f})
         assert status == 200, ("field_declare", f["label"], status, fid)
@@ -259,7 +282,7 @@ def rest_half(key: str, org: dict, table: str, spec: dict) -> None:
     s, b, _ = api(key, "GET", f"/{table}/rows/{row_id}", org=org["id"])
     got = (b.get("values") or (b.get("row") or {}).get("values") or {}) if isinstance(b, dict) else {}
     title = next(iter(spec["row"].values()))
-    step(["A06"], f"{k}.rest.get_row", s == 200 and title in json.dumps(got), f"{s}; values {json.dumps(got)[:200]}", {"status": s, "title_back": title in json.dumps(got)})
+    step(["A06"], f"{k}.rest.get_row", s == 200 and title in json.dumps(got, ensure_ascii=False), f"{s}; values {json.dumps(got)[:200]}", {"status": s, "title_back": title in json.dumps(got, ensure_ascii=False)})
     s, b, _ = api(key, "PATCH", f"/{table}/rows/{row_id}", {"values": spec["row2"], "expected_version": version}, org=org["id"], idem=idem + "-u")
     step(["A06"], f"{k}.rest.update_row", s == 200, f"{s}; {json.dumps(b)[:200]}", {"status": s})
     s, b, _ = api(key, "PATCH", f"/{table}/rows/{row_id}", {"values": spec["row"], "expected_version": version}, org=org["id"])
@@ -318,7 +341,7 @@ async def mcp_half(token: str, label: str, org: dict, table: str, spec: dict) ->
                 page, err = await call(action="list_rows", table=table)
                 rows = page.get("rows") or [] if isinstance(page, dict) else []
                 marker = spec["marker"]
-                step(items, f"{k}.mcp_{label}.list_rows", not err and marker in json.dumps(rows), f"{len(rows)} rows; marker read={marker in json.dumps(rows)}", {"marker": marker in json.dumps(rows)})
+                step(items, f"{k}.mcp_{label}.list_rows", not err and marker in json.dumps(rows, ensure_ascii=False), f"{len(rows)} rows; marker read={marker in json.dumps(rows, ensure_ascii=False)}", {"marker": marker in json.dumps(rows, ensure_ascii=False)})
                 idem = f"sn-b-mcp-{label}-{k}-{int(time.time())}"
                 made, err = await call(action="create_row", table=table, values=spec["row"], idempotency_key=idem)
                 rid = ((made.get("row") or {}).get("id") if isinstance(made, dict) else None)
@@ -355,11 +378,16 @@ def refusals(member_jwt: str, key: str, table: str, spec: dict) -> None:
     words = msg(b)
     step(["A09"], "control.member_write_refused", s in (403, 404) and bool(words), f"{s}; {words}", {"status": s})
     step(["A09"], "control.member_refusal_is_peoples_words", s in (403, 404) and not DEV_WORDS.search(words),
-         f"developer words found: {DEV_WORDS.findall(words)}" if DEV_WORDS.search(words) else f"plain: {words[:200]}", {"plain": not DEV_WORDS.search(words)})
+         (f"developer words in the sentence: {DEV_WORDS.findall(words)} — {words[:200]}" if DEV_WORDS.search(words) else f"plain: {words[:200]}")
+         + (f" · hint: {hint(b)[:160]}" if hint(b) else ""), {"plain": not DEV_WORDS.search(words)})
+    # An organization the caller is not in: refused by name (table_api FEATURE: 400 organization_forbidden), never ignored.
     s, b, _ = api(member_jwt, "GET", "", org=NOT_A_MEMBER_OF)
-    step(["A09"], "outsider.organization_refused", s in (400, 403) and not DEV_WORDS.search(msg(b)), f"{s}; {msg(b)}", {"status": s})
-    s, b, _ = api(key, "GET", f"/{table}/rows", org=NOT_A_MEMBER_OF)
-    step(["A09"], "outsider.key_naming_another_org_refused", s in (400, 403, 404), f"{s}; {msg(b)}", {"status": s})
+    step(["A09"], "outsider.list_naming_a_foreign_org_refused", s in (400, 403) and not DEV_WORDS.search(msg(b)),
+         f"{s}; {msg(b)[:200]}" + (f"; answered organization_id={b.get('organization_id')!r}" if isinstance(b, dict) and s == 200 else ""), {"status": s})
+    s, b, _ = api(key, "POST", f"/{table}/rows", {"values": spec["row"]}, org=NOT_A_MEMBER_OF)
+    step(["A09"], "outsider.write_naming_a_foreign_org_refused", s in (400, 403), f"{s}; {msg(b)[:200]}", {"status": s})
+    if s in (200, 201) and isinstance(b, dict) and (b.get("row") or {}).get("id"):
+        api(key, "DELETE", f"/{table}/rows/{b['row']['id']}", org=CONTROL["id"])
 
 
 async def main() -> int:
@@ -368,17 +396,15 @@ async def main() -> int:
     key_id = None
     tables: dict[str, str] = {}
     try:
-        s, made = rpc(admin, "iam", "personal_api_key_create",
-                      {"p_name": f"Safety net B {STAMP}", "p_organization_id": SWITCHING["id"],
-                       "p_expires_at": datetime.now(ZoneInfo("UTC")).replace(microsecond=0).isoformat().replace("+00:00", "Z")[:10] + "T23:59:00Z"})
+        s, made = rpc(admin, "iam", "personal_api_key_create", {"p_name": f"Safety net B {STAMP}", "p_organization_id": SWITCHING["id"]})
         api_key = made.get("api_key") if isinstance(made, dict) else None
         key_id = made.get("id") if isinstance(made, dict) else None
         if api_key:
             SECRETS.append(api_key)
-        if not step(["A06"], "key.created", s == 200 and bool(api_key), f"{s}; key id {key_id}"):
-            return 1
+        if not step(["A06"], "key.created", s == 200 and bool(api_key), f"{s}; key id {key_id}" + ("" if s == 200 else f"; {json.dumps(made)[:300]}")):
+            return write_out()
         for org in (CONTROL, SWITCHING):
-            tables[org["key"]] = make_table(admin, org, FIXTURES[org["key"]])
+            make_table(admin, org, FIXTURES[org["key"]], tables)
             step([], f"{org['key']}.fixture", True, f"{FIXTURES[org['key']]['name']} = {tables[org['key']]} in {org['name']}")
         for org in (CONTROL, SWITCHING):
             rest_half(api_key, org, tables[org["key"]], FIXTURES[org["key"]])
@@ -398,6 +424,10 @@ async def main() -> int:
                 ss, bb, _ = api([x for x in SECRETS if x.startswith("mx_")][0] if any(x.startswith("mx_") for x in SECRETS) else "", "GET", "", org=SWITCHING["id"])
                 step(["A09"], "key.revoked_key_refused", ss == 401 and not DEV_WORDS.search(msg(bb)), f"{ss}; {msg(bb)}", {"status": ss})
 
+    return write_out()
+
+
+def write_out() -> int:
     if COMPARE:
         before = json.loads(Path(COMPARE).read_text()).get("signatures", {})
         for name, sig in before.items():

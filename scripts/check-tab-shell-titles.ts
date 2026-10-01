@@ -57,6 +57,7 @@ import { dirname, join, relative } from "node:path";
 import ts from "typescript";
 import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 import { createDynamicRouteMetadata, createRouteMetadata } from "../utils/route-metadata";
 
 const PAGE_FILES = ["page.tsx", "page.dev.tsx"];
@@ -298,8 +299,9 @@ async function resolveTitle(
       };
     }
     case "pathname": {
-      const spec = info.module.startsWith("@/")
-        ? join(repoRoot, info.module.slice(2))
+      const aliased = aliasTarget(info.module);
+      const spec = aliased !== null
+        ? join(repoRoot, aliased)
         : join(dirname(owner), info.module);
       try {
         const mod = (await import(spec)) as Record<string, (p: string) => { title?: unknown }>;

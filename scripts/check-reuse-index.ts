@@ -21,6 +21,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const INDEX_FILE = "docs/reuse-first.md";
 const SECTION_MARKER = "## Primitives Index";
@@ -57,7 +58,7 @@ let checked = 0;
 
 for (const raw of candidates) {
   let p = raw;
-  if (p.startsWith("@/")) p = p.slice(2); // repo alias
+  p = aliasTarget(p) ?? p; // repo alias (@/, @host/, @ai-matrx/chat/)
   p = p.split("#")[0]; // strip anchors like file.ts#export
   if (p.endsWith("/*")) p = p.slice(0, -2); // glob → parent dir
   p = p.replace(/\/$/, ""); // trailing dir slash

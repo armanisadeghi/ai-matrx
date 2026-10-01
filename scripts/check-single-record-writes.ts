@@ -55,6 +55,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRootOf } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE_FILE = join(ROOT, "scripts", "single-record-writes-baseline.json");
@@ -272,8 +273,10 @@ function countByFile(sites: Site[]): Record<string, number> {
 }
 
 function featureOf(file: string): string {
+  const feature = featureRootOf(file);
+  if (feature) return `${feature.root}/${feature.rest.split("/")[0]}`;
   const parts = file.split("/");
-  return parts[0] === "features" || parts[0] === "components" || parts[0] === "lib" ? `${parts[0]}/${parts[1]}` : parts[0];
+  return parts[0] === "components" || parts[0] === "lib" ? `${parts[0]}/${parts[1]}` : parts[0];
 }
 
 function selfTest(): number {

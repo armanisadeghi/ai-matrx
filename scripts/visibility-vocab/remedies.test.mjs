@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { FINDINGS_CHECKS } from "../findings/registry.mjs";
 import { REMEDIES, remedyForKey } from "./remedies.mjs";
+import { aliasTarget } from "../lib/source-roots.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CHECK = join(ROOT, "scripts", "check-visibility-vocab.ts");
@@ -22,8 +23,9 @@ const TSX = join(ROOT, "node_modules", ".bin", "tsx");
 const KINDS_THE_CHECK_EMITS = ["collapsedUnion", "onlyYouClaim", "retiredSpelling"];
 
 function moduleFile(spec) {
-  assert.ok(spec.startsWith("@/"), `${spec}: remedies import through the @/ alias`);
-  const base = join(ROOT, spec.slice(2));
+  const target = aliasTarget(spec);
+  assert.ok(target !== null, `${spec}: remedies import through a repo alias (@/, @host/, @ai-matrx/chat/)`);
+  const base = join(ROOT, target);
   for (const candidate of [`${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")]) {
     if (existsSync(candidate)) return candidate;
   }

@@ -39,6 +39,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { featureRoots } from "@/scripts/lib/source-roots.mjs";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
@@ -152,7 +153,7 @@ describe('"no org yet" is not "still reading"', () => {
 
   it("no busy-gated reader under features/ bares an organization early return without the bootstrap", () => {
     const offenders: string[] = [];
-    for (const relative of filesUnder("features")) {
+    for (const relative of featureRoots(REPO_ROOT).flatMap((root) => filesUnder(root))) {
       const source = readFileSync(join(REPO_ROOT, relative), "utf8");
       if (!ORG_EARLY_RETURN.test(source)) continue;
       if (!hasBusyInit(source)) continue;

@@ -7,6 +7,7 @@ import type {
   UnwiredFinding,
   UnwiredRepository,
 } from "./types";
+import { aliasTarget, featureRootOf } from "../lib/source-roots.mjs";
 
 const FRONTEND_ROOTS = ["app", "components", "features", "hooks", "lib", "providers", "utils"];
 // Directory names skipped wholesale. Only unambiguous ones belong here: this
@@ -175,7 +176,8 @@ function detectorFor(kind: Candidate["kind"]): Candidate["detector"] {
 
 function resolveModule(root: string, importer: string, specifier: string): string | null {
   let base: string;
-  if (specifier.startsWith("@/")) base = join(root, specifier.slice(2));
+  const aliased = aliasTarget(specifier);
+  if (aliased !== null) base = join(root, aliased);
   else if (specifier.startsWith(".")) base = resolve(dirname(importer), specifier);
   else return null;
   const choices = [
@@ -264,8 +266,9 @@ function factsFor(root: string, path: string, candidates: Candidate[]): ModuleFa
   }
   for (const match of text.matchAll(/\bimport\s*\(\s*`([^`]*?)\$\{/g)) {
     const prefix = match[1] ?? "";
-    const directory = prefix.startsWith("@/")
-      ? resolve(root, prefix.slice(2))
+    const aliasedPrefix = aliasTarget(prefix);
+    const directory = aliasedPrefix !== null
+      ? resolve(root, aliasedPrefix)
       : prefix.startsWith(".")
         ? resolve(dirname(path), prefix)
         : null;
@@ -368,7 +371,8 @@ function featureOf(repository: UnwiredRepository, file: string): string {
     if (parts[0] === "packages") return parts.slice(0, 2).join("/");
     return parts.slice(0, Math.min(3, parts.length - 1)).join("/") || "aidream";
   }
-  if (parts[0] === "features") return parts.slice(0, 2).join("/");
+  const feature = featureRootOf(file);
+  if (feature) return `${feature.root}/${feature.rest.split("/")[0]}`;
   if (parts[0] === "app") return parts.slice(0, 3).join("/");
   return parts[0] || "root";
 }

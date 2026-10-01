@@ -105,6 +105,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { emitItem, endItems } from "./checks/items.mjs";
+import { isAliasSpecifier } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIRS = ["scripts", "lib", "features", "app", "utils"];
@@ -563,7 +564,7 @@ function firstPartyNamedImports(src: string): Map<string, string> {
   while ((m = re.exec(src)) !== null) {
     const from = m[2] ?? "";
     // Only our own modules: a node_modules helper is somebody else's read.
-    if (!from.startsWith(".") && !from.startsWith("@/")) continue;
+    if (!from.startsWith(".") && !isAliasSpecifier(from)) continue;
     for (const part of (m[1] ?? "").split(",")) {
       const name = part.trim().split(/\s+as\s+/).pop()?.trim();
       if (name) out.set(name, from);

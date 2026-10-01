@@ -117,13 +117,11 @@ const benchSittings = createSittingStore<BenchSitting>({
  * one panel earlier. The price is the server's `estimated_cost_note` and it
  * rides WITH this everywhere this appears, including in the confirmation.
  */
-const WHAT_IT_DOES =
-  "Starting a trial makes real, paid model calls across all six arms — the " +
-  "best frontier model three times (once with your whole corpus, once with " +
-  "retrieval and the open web up to the budget ceiling), a cheap model, a " +
-  "full run of your Masterwork, and then a judge on every arm plus a blind " +
-  "panel. It takes many minutes, and nothing about it is undone by closing " +
-  "this.";
+// The consequence of the click, in the one line above it (cold walk 24: this
+// was a 60-word paragraph). What runs — the frontier model three ways, a cheap
+// model, the Masterwork, a judge per arm and a blind panel — is the list
+// above this line, not prose under it.
+const WHAT_IT_DOES = "Paid calls on all six arms; closing this won't stop it";
 
 function ArmRow({ arm }: { arm: BenchArmWire }) {
   const { unit, rate } = useCostDisplay();
@@ -182,17 +180,13 @@ function Verdict({ verdict }: { verdict: BenchVerdictWire }) {
       </p>
       {verdict.void ? (
         <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-foreground">
-          This trial proves nothing. The expert&apos;s own withheld answer was
-          in the blind pool and did not win it, so the trial is void and no
-          claim is made from it — however our arm scored.
+          Void: the expert&apos;s own answer lost the blind panel.
           {verdict.void_reason ? ` ${verdict.void_reason}` : ""}
         </p>
       ) : null}
       {verdict.not_scored ? (
         <p className="rounded-md border border-border bg-muted/40 p-2 text-xs text-foreground">
-          The panel was not calibrated, so this trial was not scored. That is
-          not a fail and not a pass — it is evidence about the judges, not
-          about this Masterwork.
+          Not scored: the judging panel wasn&apos;t calibrated.
           {verdict.not_scored_reason ? ` ${verdict.not_scored_reason}` : ""}
         </p>
       ) : null}
@@ -487,11 +481,8 @@ export function RunTheBench({
                 Run the Bench
               </DialogTitle>
               <DialogDescription>
-                Six answers to the same job — the best frontier model three
-                ways, a cheap model, your Masterwork, and the expert&apos;s own
-                answer — judged blind, with dollars and seconds on every one.
-                This is the trial that can establish a win. The quick check
-                beside it cannot.
+                Six answers to one job, judged blind, each with its cost and
+                time.
               </DialogDescription>
             </DialogHeader>
 
@@ -511,7 +502,7 @@ export function RunTheBench({
                   onChange={(e) => setTaskPrompt(e.target.value)}
                   rows={4}
                   enableTextStats
-                  placeholder="What all six arms are asked to do — the same wording reaches every one of them…"
+                  placeholder="e.g. Check this letter against my rules"
                 />
               </div>
               <div className="space-y-1.5">
@@ -539,12 +530,10 @@ export function RunTheBench({
                   onChange={(e) => setGroundTruth(e.target.value)}
                   rows={4}
                   enableTextStats
-                  placeholder="What the expert actually said or wrote for this job — it goes into the blind pool and has to win it…"
+                  placeholder="What the expert actually wrote for this job"
                 />
                 <p className="text-xs text-muted-foreground">
-                  This is the arm every claim depends on: if the expert&apos;s
-                  own answer is in the pool and does not win the blind panel,
-                  the trial is void and proves nothing.
+                  If this answer loses the blind panel, the trial is void
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -577,25 +566,24 @@ export function RunTheBench({
                     never returns null, so `modelName` is a last-ditch guard
                     against an older server, not a display decision. */}
                 <p>
-                  The judge:{" "}
+                  Judge{" "}
                   <span className="text-foreground">
                     {modelName(form.judge_model_name)}
                   </span>
-                  {" · "}The best model money can buy, three ways:{" "}
+                  {" · "}Frontier ×3{" "}
                   <span className="text-foreground">
                     {modelName(form.frontier_model_name)}
                   </span>
-                  {" · "}The cheap one:{" "}
+                  {" · "}Cheap{" "}
                   <span className="text-foreground">
                     {modelName(form.cheap_model_name)}
                   </span>
                 </p>
                 <p className="mt-0.5">
-                  Arm C runs{" "}
+                  Yours{" "}
                   <span className="text-foreground">
                     {form.masterwork_name}
-                  </span>{" "}
-                  — the same way the product runs it.
+                  </span>
                 </p>
                 {/* The note always; the COUNT only when the server actually
                     counted. It does not on this read (see `corpus_sources`) —

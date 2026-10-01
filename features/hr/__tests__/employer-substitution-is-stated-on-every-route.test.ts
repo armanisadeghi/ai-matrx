@@ -39,6 +39,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 
 const REPO = join(__dirname, "..", "..", "..");
 const HR_ROUTES = join(REPO, "app", "(core)", "hr");
@@ -71,7 +72,8 @@ const NO_RENDERED_OUTPUT = [join("app", "(core)", "hr", "time", "page.tsx")];
 
 function resolveSpec(spec: string, fromFile: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = join(REPO, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = join(REPO, aliased);
   else if (spec.startsWith(".")) base = resolve(dirname(fromFile), spec);
   else return null; // a package, not our code
   for (const ext of [".tsx", ".ts", "/index.tsx", "/index.ts", ""]) {

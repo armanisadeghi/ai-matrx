@@ -21,6 +21,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { isUnderFeature } from "@/scripts/lib/source-roots.mjs";
 
 import { AgentActionModal } from "@/features/agents/components/agent-listings/AgentActionModal";
 import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";
@@ -58,7 +59,7 @@ function filesThatDeleteAgents(): string[] {
   for (const dir of SEARCH_DIRS) walk(join(REPO_ROOT, dir), files);
   return files.filter((file) => {
     if (file.endsWith(join("agent-definition", "thunks.ts"))) return false;
-    if (file.includes(join("features", "agents", "deletion"))) return false;
+    if (isUnderFeature(file, "agents/deletion")) return false;
     return /\bdeleteAgent\s*\(/.test(readFileSync(file, "utf8"));
   });
 }

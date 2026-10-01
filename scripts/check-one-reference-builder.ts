@@ -50,6 +50,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, resolve, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRoots } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(__dirname, "..");
 const AIDREAM = process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream");
@@ -127,7 +128,7 @@ interface Finding {
 function scan(extraSource?: { file: string; text: string }): Finding[] {
   const files: { path: string; rel: string }[] = [];
 
-  for (const d of [join(ROOT, "features"), join(ROOT, "components"), join(ROOT, "lib"), join(ROOT, "app")]) {
+  for (const d of [...featureRoots(ROOT).map((r) => join(ROOT, r)), join(ROOT, "components"), join(ROOT, "lib"), join(ROOT, "app")]) {
     if (existsSync(d)) for (const f of walk(d)) files.push({ path: f, rel: relative(resolve(ROOT, ".."), f) });
   }
   for (const pkg of ["records", "records-ui"]) {

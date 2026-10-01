@@ -24,6 +24,7 @@ import {
   type EntityTokenInfo,
 } from "./entity-tokens";
 import type { DeadEndFinding, DeadEndRuleId, DeadEndSeverity } from "./types";
+import { featureRootOf } from "../lib/source-roots.mjs";
 
 // ─── Vocabulary ─────────────────────────────────────────────────────────────
 
@@ -2006,7 +2007,8 @@ function makeFinding(args: {
 /** `features/agents/browse/X.tsx` → `features/agents`; app files → their group. */
 export function featureOf(relPath: string): string {
   const parts = relPath.split("/");
-  if (parts[0] === "features" && parts[1]) return `features/${parts[1]}`;
+  const feature = featureRootOf(relPath);
+  if (feature && feature.rest) return `${feature.root}/${feature.rest.split("/")[0]}`;
   if (parts[0] === "app" && parts[1]) return `app/${parts[1]}`;
   if (parts[0] === "components" && parts[1]) return `components/${parts[1]}`;
   if (parts[0] === "lib" && parts[1]) return `lib/${parts[1]}`;

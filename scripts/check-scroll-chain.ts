@@ -46,6 +46,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
 import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "components", "lib"] as const;
@@ -457,8 +458,9 @@ function importSources(
       continue;
     }
     const specifier = statement.moduleSpecifier.text;
-    const base = specifier.startsWith("@/")
-      ? join(ROOT, specifier.slice(2))
+    const aliased = aliasTarget(specifier);
+    const base = aliased !== null
+      ? join(ROOT, aliased)
       : specifier.startsWith(".")
         ? resolve(dir, specifier)
         : null;

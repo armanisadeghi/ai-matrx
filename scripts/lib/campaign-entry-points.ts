@@ -31,6 +31,7 @@ import {
     CAMPAIGN_STORE_TABLES,
     type CampaignEntryPoint,
 } from "../../lib/knobs/unifiedDataCampaign.register";
+import { aliasTarget } from "./source-roots.mjs";
 
 /**
  * Files that talk about the campaign in order to POLICE it. Gating a guard on
@@ -69,7 +70,8 @@ export interface Violation {
 
 /** Resolve a module specifier to a repo-relative path, or null if unresolvable. */
 function resolveSpecifier(spec: string, fromFile: string, repoRoot: string): string | null {
-    if (spec.startsWith("@/")) return spec.slice(2);
+    const aliased = aliasTarget(spec);
+    if (aliased !== null) return aliased;
     if (spec.startsWith(".")) {
         const abs = path.resolve(repoRoot, path.dirname(fromFile), spec);
         return path.relative(repoRoot, abs);

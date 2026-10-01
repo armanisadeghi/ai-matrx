@@ -1,0 +1,290 @@
+-- LANE SAFETY-NET-B (2026-10-01) — THE SWITCH CHAIN, CLONE ONLY, ONE TRANSACTION, ROLLED BACK.
+--
+-- What one pass proves (NIGHT-PLAN-2026-10-01 §4 "Cutover mechanics"):
+--   C01  readiness is TRUTHFUL: three planted holds each turn Ready into a refusal that names the organization —
+--        (P1) a row in an older table that is not in its copy, (P2) an older row edited after it was copied,
+--        (P3) live field definitions under an archived Table — and for every plant the press agrees with readiness
+--        (Ready ⇒ the press goes through; not Ready ⇒ the press refuses "not_ready" and switches nothing).
+--   C02  the press switches EXACTLY the organizations readiness planned, and writes no press row for any other.
+--   C04  after the press every older write door refuses: a signed-in caller cannot reach it (EXECUTE revoked), and
+--        the server's own path is refused by the moved-table trigger in a person's words, naming the copy's address.
+--   C05  lists follow: a planned organization keeps no live older pick list; each list's copy is a live Table.
+--   C06  births happen only in the store: the platform value is "born moved", and a new older table is refused
+--        for a switched organization with the sentence that sends the person to New table.
+--   C03  undo: a person edits a copy after the press; the undo carries that edit back into the older row
+--        (rehearsal 15c's WO-5506 proof), the doors open again and the platform value returns.
+--
+-- RUN (matrx-frontend root):   node scripts/safety-net/run.mjs --target clone --only cutover.switch-chain
+--        or directly:          psql "$CLONE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/safety-net/probes/b_switch_chain.sql
+-- PROVE RED:                   node scripts/safety-net/run.mjs --target clone --plant b-readiness-ignores-uncopied-rows
+--                              (and the other plants/b-*.mjs aimed at this check)
+--
+-- STAND-INS, named (the shared clone is never quiet; peers edit it all night): inside this rolled-back transaction the
+-- suite (a) marks the clone's waiting context-follow rows consumed and (b) records one green Step 1 run, exactly as
+-- finalswitch_green.sql does. On production neither is needed: the hour runs Step 1 for real right before the press.
+-- If the clone is still not Ready after them, the suite FAILS with readiness's own sentence (it never skips).
+\set ON_ERROR_STOP on
+\timing off
+\pset tuples_only on
+
+begin;
+set local statement_timeout = '20min';
+set local lock_timeout = '30s';
+
+do $guard$
+begin
+  if (select count(*) from cron.job where active) <> 0 or exists (select 1 from pg_extension where extname = 'pg_net') then
+    raise exception 'refused: this is not the quarantined clone (active cron jobs or pg_net present) — the switch chain never runs on production';
+  end if;
+end
+$guard$;
+
+do $chain$
+declare
+  c_admin    constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com (platform admin)
+  c_ws       constant uuid := '884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f';   -- admin's Workspace (switched by the press)
+  c_cedar    constant uuid := '0a54df90-eab8-4d07-ab29-81a45fb41e04';   -- Cedar Ridge Physical Therapy (already switched)
+  c_claims   constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated","session_id":"safety-net-b"}';
+  c_page     constant text := '{"origin":"https://manage.aimatrx.com","x-matrx-admin-lane":"1"}';  -- the admin lane header the Final switch page sends
+  v_r jsonb; v_p jsonb; v_u jsonb; v_o jsonb; v_x jsonb;
+  v_table uuid; v_row uuid; v_list uuid; v_store_table uuid;
+  v_plan uuid[]; v_switched uuid[]; v_outside uuid[];
+  -- A work order in the column's own pattern (WO-dddd), unique to this run.
+  v_marker text := 'WO-' || (5000 + (extract(epoch from clock_timestamp())::bigint % 4000))::text;
+  v_err text; v_state text; v_n int; v_lag int;
+  v_report text[] := '{}';
+  v_run uuid := gen_random_uuid();
+begin
+  -- ── stand-ins (named; rolled back with everything else) ─────────────────────────────────────────────────────
+  update custom.io_outbox set consumed_at = clock_timestamp()
+   where event_key = 'context.follow' and consumed_at is null and deleted_at is null;
+  get diagnostics v_lag = row_count;
+  perform platform.final_switch_copy_again_record(v_run, 'start', null, true, '{"says": "safety-net-b: stand-in green Step 1"}'::jsonb);
+  perform platform.final_switch_copy_again_record(v_run, 'finish', null, true, '{"says": "safety-net-b: stand-in green Step 1"}'::jsonb);
+  v_report := v_report || format('stand-ins: %s waiting follow rows marked consumed; one green Step 1 recorded', v_lag);
+
+  v_r := platform._final_switch_readiness();
+  if not (v_r ->> 'ready')::boolean then
+    raise exception 'C01 PRECONDITION: the clone is not Ready even after the stand-ins: % — blocking: %',
+      v_r ->> 'says', left(coalesce((v_r -> 'blocking')::text, ''), 600);
+  end if;
+  select array_agg((x ->> 'id')::uuid order by x ->> 'id') into v_plan
+    from jsonb_array_elements(v_r -> 'organizations') x
+   where (x -> 'plan' ->> 'press_tables')::boolean or (x -> 'plan' ->> 'press_context')::boolean
+      or (x -> 'plan' ->> 'sweep_tables')::int > 0 or (x -> 'plan' ->> 'sweep_lists')::int > 0;
+  if not (c_ws = any (v_plan)) then
+    raise exception 'C02 PRECONDITION: admin''s Workspace is not in the press''s plan on this clone (plan: % organizations)', cardinality(v_plan);
+  end if;
+  -- The older table the chain writes through: admin's Workspace's live, copied "Rincon Plumbing — Service Calls".
+  select d.id into v_table from workbench.udt_datasets d
+   where d.organization_id = c_ws and d.deleted_at is null and d.table_name = 'Rincon Plumbing — Service Calls'
+     and exists (select 1 from custom.record c where c.id = d.id and c.data_class = 'table' and c.deleted_at is null) limit 1;
+  if v_table is null then raise exception 'PRECONDITION: admin''s Workspace has no live, copied "Rincon Plumbing — Service Calls" on this clone'; end if;
+  select r.id into v_row from workbench.udt_dataset_rows r
+   where r.table_id = v_table and r.deleted_at is null
+     and exists (select 1 from custom.record c where c.id = r.id and c.deleted_at is null) order by r.created_at limit 1;
+  v_report := v_report || format('Ready: %s; plan %s organizations; probe table %s row %s', v_r ->> 'says', cardinality(v_plan), v_table, v_row);
+
+  -- ── C01: three planted holds, each in its own subtransaction ────────────────────────────────────────────────
+  -- P1 — a row in the older table that its copy does not have.
+  begin
+    insert into workbench.udt_dataset_rows (table_id, organization_id, user_id, data)
+    select v_table, c_ws, c_admin, r.data || jsonb_build_object('work_order', v_marker || '-NEW')
+      from workbench.udt_dataset_rows r where r.id = v_row;
+    v_x := platform._final_switch_readiness();
+    perform set_config('request.jwt.claims', c_claims, true);
+    perform set_config('request.headers', c_page, true);
+    perform set_config('role', 'authenticated', true);
+    v_p := platform.final_switch_press('safety-net-b P1', null);
+    perform set_config('role', 'postgres', true);
+    raise exception using errcode = 'SNB01', message = jsonb_build_object('r', v_x - 'organizations' - 'platform',
+      'org', (select o from jsonb_array_elements(v_x -> 'organizations') o where (o ->> 'id')::uuid = c_ws), 'p', v_p - 'readiness')::text;
+  exception when sqlstate 'SNB01' then v_x := sqlerrm::jsonb;
+  end;
+  perform set_config('role', 'postgres', true);
+  if (v_x -> 'r' ->> 'ready')::boolean then
+    raise exception 'C01/P1 RED: readiness says Ready while admin''s Workspace has an older row its copy does not have: %', v_x -> 'r' ->> 'says';
+  end if;
+  if not exists (select 1 from jsonb_array_elements(v_x -> 'org' -> 'rerun_clears') c where c ->> 'key' = 'rows_present') then
+    raise exception 'C01/P1 RED: the refusal does not name the missing row for admin''s Workspace: %', left((v_x -> 'org')::text, 500);
+  end if;
+  if v_x -> 'p' ->> 'reason' is distinct from 'not_ready' then
+    raise exception 'C01/P1 RED: the press did not refuse "not_ready" with an un-copied row: %', left((v_x -> 'p')::text, 500);
+  end if;
+  v_report := v_report || format('P1 un-copied row → %s', v_x -> 'p' ->> 'says');
+
+  -- P2 — an older row edited after it was copied.
+  begin
+    update workbench.udt_dataset_rows set data = data || jsonb_build_object('work_order', v_marker || '-STALE'), updated_at = clock_timestamp()
+     where id = v_row;
+    v_x := platform._final_switch_readiness();
+    perform set_config('request.jwt.claims', c_claims, true);
+    perform set_config('request.headers', c_page, true);
+    perform set_config('role', 'authenticated', true);
+    v_p := platform.final_switch_press('safety-net-b P2', null);
+    perform set_config('role', 'postgres', true);
+    raise exception using errcode = 'SNB01', message = jsonb_build_object('r', v_x - 'organizations' - 'platform',
+      'org', (select o from jsonb_array_elements(v_x -> 'organizations') o where (o ->> 'id')::uuid = c_ws), 'p', v_p - 'readiness')::text;
+  exception when sqlstate 'SNB01' then v_x := sqlerrm::jsonb;
+  end;
+  perform set_config('role', 'postgres', true);
+  if (v_x -> 'r' ->> 'ready')::boolean then
+    raise exception 'C01/P2 RED: readiness says Ready while an older row was edited after its copy: %', v_x -> 'r' ->> 'says';
+  end if;
+  if not exists (select 1 from jsonb_array_elements(v_x -> 'org' -> 'rerun_clears') c where c ->> 'key' = 'rows_current') then
+    raise exception 'C01/P2 RED: the refusal does not name the stale copy for admin''s Workspace: %', left((v_x -> 'org')::text, 500);
+  end if;
+  if v_x -> 'p' ->> 'reason' is distinct from 'not_ready' then
+    raise exception 'C01/P2 RED: the press did not refuse "not_ready" with a stale copy: %', left((v_x -> 'p')::text, 500);
+  end if;
+  v_report := v_report || format('P2 stale copy → %s', v_x -> 'p' ->> 'says');
+
+  -- P3 — live field definitions under an archived Table (the night window's finding: archiving a Table leaves its
+  -- fields live; 42 such on production). Readiness must agree with the press: either both go, or readiness names it.
+  select t.id into v_store_table from custom.record t
+   where t.organization_id = c_ws and t.data_class = 'table' and t.deleted_at is null
+     and not exists (select 1 from workbench.udt_datasets d where d.id = t.id)
+     and exists (select 1 from custom.record f where f.table_id = custom.field_kernel_id() and f.deleted_at is null
+                  and f.data ->> 'entity_definition_id' = t.id::text)
+   order by t.created_at desc limit 1;
+  begin
+    if v_store_table is null then raise exception using errcode = 'SNB02', message = 'no store-born Table with fields in admin''s Workspace'; end if;
+    perform set_config('request.jwt.claims', c_claims, true);
+    perform set_config('role', 'authenticated', true);
+    perform custom.table_archive(c_ws, v_store_table);
+    perform set_config('role', 'postgres', true);
+    v_n := (select count(*) from custom.record f where f.table_id = custom.field_kernel_id() and f.deleted_at is null
+              and f.data ->> 'entity_definition_id' = v_store_table::text);
+    v_x := platform._final_switch_readiness();
+    perform set_config('request.jwt.claims', c_claims, true);
+    perform set_config('request.headers', c_page, true);
+    perform set_config('role', 'authenticated', true);
+    v_p := platform.final_switch_press('safety-net-b P3', null);
+    perform set_config('role', 'postgres', true);
+    raise exception using errcode = 'SNB01', message = jsonb_build_object('r', v_x - 'organizations' - 'platform', 'fields_live', v_n,
+      'org', (select o from jsonb_array_elements(v_x -> 'organizations') o where (o ->> 'id')::uuid = c_ws), 'p', v_p - 'readiness')::text;
+  exception
+    when sqlstate 'SNB01' then v_x := sqlerrm::jsonb;
+    when sqlstate 'SNB02' then v_x := jsonb_build_object('skip', sqlerrm);
+  end;
+  perform set_config('role', 'postgres', true);
+  if v_x ? 'skip' then
+    v_report := v_report || format('P3 not planted: %s', v_x ->> 'skip');
+  elsif (v_x -> 'r' ->> 'ready')::boolean and not coalesce((v_x -> 'p' ->> 'ok')::boolean, false) then
+    raise exception 'C01/P3 RED: readiness said Ready with % live fields under an archived Table, and the press then failed: %',
+      v_x ->> 'fields_live', left((v_x -> 'p')::text, 600);
+  elsif not (v_x -> 'r' ->> 'ready')::boolean and v_x -> 'p' ->> 'reason' is distinct from 'not_ready' then
+    raise exception 'C01/P3 RED: readiness was not Ready but the press did not refuse "not_ready": %', left((v_x -> 'p')::text, 500);
+  else
+    v_report := v_report || format('P3 %s live fields under an archived Table → readiness %s, press %s (%s)', v_x ->> 'fields_live',
+      case when (v_x -> 'r' ->> 'ready')::boolean then 'Ready' else 'not Ready' end,
+      case when (v_x -> 'p' ->> 'ok')::boolean then 'went through' else 'refused' end, left(v_x -> 'p' ->> 'says', 200));
+  end if;
+
+  -- ── the press (C02) ─────────────────────────────────────────────────────────────────────────────────────────
+  perform set_config('request.jwt.claims', c_claims, true);
+  perform set_config('request.headers', c_page, true);
+  perform set_config('role', 'authenticated', true);
+  v_p := platform.final_switch_press('safety-net-b chain', null);
+  perform set_config('role', 'postgres', true);
+  if not coalesce((v_p ->> 'ok')::boolean, false) then
+    raise exception 'C02 RED: the press refused on a Ready clone: %', left((v_p - 'readiness')::text, 700);
+  end if;
+  select array_agg(distinct p.organization_id order by p.organization_id) into v_switched
+    from platform.cutover_seam_press p
+   where p.pressed_at >= now() and p.outcome = 'done' and p.seam_key in ('older_tables', 'agent_context');
+  select array_agg(x order by x) into v_outside from unnest(coalesce(v_switched, '{}')) x where not (x = any (v_plan));
+  if cardinality(coalesce(v_outside, '{}')) > 0 then
+    raise exception 'C02 RED: the press switched % organizations that readiness did not plan: %', cardinality(v_outside), v_outside;
+  end if;
+  select count(*) into v_n from jsonb_array_elements(v_r -> 'organizations') x
+   where (x -> 'plan' ->> 'press_tables')::boolean
+     and coalesce((platform._cutover_seam_last_done('older_tables', (x ->> 'id')::uuid)).direction, 'old') <> 'new';
+  if v_n > 0 then raise exception 'C02 RED: % planned organizations were not switched by the press', v_n; end if;
+  v_report := v_report || format('press → %s', v_p ->> 'says');
+
+  -- ── C04: the older doors refuse ──────────────────────────────────────────────────────────────────────────────
+  select count(*) into v_n from unnest(platform._final_switch_old_write_doors()) d
+   where has_function_privilege('authenticated', d, 'EXECUTE') or has_function_privilege('anon', d, 'EXECUTE');
+  if v_n > 0 then raise exception 'C04 RED: % older write doors are still executable by signed-in or anonymous callers after the press', v_n; end if;
+  begin
+    perform set_config('request.jwt.claims', c_claims, true);
+    perform set_config('role', 'authenticated', true);
+    perform public.add_data_row_to_user_table(v_table, jsonb_build_object('work_order', v_marker || '-DOOR'));
+    perform set_config('role', 'postgres', true);
+    raise exception 'C04 RED: a signed-in person added a row to a moved older table through add_data_row_to_user_table';
+  exception when insufficient_privilege then v_err := sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  begin
+    insert into workbench.udt_dataset_rows (table_id, organization_id, user_id, data)
+    values (v_table, c_ws, c_admin, jsonb_build_object('work_order', v_marker || '-SERVER'));
+    raise exception 'C04 RED: the server path wrote a row into a moved older table';
+  exception when check_violation then v_err := sqlerrm;
+  end;
+  if position('moved to the new system' in v_err) = 0 or position('/data/' || v_table::text in v_err) = 0 then
+    raise exception 'C04 RED: the moved-table refusal is not in a person''s words with the copy''s address: %', v_err;
+  end if;
+  v_report := v_report || format('old door refuses: %s', v_err);
+
+  -- ── C05: lists follow ──────────────────────────────────────────────────────────────────────────────────────
+  select count(*) into v_n from workbench.udt_structured_lists l
+   where l.organization_id = any (v_plan) and l.deleted_at is null;
+  if v_n > 0 then raise exception 'C05 RED: % older pick lists stay live in planned organizations after the press', v_n; end if;
+  select count(*) into v_n from workbench.udt_structured_lists l
+   where l.organization_id = any (v_plan) and l.deleted_at >= now()
+     and not exists (select 1 from custom.record t where t.id = l.id and t.data_class = 'table' and t.deleted_at is null);
+  if v_n > 0 then raise exception 'C05 RED: % pick lists archived by the press have no live copy Table', v_n; end if;
+
+  -- ── C06: births in the store only ──────────────────────────────────────────────────────────────────────────
+  if coalesce((select value::text from platform.feature_knob where feature = 'data_tables' and key = 'older_tables_moved'), 'absent') <> 'true' then
+    raise exception 'C06 RED: after the press the platform value data_tables/older_tables_moved is not true';
+  end if;
+  begin
+    insert into workbench.udt_datasets (table_name, organization_id, user_id, created_by, visibility)
+    select 'Front Desk Callbacks — older (must refuse)', c_cedar, c_admin, c_admin, d.visibility from workbench.udt_datasets d limit 1;
+    raise exception 'C06 RED: a new older table was born in a switched organization (Cedar Ridge Physical Therapy)';
+  exception when check_violation or raise_exception then
+    if sqlerrm like 'C06 RED%' then raise; end if;
+    v_err := sqlerrm;
+  end;
+  if position('born in the new system' in v_err) = 0 then
+    raise exception 'C06 RED: the refusal of an older birth does not send the person to the new system: %', v_err;
+  end if;
+  v_report := v_report || format('older birth refused: %s', left(v_err, 160));
+
+  -- ── C03: the undo puts everything back ──────────────────────────────────────────────────────────────────────
+  -- What one transaction CANNOT prove, said plainly: that the undo carries a person's copy edit back into the older
+  -- row. The carry reads each row's history AS OF the press (custom.record_state_as_of), and inside one transaction
+  -- every history entry is dated now() — before the press's clock — so an edit here is invisible to it. That proof is
+  -- the committed rehearsal (aidream scripts/final_switch_rehearsal/run.sh: write_on_a_copy.sql + verify_carry.sql;
+  -- rehearsal 15c 2026-09-30 22:47Z: older WO-5506 = copy WO-5506), registered as check cutover.rehearsal-carry.
+  -- Here: the copy still takes a person's edit after the press, and the undo restores tables, doors and the value.
+  perform set_config('request.jwt.claims', c_claims, true);
+  perform set_config('role', 'authenticated', true);
+  perform custom.record_update(c_ws, v_row, jsonb_build_object('work_order', v_marker));
+  perform set_config('role', 'postgres', true);
+  if (select c.data ->> 'work_order' from custom.record c where c.id = v_row) is distinct from v_marker then
+    raise exception 'C03 RED: after the press the copy did not take a person''s edit';
+  end if;
+  perform set_config('request.jwt.claims', c_claims, true);
+  perform set_config('request.headers', c_page, true);
+  perform set_config('role', 'authenticated', true);
+  v_u := platform.final_switch_undo('safety-net-b chain', true);
+  perform set_config('role', 'postgres', true);
+  if not coalesce((v_u ->> 'ok')::boolean, false) then raise exception 'C03 RED: the undo refused: %', left(v_u::text, 700); end if;
+  if (select d.deleted_at from workbench.udt_datasets d where d.id = v_table) is not null then
+    raise exception 'C03 RED: after the undo the older table is still archived';
+  end if;
+  select count(*) into v_n from unnest(platform._final_switch_old_write_doors()) d where not has_function_privilege('authenticated', d, 'EXECUTE');
+  if v_n > 0 then raise exception 'C03 RED: after the undo % older write doors are still closed to signed-in callers', v_n; end if;
+  if coalesce((select value::text from platform.feature_knob where feature = 'data_tables' and key = 'older_tables_moved'), 'absent') <> 'false' then
+    raise exception 'C03 RED: after the undo the platform value data_tables/older_tables_moved did not return to false';
+  end if;
+  v_report := v_report || format('undo → %s', left(v_u ->> 'says', 300));
+
+  raise notice E'SWITCH CHAIN GREEN\n  %', array_to_string(v_report, E'\n  ');
+end
+$chain$;
+
+rollback;

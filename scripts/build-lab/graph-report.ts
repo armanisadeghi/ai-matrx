@@ -37,6 +37,7 @@
  */
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
+import { aliasTarget } from "../lib/source-roots.mjs";
 
 const ROOT = resolve(__dirname, "../..");
 const SCAN_DIRS = ["app", "features", "components", "lib", "hooks", "utils", "providers", "constants", "types"];
@@ -71,7 +72,8 @@ const fileSet = new Set(files.map((f) => f.slice(ROOT.length + 1)));
 const resolveCache = new Map<string, string | null>();
 function resolveSpec(fromRel: string, spec: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = spec.slice(2);
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = aliased;
   else if (spec.startsWith(".")) base = join(dirname(fromRel), spec);
   else return null; // npm package
   const key = base;

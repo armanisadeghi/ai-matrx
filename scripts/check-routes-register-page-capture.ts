@@ -37,6 +37,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { tmpdir } from "node:os";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const REPO = join(__dirname, "..");
 const GROUPS = ["app/(core)", "app/(admin)"];
@@ -65,7 +66,8 @@ const IMPORT_RE = /(?:import\s+[^"']*?from\s*|import\s*\(\s*|export\s+[^"']*?fro
 
 function resolveImport(root: string, from: string, spec: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = join(root, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = join(root, aliased);
   else if (spec.startsWith(".")) base = resolve(dirname(from), spec);
   else return null;
   for (const candidate of [base, `${base}.tsx`, `${base}.ts`, join(base, "index.tsx"), join(base, "index.ts")]) {

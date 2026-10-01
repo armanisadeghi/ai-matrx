@@ -66,6 +66,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(__dirname, "..");
 const ALLOWLIST_PATH = join(ROOT, "scripts", "org-refusal-honesty.allowlist.json");
@@ -214,7 +215,8 @@ const CANDIDATE_SUFFIXES = ["", ".ts", ".tsx", "/index.ts", "/index.tsx"];
 /** Resolve one import specifier to a repo-relative file, or null. */
 function resolveSpecifier(fromFile: string, spec: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = join(ROOT, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = join(ROOT, aliased);
   else if (spec.startsWith("./") || spec.startsWith("../"))
     base = resolve(fromFile, "..", spec);
   else return null;

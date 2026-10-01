@@ -1,3 +1,5 @@
+-- based-on: custom._work_approvals_withdraw_on_archive() c7ead0afcdeaa7c0619d8f4b85db89352ae1e18adb13360287e11f223cc55144
+-- based-on: custom.record_restore(uuid, uuid) 59ab03f30627601549e2d4546ea6cb66b0246a0b8475555063fae515568d02b4
 -- chair-step: undo fieldarchivecascade_a_tables_fields_go_and_come_back_with_it.sql — puts back the two
 --   bodies it replaced, byte for byte (custom._work_approvals_withdraw_on_archive() and
 --   custom.record_restore(uuid, uuid)) as they were on production 2026-10-01. Fields the new trigger

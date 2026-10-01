@@ -30,6 +30,7 @@
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = process.cwd();
 const BASELINE = path.join(ROOT, "scripts", "bespoke-headers-baseline.json");
@@ -99,7 +100,8 @@ function resolveImport(file, source, name) {
   const m = source.match(re);
   if (!m) return null;
   const spec = m[1];
-  const base = spec.startsWith("@/") ? path.join(ROOT, spec.slice(2)) : spec.startsWith(".") ? path.resolve(path.dirname(file), spec) : null;
+  const aliased = aliasTarget(spec);
+  const base = aliased !== null ? path.join(ROOT, aliased) : spec.startsWith(".") ? path.resolve(path.dirname(file), spec) : null;
   if (!base) return null;
   for (const c of [`${base}.tsx`, `${base}.ts`, path.join(base, "index.tsx")]) if (existsSync(c)) return c;
   return null;

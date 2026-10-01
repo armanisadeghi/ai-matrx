@@ -14,6 +14,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 
 const ROOT = resolve(__dirname, "../../../..");
 const EXTS = [".tsx", ".ts", "/index.tsx", "/index.ts"];
@@ -22,7 +23,8 @@ const STATIC_IMPORT =
 
 function resolveSpec(fromFile: string, spec: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = join(ROOT, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = join(ROOT, aliased);
   else if (spec.startsWith(".")) base = resolve(dirname(fromFile), spec);
   else return null; // a package
   if (/\.(tsx?|jsx?)$/.test(base) && existsSync(base)) return base;

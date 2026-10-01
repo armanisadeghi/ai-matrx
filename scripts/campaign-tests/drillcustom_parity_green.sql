@@ -35,10 +35,13 @@ begin
   -- ══ P1. describe through the shared door IS the store's own definition ══
   v_mine := custom.table_dimensions(c_org, c_visits);
   v_door := platform.drill_describe(c_org, jsonb_build_object('kind', 'table', 'id', c_visits));
-  -- (the door adds only its own contract keys: source, and stale_after_knob — null for a custom
-  -- Table, which is counted live; lane DRILL-LEDGER-RECORDS)
-  if (v_door - 'source' - 'stale_after_knob') <> (v_mine - 'source')
-     or not (v_door ? 'stale_after_knob') or jsonb_typeof(v_door -> 'stale_after_knob') <> 'null' then
+  -- (the door adds only its own contract keys: source, stale_after_knob — null for a custom
+  -- Table, which is counted live; lane DRILL-LEDGER-RECORDS — and calendar, the organization's
+  -- time zone + week start its periods are cut in; DRILL-FINISH drillfinish_describe_says_its_calendar,
+  -- 2026-09-30. Accepted here by lane SAFETY-NET 2026-10-01: an intended contract addition, not drift.)
+  if (v_door - 'source' - 'stale_after_knob' - 'calendar') <> (v_mine - 'source')
+     or not (v_door ? 'stale_after_knob') or jsonb_typeof(v_door -> 'stale_after_knob') <> 'null'
+     or jsonb_typeof(v_door -> 'calendar') <> 'object' then
     raise exception 'PAR-1: the shared door''s definition of Visits differs from custom.table_dimensions';
   end if;
 

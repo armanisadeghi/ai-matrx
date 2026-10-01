@@ -17,6 +17,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 
 const BRAND_ROUTE_DIR = resolve(
   process.cwd(),
@@ -39,9 +40,9 @@ function importedMarketingModulePaths(source: string): string[] {
   const importRe = /import\s+[^;]*?\s+from\s+["']([^"']+)["']/gs;
   let match: RegExpExecArray | null;
   while ((match = importRe.exec(source)) !== null) {
-    const specifier = match[1];
-    if (specifier.startsWith("@/features/marketing/")) {
-      paths.push(specifier.replace("@/", ""));
+    const target = aliasTarget(match[1]);
+    if (target?.startsWith("features/marketing/")) {
+      paths.push(target);
     }
   }
   return paths;

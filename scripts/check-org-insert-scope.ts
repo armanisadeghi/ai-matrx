@@ -103,6 +103,7 @@ import { join, relative, resolve } from "node:path";
 import process from "node:process";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const DB_TYPES = join(ROOT, "types/database.types.ts");
@@ -498,7 +499,8 @@ function loadModule(absPath: string): ts.SourceFile | null {
 /** `@/utils/supabase/interviewDb` / `./filesDb` -> the file on disk, or undefined. */
 function resolveModuleFile(spec: string, fromFile: string): string | undefined {
   let base: string;
-  if (spec.startsWith("@/")) base = join(ROOT, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = join(ROOT, aliased);
   else if (spec.startsWith("./") || spec.startsWith("../")) {
     base = resolve(join(ROOT, fromFile, ".."), spec);
   } else return undefined; // a package import — not our wrapper

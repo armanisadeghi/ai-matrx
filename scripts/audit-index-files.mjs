@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { aliasTarget } from './lib/source-roots.mjs';
 
 const root = process.cwd();
 const SKIP = new Set(['node_modules', '.git', 'dist', '.turbo', 'coverage']);
@@ -58,10 +59,10 @@ const indexEntries = indexAbs.map((abs) => {
 });
 
 // 2) Build alias -> index map
-/** @type {Map<string, string>} longest-prefix wins handled below */
-const aliasToIndex = new Map();
+/** @type {Map<string, string>} index dir (repo-relative) -> index file; longest-prefix wins handled below */
+const dirToIndex = new Map();
 for (const e of indexEntries) {
-  if (e.dir !== '.') aliasToIndex.set(`@/${e.dir}`, e.rel);
+  if (e.dir !== '.') dirToIndex.set(e.dir, e.rel);
 }
 
 // 3) Single rg: all static import specifiers with file + line
@@ -106,18 +107,19 @@ for (const line of rgOut.split('\n')) {
   const spec = fromM?.[1] ?? dynM?.[1];
   if (!spec) continue;
 
-  // @/ alias
-  if (spec.startsWith('@/')) {
+  // repo alias (@/, @host/, @ai-matrx/chat/)
+  const target = aliasTarget(spec);
+  if (target !== null) {
     // exact match
-    const exact = aliasToIndex.get(spec);
+    const exact = dirToIndex.get(target);
     if (exact) addImporter(exact, fileRel);
-    // prefix: find longest matching alias dir
+    // prefix: find longest matching index dir
     let best = '';
     let bestIdx = '';
-    for (const [alias, idxRel] of aliasToIndex) {
-      if (alias.startsWith('@/') && (spec === alias || spec.startsWith(alias + '/'))) {
-        if (alias.length > best.length) {
-          best = alias;
+    for (const [dir, idxRel] of dirToIndex) {
+      if (target === dir || target.startsWith(dir + '/')) {
+        if (dir.length > best.length) {
+          best = dir;
           bestIdx = idxRel;
         }
       }

@@ -13,6 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 
 const ROOT = path.resolve(__dirname, "../../..");
 const REGISTRY = path.join(ROOT, "features/settings/registry.ts");
@@ -24,8 +25,9 @@ const TAB_DEF_FILES = [
 ];
 
 function resolveModule(spec: string, fromFile: string): string | null {
-  const base = spec.startsWith("@/")
-    ? path.join(ROOT, spec.slice(2))
+  const aliased = aliasTarget(spec);
+  const base = aliased !== null
+    ? path.join(ROOT, aliased)
     : spec.startsWith(".")
       ? path.resolve(path.dirname(fromFile), spec)
       : null;

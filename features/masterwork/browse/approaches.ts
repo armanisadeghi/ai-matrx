@@ -26,6 +26,12 @@ export interface DistillationApproach {
   whatItNeeds: string;
   /** The honest time/cost sentence ("start now — rules within minutes"). */
   costTimeShape: string;
+  /**
+   * The card's ONE line under its label (`metadata.tagline`, ≤60 chars —
+   * interface text is layout). Null when absent or over budget: the card then
+   * shows its label alone rather than a paragraph (cold walk 24).
+   */
+  tagline?: string | null;
   /** The Mandate that runs it (informational to the picker). */
   mandateKey: AnyMandateKey;
   /** Query params appended to /masterwork/{id} when this Approach is chosen. */
@@ -51,6 +57,15 @@ export interface DistillationApproach {
 }
 
 export type ApproachAvailability = "available" | "partial" | "coming_soon";
+
+/** A card's secondary line budget (common-docs/policies/interface-text-is-layout.md). */
+export const APPROACH_TAGLINE_BUDGET = 60;
+
+function toTagline(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const line = value.trim();
+  return line && line.length <= APPROACH_TAGLINE_BUDGET ? line : null;
+}
 
 function metaRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -128,6 +143,7 @@ export async function fetchDistillationApproaches(): Promise<
       blurb: row.blurb,
       whatItNeeds: row.what_it_needs,
       costTimeShape: row.cost_time_shape,
+      tagline: toTagline(metadata.tagline),
       mandateKey: storedMandateKey(row.mandate_key),
       intakeQuery: toIntakeQuery(row.intake_query),
       sortOrder: row.sort_order,

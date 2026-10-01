@@ -1,39 +1,37 @@
 import { openWalk, bodyText } from "../lib/harness.mjs";
 import { sleep, until } from "../lib/harness.mjs";
-import { writeFileSync } from "node:fs";
 const ctx = await openWalk("_t2explore");
 const page = await ctx.page("admin");
-const TID = process.env.TID;
 const txt = async (n=1500) => (await bodyText(page, 20000)).replace(/\s+/g," ").slice(0,n);
+let TID=process.env.TID;
+async function open(q) {
+  await ctx.goto(page, `/data-v2/${TID}${q}`);
+  for (let k=0;k<8;k++){ const t=await txt(4000); if(/could not find out where this table is/.test(t)){ await page.getByRole("button",{name:"Try again"}).first().click().catch(()=>{}); await sleep(8000);} else if(await page.locator("thead th").count()) break; else await sleep(3000);}
+  await sleep(2000);
+}
+async function pasteInto(selector, text) {
+  return page.evaluate(({selector,text})=>{
+    const el = selector ? document.querySelector(selector) : document.activeElement;
+    const dt = new DataTransfer(); dt.setData("text/plain", text);
+    const ev = new ClipboardEvent("paste",{clipboardData:dt,bubbles:true,cancelable:true});
+    el.dispatchEvent(ev); return el.tagName+"."+(el.getAttribute("data-records-grid-wrap")||el.className.slice(0,40));
+  },{selector,text});
+}
 try {
-  await ctx.goto(page, `/data-v2/${TID}?view=grid&rail=import`);
-  await sleep(7000);
-  const main = await page.evaluate(()=>document.querySelector("main")?.innerText ?? document.body.innerText);
-  console.log("IMPORT:", main.replace(/\s+/g," ").slice(0,1500));
-  const inputs = await page.evaluate(()=>[...document.querySelectorAll("input[type=file]")].map(i=>({accept:i.accept, id:i.id, name:i.name})));
-  console.log("FILEINPUTS", JSON.stringify(inputs));
-  writeFileSync("/private/tmp/claude-501/sn/v.csv","Patient,Visit date,Minutes,Paid\nMateo Álvarez,2026-09-14,45,Yes\nSiobhán O'Neill,2026-09-15,30,No\n");
-  await page.locator("input[type=file]").first().setInputFiles("/private/tmp/claude-501/sn/v.csv");
-  await sleep(4000);
-  await page.getByText("are added straight away").first().click();
-  await page.getByRole("button",{name:/^Import 2 rows/}).first().click();
-  await sleep(8000);
-  console.log("IMPORTED:", (await page.evaluate(()=>document.querySelector("main")?.innerText ?? "")).replace(/\s+/g," ").slice(0,1200));
-  await ctx.shot(page, "imported");
-  console.log("URL", page.url());
-  // table menu
-  await page.getByRole("button",{name:"Table menu"}).first().click();
-  await sleep(800);
-  console.log("TABLE MENU:", JSON.stringify(await page.locator("[role=menuitem]").allInnerTexts()));
-  await page.keyboard.press("Escape");
-  await page.getByRole("button",{name:"More actions"}).first().click();
-  await sleep(800);
-  console.log("MORE ACTIONS:", JSON.stringify(await page.locator("[role=menuitem]").allInnerTexts()));
-  await ctx.shot(page, "moreactions");
-  await page.keyboard.press("Escape");
-  await page.locator("tbody tr").first().locator("td").nth(1).click();
-  await sleep(500);
-  await page.keyboard.press("Enter");
-  await sleep(1500);
-  console.log("URL2", page.url());
+  if (process.env.MODE==="empty") {
+    await open("?view=grid");
+    console.log("PASTED ON", await pasteInto("[data-records-grid-wrap]", "Client\tPackage\tSessions\tStart\nDana Whitfield\tKnee rehab, 6 weeks\t12\t2026-10-05\nLuis Ortega\tShoulder, 8 weeks\t16\t2026-10-07\nAiko Tanaka\tBack pain, 4 weeks\t8\t2026-10-12"));
+    await sleep(3000);
+    console.log("EMPTY PASTE:", (await page.locator("main").innerText()).replace(/\s+/g," ").slice(0,1500));
+    await ctx.shot(page,"emptypaste");
+  } else {
+    await open("?view=grid");
+    const cell = page.locator("tbody tr").first().locator("td").nth(3);
+    await cell.click(); await sleep(500);
+    console.log("ACTIVE", await page.evaluate(()=>document.activeElement.tagName+" "+document.activeElement.className.slice(0,60)+" "+(document.activeElement.getAttribute("data-cell")||"")));
+    console.log("PASTED ON", await pasteInto(null, "30\t2026-10-01\n40\t2026-10-02\n55\t2026-10-03"));
+    await sleep(4000);
+    console.log("AFTER:", (await page.locator("main").innerText()).replace(/\s+/g," ").slice(0,1500));
+    await ctx.shot(page,"cellpaste");
+  }
 } finally { await ctx.finish(); }

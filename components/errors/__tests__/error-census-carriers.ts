@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 
 /** The census's per-file functions, passed in so this file imports nothing
  * relative (the lint rule loads both through Node's own TypeScript support). */
@@ -36,7 +37,8 @@ const EXT = [".tsx", ".ts", "/index.tsx", "/index.ts"];
 
 function resolveImport(root: string, fromRel: string, spec: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = spec.slice(2);
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = aliased;
   else if (spec.startsWith(".")) base = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), spec));
   else return null;
   for (const ext of ["", ...EXT]) {

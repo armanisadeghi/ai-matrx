@@ -187,7 +187,7 @@ do $$
 declare v_u record; v_q text; v_out int; v_n int := 0;
 begin
   select * into v_u from _unseen;
-  for v_q in select q from unnest(array[v_u.nm, v_u.label, 'a', 'e', 'service', 'calls', 'name']) q where q is not null loop
+  for v_q in select q from unnest(array[v_u.nm, v_u.label, 'Rincon Plumbing — Service Calls', 'a', 'e', 'service', 'calls', 'name']) q where q is not null loop
     select count(*) into v_out
       from jsonb_array_elements(custom.data_home(null, v_q) -> 'tables') e
      where (e ->> 'table_id')::uuid not in (select id from _seen);

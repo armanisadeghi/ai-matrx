@@ -322,7 +322,7 @@ try {
       return { ok: true, detail: `header present${r.target ? `; points at ${r.target}` : ""}` };
     });
   }
-  await step(["T22"], "a kind / directive column", page, async () => ({ skip: "no look on the Shows as picker makes a kind or directive column (the picker lists Text … Attachments, Formula, JSON); nothing for a person to edit" }));
+  await step(["T22"], "a kind / directive column", async () => ({ skip: "no look on the Shows as picker makes a kind or directive column (the picker lists Text … Attachments, Formula, JSON); nothing for a person to edit" }));
 
   // ── T25 default values fill a new record ───────────────────────────────────────────────────────
   await step(["T25"], "+ Row: the defaults fill the new record (Sets 3, Body Area Knee)", async () => {

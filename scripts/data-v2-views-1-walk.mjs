@@ -71,8 +71,14 @@ try {
   step("signed in", { as: out.signed_in_as });
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`wrong seat: ${out.signed_in_as}`);
   await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
-  await setOrganization(page, ORG);
-  step("organization", { org: ORG });
+  // A table page takes its organization from the table; only a NEW table needs the active one.
+  try {
+    await setOrganization(page, ORG);
+    step("organization", { org: ORG });
+  } catch (e) {
+    if (PHASE === "make") throw e;
+    step("organization not set (not needed on a table page)", { why: String(e?.message ?? e).slice(0, 120) });
+  }
 
   let table = existsSync(join(SHOTS, "table.json")) ? JSON.parse(readFileSync(join(SHOTS, "table.json"), "utf8")).table : null;
 

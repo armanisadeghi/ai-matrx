@@ -399,7 +399,7 @@ describe("the Bench door never lies about what it can do", () => {
     expect(noteIndex).toBeGreaterThan(-1);
     expect(noteIndex).toBeLessThan(startIndex);
     // And the consequence of the click is named, not a generic "are you sure".
-    expect(text).toContain("real, paid model calls across all six arms");
+    expect(text).toContain("Paid calls on all six arms; closing this won't stop it");
   });
 
   it("an uncounted corpus says the rule, never \"0 sources\"", () => {
@@ -491,7 +491,7 @@ describe("the Bench door never lies about what it can do", () => {
       (host.querySelector("button") as HTMLButtonElement).click();
     });
     const text = host.textContent ?? "";
-    expect(text).toContain("This trial proves nothing");
+    expect(text).toContain("Void: the expert's own answer lost the blind panel.");
     expect(text).toContain("The expert's own answer placed third of six.");
     // The claim is not softened, hedged or footnoted — it is not rendered.
     expect(text).not.toContain("quality win claimed");
@@ -512,7 +512,7 @@ describe("the Bench door never lies about what it can do", () => {
       (host.querySelector("button") as HTMLButtonElement).click();
     });
     const text = host.textContent ?? "";
-    expect(text).toContain("The panel was not calibrated");
+    expect(text).toContain("Not scored: the judging panel wasn't calibrated.");
     expect(text).toContain("this trial was not scored");
     expect(text).toContain("not a fail and not a pass");
     expect(text).toContain("Only 1 of 3 calibration votes went to the expert.");

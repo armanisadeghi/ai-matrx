@@ -45,6 +45,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFile
 import { tmpdir } from "os";
 import { join, relative, resolve } from "path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRoots } from "./lib/source-roots.mjs";
 
 const ROOT = join(__dirname, "..");
 
@@ -58,7 +59,7 @@ const ROOT = join(__dirname, "..");
 const CLIENT_TREES = [
   join(ROOT, "app"),
   join(ROOT, "components"),
-  join(ROOT, "features"),
+  ...featureRoots(ROOT).map((r) => join(ROOT, r)),
   join(ROOT, "hooks"),
   join(ROOT, "lib"),
   resolve(ROOT, "..", "aidream", "apps", "shared", "records", "src"),

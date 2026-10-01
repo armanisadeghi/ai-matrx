@@ -32,6 +32,7 @@ import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import { existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -435,8 +436,9 @@ const CLIENT_ONLY_DYNAMIC =
   /dynamic\(\s*\(\)\s*=>\s*import\(\s*["']([^"']+)["']\s*\)[\s\S]{0,300}?ssr:\s*false/g;
 
 function resolveSpec(from: string, spec: string): string | null {
-  const base = spec.startsWith("@/")
-    ? spec.slice(2)
+  const aliased = aliasTarget(spec);
+  const base = aliased !== null
+    ? aliased
     : spec.startsWith(".")
       ? path.normalize(path.join(path.dirname(from), spec))
       : null;

@@ -28,6 +28,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { featureRoots } from "@/scripts/lib/source-roots.mjs";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
@@ -156,7 +157,7 @@ function filesUnder(relativePath: string): string[] {
 
 describe("no surface tells a person the workspace is still loading", () => {
   it("has no dead retry toast anywhere under features/ or app/", () => {
-    const offenders = [...filesUnder("features"), ...filesUnder("app")]
+    const offenders = [...featureRoots(REPO_ROOT).flatMap((root) => filesUnder(root)), ...filesUnder("app")]
       .filter((file) => !OUT_OF_CLASS.includes(file))
       .filter((file) => DEAD_RETRY.test(readFileSync(join(REPO_ROOT, file), "utf8")));
     expect(offenders).toEqual([]);

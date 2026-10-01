@@ -49,6 +49,7 @@ import { spawnSync } from "node:child_process";
 import { posix } from "node:path";
 import { repoFiles, REPO_ROOT } from "./lib/repo-files";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 // ─── model ──────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,8 @@ class Project {
 
   resolveImport(fromRel: string, spec: string): string | null {
     let base: string;
-    if (spec.startsWith("@/")) base = spec.slice(2);
+    const aliased = aliasTarget(spec);
+    if (aliased !== null) base = aliased;
     else if (spec.startsWith(".")) base = posix.normalize(posix.join(posix.dirname(fromRel), spec));
     else return null;
     for (const cand of [base, `${base}.tsx`, `${base}.ts`, `${base}/index.tsx`, `${base}/index.ts`]) {

@@ -25,8 +25,6 @@
 -- Guard: matrx-frontend/scripts/campaign-tests/datahome3b_the_data_home_searches_titles_descriptions_and_fields.sql
 -- Inverse: migrations/inverse/datahome3_a_the_data_home_searches_titles_descriptions_and_fields_down.sql
 
-set local lock_timeout = '30s';
-
 drop function if exists custom.data_home(uuid);
 
 CREATE FUNCTION custom.data_home(p_organization_id uuid DEFAULT NULL::uuid, p_search text DEFAULT NULL::text)
@@ -153,7 +151,11 @@ begin
                      full join unnest(coalesce(h.keys, '{}')) with ordinality as k(key, o) using (o)
                     where position(split_part(lower(v_q), ' ', 1) in lower(coalesce(l.label, ''))) > 0
                        or position(split_part(lower(v_q), ' ', 1) in lower(coalesce(k.key, ''))) > 0
-                    order by o limit 1) end)
+                    -- the Field that holds the whole search first, then the first that holds its first word
+                    order by (position(lower(v_q) in lower(coalesce(l.label, ''))) > 0) desc,
+                             (position(lower(v_q) in lower(coalesce(k.key, ''))) > 0) desc,
+                             o
+                    limit 1) end)
              order by h.rank desc, length(h.nm), h.at desc nulls last, h.nm), '[]'::jsonb)
       into v_tables
       from hit h;

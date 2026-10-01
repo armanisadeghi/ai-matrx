@@ -113,6 +113,7 @@ import { readFileSync, globSync } from "node:fs";
 import { basename, join } from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 import { isGfmDelimiterRow, isPipeLedRow, rowCells } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const ROOT = process.cwd();
@@ -376,7 +377,7 @@ function slotsFromImportedBuilders(
     const named = m[1];
     if (!/(menu|action)/i.test(spec) && !/(MenuSection|RowMenu|EntityRef)/.test(named))
       continue;
-    const rel = spec.replace(/^@\//, "");
+    const rel = aliasTarget(spec) ?? spec;
     for (const [path, body] of files) {
       const noExt = path.replace(/\.tsx?$/, "");
       if (noExt !== rel && !noExt.endsWith(`/${rel.split("/").pop()}`)) continue;

@@ -265,25 +265,15 @@ export function ApproachCard({
           <Check className={cn("ml-auto h-5 w-5 shrink-0", accent.check)} />
         )}
       </div>
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        {approach.blurb}
-      </p>
-      {/* NOT `mt-auto`. Pinning this block to the bottom of an equal-height
-          grid cell tore a 150px hole through the middle of every card with a
-          short blurb — most visibly the RECOMMENDED card on the guided start
-          (jobs-bar-2026-09-16, item 20). The cards still share a height; the
-          empty space now falls below the text where nobody reads it, instead
-          of between two sentences that belong together. */}
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <p>
-          <span className="font-medium text-foreground/80">You bring:</span>{" "}
-          {approach.whatItNeeds}
+      {/* ONE LINE UNDER THE LABEL (cold walk 24: each card was a paragraph —
+          blurb, "You bring:" and "Time:", ~90 words on the Teach-Back). The
+          label carries the meaning; the registry's `metadata.tagline` (≤60)
+          is the only secondary text a card shows. */}
+      {approach.tagline ? (
+        <p className="truncate text-sm text-muted-foreground">
+          {approach.tagline}
         </p>
-        <p>
-          <span className="font-medium text-foreground/80">Time:</span>{" "}
-          {approach.costTimeShape}
-        </p>
-      </div>
+      ) : null}
       {/* A CARD THAT REFUSES TO BE PICKED SAYS SO, AND SAYS WHERE TO GO.
           On the guided start the Vision Interview rendered dashed, greyed and
           unclickable with NOT ONE WORD about why — while the very same card
@@ -297,11 +287,10 @@ export function ApproachCard({
             // this line describes where the click goes rather than being the
             // only thing that goes there.
             <span className="font-medium text-primary">
-              This one is not a way to begin — it has its own page. Opens{" "}
-              {approach.label} →
+              Opens its own page →
             </span>
           ) : (
-            "This one cannot start a Rulebook — pick another way to begin, and you can use this one afterwards."
+            "Not a way to begin — use it after you start"
           )}
         </p>
       ) : null}

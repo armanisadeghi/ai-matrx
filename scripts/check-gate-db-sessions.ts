@@ -27,6 +27,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { ALIAS_PREFIX_PATTERN, aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -123,10 +124,11 @@ function entryFiles(cmd: string, depth = 0): string[] {
   return out;
 }
 
-const IMPORT_RE = /(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+|@\/[^"']+)["']/g;
+const IMPORT_RE = new RegExp(`(?:from|import)\\s*\\(?\\s*["'](\\.{1,2}\\/[^"']+|(?:${ALIAS_PREFIX_PATTERN})[^"']+)["']`, "g");
 
 function resolveImport(from: string, spec: string): string | null {
-  let base = spec.startsWith("@/") ? join(ROOT, spec.slice(2)) : resolve(ROOT, dirname(from), spec);
+  const aliased = aliasTarget(spec);
+  let base = aliased !== null ? join(ROOT, aliased) : resolve(ROOT, dirname(from), spec);
   base = base.replace(/\.(js|mjs)$/, "");
   for (const ext of ["", ".ts", ".tsx", ".mts", ".js", ".mjs", "/index.ts", "/index.tsx"]) {
     const c = base + ext;

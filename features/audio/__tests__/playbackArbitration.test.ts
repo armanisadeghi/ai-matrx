@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
+import { aliasTarget } from "@/scripts/lib/source-roots.mjs";
 import {
   claimPlayback,
   getActivePlaybackHolderId,
@@ -33,7 +34,8 @@ function resolveImport(
   specifier: string,
 ): string | null {
   let base: string;
-  if (specifier.startsWith("@/")) base = join(root, specifier.slice(2));
+  const aliased = aliasTarget(specifier);
+  if (aliased !== null) base = join(root, aliased);
   else if (specifier.startsWith(".")) base = join(dirname(fromFile), specifier);
   else return null;
   for (const suffix of CANDIDATE_SUFFIXES) {

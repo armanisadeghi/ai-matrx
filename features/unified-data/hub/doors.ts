@@ -461,3 +461,60 @@ export async function dataHome(
     data: { tables: data?.tables ?? [], items: data?.items ?? [], changed_by: data?.changed_by ?? [] },
   };
 }
+
+/**
+ * Where a server search matched a row (`custom.data_home(p_search)`, DATA-HOME-3B): its title, its
+ * description, one of its Fields (label or key), or a whole id pasted in.
+ */
+export type DataHomeMatchedIn = "name" | "description" | "field" | "id";
+
+/** What a searched row carries beside its own columns. */
+export interface DataHomeMatch {
+  /** `public.mtx_search_score` — higher is better; the door already ordered the rows by it. */
+  match_rank: number;
+  matched_in: DataHomeMatchedIn;
+  /** The Field label (or key) that matched, when `matched_in` is `field`; otherwise null. */
+  matched_field: string | null;
+}
+
+/** The data home narrowed to one search, ranked (`custom.data_home(p_organization_id, p_search)`). */
+export interface DataHomeSearchAnswer {
+  /** The search the door answered, trimmed — compare it with the box to drop a stale answer. */
+  search: string;
+  tables: Array<DataHomeTableRow & DataHomeMatch>;
+  items: Array<DataHomeItemRow & DataHomeMatch>;
+  changed_by: Array<ChangedByRow & { organization_id: string }>;
+}
+
+/**
+ * THE DATA HOME'S SERVER SEARCH, IN THE SAME ONE CALL (`custom.data_home(p_organization_id,
+ * p_search)`, lane DATA-HOME-3B): the rows the unsearched home lists, narrowed to the ones whose
+ * title, description or Fields (label or key) match, best match first, each with `match_rank`,
+ * `matched_in` and `matched_field`. It never answers a row the unsearched home would not (the door's
+ * walls decide both). `organizationId` narrows exactly as in `dataHome`. A blank search sends nothing
+ * and answers no server hits (`search: ""`): the unsearched home is `dataHome`'s. Over 200 characters the door refuses (22023).
+ * No record counts and no search inside records: neither has a door that fits this call.
+ */
+export async function dataHomeSearch(
+  dataSource: RecordsDataSource,
+  search: string,
+  organizationId: string | null = null,
+): Promise<DoorAnswer<DataHomeSearchAnswer>> {
+  const q = search.trim();
+  if (q === "") return { ok: true, data: { search: "", tables: [], items: [], changed_by: [] } };
+  const answered = await call<DataHomeSearchAnswer | null>(dataSource, "data_home", {
+    ...(organizationId ? { p_organization_id: organizationId } : {}),
+    p_search: q,
+  });
+  if (!answered.ok) return answered;
+  const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;
+  return {
+    ok: true,
+    data: {
+      search: data?.search ?? q,
+      tables: data?.tables ?? [],
+      items: data?.items ?? [],
+      changed_by: data?.changed_by ?? [],
+    },
+  };
+}

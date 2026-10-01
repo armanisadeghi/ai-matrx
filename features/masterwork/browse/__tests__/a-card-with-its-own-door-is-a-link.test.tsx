@@ -54,6 +54,7 @@ function approach(
     label: "A lane",
     blurb: "What it is.",
     whatItNeeds: "Twenty minutes.",
+    tagline: "Your vision, turned into a brief",
     costTimeShape: "Start now.",
     mandateKey: storedMandateKey("masterwork.test"),
     intakeQuery: {},
@@ -120,11 +121,10 @@ describe("an inert Approach with its own page", () => {
     const el = card();
     expect(el.tagName).toBe("A");
     expect(el.getAttribute("href")).toBe("/masterwork/vision-interview/new");
-    // The click target is the card itself, not a fragment of it: the title,
-    // the blurb and the "You bring:" line all live inside it.
+    // The click target is the card itself, not a fragment of it: the title
+    // and its one line live inside it.
     expect(el.textContent).toContain("Vision Interview");
-    expect(el.textContent).toContain("What it is.");
-    expect(el.textContent).toContain("You bring:");
+    expect(el.textContent).toContain("Your vision, turned into a brief");
     expect(container.querySelector('[aria-disabled="true"]')).toBeNull();
   });
 
@@ -138,9 +138,7 @@ describe("an inert Approach with its own page", () => {
 
   it("says in words that it opens its own page, with no nested anchor", () => {
     show(<ApproachCard approach={VISION_INTERVIEW} inert />);
-    expect(card().textContent).toContain(
-      "not a way to begin — it has its own page",
-    );
+    expect(card().textContent).toContain("Opens its own page");
     // An <a> inside an <a> is invalid HTML and React will not hydrate it; the
     // old card shipped exactly that shape the moment the outer card became a
     // link.
@@ -173,9 +171,7 @@ describe("an Approach with genuinely nowhere to go", () => {
       />,
     );
     expect(container.querySelector('[aria-disabled="true"]')).not.toBeNull();
-    expect(container.textContent).toContain(
-      "cannot start a Rulebook — pick another way to begin",
-    );
+    expect(container.textContent).toContain("Not a way to begin");
   });
 });
 
@@ -200,5 +196,23 @@ describe("a startable Approach is untouched", () => {
     });
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(container.querySelector("a")).toBeNull();
+  });
+});
+
+// Cold walk 24: every card was a paragraph (the Teach-Back ran ~90 words).
+// Interface text is layout: a label and at most ONE line of secondary text.
+describe("a card is a label and one line, never a paragraph", () => {
+  it("shows the registry tagline and none of the long copy", () => {
+    show(<ApproachCard approach={VISION_INTERVIEW} inert />);
+    const text = card().textContent ?? "";
+    expect(text).toContain("Your vision, turned into a brief");
+    expect(text).not.toContain("What it is.");
+    expect(text).not.toContain("You bring:");
+    expect(text).not.toContain("Time:");
+  });
+
+  it("reads a tagline only within its 60-character budget", async () => {
+    const { APPROACH_TAGLINE_BUDGET } = await import("../approaches");
+    expect(APPROACH_TAGLINE_BUDGET).toBe(60);
   });
 });

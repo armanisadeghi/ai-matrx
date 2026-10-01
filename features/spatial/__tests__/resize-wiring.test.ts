@@ -7,6 +7,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
+import { featureRoots } from "@/scripts/lib/source-roots.mjs";
 
 const REPO = join(__dirname, "..", "..", "..");
 
@@ -28,7 +29,7 @@ interface Use {
 
 function spatialTileUses(): Use[] {
   const uses: Use[] = [];
-  for (const file of tsxFiles(join(REPO, "features"))) {
+  for (const file of featureRoots(REPO).flatMap((root) => tsxFiles(join(REPO, root)))) {
     const text = readFileSync(file, "utf8");
     if (!text.includes("<SpatialTile")) continue;
     const src = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

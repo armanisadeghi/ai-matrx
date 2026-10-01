@@ -18,10 +18,11 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { featureRoots } from "./lib/source-roots.mjs";
 
 const ROOT = process.cwd();
 const APP_DIR = join(ROOT, "app");
-const FEATURES_DIR = join(ROOT, "features");
+const FEATURE_DIRS = featureRoots(ROOT).map((root) => join(ROOT, root));
 
 const ROUTE_GLOBS = [
   "(core)",
@@ -192,7 +193,7 @@ function main() {
       (path) =>
         !coreOnly || relative(APP_DIR, path).startsWith("(core)/"),
     );
-  const featureHeaderFiles = walkHeaderComponents(FEATURES_DIR);
+  const featureHeaderFiles = FEATURE_DIRS.flatMap((dir) => walkHeaderComponents(dir));
   const violations = [
     ...files.flatMap(scanFile),
     ...featureHeaderFiles.flatMap(scanPageHeaderClearance),

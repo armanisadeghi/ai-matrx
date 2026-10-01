@@ -68,6 +68,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const AIDREAM_DIR = process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream");
@@ -237,7 +238,8 @@ function resolveAlias(spec: string, fromFile: string): string | null {
   if (spec.startsWith("./") || spec.startsWith("../")) {
     return join(dirname(fromFile), spec);
   }
-  if (spec.startsWith("@/")) return join(ROOT, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) return join(ROOT, aliased);
   if (spec.startsWith("@components/")) return join(ROOT, "components", spec.slice("@components/".length));
   if (spec.startsWith("@lib/")) return join(ROOT, "lib", spec.slice("@lib/".length));
   if (spec.startsWith("@utils/")) return join(ROOT, "utils", spec.slice("@utils/".length));

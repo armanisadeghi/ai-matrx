@@ -26,6 +26,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
 import { emitItem, endItems } from "../checks/items.mjs";
+import { aliasTarget, featureRootOf } from "../lib/source-roots.mjs";
 
 const ROOT = process.cwd();
 const REPORT = join(ROOT, "scripts/access-errors/report.json");
@@ -508,7 +509,8 @@ export function findNarrowedRecordReads(
 /** `@/x/y` and `./z` → a file in the repo, or null for a package import. */
 function resolveImport(spec: string, fromFile: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = spec.slice(2);
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = aliased;
   else if (spec.startsWith(".")) {
     const dir = fromFile.split("/").slice(0, -1);
     const parts = spec.split("/");
@@ -587,7 +589,8 @@ function scanNarrowedReads(): NarrowedRead[] {
 /** Group by the feature that owns the file, so the sweep can go out in waves. */
 function featureOf(file: string): string {
   const parts = file.split("/");
-  if (parts[0] === "features") return `features/${parts[1]}`;
+  const feature = featureRootOf(file);
+  if (feature) return `${feature.root}/${feature.rest.split("/")[0]}`;
   if (parts[0] === "app") return `app/${parts[1] ?? ""}`;
   return parts[0];
 }

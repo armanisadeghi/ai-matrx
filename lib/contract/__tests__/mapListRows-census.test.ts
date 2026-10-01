@@ -33,6 +33,7 @@
 import { readFileSync } from "node:fs";
 import { globSync } from "node:fs";
 import path from "node:path";
+import { featureRoots } from "@/scripts/lib/source-roots.mjs";
 
 // `node:fs` only grew `globSync` in newer Node — fall back to a tiny manual
 // walk so this guard runs on whatever Node this repo's CI actually has.
@@ -70,7 +71,7 @@ const RAW_ROW_MAP = /\.map\(\s*\([^)]*\)\s*=>\s*[\s\S]{0,120}?\bparse[A-Z]\w*\(/
 describe("every list-of-rows reader under features/**/contract.ts uses mapListRows", () => {
   const repoRoot = path.resolve(__dirname, "..", "..", "..");
   const contractFiles = [
-    ...findContractFiles(path.join(repoRoot, "features")),
+    ...featureRoots(repoRoot).flatMap((root) => findContractFiles(path.join(repoRoot, root))),
     ...findContractFiles(path.join(repoRoot, "lib", "contract")),
   ];
 

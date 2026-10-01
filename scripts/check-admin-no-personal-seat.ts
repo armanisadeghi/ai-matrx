@@ -48,6 +48,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { aliasTarget } from "./lib/source-roots.mjs";
 
 const ROOT = path.resolve(__dirname, "..");
 const ADMIN_ROOT = path.join(ROOT, "app", "(admin)");
@@ -80,7 +81,8 @@ const MAX_DEPTH = 4;
 
 function resolveImport(from: string, spec: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = path.join(ROOT, spec.slice(2));
+  const aliased = aliasTarget(spec);
+  if (aliased !== null) base = path.join(ROOT, aliased);
   else if (spec.startsWith(".")) base = path.resolve(path.dirname(from), spec);
   else return null;
   if (fs.existsSync(base) && fs.statSync(base).isFile()) return base;
