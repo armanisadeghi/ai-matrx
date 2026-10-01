@@ -29,6 +29,7 @@ import { ArrowDown } from "lucide-react";
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
+import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
@@ -216,6 +217,9 @@ export default function ChatConversationClient({
         {/* Input */}
         <div className="shrink-0 p-2 pb-safe">
           <div className="max-w-[800px] mx-auto">
+            {/* Same reconnect / Continue face as every agent surface — a turn
+                whose resume could not continue is never a silent stall. */}
+            <ServerOperationBanner conversationId={conversationId} />
             <ProposedDirectivesZone conversationId={conversationId} />
             <SmartAgentInput
               conversationId={conversationId}
