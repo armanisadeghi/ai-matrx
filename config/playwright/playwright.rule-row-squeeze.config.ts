@@ -19,9 +19,12 @@
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./features/masterwork/components/detail/__tests__/rule-row-squeeze",
+  testDir:
+    "../../features/masterwork/components/detail/__tests__/rule-row-squeeze",
   testMatch: /.*\.spec\.ts$/,
-  globalSetup: "./features/masterwork/components/detail/__tests__/rule-row-squeeze/global-setup.ts",
+  globalSetup:
+    "../../features/masterwork/components/detail/__tests__/rule-row-squeeze/global-setup.ts",
+  outputDir: "../../.cache/playwright/rule-row-squeeze",
   fullyParallel: true,
   reporter: [["list"]],
   use: {

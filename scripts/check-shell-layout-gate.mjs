@@ -19,7 +19,7 @@
 import { spawnSync } from "node:child_process";
 import { writeSync } from "node:fs";
 
-const result = spawnSync("pnpm", ["exec", "playwright", "test", "-c", "playwright.shell-layout.config.ts"], {
+const result = spawnSync("pnpm", ["exec", "playwright", "test", "-c", "config/playwright/playwright.shell-layout.config.ts"], {
   encoding: "utf8",
   env: process.env,
   maxBuffer: 64 * 1024 * 1024,

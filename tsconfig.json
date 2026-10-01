@@ -1,18 +1,9 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "target": "es2018",
     "allowJs": true,
-    "types": [
-      "node",
-      "react",
-      "react-dom",
-      "jest"
-    ],
+    "types": ["node", "react", "react-dom", "jest"],
     "skipLibCheck": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -21,24 +12,14 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/app/(admin)/*": [
-        "./app/(admin)/*",
-        "./app/_admin_build_excluded/*"
-      ],
-      "@/*": [
-        "./*"
-      ],
-      "@components/ui/*": [
-        "./components/ui/*"
-      ],
-      "@components/*": [
-        "./components/*"
-      ],
-      "/*": [
-        "./public/*"
-      ]
+      "@/app/(admin)/*": ["./app/(admin)/*", "./app/_admin_build_excluded/*"],
+      "@/*": ["./*"],
+      "@components/ui/*": ["./components/ui/*"],
+      "@components/*": ["./components/*"],
+      "/*": ["./public/*"]
     },
     "incremental": true,
+    "tsBuildInfoFile": ".cache/tsc/tsconfig.tsbuildinfo",
     "isolatedModules": true,
     "plugins": [
       {
@@ -94,38 +75,21 @@
     "utils/schema/schemaUtils.ts"
   ],
   "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ],
+    "require": ["tsconfig-paths/register"],
     "transpileOnly": true,
     "compilerOptions": {
       "ignoreDeprecations": "6.0",
       "rootDir": ".",
-      "types": [
-        "node"
-      ],
-      "lib": [
-        "dom",
-        "dom.iterable",
-        "esnext"
-      ],
+      "types": ["node"],
+      "lib": ["dom", "dom.iterable", "esnext"],
       "module": "commonjs",
       "moduleResolution": "node",
       "baseUrl": ".",
       "paths": {
-        "@/app/(admin)/*": [
-          "./app/(admin)/*",
-          "./app/_admin_build_excluded/*"
-        ],
-        "@/*": [
-          "./*"
-        ],
-        "@components/ui/*": [
-          "./components/ui/*"
-        ],
-        "@components/*": [
-          "./components/*"
-        ]
+        "@/app/(admin)/*": ["./app/(admin)/*", "./app/_admin_build_excluded/*"],
+        "@/*": ["./*"],
+        "@components/ui/*": ["./components/ui/*"],
+        "@components/*": ["./components/*"]
       }
     }
   }

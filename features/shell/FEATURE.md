@@ -111,7 +111,7 @@ rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
   disclosure; `.shell-user-menu-panel` subtracts the safe-area insets from its
   viewport bound. Gate:
   `features/shell/layout-gate/user-menu-reachability.spec.ts`, which runs at
-  1280x720, **1440x900** (added to `playwright.shell-layout.config.ts` for
+  1280x720, **1440x900** (added to `config/playwright/playwright.shell-layout.config.ts` for
   this defect) and 390x844.
 
 - **2026-09-19** — Created with the header right set and the bottom-left user

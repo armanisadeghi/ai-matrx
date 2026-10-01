@@ -6,14 +6,19 @@ import { defineConfig } from "@playwright/test";
  * three failure boundaries this gate protects.
  */
 export default defineConfig({
-  testDir: "./components/official/entity-ref/__tests__/browser",
+  testDir: "../../components/official/entity-ref/__tests__/browser",
+  outputDir: "../../.cache/playwright/entity-ref-controls",
   testMatch: /.*\.spec\.ts$/,
   reporter: [["list"]],
   projects: [
     { name: "desktop", use: { viewport: { width: 1280, height: 720 } } },
     {
       name: "phone-390",
-      use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+      use: {
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
     },
   ],
 });

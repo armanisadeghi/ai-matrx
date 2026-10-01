@@ -14,7 +14,8 @@
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./features/shell/layout-gate",
+  testDir: "../../features/shell/layout-gate",
+  outputDir: "../../.cache/playwright/shell-layout",
   testMatch: /.*\.spec\.ts$/,
   fullyParallel: true,
   reporter: [["list"]],

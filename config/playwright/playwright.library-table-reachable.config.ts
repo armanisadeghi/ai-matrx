@@ -16,9 +16,11 @@
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./features/source-library/__tests__/library-table-reachable",
+  testDir: "../../features/source-library/__tests__/library-table-reachable",
   testMatch: /.*\.spec\.ts$/,
-  globalSetup: "./features/source-library/__tests__/library-table-reachable/global-setup.ts",
+  globalSetup:
+    "../../features/source-library/__tests__/library-table-reachable/global-setup.ts",
+  outputDir: "../../.cache/playwright/library-table-reachable",
   fullyParallel: true,
   reporter: [["list"]],
   use: {

@@ -16,7 +16,10 @@
  */
 import { defineConfig, devices } from "@playwright/test";
 
-import { noAppSentence, resolveBaseURL } from "./scripts/lib/kind-sandbox-base-url";
+import {
+  noAppSentence,
+  resolveBaseURL,
+} from "../../scripts/lib/kind-sandbox-base-url";
 
 /**
  * Refuse here rather than inside a test. A missing app is not a failing
@@ -29,19 +32,20 @@ if (!baseURL) throw new Error(noAppSentence());
 console.log(`[kind-sandbox gate] driving ${baseURL}`);
 
 export default defineConfig({
-    testDir: "features/content-ir/sandbox/browser",
-    globalSetup: "./features/content-ir/sandbox/browser/global-setup.ts",
-    // One boundary, one browser. Retries would only hide a flaky boundary,
-    // which is the one thing this suite may never do.
-    retries: 0,
-    workers: 1,
-    timeout: 90_000,
-    reporter: [["list"]],
-    use: {
-        baseURL,
-        ...devices["Desktop Chrome"],
-        // The bundled Chromium, so the CSP behaviour under test is the engine's
-        // and not whatever the machine happens to have installed.
-        channel: undefined,
-    },
+  testDir: "../../features/content-ir/sandbox/browser",
+  globalSetup: "../../features/content-ir/sandbox/browser/global-setup.ts",
+  outputDir: "../../.cache/playwright/kind-sandbox",
+  // One boundary, one browser. Retries would only hide a flaky boundary,
+  // which is the one thing this suite may never do.
+  retries: 0,
+  workers: 1,
+  timeout: 90_000,
+  reporter: [["list"]],
+  use: {
+    baseURL,
+    ...devices["Desktop Chrome"],
+    // The bundled Chromium, so the CSP behaviour under test is the engine's
+    // and not whatever the machine happens to have installed.
+    channel: undefined,
+  },
 });
