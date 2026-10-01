@@ -309,7 +309,7 @@ export function useFlashcardSetRowActions(
       }}
       title="Archive this deck?"
       description={
-        pendingArchive ? archiveConfirmSentence(`"${pendingArchive.name}"`) : ""
+        pendingArchive ? archiveConfirmSentence(`"${pendingArchive.name}"`, { restoreFrom: "list_filters" }) : ""
       }
       confirmLabel="Archive"
       variant="destructive"

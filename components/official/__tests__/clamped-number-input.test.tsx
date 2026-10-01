@@ -6,7 +6,8 @@
 
 import React, { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { ClampedNumberInput, clampDraft } from "../ClampedNumberInput";
+import { ClampedNumberInput, clampDraft, shownDraft } from "../ClampedNumberInput";
+import { makeMoreCardsLabel } from "@/features/flashcards/components/create/cardProgressLine";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -111,5 +112,48 @@ describe("ClampedNumberInput", () => {
     expect(clampDraft("900", 1, 50)).toBe(50);
     expect(clampDraft("900", 1, null)).toBe(900);
     expect(clampDraft("", 1, 50)).toBeNull();
+  });
+
+  // verify-7 #3: clearing "10" with backspace passes through "1" (committed), then "" and "0"
+  // the field keeps — the button said "Make 1 more cards" while the field showed "0".
+  it("a label reading the draft names only the number the field shows, pluralised", () => {
+    const labels: string[] = [];
+    function Host() {
+      const [count, setCount] = useState(10);
+      const [shown, setShown] = useState<number | null>(10);
+      labels.push(makeMoreCardsLabel(shown));
+      return (
+        <>
+          <ClampedNumberInput min={1} max={50} value={count} onChange={setCount} onDraftChange={setShown} />
+          <button>{makeMoreCardsLabel(shown)}</button>
+        </>
+      );
+    }
+    act(() => root.render(<Host />));
+    const input = host.querySelector("input")!;
+    const button = host.querySelector("button")!;
+    setNativeValue(input, "1");
+    expect(button.textContent).toBe("Make 1 more card");
+    setNativeValue(input, "");
+    expect(button.textContent).toBe("Make more cards");
+    setNativeValue(input, "0");
+    expect(input.value).toBe("0");
+    expect(button.textContent).toBe("Make more cards");
+    act(() => {
+      input.focus();
+      input.blur();
+    });
+    expect(input.value).toBe("1");
+    expect(button.textContent).toBe("Make 1 more card");
+    setNativeValue(input, "7");
+    expect(button.textContent).toBe("Make 7 more cards");
+  });
+
+  it("shownDraft is the number only when the field shows exactly it", () => {
+    expect(shownDraft("7", 1, 50)).toBe(7);
+    expect(shownDraft("07", 1, 50)).toBe(7);
+    expect(shownDraft("0", 1, 50)).toBeNull();
+    expect(shownDraft("", 1, 50)).toBeNull();
+    expect(shownDraft("90", 1, 50)).toBeNull();
   });
 });

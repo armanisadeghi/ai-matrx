@@ -62,12 +62,16 @@ function receipt(maxInline: number, delivery: "inline" | "on_request"): ContextR
   };
 }
 
-function run(expectedRequestId: string | null, data: ContextReceiptData) {
+function run(
+  expectedRequestId: string | null,
+  data: ContextReceiptData,
+  extraRows: Array<Record<string, unknown>> = [],
+) {
   const actions: Array<{ type: string; payload: Record<string, unknown> }> = [];
   const state = {
     instanceContext: {
       expectedByConversationId: expectedRequestId
-        ? { c1: { requestId: expectedRequestId, rows: [{ ...row, value: undefined }] } }
+        ? { c1: { requestId: expectedRequestId, rows: [{ ...row, value: undefined }, ...extraRows] } }
         : {},
     },
     userAuth: { isAdmin: false, adminLaneOpen: false },
@@ -119,4 +123,31 @@ it("a value the server's safety check removed keeps its reason and is worded as 
   const mismatch = captured.find((c) => c.code === "context_truth_mismatch");
   expect(mismatch?.message).toBe("Removed by the server's safety check (1)");
   expect(mismatch?.details).toBe("note_bundle: removed by the server's safety check");
+});
+
+// verify-7 #4: Add more cards on /education/flashcards ran with its dialog open, so the request
+// carried `window_forms`; the server pops that key and expands it (`window::<title>`), so a
+// receipt never lists it by name — every such turn raised `window_forms.missing`.
+it("the platform keys the server expands are never expected back by name", () => {
+  const platformRow = (key: string, label: string) => ({
+    ...resolveContextRow(
+      {
+        key,
+        label,
+        surfaceKey: "matrx-user/notes",
+        origin: "page",
+        value: [{ title: "Add more cards", kind: "dialog", fields: [] }],
+        layers: { surface: { declared: true, auto_context: true, max_inline_chars: 10 } },
+      },
+      {},
+    ),
+    value: undefined,
+  });
+  const entry = run("r1", receipt(12000, "inline"), [
+    platformRow("window_forms", "Open windows"),
+    platformRow("surface_chain", "Open screens"),
+  ]);
+  expect(entry.checked).toBe(true);
+  expect(entry.mismatches).toEqual([]);
+  expect(captured).toEqual([]);
 });

@@ -21,6 +21,7 @@ const SHOTS = process.env.DH_SHOTS ?? "tmp/data-home-3";
 const EMAIL = process.env.DH_EMAIL;
 const PASSWORD = process.env.DH_PASSWORD;
 const ONLY = process.env.DH_ONLY ?? "";
+const BEFORE_ONLY = ONLY === "before-only";
 if (!ORIGIN || !EMAIL || !PASSWORD) throw new Error("DH_ORIGIN, DH_EMAIL and DH_PASSWORD must be set");
 mkdirSync(SHOTS, { recursive: true });
 
@@ -40,7 +41,13 @@ page.on("console", (m) => {
 });
 const failedRequests = [];
 page.on("response", (r) => {
-  if (r.status() >= 400 && /\/rest\/v1\/|\/rpc\//.test(r.url())) failedRequests.push(`${r.status()} ${r.url().split("?")[0].slice(-80)}`);
+  if (r.status() >= 400 && /\/rest\/v1\/|\/rpc\//.test(r.url())) {
+    const at = `${r.status()} ${r.url().split("?")[0].slice(-60)} on ${new URL(page.url()).search.slice(0, 40)} body=${(r.request().postData() ?? "").slice(0, 120)}`;
+    void r.text().then(
+      (body) => failedRequests.push(`${at} ${body.slice(0, 200)}`),
+      () => failedRequests.push(at),
+    );
+  }
 });
 
 // The shared preview's walk cap parks an idle host; Resume it the way the other walks do.
@@ -77,13 +84,14 @@ const goto = async (query = "") => {
 };
 
 try {
-  if (!ONLY || ONLY === "before") {
+  if (!ONLY || ONLY === "before" || BEFORE_ONLY) {
     await page.goto(`${ORIGIN}/data-v2?home=old`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("old hub", async () => (await page.locator("[data-hub-root]").count()) > 0, 90000);
     await sleep(2500);
     await shot("before-home");
   }
 
+  if (BEFORE_ONLY) throw new Error("before-only: stopped after the old page");
   await goto();
   const headers = (await page.locator("thead th").allInnerTexts()).map((t) => t.trim()).filter(Boolean);
   const wanted = ["Name", "Kind", "Organization", "Records", "Updated", "Owner", "Access"];
@@ -165,6 +173,8 @@ try {
   await shot("after-1024-table");
   await page.setViewportSize({ width: 390, height: 844 });
   await goto();
+  const opened = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll(".overflow-y-auto")].map((e) => e.scrollTop)));
+  pass("390 px: the list opens at its first row", opened === 0, `scrolled ${opened}px`);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   pass("390 px: no sideways scroll", overflow <= 1, `overflow ${overflow}px`);
   await shot("after-390-table");
@@ -175,6 +185,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 900 });
   await goto();
   await page.getByRole("button", { name: "Reset view to defaults" }).first().click().catch(() => {});
+  await sleep(2500); // the preference write is debounced; let it reach the account before closing
 } catch (error) {
   pass("the walk ran to the end", false, String(error).slice(0, 300));
   await shot("failure").catch(() => {});

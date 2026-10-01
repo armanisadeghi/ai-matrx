@@ -107,7 +107,7 @@ import {
   cardRunRequest,
   restoreCardRunRequest,
 } from "../../data/cardRunRequest";
-import { cardProgressLine } from "./cardProgressLine";
+import { cardCount, cardProgressLine } from "./cardProgressLine";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { DeckFileImport } from "./DeckFileImport";
 
@@ -271,6 +271,8 @@ export function CreateDeckPage() {
   // The most cards one run may make — the `flashcards.max_cards_per_run` knob.
   const cardLimit = useMaxCardsPerRun();
   const countMax = cardLimit.max;
+  // What the count field shows (null while empty or out of range) — the summary repeats it.
+  const [shownCount, setShownCount] = useState<number | null>(count);
   const safeCount =
     countMax === null
       ? Math.max(MIN_CARDS_PER_RUN, count || 10)
@@ -571,6 +573,7 @@ export function CreateDeckPage() {
                           setCount(n);
                           keep({ count: n });
                         }}
+                        onDraftChange={setShownCount}
                         className="h-11 text-base sm:h-9"
                         disabled={busy}
                       />
@@ -701,7 +704,7 @@ export function CreateDeckPage() {
                                 ? "Opening your deck…"
                                 : "Saving your deck…"
                               : (cardProgressLine(progress, safeCount) ??
-                                `Making ${safeCount} cards${hasSources ? "" : ` about “${topic}”`}`)}
+                                `Making ${cardCount(safeCount)}${hasSources ? "" : ` about “${topic}”`}`)}
                         </p>
                       </div>
                     </div>
@@ -777,8 +780,8 @@ export function CreateDeckPage() {
                       {/* read-gate-exempt: counts of the sources the person added to this form and the card count they chose, not a read's rows */}
                       {blockedReason ??
                         (hasSources
-                          ? `${safeCount} cards from ${ready.length} ${ready.length === 1 ? "source" : "sources"}${topic ? `, focused on “${topic}”` : ""}`
-                          : `${safeCount} cards about “${topic}”.`)}
+                          ? `${shownCount === null ? "Cards" : cardCount(shownCount)} from ${ready.length} ${ready.length === 1 ? "source" : "sources"}${topic ? `, focused on “${topic}”` : ""}`
+                          : `${shownCount === null ? "Cards" : cardCount(shownCount)} about “${topic}”.`)}
                     </p>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <coppa.Gate />

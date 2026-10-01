@@ -111,6 +111,10 @@ grant select on _field, _unseen to authenticated;
 set local role authenticated;
 
 -- B. UNSEARCHED = THE OLD ANSWER.
+create function pg_temp._dh3_sorted(h jsonb) returns jsonb language sql immutable as $f$
+  select jsonb_object_agg(k, (select coalesce(jsonb_agg(e order by e::text), '[]'::jsonb) from jsonb_array_elements(h -> k) e))
+    from jsonb_object_keys(h) k
+$f$;
 do $$
 declare v_diff int; v_h jsonb := (select h from _home);
 begin
@@ -122,7 +126,8 @@ begin
   if v_h ? 'search' or exists (select 1 from jsonb_array_elements(v_h -> 'tables') e where e ? 'match_rank') then
     raise exception 'B FAILED: the unsearched home carries search keys';
   end if;
-  if custom.data_home(null, '   ') <> v_h or custom.data_home(null, null) <> v_h then
+  -- the same rows, compared as sets (jsonb_agg over a set-returning door has no order to promise)
+  if pg_temp._dh3_sorted(custom.data_home(null, '   ')) <> pg_temp._dh3_sorted(v_h) or pg_temp._dh3_sorted(custom.data_home(null, null)) <> pg_temp._dh3_sorted(v_h) then
     raise exception 'B FAILED: a blank or null search answers differently from no search';
   end if;
   raise notice 'B passed: unsearched = custom.data_home_tables() (% Tables), blank = null = none', (select count(*) from _seen);
@@ -132,7 +137,7 @@ end $$;
 do $$
 declare
   v_t jsonb; v_last_name int; v_first_other int; v_rincon uuid; v_rincon_org uuid; v_first text;
-  v_admin boolean := current_setting('dh3.seat') = 'admin@admin.com';
+  v_admin boolean := current_setting('dh3.seat') = 'admin@admin.com'; v_q text;
 begin
   v_t := custom.data_home(null, 'Service Calls') -> 'tables';
   if jsonb_array_length(v_t) = 0 then raise exception 'C FAILED: "Service Calls" finds nothing'; end if;
@@ -160,7 +165,15 @@ begin
       raise exception 'C FAILED: its own full title finds "%" first', v_first;
     end if;
   end if;
-  raise notice 'C passed: "Service Calls" → % first of %; title matches all rank above other matches',
+  -- best match first, always: over a broad search the ranks never rise down the list
+  for v_q in select unnest(array['service', 'calls', 'name', 'Service Calls']) loop
+    if exists (select 1 from (select (e ->> 'match_rank')::int as r, lag((e ->> 'match_rank')::int) over (order by o) as prev
+                                from jsonb_array_elements(custom.data_home(null, v_q) -> 'tables') with ordinality as a(e, o)) x
+                where x.r > x.prev) then
+      raise exception 'C FAILED: searching "%" lists a better match below a worse one', v_q;
+    end if;
+  end loop;
+  raise notice 'C passed: "Service Calls" → % first of %; title matches all rank above other matches; best match first',
     v_t -> 0 ->> 'table_name', jsonb_array_length(v_t);
 end $$;
 

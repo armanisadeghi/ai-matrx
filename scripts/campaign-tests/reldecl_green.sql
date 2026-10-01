@@ -275,13 +275,16 @@ begin
   v_f_cas := custom.field_declare(v_org, v_job, jsonb_build_object(
     'label','Sub','type','relation','relation_target', v_client::text, 'on_target_delete','cascade'));
 
-  -- 4a. set_null — deleting the target detaches, and the VALUE goes too (T7).
+  -- 4a. set_null — ARCHIVING the target keeps the reference (chair ruling B3-21, 2026-10-01, lane
+  -- REFERENCE-KEEPS-ARCHIVED): an archive is a delete a person can undo, so the pointer and its edge
+  -- stay and a reader draws them as archived. set_null is carried out by a true purge only
+  -- (custom.migrate_purge_hard; refkeep_an_archived_record_keeps_every_reference.sql part E).
   perform custom.record_delete(v_org, v_b1);
   v_j := custom.read_record(v_org, v_a1, false);
-  if v_j ? 'client' and nullif(v_j ->> 'client','') is not null then
-    raise exception '4a: set_null left the pointer % sitting in the document', v_j ->> 'client'; end if;
-  select count(*) into v_n from platform.relations_from(v_org, v_a1) f where f.role = 'crew';
-  if v_n <> 0 then raise exception '4a: set_null left % crew edge(s) pointing at a deleted record', v_n; end if;
+  if (v_j ->> 'client') is distinct from v_b1::text then
+    raise exception '4a: archiving the target took the pointer out of the document (now %)', coalesce(v_j ->> 'client','<empty>'); end if;
+  select count(*) into v_n from platform.relations_from(v_org, v_a1) f where f.role = 'crew' and f.target_id = v_b1;
+  if v_n <> 1 then raise exception '4a: archiving the target left % crew edge(s) to it, not 1', v_n; end if;
 
   -- 4b. restrict — REFUSED, and it NAMES what is in the way, never a count.
   v_a3 := custom.record_write(v_org, v_job, jsonb_build_object('jname','Fence','owner', v_b2::text));
@@ -300,7 +303,7 @@ begin
   select count(*) into v_n from custom.read_records(v_org, v_job, false, 200, 0) r
    where (r.document ->> 'jname') = 'Gate';
   if v_n <> 0 then raise exception '4c: cascade left the Gate standing after its target was deleted'; end if;
-  raise notice 'PART 4 PASSED (4a-4c) — set_null detaches and takes the value with it, restrict refuses NAMING what is in the way, cascade takes the relating record with it.';
+  raise notice 'PART 4 PASSED (4a-4c) — archiving keeps a set_null reference (value and edge), restrict refuses NAMING what is in the way, cascade takes the relating record with it.';
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 5 — A COLUMN THAT STOPS POINTING TAKES ITS LINKS WITH IT.

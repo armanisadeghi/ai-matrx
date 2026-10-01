@@ -21,6 +21,9 @@ const sql = (name, items, extra = {}) => ({
 });
 
 export default [
+  // THE SEAT WALK: admin makes a type + item, a scope, a value, renames the type, tags a task, reads the
+  // inspector's byte parity on manage; test@test.com sees the type and scope; everything archived after.
+  { id: "scopes.walk-seat", area: "scopes", kind: "walk", file: "scripts/safety-net/walks/scopes.mjs", walkName: "scopes", items: ["S01", "S02", "S03", "S06", "S09", "S10", "S11"], targets: ["live", "clone"], timeoutMs: 25 * 60 * 1000 },
   // S01–S03: a scope type's, a context field's and a scope's own words live in the store's own homes,
   // and a duplicate slug is refused by the record door.
   sql("scopeshomes_every_column_has_a_home_red_green", ["S01", "S02", "S03"], { short: "homes" }),

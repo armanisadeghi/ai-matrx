@@ -7,15 +7,18 @@
 -- undo; stripping references on archive is data loss a restore cannot undo. A relation's
 -- `on_target_delete` is carried out by a true purge only (custom.migrate_purge_hard).
 --   A. archive the Patient: the Follow-up's Patient cell and Family list are unchanged; the edges live;
+--      the Follow-up stays editable (A2); a NEW pointer at the archived Patient is still refused (A3);
 --   B. the store still names the archived Patient for the chip (custom.relation_words_many);
 --   C. the list a person CHOOSES from (the Patients table's live rows) does not offer the archived one;
 --   D. bring it back: nothing changed on the Follow-up (same ids, same order, no duplicate edge);
---   E. a compliance erasure (migrate_purge_hard) of an archived Patient past its window takes the
---      pointer out of the Follow-up and tombstones the edge — the one place set_null runs.
+--   E. archiving a whole target table keeps the reference too; a compliance erasure (migrate_purge_hard)
+--      of that table past its window takes the pointer out of the Follow-up and its edge — the one
+--      place set_null runs.
 -- RUN IT (clone; always rolled back):
 --   psql "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/refkeep_an_archived_record_keeps_every_reference.sql
--- ITS RED: on the body before refkeep_an_archived_record_keeps_every_reference_to_it.sql it fails at A
--- (the Patient cell is emptied and Sean is taken out of the Family list).
+-- ITS RED: on the bodies before refkeep_an_archived_record_keeps_every_reference_to_it.sql it fails at A
+-- (the Patient cell is emptied and Sean is taken out of the Family list); with that file and without
+-- refkeep_c_a_record_pointing_at_an_archived_one_stays_editable.sql it fails at A2.
 
 \set ON_ERROR_STOP on
 \timing off
@@ -37,7 +40,7 @@ declare
   v_boss    text := current_user;
   v_org uuid := gen_random_uuid();
   v_home uuid; v_pat uuid; v_fu uuid; v_f_one uuid; v_f_fam uuid;
-  v_sean uuid; v_maya uuid; v_fu1 uuid;
+  v_sean uuid; v_maya uuid; v_fu1 uuid; v_doc uuid; v_lee uuid;
   v_j jsonb; v_before jsonb; v_t text; v_n int; v_res jsonb;
 begin
   perform set_config('app.actor_system', 'campaign-test/refkeep', true);
@@ -90,6 +93,21 @@ begin
   if v_n <> 2 then raise exception 'A: % live edge(s) from the Follow-up to the archived Patient, not 2', v_n; end if;
   perform set_config('role', 'authenticated', true);
 
+  -- A2. THE FOLLOW-UP STAYS EDITABLE while it points at an archived Patient: a change to another
+  --     column saves, and the reference is still there after it.
+  perform custom.record_update(v_org, v_fu1, jsonb_build_object('task','Call Sean about his knee (left voicemail)'));
+  v_j := custom.read_record(v_org, v_fu1, false);
+  if (v_j ->> 'patient') is distinct from v_sean::text or (v_j ->> 'task') not like '%voicemail%' then
+    raise exception 'A2: editing the Follow-up beside an archived reference read back %', v_j; end if;
+
+  -- A3. A NEW pointer at the archived Patient is still refused (the choose list never offers him).
+  v_t := null;
+  begin
+    perform custom.record_write(v_org, v_fu, jsonb_build_object('task','Book Sean''s next visit','patient', v_sean::text));
+  exception when others then v_t := sqlerrm;
+  end;
+  if v_t is null then raise exception 'A3: a new Follow-up pointing at the archived Patient was accepted'; end if;
+
   -- B. THE CHIP STILL HAS THE PATIENT'S WORDS.
   select w.words into v_t from custom.relation_words_many(v_org, v_f_one, array[v_sean]) w where w.record_id = v_sean;
   if v_t is distinct from 'Sean O''Brien' then
@@ -113,27 +131,43 @@ begin
    where a.organization_id = v_org and a.source_id = v_fu1 and a.deleted_at is null;
   if v_n <> 3 then raise exception 'D: after the restore the Follow-up has % live edge(s), not 3', v_n; end if;
 
-  -- E. A TRUE PURGE IS WHERE set_null RUNS. Maya archived, then past her table's window.
+  -- E. A TRUE PURGE IS WHERE set_null RUNS. The clinic's old Referring doctors table is archived
+  --    whole, sits past its window, and a compliance erasure destroys it.
   perform set_config('role', 'authenticated', true);
-  perform custom.record_delete(v_org, v_maya);
+  v_doc := custom.table_declare(v_org, jsonb_build_object(
+    'name','Referring doctors','slug','referring_doctors','type','entity','label_singular','Doctor','label_plural','Doctors',
+    'title_field','dname','display','page','weight','light','ordered',false,'row_order','sorted',
+    'default_sort','[]'::jsonb,'agent_writable',true,'retention_days',30,
+    'fields', jsonb_build_array(jsonb_build_object('name','dname')),'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_doc, jsonb_build_object('label','Name','key','dname','type','text'));
+  perform custom.field_declare(v_org, v_fu, jsonb_build_object('label','Referred by','key','referred_by','type','relation',
+    'relation_target', v_doc::text, 'on_target_delete','set_null'));
+  v_lee := custom.record_write(v_org, v_doc, jsonb_build_object('dname','Dr. Priya Lee'));
+  perform custom.record_update(v_org, v_fu1, jsonb_build_object('referred_by', v_lee::text));
+  perform custom.record_delete(v_org, v_doc);
+  v_j := custom.read_record(v_org, v_fu1, false);
+  if (v_j ->> 'referred_by') is distinct from v_lee::text then
+    raise exception 'E: archiving the Referring doctors table took the reference out of the Follow-up (%)', coalesce(v_j ->> 'referred_by', '<empty>');
+  end if;
   perform set_config('role', v_boss, true);
-  -- Back-date the archive past the window. Triggers off for this one row only through the
-  -- transaction-local replication role (no table lock, unlike ALTER TABLE ... DISABLE TRIGGER).
-  perform set_config('session_replication_role', 'replica', true);
-  update custom.record set deleted_at = deleted_at - interval '400 days' where organization_id = v_org and id = v_maya;
-  perform set_config('session_replication_role', 'origin', true);
-  v_res := custom.migrate_purge_hard(v_org, v_pat,
-             'Patient asked in writing for her record to be erased under the clinic''s privacy policy (refkeep test).',
+  -- Back-date that archive past the window (the store owner's seat; this table's rows only).
+  update custom.record set deleted_at = deleted_at - interval '400 days'
+   where organization_id = v_org and deleted_at is not null
+     and (id = v_doc or table_id = v_doc or data ->> 'entity_definition_id' = v_doc::text);
+  v_res := custom.migrate_purge_hard(v_org, v_doc,
+             'The clinic closed its referral program and its counsel asked in writing for the list to be erased (refkeep test).',
              200, false);
   if coalesce((v_res ->> 'rows_purged')::int, 0) < 1 then
     raise exception 'E: the erasure destroyed nothing: %', v_res; end if;
   v_j := custom.read_record(v_org, v_fu1, false);
-  if (v_j -> 'family') is distinct from jsonb_build_array(v_sean::text) then
-    raise exception 'E: after the erasure the Family list is %, not [Sean] — a pointer at nothing was kept', v_j -> 'family';
+  if nullif(v_j ->> 'referred_by', '') is not null then
+    raise exception 'E: after the erasure the Follow-up still points at %: a pointer at nothing was kept (%)', v_j ->> 'referred_by', v_res;
   end if;
   select count(*) into v_n from platform.associations a
-   where a.organization_id = v_org and a.target_id = v_maya and a.deleted_at is null;
-  if v_n <> 0 then raise exception 'E: % live edge(s) still point at the erased Patient', v_n; end if;
+   where a.organization_id = v_org and a.target_id = v_lee and a.deleted_at is null;
+  if v_n <> 0 then raise exception 'E: % live edge(s) still point at the erased doctor', v_n; end if;
+  if (v_j -> 'family') is distinct from (v_before -> 'family') then
+    raise exception 'E: the erasure of another table changed the Family list (%)', v_j -> 'family'; end if;
 
   raise notice '[GREEN] refkeep — an archive keeps every reference (A-B), the choose list leaves the archived one out (C), a restore changes nothing (D), a true erasure clears the pointer (E).';
 end

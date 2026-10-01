@@ -35,13 +35,19 @@ export function trashConfirmSentence(what: string): string {
  *   archive_filter — the page's own ArchiveFilter ("Archived only", THE ARCHIVED-ITEMS LAW); a
  *                    list that carries the filter restores in place, so its confirm names it
  *                    (V6-B 2026-10-01: the Sources page said "Trash" while offering the filter).
+ *   list_filters   — an entity list's Filters & Sort panel, section "Archived" (lib/entity-list
+ *                    `EntityFilterPanel`, every list with `supportsArchived` not false). Its
+ *                    control reads "Archived", not "Archived only" (verify-7 #2, 2026-10-01: the
+ *                    flashcards confirm said "Trash" and the page offered no Trash control).
  */
-export type ArchiveRestorePlace = "trash" | "archive_filter";
+export type ArchiveRestorePlace = "trash" | "archive_filter" | "list_filters";
 
 const RESTORE_PLACE_WORDS: Record<ArchiveRestorePlace, string> = {
   trash: "Trash",
   // The filter's own label (`ARCHIVE_FILTER_LABELS.archived` in @ai-matrx/design-system).
   archive_filter: "Archived only",
+  // EntityFilterPanel's button and its section heading.
+  list_filters: "Filters → Archived",
 };
 
 export interface ArchiveConfirmOptions {

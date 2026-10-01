@@ -52,11 +52,14 @@ begin
   -- archived by a junk sweep (production: Alex Hart's Workspace → "Biology 101 — Live Test"). Readiness now names it,
   -- correctly; this chain tests the press's OTHER mechanics, so here the Record is brought back the way the repair
   -- would, inside this rolled-back transaction, and counted.
-  perform set_config('matrx.actor_system', 'safety-net-b stand-in (clone, rolled back)', true);
+  perform set_config('app.actor_system', 'safety-net-b stand-in (clone, rolled back)', true);
   update custom.record r set deleted_at = null
    where r.deleted_at is not null
      and exists (select 1 from context.scopes s where s.id = r.id and s.organization_id = r.organization_id and s.deleted_at is null);
   get diagnostics v_n = row_count;
+  -- The declared system ends with the stand-in: the press must run as the person, never under this name (a named
+  -- system's write to a test copy is refused by the copy fence — which would fail the press's own re-sync).
+  perform set_config('app.actor_system', '', true);
   if v_n > 0 then v_report := v_report || format('stand-in: %s scope Records brought back beside their live current-table scopes (W1)', v_n); end if;
   -- (c) Step 1's own removal carry (platform.cutover_carry_removals — the door Copy again calls) for every organization
   -- whose only difference is "something removed on the older side is still on its copy" (peers' fixtures, all night).

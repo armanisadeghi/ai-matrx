@@ -48,9 +48,11 @@ async function makeAndJudge(page, marker, label) {
   if (id) made.push(id);
   if (!grid.v || !id) return { ok: false, detail: `no table page opened (url ${page.url()})` };
   await sleep(4000);
-  const heads = (await page.locator("thead th").allInnerTexts()).map((h) => h.trim()).filter(Boolean);
+  // Header cells draw upper-case (CSS) with glyphs (key, "+", sort marks): compare letters only, case-blind.
+  const norm = (t) => t.toLowerCase().replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+  const heads = (await page.locator("thead th").allInnerTexts()).map(norm).filter(Boolean);
   const body = await page.locator("tbody").first().innerText().catch(() => "");
-  const missing = COLS.filter((c) => !heads.some((h) => h.startsWith(c)));
+  const missing = COLS.filter((c) => !heads.some((h) => h === norm(c) || h.startsWith(`${norm(c)} `)));
   return {
     ok: missing.length === 0 && body.includes(marker),
     detail: `${label}: table ${id}; columns ${JSON.stringify(heads.slice(0, 8))}${missing.length ? ` MISSING ${missing}` : ""}; marker row ${body.includes(marker) ? "present" : "ABSENT"}`,
@@ -140,7 +142,9 @@ try {
     const box = page.locator("textarea").last();
     await box.waitFor({ timeout: 90000 });
     await box.click();
-    await page.keyboard.type(`Reply with only this markdown table, exactly as written, and no other words:\n${tableText(chatMarker).split("\n").slice(2).join(" ")}`);
+    // fill, never type: a typed newline is Enter and sends the message half written.
+    await box.fill(`Reply with only this markdown table, exactly as written, and no other words:\n\n${tableText(chatMarker).split("\n").slice(2).join("\n")}`);
+    await sleep(800);
     await page.keyboard.press("Enter");
     const got = await until("the answer", async () => {
       const t = await page.locator("main").innerText();

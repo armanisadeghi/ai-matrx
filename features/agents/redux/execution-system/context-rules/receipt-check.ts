@@ -23,6 +23,18 @@ import type { ContextReceiptData } from "@/types/python-generated/stream-events"
 import { setContextReceipt } from "../instance-context/instance-context.slice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
+import { PLATFORM_CONTEXT_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
+
+/**
+ * Platform keys the server never echoes by name: `apply_surface_context` pops each and expands
+ * it into one row per value (`<surface>::<value>`, `window::<title>`), which the receipt reports
+ * as the server's own rows. Expecting them by name made every turn sent with a dialog open a
+ * false `window_forms.missing` (verify-7 #4, /education/flashcards Add more cards).
+ */
+const SERVER_EXPANDED_KEYS: ReadonlySet<string> = new Set([
+  PLATFORM_CONTEXT_VALUES.surface_chain.name,
+  PLATFORM_CONTEXT_VALUES.window_forms.name,
+]);
 
 /** Normalize the generated wire type (optional fields) to the package's receipt. */
 export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
@@ -88,7 +100,8 @@ export function recordContextReceipt(
     });
   }
   if (expected && checked) {
-    mismatches = compareReceipt(expected.rows, receipt).mismatches;
+    const comparable = expected.rows.filter((row) => !SERVER_EXPANDED_KEYS.has(row.key));
+    mismatches = compareReceipt(comparable, receipt).mismatches;
     // A model that reads no context received none of it — that is the truth
     // the chip shows ("This model can't read context"), not a broken promise.
     if (!receipt.model_reads_context) {

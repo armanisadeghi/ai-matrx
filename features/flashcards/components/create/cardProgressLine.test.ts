@@ -7,7 +7,7 @@ import { cardProgressLine } from "./cardProgressLine";
 describe("cardProgressLine", () => {
   it("caps the ready count at the request", () => {
     expect(cardProgressLine({ done: 3, total: 4, label: "Part 3", items: 9 }, 5)).toBe("Making 5 cards — 5 ready · 3/4 parts");
-    expect(cardProgressLine({ done: 1, total: 4, label: "Part 1", items: 2 }, 5, "new cards")).toBe(
+    expect(cardProgressLine({ done: 1, total: 4, label: "Part 1", items: 2 }, 5, "new")).toBe(
       "Making 5 new cards — 2 ready · 1/4 parts",
     );
   });
@@ -32,7 +32,7 @@ describe("cardProgressLine", () => {
       { done: 1, total: 40, label: "", items: 49, retrying: 12 },
       { done: 40, total: 40, label: "", items: 38, failed: 12 },
     ]) {
-      expect((cardProgressLine(p, 50, "new cards") ?? "").length).toBeLessThanOrEqual(60);
+      expect((cardProgressLine(p, 50, "new") ?? "").length).toBeLessThanOrEqual(60);
     }
   });
 });

@@ -21,7 +21,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback.
 
-import { cardProgressLine } from "@/features/flashcards/components/create/cardProgressLine";
+import { cardCount, cardProgressLine, makeMoreCardsLabel } from "@/features/flashcards/components/create/cardProgressLine";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -247,6 +247,8 @@ function AddMoreCardsDialog({
   // null = still reading which material the deck came from.
   const [origins, setOrigins] = useState<ArtifactOrigin[] | null>(null);
   const [count, setCount] = useState(10);
+  // What the count field shows (null while empty or out of range) — the button repeats it.
+  const [shownCount, setShownCount] = useState<number | null>(10);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -316,7 +318,7 @@ function AddMoreCardsDialog({
               .join(" "),
           );
         }
-        setStatus(`Making ${safeCount} new cards…`);
+        setStatus(`Making ${cardCount(safeCount, "new")}…`);
         const made = await generateCardsFromSources({
           resolved,
           count: safeCount,
@@ -329,7 +331,7 @@ function AddMoreCardsDialog({
             store,
             orgId,
             onProgress: (p: ConvertProgress) =>
-              setStatus(cardProgressLine(p, safeCount, "new cards") ?? `Making ${safeCount} new cards…`),
+              setStatus(cardProgressLine(p, safeCount, "new") ?? `Making ${cardCount(safeCount, "new")}…`),
           },
         });
         if (made.cards.length === 0) {
@@ -437,6 +439,7 @@ function AddMoreCardsDialog({
           max={cardLimit.max}
           value={count}
           onChange={setCount}
+          onDraftChange={setShownCount}
           className="h-11 w-32 text-base sm:h-9"
           disabled={busy}
         />
@@ -476,7 +479,7 @@ function AddMoreCardsDialog({
           ) : (
             <AGENT_ICON className="mr-1.5 h-4 w-4" />
           )}
-          Make {safeCount} more cards
+          {makeMoreCardsLabel(shownCount)}
         </Button>
       </div>
       <cardGen.Paywall />

@@ -34,7 +34,7 @@ function sessionOf(cookies) {
 }
 
 /** A door, called as the signed-in seat (the page's own token). schema = the Content-Profile (custom, …). */
-async function door(page, fn, args, schema = null) {
+async function door(page, fn, args, schema = "public") {
   const session = sessionOf(await page.context().cookies());
   const headers = { apikey, Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" };
   if (schema) {
@@ -135,7 +135,7 @@ try {
     await ctx.goto(page, "/lists/v3");
     const seen = await waitText(page, new RegExp(LIST_NAME.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), 150000);
     if (!seen) return { ok: false, detail: `/lists/v3 never listed "${LIST_NAME}"` };
-    await page.getByRole("button", { name: new RegExp(LIST_NAME) }).first().evaluate((el) => el.click());
+    await page.getByText(LIST_NAME).first().evaluate((el) => el.click());
     const opened = (await until("the list's own address", async () => (page.url().includes(`/lists/${listId}`) ? true : null), 60000)).v;
     await sleep(6000);
     const t = await bodyText(page, 30000);
@@ -201,7 +201,7 @@ try {
 
   await ctx.step(["L02"], `a word added to the list (${EXTRA}) appears in the column's choices`, page, async () => {
     if (!tableId || !fieldId) return { skip: "no bound column was made" };
-    const added = await door(page, "record_write", { p_organization_id: FIXTURE_ORG_ID, p_table_id: listId, p_data: { name: EXTRA, label: EXTRA } }, "custom");
+    const added = await door(page, "record_write", { p_organization_id: FIXTURE_ORG_ID, p_table_id: listId, p_data: { name: EXTRA } }, "custom");
     if (added.status >= 300) return { ok: false, detail: `adding a word to the list: ${added.status} ${JSON.stringify(added.data).slice(0, 220)}` };
     const offered = await door(page, "field_options", { p_organization_id: FIXTURE_ORG_ID, p_field_id: fieldId }, "custom");
     const names = (Array.isArray(offered.data) ? offered.data : []).map((r) => r?.data?.name ?? r?.data?.label ?? r?.name ?? "");

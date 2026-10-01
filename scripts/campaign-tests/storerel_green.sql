@@ -164,15 +164,18 @@ begin
     raise exception '1b (T7): the restrict refusal did not NAME the purchase order: %', v_caught;
   end if;
 
-  -- 1c. SET_NULL DETACHES, AND THE POINTER DOES NOT DANGLE.
+  -- 1c. SET_NULL AND AN ARCHIVE: THE REFERENCE IS KEPT (chair ruling B3-21, 2026-10-01, lane
+  -- REFERENCE-KEEPS-ARCHIVED). An archive is a delete a person can undo, so the edge stays live and
+  -- the purchase order still names its supplier, drawn as archived. set_null runs at a true purge
+  -- (custom.migrate_purge_hard).
   update custom.record set data = data || jsonb_build_object('on_target_delete','set_null')
    where organization_id = v_org and id = v_f_sup;
   perform custom.record_delete(v_org, v_sup);
   select count(*) into v_n
     from platform.associations a
    where a.source_id=v_po and a.target_id=v_sup and a.role='supplier' and a.deleted_at is null;
-  if v_n <> 0 then
-    raise exception '1c (T7): detach-everywhere left % live edge(s) pointing at a deleted record', v_n;
+  if v_n <> 1 then
+    raise exception '1c (T7): archiving the supplier left % live edge(s) from the purchase order to it, not 1', v_n;
   end if;
 
   -- 1d. CASCADE TAKES THE OTHER SIDE WITH IT.
@@ -254,7 +257,7 @@ begin
       coalesce(v_caught,'no refusal at all');
   end if;
 
-  raise notice '[GREEN] part 1 (T7) — the edge names its field, and restrict, detach and cascade all fire.';
+  raise notice '[GREEN] part 1 (T7) — the edge names its field, and restrict, keep-on-archive and cascade all fire.';
 
   -- ════════════════════════════════════════════════════════════════════════════════════════
   -- PART 2 — T2. A NOTE ON THREE RECORDS, THROUGH A CLIENT DOOR.

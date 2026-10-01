@@ -266,4 +266,116 @@ if (tid) {
   }
 }
 
+// ── PART 2: calendar and gallery on the follow-up list (T39, T40) ─────────────────────────────
+if (tid) {
+  try {
+    await ctx.step(["T39"], "calendar: each patient sits on their follow-up date", admin, async () => {
+      const path = `/data-v2/${tid}?view=calendar`;
+      await go(admin, path);
+      await until("the calendar draws", async () => {
+        await unpark(admin);
+        return (await main(admin)).includes("Dana Whitcomb") || (await main(admin)).includes("Make it work");
+      }, 150000);
+      // A calendar with several date columns, or none picked yet, asks which one: pick Follow-up date.
+      const pick = admin.locator("#view-field-calendar");
+      if (await pick.count()) {
+        await pick.selectOption({ label: "Follow-up date" }).catch(() => {});
+        await sleep(3000);
+      }
+      await sleep(2500);
+      const t = await main(admin);
+      // Where each patient sits: the cell (a gridcell / day box) that holds their name and a day number.
+      const placed = await admin.evaluate((names) => {
+        const out = {};
+        for (const n of names) {
+          const el = [...document.querySelectorAll("main *")].find((e) => e.children.length === 0 && (e.textContent ?? "").includes(n));
+          if (!el) { out[n] = null; continue; }
+          let cell = el;
+          for (let i = 0; i < 8 && cell; i += 1, cell = cell.parentElement) {
+            const attr = cell.getAttribute?.("data-date") ?? cell.getAttribute?.("data-day") ?? cell.getAttribute?.("aria-label");
+            if (attr && /\d{4}-\d{2}-\d{2}|\b\d{1,2}\b/.test(attr)) { out[n] = attr; break; }
+          }
+          if (!out[n]) out[n] = "(no dated cell found)";
+        }
+        return out;
+      }, ROWS.map(([n]) => n.split(" - ")[0]));
+      const wrong = ROWS.filter(([n, , day]) => {
+        const seen = placed[n.split(" - ")[0]];
+        return !seen || !new RegExp(`(^|\\D)${YM}-${day}(\\D|$)|-${day}$`).test(seen);
+      }).map(([n, , day]) => `${n.split(" - ")[0]} should be on the ${Number(day)}th, found ${placed[n.split(" - ")[0]]}`);
+      return { ok: !wrong.length, detail: wrong.length ? `WRONG: ${wrong.join("; ")}` : `all ${ROWS.length} patients on their dates (${JSON.stringify(placed)}); page says: ${t.slice(0, 120)}` };
+    });
+
+    await ctx.step(["T40"], "gallery: every patient has a card", admin, async () => {
+      await go(admin, `/data-v2/${tid}?view=gallery`);
+      await until("the gallery draws", async () => {
+        await unpark(admin);
+        return (await main(admin)).includes("Dana Whitcomb");
+      }, 150000);
+      await sleep(2500);
+      const t = await main(admin);
+      const missing = ROWS.filter(([n]) => !t.includes(n.split(" - ")[0])).map(([n]) => n.split(" - ")[0]);
+      return { ok: !missing.length, detail: missing.length ? `cards missing: ${missing.join(", ")}` : `all ${ROWS.length} patients drawn` };
+    });
+  } catch (e) {
+    await ctx.step([], "part 2 aborted", admin, async () => ({ ok: false, detail: String(e?.message ?? e).slice(0, 400) }));
+  }
+}
+
+// ── PART 3: "Make it work" on a plain callback list (T41) ───────────────────────────────────
+try {
+  await ctx.step([], "make the plain callback list (title only, 3 patients)", admin, async () => {
+    pid = await newTable(admin, PLAIN);
+    ctx.cleanup(async () => archive(admin, pid, "cleanup callback list"));
+    const path = `/data-v2/${pid}?view=sheet`;
+    await go(admin, path);
+    await admin.getByRole("button", { name: /^Row$/ }).first().waitFor({ timeout: 150000 });
+    for (const t of ["Dana Whitcomb - knee rehab follow-up", "Luis Ortega - reschedule Thursday visit", "Priya Nair - insurance pre-authorization"]) await addRow(admin, path, t);
+    return { ok: true, detail: `table ${pid}` };
+  });
+  if (pid) {
+    const offers = async (view, sentence) => {
+      await go(admin, `/data-v2/${pid}?view=${view}`);
+      await until("the offer", async () => {
+        await unpark(admin);
+        return (await main(admin)).includes("Make it work");
+      }, 150000);
+      const t = await main(admin);
+      return { said: t.includes(sentence), button: await admin.getByRole("button", { name: "Make it work" }).count(), ask: await admin.getByRole("button", { name: "Ask AI" }).count() };
+    };
+    const made = async (view, label) => {
+      await admin.getByRole("button", { name: "Make it work" }).first().click();
+      const gone = await until(`${label} laid out`, async () => !(await main(admin)).includes("Make it work"), 90000);
+      await sleep(3000);
+      return !!gone.v;
+    };
+    await ctx.step(["T41"], "board with no choice column: says so, Make it work makes Status and groups by it", admin, async () => {
+      const o = await offers("kanban", "This table has no choice column to make the board's columns from.");
+      const ok1 = await made("kanban", "the board");
+      const cols = await board(admin);
+      await openTable(admin, pid, "grid", async () => (await heads(admin)).length > 1);
+      const hs = await heads(admin);
+      return {
+        ok: o.said && o.button > 0 && ok1 && hs.length > 2,
+        detail: `offer sentence ${o.said ? "shown" : "MISSING"}, Make it work ${o.button ? "offered" : "absent"}, Ask AI ${o.ask ? "offered" : "absent"}; after: ${ok1 ? "board drawn" : "board still asks"} (columns ${cols.map((c) => `${c.name} ${c.cards.length}`).join(", ") || "none"}); grid columns now ${hs.join(" | ")}`,
+      };
+    });
+    await ctx.step(["T41"], "calendar with no date column: says so, Make it work adds a date column", admin, async () => {
+      const o = await offers("calendar", "This table has no date column to place records on.");
+      const ok1 = await made("calendar", "the calendar");
+      await openTable(admin, pid, "grid", async () => (await heads(admin)).length > 1);
+      const hs = await heads(admin);
+      return { ok: o.said && o.button > 0 && ok1, detail: `offer sentence ${o.said ? "shown" : "MISSING"}; after: ${ok1 ? "calendar lays out" : "calendar still asks"}; grid columns ${hs.join(" | ")}` };
+    });
+    await ctx.step(["T41"], "gallery with no file column: says so, Make it work adds a picture column", admin, async () => {
+      const o = await offers("gallery", "The cards have no picture because this table has no file column.");
+      const ok1 = await made("gallery", "the gallery");
+      const t = await main(admin);
+      return { ok: o.said && o.button > 0 && ok1 && t.includes("Dana Whitcomb"), detail: `offer sentence ${o.said ? "shown" : "MISSING"}; after: ${ok1 ? "gallery drawn" : "gallery still asks"}; cards ${t.includes("Dana Whitcomb") ? "present" : "absent"}` };
+    });
+  }
+} catch (e) {
+  await ctx.step([], "part 3 aborted", admin, async () => ({ ok: false, detail: String(e?.message ?? e).slice(0, 400) }));
+}
+
 await ctx.finish();

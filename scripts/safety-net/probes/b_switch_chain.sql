@@ -69,11 +69,14 @@ begin
   -- archived by a junk sweep (production: Alex Hart's Workspace → "Biology 101 — Live Test"). Readiness now names it,
   -- correctly; this chain tests the press's OTHER mechanics, so here the Record is brought back the way the repair
   -- would, inside this rolled-back transaction, and counted.
-  perform set_config('matrx.actor_system', 'safety-net-b stand-in (clone, rolled back)', true);
+  perform set_config('app.actor_system', 'safety-net-b stand-in (clone, rolled back)', true);
   update custom.record r set deleted_at = null
    where r.deleted_at is not null
      and exists (select 1 from context.scopes s where s.id = r.id and s.organization_id = r.organization_id and s.deleted_at is null);
   get diagnostics v_n = row_count;
+  -- The declared system ends with the stand-in: the press must run as the person, never under this name (a named
+  -- system's write to a test copy is refused by the copy fence — which would fail the press's own re-sync).
+  perform set_config('app.actor_system', '', true);
   if v_n > 0 then v_report := v_report || format('stand-in: %s scope Records brought back beside their live current-table scopes (W1)', v_n); end if;
   -- (c) Step 1's own removal carry (platform.cutover_carry_removals — the door Copy again calls) for every organization
   -- whose only difference is "something removed on the older side is still on its copy" (peers' fixtures, all night).
@@ -177,8 +180,9 @@ begin
     if v_store_table is null then raise exception using errcode = 'SNB02', message = 'no store-born Table with fields in admin''s Workspace'; end if;
     -- The Table record is archived WITHOUT its door (the door now archives its field definitions too — lane
     -- FIELD-ARCHIVE-CASCADE); production's 42 such fields were left by paths that archived only the Table record.
-    perform set_config('matrx.actor_system', 'safety-net-b plant (clone, rolled back)', true);
+    perform set_config('app.actor_system', 'safety-net-b plant (clone, rolled back)', true);
     update custom.record set deleted_at = clock_timestamp() where id = v_store_table and organization_id = c_ws;
+    perform set_config('app.actor_system', '', true);
     v_n := (select count(*) from custom.record f where f.table_id = custom.field_kernel_id() and f.deleted_at is null
               and f.data ->> 'entity_definition_id' = v_store_table::text);
     v_x := platform._final_switch_readiness();

@@ -42,6 +42,7 @@ import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 import { DataHomeList } from "./DataHomeList";
 import { DataHomeArchive } from "./DataHomeArchive";
+import { MountWhenNear } from "./MountWhenNear";
 
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
 
@@ -156,12 +157,14 @@ export function DataHomeShellPage() {
                       activeOrganizationId={active.organizationId}
                       makeAsked={makeAsked}
                     />
-                    <ActionInbox
-                      className="max-h-64"
-                      onOpenRecord={(recordId, tableId) =>
-                        router.push(openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` }))
-                      }
-                    />
+                    <MountWhenNear>
+                      <ActionInbox
+                        className="max-h-64"
+                        onOpenRecord={(recordId, tableId) =>
+                          router.push(openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` }))
+                        }
+                      />
+                    </MountWhenNear>
                     <DataHomeArchive dataSource={dataSource} organizationFilter={organizationId} />
                   </div>
                 }

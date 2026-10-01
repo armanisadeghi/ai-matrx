@@ -1,10 +1,12 @@
 -- chair-step: a STORE FIX (lane REFERENCE-KEEPS-ARCHIVED, chair ruling B3-21 of 2026-10-01: archiving a
---   record keeps every reference other records hold to it). It REPLACES two bodies and adds nothing:
+--   record keeps every reference other records hold to it). It REPLACES three bodies and adds nothing:
 --   `platform.relation_on_delete` (the archive half of a relation's delete rule; its one caller is
 --   custom.delete_rule from custom.record_delete, the one archive door every archive path ends in) no
 --   longer carries out `set_null` — the pointer and its edge stay; `custom.migrate_purge_hard` (the one
 --   door where a row stops existing, chair-only) now carries `on_target_delete` out: `restrict` refuses
---   by name, everything else takes the pointer out of the record that holds it and tombstones the edge.
+--   by name, everything else takes the pointer out of the record that holds it and tombstones the edge;
+--   `platform._gc_entity_associations_stmt_softdelete` (custom.record's statement trash trigger) keeps
+--   a relation edge INTO the archived record live, so the pointer and its edge never disagree.
 --   No table, column, index, trigger, policy or grant changes; no row of anybody's data is rewritten.
 --   Inverse: `migrations/inverse/refkeep_an_archived_record_keeps_every_reference_to_it_down.sql`.
 --   Proof: scripts/campaign-tests/refkeep_an_archived_record_keeps_every_reference.sql (RED at A on the
@@ -13,6 +15,7 @@
 -- lane: REFERENCE-KEEPS-ARCHIVED
 -- based-on: platform.relation_on_delete(uuid, uuid) 8dd19334048e3c953545a72836cee6dde5ea4ab15c887d0c466aa198570191d2
 -- based-on: custom.migrate_purge_hard(uuid, uuid, text, integer, boolean) 8756b8e3b5cafcd251008f49ff51242f0c626046e72f2315c5be96b2a6639d60
+-- based-on: platform._gc_entity_associations_stmt_softdelete() dda4b5946344bdaad243e48750e34243f28faa90a47f6c670873180f6e0f72cb
 
 CREATE OR REPLACE FUNCTION platform.relation_on_delete(p_organization_id uuid, p_record_id uuid)
  RETURNS jsonb
@@ -274,4 +277,64 @@ begin
     'policy', 'Nothing important is deleted here. This door is the compliance exception: every record in scope was already archived, has been archived for at least thirty days, a written reason is stored with the erasure, and an id something still resolves to is never destroyed (REC-21).',
     'at', now());
 end;
+$function$;
+
+CREATE OR REPLACE FUNCTION platform._gc_entity_associations_stmt_softdelete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_token       text := tg_argv[0];
+  v_key_is_uuid boolean;
+begin
+  select a.atttypid = 'uuid'::regtype
+    into v_key_is_uuid
+    from pg_catalog.pg_attribute a
+   where a.attrelid = tg_relid
+     and a.attname  = 'id'
+     and a.attnum   > 0
+     and not a.attisdropped;
+  if v_key_is_uuid is not true then
+    return null;
+  end if;
+
+  -- TRASH: soft-remove every LIVE edge, stamped with the entity that caused it.
+  -- Already-tombstoned edges keep their original stamp so the entity that first
+  -- removed them is the entity that brings them back.
+  --
+  -- EXCEPT A REFERENCE OTHER RECORDS HOLD TO IT (lane REFERENCE-KEEPS-ARCHIVED, chair ruling
+  -- B3-21, 2026-10-01). A relation edge INTO the archived row (relation_field_id set, this row
+  -- the target) is the index of a pointer the referring record keeps in its own document, and an
+  -- archive keeps that pointer (platform.relation_on_delete clears nothing any more). So the edge
+  -- stays live too: the two halves of a relation never disagree, a reader still finds the
+  -- reference and draws it as archived, and a restore has nothing to put back. The archived row's
+  -- OWN edges (it is the source) and every non-relation edge still go, exactly as before. A true
+  -- hard delete still removes them all (platform._gc_entity_associations_stmt_harddelete).
+  update platform.associations x
+     set deleted_at       = now(),
+         deleted_via_type = v_token,
+         deleted_via_id   = n.id
+    from new_rows n
+    join old_rows o on o.organization_id = n.organization_id and o.id = n.id
+   where o.deleted_at is null and n.deleted_at is not null
+     and x.deleted_at is null
+     and ((x.source_type = v_token and x.source_id = n.id)
+       or (x.target_type = v_token and x.target_id = n.id and x.relation_field_id is null));
+
+  -- RESTORE: bring back exactly what THIS entity's trashing removed. An edge the
+  -- user detached before trashing was hard-deleted and is not resurrected.
+  update platform.associations x
+     set deleted_at       = null,
+         deleted_via_type = null,
+         deleted_via_id   = null
+    from new_rows n
+    join old_rows o on o.organization_id = n.organization_id and o.id = n.id
+   where o.deleted_at is not null and n.deleted_at is null
+     and x.deleted_at is not null
+     and x.deleted_via_type = v_token
+     and x.deleted_via_id   = n.id;
+  return null;
+end
 $function$;

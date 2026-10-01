@@ -27,7 +27,20 @@ type ClampedNumberInputProps = {
   "data-testid"?: string;
   title?: string;
   onChange: (value: number) => void;
+  /**
+   * The number the field shows right now when it is a value it would keep as typed, else null
+   * (empty, or out of range until blur clamps it). A label that repeats the count ("Make 5
+   * cards") reads this, so it never names a number the field does not show (verify-7 #3).
+   */
+  onDraftChange?: (shown: number | null) => void;
 };
+
+/** The number a draft shows when it is exactly a value the field would keep, else null. */
+export function shownDraft(raw: string, min: number, max?: number | null, decimal = false): number | null {
+  const next = clampDraft(raw, min, max, decimal);
+  if (next === null) return null;
+  return String(next) === raw.replace(/^0+(?=\d)/, "") ? next : null;
+}
 
 /** The committed value for a typed draft, or null to restore the last value. */
 export function clampDraft(
@@ -60,8 +73,13 @@ export function ClampedNumberInput({
   "data-testid": testId,
   title,
   onChange,
+  onDraftChange,
 }: ClampedNumberInputProps) {
   const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => {
+    onDraftChange?.(shownDraft(draft, min, max, decimal));
+  }, [draft, min, max, decimal, onDraftChange]);
 
   useEffect(() => {
     setDraft(String(value));
@@ -96,8 +114,8 @@ export function ClampedNumberInput({
         setDraft(raw);
         // An in-range value is the value now (a "Make 10 cards" button must
         // not lag the field until blur); anything else waits for blur.
-        const next = clampDraft(raw, min, max, decimal);
-        if (next !== null && String(next) === raw.replace(/^0+(?=\d)/, "") && next !== value) onChange(next);
+        const next = shownDraft(raw, min, max, decimal);
+        if (next !== null && next !== value) onChange(next);
       }}
       onBlur={(event) => commit(event.target.value)}
       onKeyDown={(event) => {

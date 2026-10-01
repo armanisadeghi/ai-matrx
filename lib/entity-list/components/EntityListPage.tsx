@@ -1136,7 +1136,11 @@ export function EntityListPage<TRow>({
       */}
       <div className="min-h-[16rem] flex-1 overflow-y-auto px-3 pb-4">
         {view === "table" ? (
-          // read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once
+          // A page FOOTER waits below the fold: the table pane is one screen tall (a definite
+          // height, so the table keeps its own virtualized scroll), and the body scrolls on to the
+          // footer after it. (A percentage height here does not resolve inside the scroll body.)
+          <div data-entity-list-table-pane="" className={footer ? "flex h-[max(16rem,calc(100dvh-13rem))] shrink-0 flex-col" : "contents"}>
+          {/* read-gate-exempt: a failed read swaps resolvedEmptyState for failureEmptyState, and the alert above names the failure once */}
           <EntityListTable
             config={config}
             actions={actions}
@@ -1224,6 +1228,7 @@ export function EntityListPage<TRow>({
               list.setPage(next.page);
             }}
           />
+          </div>
         ) : list.rows.length === 0 && !list.isLoading ? (
           // Cards/rows views used to render literally nothing on an empty list —
           // the empty state (and its emptyAction door) existed only in the table
@@ -1247,7 +1252,7 @@ export function EntityListPage<TRow>({
             onPage={list.setPage}
           />
         )}
-        {footer ? <div className="pt-4">{footer}</div> : null}
+        {footer ? <div className="shrink-0 pt-4">{footer}</div> : null}
       </div>
 
       {modals}

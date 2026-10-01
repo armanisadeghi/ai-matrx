@@ -35,6 +35,7 @@ import { ORG_RESOURCE_CATALOGUE } from "../resource-catalogue";
 import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
 import { listableTokens } from "@/features/scopes/registry/entityRegistry";
 import { fetchKindCounts } from "@/features/scopes/service/kindInventory";
+import { countSavedSources } from "@/features/resource-manager/source-input/savedWebPages";
 
 interface ContainerCountRow {
   resource_key: string;
@@ -162,6 +163,29 @@ export function useContainerInventory({
             console.error("[useContainerInventory] kind counts failed:", err);
             if (!failed.includes("the item counts")) failed.push("the item counts");
           }
+        }
+      }
+
+      // A KIND HELD AS SAVED SOURCES (verify-7 #5): Websites has no registry token and no table,
+      // so neither count above reaches it and the tile said 0 while the library listed the
+      // organization's web pages. It counts what Use existing lists for the same organization
+      // (`countSavedSources`, the Sources library's own narrowing). The organization lane reads
+      // no person id (`savedSourcesLane` → the "all" lane filtered by organization).
+      if (column === "organization_id") {
+        for (const entry of ORG_RESOURCE_CATALOGUE) {
+          if (!entry.savedSourceGroup) continue;
+          let n: number | null = null;
+          try {
+            n = await countSavedSources(
+              entry.savedSourceGroup,
+              { kind: "organization", organizationId: value },
+              "",
+            );
+          } catch (err) {
+            console.error("[useContainerInventory] saved Sources count failed:", err);
+          }
+          if (n === null) failed.push(entry.labelPlural.toLowerCase());
+          else ownedByKey.set(entry.key, (ownedByKey.get(entry.key) ?? 0) + n);
         }
       }
 

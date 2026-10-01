@@ -38,6 +38,7 @@ import { visibilityWords } from "@/lib/record-words";
 import { PlayTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
 import { Archive } from "lucide-react";
 import { archiveRecord } from "@/features/trash/service";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import {
   fetchDeckFacets,
   fetchDeckLaneCounts,
@@ -399,7 +400,11 @@ export function buildFlashcardSetListConfig(input: {
         variant: "outline",
         confirm: (selection) => ({
           title: `Archive ${selection.count === 1 ? "this deck" : `${selection.count} decks`}?`,
-          description: `${selection.count === 1 ? "It leaves" : "They leave"} this list and every study mode. Cards and study history are kept, and you can restore ${selection.count === 1 ? "it" : "them"} from Trash or the Archived filter.`,
+          // The list's Filters panel carries Archived, so restore lives there (verify-7 #2).
+          description: `${archiveConfirmSentence(
+            selection.count === 1 ? "this deck" : `${selection.count} decks`,
+            { count: selection.count, restoreFrom: "list_filters" },
+          )} Cards and study history are kept.`,
           confirmLabel: "Archive",
         }),
         run: async (selection) => {

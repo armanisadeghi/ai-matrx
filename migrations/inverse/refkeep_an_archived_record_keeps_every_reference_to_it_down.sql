@@ -1,6 +1,11 @@
 -- Inverse of refkeep_an_archived_record_keeps_every_reference_to_it.sql: the two bodies exactly as they
--- were before it (archive carries out set_null; the hard purge clears nothing).
+-- were before it (archive carries out set_null; the hard purge clears nothing; the trash
+-- trigger tombstones every edge into the archived record).
+-- lock: custom
 -- lane: REFERENCE-KEEPS-ARCHIVED
+-- based-on: platform.relation_on_delete(uuid, uuid) 9c2f96fb7846ac3c04f8d04bb3468b71237baa238dd75147715aa4ab2d842af4
+-- based-on: custom.migrate_purge_hard(uuid, uuid, text, integer, boolean) 01231794220e86bbe4736ec98f43c56b70b69f5a7573f572b678025283e8d343
+-- based-on: platform._gc_entity_associations_stmt_softdelete() bf384a444303a4e3a4819c7eda5a376cfc1d95e3b11ea80b6a4a4053dc5c15e1
 
 CREATE OR REPLACE FUNCTION platform.relation_on_delete(p_organization_id uuid, p_record_id uuid)
  RETURNS jsonb
@@ -213,4 +218,55 @@ begin
     'policy', 'Nothing important is deleted here. This door is the compliance exception: every record in scope was already archived, has been archived for at least thirty days, a written reason is stored with the erasure, and an id something still resolves to is never destroyed (REC-21).',
     'at', now());
 end;
+$function$;
+
+CREATE OR REPLACE FUNCTION platform._gc_entity_associations_stmt_softdelete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_token       text := tg_argv[0];
+  v_key_is_uuid boolean;
+begin
+  select a.atttypid = 'uuid'::regtype
+    into v_key_is_uuid
+    from pg_catalog.pg_attribute a
+   where a.attrelid = tg_relid
+     and a.attname  = 'id'
+     and a.attnum   > 0
+     and not a.attisdropped;
+  if v_key_is_uuid is not true then
+    return null;
+  end if;
+
+  -- TRASH: soft-remove every LIVE edge, stamped with the entity that caused it.
+  -- Already-tombstoned edges keep their original stamp so the entity that first
+  -- removed them is the entity that brings them back.
+  update platform.associations x
+     set deleted_at       = now(),
+         deleted_via_type = v_token,
+         deleted_via_id   = n.id
+    from new_rows n
+    join old_rows o on o.organization_id = n.organization_id and o.id = n.id
+   where o.deleted_at is null and n.deleted_at is not null
+     and x.deleted_at is null
+     and ((x.source_type = v_token and x.source_id = n.id)
+       or (x.target_type = v_token and x.target_id = n.id));
+
+  -- RESTORE: bring back exactly what THIS entity's trashing removed. An edge the
+  -- user detached before trashing was hard-deleted and is not resurrected.
+  update platform.associations x
+     set deleted_at       = null,
+         deleted_via_type = null,
+         deleted_via_id   = null
+    from new_rows n
+    join old_rows o on o.organization_id = n.organization_id and o.id = n.id
+   where o.deleted_at is not null and n.deleted_at is null
+     and x.deleted_at is not null
+     and x.deleted_via_type = v_token
+     and x.deleted_via_id   = n.id;
+  return null;
+end
 $function$;

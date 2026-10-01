@@ -152,7 +152,7 @@ export function makeAssessmentRowActions(config: KindConfig) {
           if (!open) setPendingArchive(null);
         }}
         title={`Archive this ${noun}?`}
-        description={pendingArchive ? archiveConfirmSentence(`"${pendingArchive.title}"`) : ""}
+        description={pendingArchive ? archiveConfirmSentence(`"${pendingArchive.title}"`, { restoreFrom: "list_filters" }) : ""}
         confirmLabel="Archive"
         variant="destructive"
         busy={busy}

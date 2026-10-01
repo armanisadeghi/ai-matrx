@@ -236,7 +236,7 @@ end $$;
 -- who-changed-it for every row the page shows.
 do $$
 declare
-  t0 timestamptz; v_best numeric := 1e9; n int; v_one boolean := to_regprocedure('custom.data_home(uuid)') is not null;
+  t0 timestamptz; v_best numeric := 1e9; n int; v_one boolean := to_regproc('custom.data_home') is not null;  -- (uuid) or, since DATA-HOME-3B, (uuid, text)
   v_home jsonb; v_asks jsonb; v_diff int;
 begin
   -- the rows the page asks who-changed-it for (the same rule custom.data_home states)
@@ -252,7 +252,7 @@ begin
     from (select org, k, jsonb_agg(id order by id) as ids from ids group by org, k) q;
 
   if not v_one then
-    raise exception 'K FAILED: custom.data_home(uuid) does not exist';
+    raise exception 'K FAILED: custom.data_home does not exist';
   end if;
   v_home := custom.data_home();
   select count(*) into v_diff from (

@@ -13,14 +13,27 @@
 
 import type { ConvertProgress } from "@/features/education/convert/types";
 
+/** "1 card", "5 cards", "1 new card" — every card count on Create deck and Add more cards. */
+export function cardCount(n: number, adjective = ""): string {
+  return `${n} ${adjective ? `${adjective} ` : ""}${n === 1 ? "card" : "cards"}`;
+}
+
+/**
+ * Add more cards' run button. `shown` is the number the count field shows (null while it is
+ * empty or out of range), so the label never names a number the field does not (verify-7 #3).
+ */
+export function makeMoreCardsLabel(shown: number | null): string {
+  return shown === null ? "Make more cards" : `Make ${shown} more ${shown === 1 ? "card" : "cards"}`;
+}
+
 export function cardProgressLine(
   progress: ConvertProgress | null,
   requested: number,
-  cards = "cards",
+  adjective = "",
 ): string | null {
   if (!progress || progress.total <= 1) return null;
   const ready = Math.min(progress.items, requested);
-  const line = `Making ${requested} ${cards} — ${ready} ready`;
+  const line = `Making ${cardCount(requested, adjective)} — ${ready} ready`;
   const retrying = progress.retrying ?? 0;
   const failed = progress.failed ?? 0;
   if (retrying > 0) return `${line} · retrying ${retrying} ${retrying === 1 ? "part" : "parts"}`;
