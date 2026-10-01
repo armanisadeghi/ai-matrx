@@ -965,16 +965,23 @@ export function SourcesPage() {
       filter: false,
       width: 44,
       cell: (r) => (
-        <ItemMenu config={rowMenu(r)}>
-          <button
-            type="button"
-            aria-label={`Actions for ${r.name}`}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </ItemMenu>
+        // The menu is portaled, but React still bubbles its clicks through this cell to the
+        // row — a menu choice must never also open the row.
+        <span
+          className="inline-flex"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <ItemMenu config={rowMenu(r)}>
+            <button
+              type="button"
+              aria-label={`Actions for ${r.name}`}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </ItemMenu>
+        </span>
       ),
     },
   ];
