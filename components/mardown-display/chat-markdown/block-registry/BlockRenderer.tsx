@@ -165,6 +165,11 @@ export function pendingStructuredEnvelope(block: {
     // it names no kind, so the first-key rule decides exactly as it does for
     // a region no parser opened (A6). A settled block falls through.
     if (envelope.root.kind) {
+      // Identified, the BLOCK still streaming, the route says "code": the
+      // region's own envelope may already read complete (its last chunk) but
+      // the block is not settled — the kind's loader, whatever the registry
+      // state. Bounded by the stream: finalize settles the block.
+      if (block.isStreamingBlock) return envelope;
       // Identified, SETTLED, and still "code" after the route: the route is
       // holding its verdict because the component registry has not settled
       // (THE COLD-VERDICT RULE). Show the kind's loader, never the raw card;

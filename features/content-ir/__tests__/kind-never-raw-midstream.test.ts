@@ -22,11 +22,7 @@
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
-import {
-  pendingStructuredEnvelope,
-  settleBrokenKindRoute,
-  withTerminalEnvelope,
-} from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
 import { applyIrKindRoute } from "../react/kind-route";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import { componentRegistry } from "../registry/component-registry";
@@ -92,20 +88,8 @@ function streamCharByChar(stream: string, requestId: string): Upsert[] {
   return upserts; // NO finalize — every frame is a live, mid-stream frame
 }
 
-/**
- * BlockRenderer's question: does this frame draw the raw JSON code card?
- * The same steps it takes: terminal envelope (settled frames), the kind
- * route, the broken-kind settle (A10), then the pending gate.
- */
-function rendersRawJson(block: RenderBlockPayload): boolean {
-  if (!(block.content ?? "").trim()) return false; // nothing visible yet
-  const settled = block.status !== "streaming";
-  const routed = settleBrokenKindRoute(
-    applyIrKindRoute(withTerminalEnvelope(renderBlockToContentBlock(block), !settled)),
-  );
-  if (routed.type !== "code") return false; // a kind / its loader / text
-  return pendingStructuredEnvelope(routed) === null;
-}
+/** BlockRenderer's question, asked through the ONE shared answer. */
+const rendersRawJson = drawsRawJsonCard;
 
 /** Stream one character at a time, FINALIZE, return the last frame per block. */
 function finalBlocks(stream: string, requestId: string): RenderBlockPayload[] {
