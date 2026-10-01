@@ -15,7 +15,7 @@
  * editor.
  */
 
-import { useCallback, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
@@ -36,72 +36,83 @@ export function useConnectMcpServer() {
   const router = useRouter();
   const organizationId = useAppSelector(selectOrganizationId);
   const [connectingSlug, setConnectingSlug] = useState<string | null>(null);
+  const pending = useRef(false);
 
-  const connect = useCallback(
-    async (server: McpCatalogEntry) => {
-      const route = mcpConnectionRouteFor(server);
+  const connect = async (
+    server: McpCatalogEntry,
+    endpointOverride?: string,
+  ) => {
+    if (pending.current) return;
+    const route =
+      server.slug === "supabase" && endpointOverride
+        ? "oauth"
+        : mcpConnectionRouteFor(server);
 
-      if (route === "configure") {
-        router.push(
-          `/user-settings/integrations?provider=${encodeURIComponent(server.slug)}`,
-        );
-        return;
-      }
-      if (route === "github") {
+    if (route === "configure") {
+      router.push(
+        `/user-settings/integrations?provider=${encodeURIComponent(server.slug)}`,
+      );
+      return;
+    }
+    if (route === "github") {
       // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
       // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
       // boot is already fetching and, settled with nothing, carries its own
       // sentence and remedy.
-        const workspace = await awaitEffectiveOrganizationId();
-        if (workspace.status !== "ready") {
-          toast.error(workspace.reason);
-          return;
-        }
-        window.location.assign(
-          githubConnectUrl(window.location.pathname, workspace.organizationId),
-        );
+      const workspace = await awaitEffectiveOrganizationId();
+      if (workspace.status !== "ready") {
+        toast.error(workspace.reason);
         return;
       }
+      window.location.assign(
+        githubConnectUrl(window.location.pathname, workspace.organizationId),
+      );
+      return;
+    }
 
-      setConnectingSlug(server.slug);
-      try {
-        if (route === "none") {
-          await dispatch(
-            connectServer({
-              serverId: server.serverId,
-              transport: server.transport,
-            }),
-          ).unwrap();
+    pending.current = true;
+    setConnectingSlug(server.slug);
+    try {
+      if (route === "none") {
+        await dispatch(
+          connectServer({
+            serverId: server.serverId,
+            transport: server.transport,
+          }),
+        ).unwrap();
+        toast.success(`Connected to ${server.name}`);
+      } else {
+        const outcome = await startMcpOAuthPopup(
+          server.serverId,
+          undefined,
+          endpointOverride,
+        );
+        if (outcome.ok) {
           toast.success(`Connected to ${server.name}`);
+        } else if (!outcome.cancelled) {
+          toast.error(`Could not connect to ${server.name}`, {
+            description: outcome.error,
+          });
+          return;
         } else {
-          const outcome = await startMcpOAuthPopup(server.serverId);
-          if (outcome.ok) {
-            toast.success(`Connected to ${server.name}`);
-          } else if (!outcome.cancelled) {
-            toast.error(`Could not connect to ${server.name}`, {
-              description: outcome.error,
-            });
-            return;
-          } else {
-            return;
-          }
+          return;
         }
-        // Re-read BOTH the catalog row and the server's health: a fresh
-        // connection row means nothing until aidream confirms it can be used.
-        dispatch(fetchCatalog());
-        if (organizationId) {
-          dispatch(fetchAvailability({ organizationId })); // org-filter: server-call re-checks the health of the connection just made in the organization it was connected in
-        }
-      } catch (cause) {
-        toast.error(`Could not connect to ${server.name}`, {
-          description: cause instanceof Error ? cause.message : String(cause),
-        });
-      } finally {
-        setConnectingSlug(null);
       }
-    },
-    [dispatch, organizationId, router],
-  );
+      // Re-read BOTH the catalog row and the server's health: a fresh
+      // connection row means nothing until aidream confirms it can be used.
+      dispatch(fetchCatalog());
+      if (organizationId) {
+        dispatch(fetchAvailability({ organizationId })); // org-filter: server-call re-checks the health of the connection just made in the organization it was connected in
+      }
+    } catch (cause) {
+      toast.error(`Could not connect to ${server.name}`, {
+        description: cause instanceof Error ? cause.message : String(cause),
+      });
+    } finally {
+      pending.current = false;
+      setConnectingSlug(null);
+    }
+  };
 
   return { connect, connectingSlug };
 }

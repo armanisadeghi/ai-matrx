@@ -18,7 +18,7 @@ import {
   selectMcpAvailabilityStatusForOrganization,
 } from "@/features/agents/redux/mcp/mcp.slice";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
-import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+import { useConnectMcpServer } from "@/features/connectors/useConnectMcpServer";
 import { buildSupabaseScopedMcpEndpoint } from "@/features/agents/services/mcp-oauth/endpoint";
 import { toast, recordToast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -71,7 +71,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
-import { githubConnectUrl } from "@/features/github-integration/service";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSettingsPanel";
@@ -237,6 +236,7 @@ export function IntegrationsWorkspace({
   const status = useAppSelector(selectMcpCatalogStatus);
   const error = useAppSelector(selectMcpCatalogError);
   const connectingId = useAppSelector(selectMcpConnectingServerId);
+  const { connect: handleOAuthConnect, connectingSlug } = useConnectMcpServer();
   const availability = useAppSelector((state) =>
     selectMcpAvailabilityForOrganization(state, organizationId),
   );
@@ -601,40 +601,6 @@ export function IntegrationsWorkspace({
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleOAuthConnect = async (
-    entry: McpCatalogEntry,
-    endpointOverride?: string,
-  ) => {
-    if (entry.slug === "github") {
-      if (!organizationId) {
-        toast.error("Select an organization before connecting GitHub.");
-        return;
-      }
-      window.location.assign(
-        githubConnectUrl(window.location.pathname, organizationId),
-      );
-      return;
-    }
-    const outcome = await startMcpOAuthPopup(
-      entry.serverId,
-      undefined,
-      endpointOverride,
-    );
-    const ref = {
-      type: "mcp_server",
-      id: entry.serverId,
-      title: entry.name,
-    };
-    if (outcome.ok) {
-      refreshMcpConnections();
-      recordToast.success(ref, `Connected to ${entry.name}`);
-    } else if (!outcome.cancelled) {
-      recordToast.error(ref, `Could not connect to ${entry.name}`, {
-        description: outcome.error,
-      });
-    }
-  };
-
   const handleBearerConnect = async (serverId: string, token: string) => {
     const result = await dispatch(
       connectServerWithCredentials({
@@ -751,7 +717,7 @@ export function IntegrationsWorkspace({
           connectionPresentation={catalogPresentation(entry)}
           isExpanded
           onToggleExpand={() => selectDetail(null)}
-          isConnecting={connectingId === entry.serverId}
+          isConnecting={connectingId === entry.serverId || connectingSlug === entry.slug}
           isChecking={checkingServerId === entry.serverId}
           onOAuthConnect={(endpointOverride) =>
             handleOAuthConnect(entry, endpointOverride)
