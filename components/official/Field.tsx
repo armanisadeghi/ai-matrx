@@ -194,7 +194,7 @@ export function Field({
     !overLimit;
 
   return (
-    <div className={cn("group/field space-y-1.5", className)}>
+    <div data-field-root="" className={cn("group/field space-y-1.5", className)}>
       <div className="flex items-center gap-1.5">
         <Label
           htmlFor={htmlFor}
@@ -264,7 +264,7 @@ export function Field({
             // example (a visible placeholder). An empty box with no example text,
             // or a select, has nothing to be mistaken for an answer — so the row
             // stays hidden until `:placeholder-shown` matches inside this field.
-            !error && !hasCounter && "hidden group-has-[:placeholder-shown]/field:flex",
+            !error && !hasCounter && "hidden [[data-field-root]:has(:placeholder-shown)_&]:flex",
           )}
         >
           {error ? (
@@ -276,7 +276,7 @@ export function Field({
           ) : requiredEmpty ? (
             <p
               data-slot="field-empty-notice"
-              className="hidden text-xs text-muted-foreground items-center gap-1 group-has-[:placeholder-shown]/field:flex"
+              className="hidden text-xs text-muted-foreground items-center gap-1 [[data-field-root]:has(:placeholder-shown)_&]:flex"
             >
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
               <span>Empty — the grey text is an example, not your answer.</span>

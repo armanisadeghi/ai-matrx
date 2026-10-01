@@ -2626,8 +2626,10 @@ html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
   margin: 0;
 }
 
-/* The copy palette opened by a toast must remain above its originating card. */
-body:has(.toaster [data-sonner-toast] > .error-toast-copy [data-alchemy-trigger][data-state="open"])
-  .matrx-alchemy-menu.matrx-alchemy-palette {
+/* The copy palette opened by a toast must remain above its originating card.
+   A palette is a transient menu opened by a click, so every palette sits on
+   the top layer — no body:has() asking which trigger opened it, which
+   re-checked the whole page on every DOM insertion (D349). */
+.matrx-alchemy-menu.matrx-alchemy-palette {
   z-index: 1000000000 !important;
 }

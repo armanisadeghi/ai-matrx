@@ -633,6 +633,7 @@ export function KnobOverrideRow(props: {
     >
       <div className="flex w-full min-w-0 max-w-[calc(20rem+5rem)] items-start gap-1">
         <div
+          data-knob-row=""
           className={
             scopeKind === "user"
               ? "group/knobrow w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]"
@@ -728,7 +729,7 @@ export function KnobOverrideRow(props: {
             // pointerup landed on this sentence — so a switch or a choice button ignored the click
             // (the keyboard worked). A press must never move what is being pressed.
             <p
-              className={`${draftDirty ? "block" : "hidden group-has-[:focus-visible]/knobrow:block"} mt-1 text-xs leading-snug text-muted-foreground`}
+              className={`${draftDirty ? "block" : "hidden [[data-knob-row]:has(:focus-visible)_&]:block"} mt-1 text-xs leading-snug text-muted-foreground`}
             >
               {impactSentence}
             </p>

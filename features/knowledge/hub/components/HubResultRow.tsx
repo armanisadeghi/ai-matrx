@@ -366,7 +366,7 @@ export function ResultRow({
                   dateTime={when ?? undefined}
                   className={cn(
                     "text-xs tabular-nums text-muted-foreground",
-                    menu && "group-hover:invisible group-focus-within:invisible group-has-[[data-state=open]]:invisible",
+                    menu && "group-hover:invisible group-focus-within:invisible [:has([data-state=open])>&]:invisible",
                   )}
                 >
                   {date}

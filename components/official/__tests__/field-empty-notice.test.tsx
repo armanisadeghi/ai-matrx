@@ -32,7 +32,7 @@ describe("Field — the empty notice is conditional on a visible example", () =>
     const notice = host.querySelector('[data-slot="field-empty-notice"]');
     expect(notice).not.toBeNull();
     expect(notice?.className).toContain("hidden");
-    expect(notice?.className).toContain("group-has-[:placeholder-shown]/field:flex");
+    expect(notice?.className).toContain("[[data-field-root]:has(:placeholder-shown)_&]:flex");
     expect(host.firstElementChild?.className).toContain("group/field");
   });
 

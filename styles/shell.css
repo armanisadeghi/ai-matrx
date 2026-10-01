@@ -1733,28 +1733,46 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   --shell-fixed-alert-clearance: max(4.5rem, env(safe-area-inset-bottom, 0px));
 }
 
-/* Keep the default floating notice above table navigation. This moves only
-   the unpositioned dock; remembered user positions still belong to the user.
-   No table height, padding, or footer controls change. */
-:root:has(.shell-main [data-matrx-table-footer]) {
-  --admin-attention-anchor-bottom: calc(
-    1rem + var(--matrx-table-control-size, 2rem) + 0.5rem +
-    env(safe-area-inset-bottom, 0px)
-  );
-}
+/* Keep the default floating notice above table navigation and the complete
+   totals band. This moves only the unpositioned dock; remembered user
+   positions still belong to the user. No table height, padding, or footer
+   controls change.
 
-/* Keep the default dock above both pagination and the complete totals band.
-   Use the totals' intrinsic height: its sticky visual position differs from
-   the layout position reported by anchor(), so edge anchoring is unsuitable. */
+   No :has() on :root (D349): it re-checked the whole page on every DOM
+   insertion. The footer and the totals band publish themselves as anchors,
+   and the dock's default bottom reads their PRESENCE through anchor-size()'s
+   fallback — an absent anchor reads 0px; a present one, times 1000 and capped
+   by min(), reads exactly the lift. Totals use their intrinsic height: their
+   sticky visual position differs from the layout position anchor() reports,
+   so edge anchoring is unsuitable.
+     no table           → 1rem
+     pager              → 1rem + control + 0.5rem + safe area
+     pager + totals     → 1rem + control + 1rem + totals height + safe area */
 @supports (bottom: anchor-size(--matrx-table-summary-totals height)) {
+  .shell-main [data-matrx-table-footer] {
+    anchor-name: --matrx-table-footer;
+  }
+
   .shell-main tfoot:has([data-matrx-table-summary-totals]) {
     anchor-name: --matrx-table-summary-totals;
   }
 
-  :root:has(.shell-main [data-matrx-table-summary-totals]) {
+  :root {
     --admin-attention-anchor-bottom: calc(
-      1rem + var(--matrx-table-control-size, 2rem) + 1rem +
-      anchor-size(--matrx-table-summary-totals height) + env(safe-area-inset-bottom, 0px)
+      1rem +
+      max(
+        min(
+          anchor-size(--matrx-table-footer height, 0px) * 1000,
+          var(--matrx-table-control-size, 2rem) + 0.5rem +
+            env(safe-area-inset-bottom, 0px)
+        ),
+        min(
+          anchor-size(--matrx-table-summary-totals height, 0px) * 1000,
+          var(--matrx-table-control-size, 2rem) + 1rem +
+            env(safe-area-inset-bottom, 0px)
+        )
+      ) +
+      anchor-size(--matrx-table-summary-totals height, 0px)
     );
   }
 }

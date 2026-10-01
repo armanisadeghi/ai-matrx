@@ -58,16 +58,18 @@ describe("global fixed alerts preserve reachable page actions", () => {
   });
 
   it("anchors the unpositioned dock above canonical table summary totals", () => {
-    expect(SHELL_CSS).toContain(':root:has(.shell-main [data-matrx-table-footer])');
+    // Presence comes from the anchors themselves — never a :root:has()
+    // that re-checks the page on every DOM insertion (D349).
+    expect(SHELL_CSS).not.toMatch(/:root:has\(/);
+    expect(SHELL_CSS).toContain('anchor-name: --matrx-table-footer');
     expect(SHELL_CSS).toContain('--admin-attention-anchor-bottom: calc(');
     expect(SHELL_CSS).toContain('var(--matrx-table-control-size, 2rem)');
     expect(SHELL_CSS).toContain('@supports (bottom: anchor-size(--matrx-table-summary-totals height))');
     expect(SHELL_CSS).toContain('tfoot:has([data-matrx-table-summary-totals])');
     expect(SHELL_CSS).toContain('anchor-name: --matrx-table-summary-totals');
-    expect(SHELL_CSS).toContain(':root:has(.shell-main [data-matrx-table-summary-totals])');
-    expect(SHELL_CSS).not.toContain(':root:has(.shell-main tfoot:has(');
+    expect(SHELL_CSS).toContain('anchor-size(--matrx-table-footer height, 0px) * 1000');
     expect(SHELL_CSS).toContain(
-      'anchor-size(--matrx-table-summary-totals height)',
+      'anchor-size(--matrx-table-summary-totals height, 0px)',
     );
     expect(BANNER_TSX).toContain('bottom: "var(--admin-attention-anchor-bottom, 1rem)"');
   });
