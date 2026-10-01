@@ -65,6 +65,7 @@ import {
 } from "./reconcile";
 import { formatText } from "@ai-matrx/kit/text-case";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
+import { liveRunRequestId } from "./live-run-rejoin";
 import type {
   ToolEventPayload,
   TypedStreamEvent,
@@ -782,9 +783,35 @@ export function useStudioRun(runId: string): UseStudioRun {
                   stream: true,
                   signal: controller.signal,
                   onStreamEvent,
+                  // 409 run_in_progress is the server saying "rejoin, don't
+                  // re-run" — an expected answer, not an incident.
+                  expectedErrorStatuses: [409],
                 }),
               );
-        if (result.error && !controller.signal.aborted) {
+        // A run still generating is FOLLOWED, never run twice: replay its
+        // journaled stream (stages, live audio chunks) and keep following.
+        const liveRequestId =
+          kind === "resume" ? liveRunRequestId(result.error) : null;
+        if (liveRequestId && !controller.signal.aborted) {
+          const rejoin = await dispatch(
+            callApi({
+              path: "/runtime/operations/{request_id}/rejoin",
+              interactiveOrganization: false,
+              method: "POST",
+              pathParams: { request_id: liveRequestId },
+              stream: true,
+              signal: controller.signal,
+              onStreamEvent,
+            }),
+          );
+          if (rejoin.error && !controller.signal.aborted) {
+            console.warn(
+              "[studio-run] live rejoin unavailable; watching durable record:",
+              rejoin.error,
+            );
+            void watchInBackground();
+          }
+        } else if (result.error && !controller.signal.aborted) {
           console.warn(
             "[studio-run] stream dropped; watching durable record:",
             result.error,
