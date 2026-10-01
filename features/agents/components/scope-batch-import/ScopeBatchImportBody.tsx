@@ -74,6 +74,7 @@ import {
 } from "@/features/agents/utils/agent-edit-access";
 import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { InfoHint } from "@/components/official/InfoHint";
 
 interface ScopeBatchImportBodyProps {
   agentId: string;
@@ -512,8 +513,9 @@ export function ScopeBatchImportBody({
                 </TableHead>
                 <TableHead className="w-[190px]">
                   <div className="flex items-center justify-between gap-2">
-                    <span title="Whether the agent may change this value while it works, or only read it. An editable context policy's edits are saved back to the scope value as a new version.">
+                    <span className="inline-flex items-center gap-1">
                       Agent access
+                      <InfoHint text="Whether the agent may edit this value or only read it; edits save back as a new version." />
                     </span>
                     {accessEligibleItems.length > 0 && (
                       <Button

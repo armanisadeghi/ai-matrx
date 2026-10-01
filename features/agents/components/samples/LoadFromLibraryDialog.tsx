@@ -302,9 +302,8 @@ export function LoadFromLibraryDialog({
         <DialogHeader>
           <DialogTitle>Load sample data from a Library</DialogTitle>
           <DialogDescription>
-            Catalogued items that already have a transcript become candidate
-            test cases for this agent. The Library does the writing — they
-            appear under Candidates as they are written.
+            Catalogued items with transcripts become candidate test cases,
+            listed under Candidates as they are written.
           </DialogDescription>
         </DialogHeader>
 
@@ -466,10 +465,8 @@ export function LoadFromLibraryDialog({
           ) : null}
           {phase.kind === "quiet" ? (
             <p className="text-sm text-muted-foreground">
-              {phase.sent} items were sent and the job was created, but no test
-              case had been written when this screen stopped watching. It may
-              still be running — refresh the list in a minute, or open the
-              Library to see the job.
+              {phase.sent} items sent, no test case written yet. Refresh in a
+              minute or open the Library.
             </p>
           ) : null}
 

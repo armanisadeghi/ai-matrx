@@ -249,12 +249,10 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
           <SectionHeader
             title="Declared policies"
             count={declaredPolicies.length}
-            description="Defined on the agent. Values are saved per agent across sessions."
           />
           {declaredPolicies.length === 0 ? (
             <div className="mt-2 px-3 py-2 text-[11px] text-muted-foreground border border-dashed border-border rounded-md">
-              This agent defines no context policies. Use the Ad-hoc section below
-              to test with arbitrary keys.
+              No context policies; test keys in Ad-hoc below
             </div>
           ) : (
             <div className="mt-2 space-y-2">
@@ -276,7 +274,6 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
           <SectionHeader
             title="Ad-hoc context"
             count={adHocEntries.length}
-            description="Extra keys sent to the server that aren't declared on the agent."
             rightPolicy={
               hasAnyValues ? (
                 <button

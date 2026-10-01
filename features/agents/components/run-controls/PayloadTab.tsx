@@ -332,7 +332,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
     <div className="px-3 py-2 space-y-3">
       {/* ── Context ──────────────────────────────────────────────────────── */}
       {hasContextSection && (
-        <StatSection title="Context (sent as `context` dict)">
+        <StatSection title="Request context">
           {slotMatched.length > 0 && (
             <div className="mt-1">
               <div className="text-[10px] font-semibold text-muted-foreground/80 mb-0.5">
@@ -416,7 +416,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
       )}
 
       {!hasContextSection && (
-        <StatSection title="Context (sent as `context` dict)">
+        <StatSection title="Request context">
           <div className="text-[11px] text-muted-foreground/60 italic py-1">
             — no context entries and no declared slots —
           </div>
@@ -635,8 +635,8 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
       {/* ── Footer: copy + raw JSON ──────────────────────────────────────── */}
       <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2">
         <span className="text-[10px] text-muted-foreground/70">
-          + turn-1 fields (conversation_id, is_new, is_version, store,
-          cache_bypass) will be added on first send
+          {/* turn-1 fields added on first send: conversation_id, is_new, is_version, store, cache_bypass */}
+          + turn-1 fields added on first send
         </span>
         <button
           type="button"

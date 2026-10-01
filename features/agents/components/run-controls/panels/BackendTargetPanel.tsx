@@ -279,11 +279,8 @@ export function BackendTargetPanel({
       </div>
 
       <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
-        Read-only. Set automatically by the editor surface via{" "}
-        <code className="font-mono">useBindAgentToSandbox</code>. The override
-        only redirects this conversation’s <code>/ai/*</code> calls — every
-        other backend call (cloud-files, prompts, agent definitions) keeps using
-        the global URL.
+        {/* Set by the editor surface via useBindAgentToSandbox. Other backend calls (cloud-files, prompts, agent definitions) keep the global URL. */}
+        Read-only; redirects only this conversation’s <code>/ai/*</code> calls
       </p>
     </div>
   );

@@ -299,9 +299,7 @@ function TrimSummaryView({ trim }: TrimSummaryViewProps) {
       )}
       {skipped === "cache_protect" && (
         <p className="text-[10px] text-muted-foreground/80 mt-1">
-          Trim was eligible but skipped to protect the live cache prefix.
-          Will fire on the next turn that crosses the 5K-token savings floor
-          or once the cache window expires.
+          Skipped for the cache; retries at 5K savings or expiry
         </p>
       )}
     </>

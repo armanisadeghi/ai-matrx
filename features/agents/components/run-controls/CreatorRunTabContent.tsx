@@ -282,8 +282,7 @@ function SystemPromptTab({ conversationId }: { conversationId: string }) {
         <SystemInstructionEditor conversationId={conversationId} />
       ) : (
         <p className="text-xs text-muted-foreground/60">
-          Enable to configure structured system instruction fields (intro,
-          outro, content blocks, etc.)
+          Enable to edit structured system instruction fields
         </p>
       )}
     </div>
