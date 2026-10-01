@@ -7,10 +7,21 @@ const sql = (name, items, extra = {}) => ({
   file: `scripts/campaign-tests/${name}.sql`,
   items,
   targets: ["clone"],
+  // Each suite raises on a failed clause and prints its verdict on the last NOTICE line.
+  passWhen: "GREEN|ALL \\d+ CLAUSES PASSED|ALL PARTS PASSED",
   ...extra,
 });
 
 export default [
+  {
+    id: "tables.walk-life",
+    area: "tables",
+    kind: "walk",
+    file: "scripts/safety-net/walks/tables-life.mjs",
+    items: ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T11", "T12", "T13", "T14", "T15", "T16", "T17", "T18", "T19", "T20", "T21", "T22", "T23", "T24", "T25", "T26", "T27", "T28", "T29"],
+    targets: ["live", "clone"],
+    timeoutMs: 30 * 60 * 1000,
+  },
   sql("databasics2_a_choice_changed_keeps_its_words", ["T26"]),
   sql("databasics2_a_choice_column_keeps_its_list", ["T26", "T03", "T04"]),
   // databasics2_a_column_default_fills_a_new_record is NOT registered: it fails on the clone today at
