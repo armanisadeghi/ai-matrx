@@ -76,12 +76,59 @@ beforeEach(() => {
   dispatched.length = 0;
 });
 
+describe("lag is judged on the rules, not on the version number", () => {
+  // Cold walk 23 (friction): after only a rename and a "Keep mine" the card
+  // said "This stand-in is behind your rules … version 10 (0 approved rules)
+  // … now at version 13" — a rename bumps the Rulebook's version without
+  // touching a rule the stand-in performs from.
+  const BUILT_AT_10 = {
+    rulebook_version: 10,
+    approved: 0,
+    unconfirmed: 6,
+    refreshed_at: null,
+  };
+
+  it("a version bumped by a rename is not lag", () => {
+    const standIn = readUnderstudyStandIn(
+      getUnderstudyRefreshState("rb-rename"),
+      BUILT_AT_10,
+      13,
+      { approved: 0, unconfirmed: 6 },
+    );
+    expect(standIn.behind).toBe(false);
+    // …but the stamp is old, so an editor's card refreshes it (free).
+    expect(standIn.stampOutdated).toBe(true);
+  });
+
+  it("a newly approved rule is lag", () => {
+    const standIn = readUnderstudyStandIn(
+      getUnderstudyRefreshState("rb-approved"),
+      BUILT_AT_10,
+      13,
+      { approved: 1, unconfirmed: 5 },
+    );
+    expect(standIn.behind).toBe(true);
+    expect(standIn.stampOutdated).toBe(false);
+  });
+
+  it("with no account of the current rules, the version is all there is", () => {
+    expect(
+      readUnderstudyStandIn(
+        getUnderstudyRefreshState("rb-unknown"),
+        BUILT_AT_10,
+        13,
+        null,
+      ).behind,
+    ).toBe(true);
+  });
+});
+
 describe("a successful rebuild clears the behind state with no host reload", () => {
   it("believes the refresh payload's version over the stale workflow row", async () => {
     const rulebookId = "rb-success";
     // The save bumped the Rulebook to 5 and poked the Understudy.
     expect(
-      readUnderstudyStandIn(getUnderstudyRefreshState(rulebookId), STALE_ROW, 5)
+      readUnderstudyStandIn(getUnderstudyRefreshState(rulebookId), STALE_ROW, 5, null)
         .behind,
     ).toBe(true);
 
@@ -94,6 +141,7 @@ describe("a successful rebuild clears the behind state with no host reload", () 
       getUnderstudyRefreshState(rulebookId),
       STALE_ROW,
       5,
+      null,
     );
     expect(standIn.behind).toBe(false);
     expect(standIn.builtFromVersion).toBe(5);
@@ -112,6 +160,7 @@ describe("a successful rebuild clears the behind state with no host reload", () 
       getUnderstudyRefreshState(rulebookId),
       STALE_ROW,
       6,
+      null,
     );
     expect(standIn.behind).toBe(true);
     expect(standIn.builtFromVersion).toBe(5);
@@ -134,7 +183,7 @@ describe("overlapping refreshes never clobber the ledger", () => {
     expect(state.message).toBeNull();
     expect(state.pending).toBe(false);
     expect(
-      readUnderstudyStandIn(state, STALE_ROW, 7).behind,
+      readUnderstudyStandIn(state, STALE_ROW, 7, null).behind,
     ).toBe(false);
   });
 
@@ -162,7 +211,7 @@ describe("overlapping refreshes never clobber the ledger", () => {
     expect(state.retryIsPointless).toBe(false);
     // And the card must not claim the stand-in is current off that stale win.
     expect(
-      readUnderstudyStandIn(state, STALE_ROW, 9).behind,
+      readUnderstudyStandIn(state, STALE_ROW, 9, null).behind,
     ).toBe(true);
   });
 });
@@ -183,6 +232,7 @@ describe("the rebuild time belongs to the build, not to the last attempt", () =>
       getUnderstudyRefreshState(rulebookId),
       STALE_ROW,
       6,
+      null,
     );
     expect(afterSuccess.rebuiltAt).not.toBeNull();
 
@@ -196,6 +246,7 @@ describe("the rebuild time belongs to the build, not to the last attempt", () =>
       getUnderstudyRefreshState(rulebookId),
       STALE_ROW,
       6,
+      null,
     );
     // The stand-in still performs from the build that landed, so the card must
     // still name that build — and date it to when it landed, not to the moment
@@ -216,6 +267,7 @@ describe("the rebuild time belongs to the build, not to the last attempt", () =>
       getUnderstudyRefreshState(rulebookId),
       STALE_ROW,
       6,
+      null,
     ).rebuiltAt;
 
     // A new save pokes again; nothing has settled yet.
@@ -224,6 +276,7 @@ describe("the rebuild time belongs to the build, not to the last attempt", () =>
       getUnderstudyRefreshState(rulebookId),
       STALE_ROW,
       6,
+      null,
     );
     expect(whilePending.rebuiltAt).toBe(landed);
   });

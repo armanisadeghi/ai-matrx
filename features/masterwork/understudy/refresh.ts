@@ -258,8 +258,22 @@ export interface UnderstudyStandIn {
   unconfirmed: number | null;
   /** When that build happened (ISO), from whichever account is newer. */
   rebuiltAt: string | null;
-  /** The stand-in is older than the Rulebook — the amber banner's condition. */
+  /**
+   * The stand-in performs from DIFFERENT RULES than the Rulebook holds — the
+   * amber banner's condition. Judged on the rules, never on the version alone.
+   */
   behind: boolean;
+  /**
+   * Built from an older version whose rules match today's (a rename, a
+   * metadata edit). Not lag; an editor's card refreshes the stamp for free.
+   */
+  stampOutdated: boolean;
+}
+
+/** The Rulebook's live rules as the stand-in counts them (approved / drafts). */
+export interface CurrentRuleCounts {
+  approved: number;
+  unconfirmed: number;
 }
 
 /** The Understudy workflow row's side of the comparison. */
@@ -274,6 +288,8 @@ export function readUnderstudyStandIn(
   refresh: UnderstudyRefreshState,
   row: UnderstudyRowFacts | null,
   rulebookVersion: number,
+  /** Today's rules; null when unknown (then the version is all there is). */
+  current: CurrentRuleCounts | null,
 ): UnderstudyStandIn {
   // Two accounts of the same build: the workflow row the page loaded (which
   // goes stale the moment a save pokes a rebuild) and the payload the rebuild
@@ -288,12 +304,28 @@ export function readUnderstudyStandIn(
   const builtFromVersion = useRebuild
     ? rebuilt.rulebook_version
     : (rowVersion ?? null);
+  const approved = useRebuild ? rebuilt.approved_rules : (row?.approved ?? null);
+  const unconfirmed = useRebuild
+    ? rebuilt.unconfirmed_rules
+    : (row?.unconfirmed ?? null);
+  // 🚨 LAG IS JUDGED ON THE RULES (cold walk 23). The Rulebook's version moves
+  // on ANY write — a rename, "Keep mine" — and only rules writes poke a
+  // rebuild, so "older version" alone said "behind your rules … version 10 (0
+  // approved) … now at 13" about a stand-in performing today's exact rules.
+  // When the baked counts match today's, an older stamp is not lag: the card
+  // refreshes it (free, idempotent), which also catches a same-count text
+  // edit whose own rebuild failed — that failure shows its own banner.
+  const versionOlder =
+    builtFromVersion !== null && builtFromVersion < rulebookVersion;
+  const rulesKnown = current !== null && approved !== null && unconfirmed !== null;
+  const rulesDiffer =
+    rulesKnown &&
+    (approved !== current.approved || unconfirmed !== current.unconfirmed);
+  const behind = versionOlder && (rulesKnown ? rulesDiffer : true);
   return {
     builtFromVersion,
-    approved: useRebuild ? rebuilt.approved_rules : (row?.approved ?? null),
-    unconfirmed: useRebuild
-      ? rebuilt.unconfirmed_rules
-      : (row?.unconfirmed ?? null),
+    approved,
+    unconfirmed,
     // `resultAt`, never `at`: the time the surviving build LANDED, not when
     // the last attempt (which may have failed, or may still be running) ended.
     rebuiltAt: useRebuild
@@ -301,7 +333,8 @@ export function readUnderstudyStandIn(
         ? new Date(refresh.resultAt).toISOString()
         : (row?.refreshed_at ?? null)
       : (row?.refreshed_at ?? null),
-    behind: builtFromVersion !== null && builtFromVersion < rulebookVersion,
+    behind,
+    stampOutdated: versionOlder && !behind,
   };
 }
 

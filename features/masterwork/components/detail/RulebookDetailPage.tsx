@@ -2827,6 +2827,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     rulebookId={rulebook.id}
                     understudy={understudy}
                     approvedCount={approvedCount}
+                    draftCount={draftCount}
                     rulebookVersion={rulebook.version}
                     canEdit={canEdit}
                     onCreated={reloadMasterworks}
@@ -2868,6 +2869,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                 rulebookId={rulebook.id}
                 understudy={understudy}
                 approvedCount={approvedCount}
+                draftCount={draftCount}
                 rulebookVersion={rulebook.version}
                 canEdit={canEdit}
                 onCreated={reloadMasterworks}

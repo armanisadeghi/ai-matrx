@@ -90,6 +90,7 @@ async function showRulebook(rulebookId: string): Promise<void> {
         rulebookId={rulebookId}
         understudy={null}
         approvedCount={12}
+        draftCount={0}
         rulebookVersion={3}
         canEdit
         onCreated={() => {}}
@@ -128,4 +129,66 @@ it("does not show one Rulebook's heal failure over the next Rulebook", async () 
     await Promise.resolve();
   });
   expect(healCalls).toContain(RULEBOOK_B);
+});
+
+/**
+ * COLD WALK 23 (friction): after only a rename and "Keep mine" the card said
+ * "This stand-in is behind your rules … version 10 (0 approved rules) … now at
+ * version 13" AND "There is nothing for your stand-in to perform yet." Lag is
+ * judged on the rules, and the two sentences never share the card.
+ */
+const BUILT_AT_10 = {
+  id: "wf-understudy",
+  name: "Floor — Understudy",
+  understudy: true,
+  rulebook_version: 10,
+  understudy_rules: { approved: 0, unconfirmed: 6 },
+  understudy_refreshed_at: null,
+} as never;
+
+async function showStandIn(props: {
+  approvedCount: number;
+  draftCount: number;
+  rulebookVersion: number;
+  understudyRow?: unknown;
+}): Promise<string> {
+  const localRoot = root;
+  if (!localRoot) throw new Error("nothing mounted");
+  await act(async () => {
+    localRoot.render(
+      <UnderstudyCard
+        rulebookId={RULEBOOK_A}
+        understudy={(props.understudyRow ?? BUILT_AT_10) as never}
+        approvedCount={props.approvedCount}
+        draftCount={props.draftCount}
+        rulebookVersion={props.rulebookVersion}
+        canEdit
+        onCreated={() => {}}
+      />,
+    );
+  });
+  return container?.textContent ?? "";
+}
+
+it("a rename's version bump is not lag — and the stamp is refreshed quietly", async () => {
+  const text = await showStandIn({ approvedCount: 0, draftCount: 6, rulebookVersion: 13 });
+  expect(text).not.toMatch(/behind your rules|is missing/);
+  expect(text).toContain("There is nothing for your stand-in to perform yet.");
+  expect(healCalls).toEqual([RULEBOOK_A]);
+});
+
+it("never says 'behind' beside 'nothing to perform', even when rules moved", async () => {
+  const text = await showStandIn({ approvedCount: 0, draftCount: 9, rulebookVersion: 13 });
+  expect(text).toContain("There is nothing for your stand-in to perform yet.");
+  expect(text).not.toMatch(/behind your rules|is missing/);
+});
+
+it("still says so when an approved rule is missing from the stand-in", async () => {
+  const text = await showStandIn({
+    approvedCount: 2,
+    draftCount: 4,
+    rulebookVersion: 13,
+    understudyRow: { ...(BUILT_AT_10 as object), understudy_rules: { approved: 0, unconfirmed: 6 } },
+  });
+  expect(text).toContain("This stand-in is missing 2 approved rules.");
 });

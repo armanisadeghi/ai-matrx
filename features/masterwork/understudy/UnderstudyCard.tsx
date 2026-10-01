@@ -38,6 +38,7 @@ export function UnderstudyCard({
   rulebookId,
   understudy,
   approvedCount,
+  draftCount,
   rulebookVersion,
   canEdit,
   onCreated,
@@ -46,6 +47,8 @@ export function UnderstudyCard({
   /** The Understudy workflow row, when it already exists. */
   understudy: Masterwork | null;
   approvedCount: number;
+  /** Rules still in review — with `approvedCount`, today's rules to compare. */
+  draftCount: number;
   /**
    * The Rulebook's CURRENT version. Compared against the version baked into
    * the stand-in so the card can never let someone test a stale one unaware.
@@ -91,6 +94,7 @@ export function UnderstudyCard({
         }
       : null,
     rulebookVersion,
+    { approved: approvedCount, unconfirmed: draftCount },
   );
   const builtFromVersion = standIn.builtFromVersion;
   const behind = standIn.behind;
@@ -129,6 +133,22 @@ export function UnderstudyCard({
       })
       .finally(() => setHealing(false));
   }, [rulebookId, onCreated]);
+
+  // An older stamp over today's rules (a rename bumped the version) is not
+  // lag — refresh the stamp quietly, once per Rulebook version. Free and
+  // idempotent; a failure lands in the ledger and shows its own banner.
+  const stampRefreshedForRef = useRef<string | null>(null);
+  const stampOutdated = standIn.stampOutdated;
+  const refreshPending = refreshState.pending;
+  useEffect(() => {
+    if (!stampOutdated || !canEdit || refreshPending) return;
+    const key = `${rulebookId}:${rulebookVersion}`;
+    if (stampRefreshedForRef.current === key) return;
+    stampRefreshedForRef.current = key;
+    void refreshUnderstudyTracked(rulebookId)
+      .then(() => onCreated())
+      .catch(() => undefined);
+  }, [stampOutdated, canEdit, refreshPending, rulebookId, rulebookVersion, onCreated]);
 
   useEffect(() => {
     if (healedForRef.current !== null && healedForRef.current !== rulebookId) {
@@ -227,24 +247,22 @@ export function UnderstudyCard({
         Quick test of a temporary stand-in we&apos;re building in real time
       </p>
 
-      {refreshState.failed || behind ? (
+      {/* Never beside "nothing to perform yet": with no approved rule there
+          is no run to be stale (cold walk 23 showed both at once). */}
+      {approvedCount > 0 && (refreshState.failed || behind) ? (
         <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500" />
           <div className="min-w-0 flex-1">
+            {/* Two sentences at most: what is wrong, what a test now gets.
+                Which version and counts it performs from is the footer line
+                under this banner — never repeated here. */}
             <p className="text-sm text-foreground">
               {behind
-                ? "This stand-in is behind your rules."
-                : "The last rebuild of this stand-in did not go through, so it may be behind your rules."}{" "}
-              It is performing from your Rulebook as it was at version{" "}
-              {builtFromVersion ?? "?"}
-              {bakedApproved !== null
-                ? ` (${bakedApproved} approved ${bakedApproved === 1 ? "rule" : "rules"})`
-                : ""}
-              , and your Rulebook is now at version {rulebookVersion}
-              {missedApprovals !== null && missedApprovals > 0
-                ? ` with ${missedApprovals} more approved ${missedApprovals === 1 ? "rule" : "rules"}`
-                : ""}
-              . Anything you test now is the older stand-in.
+                ? missedApprovals !== null && missedApprovals > 0
+                  ? `This stand-in is missing ${missedApprovals} approved ${missedApprovals === 1 ? "rule" : "rules"}.`
+                  : "This stand-in is behind your rules."
+                : "The last rebuild failed, so this stand-in may be behind your rules."}{" "}
+              Tests now use the older stand-in.
             </p>
             {refreshState.message ? (
               <p className="mt-1 text-xs text-muted-foreground">
