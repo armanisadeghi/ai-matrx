@@ -12,7 +12,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const ROOT = path.resolve(__dirname, "../../..");
+// NUMBER_GUARD_ROOT lets the red proof point the scan at a scratch checkout.
+const ROOT = process.env.NUMBER_GUARD_ROOT ?? path.resolve(__dirname, "../../..");
 
 // The coercion of an event value followed by a `||` / `??` fallback. Multi-line
 // safe (the callee, argument and fallback may be split across lines).
