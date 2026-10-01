@@ -103,7 +103,16 @@ Every stream item below adds its case there.
 - [x] T1. Generic tool renderer (`ResultValue`) never routes kinds → grid / raw JSON tree.
       `detectResultShape` → `kindInstance`/`kindList`; `ResultValue` routes them via `KindValueNode`.
 - [x] T2. Reloaded tool call with only `output_preview` → unparseable raw text. (→ `previewResult`: whole JSON parses; truncated kind JSON → "<Kind> · full output not saved")
-- [x] T3. Sub-agent call results; collaboration cards on plain markdown. (→ `AnswerValueView` for the child's answer; live child text → `MarkdownStream` content mode — the child has no request of its own, it streams inside the parent's)
+- [ ] T3. Sub-agent call results; collaboration cards on plain markdown. PARTIAL — settled answers DONE (→ `AnswerValueView`,
+      `readAgentCallAnswer`); the live child text still goes to `MarkdownStream` as plain `content` (re-split, not
+      the stream's own parsed blocks). The gap, exactly: the child's blocks DO exist in the parent request —
+      `renderBlocks[renderBlockOrder[blockAnchor .. blockEnd)]` of the `sub_agent` operation whose `toolCallId` is the
+      card (`selectAgentCallChildStream` reads that range but returns only the joined `.content` text). No canonical
+      render path takes them: `selectUnifiedSlots` deliberately DROPS child-owned block ids (the D209 handoff), and
+      `MarkdownStream`'s `streamSlotStart/End` are TIMELINE indices filtered through that same selector, so no slot
+      range can ever reach them. Fix owed (engine, not this card): a `selectAgentCallChildSlots(requestId, callId)`
+      returning those blocks as `render_block` slots, and a `MarkdownStream`/`EnhancedChatMarkdown` prop
+      (`childOfCallId`) that renders from it; then CollabCallCard passes `requestId` + `childOfCallId`.
 - [x] T4. Search / research / scrape / random-wheel / SQL renderers on plain markdown.
       Closed at the leaf: `BasicMarkdownContent` hands `__kind` text to `MarkdownStream` (`KindTextGate`).
 - [x] T5. Shared public conversation tool steps. (truncated `output_preview` → `previewResult`; the cards themselves are the chat's, so T1 covers the rest)
