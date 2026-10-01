@@ -101,8 +101,7 @@ import type {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   PropertyRow,
-  ConfigurationTable,
-  ConfigurationTableRow,
+  ConfigurationValueList,
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
@@ -1268,24 +1267,14 @@ export function MandateTestBench({
                   </Button>
                 </div>
 
-                <ConfigurationTable
+                <ConfigurationValueList
                   label={`${exemplar.label} inputs`}
-                  columns={[
-                    { key: "input", label: "Input" },
-                    { key: "value", label: "Value" },
-                  ]}
-                >
-                  {Object.entries(exemplar.variables ?? {}).map(
-                    ([name, value]) => (
-                      <ConfigurationTableRow
-                        key={name}
-                        columns={[
-                          { key: "input", label: "Input" },
-                          { key: "value", label: "Value" },
-                        ]}
-                        cells={{
-                          input: displayLabelForKey(name),
-                          value:
+                  entries={[
+                    ...Object.entries(exemplar.variables ?? {}).map(
+                      ([name, value]) => ({
+                        key: name,
+                        label: displayLabelForKey(name),
+                        value:
                             value !== null &&
                             (typeof value === "object" ||
                               typeof value === "string") ? (
@@ -1299,17 +1288,11 @@ export function MandateTestBench({
                                 {value === "" ? "Empty" : String(value)}
                               </span>
                             ),
-                        }}
-                      />
+                      }),
                     ),
-                  )}
-                  <ConfigurationTableRow
-                    columns={[
-                      { key: "input", label: "Input" },
-                      { key: "value", label: "Value" },
-                    ]}
-                    cells={{
-                      input: "User message",
+                    {
+                      key: "__user_message",
+                      label: "User message",
                       value: (
                         <span className="whitespace-pre-wrap break-words">
                           {exemplar.user_input === ""
@@ -1317,9 +1300,9 @@ export function MandateTestBench({
                             : (exemplar.user_input ?? "Not set")}
                         </span>
                       ),
-                    }}
-                  />
-                </ConfigurationTable>
+                    },
+                  ]}
+                />
 
                 <div className="space-y-1.5">
                   <ReferenceRow

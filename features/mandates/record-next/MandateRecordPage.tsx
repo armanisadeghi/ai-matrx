@@ -147,7 +147,7 @@ function MandateRecordPageInner({
         <div
           className={
             level === "system"
-              ? "mx-auto w-full max-w-6xl px-4 pb-10 pt-3 sm:px-6"
+              ? "w-full min-w-0 px-4 pb-10 pt-3 sm:px-6"
               : "mx-auto w-full max-w-6xl px-4 pb-10 pt-[calc(var(--shell-header-h)+0.75rem)] sm:px-6"
           }
         >
