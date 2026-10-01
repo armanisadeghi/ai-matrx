@@ -299,12 +299,14 @@ export function EditableCell({
   }, [editing, seed, seedIsTheSearch]);
 
   /**
-   * A CHOICE EDIT ENDED BY A CLICK ELSEWHERE STILL COMMITS (BREAKER-2 B2-04; Arman's core feature).
-   * The choice list commits on pick (one choice) or on close (several) — but a click on another cell
-   * ends the edit by unmounting the list, and it never closed: "Neck, Ankle" was silently saved as
-   * "Neck". When the grid ends a choice edit that neither committed nor cancelled, the draft is
-   * committed here, through the same path — so a word that is none of the choices ASKS, exactly as
-   * one choice does.
+   * AN EDIT ENDED BY A CLICK ELSEWHERE STILL COMMITS — EVERY KIND (TABLE-EDIT-DEFECTS T28; first
+   * found for choices, BREAKER-2 B2-04). A press on another cell selects it, and selecting ends the
+   * edit in the same render: the editor unmounts before the browser moves focus, so its own blur (or
+   * a calendar's "pointer down outside") never fires. "Band above the knees, 3 x 12" typed into a
+   * Text cell read "—" after the click and after a reload — on live, for text, number, date and
+   * choice alike. When the grid ends an edit that neither committed nor cancelled, the held draft is
+   * committed here, through the one commit path: a number or date that does not read is refused on
+   * the cell, a word that is none of the choices ASKS — exactly as Enter would.
    */
   /** This cell's saves, one after another (B2-10/B2-11). */
   const saveLane = useRef<Promise<void>>(Promise.resolve());
@@ -628,18 +630,16 @@ export function EditableCell({
   }, [editing, seed]);
 
   const endedWithoutSettling = useRef(false);
-  const wasEditingChoice = useRef(false);
+  const editWasOpen = useRef(false);
   useEffect(() => {
-    const kind = format ? getFieldFormat(format.id)?.editor : undefined;
-    const isChoice = kind === "select" || kind === "multiselect";
-    if (wasEditingChoice.current && !editing && isChoice && !settled.current && !endedWithoutSettling.current) {
+    if (editWasOpen.current && !editing && !settled.current && !endedWithoutSettling.current) {
       endedWithoutSettling.current = true;
       const held = latestDraft.current;
       if (!valuesEqual(held, value)) void commitEdit({ value: held });
     }
     if (editing) endedWithoutSettling.current = false;
-    wasEditingChoice.current = editing && isChoice;
-  }, [editing, format, value, commitEdit]);
+    editWasOpen.current = editing;
+  }, [editing, value, commitEdit]);
 
   if (!editing) {
     return (
@@ -1020,6 +1020,7 @@ export function EditableCell({
         style={editorStyle}
         onCommit={(next, move) => void commitEdit({ value: next, move })}
         onCancel={cancelEdit}
+        onDraft={(words) => setDraft(words)}
       />
     );
   }

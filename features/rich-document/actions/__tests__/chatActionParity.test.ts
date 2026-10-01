@@ -125,7 +125,7 @@ describe("RC-B6: every former chat action lives in the ONE registry", () => {
           expect.objectContaining({
             type: "chat-message",
             conversationId: "conv-1",
-            messageId: "msg-2",
+            messageId: "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80",
           }),
         );
       } finally {
@@ -156,7 +156,7 @@ describe("RC-B6: every former chat action lives in the ONE registry", () => {
             // The rule text a person edits: a kind arrives as its markdown.
             initialContent: kindTextToMarkdown(RICH_MESSAGE),
             initialConversationId: "conv-1",
-            initialMessageId: "msg-2",
+            initialMessageId: "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80",
           }),
         }),
       }),

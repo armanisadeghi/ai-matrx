@@ -16,7 +16,7 @@ import { saveOutputFeedback } from "./service";
 
 beforeEach(() => {
   rpc.mockReset().mockResolvedValue({
-    data: { id: "f1", subject_type: "message", subject_id: "m1", user_id: "u1", created_at: "x", updated_at: "x" },
+    data: { id: "f1", subject_type: "message", subject_id: "263550e7-eb60-4e8e-97ee-e19297126ebe", user_id: "u1", created_at: "x", updated_at: "x" },
     error: null,
   });
   ensureOrgId.mockReset();
@@ -24,7 +24,7 @@ beforeEach(() => {
 
 it("sends the working organization when the caller names none", async () => {
   ensureOrgId.mockResolvedValue("org-active");
-  await saveOutputFeedback({ subjectType: "message", subjectId: "m1", verdict: "up" } as never).catch(() => undefined);
+  await saveOutputFeedback({ subjectType: "message", subjectId: "263550e7-eb60-4e8e-97ee-e19297126ebe", verdict: "up" } as never).catch(() => undefined);
   expect(ensureOrgId).toHaveBeenCalledWith(undefined);
   expect(rpc).toHaveBeenCalledWith("upsert_output_feedback", expect.objectContaining({ p_organization_id: "org-active" }));
 });
@@ -33,7 +33,7 @@ it("sends the subject's own organization when the caller names it", async () => 
   ensureOrgId.mockImplementation(async (id?: string) => id);
   await saveOutputFeedback({
     subjectType: "message",
-    subjectId: "m1",
+    subjectId: "263550e7-eb60-4e8e-97ee-e19297126ebe",
     verdict: "up",
     organizationId: "org-record",
   } as never).catch(() => undefined);

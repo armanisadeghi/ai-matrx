@@ -5,6 +5,7 @@
 // what the reader sees; chat provenance rides along when the source is a chat
 // message (the per-message idempotency key on the public page).
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { FileText, Globe } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { registerAction } from "../provider";
@@ -45,7 +46,7 @@ registerAction({
       const { url } = await shareMessageAsWebpage({
         content: contentForDestination(ctx),
         title: deriveContentTitle(ctx) ?? "Shared AI response",
-        messageId,
+        messageId: durableRecordId(messageId),
         conversationId,
       });
       let copied = false;

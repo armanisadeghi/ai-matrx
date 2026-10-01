@@ -22,6 +22,7 @@
  * bodies stay mounted without a re-render.
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -77,6 +78,11 @@ export const editMessage = createAsyncThunk<
       return rejectWithValue({
         // access-errors: ok — browser-local Redux lookup; the message is absent from the loaded conversation slice, no record read involved
         message: `Message ${messageId} not found in conversation ${conversationId}`,
+      });
+    }
+    if (durableRecordId(messageId) === null) {
+      return rejectWithValue({
+        message: "This message isn't saved yet — edit it once it finishes saving.",
       });
     }
     const previousContent = prevRecord.content;

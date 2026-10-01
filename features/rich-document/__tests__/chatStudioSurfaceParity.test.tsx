@@ -20,7 +20,7 @@
  */
 
 const ROW = {
-  id: "msg-2",
+  id: "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80",
   conversation_id: "conv-1",
   role: "assistant",
   created_at: "2026-09-24T10:00:00Z",
@@ -105,7 +105,7 @@ function makeStore() {
       conversationId: "conv-1",
       messages: [
         {
-          id: "msg-2",
+          id: "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80",
           conversationId: "conv-1",
           agentId: null,
           role: "assistant",
@@ -136,14 +136,14 @@ function specIds(state: RootState, surfaceId: string): Set<string> {
 
 it("the chat bar and the studio bar carry the same actions for one assistant message", async () => {
   const store = makeStore();
-  const loaded = await STUDIO_SOURCES["chat-message"].load("msg-2");
+  const loaded = await STUDIO_SOURCES["chat-message"].load("7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80");
   const noop = () => {};
 
   // What AssistantMessageFooter builds for this message (the chat host owns the
   // delete / history / print / convert dialogs).
   const chat = buildChatMessageActions({
     conversationId: "conv-1",
-    messageId: "msg-2",
+    messageId: "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80",
     role: "assistant",
     messageContent: loaded.content,
     metadata: null,

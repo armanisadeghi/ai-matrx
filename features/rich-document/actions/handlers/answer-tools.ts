@@ -14,6 +14,7 @@
 //
 // Every action is ABSENT where it cannot work (visible → false) — never dead.
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import {
   FileInput,
   Loader2,
@@ -61,7 +62,8 @@ registerAction({
   renderSlot: "both",
   order: -10,
   requiresAuth: true,
-  visible: (ctx) => Boolean(chatIds(ctx).messageId),
+  // Absent until the answer has a durable row — a client-temp answer cannot be pinned.
+  visible: (ctx) => durableRecordId(chatIds(ctx).messageId) !== null,
   active: (ctx) => {
     const { messageId } = chatIds(ctx);
     return Boolean(messageId && isMessagePinned(messageId));

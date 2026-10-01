@@ -13,6 +13,7 @@ import { operationFailed } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { readAllRows } from "@ai-matrx/data/db";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import type { Database } from "@/types/database.types";
 import {
   toOutputFeedbackRecord,
@@ -44,6 +45,10 @@ export interface SaveOutputFeedbackArgs extends OutputFeedbackSubject {
 export async function saveOutputFeedback(
   args: SaveOutputFeedbackArgs,
 ): Promise<OutputFeedbackRecord> {
+  // `subject_id` is a uuid: a client-temp subject has no row to rate yet.
+  if (durableRecordId(args.subjectId) === null) {
+    throw new Error("This output isn't saved yet — rate it once it finishes saving.");
+  }
   // EVERY SAVE CARRIES AN ORGANIZATION (law: active-org-is-never-a-list-filter, rule 4): the
   // subject's own when the caller knows it, else the one the person works in — the database never
   // picks one. With none set the write is held and the person picks.

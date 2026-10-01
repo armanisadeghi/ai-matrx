@@ -50,7 +50,7 @@ jest.mock("@/utils/supabase/client", () => ({
     },
     schema: () => {
       const row = () => ({
-        id: "m-rc-b5",
+        id: "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
         conversation_id: "c-rc-b5",
         role: "assistant",
         content: dbContent ?? reduxContent,
@@ -90,7 +90,7 @@ jest.mock("@/lib/output-feedback/service", () => ({
 }));
 
 const CONVERSATION_ID = "c-rc-b5";
-const MESSAGE_ID = "m-rc-b5";
+const MESSAGE_ID = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
 
 // A real answer shape: thinking, two cited text segments, a tool call between
 // paragraphs, a kind payload in a fence, a math block.

@@ -23,7 +23,7 @@ jest.mock("../invalidate-conversation-cache.thunk", () => ({
 }));
 
 const CONVERSATION_ID = "conversation-1";
-const MESSAGE_ID = "message-1";
+const MESSAGE_ID = "5b1f2e44-8c3d-4a6b-9e7f-0a1b2c3d4e5f";
 const REQUEST_ID = "request-1";
 
 function makeMessage(

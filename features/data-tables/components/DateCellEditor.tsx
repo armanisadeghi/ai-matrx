@@ -69,6 +69,12 @@ type Props = {
   style?: React.CSSProperties;
   onCommit: (value: unknown, move?: GridMove) => void;
   onCancel: () => void;
+  /**
+   * The words in the field whenever a person changes them (TABLE-EDIT-DEFECTS T28): the cell holds
+   * them as its draft, so an edit the grid ends without a commit (a press on another cell unmounts
+   * this editor before its calendar hears the outside press) still saves what was typed.
+   */
+  onDraft?: (words: string) => void;
 };
 
 const DATE_TEXT = "MMM d, yyyy";
@@ -129,6 +135,7 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
       style,
       onCommit,
       onCancel,
+      onDraft,
     },
     ref,
   ) {
@@ -163,7 +170,9 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
     const anchorRef = useRef<HTMLDivElement>(null);
 
     const setFromDate = (next: Date | null) => {
-      setText(toText(next, kind));
+      const words = toText(next, kind);
+      setText(words);
+      onDraft?.(words);
       setTouched(true);
       setUnreadable(false);
       if (next) setMonth(next);
@@ -259,6 +268,7 @@ export const DateCellEditor = forwardRef<HTMLInputElement, Props>(
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
+                onDraft?.(e.target.value);
                 setTouched(true);
                 setUnreadable(false);
                 const read = fromText(e.target.value, kind, value);

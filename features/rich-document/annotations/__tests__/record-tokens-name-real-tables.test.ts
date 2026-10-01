@@ -23,7 +23,7 @@ describe("annotation record tokens name the table the id lives in", () => {
   it("a note is a note and a chat answer is a message", () => {
     expect(annotationRecordOf({ ...noteIdentityContentSource("11111111-1111-4111-8111-111111111111"), mode: "readonly" } as never)?.token).toBe("note");
     expect(
-      annotationRecordOf({ type: "chat-message", messageId: "m", conversationId: "c" } as never)?.token,
+      annotationRecordOf({ type: "chat-message", messageId: "263550e7-eb60-4e8e-97ee-e19297126ebe", conversationId: "c" } as never)?.token,
     ).toBe("message");
   });
 });

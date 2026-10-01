@@ -29,7 +29,7 @@ export function chatContext(
   const noop = () => {};
   const config = buildChatMessageActions({
     conversationId: "conv-1",
-    messageId: "msg-2",
+    messageId: "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80",
     role,
     messageContent: RICH_MESSAGE,
     metadata: { compaction_group_id: "grp-1" },
@@ -57,10 +57,10 @@ export function chatContext(
       messages: {
         byConversationId: {
           "conv-1": {
-            orderedIds: ["msg-2"],
+            orderedIds: ["7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80"],
             byId: {
-              "msg-2": {
-                id: "msg-2",
+              "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80": {
+                id: "7c0e3b52-5d1a-4f3e-9b2a-1c4d5e6f7a80",
                 conversationId: "conv-1",
                 role,
                 content: [{ type: "text", text: RICH_MESSAGE }],

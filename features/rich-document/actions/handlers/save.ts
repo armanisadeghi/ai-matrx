@@ -5,6 +5,7 @@
 // because it hard-coded `entity_type: "cx_message"`; we generalize via
 // a source → entity_type map so any source can produce a task.
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import {
   FileText,
   Save,
@@ -50,15 +51,20 @@ function sourceToEntityType(source: ContentSource): {
   parent?: { entity_type: string; entity_id: string };
 } | null {
   switch (source.type) {
-    case "chat-message":
+    case "chat-message": {
+      // A client-temp answer has no row to link; the task gets no parent link
+      // rather than an association write that 22P02s.
+      const messageId = durableRecordId(source.messageId);
+      if (!messageId) return null;
       return {
         entity_type: "message",
-        entity_id: source.messageId,
+        entity_id: messageId,
         parent: {
           entity_type: "conversation",
           entity_id: source.conversationId,
         },
       };
+    }
     case "note":
       return { entity_type: "note", entity_id: source.noteId };
     case "artifact":

@@ -9,13 +9,17 @@
 
 import type { OutputFeedbackSubject } from "@/lib/output-feedback/types";
 import type { ContentSource } from "./types";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 
 export function outputFeedbackSubjectForSource(
   source: ContentSource,
 ): OutputFeedbackSubject | null {
   switch (source.type) {
-    case "chat-message":
-      return { subjectType: "message", subjectId: source.messageId };
+    case "chat-message": {
+      // A client-temp answer has no row yet — no thumbs until it does.
+      const messageId = durableRecordId(source.messageId);
+      return messageId ? { subjectType: "message", subjectId: messageId } : null;
+    }
     case "note":
       return { subjectType: "note", subjectId: source.noteId };
     case "artifact":

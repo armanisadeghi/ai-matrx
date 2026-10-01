@@ -310,7 +310,8 @@ function ColumnSettingsForm({
         if (isServiceFailure(renamed)) throw new Error(renamed.error);
       }
       const priorFormat = resolveFieldFormat(original.data_type, original.metadata);
-      if (JSON.stringify(format) !== JSON.stringify(priorFormat)) {
+      const formatChanged = JSON.stringify(format) !== JSON.stringify(priorFormat);
+      if (formatChanged) {
         const formatted = await setFieldFormat({ tableId, fieldId: original.id, format, rehome });
         if (isServiceFailure(formatted)) throw new Error(formatted.error);
         rehomedUndo = formatted.data.undo ?? null;
@@ -347,14 +348,27 @@ function ColumnSettingsForm({
                 <ToastAction
                   altText="Undo the type change"
                   onClick={() =>
-                    void changeFieldType({ tableId, fieldId: original.id, newType: typedFrom as FieldDataType }).then((back) => {
+                    void (async () => {
+                      // UNDO PUTS BACK EVERYTHING THE SAVE CHANGED (TABLE-EDIT-DEFECTS T26/T29): the kind
+                      // AND the look. It used to change the kind back only, so on live "Patient Notes"
+                      // came back as text holding its words while it still showed — and read every
+                      // typed word — as Number.
+                      const back = await changeFieldType({ tableId, fieldId: original.id, newType: typedFrom as FieldDataType });
                       if (isServiceFailure(back)) {
                         toast({ title: "Could not change the column back", description: back.error, variant: "destructive" });
                         return;
                       }
+                      if (formatChanged) {
+                        const look = await setFieldFormat({ tableId, fieldId: original.id, format: priorFormat });
+                        if (isServiceFailure(look)) {
+                          toast({ title: "Its values are back, but not how it showed", description: look.error, variant: "destructive" });
+                          onSaved();
+                          return;
+                        }
+                      }
                       toast({ title: `"${trimmed}" is back as it was, with its values` });
                       onSaved();
-                    })
+                    })()
                   }
                 >
                   Undo

@@ -8,6 +8,7 @@
 // handler (code-splitting rule 6 — this module is reachable from every
 // RichDocument surface).
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import {
   BookOpen,
   Boxes,
@@ -99,7 +100,7 @@ registerAction({
           initialContent: contentForDestination(ctx),
           initialConversationId: conversationId,
           // Provenance: the exact turn the draft came from.
-          initialMessageId: messageId,
+          initialMessageId: durableRecordId(messageId),
           // And the QUESTION it answered — the Oracle tap's whole premise.
           initialQuestion,
         },
@@ -318,7 +319,8 @@ registerAction({
         // Provenance rides with the save (DD-131 slice 1): HOMED in this
         // conversation with a `produced_by` edge back to this message.
         conversationId,
-        messageId,
+        // A client-temp answer has no row for the `produced_by` edge.
+        messageId: durableRecordId(messageId),
       });
       const drifted = saved.filter((s) => s.validationStatus !== "passed");
       if (drifted.length > 0) {

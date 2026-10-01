@@ -27,6 +27,7 @@
  * where history is rebuilt (matrx-ai `db/edited_answers.py`).
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
@@ -92,6 +93,9 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
     const record = getState().messages.byConversationId[conversationId]?.byId?.[messageId];
     if (!record) {
       return rejectWithValue({ message: "This answer is no longer loaded — reload the conversation and edit again." });
+    }
+    if (durableRecordId(messageId) === null) {
+      return rejectWithValue({ message: "This answer isn't saved yet — edit it once it finishes saving." });
     }
     let stored: { content: unknown; text: string };
     try {

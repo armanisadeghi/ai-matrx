@@ -30,6 +30,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { messageRowToRecord } from "../thunks/conversation-bundle";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 
 interface RefetchSingleMessageArgs {
   conversationId: string;
@@ -89,6 +90,12 @@ export const refetchSingleMessage = createAsyncThunk<
     },
     { dispatch, getState, rejectWithValue },
   ) => {
+    // A client-temp answer has no row to read (a uuid query would 22P02).
+    if (durableRecordId(messageId) === null) {
+      return rejectWithValue({
+        message: "This answer has no saved copy yet — nothing to reload.",
+      });
+    }
     const read = () => {
       const byId = supabase
         .schema("chat").from("message")

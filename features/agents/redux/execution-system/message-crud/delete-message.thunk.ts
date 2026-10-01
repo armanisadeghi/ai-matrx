@@ -39,6 +39,7 @@ import { invalidateConversationCache } from "./invalidate-conversation-cache.thu
 import { selectToolCallsForMessage } from "../observability/observability.selectors";
 import { patchToolCall } from "../observability/observability.slice";
 import { loadConversation } from "../thunks/load-conversation.thunk";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 
 interface DeleteMessageArgs {
   conversationId: string;
@@ -94,6 +95,16 @@ export const deleteMessage = createAsyncThunk<
           patch: { deletedAt: cascadeStamp },
         }),
       );
+    }
+
+    // A client-temp answer (no reservation arrived — e.g. incognito) has no
+    // row: removing it from the transcript IS the whole delete.
+    if (durableRecordId(messageId) === null) {
+      return {
+        conversationId,
+        messageId,
+        cascadedToolCallCount: cascadedToolCallSnapshots.length,
+      };
     }
 
     // ── 2. Fire the RPC ───────────────────────────────────────────────────

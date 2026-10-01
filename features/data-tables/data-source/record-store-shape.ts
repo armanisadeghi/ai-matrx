@@ -296,6 +296,18 @@ const PLAIN_KIND_FOR_BASE: Partial<Record<string, string>> = {
   datetime: "datetime",
 };
 
+/**
+ * Whether a column's look still fits the store kind it is being changed into (TABLE-EDIT-DEFECTS T26):
+ * a Number look on a column that now holds text read every typed word as a number that does not fit,
+ * so the cell kept nothing. A look the registry does not know, or one that holds no plain value, is
+ * left alone (true).
+ */
+export function lookFitsKind(formatId: string, kind: string): boolean {
+  const base = getFieldFormat(formatId as FieldFormatId)?.base;
+  const plain = base ? PLAIN_KIND_FOR_BASE[base] : undefined;
+  return plain === undefined || plain === kind;
+}
+
 type FieldForWrite = Pick<Field, "type" | "format" | "multi" | "key" | "label" | "relation_target" | "config"> & {
   display?: unknown;
 };

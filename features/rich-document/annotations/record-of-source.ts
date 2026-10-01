@@ -6,6 +6,7 @@
 // record actions (highlight, comment, suggest, link) are simply absent there.
 
 import type { ContentSource } from "../types";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 
 /** The saved record a host renders, when its ContentSource does not say (the studio's loaded document). */
 export interface AnnotationRecord {
@@ -27,13 +28,17 @@ export function annotationRecordOf(source: ContentSource): AnnotationRecord | nu
         contentVersion: source.mode === "editable" ? source.editBase.version : undefined,
         href: `/notes/${source.noteId}`,
       };
-    case "chat-message":
+    case "chat-message": {
+      // A client-temp answer (no reservation arrived — e.g. incognito) is not a saved record.
+      const messageId = durableRecordId(source.messageId);
+      if (!messageId) return null;
       return {
         token: "message",
-        id: source.messageId,
+        id: messageId,
         title: "Chat answer",
         href: `/chat/${source.conversationId}`,
       };
+    }
     case "working-document":
       // "working_document" (workbench.working_documents), NOT "document" (content.document, a different
       // table): the wrong token made every access check ask about a row that does not exist, so a

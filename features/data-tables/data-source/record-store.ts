@@ -76,6 +76,7 @@ import {
   choiceFromOption,
   jsonbText,
   liveOptionsInOrder,
+  lookFitsKind,
   olderColumnFromField,
   olderRowData,
   olderRowOrdering,
@@ -1393,6 +1394,14 @@ export async function changeFieldType(
       `The record store has no "${args.newType}" kind of column to change this one into. Nothing was changed.`,
     );
   }
+  // THE LOOK GOES WITH THE KIND (TABLE-EDIT-DEFECTS T26): a look that no longer fits what the column
+  // stores is cleared in the same change — "Patient Notes" changed back to text kept its Number look,
+  // and every word typed into it afterwards was read as a number and dropped. Read before the retype.
+  const before = await fieldById(home, args.tableId, args.fieldId);
+  const shownAs = before.success
+    ? ((before.data as { data?: { display_format?: { id?: unknown } | null } }).data?.display_format?.id ?? null)
+    : null;
+  const staleLook = typeof shownAs === "string" && !lookFitsKind(shownAs, kind);
   // FLD-4 / T12: the store converts what converts and keeps what does not in
   // `_retired`, with the reason — neither coerced nor deleted.
   const behaviour = kind === "text" ? "text" : kind === "checkbox" ? "boolean" : "range";
@@ -1401,14 +1410,20 @@ export async function changeFieldType(
     invalidateRecordStoreTable(args.tableId);
     return doorRefused(retyped);
   }
-  if (kind === "datetime" || args.newType === "integer") {
+  const shape: Record<string, unknown> | null =
+    args.newType === "date"
+      ? { type: "datetime", display_format: { id: "date" } }
+      : kind === "datetime"
+        ? { type: "datetime", ...(staleLook ? { display_format: null } : {}) }
+        : args.newType === "integer"
+          ? { display_format: { id: "integer" } }
+          : staleLook
+            ? { display_format: null }
+            : null;
+  if (shape) {
     const shaped = await clientFor(home).fieldUpdate({
       field_id: args.fieldId,
-      patch: (args.newType === "date"
-        ? { type: "datetime", display_format: { id: "date" } }
-        : kind === "datetime"
-          ? { type: "datetime" }
-          : { display_format: { id: "integer" } }) as never,
+      patch: shape as never,
     });
     if (!shaped.ok) {
       invalidateRecordStoreTable(args.tableId);
@@ -1697,8 +1712,13 @@ export async function updateTableConfig(
 
 // ─── add a column ───────────────────────────────────────────────────────────
 
-/** The older storage type an Add Column form picks → a new store Field's spec. */
-function specForNewColumn(dataType: string): Record<string, unknown> | null {
+/**
+ * The older storage type an Add Column form picks → a new store Field's spec. EVERY storage type the
+ * picker can send has one (TABLE-EDIT-DEFECTS T05: "Date & time" sent `datetime`, which had none, and
+ * Add Column refused with "The record store has no "datetime" kind of column" while offering it).
+ * Guard: features/data-tables/__tests__/every-look-add-column-offers-can-be-made.test.ts.
+ */
+export function specForNewColumn(dataType: string): Record<string, unknown> | null {
   switch (dataType) {
     case "string":
       return { type: "text" };
@@ -1709,6 +1729,8 @@ function specForNewColumn(dataType: string): Record<string, unknown> | null {
     case "boolean":
       return { type: "checkbox" };
     case "date":
+      return { type: "datetime" };
+    case "datetime":
       return { type: "datetime" };
     case "json":
       return { plain: "text", display_format: { id: "json" } };

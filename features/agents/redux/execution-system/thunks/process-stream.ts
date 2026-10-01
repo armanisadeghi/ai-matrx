@@ -20,6 +20,7 @@ import type { ToolLifecycleStatus } from "@/features/agents/types/request.types"
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { isStreamTransportLost, StreamTransportError } from "@/lib/api/errors";
 import { monitorStream } from "@ai-matrx/data/net";
+import { mintClientTempId } from "@/lib/ids/durable-record-id";
 import { withPerformedScript } from "@/features/agents/speech-script/types";
 import {
   isChunkEvent,
@@ -3326,7 +3327,7 @@ export async function processStream({
     position: number,
     isLast: boolean,
   ) => {
-    const tempId = `client-assistant-${requestId}-iter${iter}`;
+    const tempId = mintClientTempId("assistant", requestId, `iter${iter}`);
     dispatch(
       reserveMessage({
         conversationId,
@@ -3549,22 +3550,28 @@ export async function processStream({
     // Redux-only, so it can never duplicate a real DB row.
     // Self-classifying diagnostic so this scream pinpoints the cause instead of
     // leaving us guessing:
-    //   • isEphemeral=true  → expected (server persists nothing); harmless.
-    //   • isEphemeral=false + userRequestReserved=true → SMOKING GUN: the server
-    //     persisted the user turn (reserved its cx_user_request) but never
-    //     reserved a cx_message(role=assistant) for the response. That is a
-    //     BACKEND reservation gap, not a client issue — the FE correctly asked
-    //     for persistence (is_new:true, no store:false).
-    //   • isEphemeral=false + userRequestReserved=false → nothing was reserved at
-    //     all: the stream died before any record_reserved arrived, or the
-    //     request was (wrongly) flagged ephemeral upstream.
+    //   • isEphemeral=true  → EXPECTED on every incognito turn: the server
+    //     reserves cx_message rows only when store:true (aidream executor), so
+    //     a store:false turn never gets one. Not an alarm — info only. (It used
+    //     to console.error here, which filed a red system_error for every
+    //     incognito answer and sent a 2026-10-01 diagnosis chasing a phantom
+    //     "ephemeral flip" on a persisted conversation.)
+    //   • NOTE userRequestReserved is NOT evidence of persistence: the stream
+    //     preamble announces the request's user_request id even for store:false.
+    //   • isEphemeral=false → a BACKEND reservation gap: the FE asked for
+    //     persistence (store:true) and no cx_message(role=assistant) was
+    //     announced, or the stream died before it arrived.
+    // The client-temp id never reaches the database: every reader asks
+    // `durableRecordId` first (lib/ids/durable-record-id.ts).
     const conv = finalState.conversations.byConversationId[conversationId];
-    console.error(
+    (conv?.isEphemeral === true ? console.info : console.error)(
       `[stream:${requestId.slice(0, 8)}] no assistant reservation arrived but ${assistantBlocks.length} content block(s) were produced — committing to a client-temp message to avoid transcript loss. ` +
         `DIAGNOSIS isEphemeral=${conv?.isEphemeral ?? false} apiEndpointMode=${conv?.apiEndpointMode ?? "agent"} userRequestReserved=${reservedUserRequestId !== null} toolReservations=${toolCallIdByProviderCallId.size} streamError=${!!finalErrorMessage}. ` +
-        `If isEphemeral=false the server should have reserved a cx_message(role=assistant); a false/true (isEphemeral/userRequestReserved) pair is a backend reservation gap.`,
+        (conv?.isEphemeral === true
+          ? `Expected for an ephemeral (incognito) turn: the server reserves no message rows for store:false.`
+          : `isEphemeral=false: the server should have reserved a cx_message(role=assistant) — a backend reservation gap (userRequestReserved alone proves nothing; the preamble announces it even for store:false).`),
     );
-    const tempId = `client-assistant-${requestId}`;
+    const tempId = mintClientTempId("assistant", requestId);
     const existingById =
       finalState.messages.byConversationId[conversationId]?.byId ?? {};
     const maxPos = Object.values(existingById).reduce<number>(
@@ -3612,7 +3619,7 @@ export async function processStream({
         // server persists its row. Seed a Redux-only row (joined by callId,
         // replaced by the real row on reload) so the settled card keeps the
         // live status, error and events instead of a bare "completed" stub.
-        dbId = `client-tool-call-${callId}`;
+        dbId = mintClientTempId("tool-call", callId);
         const nowIso = new Date().toISOString();
         dispatch(
           upsertToolCall({

@@ -9,6 +9,7 @@
 
 import { fetchOutputFeedbackForSubjects } from "./service";
 import { hydrateOutputFeedback, peekOutputFeedback } from "./store";
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 
 const MAX_IDS_PER_QUERY = 200;
 const BATCH_WINDOW_MS = 16;
@@ -55,6 +56,9 @@ export function loadOutputFeedback(
   subjectType: string,
   subjectId: string,
 ): void {
+  // `subject_id` is a uuid: a client-temp id would 400 the whole chunk. It
+  // stays unanswered (not "no verdict") until its durable id renders.
+  if (!durableRecordId(subjectId)) return;
   if (peekOutputFeedback({ subjectType, subjectId }) !== undefined) return;
   const key = `${subjectType}:${subjectId}`;
   if (inFlight.has(key)) return;
