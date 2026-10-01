@@ -104,6 +104,20 @@ describe("the server layer", () => {
     expect(corpus.server.lookup("furnace", null)?.get("table:o1:t1")).toEqual({ rank: 4, in: "field", field: "Furnace model" });
   });
 
+  it("keys a table of another kind (scope, list) by its own kind, as the row ids are", async () => {
+    const corpus = createDataHomeCorpus({} as never, {} as never, {
+      dataHomeSearch: async (_ds, search) => {
+        const a = answer(search);
+        return { ok: true, data: { ...a, tables: [{ ...a.tables[0]!, table_id: "t2", table_name: "Matter", kind: "scope" }] } };
+      },
+    });
+    corpus.server.request("applicant phone", null);
+    jest.advanceTimersByTime(250);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(corpus.server.lookup("applicant phone", null)?.get("scope:o1:t2")).toEqual({ rank: 4, in: "field", field: "Furnace model" });
+  });
+
   it("a slow answer for text the box has left is kept but announces nothing", async () => {
     let release: (() => void) | null = null;
     const corpus = createDataHomeCorpus({} as never, {} as never, {

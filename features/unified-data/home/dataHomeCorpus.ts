@@ -101,7 +101,8 @@ export function createDataHomeCorpus(
     meta.searchTrouble = null;
     const matches: ServerMatches = new Map();
     for (const t of answered.data.tables) {
-      matches.set(`table:${t.organization_id}:${t.table_id}`, { rank: t.match_rank, in: t.matched_in, field: t.matched_field });
+      // The row id carries the table's own kind (`scope:`, `list:` …), never a fixed `table:`.
+      matches.set(`${t.kind || "table"}:${t.organization_id}:${t.table_id}`, { rank: t.match_rank, in: t.matched_in, field: t.matched_field });
     }
     for (const i of answered.data.items) {
       matches.set(`${i.kind}:${i.organization_id}:${i.item_id}`, { rank: i.match_rank, in: i.matched_in, field: i.matched_field });
