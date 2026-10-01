@@ -8,6 +8,9 @@ GO-time switches (both off unless their file exists; see "GO-time switches" belo
     python3 scripts/sync-main.py --resume
     python3 scripts/sync-main.py --status        pause state + old-path refusal + commit hold state
     python3 scripts/sync-main.py --hold-status   the commit hold and every held path
+    python3 scripts/sync-main.py --hold-now      set aside, right now, every edit on a held path
+                                                 (the same step a sweep runs first; it also runs
+                                                 while paused — GO uses it before its wip commit)
     python3 scripts/sync-main.py --pause-active  exit 3 + the SYNC PAUSED line while a pause is in
                                                  force, else exit 0 silently. Every OTHER path that
                                                  pushes or releases from this checkout asks this
@@ -315,7 +318,7 @@ def other_sweeps():
     out = []
     for line in r.stdout.splitlines():
         pid, _, cmd = line.strip().partition(" ")
-        if pid != str(os.getpid()) and not re.search(r"--(pause|resume|status|hold-status)\b", cmd):
+        if pid != str(os.getpid()) and not re.search(r"--(pause|resume|status|hold-status|hold-now)\b", cmd):
             out.append(line.strip())
     return out
 
@@ -562,6 +565,23 @@ def hold_status_cmd():
     say(hold_line(h))
     for e in h["entries"]:
         say("  " + e)
+
+
+def hold_now_cmd():
+    """--hold-now: the sweep's hold step on its own, so a paused GO can set peers' edits on held
+    paths aside before it commits anything. Exit 2 when no hold is in force (nothing would be held,
+    and a caller relying on it must know)."""
+    h = read_hold()
+    if not h:
+        say("commit hold: off (no live %s) — nothing set aside" % HOLD_REL)
+        sys.exit(2)
+    stamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    hh = hold_changed_paths(stamp)
+    if hh:
+        update_log(stamp, [], hh)
+    say("%s — set aside %d file(s) now" % (hold_line(h), len(hh)))
+    for path, held_path, _ in hh:
+        say("  %s -> %s" % (path, held_path))
 
 
 def hold_changed_paths(stamp):
@@ -1406,6 +1426,9 @@ def main():
         return
     if "--hold-status" in argv:
         hold_status_cmd()
+        return
+    if "--hold-now" in argv:
+        hold_now_cmd()
         return
     paused = read_pause()
     if paused:
