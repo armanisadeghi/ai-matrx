@@ -51,7 +51,8 @@ export function useTranscriptRowActions(
     const name = row.title?.trim() ? `"${row.title.trim()}"` : "this transcript";
     const ok = await confirm({
       title: `Archive ${name}?`,
-      description: archiveConfirmSentence(name),
+      // The list carries the Archived filter, so restore lives there (V6-B).
+      description: archiveConfirmSentence(name, { restoreFrom: "archive_filter" }),
       confirmLabel: "Archive",
       variant: "destructive",
     });
