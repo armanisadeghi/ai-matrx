@@ -12,7 +12,10 @@ import {
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/react/kind-route";
-import { routeBlockAtRegistryVersion } from "@/features/content-ir/react/route-at-version";
+import {
+  routeBlockAtRegistryVersion,
+  routeBlockNow,
+} from "@/features/content-ir/react/route-at-version";
 import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
 import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
@@ -212,7 +215,12 @@ export function withTerminalEnvelope<
     isStreamingBlock?: boolean;
   },
 >(block: T, isStreamActive: boolean | undefined): T {
-  if (isStreamActive || block.isStreamingBlock || readEnvelope(block.metadata)) {
+  // Settled = its producer says so (`isStreamingBlock === false`: a closed
+  // region of a live accumulator — the rest of the MESSAGE may still stream,
+  // V5), or, with no per-block word (a static split), the message has ended.
+  const settled =
+    block.isStreamingBlock === false || (!isStreamActive && !block.isStreamingBlock);
+  if (!settled || readEnvelope(block.metadata)) {
     return block;
   }
   const metadata = withIrEnvelope(block.content ?? "", block.metadata, {
@@ -298,6 +306,97 @@ function unparsedKindPendingEnvelope(block: {
 }
 
 /**
+ * What the renderer shows in place of the block's own dispatch while its kind
+ * is still arriving: the provisional render (Stage 1.5), or a kind loader
+ * (Stages 1.6, 2, 2.5 and the kind half of Stage 3). Null → the block is
+ * dispatched by its routed type.
+ */
+export type BlockRenderGate =
+  | {
+      kind: "provisional";
+      provisional: NonNullable<ReturnType<typeof resolveProvisionalKindRender>>;
+    }
+  | { kind: "loader"; envelope: CanonicalBlockIR }
+  | null;
+
+export interface BlockRenderDecision {
+  /** The input with its terminal envelope (settled blocks of a settled message). */
+  rawBlock: RenderBlock;
+  /** The routed block — what the dispatch registry receives. */
+  block: RenderBlock;
+  gate: BlockRenderGate;
+}
+
+/**
+ * THE DECISION BlockRenderer makes, as a pure function (V5): terminal
+ * envelope, kind route, broken-kind settle, then the loading gates in order.
+ * BlockRenderer calls it; so does the frame judge (`draws-raw-kind-json.ts`),
+ * so a guard can never drift from what the reader sees. `isStreamActive` is
+ * the MESSAGE's stream state, exactly as the renderer receives it — a settled
+ * block inside a still-streaming message is judged the way it is drawn.
+ * `route` is the kind route at a registry version (BlockRenderer passes its
+ * versioned, memoised route; pure callers take the uncached one).
+ */
+export function decideBlockRender(
+  inputBlock: RenderBlock,
+  {
+    isStreamActive,
+    suppressLoadingGate = false,
+    route = routeBlockNow,
+  }: {
+    isStreamActive?: boolean;
+    suppressLoadingGate?: boolean;
+    route?: (block: RenderBlock) => RenderBlock;
+  } = {},
+): BlockRenderDecision {
+  const rawBlock = withTerminalEnvelope(inputBlock, isStreamActive);
+  const block = settleBrokenKindRoute(route(rawBlock));
+  const decided = (gate: BlockRenderGate): BlockRenderDecision => ({
+    rawBlock,
+    block,
+    gate,
+  });
+
+  // Stage 1.5 — streaming partial kinds (server-announced provisional value).
+  const provisional = suppressLoadingGate
+    ? null
+    : resolveProvisionalKindRender(rawBlock, { streamActive: isStreamActive });
+  if (provisional) return decided({ kind: "provisional", provisional });
+
+  // Stage 1.6 — announced, not yet renderable: that kind's loader.
+  const announced = suppressLoadingGate
+    ? null
+    : resolveAnnouncedKindLoading(rawBlock, { streamActive: isStreamActive });
+  if (announced) return decided({ kind: "loader", envelope: announced.envelope });
+
+  // Stage 2 — the pending gate (the first-key rule).
+  const pendingEnvelope = pendingStructuredEnvelope(block);
+  if (pendingEnvelope) return decided({ kind: "loader", envelope: pendingEnvelope });
+
+  // Stage 2.5 — identified, routed to the generic floor mid-stream: loader.
+  if (block.type === GENERIC_STRUCTURED_COMPONENT_KEY && !suppressLoadingGate) {
+    const genericEnvelope = readEnvelope(block.metadata);
+    if (genericEnvelope?.root.kind && genericEnvelope.root.status === "streaming") {
+      return decided({ kind: "loader", envelope: genericEnvelope });
+    }
+  }
+
+  // Stage 3 (kind half) — a materializable kind block still loading with no
+  // renderable frame yet shows the kind's declared loader.
+  if (block.type !== "artifact" && !suppressLoadingGate) {
+    const def = resolveArtifactDef(block.type);
+    if (def && hasArtifactRenderer(def.canvasType) && isBlockLoading(block)) {
+      const kindEnvelope = readEnvelope(block.metadata);
+      if (kindEnvelope?.root.kind && block.serverData === undefined) {
+        return decided({ kind: "loader", envelope: kindEnvelope });
+      }
+    }
+  }
+
+  return decided(null);
+}
+
+/**
  * The registry-driven pending loader: picks the kind's declared
  * `loading_component` slug (kind_definition.metadata, read from the warm/cold
  * registry) — generic default otherwise — and feeds it the early keys the
@@ -368,18 +467,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // Reload has only the original text when an interrupted run could not stamp
   // a COMPLETE persistence envelope. Reuse the stream's parser at this terminal
   // boundary, never on a live prefix, and keep its error status intact.
-  const rawBlock = withTerminalEnvelope(inputBlock, isStreamActive);
+  const terminalBlock = withTerminalEnvelope(inputBlock, isStreamActive);
   // Late-arrival repaint, GRANULAR: subscribe to THIS block's envelope kind
   // only — a schema/component that lands after this block rendered (cold
   // fetch losing the race with region end) re-runs the route on the frozen
   // envelope, while arrivals for OTHER kinds never touch this block.
-  const partialEvent = readPartialKindEvent(rawBlock.metadata);
+  const partialEvent = readPartialKindEvent(terminalBlock.metadata);
   const announcedKind =
     partialEvent?.state === "partial"
       ? partialEvent.root.kind
       : partialEvent?.kind;
   const envelopeKind =
-    readEnvelope(rawBlock.metadata)?.root.kind ?? announcedKind ?? null;
+    readEnvelope(terminalBlock.metadata)?.root.kind ?? announcedKind ?? null;
   const kindRouteVersion = useContentIrKindVersion(envelopeKind);
   // Fetch-from-render (the convergence seam): rendering a kind block IS the
   // demand for its schema + component, on EVERY arrival path — live stream,
@@ -405,9 +504,14 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // run the compiler, which is why three lanes' tests said this worked.
   // `routeBlockAtRegistryVersion` takes the version, so no compiler pass can
   // decide it is dead. Guard: `pnpm check:registry-repaint`.
-  const block = settleBrokenKindRoute(
-    routeBlockAtRegistryVersion(rawBlock, kindRouteVersion),
-  );
+  // The whole decision — route, broken settle, loading gates — is ONE pure
+  // function the frame judge calls too (`decideBlockRender`, V5).
+  const decision = decideBlockRender(inputBlock, {
+    isStreamActive,
+    suppressLoadingGate,
+    route: (b) => routeBlockAtRegistryVersion(b, kindRouteVersion),
+  });
+  const block = decision.block;
 
   const interruptedEnvelope = readEnvelope(block.metadata);
   const hasInterruptedKind = Boolean(
@@ -542,10 +646,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // same frame with no flicker. Withheld by default per kind; a component that
   // throws anyway is caught and falls back to this kind's loading skeleton.
   // Contract: common-docs/systems/content-ir-system/STREAMING_PARTIAL_KINDS.md
-  const provisional = suppressLoadingGate
-    ? null
-    : resolveProvisionalKindRender(rawBlock, { streamActive: isStreamActive });
-  if (provisional) {
+  if (decision.gate?.kind === "provisional") {
+    const provisional = decision.gate.provisional;
     return (
       <ProvisionalKindBoundary
         key={index}
@@ -573,50 +675,15 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     );
   }
 
-  // Stage 1.6 — ANNOUNCED, not yet renderable. The server named this region's
-  // kind but there is nothing renderable in it yet (the value is still too
-  // thin, the kind withholds provisional values, or nothing can route it).
-  // Show THAT KIND's loading state rather than the region's raw text.
-  //
-  // This is the only kind signal a WORKFLOW run page has: its lane is
-  // `block_shadowed`, so no streaming `__ir` is ever built for the region and
-  // Stage 2 below cannot fire. Without it a node's structured answer rendered
-  // as raw JSON until it finished — Arman, 2026-08-21.
-  const announced = suppressLoadingGate
-    ? null
-    : resolveAnnouncedKindLoading(rawBlock, { streamActive: isStreamActive });
-  if (announced) {
-    return <PendingStructuredBlock key={index} envelope={announced.envelope} />;
-  }
-
-  // Stage 2 — a JSON region still streaming whose kind is unresolved OR whose
-  // schema is still cold-fetching renders its loading component (registry-
-  // driven, early-key fed), NOT its raw text. The moment the schema lands the
-  // parser upgrades in place and Stage 1 routes to the real component; a
-  // region completing genuinely kind-less falls through to the code block
-  // below. (Placed after all hooks so the early return never changes hook
-  // order.)
-  const pendingEnvelope = pendingStructuredEnvelope(block);
-  if (pendingEnvelope) {
-    return <PendingStructuredBlock key={index} envelope={pendingEnvelope} />;
-  }
-
-  // Stage 2.5 — kind identified, COMPONENT not resolvable yet. The route
-  // sent this streaming region to the generic fallback because no component
-  // answered — which mid-stream almost always means the cold fetch (fired by
-  // the seam above) hasn't landed, not that the kind has no component. Per
-  // the ONE loading sequence: show the kind's loader, never a JSON tree,
-  // while the stream is live. Bounded by the stream itself: if the component
-  // truly never comes, the block completes and the generic viewer (the
-  // sanctioned R6 floor) renders the final value below.
-  if (block.type === GENERIC_STRUCTURED_COMPONENT_KEY && !suppressLoadingGate) {
-    const genericEnvelope = readEnvelope(block.metadata);
-    if (
-      genericEnvelope?.root.kind &&
-      genericEnvelope.root.status === "streaming"
-    ) {
-      return <PendingStructuredBlock key={index} envelope={genericEnvelope} />;
-    }
+  // Stages 1.6, 2, 2.5 and Stage 3's kind half — a kind still arriving shows
+  // ITS loader, never its raw text (see `decideBlockRender` for each stage):
+  // the server announced the kind (the only signal a WORKFLOW run page has —
+  // Arman, 2026-08-21), the first-key rule says it could be a kind, the
+  // component is still cold-fetching mid-stream, or a materializable kind
+  // block has no renderable frame yet. (After all hooks, so the early return
+  // never changes hook order.)
+  if (decision.gate?.kind === "loader") {
+    return <PendingStructuredBlock key={index} envelope={decision.gate.envelope} />;
   }
 
   // Stage 3 — unified artifact renderer (Wave B): standalone materializable
@@ -652,13 +719,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // unit, or a wait-for-complete kind), the kind's DECLARED loader shows.
       // The per-kind knob is the bridge itself ({provisional: true} + its
       // own too-thin gate) — never a hardcoded type list here.
+      // (A kind block with no renderable frame never reaches here — its
+      // loader is `decideBlockRender`'s; a renderable frame renders live.)
       const kindEnvelope = loading ? readEnvelope(block.metadata) : null;
-      if (loading && kindEnvelope?.root.kind) {
-        if (block.serverData === undefined) {
-          return <PendingStructuredBlock key={index} envelope={kindEnvelope} />;
-        }
-        // Renderable frame → fall through to the real component, live.
-      } else if (loading) {
+      if (loading && !kindEnvelope?.root.kind) {
         // Legacy blocks (no envelope — old messages, direct typed fences)
         // keep the bespoke type-keyed skeletons unchanged.
         const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];

@@ -22,7 +22,7 @@
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
-import { drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
+import { drawsKindAsRawJson, drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
 import { applyIrKindRoute } from "../react/kind-route";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import { componentRegistry } from "../registry/component-registry";
@@ -560,5 +560,27 @@ describe("never raw: the frames before a LATER __kind key's colon (V6)", () => {
     const afterFirstKey = frames.filter((b) => (b.content ?? "").length > 8);
     const held = afterFirstKey.filter((b) => !rendersRawJson(b)).map((b) => b.content);
     expect(held).toEqual([expect.stringMatching(/"__k$/)]);
+  });
+});
+
+describe("never raw: every frame judged with the MESSAGE's stream state (V5a)", () => {
+  // The kind block settles while prose after it is still streaming — the
+  // renderer gets isStreamActive=true for every block of the message, so the
+  // judge must too (a settled block in a live message is drawn that way).
+  const PRETTY = JSON.stringify(JSON.parse(KIND_PAYLOAD_ONE_LINE), null, 2);
+  const CASES: Array<[string, string]> = [
+    ...[...FENCES, ...UNPARSED_FENCES].map(
+      ([label, wrap]) => [label, `${wrap(KIND_PAYLOAD_ONE_LINE)}${label === "bare" ? "" : "\n```"}\n\nAnd more prose after it.`] as [string, string],
+    ),
+    ["```jsonc pretty", `Here:\n\n\`\`\`jsonc\n${PRETTY}\n\`\`\`\n\nAnd more prose after it.`],
+    ["prose same line", `Here: ${KIND_PAYLOAD_ONE_LINE} and more prose after it.`],
+  ];
+
+  it.each(CASES)("%s: no frame of any status draws the kind raw while the message streams", (_label, stream) => {
+    const frames = streamCharByChar(stream, `req-v5a-${_label}`).map((u) => u.block);
+    const settledMidStream = frames.filter((b) => b.status === "complete" && hasKindKey(b.content ?? ""));
+    expect(settledMidStream.length).toBeGreaterThan(0);
+    const raw = frames.filter((b) => drawsKindAsRawJson(b, { isStreamActive: true }));
+    expect(raw.map((b) => `${b.type}/${b.status}: ${(b.content ?? "").slice(0, 40)}`)).toEqual([]);
   });
 });

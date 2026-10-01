@@ -52,6 +52,17 @@ const routed = new WeakMap<object, RoutedEntry>();
  * a block whose partial channel was superseded routes off the completed value,
  * not off the partial envelope.
  */
+/**
+ * The route itself, uncached — what `routeBlockAtRegistryVersion` computes and
+ * memoises. For pure callers that ask the renderer's question without a
+ * registry version (the frame judge, `draws-raw-kind-json.ts`).
+ */
+export function routeBlockNow<T extends IrRoutableBlock & { content: string }>(
+  block: T,
+): T {
+  return (resolveSupersededKindRender(block)?.block ?? applyIrKindRoute(block)) as T;
+}
+
 export function routeBlockAtRegistryVersion<
   T extends IrRoutableBlock & { content: string },
 >(block: T, registryVersion: number): T {
@@ -59,8 +70,7 @@ export function routeBlockAtRegistryVersion<
     routed as WeakMap<T, { version: number; value: T }>,
     block,
     registryVersion,
-    () =>
-      (resolveSupersededKindRender(block)?.block ?? applyIrKindRoute(block)) as T,
+    () => routeBlockNow(block),
   );
   announceStaleRoute(answer);
   return answer;

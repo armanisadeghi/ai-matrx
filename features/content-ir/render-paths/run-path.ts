@@ -142,6 +142,7 @@ export function runStreamingPath(
     payload: { requestId: string; block: RenderBlockPayload },
   ) => ({ type: "render-path/upsert", payload })) as never);
 
+  let finalizing = false;
   const dispatch = (action: unknown) => {
     const block = (action as { payload?: { block?: RenderBlockPayload } })
       .payload?.block;
@@ -158,8 +159,11 @@ export function runStreamingPath(
       type: routed.type,
       hasServerData: routed.serverData !== undefined,
     };
-    record.drawsKindAsRawJson =
-      block.status === "streaming" && drawsKindAsRawJson(block);
+    // Every frame, judged as BlockRenderer draws it: the MESSAGE streams until
+    // finalize, so a block that settled mid-stream is drawn live (V5a).
+    record.drawsKindAsRawJson = drawsKindAsRawJson(block, {
+      isStreamActive: !finalizing,
+    });
     records.push(record);
     return action;
   };
@@ -169,6 +173,7 @@ export function runStreamingPath(
     accumulator.ingest(chunk, dispatch);
   }
   chunkNo += 1;
+  finalizing = true;
   accumulator.finalize(dispatch);
 
   const blocks = order

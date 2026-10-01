@@ -152,14 +152,17 @@ export default function ShapeStreamTab({
     const byId = new Map<string, RenderBlockPayload>();
     let chunkNo = 0;
 
+    let finalizing = false;
     const accumulator = new StreamBlockAccumulator(requestId, (payload) => {
       const block = payload.block;
       byId.set(block.blockId, block);
       const record = recordFromUpsert(chunkNo, block);
       // The renderer's own answer — the verdict must never be blinder than
       // the screen (the one-line ```json defect passed the old flag).
-      record.drawsKindAsRawJson =
-        block.status === "streaming" && drawsKindAsRawJson(block);
+      // Judged with the MESSAGE's stream state, as BlockRenderer draws it (V5a).
+      record.drawsKindAsRawJson = drawsKindAsRawJson(block, {
+        isStreamActive: !finalizing,
+      });
       recordsRef.current.push(record);
       return payload;
     });
@@ -180,6 +183,7 @@ export default function ShapeStreamTab({
       }
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = null;
+      finalizing = true;
       accumulator.finalize(dispatch);
       publish();
       setRunState("done");
