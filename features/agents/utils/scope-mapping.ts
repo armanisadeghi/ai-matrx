@@ -10,6 +10,9 @@
  *   2. contextMappings — explicit UI key → agent context-policy key
  *   3. Ad-hoc         — key falls through as a context entry; if the key
  *                       matches an agent context policy, slotMatched=true.
+ *                       Only when the launch declared NO mapping: an
+ *                       engineered launch admits just the agent's own slots
+ *                       and the surface's always-on values (W-31).
  */
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
@@ -84,6 +87,7 @@ export function mapScopeToInstance(
     | null
     | undefined,
   contextMappings: Record<string, string> | null = null,
+  options: ScopeMappingOptions = {},
 ): ScopeMappingResult {
   const defs = variableDefinitions ?? [];
   const slots = contextPolicies ?? [];
@@ -132,6 +136,12 @@ export function mapScopeToInstance(
   }
 
   // ── Pass 3: Unmapped scope keys fall through as ad-hoc context ──────────
+  // An ENGINEERED launch (see `admitsUnmappedKey`) admits only the agent's own
+  // named slots and the surface's always-on values here — never the page.
+  const admits = (key: string) =>
+    !options.engineered ||
+    policyMap.has(key) ||
+    alwaysOnKeySet(options.alwaysOnKeys).has(key);
   for (const [key, value] of Object.entries(applicationScope)) {
     if (mappedScopeKeys.has(key) || value === undefined) continue;
     // Well-known `context` object gets flattened into entries
@@ -139,18 +149,41 @@ export function mapScopeToInstance(
       for (const [ctxKey, ctxVal] of Object.entries(
         value as Record<string, unknown>,
       )) {
-        if (ctxVal === undefined) continue;
+        if (ctxVal === undefined || !admits(ctxKey)) continue;
         const policy = policyMap.get(ctxKey);
         contextEntries.push(createContextEntry(ctxKey, ctxVal, policy));
       }
       continue;
     }
 
+    if (!admits(key)) continue;
     const policy = policyMap.get(key);
     contextEntries.push(createContextEntry(key, value, policy));
   }
 
   return { variableValues, contextEntries };
+}
+
+export interface ScopeMappingOptions {
+  /**
+   * The launch declared its inputs (a shortcut or binding mapping), so the
+   * page's unmapped values stay home. Set by `mapScopeToInstanceWithSurface`.
+   */
+  engineered?: boolean;
+  /**
+   * Values the surface sends on every run whatever the mapping says —
+   * `alwaysOnSurfaceKeys(surfaceName, scope)` in
+   * `features/surfaces/utils/always-on-context.ts`.
+   */
+  alwaysOnKeys?: Iterable<string> | null;
+}
+
+function alwaysOnKeySet(keys: Iterable<string> | null | undefined): Set<string> {
+  return keys instanceof Set ? (keys as Set<string>) : new Set(keys ?? []);
+}
+
+function hasEntries(map: object | null | undefined): boolean {
+  return !!map && Object.keys(map).length > 0;
 }
 
 /**
@@ -183,7 +216,21 @@ export function mapScopeToInstanceWithSurface(
     | null
     | undefined,
   contextMappings: Record<string, string> | null = null,
+  options: Pick<ScopeMappingOptions, "alwaysOnKeys"> = {},
 ): SurfaceBoundScopeMappingResult {
+  // THE ENGINEERED-INPUTS BOUNDARY (W-31). A launch that declares ANY mapping
+  // — a shortcut's scope/context/value mappings or a binding's value_mappings
+  // — receives exactly what it mapped, plus the agent's own named context
+  // slots and the surface's always-on values. Nothing else from the page.
+  // A launch with no mapping at all (a chat that follows the page) keeps the
+  // page's values as before. Every launch and every follow-up turn reaches
+  // the model through here: launchAgentExecution, createInstanceFromShortcut,
+  // refreshSurfaceScope.
+  const engineered =
+    hasEntries(scopeMappings) ||
+    hasEntries(contextMappings) ||
+    hasEntries(surfaceValueMappings);
+
   // Pass 1 — legacy.
   const legacy = mapScopeToInstance(
     applicationScope,
@@ -191,6 +238,7 @@ export function mapScopeToInstanceWithSurface(
     variableDefinitions,
     contextPolicies,
     contextMappings,
+    { engineered, alwaysOnKeys: options.alwaysOnKeys },
   );
 
   // Pass 2 — surface value_mappings (no auto-name-match; legacy already covered it).

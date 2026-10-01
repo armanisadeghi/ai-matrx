@@ -112,6 +112,15 @@ export interface SurfaceValue extends DeclaredValue {
   autoContext?: boolean;
 
   /**
+   * Sent on EVERY run from this surface, including a shortcut or binding
+   * launch that maps only its own inputs (which otherwise receives nothing
+   * it did not map — `mapScopeToInstanceWithSurface`, W-31). Default false.
+   * Reserve it for small facts no agent on this surface may run without;
+   * never a body, a selection, or a bundle. Code-only (not mirrored).
+   */
+  alwaysOn?: boolean;
+
+  /**
    * Alchemy sensitivity (CONTRACT 2.1 `Sensitivity`). Every field defaults:
    * exportable true, classification "ordinary", includedByDefault true.
    */

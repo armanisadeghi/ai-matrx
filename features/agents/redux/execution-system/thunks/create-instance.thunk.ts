@@ -359,6 +359,11 @@ interface CreateShortcutInstanceArgs {
    * surface path and uses the shortcut's own scopeMappings.
    */
   surfaceValueMappings?: ValueMappingMap | null;
+  /**
+   * The launching surface's always-on values — the only page values this
+   * shortcut receives beyond what it maps (`alwaysOnSurfaceKeys`, W-31).
+   */
+  alwaysOnKeys?: string[];
 }
 
 export const createInstanceFromShortcut = createAsyncThunk<
@@ -368,6 +373,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   const {
     shortcutId,
     uiScopes,
+    alwaysOnKeys,
     sourceFeature,
     organizationId,
     contextAnchor,
@@ -602,6 +608,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
       shortcutVariableDefinitions,
       shortcutContextPolicies,
       shortcut.contextMappings,
+      { alwaysOnKeys },
     );
     if (result.errors.length > 0) {
       // Backstop only — required-missing is pre-checked by the launch

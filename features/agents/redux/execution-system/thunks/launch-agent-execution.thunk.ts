@@ -51,6 +51,7 @@ import {
   getSurfaceRuntimeForName,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
+import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
 import {
   ensureAgentIdentity,
   fetchAgentExecutionFull,
@@ -681,6 +682,7 @@ export const launchAgentExecution = createAsyncThunk<
       createInstanceFromShortcut({
         shortcutId,
         uiScopes: applicationScope ?? {},
+        alwaysOnKeys: [...alwaysOnSurfaceKeys(surfaceName, applicationScope)],
         sourceFeature,
         ...(organizationId !== undefined ? { organizationId } : {}),
         ...(contextAnchor !== undefined ? { contextAnchor } : {}),
@@ -918,6 +920,8 @@ export const launchAgentExecution = createAsyncThunk<
             surfaceValueMappings ?? {},
             agent.variableDefinitions ?? [],
             agent.contextPolicies ?? [],
+            null,
+            { alwaysOnKeys: alwaysOnSurfaceKeys(surfaceName, applicationScope) },
           );
           if (result.errors.length > 0) {
             // Backstop only — required-missing is pre-checked in

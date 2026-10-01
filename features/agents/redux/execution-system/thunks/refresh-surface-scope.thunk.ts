@@ -26,6 +26,7 @@ import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
 import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
+import { alwaysOnSurfaceKeys } from "@/features/surfaces/utils/always-on-context";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import {
   replaceSurfaceContextEntries,
@@ -213,6 +214,7 @@ export const refreshSurfaceScope = createAsyncThunk<
       variableDefinitions,
       agent?.contextPolicies ?? [],
       shortcut?.contextMappings ?? null,
+      { alwaysOnKeys: alwaysOnSurfaceKeys(surfaceName, applicationScope) },
     );
 
     if (result.errors.length > 0) {

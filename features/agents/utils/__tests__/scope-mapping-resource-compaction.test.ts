@@ -24,7 +24,7 @@ describe("resource-family scope compaction", () => {
     ]);
   });
 
-  it("keeps explicitly mapped text and a non-full active slice", () => {
+  it("keeps explicitly mapped text — and only it (engineered inputs, W-31)", () => {
     const result = mapScopeToInstanceWithSurface(
       {
         file_id: "11111111-1111-4111-8111-111111111111",
@@ -38,12 +38,30 @@ describe("resource-family scope compaction", () => {
       [],
     );
 
-    expect(result.contextEntries).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ key: "document_body", value: "full" }),
-        expect.objectContaining({ key: "active_scope_text", value: "selected" }),
-      ]),
+    expect(result.contextEntries).toEqual([
+      expect.objectContaining({ key: "document_body", value: "full" }),
+    ]);
+  });
+
+  it("keeps a non-full active slice for an unmapped run", () => {
+    const result = mapScopeToInstanceWithSurface(
+      {
+        file_id: "11111111-1111-4111-8111-111111111111",
+        full_document_text: "full",
+        active_scope_text: "selected",
+        scope_kind: "selection",
+      },
+      null,
+      null,
+      [],
+      [],
     );
+
+    expect(result.contextEntries.map((entry) => entry.key)).toEqual([
+      "file_id",
+      "active_scope_text",
+      "scope_kind",
+    ]);
   });
 
   it("keeps fallbacks for a malformed file id", () => {

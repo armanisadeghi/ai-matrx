@@ -11,7 +11,7 @@
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 
-const ATTACHED_DOCUMENT_KEY_PREFIX = "attached_document_";
+export const ATTACHED_DOCUMENT_KEY_PREFIX = "attached_document_";
 
 function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
