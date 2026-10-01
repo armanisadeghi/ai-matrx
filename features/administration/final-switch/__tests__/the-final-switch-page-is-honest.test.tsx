@@ -202,10 +202,10 @@ test("one set of counts: every number on the page names its set and they agree (
   readFinalSwitch.mockResolvedValue(board("after_copy"));
   await mount();
   const counts = byTestId("final-switch-counts")!.textContent!;
-  expect(counts).toContain("2 switch at the press");
-  expect(counts).toContain("1 already on the new system or with nothing old left");
-  expect(counts).toContain("1 of the listed need Copy again first");
-  expect(container.textContent).toContain("3 organizations listed (anything old, or a switch pressed)");
+  expect(counts).toContain("2 to switch");
+  expect(counts).toContain("1 current");
+  expect(counts).toContain("1 need Copy again");
+  expect(container.textContent).toContain("3 organizations listed, measured");
   expect(container.textContent).toContain("The 3 organizations listed (2 switch at the press)");
   expect(container.textContent).not.toMatch(/Every organization is ready/);
 });
@@ -230,13 +230,13 @@ test("Step 1 covers the context copy: the organizations only it clears are Step 
   await mount();
   await act(async () => {});
   expect((byTestId("final-switch-press") as HTMLButtonElement).disabled).toBe(true);
-  expect(byTestId("final-switch-step-one-plan")!.textContent).toContain("run the context copy for 1");
+  expect(byTestId("final-switch-step-one-plan")!.textContent).toContain("runs the context copy for 1.");
   const gate = byTestId("final-switch-context-gate")!;
   expect(gate.textContent).toContain("does not have aidream 991ff424b5");
   expect(gate.className).toContain("text-destructive");
   // Aamir's Org's waiting edits are Step 1's to clear — not a blocker a person must fix.
   expect(container.textContent).toContain("Context copy: not yet: no scope edit is waiting to be copied");
-  expect(byTestId("final-switch-counts")!.textContent).toContain("1 need the context copy first");
+  expect(byTestId("final-switch-counts")!.textContent).toContain("1 need context copy");
   expect(byTestId("final-switch-counts")!.textContent).toContain("0 blocked");
 });
 
