@@ -41,6 +41,30 @@ export type NodeSource =
    */
   | { kind: "entity"; entity: string; id: string | null; meta?: Record<string, string> };
 
+/**
+ * The platform record a source shows, as one key — or null when it shows board
+ * content (text, a label, a page, an image) or a record not created yet.
+ * A board holds each record ONCE: two tiles of one note, document or file are
+ * two editors of the same record in one tab, each saving its own copy over the
+ * other's (the later save silently wins).
+ */
+export function recordKeyOf(source: NodeSource): string | null {
+  switch (source.kind) {
+    case "file":
+      return source.fileId ? `file:${source.fileId}` : null;
+    case "record":
+      return `record:${source.tableId}:${source.recordId}`;
+    case "document":
+      return `document:${source.documentId}`;
+    case "thread":
+      return `thread:${source.threadId}`;
+    case "entity":
+      return source.id ? `${source.entity}:${source.id}` : null;
+    default:
+      return null;
+  }
+}
+
 export interface BoardNode {
   id: string;
   rect: Rect;

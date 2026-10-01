@@ -33,7 +33,7 @@ import { type BoardStore, useBoardLayout, useBoardStore, useBoardTile, useBoardV
 import type { PaceTier } from "../engine/lod";
 import { useBoardKeys } from "../board/useBoardKeys";
 import { useWheelModePreference } from "../board/useWheelModePreference";
-import type { BoardDocument, NodeSource } from "../board/document";
+import { type BoardDocument, type NodeSource, recordKeyOf } from "../board/document";
 import { SpatialBoardMenu } from "../components/SpatialBoardMenu";
 import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
 import { SpatialViewport } from "../components/SpatialViewport";
@@ -195,7 +195,34 @@ export function UserBoard({
   // the last add left it (`home/place-run.ts`).
   const placementRun = useRef<PlacementRun | null>(null);
   /** `at`: a drop point — the nearest free spot there. Otherwise the run. */
-  const place = (items: PlacedItem[], at?: { x: number; y: number }) => {
+  const place = (wanted: PlacedItem[], at?: { x: number; y: number }) => {
+    // A record already on this board is shown, never opened a second time
+    // (two editors of one record in one tab overwrite each other).
+    const onBoard = new Map<string, string>();
+    for (const t of [...board.read().tiles, ...board.read().parked]) {
+      const key = recordKeyOf(t.source);
+      if (key) onBoard.set(key, t.id);
+    }
+    const already: string[] = [];
+    const items = wanted.filter((item) => {
+      const key = recordKeyOf(item.source);
+      const existing = key ? onBoard.get(key) : undefined;
+      if (existing) already.push(existing);
+      return !existing;
+    });
+    if (already.length > 0) {
+      const target = already[already.length - 1];
+      if (board.getLayout().parkedIds.includes(target)) board.unparkTile(target);
+      toast(already.length === 1 ? "Already on this board" : `${already.length} were already on this board`);
+      if (items.length === 0 && store) {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            store.select(target);
+            store.fitItem(target, 80);
+          }),
+        );
+      }
+    }
     const tiles: UserBoardTile[] = items.map((item) => {
       const type = itemTypeFor(item.source);
       const size = item.size ?? type?.defaultSize ?? { w: 480, h: 360 };

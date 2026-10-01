@@ -1,3 +1,4 @@
+import { recordKeyOf } from "../board/document";
 // Saved boards — the pure parts of the service and the autosave core.
 // Each case fails when the behaviour it names breaks.
 
@@ -241,5 +242,18 @@ describe("board list service", () => {
     const again = await service.fetchPage({ ...query, search: "renamed" }, sort);
     expect(reads).toBe(2);
     expect(again).toEqual({ rows: [rows[0]], total: 1 });
+  });
+});
+
+describe("recordKeyOf — one record, one tile", () => {
+  it("names a record by what it is, and board content as null", () => {
+    expect(recordKeyOf({ kind: "entity", entity: "note", id: "n1" })).toBe("note:n1");
+    expect(recordKeyOf({ kind: "entity", entity: "file", id: "f1" })).toBe(recordKeyOf({ kind: "entity", entity: "file", id: "f1" }));
+    expect(recordKeyOf({ kind: "file", fileId: "f1" })).toBe("file:f1");
+    expect(recordKeyOf({ kind: "document", documentId: "d1" })).toBe("document:d1");
+    expect(recordKeyOf({ kind: "record", tableId: "t", recordId: "r" })).toBe("record:t:r");
+    expect(recordKeyOf({ kind: "entity", entity: "note", id: null })).toBeNull();
+    expect(recordKeyOf({ kind: "text", markdown: "x" })).toBeNull();
+    expect(recordKeyOf({ kind: "html", url: "https://example.com" })).toBeNull();
   });
 });
