@@ -41,6 +41,7 @@ competing with the one persistent shell header.
 `/demos/canonical-flashcards` is the isolated comparison and migration proof for one context-aware flashcard player. Its four variant routes use fixture `flashcard_set` data only; they do not write production data or execute production AI. **Start at the hub** for the selected candidate, source-to-style mapping, proof boundary, and additive migration sequence.
 
 ## Change log
+- 2026-10-01 — Added `/demos/ui-unification`: a decision board that renders each contested UI pattern (toolbar height, field height, badge, tabs, card density, dialog width, loaders, empty states, toasts, radius…) with the real components and census counts; picks + notes persist in localStorage and export as Markdown.
 
 - 2026-09-11 — **Deleted `/demos/print-studio` and `/demos/lulu-pricing`.** Both went live as real product surfaces under `/print` (Arman's ruling: "get away from demos and just go live with this stuff"). The 11 print sections are now `/print/<printable>` and the Lulu calculator + paid order flow is `/print/order`. Home: [`features/print/FEATURE.md`](../../../features/print/FEATURE.md). No redirect — pre-launch, no legacy.
 - 2026-08-30 — Added `/demos/print-studio`: the feature-visibility surface for `@ai-matrx/print` — one page exercising `/qr`, `/qr-styled`, `/barcode`, `/labels` (+ `LabelSheetPreview`), `/flashcards` (+ `PrintOptionsDialog`), `/booklet`, and `/pdf` (the converter and stylesheet ship in the package as of 0.3.0 — no host seam).
