@@ -53,6 +53,20 @@ export interface EntityListService<TRow> {
   ): Promise<EntityListPageData<TRow>>;
   fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts>;
   fetchFacets(query: EntityListQuery): Promise<EntityFacets>;
+  /**
+   * THE IN-HAND ANSWER, SYNCHRONOUSLY (optional; DATA-HOME-3E, 2026-10-01). A service whose rows
+   * are already in the browser answers the same three questions without a promise, or returns
+   * `undefined` while it cannot yet (its corpus is still loading, or this question needs the
+   * server). When it answers, the shell renders that answer in the SAME render as the keystroke
+   * that asked it — no promise hop, no second render with the old rows under the new text — and
+   * skips the async call for that question. Every answer must equal what the async call would
+   * resolve to. A service that changes what it holds re-states that through `serviceKey`.
+   */
+  peek?: {
+    page(query: EntityListQuery, sort: EntityListSort): EntityListPageData<TRow> | undefined;
+    counts(query: EntityListQuery): EntityScopeCounts | undefined;
+    facets(query: EntityListQuery): EntityFacets | undefined;
+  };
 }
 
 /** What useEntityList hands back — the query half of the surface. */

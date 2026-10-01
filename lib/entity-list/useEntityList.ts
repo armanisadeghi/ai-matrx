@@ -10,7 +10,7 @@
 // never overwrite a newer one. That class of bug is invisible until a user
 // types fast on a slow connection and the list settles on the wrong results.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSelectors";
@@ -432,6 +432,30 @@ export function useEntityList<TRow>({
       service: serviceKey,
     });
   const [rowsAnswer, setRowsAnswer] = useState<string | null>(null);
+
+  // THE IN-HAND ANSWER (EntityListService.peek): computed in render for exactly this question, so
+  // the keystroke's own render already carries its rows. `undefined` = ask the service the async
+  // way. A local row mutation (removeRow/patchRow) takes the rows over into state for this question
+  // (`peekReleasedFor`), so an optimistic edit is never overwritten by the next render's peek.
+  const peekedPage = useMemo(() => {
+    try {
+      return service.peek?.page(effectiveQuery, {
+        sort: view.sort,
+        direction: view.direction,
+        favoritesFirst: view.favoritesFirst,
+        pageSize: view.pageSize,
+      });
+    } catch (err) {
+      // The async path below asks again and owns the failure (it is classified and shown there).
+      console.error("[entity-list] the in-hand page answer failed; asking the service", err);
+      return undefined;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the key IS the question
+  }, [queryKey]);
+  const [peekReleasedFor, setPeekReleasedFor] = useState<string | null>(null);
+  const showPeek = peekedPage !== undefined && peekReleasedFor !== queryKey;
+  const peekRef = useRef<{ page: typeof peekedPage; key: string; shown: boolean }>({ page: undefined, key: "", shown: false });
+  peekRef.current = { page: peekedPage, key: queryKey, shown: showPeek };
   const liveQuestion = questionOf(query, query.search);
   const rowsAnswerThisQuestion =
     rowsAnswer === null ||
@@ -442,6 +466,14 @@ export function useEntityList<TRow>({
   useEffect(() => {
     const gen = ++generation.current;
     const askedQuestion = questionOf(effectiveQuery, effectiveQuery.search);
+    if (peekedPage !== undefined) {
+      // Answered in hand, in this very render: nothing to ask, nothing loading.
+      hasLoadedOnce.current = true;
+      setIsLoading(false);
+      setIsFetching(false);
+      setError(null);
+      return;
+    }
     if (hasLoadedOnce.current) setIsFetching(true);
     else setIsLoading(true);
 
@@ -514,10 +546,24 @@ export function useEntityList<TRow>({
   // The typed search counts too: the question changes the moment the box does, while the
   // debounced value (which the counts request carries) lags — those numbers answer the
   // previous text, so they read as "not measured" until the new answer lands.
+  const peekedCounts = useMemo(() => {
+    try {
+      return service.peek?.counts(countsQuery);
+    } catch (err) {
+      console.error("[entity-list] the in-hand counts failed; asking the service", err);
+      return undefined;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the key IS the question
+  }, [countsKey]);
   const countsLoading =
-    countsAnsweredFor !== countsKey || debouncedSearch !== query.search;
+    peekedCounts === undefined &&
+    (countsAnsweredFor !== countsKey || debouncedSearch !== query.search);
 
   useEffect(() => {
+    if (peekedCounts !== undefined) {
+      setCountsError(null);
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {
@@ -571,9 +617,22 @@ export function useEntityList<TRow>({
   // written by an effect. A previously answered payload is stale as soon as
   // the query changes, so consumers can never present its values as counts for
   // the new query while the next request is still in flight.
-  const facetsLoading = facetsAnsweredFor !== facetsKey;
+  const peekedFacets = useMemo(() => {
+    try {
+      return service.peek?.facets(facetsQuery);
+    } catch (err) {
+      console.error("[entity-list] the in-hand facets failed; asking the service", err);
+      return undefined;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the key IS the question
+  }, [facetsKey]);
+  const facetsLoading = peekedFacets === undefined && facetsAnsweredFor !== facetsKey;
 
   useEffect(() => {
+    if (peekedFacets !== undefined) {
+      setFacetsError(null);
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {
@@ -616,8 +675,9 @@ export function useEntityList<TRow>({
   // and filters, with no second query authority to drift from it. Every
   // service already implements it, so no config anywhere had to change.
   const archiveAxisIsHiding = supportsArchived && query.archived === "active";
-  const liveHalfIsEmpty =
-    !isLoading && !error && rows.length === 0 && total === 0;
+  const liveHalfIsEmpty = showPeek
+    ? peekedPage.rows.length === 0 && peekedPage.total === 0
+    : !isLoading && !error && rows.length === 0 && total === 0;
   const archivedProbeKey =
     archiveAxisIsHiding && liveHalfIsEmpty
       ? JSON.stringify({
@@ -721,8 +781,21 @@ export function useEntityList<TRow>({
   };
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
+  // The rows on screen came from the in-hand answer: hand them to state first, so the edit
+  // applies to what the person sees and the next render keeps it.
+  const takeOverPeek = () => {
+    const held = peekRef.current;
+    if (!held.shown || !held.page) return false;
+    setRows(held.page.rows);
+    setTotal(held.page.total);
+    setRowsAnswer(null);
+    setPeekReleasedFor(held.key);
+    return true;
+  };
+
   const removeRow = useCallback(
     (id: string) => {
+      takeOverPeek();
       setRows((prev) => prev.filter((r) => getRowId(r) !== id));
       setTotal((prev) => Math.max(prev - 1, 0));
       // The scope tabs, the facet options and the all-archived probe were all
@@ -734,6 +807,7 @@ export function useEntityList<TRow>({
 
   const patchRow = useCallback(
     (id: string, patch: Partial<TRow>) => {
+      takeOverPeek();
       setRows((prev) =>
         prev.map((r) => (getRowId(r) === id ? { ...r, ...patch } : r)),
       );
@@ -746,19 +820,19 @@ export function useEntityList<TRow>({
 
   return {
     query,
-    rows: rowsAnswerThisQuestion ? rows : [],
-    total: rowsAnswerThisQuestion ? total : 0,
-    counts,
+    rows: showPeek ? peekedPage.rows : rowsAnswerThisQuestion ? rows : [],
+    total: showPeek ? peekedPage.total : rowsAnswerThisQuestion ? total : 0,
+    counts: peekedCounts ?? counts,
     countsLoading,
-    countsError,
-    facets,
+    countsError: peekedCounts !== undefined ? null : countsError,
+    facets: peekedFacets ?? facets,
     facetsLoading,
-    facetsError,
+    facetsError: peekedFacets !== undefined ? null : facetsError,
     archivedProbe,
     defaultArchived: defaultQuery.archived,
-    isLoading: isLoading || (!rowsAnswerThisQuestion && error === null),
-    isFetching,
-    error,
+    isLoading: showPeek ? false : isLoading || (!rowsAnswerThisQuestion && error === null),
+    isFetching: showPeek ? false : isFetching,
+    error: showPeek ? null : error,
     setScope,
     setOrgId,
     setFilters,
