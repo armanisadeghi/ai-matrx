@@ -395,7 +395,7 @@ function QuietRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5">
-      <span className="truncate text-sm text-foreground">Launch plan.md</span>
+      <span className="truncate text-sm text-foreground">Launch plan</span>
       <div className="flex items-center gap-0.5">
         <Button size="icon-sm" variant={variant} className={className} aria-label="Edit">
           <Pencil />
