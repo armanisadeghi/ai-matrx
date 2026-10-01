@@ -257,10 +257,10 @@ export function AddressesCard({
               <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-xs font-medium capitalize leading-none text-muted-foreground">
                 {address.purpose_code}
               </span>
-              <span className="min-w-0 truncate text-sm text-foreground">
+              <span className="min-w-0 flex-1 truncate text-sm text-foreground">
                 {formatAddress(address) || "—"}
               </span>
-              <span className="inline-flex ml-auto shrink-0 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"><TrashTapButton
+              <span className="inline-flex shrink-0 opacity-100 sm:pointer-fine:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"><TrashTapButton
                 ariaLabel="Remove address"
                 onClick={() => void remove(address)}
                 className="text-muted-foreground hover:text-destructive"
