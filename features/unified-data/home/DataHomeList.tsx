@@ -13,7 +13,7 @@
 // in the footer). Nothing in this file reads the active organization for a read.
 
 import { useMemo, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, Link2, Star, StarOff } from "lucide-react";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource } from "@ai-matrx/records";
@@ -122,7 +122,9 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
 
   // Defaults stay knobs (person / platform tier; never the active organization).
   const defaultScope = resolveDataHomeScope(null, useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_SCOPE_KNOB));
-  const defaultKind = resolveDataHomeKind(null, useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_KIND_KNOB));
+  // `?kind=` (the old page's address) is kept as an alias: it opens on that kind, one chip away from all.
+  const kindParam = useSearchParams().get("kind");
+  const defaultKind = resolveDataHomeKind(kindParam, useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_KIND_KNOB));
   const order = resolveDataHomeOrder(useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_ORDER_KNOB));
   const defaultView = resolveDataHomeView(useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_VIEW_KNOB));
 
@@ -217,7 +219,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       emptyState: sharedOnlyHere
         ? {
             title: "Nothing shared with you here yet",
-            description: "Here you see only tables shared with you. Ask the table's keeper to share it.",
+            description: "Ask a table's keeper to share it with you.",
           }
         : { title: "No tables yet", description: "New table makes one." },
     };

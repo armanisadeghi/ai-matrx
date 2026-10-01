@@ -533,6 +533,9 @@ export function EntityListTable<TRow>({
             : `${start.toLocaleString()}-${end.toLocaleString()} of ${count.toLocaleString()}`
       }
       zebra
+      // GROUPED = the whole result on one page (EntityListPage); a pager over one page, reading
+      // "100000 per page", is chrome for nothing — each group header carries its own count.
+      hidePagination={Boolean(grouping?.columnId)}
       pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
       className={cn(density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1")}
       // SIZE TO CONTENT (page-pass 2026-09-27): the table's bordered box is

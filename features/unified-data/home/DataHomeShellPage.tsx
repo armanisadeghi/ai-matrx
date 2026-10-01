@@ -201,6 +201,7 @@ function MakeInActiveOrganization({
   }
   if (mountOrganizationId === activeOrganizationId) return <TablesHome makingOnly askedBy={makeAsked} onOpenTable={open} />;
   return (
+    // org-filter: write-target the making controls file a NEW table in the active organization; nothing is listed here
     <RecordsProvider config={{ ...client.config, organizationId: activeOrganizationId }}>
       <TablesHome makingOnly askedBy={makeAsked} onOpenTable={open} />
     </RecordsProvider>

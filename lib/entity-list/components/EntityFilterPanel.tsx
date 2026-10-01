@@ -231,8 +231,11 @@ export function EntityFilterPanel<TRow>({
   });
   // No sortable column → no sort anywhere in the panel (trigger included).
   const canSort = sortOptions.length > 0;
-  const sortLabel =
-    sortOptions.find((o) => o.value === sortKey)?.label ?? "Custom";
+  // RELEVANCE OVERRIDES THE SORT WHILE SEARCHING (a ratified shell decision — FEATURE.md), so the
+  // trigger says what is true then; the chosen sort comes back when the box is cleared.
+  const sortLabel = query.search.trim()
+    ? "Best match"
+    : (sortOptions.find((o) => o.value === sortKey)?.label ?? "Custom");
   // A panel with nothing in it is absent, never a button that opens an empty
   // box (/connected-sources, page-pass 2026-09-27: no sortable column, no
   // facet, no archive axis).

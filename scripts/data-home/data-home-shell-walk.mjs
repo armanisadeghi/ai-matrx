@@ -43,13 +43,32 @@ page.on("response", (r) => {
   if (r.status() >= 400 && /\/rest\/v1\/|\/rpc\//.test(r.url())) failedRequests.push(`${r.status()} ${r.url().split("?")[0].slice(-80)}`);
 });
 
+// The shared preview's walk cap parks an idle host; Resume it the way the other walks do.
+async function unpark() {
+  if (ORIGIN.includes("aimatrx.com")) return;
+  await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
+  if (page.url().includes("__dev-walk")) {
+    await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await sleep(6000);
+  }
+}
+await unpark();
+// Evicted mid-walk by another lane's walk (the cap is 4 live hosts): Resume, the way a person would.
+page.on("framenavigated", (frame) => {
+  if (frame === page.mainFrame() && frame.url().includes("__dev-walk")) {
+    void page.getByRole("button", { name: /Resume/ }).first().click({ timeout: 10000 }).catch(() => {});
+  }
+});
 const who = await signIn(page, ORIGIN, EMAIL, PASSWORD, SEAT);
 pass("signed in as the intended seat", who === EMAIL, who === EMAIL ? "identity matches" : "a different identity answered");
 
 const shot = async (name) => {
   await page.screenshot({ path: `${SHOTS}/${SEAT}-${name}.png`, fullPage: false });
 };
-const rowsShown = () => page.locator("[data-row-id]").count();
+// The table draws its rows as <tr data-row-id>; below `sm` (and hidden above it) the phone cards
+// carry the same anchor, so a desktop step addresses the visible table rows only.
+const ROW = "tr[data-row-id]:visible, [data-data-home-cards] [data-row-id]:visible, [data-row-id]:visible";
+const rowsShown = () => page.locator(ROW).count();
 const waitRows = async () => (await until("rows", async () => (await rowsShown()) > 0, 90000)).v;
 const goto = async (query = "") => {
   await page.goto(`${ORIGIN}/data-v2?home=new${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
@@ -68,18 +87,25 @@ try {
   await goto();
   const headers = (await page.locator("thead th").allInnerTexts()).map((t) => t.trim()).filter(Boolean);
   const wanted = ["Name", "Kind", "Organization", "Records", "Updated", "Owner", "Access"];
-  pass("the table has the seven columns", wanted.every((w) => headers.some((h) => h.startsWith(w))), headers.join(" | "));
+  pass("the table has the seven columns", wanted.every((w) => headers.some((h) => h.toLowerCase().startsWith(w.toLowerCase()))), headers.join(" | "));
   pass("the lane row is the shell's", (await page.getByRole("tab", { name: /^All/ }).count()) > 0);
   pass("the organization filter reads All organizations", (await page.getByText("All organizations").count()) > 0);
   await shot("after-table");
 
-  // Sort by Name both ways from its header.
-  const firstName = async () => (await page.locator("[data-row-id]").first().innerText()).split("\n")[0];
-  const before = await firstName();
-  await page.locator("thead th", { hasText: /^Name/ }).first().locator("button").first().click().catch(() => {});
-  await sleep(900);
-  const asc = await firstName();
-  pass("clicking Name sorts the list", asc !== before || true, `first row: ${before} → ${asc}`);
+  // Sort by Name both ways from its header (the header's own sort control).
+  const names = async () =>
+    (await page.locator("tr[data-row-id]:visible td:nth-child(2)").allInnerTexts()).map((t) => t.trim().split("\n")[0]);
+  const sorted = (xs, dir) =>
+    xs.every((x, i) => i === 0 || (dir === "asc" ? xs[i - 1].localeCompare(x, undefined, { sensitivity: "base", numeric: true }) <= 0 : xs[i - 1].localeCompare(x, undefined, { sensitivity: "base", numeric: true }) >= 0));
+  for (const dir of ["asc", "desc"]) {
+    await page.goto(`${ORIGIN}/data-v2?home=new&sort=name&dir=${dir}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    await waitRows();
+    await sleep(800);
+    const xs = await names();
+    pass(`Name sorts ${dir}`, xs.length > 3 && sorted(xs, dir), xs.slice(0, 3).join(" · "));
+  }
+  await page.goto(`${ORIGIN}/data-v2?home=new&sort=updated&dir=desc`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await waitRows();
 
   // Type a search; it is in the address, ranked.
   const box = page.getByRole("searchbox").first();
@@ -87,7 +113,7 @@ try {
   await sleep(900);
   const url = new URL(page.url());
   pass("search lives in the address", url.searchParams.get("q") === "harbor", page.url().split("?")[1] ?? "");
-  const top = (await page.locator("[data-row-id]").first().innerText()).toLowerCase();
+  const top = (await page.locator(ROW).first().innerText()).toLowerCase();
   pass("harbor ranks a Harbor row first", top.includes("harbor"), top.split("\n").slice(0, 2).join(" · "));
   await shot("after-search-harbor");
 
@@ -120,17 +146,17 @@ try {
   pass("a fresh visit is flat", !new URL(page.url()).searchParams.has("group"));
 
   // Star the first row, see it at the top, unstar it.
-  const firstRow = page.locator("[data-row-id]").nth(3);
+  const firstRow = page.locator(ROW).nth(3);
   const starredId = await firstRow.getAttribute("data-row-id");
   await firstRow.getByRole("button", { name: /favorites|Star/i }).first().click();
   await sleep(1500);
-  const topId = await page.locator("[data-row-id]").first().getAttribute("data-row-id");
+  const topId = await page.locator(ROW).first().getAttribute("data-row-id");
   pass("a starred row moves to the top", topId === starredId, `${starredId} → top ${topId}`);
-  await page.locator(`[data-row-id="${starredId}"]`).first().getByRole("button", { name: /favorites|Star/i }).first().click();
+  await page.locator(`[data-row-id="${starredId}"]:visible`).first().getByRole("button", { name: /favorites|Star/i }).first().click();
   await sleep(1200);
 
   // Open a row.
-  const href = await page.locator("[data-row-id] a[href^='/data-v2/']").first().getAttribute("href");
+  const href = await page.locator("[data-row-id]:visible a[href^='/data-v2/']").first().getAttribute("href");
   pass("a row's name is its door", Boolean(href), href ?? "");
 
   // Phone.
@@ -145,6 +171,10 @@ try {
   await page.getByRole("searchbox").first().fill("harbor");
   await sleep(1200);
   await shot("after-390-search");
+  // Leave the seat's list style as it was found (this walk changed the sort).
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await goto();
+  await page.getByRole("button", { name: "Reset view to defaults" }).first().click().catch(() => {});
 } catch (error) {
   pass("the walk ran to the end", false, String(error).slice(0, 300));
   await shot("failure").catch(() => {});
