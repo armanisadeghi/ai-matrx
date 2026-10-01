@@ -143,7 +143,7 @@ function readUsageRollup(
         .select("user_id, total_requests, total_cost, last_activity")
         .order("user_id")
         .range(start, to),
-    { label: `chat.admin_user_usage_rollup (${from ? "7d" : "all-time"})` },
+    { label: `chat.admin_user_usage_rollup (${from ?? "all-time"})` },
   );
 }
 
@@ -253,10 +253,9 @@ export async function GET() {
   let guestRows: GuestSignalRow[];
   let usageAll: UsageRollupRow[];
   let usageWeek: UsageRollupRow[];
-  let usageSinceJune: UsageRollupRow[];
   let parties: { id: string; claimed_by: string | null }[];
   try {
-    [profiles, guestRows, usageAll, usageWeek, usageSinceJune, parties] = await Promise.all([
+    [profiles, guestRows, usageAll, usageWeek, parties] = await Promise.all([
       readAllRows<ProfileRow>(
         ({ from, to }) =>
           admin
@@ -270,7 +269,6 @@ export async function GET() {
       readGuestSignalRows(admin),
       readUsageRollup(admin, null),
       readUsageRollup(admin, weekAgo),
-      readUsageRollup(admin, "2026-06-01T00:00:00Z"),
       readAllRows<{ id: string; claimed_by: string | null }>(
         ({ from, to }) => admin.schema("crm").from("party")
           .select("id, claimed_by", { count: "exact" })
@@ -290,7 +288,6 @@ export async function GET() {
   const usageAllById = new Map(usageAll.map((u) => [u.user_id, u]));
   const usageWeekById = new Map(usageWeek.map((u) => [u.user_id, u]));
   const signalsByUserId = indexGuestSignals(guestRows);
-  const usageSinceJuneById = new Map(usageSinceJune.map((u) => [u.user_id, u]));
   const partiesByUser = new Map<string, string[]>();
   for (const party of parties) if (party.claimed_by) {
     partiesByUser.set(party.claimed_by, [...(partiesByUser.get(party.claimed_by) ?? []), party.id]);
@@ -390,10 +387,8 @@ export async function GET() {
       created_at: u.created_at ?? null,
       last_sign_in_at: u.last_sign_in_at ?? null,
       organizations: organizationsByUserId.get(u.id) ?? [],
-      party_id: partiesByUser.get(u.id)?.length === 1 ? partiesByUser.get(u.id)![0] : null,
+      party_id: partiesByUser.get(u.id)?.length === 1 ? partiesByUser.get(u.id)?.[0] ?? null : null,
       party_integrity: u.is_anonymous ? "anonymous" : partiesByUser.get(u.id)?.length === 1 ? "resolved" : partiesByUser.get(u.id)?.length ? "ambiguous" : "missing",
-      ai_requests_since_june: Number(usageSinceJuneById.get(u.id)?.total_requests ?? 0),
-      ai_cost_since_june: Number(usageSinceJuneById.get(u.id)?.total_cost ?? 0),
       kind: segment.kind,
       kind_reason: segment.kindReason,
       stage: segment.stage,

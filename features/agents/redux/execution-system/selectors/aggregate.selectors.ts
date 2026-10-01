@@ -481,6 +481,14 @@ export function makeSelectAssembledRequest(conversationId: string) {
       (s: RootState) => s.appContext,
       (s: RootState) => s.adminPreferences,
       (s: RootState) => s.userPreferences,
+      // The context door (buildRequestContext) reads these too: the agent's
+      // policies + kill switch, the person's saved context rules, whether this
+      // is the first turn, and who is signed in (first-turn system values).
+      (s: RootState) => s.agentDefinition,
+      (s: RootState) => s.surfaceUserState,
+      (s: RootState) => s.messages,
+      (s: RootState) => s.userAuth,
+      (s: RootState) => s.userProfile,
     ],
     (
       conversations,
@@ -494,6 +502,11 @@ export function makeSelectAssembledRequest(conversationId: string) {
       appContext,
       adminPreferences,
       userPreferences,
+      agentDefinition,
+      surfaceUserState,
+      messages,
+      userAuth,
+      userProfile,
     ): AssembledAgentStartRequest | null => {
       const state = {
         conversations,
@@ -507,6 +520,11 @@ export function makeSelectAssembledRequest(conversationId: string) {
         appContext,
         adminPreferences,
         userPreferences,
+        agentDefinition,
+        surfaceUserState,
+        messages,
+        userAuth,
+        userProfile,
       } as RootState;
       return assembleRequest(state, conversationId);
     },

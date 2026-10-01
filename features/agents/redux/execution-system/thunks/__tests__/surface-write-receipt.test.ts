@@ -57,12 +57,13 @@ import {
   type SurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteTarget } from "@/features/surfaces/types";
+import { buildContextWire, resolveContextRow } from "@ai-matrx/agents/context";
 import type { RootState } from "@/lib/redux/store";
 import activeRequestsReducer, {
   createRequest,
 } from "../../active-requests/active-requests.slice";
 import {
-  composeResumeContext,
+  surfaceWritesNoteSource,
   SURFACE_WRITES_NOTE_KEY,
 } from "../../utils/surface-writes-note";
 
@@ -218,11 +219,12 @@ it("the resumed request labels the re-read page values as coming AFTER this conv
   }
   const state = { activeRequests } as unknown as RootState;
 
-  // What resumeInstance sends as the resumed request's `context`.
-  const ambient = { organization: { id: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f" } };
-  const context = composeResumeContext(state, "c1", ambient, undefined, "2026-09-27T11:54:42.326Z");
-  expect(context?.organization).toEqual(ambient.organization);
-  const envelope = context?.[SURFACE_WRITES_NOTE_KEY] as Record<string, unknown>;
+  // What resumeInstance sends: the note is one more row of the one door,
+  // and its envelope reaches the wire through `buildContextWire`.
+  const source = surfaceWritesNoteSource(state, "c1", "2026-09-27T11:54:42.326Z");
+  expect(source).not.toBeNull();
+  const context = buildContextWire([resolveContextRow(source!, {})]);
+  const envelope = context[SURFACE_WRITES_NOTE_KEY] as Record<string, unknown>;
   expect(SURFACE_WRITES_NOTE_KEY).toBe("page_values_read_after_your_writes");
   // Sent INLINE: a bare string was listed as a deferred key the model never read.
   expect(envelope).toMatchObject({ type: "text", max_inline_chars: 4000 });
@@ -233,6 +235,5 @@ it("the resumed request labels the re-read page values as coming AFTER this conv
   expect(note).toContain(AUSTIN.id);
   expect(note).toContain("never as already there");
   // A conversation that wrote nothing gets no note — and no invented context.
-  expect(composeResumeContext(state, "other-conversation", ambient, undefined)).toEqual(ambient);
-  expect(composeResumeContext(state, "other-conversation", null, undefined)).toBeUndefined();
+  expect(surfaceWritesNoteSource(state, "other-conversation")).toBeNull();
 });

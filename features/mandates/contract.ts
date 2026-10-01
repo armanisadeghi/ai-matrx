@@ -35,6 +35,13 @@ export interface MandateContract {
    * path.
    */
   spillVariables: string[];
+  /**
+   * The Mandate's context kill switch (`contract.auto_context_disabled`): only
+   * the Holder's declared Context Policies reach it, unless the person turned a
+   * value on themselves (common-docs context-delivery RULES.md §2). The
+   * composer's context table needs it to show the truth before the first turn.
+   */
+  autoContextDisabled: boolean;
 }
 
 export const EMPTY_MANDATE_CONTRACT: MandateContract = {
@@ -42,6 +49,7 @@ export const EMPTY_MANDATE_CONTRACT: MandateContract = {
   requiredContextPolicyKeys: [],
   requiredOutputKeys: [],
   spillVariables: [],
+  autoContextDisabled: false,
 };
 
 function stringList(value: unknown): string[] {
@@ -55,6 +63,7 @@ export function parseMandateContract(contract: Json): MandateContract {
     requiredContextPolicyKeys: stringList(contract.required_context_policies),
     requiredOutputKeys: stringList(contract.required_output_keys),
     spillVariables: stringList(contract.spill_variables),
+    autoContextDisabled: contract.auto_context_disabled === true,
   };
 }
 

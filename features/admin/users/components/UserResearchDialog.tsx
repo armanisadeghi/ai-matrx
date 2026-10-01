@@ -20,21 +20,22 @@ export function UserResearchDialog({ row, ownerId, existing, sharedOrganizations
   const [contactState, setContactState] = useState<ContactState>(existing?.contact_state ?? (row.banned ? "hold" : "not_contacted"));
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [saving, setSaving] = useState(false);
-  const [plans, setPlans] = useState<{ name: string; slug: string }[]>([]);
-  const [plan, setPlan] = useState("");
-  const [feature, setFeature] = useState<keyof typeof OUTREACH_FEATURE_LABELS>("general");
-  const [draft, setDraft] = useState("");
+  const [plans, setPlans] = useState<{ name: string; plan_key: string }[]>([]);
+  const savedDraft = existing?.outreach.draft;
+  const [plan, setPlan] = useState(typeof savedDraft === "object" && savedDraft !== null && "plan" in savedDraft && typeof savedDraft.plan === "string" ? savedDraft.plan : "");
+  const [feature, setFeature] = useState<keyof typeof OUTREACH_FEATURE_LABELS>(typeof savedDraft === "object" && savedDraft !== null && "feature" in savedDraft && typeof savedDraft.feature === "string" && savedDraft.feature in OUTREACH_FEATURE_LABELS ? savedDraft.feature as keyof typeof OUTREACH_FEATURE_LABELS : "general");
+  const [draft, setDraft] = useState(typeof savedDraft === "object" && savedDraft !== null && "text" in savedDraft && typeof savedDraft.text === "string" ? savedDraft.text : "");
   useEffect(() => { void (async () => {
-    const { data, error } = await supabase.schema("billing").from("plan").select("name, slug").is("deleted_at", null);
+    const { data, error } = await supabase.schema("billing").from("plan").select("name, plan_key").eq("active", true).eq("audience", "personal").is("deleted_at", null).order("rank");
     if (error) { toast.error("Could not load plans. Reopen the notes to retry."); return; }
-    setPlans((data ?? []).filter(p => p.slug !== "free").map(p => ({ name: p.name, slug: p.slug })));
+    setPlans((data ?? []).filter(p => p.plan_key !== "free").map(p => ({ name: p.name, plan_key: p.plan_key })));
   })(); }, []);
   async function save() {
     if (!row.party_id) { toast.error("The linked contact needs repair before notes can be saved."); return; }
     setSaving(true);
     try {
       const saved = await saveUserResearch({ ownerId, subjectId: row.id, partyId: row.party_id,
-        label: row.display_name ?? row.email ?? row.id, category, notes, contactState, existing });
+        label: row.display_name ?? row.email ?? row.id, category, notes, contactState, existing, draft: draft ? { text: draft, plan, feature } : null });
       onSaved(saved); toast.success("Personal notes saved"); onClose();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not save notes"); }
     finally { setSaving(false); }
@@ -54,13 +55,16 @@ export function UserResearchDialog({ row, ownerId, existing, sharedOrganizations
         <div className="space-y-2"><Label htmlFor="personal-user-notes">My notes</Label><ProTextarea id="personal-user-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Relationship, previous contact, next step…" className="min-h-28" /></div>
         <div className="border-t pt-4 space-y-3">
           <Label>Invitation draft</Label>
+          <p className="text-xs text-muted-foreground">Saved with notes · awaiting your approval</p>
           <div className="grid grid-cols-2 gap-3">
-            <Select value={plan} onValueChange={setPlan}><SelectTrigger aria-label="Trial plan"><SelectValue placeholder="Choose a trial plan" /></SelectTrigger><SelectContent>{plans.map(p => <SelectItem key={p.slug} value={p.name}>{p.name}</SelectItem>)}</SelectContent></Select>
+            <Select value={plan} onValueChange={setPlan}><SelectTrigger aria-label="Trial plan"><SelectValue placeholder="Choose a trial plan" /></SelectTrigger><SelectContent>{plans.map(p => <SelectItem key={p.plan_key} value={p.plan_key}>{p.name}</SelectItem>)}</SelectContent></Select>
             <Select value={feature} onValueChange={v => setFeature(v as keyof typeof OUTREACH_FEATURE_LABELS)}><SelectTrigger aria-label="Verified feature"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(OUTREACH_FEATURE_LABELS).map(([key, label]) => <SelectItem key={key} value={key}>{label || "General welcome"}</SelectItem>)}</SelectContent></Select>
           </div>
           <Button variant="outline" onClick={() => {
             if (!plan) { toast.error("Choose a trial plan first."); return; }
-            setDraft(feedbackInvitation(row.display_name ?? row.full_name ?? "", plan, feature));
+            const chosenPlan = plans.find(p => p.plan_key === plan);
+            if (!chosenPlan) { toast.error("Choose an available plan first."); return; }
+            setDraft(feedbackInvitation(row.display_name ?? row.full_name ?? "", chosenPlan.name, feature));
           }}>Draft invitation</Button>
           {draft && <><ProTextarea aria-label="Invitation draft" value={draft} onChange={e => setDraft(e.target.value)} className="min-h-48" /><Button variant="outline" onClick={async () => { await navigator.clipboard.writeText(draft); toast.success("Invitation copied"); }}>Copy draft</Button></>}
         </div>

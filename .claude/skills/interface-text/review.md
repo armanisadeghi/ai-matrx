@@ -19,6 +19,7 @@ with the corrections as examples; do not patch around it. Record every overturn 
 the next edit to `discover.md`.
 
 Common Discover mistakes to look for:
+- A rewrite of a unit marked `owner_words` (forbidden — see §4).
 - `legit` on a dialog description that is really a page description in a dialog.
 - `too-long` where the text is author-facing (a rewrite would keep a formula on screen).
 - A proposal that is still over budget, or that keeps a pipeline word ("server", "backend").
@@ -52,7 +53,19 @@ Write the batches as JSON the Fix agents consume directly:
 - Mechanical batches (deletes, page descriptions, pure shortenings) → `quick` lane.
   Batches with primitive swaps, tooltips needing new props, or sibling re-balancing → `standard`.
 
-## 4. What goes to Arman — almost nothing
+## 4. Arman's own words — never yours to judge
+
+Arman, 2026-09-30: AI judges the value of text badly and "anything written by ai will always sound
+'better' than the real, human guidance". Round 1 shortened his own ruling in a placeholder and it
+was restored. So:
+- A unit with `owner_words`: read its `context`. If it is his guidance → add it to
+  `scripts/interface-text/keep.json` (text, file, reason, `by: "check-owner-words"`) and change
+  nothing. If he pasted it only to complain about it → it rejoins the sweep; cite the context.
+- Every deletion and rewrite reaches his **review page** (page link, before → after, keep /
+  restore / note). His `restore` and `keep` verdicts go into `keep.json` and the code is reverted;
+  his notes become rows in this file's mistake list. That page is how the patterns are learned.
+
+## 5. What else goes to Arman — almost nothing
 
 Only a finding where deleting the text would remove information a person needs **and** no
 label, tooltip, or state design can carry it. State it as a decision with your recommendation

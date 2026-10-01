@@ -14,6 +14,10 @@ import isEqual from "lodash/isEqual";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
 import type { ContextReceiptData } from "@/types/python-generated/stream-events";
+import type {
+  ContextReceiptMismatch,
+  ResolvedContextRow,
+} from "@ai-matrx/agents/context";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 
@@ -32,18 +36,32 @@ export interface InstanceContextState {
    * never the client's belief.
    */
   receiptByConversationId: Record<string, ContextReceiptEntry>;
+  /**
+   * The rows the latest request was BUILT from (`buildRequestContext`) — what
+   * the screen showed when the person pressed send. The receipt is compared
+   * against these, never against rows recomputed later.
+   */
+  expectedByConversationId: Record<string, ExpectedContextEntry>;
 }
 
 export interface ContextReceiptEntry {
   requestId: string;
   receipt: ContextReceiptData;
   receivedAt: number;
+  /** Expected-vs-actual differences for this turn (empty = the screen told the truth). */
+  mismatches?: ContextReceiptMismatch[];
+}
+
+export interface ExpectedContextEntry {
+  requestId: string;
+  rows: ResolvedContextRow[];
 }
 
 const initialState: InstanceContextState = {
   byConversationId: {},
   surfaceKeysByConversationId: {},
   receiptByConversationId: {},
+  expectedByConversationId: {},
 };
 
 // =============================================================================
@@ -337,6 +355,7 @@ const instanceContextSlice = createSlice({
       delete state.byConversationId[action.payload];
       delete state.surfaceKeysByConversationId[action.payload];
       delete state.receiptByConversationId[action.payload];
+      delete state.expectedByConversationId[action.payload];
     },
 
     setContextReceipt(
@@ -345,6 +364,14 @@ const instanceContextSlice = createSlice({
     ) {
       const { conversationId, ...entry } = action.payload;
       state.receiptByConversationId[conversationId] = entry;
+    },
+
+    setExpectedContextRows(
+      state,
+      action: PayloadAction<{ conversationId: string } & ExpectedContextEntry>,
+    ) {
+      const { conversationId, ...entry } = action.payload;
+      state.expectedByConversationId[conversationId] = entry;
     },
   },
 
@@ -357,6 +384,7 @@ const instanceContextSlice = createSlice({
       delete state.byConversationId[action.payload];
       delete state.surfaceKeysByConversationId[action.payload];
       delete state.receiptByConversationId[action.payload];
+      delete state.expectedByConversationId[action.payload];
     });
   },
 });
@@ -371,6 +399,7 @@ export const {
   clearInstanceContext,
   removeInstanceContext,
   setContextReceipt,
+  setExpectedContextRows,
 } = instanceContextSlice.actions;
 
 export default instanceContextSlice.reducer;

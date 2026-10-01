@@ -58,6 +58,12 @@ export type CapturedErrorSource =
   | "app-api-http"
   /** A React component threw during render and an error boundary caught it. */
   | "react-render"
+  /**
+   * The server's `context_receipt` disagreed with what the composer showed the
+   * person (common-docs context-delivery RULES.md §6) — the screen promised
+   * one thing and the server did another.
+   */
+  | "context-truth"
   // ── Server-origin structured stream events (the agent execution stream) ───
   /** A typed `error` event from the stream (ErrorPayload — fatal). */
   | "agent-stream-error"

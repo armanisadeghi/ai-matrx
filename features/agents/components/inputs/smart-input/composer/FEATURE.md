@@ -140,10 +140,13 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 - **No mode has less capability** (Arman, 2026-09-27). Chat tucks things into the + menu; it never loses them.
   Every mode gets every `plus.*` row and every phone tab; modes differ only in what sits OUTSIDE the + menu
   (agent panel, chips row, effort, overrides, repo chips).
-- **The page is ONE chip** — the context rail (`ConversationContextRail` → `PageContextChip`) folds every value the
-  page's SURFACE contributed (`selectSurfaceContextKeys`) into one chip: click = the values listed + the switch;
-  off = an eye-off icon in the same spot (`setPageContextEnabled` — on re-reads the page via `refreshSurfaceScope`).
-  Hand-attached and other-source context keeps its own chips.
+- **Every value the next turn carries is ONE chip** (2026-09-30) — `ConversationContextChip` in the rail renders
+  `selectResolvedContextRows` (page, attached and first-turn system values) as a table — Item | Include | Chars |
+  Inline max — with the page's master switch (`setPageContextEnabled`). The rows are the SAME rows the send path turns
+  into the request (`context-rules/request-context.ts` → `buildContextWire`), a change saves the person's rule
+  (`saveContextRule` → `users.user_surface_state`, read by the server every turn), and the server's
+  `context_receipt` is compared with what was shown (amber on any difference). Full view: `ContextRulesPanel`.
+  Contract: common-docs `systems/scopes-context/context-delivery/RULES.md`.
 - **No border lines** on headers or between panels — the design has none.
 - **Hidden, never faked** (brief Q5). Not shown because no capability exists yet: Manual (no approval
   gate client or server), per-chat Vault, team sandbox, Files/Media/Artifacts/The Matrx output families,

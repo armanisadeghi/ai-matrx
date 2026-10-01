@@ -257,6 +257,7 @@ if $STRICT; then
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
         "Univer document page is legible in both themes|pnpm check:univer-doc-theme"
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
+        "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         # No blocking layers (register ARE-008): a desktop dialog forced to
@@ -982,6 +983,7 @@ else
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
         "Univer document page is legible in both themes|pnpm check:univer-doc-theme"
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
+        "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         "No blocking dialogs (AI stays reachable)|pnpm check:blocking-dialogs"

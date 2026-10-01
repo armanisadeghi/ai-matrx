@@ -60,9 +60,10 @@ import { buildAdminUsersScope } from "../lib/admin-users-scope";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { UserResearchDialog } from "./UserResearchDialog";
 import { readUserResearch } from "../service/userResearch";
-import { RELATIONSHIP_LABELS, CONTACT_STATE_LABELS, type UserResearch } from "../lib/userResearch";
+import { RELATIONSHIP_LABELS, CONTACT_STATE_LABELS, feedbackDmKey, type UserResearch } from "../lib/userResearch";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
@@ -141,22 +142,21 @@ export function AccountsTableClient() {
     useListViewPrefs("admin-user-accounts");
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const researchOwnerId = useAppSelector(state => state.userAuth.id);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [research, setResearch] = useState<UserResearch[]>([]);
   const [researchError, setResearchError] = useState<string | null>(null);
   const [researchTarget, setResearchTarget] = useState<AdminUserRow | null>(null);
-  const researchByUser = useMemo(() => new Map(research.map(record => [record.subject_id, record])), [research]);
+  const researchByUser = useMemo(() => new Map(research.filter(record => record.created_by === researchOwnerId).map(record => [record.subject_id, record])), [research, researchOwnerId]);
   const ownerOrganizations = useMemo(() => new Set(rows.find(row => row.id === researchOwnerId)?.organizations.map(org => org.id) ?? []), [rows, researchOwnerId]);
   useEffect(() => {
     if (!researchOwnerId) return;
     let cancelled = false;
-    setResearchError(null);
-    void readUserResearch(researchOwnerId).then(records => { if (!cancelled) setResearch(records); })
+    void readUserResearch(researchOwnerId).then(records => { if (!cancelled) { setResearch(records); setResearchError(null); } })
       .catch(error => { if (!cancelled) setResearchError(error instanceof Error ? error.message : "Could not load personal notes"); });
     return () => { cancelled = true; };
-  }, [researchOwnerId]);
+  }, [researchOwnerId, refreshKey]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [clickedRow, setClickedRow] = useState<AdminUserRow | null>(null);
   // The table's search / column filters / sort / page live HERE rather than
   // inside MatrxDataTable ("controlled-local": the table still filters the
@@ -287,7 +287,7 @@ export function AccountsTableClient() {
   const [dmSending, setDmSending] = useState(false);
 
   const sendDm = useCallback(async () => {
-    if (!dmTarget || !dmContent.trim()) return;
+    if (!dmTarget || !dmContent.trim() || !researchOwnerId || dmSending) return;
     if (!selectedOrganizationId) {
       // The conversation route files the DM in the admitted organization and
       // refuses without one; say so here instead of sending a request that 400s.
@@ -313,10 +313,11 @@ export function AccountsTableClient() {
       if (!convRes.ok || !convJson.success)
         throw new Error(convJson.msg ?? "Could not open conversation");
       const conversationId = convJson.data?.ConversationID as string;
+      const clientMessageId = await feedbackDmKey(researchOwnerId, conversationId, dmContent);
       const msgRes = await fetch(`/api/messages/${conversationId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: dmContent.trim() }),
+        body: JSON.stringify({ content: dmContent.trim(), client_message_id: clientMessageId }),
       });
       const msgJson = await msgRes.json();
       if (!msgRes.ok || !msgJson.success)
@@ -337,7 +338,7 @@ export function AccountsTableClient() {
     } finally {
       setDmSending(false);
     }
-  }, [dmTarget, dmContent, router, selectedOrganizationId]);
+  }, [dmTarget, dmContent, dmSending, researchOwnerId, router, selectedOrganizationId, setDmTarget, setDmContent]);
 
   const columns = useMemo((): MatrxColumnDef<AdminUserRow>[] => {
     return [
@@ -375,8 +376,6 @@ export function AccountsTableClient() {
         cell: row => <Button variant="ghost" size="sm" onClick={() => setResearchTarget(row)}>{researchError ? "—" : RELATIONSHIP_LABELS[researchByUser.get(row.id)?.category ?? "unknown"]}</Button> },
       { id: "contact_status", header: "Contact status", accessorFn: row => researchError ? "—" : CONTACT_STATE_LABELS[researchByUser.get(row.id)?.contact_state ?? (row.banned ? "hold" : "not_contacted")], filter: "select", width: 130 },
       { id: "my_notes", header: "My notes", accessorFn: row => researchByUser.get(row.id)?.notes ?? "", hidden: true, width: 240 },
-      { id: "ai_requests_since_june", header: "AI requests (since Jun)", accessorFn: row => row.ai_requests_since_june ?? null, hidden: true, width: 170 },
-      { id: "ai_cost_since_june", header: "AI cost (since Jun)", accessorFn: row => row.ai_cost_since_june ?? null, cell: row => row.ai_cost_since_june === undefined ? "—" : fmtCost(row.ai_cost_since_june), hidden: true, width: 160 },
       {
         id: "kind",
         header: "Who",
@@ -666,7 +665,7 @@ export function AccountsTableClient() {
         width: 120,
       },
     ];
-  }, [router, researchByUser, researchError]);
+  }, [router, researchByUser, researchError, setResearchTarget]);
 
   // Derived, never stored: a deep link that arrives after load and one that
   // arrives before it resolve identically, and closing the focus cannot fight a
@@ -1077,11 +1076,11 @@ export function AccountsTableClient() {
         </NonEditableContextMenu>
       </div>
 
-      {researchError && <p role="alert" className="text-sm text-destructive">Personal notes could not load. Refresh to retry.</p>}
+      {researchError && <ErrorNotice size="inline" message="Personal notes could not load. Refresh to retry." error={researchError} operation="Load personal user notes" calls={["crm.party_research"]} />}
       {researchTarget && researchOwnerId && <UserResearchDialog
         key={researchTarget.id} row={researchTarget} ownerId={researchOwnerId}
         existing={researchByUser.get(researchTarget.id) ?? null}
-        sharedOrganizations={researchTarget.organizations.filter(org => ownerOrganizations.has(org.id)).map(org => org.name)}
+        sharedOrganizations={researchTarget.id === researchOwnerId ? [] : researchTarget.organizations.filter(org => ownerOrganizations.has(org.id)).map(org => org.name)}
         onClose={() => setResearchTarget(null)}
         onSaved={record => setResearch(records => [...records.filter(current => current.subject_id !== record.subject_id), record])}
       />}

@@ -2,6 +2,9 @@
 
 Run:  cd /Users/armanisadeghi/code/aidream && uv run --with asyncpg --with httpx \
         python /Users/armanisadeghi/code/matrx-frontend/scripts/hr/t_l1_5_rehire_and_access_shutoff_walk.py
+      It runs against the proven nightly CLONE by default (tests never touch the live database); the
+      subject persona and every row it leaves are removed in `finally`. Add `--live` only for a demo the
+      owner asked for on live.
 
 Every write goes through the SAME RPC the UI calls (`hr_employee_create`, `hr_separation_record`),
 over HTTPS PostgREST, with a token minted by admin generate_link + verify. No password is set or
@@ -68,8 +71,7 @@ def load_env(p):
     return out
 
 
-async def walk():
-    env = load_env(ENV)
+async def walk(env):
     base = env["SUPABASE_MATRIX_URL"].rstrip("/")
     anon = env["SUPABASE_MATRIX_PUBLISHABLE_KEY"]
     service = env["SUPABASE_MATRIX_SECRET_KEY"]
@@ -328,15 +330,26 @@ async def main():
     """Make this run's subject with the persona factory, walk, and tear the subject down in `finally`."""
     global SUBJECT, SUBJECT_UID, SUBJECT_FIRST, SUBJECT_LAST
     sys.path.insert(0, "/Users/armanisadeghi/code/aidream")
-    from aidream.testing.persona import PersonaFactoryRefusal, create_fixture_user, delete_fixture_user, live_target
+    from aidream.testing.persona import (
+        PersonaFactoryRefusal, clone_target, create_fixture_user, delete_fixture_user, live_target,
+    )
 
-    target = live_target(reason="T-L1-5 rehire walk needs a fresh org member subject per run")
+    if "--live" in sys.argv:
+        target = live_target(reason="T-L1-5 rehire walk needs a fresh org member subject per run")
+        env = load_env(ENV)
+    else:
+        sys.path.insert(0, "/Users/armanisadeghi/code/aidream/scripts/clone")
+        import server_env  # pyright: ignore[reportMissingImports]
+
+        target = clone_target()
+        env = server_env.resolve_clone_server_env()
+    print(f"target: {target.label}")
     made = create_fixture_user(target, suite="hr-demo/t-l1-5-rehire-walk",
                                purpose="a fresh subject hired, departed and rehired through the product's own doors")
     SUBJECT, SUBJECT_UID = made.email, made.user_id
     SUBJECT_FIRST, SUBJECT_LAST = made.persona.first_name, made.persona.last_name
     try:
-        return await walk()
+        return await walk(env)
     finally:
         try:
             delete_fixture_user(target, made.user_id)

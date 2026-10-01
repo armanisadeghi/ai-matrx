@@ -59,10 +59,12 @@ import {
   RESUME_STREAM_CLOSING_BACKOFF_MS,
   RESUME_STREAM_CLOSING_MAX_RETRIES,
 } from "./resume-claims";
-import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
-import { composeResumeContext } from "../utils/surface-writes-note";
-import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
+import { surfaceWritesNoteSource } from "../utils/surface-writes-note";
+import { buildRequestContext } from "../context-rules/request-context";
+import { ensureContextRulesReady } from "../context-rules/context-rules.thunks";
+import { resolveMandateKillSwitch } from "../context-rules/mandate-kill-switch";
+import { setExpectedContextRows } from "../instance-context/instance-context.slice";
 import {
   patchConversation,
   setInstanceStatus,
@@ -237,18 +239,20 @@ export const resumeInstance = createAsyncThunk<
             error,
           ),
         );
+      await (dispatch as AppDispatch)(ensureContextRulesReady());
       const freshState = getState() as RootState;
-      const chipContext = selectContextPayload(conversationId)(freshState);
-      const ambient = buildAmbientContext(freshState, conversationId);
-      // THE LABEL ON THE RE-READ: the page values above were read AFTER the
-      // writes this conversation made; say so, or the model reads its own
-      // write as a value that was already there (2026-09-27).
-      const context = composeResumeContext(
-        freshState,
-        conversationId,
-        ambient,
-        chipContext,
-      );
+      // THE ONE DOOR, with the system values on every resume and — THE LABEL
+      // ON THE RE-READ — the note that the page values were read AFTER the
+      // writes this conversation made, or the model reads its own write as a
+      // value that was already there (2026-09-27).
+      const writesNote = surfaceWritesNoteSource(freshState, conversationId);
+      const { rows: contextRows, context } = buildRequestContext(freshState, conversationId, {
+        includeAmbient: true,
+        mandateKillSwitch: await resolveMandateKillSwitch(
+          freshState.conversations.byConversationId[conversationId]?.mandateKey,
+        ),
+        extraSources: writesNote ? [writesNote] : [],
+      });
 
       // USER-layer apply policy — keep the resumed loop's directive handling
       // aligned with the user's preference (highest-priority cascade leg).
@@ -308,6 +312,13 @@ export const resumeInstance = createAsyncThunk<
       // Create the request tracking entry. No optimistic user message — there
       // is no new input on a resume.
       dispatch(createRequest({ requestId, conversationId }));
+      dispatch(
+        setExpectedContextRows({
+          conversationId,
+          requestId,
+          rows: contextRows.map((row) => ({ ...row, value: undefined })),
+        }),
+      );
       // Flip the instance back to running. It was likely `paused` (the
       // ui-first dispatcher sets it before awaiting the user) or `complete`
       // (the original suspended stream finalised its phase). `runAiStream`

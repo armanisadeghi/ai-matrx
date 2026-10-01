@@ -16,6 +16,10 @@
  * `finish`), so there is no second record of what was written.
  */
 
+import {
+  DEFAULT_SURFACE_KEY,
+  type ContextRowSource,
+} from "@ai-matrx/agents/context";
 import type { RootState } from "@/lib/redux/store";
 
 /** The context key the resumed request carries the note under. */
@@ -97,23 +101,28 @@ export function buildSurfaceWritesNote(
 }
 
 /**
- * The resumed request's `context`: ambient + chip context, plus the writes
- * note when this conversation made a page write. `resumeInstance` sends
- * exactly what this returns.
+ * The writes note as one more context VALUE for the resumed request — a row
+ * of the one door (`buildRequestContext`'s `extraSources`), so the person sees
+ * and governs it like any other value. Null when this conversation made no
+ * page write.
  */
-export function composeResumeContext(
+export function surfaceWritesNoteSource(
   state: RootState,
   conversationId: string,
-  ambient: Record<string, unknown> | null | undefined,
-  chipContext: Record<string, unknown> | null | undefined,
   readAt?: string,
-): Record<string, unknown> | undefined {
+): ContextRowSource | null {
   const writesNote = buildSurfaceWritesNote(state, conversationId, readAt);
-  if (!ambient && !chipContext && !writesNote) return undefined;
+  if (!writesNote) return null;
+  const envelope = surfaceWritesNoteEnvelope(writesNote);
   return {
-    ...(ambient ?? {}),
-    ...(chipContext ?? {}),
-    ...(writesNote ? { [SURFACE_WRITES_NOTE_KEY]: surfaceWritesNoteEnvelope(writesNote) } : {}),
+    key: SURFACE_WRITES_NOTE_KEY,
+    label: envelope.label as string,
+    surfaceKey: DEFAULT_SURFACE_KEY,
+    origin: "system",
+    value: envelope,
+    type: "text",
+    // The note only works when it is in front of the model.
+    layers: { surface: { declared: false, max_inline_chars: NOTE_INLINE_CEILING } },
   };
 }
 

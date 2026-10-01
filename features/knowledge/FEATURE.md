@@ -123,6 +123,8 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
 
 ## Change log
 
+- **2026-09-30** — Showcase headline uses separate source-flow and system lines, balanced paragraph wrapping, and a compact phone subtitle. Verified on localhost at desktop and phone widths with an independent visual review.
+
 - **2026-09-30** — Hub org filter finished: Transcripts sends `p_org_id` on every lane, per-organization counts in the menu, empty state names the organization with Clear filters (also in Everything), unsorted recordings not trashable by design, trash/restore refreshes Inbox/Kept/Archived, mounted active-org-inert test.
 
 - **2026-09-29** — Knowledge table layout retains the canonical footer and source-coverage notice; browse totals exclude passage counts, while text search never invents a distinct-item total. The existing Load more advances section cursors.

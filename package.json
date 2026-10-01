@@ -62,6 +62,8 @@
     "typecheck-health": "node scripts/typecheck-health.mjs",
     "typecheck-health:strict": "node scripts/typecheck-health.mjs --strict",
     "typecheck-health:self-test": "node scripts/typecheck-health.mjs --self-test",
+    "check:context-single-door": "node scripts/check-context-single-door.mjs",
+    "check:context-single-door:self-test": "node scripts/check-context-single-door.mjs --self-test",
     "check:fixture-org-per-run": "node scripts/check-fixture-org-per-run.mjs",
     "check:fixture-org-per-run:self-test": "node scripts/check-fixture-org-per-run.mjs --self-test",
     "test:fixture-org": "node --test scripts/lib/use-case-org.test.mjs",

@@ -52,7 +52,6 @@ import {
 import {
   messagePartToUserInputPart,
   selectEditorResourceXml,
-  selectResourceContextPayload,
   selectResourcePayloads,
   userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
@@ -62,15 +61,19 @@ import {
   selectVariablesForRequest,
 } from "../instance-variable-values/instance-variable-values.selectors";
 import { selectSettingsOverridesForApi } from "../instance-model-overrides/instance-model-overrides.selectors";
+import { selectInstanceContextEntries } from "../instance-context/instance-context.selectors";
 import {
-  selectContextPayload,
-  selectInstanceContextEntries,
-} from "../instance-context/instance-context.selectors";
-import { consumePerTurnContext } from "../instance-context/instance-context.slice";
+  consumePerTurnContext,
+  setExpectedContextRows,
+} from "../instance-context/instance-context.slice";
+import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
-  buildAmbientContext,
-  isFirstTurn,
-} from "@/features/agents/ui-first-tools/redux/build-ambient-context";
+  buildRequestContext,
+  contextRowsForRequest,
+  rememberRequestContextRows,
+} from "../context-rules/request-context";
+import { ensureContextRulesReady } from "../context-rules/context-rules.thunks";
+import { resolveMandateKillSwitch } from "../context-rules/mandate-kill-switch";
 import {
   selectProjectId,
   selectActiveScopeTypeIds,
@@ -211,6 +214,8 @@ export function assembleRequest(
      * interactive send paths; clearly-automatic callers must declare "auto".
      */
     initiation?: RequestInitiation;
+    /** The Mandate's context kill switch, when this run is a mandate's. */
+    mandateKillSwitch?: boolean;
   },
 ): AssembledAgentStartRequest | null {
   const instance = state.conversations.byConversationId[conversationId];
@@ -276,13 +281,13 @@ export function assembleRequest(
   // Config overrides (ONLY deltas — uses instance-owned baseSettings snapshot)
   const config_overrides = selectSettingsOverridesForApi(conversationId)(state);
 
-  // Context dict
-  const ordinaryContext = selectContextPayload(conversationId)(state);
-  const resourceContext = selectResourceContextPayload(conversationId)(state);
-  const context =
-    ordinaryContext || resourceContext
-      ? { ...(ordinaryContext ?? {}), ...(resourceContext ?? {}) }
-      : undefined;
+  // Context — THE ONE DOOR (context-rules/request-context.ts): the rows the
+  // composer's table shows, every rule applied, then `buildContextWire`. The
+  // first turn's system values (user, client, route…) are rows too, so the
+  // person can see and govern them like everything else.
+  const { rows: contextRows, context } = buildRequestContext(state, conversationId, {
+    mandateKillSwitch: opts?.mandateKillSwitch,
+  });
 
   // Tool injection (`tools` + `client` envelope) is layered on by the thunk
   // body via `buildToolInjection` after this sync assembly returns. Keeping
@@ -401,6 +406,7 @@ export function assembleRequest(
   const userOverrides = buildUserOverrides(state);
   if (userOverrides) request.user = userOverrides;
 
+  rememberRequestContextRows(request, contextRows);
   return request;
 }
 
@@ -624,10 +630,18 @@ export const executeInstance = createAsyncThunk<
       // the user's raw prose; on reload from the DB the same message would
       // render as prose + chips — a visible mismatch during the first turn.
 
+      // The person's saved context rules are loaded and no rule write is
+      // still in flight — the request below must be built from exactly what
+      // the server will read (RULES.md §3).
+      await dispatch(ensureContextRulesReady());
+      const mandateKillSwitch = await resolveMandateKillSwitch(instance.mandateKey);
+      state = getState() as RootState;
+
       // Assemble the request (sync — pure selector logic).
       const payload = assembleRequest(state, conversationId, {
         scopeIdsOverride,
         initiation,
+        mandateKillSwitch,
       });
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
@@ -668,18 +682,9 @@ export const executeInstance = createAsyncThunk<
         }
       }
 
-      // First-turn-only ambient context. The agent gets `user`,
-      // `route_brief`, `organization`, `active_scopes`, etc. once — on the
-      // first send of the conversation, merged directly into payload.context.
-      // We deliberately do NOT route this through the `instanceContext` slice
-      // (which renders chips above every user message). The agent has the
-      // keys in its prior turns; re-sending on every turn is noise.
-      if (isFirstTurn(state, conversationId)) {
-        const ambient = buildAmbientContext(state, conversationId);
-        if (ambient) {
-          payload.context = { ...(payload.context ?? {}), ...ambient };
-        }
-      }
+      // First-turn-only system values (`user`, `route_brief`, `organization`…)
+      // are rows of `buildRequestContext` inside assembleRequest — governed
+      // and shown like every other value, still sent on the first turn only.
 
       // ─────────────────────────────────────────────────────────────────────
       // OPTIMISTIC USER BUBBLE — fire synchronously BEFORE any await so the
@@ -810,6 +815,15 @@ export const executeInstance = createAsyncThunk<
       // bound to `activeRequests` (status pills, "thinking" indicators) gets
       // wired to the in-flight turn before we yield to the network/registry.
       dispatch(createRequest({ requestId, conversationId }));
+      // What the screen showed when the person pressed send — the server's
+      // `context_receipt` for this request is compared against exactly this.
+      dispatch(
+        setExpectedContextRows({
+          conversationId,
+          requestId,
+          rows: contextRowsForRequest(payload),
+        }),
+      );
       // An image / video / audio run is a JOB: its own working line or card
       // (model, clock, estimated cost) replaces the generic shimmer.
       void labelGenerationJob(

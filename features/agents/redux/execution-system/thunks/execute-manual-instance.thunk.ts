@@ -112,13 +112,16 @@ import {
   clearSubmittedFirstTurnValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
+import { selectInstanceContextEntries } from "../instance-context/instance-context.selectors";
 import {
-  selectContextPayload,
-  selectInstanceContextEntries,
-} from "../instance-context/instance-context.selectors";
+  buildRequestContext,
+  contextRowsForRequest,
+  rememberRequestContextRows,
+} from "../context-rules/request-context";
+import { ensureContextRulesReady } from "../context-rules/context-rules.thunks";
+import { setExpectedContextRows } from "../instance-context/instance-context.slice";
 import {
   messagePartToUserInputPart,
-  selectResourceContextPayload,
   selectResourcePayloads,
   userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
@@ -351,7 +354,6 @@ export async function assembleManualRequest(
   const textInput = userInputState?.text ?? "";
   const userMessageParts = userInputState?.messageParts;
   const resourcePayloads = selectResourcePayloads(conversationId)(state);
-  const resourceContext = selectResourceContextPayload(conversationId)(state);
 
   if (textInput || userMessageParts || resourcePayloads.length > 0) {
     const parts: UserInputPart[] = [];
@@ -382,11 +384,12 @@ export async function assembleManualRequest(
   });
   const variableResourceContext =
     selectRuntimeVariableResourcePolicies(conversationId)(state);
-  const ordinaryContext = selectContextPayload(conversationId)(state);
-  const context =
-    ordinaryContext || resourceContext
-      ? { ...(ordinaryContext ?? {}), ...(resourceContext ?? {}) }
-      : undefined;
+  // Context — THE ONE DOOR (context-rules/request-context.ts). The builder's
+  // manual run has never carried the first turn's system values; it still
+  // doesn't, and the table shows exactly that.
+  const { rows: contextRows, context } = buildRequestContext(state, conversationId, {
+    includeAmbient: false,
+  });
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
   // agent.tools (UUID array) becomes seed RegisteredToolSpec entries with
@@ -599,6 +602,7 @@ export async function assembleManualRequest(
     }
   }
 
+  rememberRequestContextRows(request, contextRows);
   return request;
 }
 
@@ -648,6 +652,9 @@ export const executeManualInstance = createAsyncThunk<
     let runModelLabel: string | null = null;
     let runWaitSeconds: number | null = null;
     try {
+      // Saved context rules loaded and no rule write in flight before the
+      // snapshot the request is built from (RULES.md §3).
+      await dispatch(ensureContextRulesReady());
       const state = getState() as RootState;
       const instance = state.conversations.byConversationId[conversationId];
       if (!instance) {
@@ -785,6 +792,13 @@ export const executeManualInstance = createAsyncThunk<
             `Check that the agent has a modelId set.`,
         );
       }
+      dispatch(
+        setExpectedContextRows({
+          conversationId,
+          requestId,
+          rows: contextRowsForRequest(payload),
+        }),
+      );
       // Freeze the first request's explicit organization on the local Builder
       // conversation so later independent manual runs cannot follow a changed
       // sidebar selection into another tenant.

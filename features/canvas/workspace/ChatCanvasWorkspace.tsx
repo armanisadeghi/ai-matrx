@@ -284,7 +284,7 @@ export function ChatCanvasWorkspace({
   const conversationId = chat.conversationId;
   // Passing no conversation keeps the hook inert for a host that does not
   // follow the page. The person turns it off and on from the composer's page
-  // chip (PageContextChip), which the hook honours.
+  // chip (ConversationContextChip), which the hook honours.
   useConversationFollowsPage(followPageSurface ? conversationId : null, true);
   const chatTitle = useChatPanelTitle(conversationId);
 

@@ -19,6 +19,14 @@ the validator passes.
 node scripts/interface-text/check-interface-text.mjs <slice paths...> --units > <run>/units.json
 ```
 
+Then mark Arman's own words (strings overlapping what he typed or wrote) — a fixer never touches those:
+
+```bash
+node scripts/interface-text/check-owner-words.mjs <run>/units.json -o <run>/units.json
+```
+
+Strings in `scripts/interface-text/keep.json` never appear as units — he approved them.
+
 A **unit** is one rendered string (file + line) with every rule that fired on it: `id`, `file`,
 `line`, `severity` (1 = NOVEL, 2 = long), `rules`, `slot` (its budget kind), `chars`, `text`.
 `…` inside `text` marks a dynamic value. A batch is at most ~45 units.
@@ -43,6 +51,7 @@ failure of this phase (round 1, 2026-09-30: 3 of 3 agents did it).
 | `asymmetric` | One sibling has text the others lack, or lengths differ wildly | Remove the outlier, or give the exact parallel text for every sibling |
 | `primitive` | The component itself lets secondary text grow (no `truncate`/`line-clamp`), or it hand-rolls a copy of a `components/official/*` primitive | Name the primitive to adopt or the one-line clamp to add |
 | `legit` | Confirm-dialog consequence ≤2 sentences, empty/error state ≤2 sentences, the product's own content (lesson, help article, legal text, AI output, user data), `(public)` marketing | None |
+| `owner` | The unit carries `owner_words` — the text overlaps Arman's own words | None — Review decides; never propose a rewrite |
 | `unsure` | You cannot tell which of the above | None — say what you could not tell |
 
 Budgets: secondary 60 · tooltip 140 · placeholder 60 · dialog/empty/error 140 (≤2 sentences).

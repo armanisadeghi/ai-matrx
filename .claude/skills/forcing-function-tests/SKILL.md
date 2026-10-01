@@ -22,7 +22,7 @@ false confidence. Applies to pytest, jest, `node --test`, `check:*` scripts, and
 
 **Tests are guards, not verification.** Green never flips anything to done. Done = someone who did
 not build it, on the live surface, with real data (`campaign-pattern`). A test keeps one named break
-caught forever. **Fixture names look real** ([test-data-looks-real](/policies/test-data-looks-real.md)).
+caught forever. **Fixture names look real, and test people come only from the persona factory** ([test-data-looks-real](/policies/test-data-looks-real.md): `aidream/aidream/testing/persona.py`, `matrx-frontend/scripts/lib/persona.mjs`; never hand-make an account).
 
 ## 1. Before the body: name the break
 

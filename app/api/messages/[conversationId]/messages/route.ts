@@ -211,22 +211,22 @@ export async function POST(
       client_message_id,
     } = validation.data;
 
-    // Check for duplicate message (idempotency)
-    if (client_message_id) {
-      const { data: existingMessage } = await supabase
-        .schema("communication").from("dm_messages")
-        .select("*")
-        .eq("client_message_id", client_message_id)
-        .single();
-
-      if (existingMessage) {
-        return NextResponse.json({
-          success: true,
-          data: existingMessage,
-          duplicate: true,
-          msg: "Message already exists",
-        });
+    // A replay key belongs to the authenticated sender, conversation and exact payload.
+    async function replayResponse() {
+      if (!client_message_id) return null;
+      const { data: prior, error } = await supabase.schema("communication").from("dm_messages")
+        .select("*").eq("client_message_id", client_message_id).eq("sender_id", userId).maybeSingle();
+      if (error) return NextResponse.json({ success: false, msg: "Delivery could not be reconciled. Check the conversation before retrying." }, { status: 409 });
+      if (!prior) return null;
+      if (prior.conversation_id !== conversationId || prior.content !== content.trim() || prior.message_type !== message_type ||
+        (prior.media_url ?? null) !== (media_url ?? null) || (prior.reply_to_id ?? null) !== (reply_to_id ?? null)) {
+        return NextResponse.json({ success: false, msg: "This message key already belongs to a different message." }, { status: 409 });
       }
+      return NextResponse.json({ success: true, data: prior, duplicate: true, msg: "Message already exists" });
+    }
+    if (client_message_id) {
+      const replay = await replayResponse();
+      if (replay) return replay;
     }
 
     // Verify reply_to message exists and is in this conversation
@@ -290,6 +290,10 @@ export async function POST(
       .single();
 
     if (insertError) {
+      if (insertError.code === "23505" && client_message_id) {
+        const replay = await replayResponse();
+        if (replay) return replay;
+      }
       console.error("[DM Messages API] Failed to send:", insertError);
       return NextResponse.json(
         { success: false, msg: insertError.message },

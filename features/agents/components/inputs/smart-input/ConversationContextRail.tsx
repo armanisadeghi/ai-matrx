@@ -75,7 +75,10 @@ import {
   selectInstanceContextEntries,
   selectSurfaceContextKeys,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { PageContextChip, usePageContextChipShown } from "./PageContextChip";
+import {
+  ConversationContextChip,
+  useConversationContextChipShown,
+} from "./ConversationContextChip";
 import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
@@ -83,7 +86,7 @@ import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
 } from "@/features/agents/components/context-policies-display/contextPolicyIcons";
-import { ContextPolicyDetailSheet } from "@/features/agents/components/context-policies-display/ContextPolicyDetailSheet";
+import { ContextRulesPanel } from "@/features/agents/components/context-policies-display/ContextRulesPanel";
 import { CloudBrowserHandoffCanvasOpener } from "@/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
 import {
   cloudBrowserCanvasSourceId,
@@ -197,12 +200,11 @@ export function ConversationContextRail({
   // ── Live context entries (working doc, scratchpad, slot / ad-hoc context) ──
   const entries = useAppSelector(selectInstanceContextEntries(conversationId));
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
-  // Everything the PAGE'S SURFACE contributed rides ONE chip (PageContextChip);
+  // Everything the PAGE'S SURFACE contributed rides ONE chip (ConversationContextChip);
   // every other entry keeps its own.
   const surfaceKeys = useAppSelector(selectSurfaceContextKeys(conversationId));
   const surfaceKeySet = new Set(surfaceKeys);
-  const surfaceEntries = entries.filter((e) => surfaceKeySet.has(e.key) && entryHasValue(e));
-  const pageChipShown = usePageContextChipShown(conversationId);
+  const contextChipShown = useConversationContextChipShown(conversationId);
 
   // ── Document pills read the EDITOR slice (the SSOT), never instanceContext
   // (which is the agent-facing publication). Working: shown iff enabled.
@@ -274,10 +276,9 @@ export function ConversationContextRail({
   const showSetScopeCta = needsScope;
 
   // ── Detail surfaces (one of each, opened on demand) ────────────────────────
-  const [activeEntry, setActiveEntry] = useState<{
-    key: string;
-    snapshotValue?: unknown;
-  } | null>(null);
+  // The full view (every value + full control) — one panel, opened on demand,
+  // optionally on one value.
+  const [activeKey, setActiveKey] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [listsOpen, setListsOpen] = useState(false);
 
@@ -286,13 +287,13 @@ export function ConversationContextRail({
   };
 
   /** Same pill again → close; different pill → switch. */
-  const toggleEntry = (key: string, snapshotValue?: unknown) => {
-    if (detailOpen && activeEntry?.key === key) {
+  const toggleEntry = (key?: string) => {
+    if (detailOpen && key !== undefined && activeKey === key) {
       setDetailOpen(false);
       return;
     }
     closeOtherSurfaces();
-    setActiveEntry({ key, snapshotValue });
+    setActiveKey(key ?? null);
     setDetailOpen(true);
   };
 
@@ -468,7 +469,9 @@ export function ConversationContextRail({
     }
 
     const presentedByHost = new Set(
-      attachedItems.flatMap((item) => (item.contextKey ? [item.contextKey] : [])),
+      attachedItems.flatMap((item) =>
+        item.contextKey ? [item.contextKey] : [],
+      ),
     );
     for (const e of valued) {
       // A host pill already presents this entry (see `contextKey`).
@@ -547,8 +550,8 @@ export function ConversationContextRail({
         // "Table ID", "Table Name" and "Table Columns" three chips that all read "Table".
         word: label,
         hint: "Click: view details · X: remove from context",
-        active: detailOpen && activeEntry?.key === e.key,
-        onOpen: () => toggleEntry(e.key, e.value),
+        active: detailOpen && activeKey === e.key,
+        onOpen: () => toggleEntry(e.key),
         onRemove: () =>
           dispatch(removeContextEntry({ conversationId, key: e.key })),
       });
@@ -574,118 +577,117 @@ export function ConversationContextRail({
         ? []
         : items.slice(maxInline - 1);
 
-  // Zero footprint when there's nothing to surface — but keep any drawer that
-  // is mid-open mounted so its close animation completes if the backing item
-  // momentarily drops out.
-  if (items.length === 0 && !showSetScopeCta && !pageChipShown && !detailOpen && !listsOpen) {
-    return null;
-  }
+  // The detail surfaces are mounted ONCE, at the same position in the tree,
+  // whether or not the rail itself shows — so a value that drops out of the
+  // rail (or the rail emptying) never remounts an open panel.
+  const detailSurfaces = (
+    <DetailSurfaces
+      conversationId={conversationId}
+      agentId={agentId ?? null}
+      activeKey={activeKey}
+      setActiveKey={setActiveKey}
+      detailOpen={detailOpen}
+      setDetailOpen={setDetailOpen}
+      listsOpen={listsOpen}
+      setListsOpen={setListsOpen}
+    />
+  );
 
-  if (items.length === 0 && !showSetScopeCta && !pageChipShown) {
-    return (
-      <DetailSurfaces
-        conversationId={conversationId}
-        agentId={agentId ?? null}
-        activeEntry={activeEntry}
-        detailOpen={detailOpen}
-        setDetailOpen={setDetailOpen}
-        listsOpen={listsOpen}
-        setListsOpen={setListsOpen}
-      />
-    );
-  }
+  // Zero footprint when there's nothing to surface.
+  const railShown = items.length > 0 || showSetScopeCta || contextChipShown;
 
   return (
-    <div
-      className={cn("flex min-w-0 items-center gap-1.5 px-0.5 pb-1", className)}
-      data-surface-value={surfaceValueName}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-        {showSetScopeCta && (
-          <span
-            className="shrink-0 rounded-md ring-1 ring-inset ring-amber-500/60"
-            title="This agent uses context items from a scope you haven't set yet"
-          >
-            <ActiveContextButton size="xs" iconOnly className="shrink-0" />
-          </span>
-        )}
-        {pageChipShown ? (
-          <PageContextChip
-            conversationId={conversationId}
-            entries={surfaceEntries}
-            onOpenEntry={(entry) => toggleEntry(entry.key, entry.value)}
-          />
-        ) : null}
-        {inline.map((item) => (
-          <RailPill key={item.id} item={item} />
-        ))}
-      </div>
+    <>
+      {railShown ? (
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-1.5 px-0.5 pb-1",
+            className,
+          )}
+          data-surface-value={surfaceValueName}
+        >
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+            {showSetScopeCta && (
+              <span
+                className="shrink-0 rounded-md ring-1 ring-inset ring-amber-500/60"
+                title="This agent uses context items from a scope you haven't set yet"
+              >
+                <ActiveContextButton size="xs" iconOnly className="shrink-0" />
+              </span>
+            )}
+            {contextChipShown ? (
+              <ConversationContextChip
+                conversationId={conversationId}
+                onOpenFullView={(key) =>
+                  void openAfterCurrentLayerCloses(() => toggleEntry(key))
+                }
+              />
+            ) : null}
+            {inline.map((item) => (
+              <RailPill key={item.id} item={item} />
+            ))}
+          </div>
 
-      {overflow.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              title={`${overflow.length} more`}
-              aria-label={`${overflow.length} more context items`}
-              className={cn(
-                "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-2",
-                "text-xs font-medium text-muted-foreground transition-colors",
-                "hover:bg-muted/60 hover:text-foreground",
-              )}
-            >
-              <MoreHorizontal className="h-3.5 w-3.5" />
-              <span className="tabular-nums">{overflow.length}</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="top" className="w-56">
-            {overflow.map((item) => {
-              const Icon = item.icon;
-              return (
-                <DropdownMenuItem
-                  key={item.id}
-                  onSelect={() => {
-                    // Let the overflow menu release its Radix body lock before
-                    // ContextPolicyDetailSheet / TaskPanel takes ownership.
-                    void openAfterCurrentLayerCloses(item.onOpen);
-                  }}
-                  className="gap-2"
+          {overflow.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  title={`${overflow.length} more`}
+                  aria-label={`${overflow.length} more context items`}
+                  className={cn(
+                    "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-2",
+                    "text-xs font-medium text-muted-foreground transition-colors",
+                    "hover:bg-muted/60 hover:text-foreground",
+                  )}
                 >
-                  {item.busy ? (
-                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Icon
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        item.tone === "primary"
-                          ? "text-primary"
-                          : "text-muted-foreground",
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                  <span className="tabular-nums">{overflow.length}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" className="w-56">
+                {overflow.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={item.id}
+                      onSelect={() => {
+                        // Let the overflow menu release its Radix body lock before
+                        // ContextPolicyDetailSheet / TaskPanel takes ownership.
+                        void openAfterCurrentLayerCloses(item.onOpen);
+                      }}
+                      className="gap-2"
+                    >
+                      {item.busy ? (
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Icon
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            item.tone === "primary"
+                              ? "text-primary"
+                              : "text-muted-foreground",
+                          )}
+                        />
                       )}
-                    />
-                  )}
-                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                  {item.detail && (
-                    <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
-                      {item.detail}
-                    </span>
-                  )}
-                </DropdownMenuItem>
-              );
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-
-      <DetailSurfaces
-        conversationId={conversationId}
-        agentId={agentId ?? null}
-        activeEntry={activeEntry}
-        detailOpen={detailOpen}
-        setDetailOpen={setDetailOpen}
-        listsOpen={listsOpen}
-        setListsOpen={setListsOpen}
-      />
-    </div>
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.label}
+                      </span>
+                      {item.detail && (
+                        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                          {item.detail}
+                        </span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      ) : null}
+      {detailSurfaces}
+    </>
   );
 }
 
@@ -766,7 +768,8 @@ function RailPill({ item }: { item: RailItem }) {
 function DetailSurfaces({
   conversationId,
   agentId,
-  activeEntry,
+  activeKey,
+  setActiveKey,
   detailOpen,
   setDetailOpen,
   listsOpen,
@@ -774,7 +777,8 @@ function DetailSurfaces({
 }: {
   conversationId: string;
   agentId: string | null;
-  activeEntry: { key: string; snapshotValue?: unknown } | null;
+  activeKey: string | null;
+  setActiveKey: (key: string | null) => void;
   detailOpen: boolean;
   setDetailOpen: (open: boolean) => void;
   listsOpen: boolean;
@@ -785,16 +789,14 @@ function DetailSurfaces({
       {/* Agent-initiated Cloud Browser open: when a run raises a human-handoff,
           the Cloud Browser opens in the canvas (same surface the pill opens). */}
       <CloudBrowserHandoffCanvasOpener conversationId={conversationId} />
-      {activeEntry && (
-        <ContextPolicyDetailSheet
-          open={detailOpen}
-          onOpenChange={setDetailOpen}
-          conversationId={conversationId}
-          agentId={agentId}
-          contextKey={activeEntry.key}
-          snapshotValue={activeEntry.snapshotValue}
-        />
-      )}
+      <ContextRulesPanel
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        conversationId={conversationId}
+        agentId={agentId}
+        selectedKey={activeKey}
+        onSelectedKeyChange={setActiveKey}
+      />
       <TaskPanel
         conversationId={conversationId}
         open={listsOpen}

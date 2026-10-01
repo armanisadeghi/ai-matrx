@@ -17,7 +17,7 @@
  *           are dropped. Off means off.
  *
  * The choice is the person's, made on the ONE control: the composer's page
- * chip (`PageContextChip` → `setPageContextEnabled`). `startsOn` is only the
+ * chip (`ConversationContextChip` → `setPageContextEnabled`). `startsOn` is only the
  * host's default for a new conversation — a chat that opens over ANY page
  * (Quick Chat) starts off, so the chip shows as the eye-off icon naming the
  * page and one click shares it. While off, the remembered page follows the

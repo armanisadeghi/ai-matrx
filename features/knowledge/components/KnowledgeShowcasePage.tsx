@@ -260,19 +260,23 @@ export function KnowledgeShowcasePage() {
           aria-hidden
           className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-secondary/10 blur-3xl"
         />
-        <div className="relative mx-auto max-w-3xl px-4 sm:px-6 pt-12 sm:pt-20 pb-8 text-center">
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-12 pb-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-secondary/20 bg-secondary/5 px-4 py-1.5 text-sm font-medium text-secondary mb-6">
             <Brain className="h-3.5 w-3.5" />
             The Matrx Knowledge System
           </div>
-          <h1 className="text-[clamp(2rem,1.5rem+2.5vw,3.5rem)] font-bold tracking-tight text-foreground leading-[1.1]">
-            Source{" "}
-            <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">
-              → knowledge → answer
+          <h1 className="text-balance text-[clamp(2rem,1.5rem+2.5vw,3.5rem)] font-bold tracking-tight text-foreground leading-[1.15]">
+            <span className="block">
+              Source{" "}
+              <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">
+                → knowledge → answer
+              </span>
             </span>
-            , one continuous system.
+            <span className="mt-2 block text-[0.75em] sm:text-[1em]">
+              One continuous system.
+            </span>
           </h1>
-          <p className="mt-6 mx-auto max-w-2xl text-[clamp(1rem,0.95rem+0.25vw,1.2rem)] text-muted-foreground leading-relaxed">
+          <p className="mt-6 mx-auto max-w-3xl text-balance text-[clamp(1rem,0.95rem+0.25vw,1.2rem)] text-muted-foreground leading-relaxed">
             Raw sources flow through a seven-phase pipeline, pass an ingestion
             gate, and become retained, versioned, traceable knowledge — held in
             many representations and described by entities, scopes, trust, and

@@ -1,0 +1,243 @@
+/**
+ * THE ONE DOOR — what the screen shows is what the request carries.
+ *
+ * Carries forward every wire promise the retired `withSurfaceInlineCeiling` /
+ * `selectContextPayload` tests pinned (the person's pointer in full, the
+ * page-less launch's content, a record with a `content` field is data, not an
+ * envelope) and adds the rules system's own: a value the person turned off
+ * never reaches the wire; the person's limit is NEVER sent as a page rule (the
+ * server reads saved rules itself); the page's `autoContext: false` withholds;
+ * the agent's kill switch withholds; the rows ARE the wire.
+ */
+
+import type { RootState } from "@/lib/redux/store";
+import { buildRequestContext, selectResolvedContextRows } from "../request-context";
+
+jest.mock("@/features/surfaces/manifests/registry", () => ({
+  getManifest: (name: string) =>
+    name === "matrx-user/demo"
+      ? {
+          values: [
+            { name: "record", label: "The record", description: "The note", inlineUpTo: 10000 },
+            { name: "plain", label: "Plain value", description: "No ceiling" },
+            { name: "hidden", label: "Hidden value", description: "Bindable only", autoContext: false },
+            { name: "selection", label: "Current selection", description: "x" },
+          ],
+        }
+      : undefined,
+}));
+
+type Entry = { key: string; value: unknown; type?: string; label?: string; slotMatched?: boolean };
+
+function makeState(opts: {
+  entries: Entry[];
+  surfaceName?: string | null;
+  saved?: Record<string, Record<string, unknown>>;
+  policies?: Array<{ key: string; max_inline_chars?: number; label?: string }>;
+  killSwitch?: boolean;
+}): RootState {
+  const byKey: Record<string, unknown> = {};
+  for (const e of opts.entries) {
+    byKey[e.key] = {
+      key: e.key,
+      value: e.value,
+      slotMatched: e.slotMatched ?? false,
+      type: e.type ?? "text",
+      label: e.label ?? e.key,
+    };
+  }
+  return {
+    conversations: {
+      byConversationId: {
+        c1: { agentId: "a1", surfaceName: opts.surfaceName ?? null },
+      },
+    },
+    instanceContext: {
+      byConversationId: { c1: byKey },
+      surfaceKeysByConversationId: {},
+      receiptByConversationId: {},
+      expectedByConversationId: {},
+    },
+    instanceResources: { byConversationId: {} },
+    agentDefinition: {
+      agents: {
+        a1: {
+          id: "a1",
+          contextPolicies: (opts.policies ?? []).map((p) => ({ type: "text", ...p })),
+          autoContextDisabled: opts.killSwitch ?? false,
+        },
+      },
+    },
+    surfaceUserState: {
+      byFeature: {
+        context_rules: { status: "ready", error: null, fetchedAt: 1, rows: opts.saved ?? {} },
+      },
+    },
+    messages: { byConversationId: { c1: { orderedIds: ["m1"] } } },
+  } as unknown as RootState;
+}
+
+const build = (state: RootState) =>
+  buildRequestContext(state, "c1", { includeAmbient: false });
+
+describe("the page's limit and description", () => {
+  it("a declared value with a page limit is sent as an envelope with that limit and the page's description", () => {
+    const { context } = build(
+      makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "record", value: { a: 1 }, type: "json" }] }),
+    );
+    expect(context?.record).toEqual({
+      content: { a: 1 },
+      type: "json",
+      label: "The record",
+      description: "The note",
+      max_inline_chars: 10000,
+    });
+  });
+
+  it("a record that merely has a content field is data, wrapped — never mistaken for an envelope", () => {
+    const record = { id: "g1", title: "Cells", content: "# Cells" };
+    const { context } = build(
+      makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "record", value: record, type: "json" }] }),
+    );
+    expect(context?.record).toMatchObject({ content: record, max_inline_chars: 10000 });
+  });
+
+  it("the manifest's label replaces a raw key label", () => {
+    const { rows } = build(
+      makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "plain", value: "v" }] }),
+    );
+    expect(rows[0]?.label).toBe("Plain value");
+    expect(rows[0]?.surfaceKey).toBe("matrx-user/demo");
+    expect(rows[0]?.origin).toBe("page");
+  });
+});
+
+describe("the person's pointer is always shown in full (Arman, 2026-09-30)", () => {
+  it("a selection inlines up to 10,000 on any page and says the person is pointing at it", () => {
+    const { context } = build(
+      makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "selection", value: "x".repeat(4000) }] }),
+    );
+    const env = context?.selection as Record<string, unknown>;
+    expect(env.max_inline_chars).toBe(10_000);
+    expect(String(env.description)).toMatch(/pointing you at it/);
+  });
+
+  it("text before and after ride along up to 2,500, page or no page", () => {
+    for (const surfaceName of ["matrx-user/demo", null]) {
+      const { context } = build(
+        makeState({
+          surfaceName,
+          entries: [
+            { key: "text_before", value: "abc" },
+            { key: "text_after", value: "abc" },
+          ],
+        }),
+      );
+      expect((context?.text_before as Record<string, unknown>).max_inline_chars).toBe(2_500);
+      expect((context?.text_after as Record<string, unknown>).max_inline_chars).toBe(2_500);
+    }
+  });
+
+  it("a launch with no page shows its whole content up to 6,000; a page keeps its own rule", () => {
+    const pageless = build(makeState({ surfaceName: null, entries: [{ key: "content", value: "doc" }] }));
+    expect((pageless.context?.content as Record<string, unknown>).max_inline_chars).toBe(6_000);
+    const paged = build(makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "content", value: "doc" }] }));
+    expect((paged.context?.content as Record<string, unknown>).max_inline_chars).toBeUndefined();
+  });
+});
+
+describe("rules decide what reaches the wire", () => {
+  it("a value the person turned off never reaches the wire, and its row says so", () => {
+    const { rows, context } = build(
+      makeState({
+        surfaceName: "matrx-user/demo",
+        entries: [{ key: "plain", value: "v" }, { key: "record", value: "r" }],
+        saved: { "matrx-user/demo": { plain: { include: false } } },
+      }),
+    );
+    expect(context?.plain).toBeUndefined();
+    expect(context?.record).toBeDefined();
+    const row = rows.find((r) => r.key === "plain")!;
+    expect(row).toMatchObject({ include: false, delivery: "off", decided_by: { include: "you" } });
+  });
+
+  it("the person's limit decides the row but is NEVER sent as a page rule", () => {
+    const { rows, context } = build(
+      makeState({
+        surfaceName: "matrx-user/demo",
+        entries: [{ key: "plain", value: "v".repeat(5000) }],
+        saved: { "matrx-user/demo": { plain: { max_inline_chars: 20000 } } },
+      }),
+    );
+    expect(rows[0]).toMatchObject({ max_inline_chars: 20000, delivery: "inline", decided_by: { max_inline_chars: "you" } });
+    expect((context?.plain as Record<string, unknown>).max_inline_chars).toBeUndefined();
+  });
+
+  it("a page's bindable-only value is withheld", () => {
+    const { rows, context } = build(
+      makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "hidden", value: "v" }] }),
+    );
+    expect(context).toBeUndefined();
+    expect(rows[0]).toMatchObject({ include: false, decided_by: { include: "page" } });
+  });
+
+  it("the agent's kill switch withholds undeclared values and keeps declared ones", () => {
+    const { context } = build(
+      makeState({
+        surfaceName: "matrx-user/demo",
+        entries: [{ key: "plain", value: "v" }, { key: "record", value: "r" }],
+        policies: [{ key: "record" }],
+        killSwitch: true,
+      }),
+    );
+    expect(context?.plain).toBeUndefined();
+    expect(context?.record).toBeDefined();
+  });
+
+  it("the person can re-admit a value past the kill switch", () => {
+    const { context } = build(
+      makeState({
+        surfaceName: "matrx-user/demo",
+        entries: [{ key: "plain", value: "v" }],
+        killSwitch: true,
+        saved: { "matrx-user/demo": { plain: { include: true } } },
+      }),
+    );
+    expect(context?.plain).toBeDefined();
+  });
+
+  it("a value no surface declares is keyed to the person's _default row", () => {
+    const { rows, context } = build(
+      makeState({
+        surfaceName: "matrx-user/demo",
+        entries: [{ key: "note_id", value: "n1" }],
+        saved: { _default: { note_id: { include: false } } },
+      }),
+    );
+    expect(rows[0]).toMatchObject({ surfaceKey: "_default", origin: "attached", include: false });
+    expect(context).toBeUndefined();
+  });
+});
+
+describe("the table's rows are memoized on their inputs", () => {
+  it("returns the same array until an input changes", () => {
+    const state = makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "plain", value: "v" }] });
+    const select = selectResolvedContextRows("c1");
+    expect(select(state)).toBe(select(state));
+    const changed = {
+      ...state,
+      surfaceUserState: {
+        byFeature: {
+          context_rules: {
+            status: "ready",
+            error: null,
+            fetchedAt: 2,
+            rows: { "matrx-user/demo": { plain: { include: false } } },
+          },
+        },
+      },
+    } as unknown as RootState;
+    expect(select(changed)).not.toBe(select(state));
+    expect(select(changed)[0]?.include).toBe(false);
+  });
+});

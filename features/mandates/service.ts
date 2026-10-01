@@ -302,6 +302,17 @@ export interface DroppedRung {
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * The Mandate's context kill switch lives on its definition row
+ * (`auto_context_disabled`, set by the admin Mandate context gate); a verdict's
+ * contract may carry it too. Either closes context, like the server's OR.
+ */
+function withMandateKillSwitch(contract: MandateContract, rowFlag: unknown): MandateContract {
+  return rowFlag === true && !contract.autoContextDisabled
+    ? { ...contract, autoContextDisabled: true }
+    : contract;
+}
 const cache = new Map<string, { at: number; value: ResolvedMandate }>();
 
 /**
@@ -665,7 +676,10 @@ export async function resolveMandate(
     // it applies the fallback chain, so for the 33 definitions carrying a
     // `fallback_mandate_key` these describe the mandate that actually answered,
     // which the local definition row cannot know (review §4).
-    contract: parseMandateContract(verdict.contract ?? null),
+    contract: withMandateKillSwitch(
+      parseMandateContract(verdict.contract ?? null),
+      (mandate as { auto_context_disabled?: unknown }).auto_context_disabled,
+    ),
     inputKind: verdict.input_kind ?? null,
     outputKind: verdict.output_kind ?? null,
     provisionKey: verdict.provision_key ?? null,
