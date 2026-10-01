@@ -11,7 +11,7 @@
  */
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { applyAssistDockLift, liftFor, useAssistClearance } from "../assistClearance";
+import { applyAssistDockLift, dockPlacementVar, liftFor, useAssistClearance } from "../assistClearance";
 
 function rect(top: number, bottom: number, left: number, right: number): DOMRect {
   return { top, bottom, left, right, width: right - left, height: bottom - top, x: left, y: top, toJSON: () => ({}) } as DOMRect;
@@ -46,13 +46,13 @@ describe("the assists control moves off a control", () => {
       y > 680 && y < 736 ? [dock, sw] : [dock, blank];
 
     applyAssistDockLift();
-    expect(document.documentElement.style.getPropertyValue("--assist-dock-lift")).toBe("48px"); // sampled 2px inside the dock edges
+    expect(dockPlacementVar("--assist-dock-lift")).toBe("48px"); // sampled 2px inside the dock edges
     expect(dock.hasAttribute("data-assist-dock-yield")).toBe(false);
 
     (document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }).elementsFromPoint = () => [dock, sw];
     applyAssistDockLift();
     expect(dock.hasAttribute("data-assist-dock-yield")).toBe(true);
-    expect(document.documentElement.style.getPropertyValue("--assist-dock-lift")).toBe("");
+    expect(dockPlacementVar("--assist-dock-lift")).toBe("");
   });
 
   it("uses visible footer and attention-dock geometry when a tooltip hides the disabled control from hit testing", () => {
@@ -82,11 +82,10 @@ describe("the assists control moves off a control", () => {
     (document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }).elementsFromPoint = () => [dock, tooltip];
 
     applyAssistDockLift();
-    expect(document.documentElement.style.getPropertyValue("--assist-dock-lift")).toBe("104px");
+    expect(dockPlacementVar("--assist-dock-lift")).toBe("104px");
     expect(dock.hasAttribute("data-assist-dock-yield")).toBe(false);
 
     attentionRect = rect(64, 736, 0, 390);
-    document.documentElement.style.removeProperty("--assist-dock-lift");
     applyAssistDockLift();
     expect(dock.hasAttribute("data-assist-dock-yield")).toBe(true);
   });
@@ -135,7 +134,7 @@ describe("the assists control moves off a control", () => {
         root.render(createElement(Harness));
       });
       act(runQueuedFrame);
-      expect(document.documentElement.style.getPropertyValue("--assist-dock-lift")).toBe("");
+      expect(dockPlacementVar("--assist-dock-lift")).toBe("");
 
       attentionRect = rect(680, 736, 0, 390);
       await act(async () => {
@@ -143,7 +142,7 @@ describe("the assists control moves off a control", () => {
         await Promise.resolve();
       });
       act(runQueuedFrame);
-      expect(document.documentElement.style.getPropertyValue("--assist-dock-lift")).toBe("56px");
+      expect(dockPlacementVar("--assist-dock-lift")).toBe("56px");
     } finally {
       act(() => root.unmount());
       host.remove();

@@ -9,7 +9,7 @@
  *
  * RED on the old dock: `data-assist-dock-yield` was set and no `--assist-dock-slot-*` was written.
  */
-import { applyAssistDockLift, slotSpotFor } from "../assistClearance";
+import { applyAssistDockLift, dockPlacementVar, slotSpotFor } from "../assistClearance";
 
 type Box = { top: number; bottom: number; left: number; right: number };
 const W = 1024;
@@ -25,7 +25,8 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, box: Box | null, pare
   return node;
 }
 const inside = (x: number, y: number, b: Box) => x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
-const rootVar = (name: string) => document.documentElement.style.getPropertyValue(name);
+// Placement lives on the dock's own fixed box (ASSISTS-DOCK-COST: a variable on <html> restyled the whole page).
+const rootVar = (name: Parameters<typeof dockPlacementVar>[0]) => dockPlacementVar(name);
 
 /** The dock pill at its floating resting place: bottom-right, just above the pager. */
 const DOCK: Box = { top: 690, bottom: 720, left: W - 12 - 136, right: W - 12 };

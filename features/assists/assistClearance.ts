@@ -242,8 +242,8 @@ function samplePoints(r: DockRect): [number, number][] {
  * What covers `r` among the elements the hit test finds: a row stands for its whole list (one
  * jump clears the list or proves no lift will), a control for itself.
  */
-function hitCoverage(r: DockRect, rowsCount: boolean): Coverage {
-  for (const [x, y] of samplePoints(r)) {
+function hitCoverage(r: DockRect, rowsCount: boolean, points: [number, number][] = samplePoints(r)): Coverage {
+  for (const [x, y] of points) {
     const stack = document.elementsFromPoint?.(x, y) ?? [];
     const under = stack.find((el) => !el.closest(DOCK_SELECTOR));
     if (!under) continue;
@@ -346,12 +346,14 @@ function slotRegions(): { region: DockSlotRegion; host: Element }[] {
   const out: { region: DockSlotRegion; host: Element }[] = [];
   const footers = document.querySelectorAll('[data-matrx-table-footer], [data-assist-dock-slot="footer"]');
   for (const el of footers) {
-    if (el.closest(DOCK_SELECTOR)) continue;
+    // <html> carries the same attribute as the dock's own state ("docked in the footer"): never a bar.
+    if (el === document.documentElement || el.closest(DOCK_SELECTOR)) continue;
     const r = visibleRect(el);
     if (r) out.push({ host: el, region: { kind: "footer", band: r, startRight: Math.min(r.right, window.innerWidth) } });
   }
   const explicitHeaders = document.querySelectorAll('[data-assist-dock-slot="header"]');
   for (const el of explicitHeaders) {
+    if (el === document.documentElement) continue;
     const r = visibleRect(el);
     if (r) out.push({ host: el, region: { kind: "header", band: r, startRight: Math.min(r.right, window.innerWidth) } });
   }
@@ -387,7 +389,8 @@ function coveredInSlot(r: DockRect, content: DOMRect[], cache: PassCache): boole
   for (const a of attentionRects(cache)) if (overlaps(r, a)) return true;
   // Anything else laid over the bar (another floating control) still counts — hit-tested only
   // for a candidate the bar's own content left free.
-  return hitCoverage(r, false) !== false;
+  const mid = (r.top + r.bottom) / 2;
+  return hitCoverage(r, false, [[r.left + 2, mid], [(r.left + r.right) / 2, mid], [r.right - 2, mid]]) !== false;
 }
 
 /**
@@ -516,14 +519,12 @@ export function applyAssistDockLift(): DockPlacement {
   const cache: PassCache = { avoidance: null, attention: null };
   const lift = liftFor(base, (r) => coveredInDocument(r, cache));
   if (lift !== null) {
+    lastSlot = null;
     placeAll(docks, boxes, { lift }, false);
     return lift === 0 ? "rest" : "lift";
   }
   const size = { width: base.right - base.left, height: base.bottom - base.top };
-  for (const { region, host } of slotRegions()) {
-    const content = chromeContentRects(host);
-    const spot = slotSpotFor(region, size, (c) => coveredInSlot(c, content, cache));
-    if (!spot) continue;
+  const place = (kind: DockSlotKind, spot: DockRect, host: Element) => {
     slotHost = host;
     // The variables place the fixed BOX; the pill sits inset inside it (an offset no placement changes).
     const inset = insetInFixedBox(dock, box);
@@ -532,18 +533,59 @@ export function applyAssistDockLift(): DockPlacement {
       boxes,
       {
         slot: {
-          kind: region.kind,
+          kind,
           right: `${Math.round(window.innerWidth - spot.right - inset.right)}px`,
-          bottom: region.kind === "header" ? "auto" : `${Math.round(window.innerHeight - spot.bottom - inset.bottom)}px`,
-          top: region.kind === "header" ? `${Math.round(spot.top)}px` : null,
+          bottom: kind === "header" ? "auto" : `${Math.round(window.innerHeight - spot.bottom - inset.bottom)}px`,
+          top: kind === "header" ? `${Math.round(spot.top)}px` : null,
         },
       },
       false,
     );
-    return "slot";
+    return "slot" as const;
+  };
+  // The last answer stands while its bar, the bar's content, the viewport and the dock are unchanged.
+  const viewKey = `${window.innerWidth}x${window.innerHeight}|${Math.round(size.width)}x${Math.round(size.height)}`;
+  const last = lastSlot;
+  if (last && last.host.isConnected && last.viewKey === viewKey) {
+    const bar = visibleRect(last.host);
+    if (
+      bar &&
+      boxKey(bar) === last.barKey &&
+      contentKey(last.host) === last.contentKey &&
+      !attentionRects(cache).some((a) => overlaps(last.spot, a))
+    ) {
+      return place(last.kind, last.spot, last.host);
+    }
+  }
+  lastSlot = null;
+  for (const { region, host } of slotRegions()) {
+    const content = chromeContentRects(host);
+    const spot = slotSpotFor(region, size, (c) => coveredInSlot(c, content, cache));
+    if (!spot) continue;
+    lastSlot = { host, kind: region.kind, spot, viewKey, barKey: boxKey(region.band), contentKey: contentKey(host) };
+    return place(region.kind, spot, host);
   }
   placeAll(docks, boxes, {}, true);
   return "yield";
+}
+
+/** The slot the dock last docked into, and what that answer depended on. */
+let lastSlot: {
+  host: Element;
+  kind: DockSlotKind;
+  spot: DockRect;
+  viewKey: string;
+  barKey: string;
+  contentKey: string;
+} | null = null;
+
+function boxKey(r: DockRect): string {
+  return `${Math.round(r.top)},${Math.round(r.bottom)},${Math.round(r.left)},${Math.round(r.right)}`;
+}
+
+/** A bar's content changes (a pager page added, a count reworded) without its own box changing. */
+function contentKey(host: Element): string {
+  return `${host.getElementsByTagName("*").length}:${host.textContent?.length ?? 0}`;
 }
 
 // ── The scheduler ───────────────────────────────────────────────────────────────────────────────
