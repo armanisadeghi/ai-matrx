@@ -87,7 +87,20 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
   collects: the tab badge (`record-next/useCandidateCount`), the Candidates tab, an open pair or
   summary window (`CandidateRecordBody`), and every list cell (`components/CandidateListCell`,
   one batched `public.mnd_candidate_cells` read for all cells on screen). Paused while the page is
-  hidden; a beat never stacks on a read in flight. The knob is read only when something collects.
+  hidden, and reads at once when the page is seen again (V2 N1); a beat never stacks on a read in
+  flight. The knob is read only when something collects. **Stop signal = the candidate is
+  terminal-for-now** (ready / promoted / discarded / cancelled — `candidateStillMoving`), never
+  "all pairs in": the judge verdict and the server's status/recommendation land after the last
+  pair, so a pair window keeps reading while its candidate still collects (V2 N1).
+- **Every decision asks first (V2 N3).** Promote, Put back and Discard confirm on the Candidates
+  tab and the summary record in ONE set of words (`words.promoteConfirmation` /
+  `putBackConfirmation` / `discardConfirmation`): what goes live in place of what; a Reject or
+  Hold recommendation is said plainly ("The review said reject.") with "Promote anyway".
+- **"What the … saw" is never dead (V2 N4).** A click before the transcript lookup answers
+  resolves THIS pair's conversation on the spot (`transcripts.findTranscriptUnit`) and opens or
+  focuses its walk; the button carries `data-conversation-id`.
+- **The set dialog's "Applies to" (V2 D18)** shows no rung (and Start waits) until the live
+  holder's rung is read, and lists each rung once (`rungChoicesOf`).
 - **The list cell compares the list's answer by VALUE** — hosts hand a fresh row object every
   render, and an identity check reset the cell to the stale list answer (seen on the clone).
 - **One cell, every list (V1 D4):** admin list, org/person member list and `/mandates` browse all
@@ -101,7 +114,8 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
   (`CandidateHolderName`, D17).
 - Guards: `__tests__/the-candidate-screens-say-what-they-mean.test.tsx` (D3 badge, D15, D16, D18,
   D19 — 6/6 red against the pre-fix files) and `__tests__/list-cell-heartbeat.test.tsx` (red on
-  the identity compare, green on the value compare).
+  the identity compare, green on the value compare); FX2-F: `__tests__/fx2-n1-…`, `fx2-n3-d18-…`,
+  `fx2-n4-…` (7/8 red against the pre-fix files; the 8th is the pure words case).
 
 ---
 
@@ -118,3 +132,6 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
 - `2026-09-30` — Created (Mandate Candidates F3): pair + summary Detail records, openers, guard.
 - `2026-09-30` — FX-F: heartbeat, one list cell on every list, shared-inputs lead line, structured
   live args, attempt marker, version names, dialog follows the live rung.
+- `2026-10-01` — FX2-F (V2 N1, N3, N4, D18): refresh until terminal-for-now + catch-up on
+  visible, confirm every decision with shared words, never-dead transcript buttons, dialog rung
+  right from the first frame.
