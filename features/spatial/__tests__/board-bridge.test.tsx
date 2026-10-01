@@ -238,6 +238,36 @@ describe("the bridge — every board item in two requests", () => {
     expect(store.getSelected()).toBe("colors");
   });
 
+  it("while the person types in a tile, board_open_item reads another item without taking their selection, typing or view", async () => {
+    store.setEditing("site"); // the person is typing in "Website"
+    const camera = store.getCamera();
+    const hold = jest.spyOn(store, "holdAwake");
+    let result: Awaited<ReturnType<typeof executeSurfaceClientTool>> | undefined;
+    await act(async () => {
+      const pending = executeSurfaceClientTool("board_open_item", { id: "colors" });
+      await flush();
+      result = await pending;
+    });
+    const output = (result as { output: Record<string, unknown> }).output;
+    expect(output).toMatchObject({ id: "colors", live: false, values: { note_title: { value: "Colors" } } });
+    expect(store.getEditing()).toBe("site");
+    expect(store.getSelected()).toBe("site");
+    expect(store.getCamera()).toBe(camera);
+    // The sleeping tile is woken for the call instead of selected.
+    expect(hold).toHaveBeenCalledWith("colors");
+  });
+
+  it("while the person types in a tile, board_focus refuses instead of moving their view", async () => {
+    store.setEditing("site");
+    const camera = store.getCamera();
+    const result = await executeSurfaceClientTool("board_focus", { id: "colors" });
+    expect((result as { output: Record<string, unknown> }).output).toMatchObject({ ok: false });
+    expect(String((result as { output: { error: string } }).output.error)).toMatch(/working in "Website"/);
+    expect(store.getSelected()).toBe("site");
+    expect(store.getEditing()).toBe("site");
+    expect(store.getCamera()).toBe(camera);
+  });
+
   it("board_item_act writes a dormant item through the approval card and answers like apply_surface_write", async () => {
     const { call, requestApproval } = agentCall("approved");
     const result = await executeSurfaceClientTool(

@@ -13,9 +13,18 @@
 //     the `version` column). A version that moved for a column we do not edit
 //     (a rename, `last_opened_at`) is a phantom and is rebased; a document the
 //     other side changed is a `conflict`.
+//   - The document is the board's CONTENT: tiles, groups, shapes, arrows
+//     (`nodes`, `edges`). The camera is each viewer's own view
+//     (`viewerCamera.ts`), never written here and never part of the guard:
+//     when it was, panning in one tab made the other tab's next edit a
+//     conflict and stopped its autosave. The `camera` column is still READ
+//     (old rows) and copied by a duplicate; nothing writes it any more.
+//   - A save selects back only `version`; the saved fingerprint is computed
+//     from what was written (the whole board used to come back on every save).
 //   - Every failure is a `BoardError`: a sentence for a person plus a remedy.
 //   - Soft delete only (`deleted_at`). The table has no archive columns.
 
+import type { MaybeSingleResponse } from "@ai-matrx/data";
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
@@ -32,7 +41,8 @@ import {
 } from "../board/document";
 
 type BoardRow = Database["workspace"]["Tables"]["spatial_boards"]["Row"];
-type SaveRow = Pick<BoardRow, "id" | "camera" | "nodes" | "edges" | "version">;
+/** What a save reads back: the version always; the content only when a CAS missed. */
+type SaveRow = Pick<BoardRow, "version"> & Partial<Pick<BoardRow, "nodes" | "edges">>;
 
 const TABLE = "spatial_boards";
 const db = workspaceDb(supabase);
@@ -147,9 +157,13 @@ export function stableStringify(value: unknown): string {
   return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(",")}}`;
 }
 
-/** The three stored columns of a document, as a comparable fingerprint. */
-export function documentFingerprint(columns: { camera: unknown; nodes: unknown; edges: unknown }): string {
-  return stableStringify({ camera: columns.camera, nodes: columns.nodes, edges: columns.edges });
+/**
+ * The board's CONTENT as a comparable fingerprint: `nodes` and `edges` only.
+ * The camera is a viewer's own view, so it never decides whether two tabs
+ * changed the same board.
+ */
+export function documentFingerprint(columns: { nodes: unknown; edges: unknown; camera?: unknown }): string {
+  return stableStringify({ nodes: columns.nodes, edges: columns.edges });
 }
 
 /** The column values for a document, converted honestly to JSON. */
@@ -491,42 +505,120 @@ export interface SavedDocument {
   fingerprint: string;
 }
 
+export interface SaveOptions {
+  /**
+   * Send the write as a `keepalive` request, so it completes even if the page
+   * is closing (the tab hides, then unloads). The Supabase client cannot set
+   * `keepalive`, so this one write goes to the same PostgREST endpoint
+   * directly with the person's own access token — same row filter, same
+   * version guard, same RLS.
+   */
+  keepalive?: { accessToken: string };
+}
+
+/** Browsers refuse a keepalive body over 64 KiB (shared by every keepalive request in flight). */
+export const KEEPALIVE_BODY_LIMIT = 60_000;
+
 /**
- * Write the document's camera, tiles and arrows, guarded by `version`.
- * A version that moved only because a column we do not write changed (rename,
- * last-opened) is rebased and saved; a document someone else changed throws
- * `BoardError("conflict")` — the caller offers a reload, never overwrites.
+ * The guarded UPDATE as a raw PostgREST PATCH that survives page unload.
+ * Exported for tests. A body over the keepalive limit goes as an ordinary
+ * request — still sent at once, still guarded.
+ */
+export async function keepalivePatch(
+  id: string,
+  payload: Record<string, JsonValue>,
+  expectedVersion: number,
+  accessToken: string,
+): Promise<MaybeSingleResponse<{ version: number }>> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!base || !key) {
+    return { data: null, error: { message: "The database address is not configured in this build." } };
+  }
+  const body = JSON.stringify(payload);
+  const url =
+    `${base.replace(/\/$/, "")}/rest/v1/${TABLE}` +
+    `?id=eq.${encodeURIComponent(id)}&version=eq.${expectedVersion}&deleted_at=is.null&select=version`;
+  const response = await fetch(url, {
+    method: "PATCH",
+    keepalive: new TextEncoder().encode(body).length <= KEEPALIVE_BODY_LIMIT,
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "Content-Profile": "workspace",
+      "Accept-Profile": "workspace",
+      Prefer: "return=representation",
+    },
+    body,
+  });
+  if (!response.ok) {
+    let message = `The database answered ${response.status}.`;
+    let code: string | null = null;
+    try {
+      const err: unknown = await response.json();
+      if (isJsonObject(err)) {
+        if (typeof err.message === "string") message = err.message;
+        if (typeof err.code === "string") code = err.code;
+      }
+    } catch {
+      // The status line is the message.
+    }
+    return { data: null, error: { message, code } };
+  }
+  const rows: unknown = await response.json();
+  const row: unknown = Array.isArray(rows) ? rows[0] : null;
+  return {
+    data: isJsonObject(row) && typeof row.version === "number" ? { version: row.version } : null,
+    error: null,
+  };
+}
+
+/**
+ * Write the board's content (tiles, groups, shapes, arrows), guarded by
+ * `version`. The camera is not written: it is each viewer's own.
+ * A version that moved only because something we do not write changed
+ * (rename, last-opened, an old client's camera) is rebased and saved; content
+ * someone else changed throws `BoardError("conflict")` — the caller offers a
+ * reload, never overwrites.
  */
 export async function saveBoardDocument(
   id: string,
   doc: BoardDocument,
   guard: SaveGuard,
+  options: SaveOptions = {},
 ): Promise<SavedDocument> {
-  const columns = documentColumns(doc);
-  const SAVE_COLUMNS = "id, camera, nodes, edges, version" as const;
+  const { nodes, edges } = documentColumns(doc);
+  const fingerprint = documentFingerprint({ nodes, edges });
+  const keepalive = options.keepalive;
   let result;
   try {
     result = await guardedUpdate<SaveRow>({
       expectedVersion: guard.expectedVersion,
       applyUpdate: ({ expectedVersion, nextVersion }) =>
-        db
-          .from(TABLE)
-          .update({ ...columns, version: nextVersion })
-          .eq("id", id)
-          .eq("version", expectedVersion)
-          .is("deleted_at", null)
-          .select(SAVE_COLUMNS)
-          .maybeSingle(),
+        keepalive
+          ? keepalivePatch(id, { nodes, edges, version: nextVersion }, expectedVersion, keepalive.accessToken)
+          : db
+              .from(TABLE)
+              .update({ nodes, edges, version: nextVersion })
+              .eq("id", id)
+              .eq("version", expectedVersion)
+              .is("deleted_at", null)
+              .select("version")
+              .maybeSingle(),
       fetchCurrent: () =>
-        db.from(TABLE).select(SAVE_COLUMNS).eq("id", id).is("deleted_at", null).maybeSingle(),
-      rebase: { isPhantom: (current) => documentFingerprint(current) === guard.baseFingerprint },
+        db.from(TABLE).select("version, nodes, edges").eq("id", id).is("deleted_at", null).maybeSingle(),
+      rebase: {
+        isPhantom: (current) =>
+          documentFingerprint({ nodes: current.nodes, edges: current.edges }) === guard.baseFingerprint,
+      },
     });
   } catch (error) {
     throw writeFailed("save the board", error);
   }
   switch (result.status) {
     case "saved":
-      return { version: result.row.version, fingerprint: documentFingerprint(result.row) };
+      return { version: result.row.version, fingerprint };
     case "conflict":
       throw new BoardError(
         "conflict",

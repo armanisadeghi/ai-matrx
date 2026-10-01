@@ -54,6 +54,7 @@ import type { BoardItemType, PickerProps, PlacedItem, StartNewEntry } from "../i
 import { filesToBoardItems } from "../items/file-drop";
 import { noteSeedEdit } from "../items/work-sources";
 import { intakeText } from "./board-intake";
+import { type PlacementRun, placeTiles } from "./place-run";
 import { AddMenu, StartPanel } from "./AddMenu";
 import { UnavailableItemBody } from "./UnavailableItemBody";
 
@@ -78,13 +79,19 @@ const CAMERA_SAVE_MS = 1200;
 export function UserBoard({
   title,
   doc,
+  viewerCamera = null,
   onChange,
+  onCamera,
 }: {
   title: string;
   /** The saved board this session starts from. */
   doc: BoardDocument;
-  /** Every change, as the saved form. */
-  onChange: (doc: BoardDocument) => void;
+  /** Where this person last looked at this board; null opens to fit everything. */
+  viewerCamera?: Camera | null;
+  /** Every change: a builder for the saved form, called only when a save goes out. */
+  onChange: (build: () => BoardDocument) => void;
+  /** The person's view, once it settles — their own, never board content. */
+  onCamera?: (camera: Camera) => void;
 }) {
   const board = useBoardStore<UserBoardTile>(() => ({
     tiles: doc.nodes.map((n) => ({ id: n.id, rect: n.rect, title: n.title, source: n.source })),
@@ -124,43 +131,56 @@ export function UserBoard({
     };
   };
   const onChangeRef = useRef(onChange);
+  const onCameraRef = useRef(onCamera);
   const toDocRef = useRef(toDoc);
   const storeRef = useRef(store);
   useEffect(() => {
     onChangeRef.current = onChange;
+    onCameraRef.current = onCamera;
     toDocRef.current = toDoc;
     storeRef.current = store;
   });
 
   // Every change to the model is reported straight from the store — not from
-  // a render — so saving never depends on (or causes) a board re-render. The
-  // autosaver debounces; a drag reports each step and only the last is written.
+  // a render — so saving never depends on (or causes) a board re-render. What
+  // is reported is a BUILDER: a drag reports every pointer frame, and the
+  // document is built once, when the debounced save actually goes out.
   // What the board looked like when it opened: a change made before this
   // effect subscribed (a tile body upgrading its source in its own mount
   // effect — children's effects run first) is reported once on subscribe.
   const [opened] = useState(() => ({ view: board.read(), camera: doc.camera }));
   useEffect(() => {
-    const report = () => onChangeRef.current(toDocRef.current(storeRef.current?.getCamera() ?? opened.camera));
+    const build = () => toDocRef.current(storeRef.current?.getCamera() ?? opened.camera);
+    const report = () => onChangeRef.current(build);
     const unsubscribe = board.subscribe(report);
     if (board.read() !== opened.view) report();
     return unsubscribe;
   }, [board, opened]);
 
-  // The camera is saved once it settles (the URL hash follows it live).
+  // The person's view is kept once it settles (the URL hash follows it live).
+  // It is THEIR view, not board content: it never goes into the saved board,
+  // so panning here never makes another tab's edit a conflict.
   useEffect(() => {
     if (!store) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let last = store.getCamera();
+    const keep = () => {
+      timer = null;
+      onCameraRef.current?.(store.getCamera());
+    };
     const unsub = store.subscribeFrame(() => {
       const cam = store.getCamera();
       if (cam.x === last.x && cam.y === last.y && cam.z === last.z) return;
       last = cam;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => onChangeRef.current(toDocRef.current(store.getCamera())), CAMERA_SAVE_MS);
+      timer = setTimeout(keep, CAMERA_SAVE_MS);
     });
     return () => {
       unsub();
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+        keep();
+      }
     };
   }, [store]);
 
@@ -171,23 +191,32 @@ export function UserBoard({
     return screenToWorld(store.getCamera(), w / 2, h / 2);
   };
 
-  const place = (items: PlacedItem[], near = viewCentre()) => {
-    let lastId: string | null = null;
-    for (const item of items) {
+  // Successive adds fill the view in reading order while the view stays where
+  // the last add left it (`home/place-run.ts`).
+  const placementRun = useRef<PlacementRun | null>(null);
+  /** `at`: a drop point — the nearest free spot there. Otherwise the run. */
+  const place = (items: PlacedItem[], at?: { x: number; y: number }) => {
+    const tiles: UserBoardTile[] = items.map((item) => {
       const type = itemTypeFor(item.source);
       const size = item.size ?? type?.defaultSize ?? { w: 480, h: 360 };
       const id = `${type?.key ?? "item"}:${crypto.randomUUID().slice(0, 8)}`;
-      board.addTile({ id, title: item.title, source: item.source, rect: { x: 0, y: 0, ...size } }, near);
-      lastId = id;
+      return { id, title: item.title, source: item.source, rect: { x: 0, y: 0, ...size } };
+    });
+    if (tiles.length === 0) return;
+    if (!store) {
+      for (const tile of tiles) board.addTile(tile, at ?? { x: 0, y: 0 });
+      return;
     }
-    if (!lastId || !store) return;
-    const target = lastId;
-    // The tile registers on its next render: then show it, selected, so the
-    // person can start on it at once.
+    const view = { camera: store.getCamera(), size: store.getSize(), insets: store.getInsets() };
+    const placed = placeTiles(board, tiles, view, placementRun.current, at);
+    placementRun.current = placed.run;
+    const target = tiles[tiles.length - 1].id;
+    // The tile registers on its next render: then select it so the person can
+    // start on it at once, and pan just enough to show it if it is off screen.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         store.select(target);
-        store.fitItem(target, 80);
+        if (placed.reveal) store.flyTo(placed.reveal, 320);
       }),
     );
   };
@@ -244,11 +273,11 @@ export function UserBoard({
     return screenToWorld(store.getCamera(), clientX - box.left, clientY - box.top);
   };
 
-  const placeFiles = async (files: File[], near: { x: number; y: number }) => {
+  const placeFiles = async (files: File[], at?: { x: number; y: number }) => {
     const label = files.length === 1 ? `"${files[0].name}"` : `${files.length} files`;
     toast(`Uploading ${label} to your board…`);
     const items = await filesToBoardItems(files);
-    if (items.length > 0) place(items, near);
+    if (items.length > 0) place(items, at);
   };
 
   const onDragOver = (e: DragEvent) => {
@@ -280,7 +309,7 @@ export function UserBoard({
     const files = Array.from(e.clipboardData?.files ?? []);
     if (files.length > 0) {
       e.preventDefault();
-      void placeFiles(files, viewCentre());
+      void placeFiles(files);
       return;
     }
     const items = intakeText(e.clipboardData?.getData("text/plain") ?? "");
@@ -381,8 +410,8 @@ export function UserBoard({
           onDrop={onDrop}
         >
           <SpatialViewport
-            initialCamera={doc.camera}
-            fitOnMount={false}
+            initialCamera={viewerCamera ?? doc.camera}
+            fitOnMount={viewerCamera === null && doc.nodes.length > 0}
             insets={{ top: 72, bottom: 56 }}
             wheelMode={wheelMode}
             onStore={setStore}

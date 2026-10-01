@@ -92,6 +92,26 @@ contract). The stored shape is `board/document.ts` (parse reports every malforme
 shapes ride in `nodes` flagged; JSON Canvas 1.0 export). The home board is the row whose
 `settings.home` is true, per person per organization. Service + hook: `persistence/` (see The Board).
 
+- **The saved board is CONTENT only** (`nodes`, `edges`). The camera is each viewer's own view
+  (Figma, Miro): kept per person per board in this browser (`persistence/viewerCamera.ts`,
+  localStorage `matrx.board.camera:<user>:<board>`, guarded) plus the `#cam=` address. A board opens
+  at `#cam=`, else the viewer's last view, else fit-all (an empty board: the row's `camera`). The
+  `camera` column is read for old rows and copied by duplicate; nothing writes it. It is outside the
+  version guard's fingerprint (`documentFingerprint`), so a pan in one tab never makes another tab's
+  edit a conflict — it did, and the conflict stopped that tab's autosave.
+- **Saving is lazy and light.** `UserBoard` reports a BUILDER (`onChange(() => doc)`) on every store
+  change; the document is built once, when the debounced write goes out (it was built per pointer
+  frame of a drag). A save writes `nodes` + `edges` and reads back only `version`; the new
+  fingerprint is computed from what was written.
+- **The last edits survive closing the tab.** `visibilitychange` → hidden (the first step of closing
+  a tab, with time to spare) and `pagehide` flush at once as a `keepalive` PATCH to the same PostgREST
+  row (`keepalivePatch`: the person's own token from `selectAccessToken`, same `version` guard, same
+  RLS; a body over 60 KB goes as an ordinary request). Residual: an ordinary save already in flight
+  at the instant the page unloads can still be cancelled by the browser.
+- **A real content conflict** stops this tab's autosave (writing on would overwrite the newer board):
+  the byline reads "Not saved: …" and an error toast stays until "Reload board", which reopens the
+  newer version and resumes saving (`__tests__/useSavedBoard.test.tsx`).
+
 ## Performance rules (each one measured on the 100-stream stress board)
 
 - **Status is read in leaves.** `useTileStatus` lives in the dot and the overview card; subscribing
@@ -173,9 +193,17 @@ hardware with a production build before tuning further.
 - **Board model (`board/board-store.ts`, hooks in `board/useBoard.ts`):** tiles, positions, shelf, frames, shapes, connections, one
   undo stack, remove-with-undo, `moveMany` (an arrangement = one step), and `addTile` with
   auto-placement in the nearest free space clear of tiles AND frames (`engine/placement.ts`;
-  `within` lets it join one frame) — the one path gestures, the menu and agents change a board
-  through. Operations read a live snapshot (`read()`), so commands issued in one tick see each
-  other before React re-renders.
+  `within` lets it join one frame; `flow` fills a block in reading order) — the one path gestures,
+  the menu and agents change a board through. Operations read a live snapshot (`read()`), so
+  commands issued in one tick see each other before React re-renders. Changes made inside
+  `runAs("agent", fn)` are the agent's: ⌘Z still walks the one shared stack, and
+  `undoActor("agent")` reverts only the agent's latest change, record by record, keeping (and
+  naming) anything the person changed since.
+- **Placement on `/board` (`home/place-run.ts`):** a run of adds (Add menu, Start panel, picker,
+  paste) fills the view in reading order — the first centred, then across the row, then the next row
+  down — and the camera only pans (never zooms) when a new tile is off screen. A pan between adds
+  starts a new run; a drop places at the drop point. Flying to each new tile made 15 adds a
+  7,000-unit diagonal staircase (the next search started on the last tile).
 
 ## Agent tools — the board is a surface
 
@@ -197,11 +225,16 @@ dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfac
 - **Request two, same turn — `board_open_item(id)`**: the item's declared values (with descriptions,
   capped) and controls — write-target lines from `describeAgentWritableTargets` (the injected
   `apply_surface_write` wording) and client tools with schemas — and it selects the item (a parked
-  one comes back). **`board_item_act(id, target+value | tool+input)`** runs through the canonical
+  one comes back). The item is held awake for the call (`holdAwake`, released ~2 s after). **`board_item_act(id, target+value | tool+input)`** runs through the canonical
   `applySurfaceWrite` / `executeSurfaceClientTool` with `source: capture` and the call's
   `agentWrite` (`SurfaceToolCall`): same type check, anchored patch, value contract, `validate`,
   apply policy (ask → this call's approval card) and `surfaceWriteToolOutput` envelope as on the page.
 - A host without `itemSurfaces` (meeting, War Room, workflow boards) lists identity only.
+- **The person's view and selection are theirs while they work.** When a tile is interacting or full
+  screen, no tool moves the camera, selects, or ends their typing: `board_open_item` opens without
+  selecting (`live: false`), `board_add_tile` does not select, `board_focus` refuses with the remedy.
+  Every tool change runs as the agent (`runAs`), and `board_undo` takes back only the agent's own
+  latest change (`__tests__/agent-actor.test.tsx`).
 
 | Piece | File |
 |---|---|
@@ -245,7 +278,7 @@ All boards and each feature's board view (War Room, Meetings, Workflow runs).
 | Page: the ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`, `features/canvas/workspace`) with the saved board as canvas; title menu Rename / New board / All boards; byline shows save state | `home/BoardPage.tsx`, `app/(core)/board/**` |
 | The board: placement, Add menu, Start panel (empty board), drop + paste, tools, shelf, layers, agent tools host | `home/UserBoard.tsx`, `home/AddMenu.tsx` |
 | What a paste/drop of text becomes (a link → web page / image, other text → a new Note) | `home/board-intake.ts` |
-| Saving: `useSavedBoard({home:true} \| {boardId})` — debounced autosave (`AUTOSAVE_DELAY_MS`), flush on unmount and pagehide. `saveBoardDocument(id, doc, { expectedVersion, baseFingerprint })` is version-guarded (`guardedUpdate`): a version moved only by a rename or the opened stamp retries; a document changed elsewhere is a `conflict` the person is told about | `persistence/` |
+| Saving: `useSavedBoard({home:true} \| {boardId})` — debounced autosave (`AUTOSAVE_DELAY_MS`) of a lazily built document, flush on unmount, keepalive flush on hide / pagehide; the viewer's camera via `saveCamera` (see Saved boards). `saveBoardDocument(id, doc, { expectedVersion, baseFingerprint })` is version-guarded (`guardedUpdate`): a version moved only by a rename or the opened stamp retries; a document changed elsewhere is a `conflict` the person is told about | `persistence/` |
 | Manage page | `boards/`, `app/(core)/board/all` |
 
 **Item types — how a feature gets onto every board.** `items/types.ts` is the contract: a
@@ -307,6 +340,15 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-10-01 — Saved boards and agents stop fighting the person: the camera left the saved board
+  (per-viewer, never in the version guard — two tabs no longer lock each other out); the document is
+  built only when a save goes out and a save reads back only `version`; hide/close flushes as a
+  keepalive PATCH; "Reload board" after a conflict dismisses the toast and resumes saving. Agents never
+  move the camera, select or end typing while the person works in a tile, and `board_undo` undoes only
+  the agent's changes (`BoardStore.runAs` / `undoActor`). Sequential adds fill the view in reading
+  order instead of a diagonal staircase. Tests: `board-save`, `useSavedBoard`, `agent-actor`,
+  `board-bridge`, `placement-run` — each failing on the old files.
 
 - 2026-10-01 — No gesture can get stuck: `startPointerGesture` ends a resize, tile drag or drawing
   on every way a press can end (a missed release heals on the next move); Escape puts a resize or

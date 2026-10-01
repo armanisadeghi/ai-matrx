@@ -44,7 +44,7 @@ describe("board document columns", () => {
     expect(() => toJson({ f: () => 1 })).toThrow("$.f is a function");
   });
 
-  it("fingerprints ignore key order (jsonb re-orders keys) but not values", () => {
+  it("fingerprints ignore key order (jsonb re-orders keys) and the camera, but not content", () => {
     const a = documentColumns(doc);
     const reordered = {
       edges: a.edges,
@@ -56,7 +56,10 @@ describe("board document columns", () => {
       camera: { z: 0.8, y: 20, x: 10 },
     };
     expect(documentFingerprint(reordered)).toBe(documentFingerprint(a));
-    expect(documentFingerprint({ ...a, camera: { x: 11, y: 20, z: 0.8 } })).not.toBe(documentFingerprint(a));
+    // The camera is each viewer's own view: a pan in another tab must never
+    // make this tab's next edit a conflict.
+    expect(documentFingerprint({ ...a, camera: { x: 11, y: 20, z: 0.8 } })).toBe(documentFingerprint(a));
+    expect(documentFingerprint({ ...a, edges: [] })).not.toBe(documentFingerprint(a));
     expect(stableStringify({ b: 1, a: [2, { d: 3, c: 4 }] })).toBe('{"a":[2,{"c":4,"d":3}],"b":1}');
   });
 

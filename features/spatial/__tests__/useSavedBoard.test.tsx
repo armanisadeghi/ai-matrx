@@ -1,6 +1,7 @@
-// useSavedBoard — load, debounced guarded autosave, flush on unmount and
-// pagehide, and the conflict path. The service is mocked; the hook's own
-// timing and state machine are real.
+// useSavedBoard — load, debounced guarded autosave, flush on unmount, the
+// keepalive save the moment the page hides or closes, the per-viewer camera,
+// and the conflict path (including Reload recovering). The service is mocked;
+// the hook's own timing and state machine are real.
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -10,10 +11,11 @@ import { createRoot, type Root } from "react-dom/client";
 const activeOrg = { id: "org-1" };
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) =>
-    selector({ appContext: { organization_id: activeOrg.id }, userAuth: { id: "user-1" } }),
+    selector({ appContext: { organization_id: activeOrg.id }, userAuth: { id: "user-1", accessToken: "token-1" } }),
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: (s: { userAuth: { id: string } }) => s.userAuth.id,
+  selectAccessToken: (s: { userAuth: { accessToken: string } }) => s.userAuth.accessToken,
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: (s: { appContext: { organization_id: string } }) => s.appContext.organization_id,
@@ -22,7 +24,10 @@ jest.mock("@/lib/organization/organization-gate", () => ({
   isOrganizationSelectionCancelled: (e: unknown) => (e as { name?: string })?.name === "OrganizationSelectionCancelled",
 }));
 const toastError = jest.fn();
-jest.mock("@/lib/toast", () => ({ toast: { error: (...a: unknown[]) => toastError(...a) } }));
+const toastDismiss = jest.fn();
+jest.mock("@/lib/toast", () => ({
+  toast: { error: (...a: unknown[]) => toastError(...a), dismiss: (...a: unknown[]) => toastDismiss(...a) },
+}));
 
 const saveBoardDocument = jest.fn();
 const getHomeBoard = jest.fn();
@@ -99,7 +104,9 @@ beforeEach(() => {
   saveBoardDocument.mockReset().mockResolvedValue({ version: 2, fingerprint: "fp-2" });
   getHomeBoard.mockReset().mockResolvedValue(loaded);
   touchOpened.mockReset().mockResolvedValue({ version: 2 });
-  toastError.mockReset();
+  toastError.mockReset().mockReturnValue("toast-1");
+  toastDismiss.mockReset();
+  window.localStorage.clear();
 });
 afterEach(() => jest.useRealTimers());
 
@@ -154,7 +161,7 @@ it("flushes a pending save on unmount — typing is never lost", async () => {
   expect(saveBoardDocument.mock.calls[0][1].nodes[0].id).toBe("typed");
 });
 
-it("flushes a pending save on pagehide", async () => {
+it("flushes a pending save on pagehide, as a keepalive request", async () => {
   const { result } = mount();
   await settle();
   act(() => ready(result.current).save(docWith("leaving")));
@@ -163,6 +170,58 @@ it("flushes a pending save on pagehide", async () => {
   });
   await settle();
   expect(saveBoardDocument).toHaveBeenCalledTimes(1);
+  expect(saveBoardDocument.mock.calls[0][3]).toEqual({ keepalive: { accessToken: "token-1" } });
+});
+
+it("the moment the page is hidden (the first step of closing a tab) the pending edit goes out as a keepalive save", async () => {
+  const { result } = mount();
+  await settle();
+  act(() => ready(result.current).save(docWith("last words")));
+  const visibility = jest.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  try {
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await settle();
+    // Not after the ~800ms quiet period: now.
+    expect(saveBoardDocument).toHaveBeenCalledTimes(1);
+    const [, doc, , options] = saveBoardDocument.mock.calls[0];
+    expect(doc.nodes[0].id).toBe("last words");
+    expect(options).toEqual({ keepalive: { accessToken: "token-1" } });
+  } finally {
+    visibility.mockRestore();
+  }
+  // An ordinary debounced save is not a keepalive request.
+  act(() => ready(result.current).save(docWith("back")));
+  act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS));
+  await settle();
+  expect(saveBoardDocument.mock.calls[1][3]).toBeUndefined();
+});
+
+it("builds the document only when the save goes out — never per reported change", async () => {
+  const { result } = mount();
+  await settle();
+  const build = jest.fn(() => docWith("built"));
+  for (let i = 0; i < 120; i++) act(() => ready(result.current).save(build)); // a drag's pointer frames
+  expect(build).not.toHaveBeenCalled();
+  act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS));
+  await settle();
+  expect(build).toHaveBeenCalledTimes(1);
+  expect(saveBoardDocument.mock.calls[0][1].nodes[0].id).toBe("built");
+});
+
+it("the camera is this viewer's own: kept per person per board, never saved into the board", async () => {
+  const { result, unmount } = mount();
+  await settle();
+  expect(ready(result.current).board.viewerCamera).toBeNull(); // first visit: open to fit everything
+  act(() => ready(result.current).saveCamera({ x: 12, y: -40, z: 0.5 }));
+  act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS * 2));
+  await settle();
+  expect(saveBoardDocument).not.toHaveBeenCalled();
+  unmount();
+  const again = mount();
+  await settle();
+  expect(ready(again.result.current).board.viewerCamera).toEqual({ x: 12, y: -40, z: 0.5 });
 });
 
 it("a conflict sets saveError, toasts with a reload action, and stops autosaving", async () => {
@@ -181,6 +240,33 @@ it("a conflict sets saveError, toasts with a reload action, and stops autosaving
   act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS * 2));
   await settle();
   expect(saveBoardDocument).toHaveBeenCalledTimes(1); // never overwrites the newer board
+  // The byline keeps saying so; the toast stays until the person reloads.
+  expect(ready(result.current).saveError).toMatch(/another tab/);
+  expect(toastError.mock.calls[0][1].duration).toBe(Infinity);
+});
+
+it("Reload board after a conflict reopens the newer board and saving resumes", async () => {
+  saveBoardDocument.mockRejectedValueOnce(
+    new BoardError("conflict", "This board was changed in another tab.", "Reload the board."),
+  );
+  const { result } = mount();
+  await settle();
+  act(() => ready(result.current).save(docWith("mine")));
+  act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS));
+  await settle();
+  getHomeBoard.mockResolvedValue({ ...loaded, version: 5, fingerprint: "fp-5", doc: docWith("theirs") });
+  touchOpened.mockResolvedValue({ version: 6 });
+  act(() => toastError.mock.calls[0][1].action.onClick());
+  await settle();
+  expect(toastDismiss).toHaveBeenCalledWith("toast-1");
+  const reopened = ready(result.current);
+  expect(reopened.board.doc.nodes[0].id).toBe("theirs");
+  expect(reopened.saveError).toBeNull();
+  act(() => reopened.save(docWith("after reload")));
+  act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS));
+  await settle();
+  expect(saveBoardDocument).toHaveBeenCalledTimes(2);
+  expect(saveBoardDocument.mock.calls[1][2]).toEqual({ expectedVersion: 6, baseFingerprint: "fp-5" });
 });
 
 it("a refused organization choice is a failed state whose retry asks again", async () => {

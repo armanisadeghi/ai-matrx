@@ -8,14 +8,16 @@
 //   - ONE write is in flight at a time. A value scheduled while a write runs
 //     waits for it, then goes out — so writes land in the order they were made
 //     and a slow save can never be overtaken by an older one.
-//   - `flush()` sends the pending value now (unmount, pagehide, "save now").
+//   - `flush()` sends the pending value now (unmount, "save now");
+//     `flush({ urgent: true })` tells the write the page may be going away
+//     (hidden or closing), so it can choose a transport that outlives it.
 //   - A failed write is reported through `onError` and NOT retried by itself;
 //     the next `schedule` (the person's next edit) or an explicit `flush`
 //     tries again with the newest value.
 
 export interface AutosaverOptions<T> {
   delayMs: number;
-  write: (value: T) => Promise<void>;
+  write: (value: T, opts: { urgent: boolean }) => Promise<void>;
   /** Fires whenever `saving` flips. */
   onSavingChange?: (saving: boolean) => void;
   onSaved?: (value: T) => void;
@@ -27,8 +29,9 @@ export interface AutosaverOptions<T> {
 
 export interface Autosaver<T> {
   schedule: (value: T) => void;
-  /** Send the pending value now. Resolves when nothing is pending or in flight. */
-  flush: () => Promise<void>;
+  /** Send the pending value now. Resolves when nothing is pending or in flight.
+   * `urgent`: the page may be about to go away. */
+  flush: (opts?: { urgent?: boolean }) => Promise<void>;
   /** A value is waiting for the timer. */
   hasPending: () => boolean;
   /** Drop the pending value without writing it (the board was reloaded). */
@@ -51,14 +54,14 @@ export function createAutosaver<T>(options: AutosaverOptions<T>): Autosaver<T> {
     }
   };
 
-  const runOne = (): Promise<void> => {
+  const runOne = (urgent = false): Promise<void> => {
     if (inFlight) return inFlight;
     if (!pending) return Promise.resolve();
     const { value } = pending;
     pending = null;
     options.onSavingChange?.(true);
     inFlight = options
-      .write(value)
+      .write(value, { urgent })
       .then(
         () => options.onSaved?.(value),
         (error: unknown) => options.onError?.(error, value),
@@ -73,12 +76,12 @@ export function createAutosaver<T>(options: AutosaverOptions<T>): Autosaver<T> {
     return inFlight;
   };
 
-  const flush = async (): Promise<void> => {
+  const flush = async (opts: { urgent?: boolean } = {}): Promise<void> => {
     stopTimer();
     // Wait out a write in flight, then send what is pending, until idle.
     while (inFlight || pending) {
       if (inFlight) await inFlight;
-      else await runOne();
+      else await runOne(opts.urgent === true);
     }
   };
 

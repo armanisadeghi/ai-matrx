@@ -138,7 +138,14 @@ export function BoardPage({
                     details={{ problems: ready.board.problems }}
                   />
                 )}
-                <UserBoard key={ready.board.id} title={ready.board.title} doc={ready.board.doc} onChange={ready.save} />
+                <UserBoard
+                  key={ready.board.id}
+                  title={ready.board.title}
+                  doc={ready.board.doc}
+                  viewerCamera={ready.board.viewerCamera}
+                  onChange={ready.save}
+                  onCamera={ready.saveCamera}
+                />
               </>
             )}
           </div>

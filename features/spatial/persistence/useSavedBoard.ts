@@ -3,21 +3,33 @@
 // features/spatial/persistence/useSavedBoard.ts
 //
 // Open a saved board (the person's home board, or one by id) and keep it
-// saved. The board page renders from `board.doc` and hands every change to
-// `save(doc)`; this hook debounces (~800ms), guards each write with the row's
-// `version`, and flushes on unmount and `pagehide` so typing is never lost.
+// saved. The board page renders from `board.doc` and reports every change to
+// `save(build)` — a function that builds the document, called only when a
+// write actually goes out (a drag reports every pointer frame; building the
+// whole document per frame was the cost). This hook debounces (~800ms),
+// guards each write with the row's `version`, and flushes on unmount, and the
+// moment the page is hidden or closing (`visibilitychange` → hidden, then
+// `pagehide`) as a `keepalive` request, so the last edits survive closing
+// the tab.
+//
+// The camera is NOT board content: `board.viewerCamera` is this person's own
+// last view of this board (`viewerCamera.ts`) and `saveCamera` keeps it. Two
+// tabs panning never conflict.
 //
 // Nothing fails silently: a failed load is `failed` with a retry, a failed save
 // sets `saveError` AND raises a toast naming what happened. A save refused
-// because another tab changed the board stops autosave for this tab (writing
-// on would overwrite the newer board) and offers a reload.
+// because another tab changed the board's CONTENT stops autosave for this tab
+// (writing on would overwrite the newer board); the byline keeps saying so and
+// the toast stays until "Reload board" reopens the newer version, which
+// resumes saving.
 
 import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectAccessToken, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
+import type { Camera } from "../engine/camera";
 import type { BoardDocument } from "../board/document";
 import { createAutosaver, type Autosaver } from "./autosave";
 import {
@@ -30,6 +42,7 @@ import {
   touchOpened,
   type LoadedBoard,
 } from "./boardsService";
+import { readViewerCamera, writeViewerCamera } from "./viewerCamera";
 
 export const AUTOSAVE_DELAY_MS = 800;
 
@@ -47,9 +60,14 @@ export type SavedBoardState =
         isHome: boolean;
         doc: BoardDocument;
         problems: string[];
+        /** Where this person last looked at this board, or null (open to fit everything). */
+        viewerCamera: Camera | null;
       };
-      /** Debounced autosave (~800ms); last write wins within the tab. */
-      save: (doc: BoardDocument) => void;
+      /** Debounced autosave (~800ms); last write wins within the tab. Pass a
+       * builder to defer building the document until the write goes out. */
+      save: (doc: BoardDocument | (() => BoardDocument)) => void;
+      /** Keep this person's view of this board (not board content; never conflicts). */
+      saveCamera: (camera: Camera) => void;
       saving: boolean;
       lastSavedAt: number | null;
       saveError: string | null;
@@ -83,10 +101,17 @@ async function loadTarget(target: SavedBoardTarget, organizationId: string | nul
 
 type Phase =
   | { key: string; status: "failed"; reason: string }
-  | { key: string; status: "ready"; board: LoadedBoard; title: string };
+  | { key: string; status: "ready"; board: LoadedBoard; title: string; viewerCamera: Camera | null };
 
 export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   const userId = useAppSelector(selectUserId);
+  // The final save as the page hides or closes goes out as a keepalive
+  // request, which needs the token in hand synchronously.
+  const accessToken = useAppSelector(selectAccessToken);
+  const accessTokenRef = useRef(accessToken);
+  useEffect(() => {
+    accessTokenRef.current = accessToken;
+  }, [accessToken]);
   // org-filter: default-for-new the organization a NEW home board is filed in; never picks which board opens
   const selectedOrgId = useAppSelector(selectOrganizationId);
   const [attempt, setAttempt] = useState(0);
@@ -104,10 +129,15 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   // advances it, and a rename / open stamp moves the version too.
   const guard = useRef<{ id: string; version: number; fingerprint: string } | null>(null);
   const blocked = useRef(false);
-  const saver = useRef<Autosaver<BoardDocument> | null>(null);
+  const saver = useRef<Autosaver<() => BoardDocument> | null>(null);
+  const conflictToast = useRef<string | number | null>(null);
   const touched = useRef<string | null>(null);
 
-  const retry = () => setAttempt((n) => n + 1);
+  const retry = () => {
+    if (conflictToast.current != null) toast.dismiss(conflictToast.current);
+    conflictToast.current = null;
+    setAttempt((n) => n + 1);
+  };
 
   // ── load ──
   useEffect(() => {
@@ -121,7 +151,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
         blocked.current = false;
         setSaveError(null);
         setLastSavedAt(null);
-        setPhase({ key, status: "ready", board, title: board.title });
+        setPhase({ key, status: "ready", board, title: board.title, viewerCamera: readViewerCamera(userId, board.id) });
       },
       (error: unknown) => {
         if (!alive) return;
@@ -158,15 +188,18 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   useEffect(() => {
     if (!readyBoardId) return;
     const boardId = readyBoardId;
-    const instance = createAutosaver<BoardDocument>({
+    const instance = createAutosaver<() => BoardDocument>({
       delayMs: AUTOSAVE_DELAY_MS,
-      write: async (doc) => {
+      write: async (build, { urgent }) => {
         const g = guard.current;
         if (!g || g.id !== boardId) return;
-        const saved = await saveBoardDocument(boardId, doc, {
-          expectedVersion: g.version,
-          baseFingerprint: g.fingerprint,
-        });
+        const token = accessTokenRef.current;
+        const saved = await saveBoardDocument(
+          boardId,
+          build(),
+          { expectedVersion: g.version, baseFingerprint: g.fingerprint },
+          urgent && token ? { keepalive: { accessToken: token } } : undefined,
+        );
         if (guard.current?.id === boardId) {
           guard.current = {
             id: boardId,
@@ -180,14 +213,14 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
         setLastSavedAt(Date.now());
         setSaveError(null);
       },
-      onError: (error, doc) => {
+      onError: (error, build) => {
         const message = isBoardError(error)
           ? error.message
           : `Your board was not saved: ${error instanceof Error ? error.message : String(error)}`;
         setSaveError(message);
         if (isBoardError(error) && error.code === "conflict") {
           blocked.current = true;
-          toast.error(message, {
+          conflictToast.current = toast.error(message, {
             duration: Infinity,
             action: { label: "Reload board", onClick: retry },
           });
@@ -202,7 +235,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
           action: {
             label: "Try again",
             onClick: () => {
-              instance.schedule(doc);
+              instance.schedule(build);
               void instance.flush();
             },
           },
@@ -210,12 +243,21 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
       },
     });
     saver.current = instance;
-    const onPageHide = () => {
-      void instance.flush();
+    // The page is hidden (tab switch, minimise — and the first step of closing
+    // a tab) or closing: send what is pending NOW, as a keepalive request.
+    // `visibilitychange` comes before `pagehide` and with time to spare; an
+    // ordinary request still in flight at unload is cancelled by the browser.
+    const sendNow = () => {
+      void instance.flush({ urgent: true });
     };
-    window.addEventListener("pagehide", onPageHide);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") sendNow();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", sendNow);
     return () => {
-      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", sendNow);
       if (saver.current === instance) saver.current = null;
       // Unmount (or switching boards): whatever is pending still goes out.
       void instance.flush();
@@ -225,11 +267,15 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   if (!phase || phase.key !== key) return { state: "loading" };
   if (phase.status === "failed") return { state: "failed", reason: phase.reason, retry };
 
-  const { board, title } = phase;
+  const { board, title, viewerCamera } = phase;
 
-  const save = (doc: BoardDocument) => {
+  const save = (doc: BoardDocument | (() => BoardDocument)) => {
     if (blocked.current) return; // saving on would overwrite the newer board; the toast offers reload
-    saver.current?.schedule(doc);
+    saver.current?.schedule(typeof doc === "function" ? doc : () => doc);
+  };
+
+  const saveCamera = (camera: Camera) => {
+    if (userId) writeViewerCamera(userId, board.id, camera);
   };
 
   const rename = (next: string) => {
@@ -260,8 +306,10 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
       isHome: board.isHome,
       doc: board.doc,
       problems: board.problems,
+      viewerCamera,
     },
     save,
+    saveCamera,
     saving,
     lastSavedAt,
     saveError,
