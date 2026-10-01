@@ -402,6 +402,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-10-01 — A scope's template-backed table is provisioned only in the record store (`custom.scope_table_provision`); the older `context.provision_scope_dataset` path and `service/olderContextWrites.ts` are deleted (lane OLD-READERS-REMOVAL).
 - 2026-10-01 — PB-07 W-62: the composer's context chip (`ActiveContextLensChip`) is keyed to the CONVERSATION — a persisted chat names its own organization and the scopes its next send carries (`displayedSendScopeIds`, same rule as `conversationScopeGate`: an empty sidebar shows the chat's durable tags). A shell org switch no longer turns `COM · 1 scope` into `ASW` while the lane still goes out. Guard: `components/active-context/__tests__/lens-chip-follows-the-conversation.test.tsx` (red on the prior chip).
 
 - 2026-09-30 — `useKindCounts` / `useKindItems` pass the person's `files.show_system_files` (via `useShowSystemFiles`) as `p_show_system_files`; system files and folders are counted and listed only while it is on (V5-B).

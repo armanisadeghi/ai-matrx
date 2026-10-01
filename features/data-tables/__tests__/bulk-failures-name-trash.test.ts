@@ -38,7 +38,6 @@ it("no bulk surface hand-writes the 'could not be found' sentence any more", () 
   for (const file of [
     "components/user-generated-table-data/UserTableViewer.tsx",
     "features/data-tables/hooks/useCellUndo.ts",
-    "components/mardown-display/tables/SaveTableModal.tsx",
   ]) {
     const src = readFileSync(join(root, file), "utf8");
     expect(src).toContain("describeBulkFailures(");

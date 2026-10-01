@@ -79,7 +79,7 @@ separate live surface (`workbook-service.ts`, `document-service.ts`, `/workbooks
 **P5 — operational hardening (decided 2026-06-06):**
 - ✅ **aidream attribution — honest NULL.** Decided to keep `changed_by = NULL` for service_role / pool writes (no JWT). The audit trail honestly reports "system write" rather than misattributing to row owners. No code change required on aidream's side.
 - ✅ **`udt_workbooks.original_file_id` FK live.** `REFERENCES cld_files(id) ON DELETE SET NULL`. Workbook import path now uploads the source file via `fileHandler.upload(...)` first and stores the `cld_files.id` on the workbook row. Upload failure is non-fatal — workbook still imports without the link.
-- ✅ **Smart importer (P3).** `smart-importer.ts` routes an upload by 7 weighted signals (`ImportRouteDialog`, auto-route at `confidence > 0.6`). 🚧 Its typed route still pushes `/data?smartImport=1` (`app/(core)/workbooks/page.tsx`), which now redirects to `/data-v2` without the file — the store table page's import is the target.
+- ✅ **Smart importer (P3).** `smart-importer.ts` routes an upload by 7 weighted signals (`ImportRouteDialog`, auto-route at `confidence > 0.6`). Its typed route reads the first sheet (`readImportGrid`) and opens the ONE "Save to a table" (`saveToTable` overlay → records-ui `SaveToTable`), which makes the table in the record store or adds the rows to an existing one.
 
 **Workbook collab v2 — ✅ DONE (2026-06-12):**
 - ✅ Implemented, verified (`collab/verify-collab.ts` 10/10 incl. real-Broadcast e2e), and flag flipped ON at `/workbooks/[id]`. Architecture + the three bugs the verify gate caught are documented in `collab/FEATURE.md`.

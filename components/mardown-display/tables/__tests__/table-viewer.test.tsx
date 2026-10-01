@@ -27,7 +27,6 @@ jest.mock("../../blocks/chart/TableChart", () => ({
   ChartThisButton: () => <button aria-label="Chart this">Chart this</button>,
   TableChartPanel: () => null,
 }));
-jest.mock("../SaveTableModal", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/hooks/useToastManager", () => ({
   useToastManager: () => ({ success: jest.fn(), error: jest.fn(), info: jest.fn() }),
 }));

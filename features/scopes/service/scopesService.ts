@@ -18,9 +18,6 @@
 // PROGRESS-SCOPES-WEB-REVERT.md. `pnpm check:old-system-unreachable` holds the old-table reads here
 // in its census while the switch is off; flipping it on is the moment to remove them.
 //
-// The one WRITE that still names the `context` schema lives in `olderContextWrites.ts`
-// (lane SCOPES-OLD-WRITERS).
-//
 // SCOPE ASSIGNMENTS MOVED OFF ctx_scope_assignments → platform.associations
 // (DB changeover, data fully copied). A scope tag is the unified edge
 //     source = (entityType, entityId)   →   target = ('scope', scopeId)
@@ -51,7 +48,6 @@ import { readAllRowsIn } from "@/lib/supabase/readAllRowsIn";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
-import { provisionScopeDatasetInTheOlderStore } from "@/features/scopes/service/olderContextWrites";
 import {
   callContextDoor,
   contextDoorQuery,
@@ -64,7 +60,6 @@ import {
   readTypeScopesPage,
 } from "@/features/scopes/service/storeScopeReads";
 import { oldTypeSlug, scopeTypeDisplayFromStore } from "@/features/scopes/service/storeScopeAdapter";
-import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
 import { placeTableInRecordStore } from "@/features/data-tables/data-source/table-home";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
@@ -205,18 +200,9 @@ export const scopesService = {
   },
 
   /**
-   * THIS SCOPE'S COPY OF A TEMPLATE-BACKED TABLE — the dataset id, creating it
-   * on first ask. `context.provision_scope_dataset` is idempotent: it returns
-   * the existing `context.scope_dataset_instances.dataset_id` when there is
-   * one, and otherwise clones the template's fields into a new
-   * `workbench.udt_datasets` row, records the instance, and writes the scope's
-   * context value as a dataset reference so the agent receives the table.
-   *
-   * It returns NULL (not an error) for the three "this item is not a
-   * template-backed table" cases — a mismatched scope type, an item whose
-   * `reference_source.container_type` is not `dataset_template`, or a missing
-   * item — so a null answer is mapped to a named refusal here rather than
-   * being read as an empty table.
+   * THIS SCOPE'S COPY OF A TEMPLATE-BACKED TABLE — the table id, creating it on first ask, in the
+   * record store (`custom.scope_table_provision`, GRID-PRIMITIVES G11), which is idempotent and
+   * records the scope's context value as a table reference so the agent receives the table.
    */
   async provisionScopeDataset(
     contextItemId: string,
@@ -225,11 +211,9 @@ export const scopesService = {
     try {
       const userId = requireUserId();
 
-      // BY WHERE THE ORGANIZATION KEEPS ITS TABLES (lane INTEG-CLIENTS, CUTOVER-PLAN F11/D5).
-      // A moved organization's scope table lives in the record store, and the store's own door
-      // (`custom.scope_table_provision`, GRID-PRIMITIVES G11) answers it — never another older
-      // dataset nobody's screens read. The id comes back PLACED, so the caller's next
-      // read or write (the list-change engine's `getCompleteTable` / `bulkWrite`) reaches it.
+      // The scope table lives in the record store; the store's own door (`custom.scope_table_provision`)
+      // answers it in the scope's own organization. The id comes back PLACED, so the caller's next read
+      // or write (the list-change engine's `getCompleteTable` / `bulkWrite`) reaches it.
       // Where the scope lives: from the scope itself (the store's door when the read switch is on).
       let organizationId: string | undefined;
       if (scopesReadFromStore()) {
@@ -248,23 +232,9 @@ export const scopesService = {
       if (!organizationId) {
         return err("not_found", "That scope could not be read, so no table was provisioned for it.");
       }
-      const born = await whereANewTableIsBorn(organizationId);
-      if (!born.ok) return err("internal", born.error);
-      if (born.store === "record") {
-        const provisioned = await provisionScopeTableInTheStore(organizationId, userId, contextItemId, scopeId);
-        if (!provisioned.ok) return err(provisioned.code, provisioned.message);
-        return ok({ datasetId: provisioned.tableId });
-      }
-
-      const { data, error } = await provisionScopeDatasetInTheOlderStore(contextItemId, scopeId);
-      if (error) return err(...mapPgErrorPair(error));
-      if (typeof data !== "string" || data === "") {
-        return err(
-          "not_found",
-          "This context item does not hold a table for this scope — it is not bound to a table template, or it belongs to a different scope type.",
-        );
-      }
-      return ok({ datasetId: data });
+      const provisioned = await provisionScopeTableInTheStore(organizationId, userId, contextItemId, scopeId);
+      if (!provisioned.ok) return err(provisioned.code, provisioned.message);
+      return ok({ datasetId: provisioned.tableId });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

@@ -45,9 +45,9 @@ import type {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createWorkbooksScope } from "@/features/surfaces/manifests/workbooks.manifest";
 import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
-import { smartImportPickupSlot } from "@/features/data-tables/smart-import-pickup";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
@@ -87,6 +87,7 @@ function unsupportedFileReason(file: File): string | null {
 
 export default function WorkbooksLandingPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const organizationId = useAppSelector(selectOrganizationId);
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,20 +304,28 @@ export default function WorkbooksLandingPage() {
           setSmartDialogOpen(false);
           await handleImportXlsx(smartFile);
         } else {
-          // Typed-dataset routing — the rich import/preview/column-config
-          // flow lives at /data. Stash the file briefly on the window so
-          // /data can pick it up (sessionStorage holds the filename and a
-          // pickup token; the actual File is non-serializable so it rides
-          // on a global module-level slot).
-          smartImportPickupSlot.file = smartFile;
-          smartImportPickupSlot.takenAt = Date.now();
+          // Typed-table routing: the ONE "Save to a table" reads the file's first sheet and makes the
+          // table in the record store (or adds the rows to one the person already has).
+          const { readImportGrid } = await import("@/features/data-tables/smart-importer");
+          const [headers = [], ...rows] = await readImportGrid(smartFile);
           setSmartDialogOpen(false);
-          toast({
-            title: "Opening in typed-data import",
-            description: smartFile.name,
-            variant: "default",
-          });
-          router.push("/data?smartImport=1");
+          dispatch(
+            openOverlay({
+              overlayId: "saveToTable",
+              instanceId: `save-to-table-${Date.now()}`,
+              data: {
+                text: null,
+                value: null,
+                hasValue: false,
+                grid: { headers, rows },
+                title: smartFile.name.replace(/\.[^.]+$/, ""),
+                shapeIndex: 0,
+                // object-org-exempt: a NEW table has no organization of its own yet; it is made where the person is working
+                organizationId: organizationId ?? null,
+                callbackGroupId: null,
+              },
+            }),
+          );
         }
       } finally {
         setSmartCommitting(false);
@@ -324,7 +333,7 @@ export default function WorkbooksLandingPage() {
         setSmartDetection(null);
       }
     },
-    [smartFile, router],
+    [smartFile, dispatch, organizationId],
   );
 
   const handleDelete = useCallback(

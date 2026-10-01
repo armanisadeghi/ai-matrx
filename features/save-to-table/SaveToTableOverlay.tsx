@@ -6,19 +6,16 @@
  * (shape reading, the new-table columns, the import into an existing table with the enum ask), and
  * this file only decides WHERE the organization's tables live and mounts the store there.
  *
- * WHERE THE ROWS GO. An organization whose tables moved to the record store gets the record-store
- * screen. One whose tables have not moved yet (`whereANewTableIsBorn` → `older`) gets the older
- * store's save dialog fed the SAME rows the one shape reader found — the COPY-mode seam, deleted
- * with the older store at the final switch. Either way the menus that open this are the same.
+ * WHERE THE ROWS GO. Every table lives in the record store, so the rows always go there, in the
+ * organization `whereANewTableIsBorn` answers (the one the person is making the table in).
  */
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { RecordsMount, SaveToTable, personActor, recordsDataSource, shapesOfSource } from "@ai-matrx/records-ui";
+import { RecordsMount, SaveToTable, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import type { SaveToTableSource } from "@ai-matrx/records-ui";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import SaveTableModal from "@/components/mardown-display/tables/SaveTableModal";
 import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -43,7 +40,6 @@ export interface SaveToTableOverlayProps {
 type Where =
   | { state: "asking" }
   | { state: "record"; organizationId: string }
-  | { state: "older" }
   | { state: "refused"; sentence: string };
 
 export function SaveToTableOverlay({
@@ -74,8 +70,7 @@ export function SaveToTableOverlay({
       .then((born) => {
         if (!live) return;
         if (!born.ok) setWhere({ state: "refused", sentence: born.error });
-        else if (born.store === "record") setWhere({ state: "record", organizationId: born.home.organizationId });
-        else setWhere({ state: "older" });
+        else setWhere({ state: "record", organizationId: born.home.organizationId });
       })
       .catch((err: unknown) => {
         // The person closed the organization picker: "not now" — nothing is saved, and nothing is wrong.
@@ -88,11 +83,6 @@ export function SaveToTableOverlay({
   }, [organizationId, onClose]);
 
   useEffect(() => () => disposeSaveToTableCallbackGroup(callbackGroupId), [callbackGroupId]);
-
-  if (where.state === "older") {
-    const shape = shapesOfSource(source)[shapeIndex] ?? shapesOfSource(source)[0] ?? null;
-    return <SaveTableModal isOpen={isOpen} onClose={onClose} tableData={shape?.rows ?? []} />;
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (open ? undefined : onClose())}>

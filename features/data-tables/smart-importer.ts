@@ -23,6 +23,7 @@
  */
 
 import * as XLSX from "xlsx";
+import { cleanGrid } from "./grid-import";
 
 export type ImportRouting = "typed" | "workbook";
 
@@ -59,6 +60,20 @@ const PER_COLUMN_UNIFORMITY_THRESHOLD = 0.9;
 const SPARSITY_THRESHOLD = 0.15;
 const STYLED_CELLS_THRESHOLD = 0.1;
 const SAMPLE_ROWS_FOR_UNIFORMITY = 100;
+
+/**
+ * The first sheet of an XLSX/CSV file as a cleaned grid of text cells — what the ONE "Save to a
+ * table" (`saveToTable` overlay → records-ui `SaveToTable`) reads when the detector routes a file to
+ * a typed table. Empty sheets answer an empty grid; the overlay says so.
+ */
+export async function readImportGrid(file: File): Promise<string[][]> {
+  const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+  const first = wb.SheetNames[0];
+  const ws = first ? wb.Sheets[first] : undefined;
+  if (!ws) return [];
+  const raw = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: "" });
+  return cleanGrid(raw);
+}
 
 /**
  * Read an XLSX/CSV file and decide where it should land. Pure detection —
