@@ -113,8 +113,10 @@ export function Minimap({ className }: { className?: string }) {
     canvas.width = MINIMAP_W * dpr;
     canvas.height = MINIMAP_H * dpr;
     let frame: number | null = null;
-    // Theme colours, read once per second — getComputedStyle forces a style
-    // flush, which per frame costs every pan frame a full-board restyle.
+    // Theme colours, read only when the theme changes — getComputedStyle
+    // forces a style flush; read per frame it cost every pan frame a
+    // full-board restyle, and read on a 1 s timer it was the idle board's
+    // only standing style recalculation.
     let colours = { frame: "", tile: "", view: "" };
     const readColours = () => {
       const st = getComputedStyle(canvas);
@@ -126,9 +128,17 @@ export function Minimap({ className }: { className?: string }) {
     };
     readColours();
 
+    // What the last picture showed — an idle board redraws nothing.
+    let drawn = "";
     const draw = () => {
       frame = null;
       const items = [...store.getItems().entries()];
+      const cam = store.getCamera();
+      const size = store.getSize();
+      let key = `${cam.x},${cam.y},${cam.z},${size.w},${size.h},${colours.frame},${colours.tile},${colours.view}`;
+      for (const [id, r] of items) key += `|${id}:${r.x},${r.y},${r.w},${r.h}`;
+      if (key === drawn) return;
+      drawn = key;
       const view = visibleWorldRect(store.getCamera(), store.getSize());
       const bounds = unionRects([...items.map(([, r]) => r), view]);
       if (!bounds) return;
@@ -153,13 +163,26 @@ export function Minimap({ className }: { className?: string }) {
     };
     schedule();
     const unsub = store.subscribeFrame(schedule);
-    const interval = setInterval(() => {
-      readColours(); // theme may have flipped
-      schedule(); // tiles moved / added
-    }, 1000);
+    // Tiles moved / added — the store has no item channel; the redraw is a
+    // no-op unless the picture changed (no DOM or style work either way).
+    const interval = setInterval(schedule, 1000);
+    // The theme flips through the root's class / data-theme, or the OS scheme.
+    const onTheme = () => {
+      readColours();
+      schedule();
+    };
+    const themeObserver = new MutationObserver(onTheme);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
+    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    scheme.addEventListener("change", onTheme);
     return () => {
       unsub();
       clearInterval(interval);
+      themeObserver.disconnect();
+      scheme.removeEventListener("change", onTheme);
       if (frame !== null) cancelAnimationFrame(frame);
     };
   }, [store]);
