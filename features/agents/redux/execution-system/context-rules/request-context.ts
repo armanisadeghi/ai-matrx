@@ -45,6 +45,7 @@ import {
 import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 import { selectSavedContextRuleRows } from "./context-rules.thunks";
 import { toContextReceipt } from "./receipt-check";
+import { resolveClientSurface } from "../utils/build-tool-injection";
 
 export interface RequestContextOptions {
   /**
@@ -232,8 +233,12 @@ export function buildRequestContext(
 ): RequestContext {
   const saved = selectSavedContextRuleRows(state);
   const cap = selectContextInlineCap(state, conversationId);
+  // The person's rules are looked up against the surface the request names as
+  // its primary (`client.surface`) — the same surface the server's lookup
+  // uses, so a value filed differently on each side still gets the same rule.
+  const primarySurface = resolveClientSurface(state, conversationId) ?? null;
   const rows = collectContextRowSources(state, conversationId, opts).map((source) =>
-    resolveContextRow(source, saved, cap),
+    resolveContextRow(source, saved, cap, primarySurface),
   );
   const wire = buildContextWire(rows);
   return { rows, context: Object.keys(wire).length > 0 ? wire : undefined };
@@ -254,6 +259,7 @@ function displayInputs(state: RootState, conversationId: string): readonly unkno
     selectSavedContextRuleRows(state),
     state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt.cap ?? null,
     ambientIncluded(state, conversationId),
+    resolveClientSurface(state, conversationId) ?? null,
   ];
 }
 

@@ -462,14 +462,7 @@ export async function buildToolInjection(
   // guess are the same string. A conversation with no launch surface (a plain
   // chat send) still falls through to the route, so chat runs keep
   // `matrx-user/chat` and the UI-first tools it carries.
-  const launchSurface =
-    state.conversations.byConversationId[conversationId]?.surfaceName ?? null;
-  const surface = disableInjection
-    ? undefined
-    : perConversation?.surfaceOverride ||
-      launchSurface ||
-      detectActiveSurface() ||
-      undefined;
+  const surface = disableInjection ? undefined : resolveClientSurface(state, conversationId);
 
   // Per-conversation MCP servers the user attached from the Smart Input tools
   // menu (`addedMcpServers`, server SLUGS) ride as `client.mcp` — the server
@@ -501,4 +494,27 @@ export async function buildToolInjection(
   }
   if (client) result.client = client;
   return result;
+}
+
+/**
+ * The surface a request names as `client.surface` — the server's PRIMARY
+ * surface for this turn (its surface resolver, and the saved-context-rule
+ * lookup in aidream context_rules). One derivation, used here and by the
+ * context door (`buildRequestContext`), so the screen resolves the person's
+ * rules against exactly the surface the server will: the builder's override,
+ * else the conversation's stamp, else the route.
+ */
+export function resolveClientSurface(
+  state: RootState,
+  conversationId: string,
+): string | undefined {
+  const perConversation = selectBuilderAdvancedSettings(conversationId)(state);
+  const launchSurface =
+    state.conversations.byConversationId[conversationId]?.surfaceName ?? null;
+  return (
+    perConversation?.surfaceOverride ||
+    launchSurface ||
+    detectActiveSurface() ||
+    undefined
+  );
 }

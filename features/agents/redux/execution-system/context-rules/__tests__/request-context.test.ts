@@ -79,6 +79,7 @@ function makeState(opts: {
       },
     },
     messages: { byConversationId: { c1: { orderedIds: ["m1"] } } },
+    instanceUIState: { byConversationId: {} },
   } as unknown as RootState;
 }
 
@@ -347,5 +348,19 @@ describe("the table displays the server's numbers for server-resolved values", (
     expect(shown[0]).toMatchObject({ fromReceipt: true, delivery: "on_request", max_inline_chars: 0 });
     // The send path still uses the unfilled rows.
     expect(buildRequestContext(state, "c1", { includeAmbient: false }).rows[0]?.delivery).toBe("server");
+  });
+});
+
+describe("the person's rule holds whichever side files the value differently", () => {
+  it("a rule saved under the page applies to a value the page does not declare (manifest drift)", () => {
+    const { rows, context } = build(
+      makeState({
+        surfaceName: "matrx-user/demo",
+        entries: [{ key: "note_published", value: "yes" }],
+        saved: { "matrx-user/demo": { note_published: { include: false } } },
+      }),
+    );
+    expect(rows[0]).toMatchObject({ surfaceKey: "_default", include: false, decided_by: { include: "you" } });
+    expect(context).toBeUndefined();
   });
 });
