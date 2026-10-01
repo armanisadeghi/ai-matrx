@@ -1,7 +1,8 @@
 -- LANE SAFETY-NET-B (2026-10-01) — W14: AFTER THE PRESS, AN ORGANIZATION WHOSE RECORD STORE IS SWITCHED OFF CAN STILL
 -- MAKE A TABLE, OR IS TOLD WHY IN A PERSON'S WORDS. CLONE ONLY, ONE REPEATABLE-READ TRANSACTION, ROLLED BACK.
 --
--- Rincon Plumbing Co — Ojai Branch (d46f323b…, custom/system_enabled = false; admin@admin.com is its owner). The press
+-- A store-off organization (planted: Cedar Ridge Physical Therapy, admin@admin.com its owner, custom/system_enabled = false;
+-- the Ojai Branch fixtures this first named are archived organizations). The press
 -- sets data_tables/older_tables_moved for every organization, so a new older table is refused there; the store is off
 -- there. The owner asks for a new table both ways (the older door the Data page's older half uses, and the store's
 -- own door). PASS when one of them makes it, or every refusal is a person's sentence (no door names, register codes
@@ -31,7 +32,7 @@ declare
   c_claims   constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated","session_id":"safety-net-b"}';
   c_page     constant text := '{"origin":"https://manage.aimatrx.com","x-matrx-admin-lane":"1"}';  -- the admin lane header the Final switch page sends
   v_r jsonb; v_p jsonb; v_u jsonb; v_o jsonb; v_x jsonb;
-  v_table uuid; v_row uuid; v_list uuid; v_store_table uuid;
+  v_table uuid; v_row uuid; v_list uuid; v_store_table uuid; v_home uuid;
   v_plan uuid[]; v_switched uuid[]; v_outside uuid[];
   -- A work order in the column's own pattern (WO-dddd), unique to this run.
   v_marker text := 'WO-' || (5000 + (extract(epoch from clock_timestamp())::bigint % 4000))::text;
@@ -138,9 +139,22 @@ begin
   perform custom.record_update(c_ws, v_row, jsonb_build_object('work_order', v_marker));
   -- ── the owner of a store-off organization asks for a new table ───────────────────────────────────────────────
   perform set_config('role', 'postgres', true);
+  -- PLANT (lane POST-PRESS-SENTENCES, 2026-10-01): both Ojai Branch fixtures are ARCHIVED organizations (ORG-CLEANUP
+  -- 2026-09-22), which refuse everyone for that reason, so they never tested the store switch. The Ojai shape is
+  -- planted on an ACTIVE organization admin owns — Cedar Ridge Physical Therapy, record store switched OFF — inside
+  -- this rolled-back transaction.
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'system_enabled', 'organization', c_cedar, c_cedar, 'false'::jsonb, 'safety-net-b W14 plant (rolled back)')
+  on conflict do nothing;
+  update platform.knob_override set value = 'false'::jsonb
+   where feature = 'custom' and key = 'system_enabled' and scope_kind = 'organization' and organization_id = c_cedar;
+  if coalesce((platform.knob_resolve('custom', 'system_enabled', c_cedar) #>> '{}')::boolean, true) then
+    raise exception 'W14 PRECONDITION: the store-off plant did not take on Cedar Ridge';
+  end if;
+  v_report := v_report || 'plant: Cedar Ridge Physical Therapy has its record store switched off'::text;
   begin
     insert into workbench.udt_datasets (table_name, organization_id, user_id, created_by, visibility)
-    select 'Water Heater Installs ' || v_marker, 'd46f323b-c132-4d27-8004-70670c4b8a11', c_admin, c_admin, d.visibility from workbench.udt_datasets d limit 1;
+    select 'Water Heater Installs ' || v_marker, c_cedar, c_admin, c_admin, d.visibility from workbench.udt_datasets d limit 1;
     v_ok := v_ok || 'older door: made it'::text;
   exception when others then
     v_ans := sqlerrm;
@@ -150,13 +164,23 @@ begin
   begin
     perform set_config('request.jwt.claims', c_claims, true);
     perform set_config('role', 'authenticated', true);
-    perform custom.table_declare('d46f323b-c132-4d27-8004-70670c4b8a11', jsonb_build_object(
+    -- The web app's own birth (records declareTable.ts): a Home record in the person kernel, then the table under it.
+    v_home := custom.record_write(c_cedar, custom.person_kernel_id(), jsonb_build_object('name', 'Water Heater Installs ' || v_marker || ' Home'));
+    perform custom.table_declare(c_cedar, jsonb_build_object(
       'name', 'Water Heater Installs ' || v_marker, 'slug', 'water_heater_installs_' || lower(replace(v_marker, '-', '_')),
       'type', 'entity', 'label_singular', 'Install', 'label_plural', 'Water Heater Installs', 'display', 'list', 'weight', 'light',
       'ordered', false, 'row_order', 'manual', 'title_field', 'address', 'retention_days', 365, 'agent_writable', true,
+      'default_sort', jsonb_build_array(jsonb_build_object('field', 'address', 'direction', 'asc')),
+      'parent_id', v_home,
       'fields', jsonb_build_array(jsonb_build_object('name', 'address'))));
     perform set_config('role', 'postgres', true);
-    v_ok := v_ok || 'store door: made it'::text;
+    if not exists (select 1 from custom.record t where t.organization_id = c_cedar and t.data_class = 'table'
+                    and t.deleted_at is null and t.data ->> 'name' = 'Water Heater Installs ' || v_marker)
+       and not exists (select 1 from custom.record t where t.organization_id = c_cedar and t.data_class = 'table'
+                    and t.deleted_at is null and t.created_at >= now() and t.created_by = c_admin) then
+      raise exception 'W14 RED: the store door answered for a store-off organization but no table record exists in the store';
+    end if;
+    v_ok := v_ok || 'store door: made it (a table record in the store)'::text;
   exception when others then
     perform set_config('role', 'postgres', true);
     v_ans := sqlerrm;
