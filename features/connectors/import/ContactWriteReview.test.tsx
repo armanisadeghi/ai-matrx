@@ -2,7 +2,10 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { ContactWriteReview } from "./ContactWriteReview";
+import { ContactWriteReview, contactWriteConnectionForRead } from "./ContactWriteReview";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
+import type { ContactSearchResultPending } from "./types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -26,6 +29,17 @@ const preview = {
   resource_name: props.resourceName, etag: "etag-1", field_mask: ["names"],
   before: names("Ada"), after: names("Augusta"), receipt: "signed-review",
 };
+
+test("a duplicate account email cannot substitute a different write connection", () => {
+  const read = { connection_id: "read-1", google_account: "same@example.invalid" } as ContactSearchResultPending;
+  const connection = (id: string) => ({
+    id, owner_type: "user", status: "connected", account_email: "same@example.invalid",
+    scopes: [GOOGLE_SCOPE.contactsWrite],
+  }) as GoogleConnectionSummary;
+  expect(contactWriteConnectionForRead([connection("write-2")], read, null)).toBeNull();
+  expect(contactWriteConnectionForRead([connection("read-1")], read, null)?.id).toBe("read-1");
+  expect(contactWriteConnectionForRead([connection("read-1")], read, "other@example.invalid")).toBeNull();
+});
 let container: HTMLDivElement;
 let root: Root;
 
@@ -85,4 +99,42 @@ test("editing the input invalidates the reviewed receipt", async () => {
   });
   expect(container.textContent).not.toContain("Apply reviewed edit");
   expect(post).toHaveBeenCalledTimes(1);
+});
+
+test("an in-flight review cannot strand the next contact or accept an edited name", async () => {
+  let resolveOld!: (value: unknown) => void;
+  post.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+  await act(async () => { root.render(<ContactWriteReview {...props} />); });
+  const input = container.querySelector("input")!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Augusta");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => { button("Preview name edit").click(); });
+  expect(input.disabled).toBe(true);
+  await act(async () => { root.render(<ContactWriteReview {...props} resourceName="people/contact-2" />); });
+  expect(container.querySelector("input")!.disabled).toBe(false);
+  expect(container.querySelector("input")!.value).toBe("");
+  await act(async () => { resolveOld({ data: preview }); });
+  expect(container.textContent).not.toContain("Apply reviewed edit");
+  expect(button("Preview name edit").disabled).toBe(true);
+});
+
+test("a failed reverse preview keeps the verified result and offers another fresh review", async () => {
+  post.mockResolvedValueOnce({ data: preview }).mockResolvedValueOnce({ data: {
+    resource_name: props.resourceName, etag: "etag-2", field_mask: ["names"],
+    before: names("Ada"), after: names("Augusta"), verified: true,
+  }}).mockRejectedValueOnce(new Error("Google changed"));
+  await act(async () => { root.render(<ContactWriteReview {...props} />); });
+  const input = container.querySelector("input")!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Augusta");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => { button("Preview name edit").click(); });
+  await act(async () => { button("Apply reviewed edit").click(); });
+  await act(async () => { button("Preview reverse edit").click(); });
+  expect(container.textContent).toContain("Google confirmed: Augusta Lovelace");
+  expect(container.textContent).toContain("Preview reverse edit");
+  expect(container.textContent).not.toContain("Apply reviewed edit");
 });

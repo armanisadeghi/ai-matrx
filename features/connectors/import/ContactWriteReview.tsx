@@ -7,6 +7,9 @@ import { Input } from "@ai-matrx/design-system";
 import { getJson, postJson } from "@/lib/python-client";
 import { getUserMessage } from "@/lib/api/errors";
 import type { components } from "@/types/python-generated/api-types";
+import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import type { ContactSearchResultPending } from "./types";
 
 type Preview = components["schemas"]["GoogleContactEditPreview"];
 type Result = components["schemas"]["GoogleContactEditResult"];
@@ -14,6 +17,17 @@ type Admission = components["schemas"]["ContactWriteAdmission"];
 type Name = components["schemas"]["GoogleContactNameEdit"];
 
 const base = "/google-integrations/contacts/write";
+
+export function contactWriteConnectionForRead(
+  connections: GoogleConnectionSummary[],
+  search: ContactSearchResultPending | null,
+  selectedAccount: string | null,
+): GoogleConnectionSummary | null {
+  if (!search?.connection_id || (selectedAccount && selectedAccount !== search.google_account)) return null;
+  return connections.find((connection) => connection.id === search.connection_id &&
+    connection.owner_type === "user" && connection.status === "connected" &&
+    connection.scopes.includes(GOOGLE_SCOPE.contactsWrite)) ?? null;
+}
 
 function sourceName(value: Record<string, unknown>): Name {
   const names = value.names;
@@ -53,6 +67,8 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
 
   useEffect(() => {
     requestVersion.current += 1;
+    applying.current = false;
+    setBusy(false);
     setPreview(null);
     setReviewedEdits(null);
     setResult(null);
@@ -105,8 +121,10 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
     } catch (cause) {
       if (version === requestVersion.current) setError(getUserMessage(cause));
     } finally {
-      applying.current = false;
-      if (version === requestVersion.current) setBusy(false);
+      if (version === requestVersion.current) {
+        applying.current = false;
+        setBusy(false);
+      }
     }
   };
 
@@ -126,8 +144,8 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
   return <section className="mt-2 space-y-3 rounded-md border p-3" aria-label={`Edit ${displayName} in Google`}>
     <p className="text-sm font-medium">Edit Google Contact name</p>
     <div className="grid gap-2 sm:grid-cols-2">
-      <label className="text-xs">Given name<Input value={givenName} maxLength={256} onChange={(event) => { invalidate(); setGivenName(event.target.value); }} /></label>
-      <label className="text-xs">Family name<Input value={familyName} maxLength={256} onChange={(event) => { invalidate(); setFamilyName(event.target.value); }} /></label>
+      <label className="text-xs">Given name<Input value={givenName} maxLength={256} disabled={busy} onChange={(event) => { invalidate(); setGivenName(event.target.value); }} /></label>
+      <label className="text-xs">Family name<Input value={familyName} maxLength={256} disabled={busy} onChange={(event) => { invalidate(); setFamilyName(event.target.value); }} /></label>
     </div>
     <Button size="sm" variant="outline" disabled={busy || (!givenName.trim() && !familyName.trim())}
       onClick={() => void review({ ...(givenName.trim() ? { given_name: givenName.trim() } : {}), ...(familyName.trim() ? { family_name: familyName.trim() } : {}) })}>

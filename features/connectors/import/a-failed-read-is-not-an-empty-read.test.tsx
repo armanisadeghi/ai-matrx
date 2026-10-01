@@ -46,6 +46,9 @@ jest.mock("@/features/organizations/useOrganizationRequired", () => ({
     organizationState: "ready",
   }),
 }));
+jest.mock("@/features/marketing/google/hooks", () => ({
+  useGoogleConnectionInventory: () => ({ data: { connections: [] } }),
+}));
 
 jest.mock("./service", () => ({
   importGoogleContacts: (...args: unknown[]) => mockImport(...args),

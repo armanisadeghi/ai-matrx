@@ -67,9 +67,8 @@ import type {
   ContactSearchResultPending,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ContactWriteReview } from "./ContactWriteReview";
+import { ContactWriteReview, contactWriteConnectionForRead } from "./ContactWriteReview";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
-import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 export interface GoogleContactsImportPanelProps {
   organizationId: string | null;
@@ -440,12 +439,9 @@ export function GoogleContactsImportPanel({
   );
 
   const contacts = search?.contacts ?? [];
-  const writeConnection = (connectionInventory.data?.connections ?? []).find(
-    (connection) => Boolean(search?.connection_id) && connection.id === search?.connection_id &&
-      connection.owner_type === "user" && connection.status === "connected" &&
-      connection.scopes.includes(GOOGLE_SCOPE.contactsWrite) &&
-      (!googleAccount || googleAccount === search?.google_account),
-  ) ?? null;
+  const writeConnection = contactWriteConnectionForRead(
+    connectionInventory.data?.connections ?? [], search, googleAccount,
+  );
   const selectedSet = useMemo(() => new Set(selection.selected), [selection.selected]);
   const { requestedExternalId, unfilteredSearch, seenIds } = selection;
   const requestedFound = Boolean(requestedExternalId && seenIds.has(requestedExternalId));
