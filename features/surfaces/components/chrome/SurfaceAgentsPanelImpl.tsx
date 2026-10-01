@@ -177,7 +177,7 @@ export default function SurfaceAgentsPanelImpl({
           isAdmin={isAdmin}
           onOpened={() => onRequestClose?.()}
         />
-        <PageIntelligenceSection onOpened={onRequestClose} />
+        <PageIntelligenceSection onOpened={onRequestClose} isAdmin={isAdmin} />
         <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
           <p className="font-medium text-foreground">
             No surface registered for this page
@@ -310,7 +310,7 @@ export default function SurfaceAgentsPanelImpl({
         hasLiveScope={runtime?.surfaceName === primaryName}
         onOpened={() => onRequestClose?.()}
       />
-      <PageIntelligenceSection onOpened={onRequestClose} />
+      <PageIntelligenceSection onOpened={onRequestClose} surfaceName={primaryName} isAdmin={isAdmin} />
     </div>
   );
 }

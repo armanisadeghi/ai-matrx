@@ -17,10 +17,24 @@ import { fetchMandateIdentities, type MandateIdentity } from "@/features/mandate
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 
-/** The page's management doors, after agents and conversations in the menu. */
-export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void }) {
+/**
+ * The page's jobs, after agents and conversations in the menu. A row opens the
+ * mandate IN PLACE (the law: a mandate never costs the person their page); the
+ * arrow beside it is the secondary door to the full intelligence page, in a new tab.
+ */
+export function PageIntelligenceSection({
+  onOpened,
+  surfaceName = null,
+  isAdmin = false,
+}: {
+  onOpened?: () => void;
+  surfaceName?: string | null;
+  isAdmin?: boolean;
+}) {
   const pathname = usePathname() ?? "";
+  const openMandate = useOpenMandateWindow();
   const doors = usePageIntelligenceDoors();
   const live = useLiveSurfaceMandates();
   const [identities, setIdentities] = useState<Record<string, MandateIdentity>>({});
@@ -86,17 +100,33 @@ export function PageIntelligenceSection({ onOpened }: { onOpened?: () => void })
       )}
       <ul className="space-y-0.5">
         {entries.map(([key, href]) => (
-          <li key={key}>
+          <li key={key} className="flex min-w-0 items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                openMandate({
+                  initialMandateKey: key,
+                  mandateKeys: entries.map(([entryKey]) => entryKey),
+                  surfaceName,
+                  initialView: isAdmin ? "admin" : "yours",
+                });
+                onOpened?.();
+              }}
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
+            >
+              <span className="min-w-0 flex-1 truncate">{mandateDisplayName(key, identities[key]?.label)}</span>
+            </button>
             <Link
               href={href}
               target="_blank"
               rel="noopener noreferrer"
               prefetch={false}
               onClick={onOpened}
-              className="group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-xs text-foreground hover:bg-accent"
+              title="Open the full page in a new tab"
+              aria-label={`Open ${mandateDisplayName(key, identities[key]?.label)} full page in a new tab`}
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
             >
-              <span className="min-w-0 flex-1 truncate">{mandateDisplayName(key, identities[key]?.label)}</span>
-              <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
+              <ArrowUpRight className="h-3 w-3" aria-hidden />
             </Link>
           </li>
         ))}
