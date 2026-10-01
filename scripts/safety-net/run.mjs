@@ -9,6 +9,7 @@
 //   node scripts/safety-net/run.mjs --target clone --plant <plant-id>   # PROVE RED: one planted break
 //   node scripts/safety-net/run.mjs --list                   # every check, its items and targets
 //   options: --half a|b|all (a = SAFETY-NET's areas, b = SAFETY-NET-B's: cutover, agents)
+//            --walk-parallel <n> (live: 3 is safe; clone: 1)   --parallel <n> (SQL/cmd, default 1)
 //            --only <checkId,checkId|area>   --origin <url>   --out <dir>   --label <word>
 //
 // What runs where (the lane rules):
@@ -259,7 +260,10 @@ try {
   const restWorkers = Promise.all(Array.from({ length: parallel }, worker));
   await restWorkers;
   queue.push(...walks);
-  await worker();
+  // Walks share one browser each. On the clone they share the one dev server, so one at a time;
+  // on live `--walk-parallel 3` is safe (each walk is one seat-pair in its own browser).
+  const walkParallel = Number(opt("walk-parallel", "1"));
+  await Promise.all(Array.from({ length: walkParallel }, worker));
 } finally {
   if (plantApplied) {
     const r = psqlSync(plant.restore);
