@@ -31,6 +31,21 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-30 (census) — **`holdUntilHydrated` holds only the DEVICE write, and
+  never forever.** A slice with `remote.write` sends its server save on the
+  normal debounce; only the IDB + mirror leg waits. If the read has not settled
+  `HOLD_UNTIL_HYDRATED_BACKSTOP_MS` (10s) after the first hold (boot never
+  started, or stalled), the middleware reads the slice's saved copy itself
+  (IDB, then the `idbFallback` mirror), dispatches the slice's REHYDRATE so its
+  reducer merges, saves the merged state, and logs `persist.hold.expired` +
+  `console.error`. Census of every persisted slice: `wizardDraft`, `scopesTree`
+  held (scopesTree's `serialize` returned `{}` while a fetch was pending and
+  stored it over the warm tree); `userPreferences` gated by `persistWhen`;
+  `theme`, `userProfile`, `appContext` exempt with written reasons. Guards:
+  `__tests__/every-persisted-slice-is-classified-for-early-writes.test.ts`
+  (a new persisted slice fails until classified) and
+  `__tests__/hold-until-hydrated-never-hangs.test.ts`.
+
 - 2026-09-30 — **`holdUntilHydrated` (policy flag, warm-cache only).** The
   debounced scheduler refuses the slice — at `schedule` and at flush, pagehide
   included — until `store._sync.hydrationSettled` is true for the current
@@ -43,8 +58,7 @@ hydration errors.
   `SyncEngineApi.flushPersisted(slice)`: write a warm-cache slice now and await
   it (tab-bound run's "saving" stamp). Guard:
   `lib/wizard-draft/__tests__/draft-write-before-read-never-wipes.test.ts`.
-  Not yet opted in (same exposure if their body is a map): the other
-  warm-cache slices — census before adopting.
+  Census done the same day (entry above).
 
 - 2026-09-27 — **A queued-reveal boundary (`$~`) counts as unhydrated.** React 19
   marks a streamed boundary `$~` while its reveal waits for a frame; boot used to

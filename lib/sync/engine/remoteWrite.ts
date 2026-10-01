@@ -125,6 +125,11 @@ export interface RemoteWriteScheduler {
      * saves each slice's live (now merged) state exactly once.
      */
     takeHydrationHolds(): string[];
+    /**
+     * The bounded wait ran out and the caller merged the saved copy into the
+     * slice itself: stop holding this slice for the current identity.
+     */
+    releaseHold(sliceName: string): void;
     /** Tear down listeners. */
     dispose(): void;
 }
@@ -145,9 +150,26 @@ export interface CreateRemoteWriteSchedulerOptions {
      * (a hand-built store with no boot has nothing to wait for).
      */
     hydrationSettled?: () => boolean;
+    /**
+     * Called when a `holdUntilHydrated` slice has been held for
+     * `holdBackstopMs` and the read has still not settled. The caller reads
+     * the saved copy, merges it, saves, and calls `releaseHold`. Absent = no
+     * bound (a hand-built scheduler with nothing to merge).
+     */
+    onHoldExpired?: (sliceName: string) => void;
+    /** Test-only override of `HOLD_UNTIL_HYDRATED_BACKSTOP_MS`. */
+    holdBackstopMs?: number;
 }
 
 const DEFAULT_DEBOUNCE_MS = 150;
+
+/**
+ * How long a `holdUntilHydrated` slice waits for the read before the engine
+ * stops waiting, reads the saved copy itself, and merges. Boot normally
+ * settles within a second of the page going idle; past this, waiting longer
+ * only risks losing the edit when the tab closes.
+ */
+export const HOLD_UNTIL_HYDRATED_BACKSTOP_MS = 10_000;
 
 /**
  * Every live scheduler, so the refresh path can ask "does this slice hold
@@ -182,10 +204,19 @@ export function createRemoteWriteScheduler(
     const pending = new Map<string, PendingWrite>();
     /** `holdUntilHydrated` slices with a write refused before hydration settled. */
     const heldForHydration = new Set<string>();
+    /** Slices whose bounded wait ran out and were merged by the caller. */
+    const releasedEarly = new Set<string>();
+    const holdTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    const holdBackstopMs = opts.holdBackstopMs ?? HOLD_UNTIL_HYDRATED_BACKSTOP_MS;
     const awaitingHydration = (policy: Policy<any>): boolean =>
         policy.config.holdUntilHydrated === true &&
+        !releasedEarly.has(policy.config.sliceName) &&
         typeof opts.hydrationSettled === "function" &&
         !opts.hydrationSettled();
+    const clearHoldTimers = () => {
+        for (const t of holdTimers.values()) clearTimeout(t);
+        holdTimers.clear();
+    };
     /** The body the server holds, per slice — see `WriteContext.base`. */
     const baseBySlice = new Map<string, unknown>();
 
@@ -196,10 +227,13 @@ export function createRemoteWriteScheduler(
 
         // THE HYDRATION GATE (`policy.holdUntilHydrated`). A body built before
         // the persisted read came back holds only what THIS page wrote, so
-        // storing it would replace everything saved on the device with it.
-        // DROP it and remember the slice: once hydration settles the caller
-        // saves the slice's live state, which then holds both.
-        if (awaitingHydration(policy)) {
+        // storing it ON THE DEVICE would replace everything saved there with
+        // it. The device leg is skipped and the slice remembered: once
+        // hydration settles (or the bounded wait runs out) the caller saves
+        // the slice's live, merged state. A server save is NOT held — it
+        // goes out below on its normal debounce.
+        const holdDeviceLeg = awaitingHydration(policy);
+        if (holdDeviceLeg && !policy.config.remote?.write) {
             if (record.timerHandle) clearTimeout(record.timerHandle);
             record.inFlightController?.abort();
             pending.delete(sliceName);
@@ -256,26 +290,30 @@ export function createRemoteWriteScheduler(
         const sliceState = record.body;
 
         // --- Storage leg (idb primary, localStorage fallback for warm-cache) ---
-        try {
-            await writeSlice(
-                identity.key,
-                sliceName,
-                policy.config.version,
-                sliceState,
-            );
-            // Mirror into localStorage as the idbFallback tier (private browsing
-            // / IDB-disabled path). Small cost, huge resilience win — boot reads
-            // this path when idb.open fails.
-            localStorageAdapter.write(`matrx:idbFallback:${sliceName}`, {
-                version: policy.config.version,
-                identityKey: identity.key,
-                body: sliceState,
-            });
-        } catch (err) {
-            logger.warn("idb.write.error", {
-                sliceName,
-                meta: { error: extractErrorMessage(err) },
-            });
+        if (holdDeviceLeg) {
+            holdForHydration(sliceName);
+        } else {
+            try {
+                await writeSlice(
+                    identity.key,
+                    sliceName,
+                    policy.config.version,
+                    sliceState,
+                );
+                // Mirror into localStorage as the idbFallback tier (private browsing
+                // / IDB-disabled path). Small cost, huge resilience win — boot reads
+                // this path when idb.open fails.
+                localStorageAdapter.write(`matrx:idbFallback:${sliceName}`, {
+                    version: policy.config.version,
+                    identityKey: identity.key,
+                    body: sliceState,
+                });
+            } catch (err) {
+                logger.warn("idb.write.error", {
+                    sliceName,
+                    meta: { error: extractErrorMessage(err) },
+                });
+            }
         }
 
         // --- Remote leg (optional; only if policy declares remote.write) ---
@@ -398,19 +436,36 @@ export function createRemoteWriteScheduler(
             logger.warn("persist.held", {
                 sliceName,
                 meta: {
-                    detail: "saved state not read yet — nothing written until it is, so this page cannot wipe it",
+                    detail: "saved state not read yet — nothing written to the device until it is, so this page cannot wipe it",
                 },
             });
         }
         heldForHydration.add(sliceName);
+        // THE BOUND. A page whose read never settles must not keep the edit
+        // off the device forever (it would be lost with the tab).
+        if (opts.onHoldExpired && !holdTimers.has(sliceName)) {
+            const onExpired = opts.onHoldExpired;
+            holdTimers.set(
+                sliceName,
+                setTimeout(() => {
+                    holdTimers.delete(sliceName);
+                    const policy = bySlice.get(sliceName);
+                    if (!policy || !heldForHydration.has(sliceName) || !awaitingHydration(policy)) return;
+                    heldForHydration.delete(sliceName);
+                    onExpired(sliceName);
+                }, holdBackstopMs),
+            );
+        }
     }
 
     function schedule(sliceName: string, body: unknown): void {
         const policy = bySlice.get(sliceName);
         if (!policy) return;
-        // A body built before the read came back is never queued: it would
-        // still be stale if hydration settled before its debounce ran out.
-        if (awaitingHydration(policy)) {
+        // A body built before the read came back is never queued for the
+        // device: it would still be stale if hydration settled before its
+        // debounce ran out. (A slice with a server save is queued — the flush
+        // skips only its device leg.)
+        if (awaitingHydration(policy) && !policy.config.remote?.write) {
             const stale = pending.get(sliceName);
             if (stale?.timerHandle) clearTimeout(stale.timerHandle);
             stale?.inFlightController?.abort();
@@ -450,7 +505,7 @@ export function createRemoteWriteScheduler(
             // An unsaved edit of a hold-until-hydrated slice is not lost with
             // the swap: it is saved, merged, once the new identity's read lands.
             const policy = bySlice.get(name);
-            if (policy?.config.holdUntilHydrated === true) heldForHydration.add(name);
+            if (policy?.config.holdUntilHydrated === true) holdForHydration(name);
             record.inFlightController?.abort();
             if (record.timerHandle) clearTimeout(record.timerHandle);
             pending.delete(name);
@@ -478,6 +533,10 @@ export function createRemoteWriteScheduler(
         flushAll,
         flushSlice: (sliceName) => flushOne(sliceName),
         onIdentitySwap() {
+            // The new identity's read is a new wait: an early release was for
+            // the identity we are leaving.
+            releasedEarly.clear();
+            clearHoldTimers();
             onIdentitySwap();
             baseBySlice.clear();
         },
@@ -492,7 +551,15 @@ export function createRemoteWriteScheduler(
         takeHydrationHolds() {
             const names = Array.from(heldForHydration);
             heldForHydration.clear();
+            clearHoldTimers();
             return names;
+        },
+        releaseHold(sliceName) {
+            releasedEarly.add(sliceName);
+            heldForHydration.delete(sliceName);
+            const t = holdTimers.get(sliceName);
+            if (t) clearTimeout(t);
+            holdTimers.delete(sliceName);
         },
         dispose() {
             for (const record of pending.values()) {
@@ -502,6 +569,8 @@ export function createRemoteWriteScheduler(
             pending.clear();
             baseBySlice.clear();
             heldForHydration.clear();
+            releasedEarly.clear();
+            clearHoldTimers();
             liveSchedulers.delete(scheduler);
             detachPageHide?.();
         },

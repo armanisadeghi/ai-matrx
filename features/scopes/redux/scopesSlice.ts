@@ -489,6 +489,12 @@ export const scopesTreePolicy = definePolicy<ScopesState>({
     actions: ["scopesTree/treeFetchFulfilled", "scopesTree/scopesReset"],
   },
   storageKey: "matrx:scopesTree",
+  // The body is the WHOLE tree, and `serialize` returns `{}` while the slice
+  // is empty — so a fetch going pending before boot's read stored `{}` over
+  // the warm tree. The device write waits for the read (bounded; see
+  // `holdUntilHydrated`). Guard:
+  // lib/sync/__tests__/hold-until-hydrated-never-hangs.test.ts
+  holdUntilHydrated: true,
   partialize: ["organizations", "organizationIds", "treeFetchedAt"],
   serialize: (state) => {
     if (state.organizationIds.length === 0) return {};

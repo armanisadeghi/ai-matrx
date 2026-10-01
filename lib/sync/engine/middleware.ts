@@ -28,7 +28,8 @@ import { localStorageAdapter } from "../persistence/local-storage";
 import { noopAdapter } from "../persistence/noop";
 import type { PersistenceAdapter } from "../persistence/types";
 import type { SyncChannel } from "../channel";
-import { isRehydrateAction } from "./rehydrate";
+import { buildRehydrateAction, isRehydrateAction } from "./rehydrate";
+import { readSlice } from "../persistence/idb";
 import { isRemoteFetchStatusAction } from "./remoteFetchStatus";
 import { applyPrePaintDescriptors } from "./applyPrePaint";
 import {
@@ -163,6 +164,8 @@ export interface SyncMiddlewareContext {
    */
   hydrationSettled?: () => boolean;
   onHydrationSettledChange?: (listener: () => void) => () => void;
+  /** Test-only override of `HOLD_UNTIL_HYDRATED_BACKSTOP_MS`. */
+  holdBackstopMs?: number;
 }
 
 /**
@@ -265,6 +268,66 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
         remoteWriteScheduler.schedule(sliceName, serializeBody(policy, sliceState));
       }
     });
+  }
+
+  // `holdUntilHydrated`, THE BOUND: the read did not settle in time (boot
+  // never started on this page, or stalled). Read this slice's saved copy
+  // ourselves, let its REHYDRATE reducer merge it into the live state exactly
+  // as boot would, save the merged state, and say so — never sit on the edit
+  // until the tab closes, never store it alone over the saved copy.
+  async function mergeExpiredHold(api: MiddlewareAPI, sliceName: string): Promise<void> {
+    const policy = ctx.policies.find((p) => p.config.sliceName === sliceName);
+    const scheduler = remoteWriteScheduler;
+    if (!policy || !scheduler) return;
+    const identity = ctx.getIdentity();
+    let body: unknown;
+    let found = false;
+    try {
+      const record = await readSlice(identity.key, sliceName, policy.config.version);
+      if (record && record.identityKey === identity.key) {
+        body = record.body;
+        found = true;
+      } else {
+        const mirror = localStorageAdapter.read(`matrx:idbFallback:${sliceName}`);
+        if (mirror && mirror.version === policy.config.version && mirror.identityKey === identity.key) {
+          body = mirror.body;
+          found = true;
+        }
+      }
+    } catch (err) {
+      logger.error("persist.hold.read.failed", {
+        sliceName,
+        meta: { error: extractErrorMessage(err) },
+      });
+    }
+    // The read settled (or the person changed) while we looked: the normal
+    // release path owns this slice now.
+    if (ctx.getIdentity().key !== identity.key) return;
+    if (ctx.hydrationSettled?.()) return;
+    if (found) {
+      let state = body;
+      try {
+        if (typeof policy.config.deserialize === "function") state = policy.config.deserialize(body);
+        api.dispatch(buildRehydrateAction(sliceName, state, { fromRehydrate: true }));
+      } catch (err) {
+        logger.error("persist.hold.merge.failed", {
+          sliceName,
+          meta: { error: extractErrorMessage(err) },
+        });
+        // Could not merge: keep holding rather than store a partial body.
+        return;
+      }
+    }
+    scheduler.releaseHold(sliceName);
+    const message =
+      `[sync] persisted hydration did not settle — "${sliceName}" read its saved copy directly, ` +
+      `merged it, and saved. This is a defect in the sync engine's boot path, not a normal path.`;
+    logger.error("persist.hold.expired", { sliceName, meta: { detail: message, found } });
+    console.error(message);
+    const live = selectSliceState(api.getState(), sliceName);
+    if (live === undefined) return;
+    lastPersistedRef.set(sliceName, live);
+    scheduler.schedule(sliceName, serializeBody(policy, live));
   }
 
   const middleware: Middleware =
@@ -414,6 +477,12 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
             ...(ctx.hydrationSettled
               ? { hydrationSettled: ctx.hydrationSettled }
               : {}),
+            ...(ctx.holdBackstopMs !== undefined
+              ? { holdBackstopMs: ctx.holdBackstopMs }
+              : {}),
+            onHoldExpired: (sliceName) => {
+              void mergeExpiredHold(api, sliceName);
+            },
           });
           releaseHoldsOnSettle(api);
         }
