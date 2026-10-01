@@ -18,31 +18,19 @@
 // Every fixture carries STAMP and is ARCHIVED in cleanup (Settings rail → Archive this table).
 // Runs unchanged on live and on the clone preview:
 //   node scripts/safety-net/run.mjs --target clone --origin http://safety-net-t2.localhost:3001 --only tables.walk-bulk
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import XLSX from "xlsx";
 
-import { openWalk, bodyText, sleep, until, STAMP, TARGET, REPO, OUT } from "../lib/harness.mjs";
+import { openWalk, bodyText, cloneRead, sleep, until, STAMP, TARGET, OUT } from "../lib/harness.mjs";
 
 const ctx = await openWalk("tables-bulk");
 const T_A = `Visit log ${STAMP}`;
 const T_300 = `Visit log 300 ${STAMP}`;
 const T_ED = `Intake ${STAMP}`;
 
-// ── the clone's record store, read for the deciding marker (clone only) ──────────────────────────
-const CLONE_DSN = (() => {
-  if (TARGET !== "clone") return null;
-  const f = join(REPO, ".env.local");
-  if (!existsSync(f)) return null;
-  return (readFileSync(f, "utf8").match(/^CLONE_DATABASE_URL=(.*)$/m)?.[1] ?? "").replace(/^"|"$/g, "") || null;
-})();
-const PSQL = ["/opt/homebrew/opt/libpq/bin/psql", "/opt/homebrew/opt/postgresql@17/bin/psql"].find(existsSync);
-function cloneSql(sql) {
-  if (!CLONE_DSN || !PSQL) return null;
-  const r = spawnSync(PSQL, [CLONE_DSN, "-At", "-v", "ON_ERROR_STOP=1", "-c", `begin read only; ${sql}; commit;`], { encoding: "utf8", timeout: 60000 });
-  return r.status === 0 ? r.stdout.split("\n").filter((l) => l && !/^(BEGIN|COMMIT)$/.test(l)).join("\n") : `ERR ${r.stderr.slice(0, 200)}`;
-}
+// ── the clone's record store, read for the deciding marker (clone only; the harness's one safe reader) ──
+const cloneSql = (sql) => (TARGET === "clone" ? cloneRead(sql) : null);
 const clean = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
 
 // ── the clinic's data ────────────────────────────────────────────────────────────────────────────
