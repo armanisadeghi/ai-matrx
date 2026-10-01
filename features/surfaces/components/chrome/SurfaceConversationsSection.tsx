@@ -34,8 +34,11 @@ import { fetchConversationHistory } from "@/features/agents/redux/conversation-h
 import { setScopeSearch } from "@/features/agents/redux/conversation-history/slice";
 import {
   makeSelectConversationHistoryItems,
+  makeSelectConversationHistoryScope,
   makeSelectConversationHistoryStatus,
 } from "@/features/agents/redux/conversation-history/selectors";
+import { useConversationServerSearch } from "@/features/agents/components/conversation-history/useConversationServerSearch";
+import { ConversationSearchStatus } from "@/features/agents/components/conversation-history/ConversationSearchStatus";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
@@ -147,6 +150,26 @@ export function SurfaceConversationsSection({
   const items = useAppSelector(selectItems);
   const { status, hasMore, error } = useAppSelector(selectStatus);
 
+  // "All conversations" search answers from the server — the person's whole
+  // library across every organization — never only from the loaded page.
+  const selectAllScope = useMemo(
+    () => makeSelectConversationHistoryScope(allScopeId),
+    [allScopeId],
+  );
+  const allScope = useAppSelector(selectAllScope);
+  const serverSearch = useConversationServerSearch({
+    enabled: showAll,
+    searchTerm: allScope.searchTerm,
+    pageSize: allPageSize ?? allScope.pageSize,
+    conversationCount: null,
+    scope: allScope,
+  });
+  const searchSettled =
+    serverSearch.isActive &&
+    serverSearch.isSettled &&
+    (serverSearch.status === "succeeded" ||
+      serverSearch.status === "loading-more");
+
   useEffect(() => {
     if (showAll) {
       if (allPageSize === null) return;
@@ -177,7 +200,8 @@ export function SurfaceConversationsSection({
   }, [dispatch, showAll, feature, recentScopeId, allPageSize]);
 
   // A conversation with no agent cannot be resumed — never offer a dead row.
-  const resumable = items.filter((c) => !!c.agentId);
+  const listed = showAll && searchSettled ? serverSearch.items : items;
+  const resumable = listed.filter((c) => !!c.agentId);
   const visible = showAll ? resumable : resumable.slice(0, RECENT_COUNT);
   const agentNames = useAgentNames(
     visible.map((c) => c.agentId).filter((id): id is string => !!id),
@@ -251,7 +275,14 @@ export function SurfaceConversationsSection({
           />
         </div>
         <div className="max-h-64 overflow-y-auto">
-          {isLoading ? (
+          {serverSearch.isActive && (
+            <ConversationSearchStatus
+              state={serverSearch}
+              cachedCount={items.length}
+              pageSize={allPageSize ?? allScope.pageSize}
+            />
+          )}
+          {isLoading && !serverSearch.isActive ? (
             <div className="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Fetching your conversations
@@ -273,7 +304,7 @@ export function SurfaceConversationsSection({
                 openingId={openingId}
                 onOpen={handleOpen}
               />
-              {hasMore && (
+              {hasMore && !serverSearch.isActive && (
                 <button
                   type="button"
                   disabled={status === "loading-more"}

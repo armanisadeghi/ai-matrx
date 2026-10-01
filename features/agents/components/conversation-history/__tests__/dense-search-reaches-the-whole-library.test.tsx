@@ -159,3 +159,31 @@ describe("dense conversation history search", () => {
     await act(async () => root.unmount());
   });
 });
+
+/**
+ * Class guard: any surface that types into a conversation-history search term
+ * must also mount the server search — otherwise its box filters only the
+ * cached page (the defect above). Fails naming the file.
+ */
+describe("every conversation-history search box asks the server", () => {
+  it("pairs setScopeSearch with useConversationServerSearch in every caller", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { execSync } = require("node:child_process") as typeof import("node:child_process");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("node:fs") as typeof import("node:fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("node:path") as typeof import("node:path");
+    const root = path.resolve(__dirname, "../../../../..");
+    const out = execSync(
+      "git grep -l -e 'setScopeSearch(' -- '*.ts' '*.tsx' ':!**/__tests__/**' ':!features/agents/redux/conversation-history/slice.ts'",
+      { cwd: root, encoding: "utf8" },
+    );
+    const files = out.split("\n").filter(Boolean);
+    expect(files.length).toBeGreaterThan(0);
+    const offenders = files.filter((f) => {
+      const src = fs.readFileSync(path.join(root, f), "utf8");
+      return !src.includes("useConversationServerSearch(");
+    });
+    expect(offenders).toEqual([]);
+  });
+});

@@ -88,10 +88,14 @@ describe("/chat authoritative server search", () => {
     const shared = read(
       "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
     );
+    const status = read(
+      "features/agents/components/conversation-history/ConversationSearchStatus.tsx",
+    );
     expect(wrapper).toContain("serverSearch");
-    expect(shared).toContain("Search message text");
-    expect(shared).toContain("Show ${nextCount} more");
-    expect(shared).toContain("Search {nextLabel}");
+    expect(shared).toContain("serverSearch = true");
+    expect(status).toContain("Search message text");
+    expect(status).toContain("Show ${nextCount} more");
+    expect(status).toContain("Search {nextLabel}");
     expect(shared).toContain("onMutationSuccess={serverSearchState.retry}");
   });
 
