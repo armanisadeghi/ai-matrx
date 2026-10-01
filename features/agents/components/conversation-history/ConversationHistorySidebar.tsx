@@ -206,8 +206,11 @@ export interface ConversationHistorySidebarProps {
    */
   hideSearchAffordance?: boolean;
   /**
-   * Replace cache-only filtering with cached-first, authoritative server
-   * search. Opt-in because dense/admin consumers have separate search needs.
+   * Cached-first, authoritative server search (ranked RPC over the person's
+   * whole library, every organization). ON for every variant: a search box
+   * that only filters the loaded page hides everything older or elsewhere
+   * (Chat History window, 2026-10-01). Pass `false` only for a surface whose
+   * list is not a conversation library.
    */
   serverSearch?: boolean;
 
@@ -237,7 +240,7 @@ function useConversationHistoryController(
     isFavorite,
     onToggleFavorite,
     getConversationHref,
-    serverSearch = false,
+    serverSearch = true,
   } = props;
   const dispatch = useAppDispatch();
 
@@ -598,7 +601,24 @@ const DenseView: React.FC<
     resolveHref,
     getSourceMenuCtx,
     allLanesOff,
+    serverSearchState,
   } = ctl;
+
+  // Search answers from the server (whole library, every organization) — the
+  // cached page is only what shows while the first answer is in flight.
+  const searchActive = serverSearchState.isActive && !allLanesOff;
+  const cachedSearchItems = byDate.flatMap((bucket) => bucket.items);
+  const hasAuthoritativeResults =
+    serverSearchState.isSettled &&
+    (serverSearchState.status === "succeeded" ||
+      serverSearchState.status === "loading-more" ||
+      (serverSearchState.status === "failed" &&
+        serverSearchState.items.length > 0));
+  const searchItems = hasAuthoritativeResults
+    ? serverSearchState.items.filter((item) =>
+        rowMatchesArchiveView(item.status, ctl.scope.archiveView ?? "active"),
+      )
+    : cachedSearchItems;
 
   // "No conversations yet" is an answer only after a read that succeeded: a
   // failed or unstarted read shows the error above (or the wait), never the
@@ -693,7 +713,41 @@ const DenseView: React.FC<
 
         {empty && <div className="px-1 py-2">{empty}</div>}
 
-        {favorites.length > 0 && (
+        {searchActive && (
+          <ConversationSearchStatus
+            state={serverSearchState}
+            cachedCount={cachedSearchItems.length}
+            pageSize={ctl.scope.pageSize}
+          />
+        )}
+
+        {searchActive && searchItems.length > 0 && (
+          <Section
+            id="search"
+            label={hasAuthoritativeResults ? "Best matches" : "Loaded matches"}
+            count={searchItems.length}
+            icon={<Search size={11} />}
+            defaultOpen
+            headerClassName={sectionHeaderClassName}
+          >
+            {searchItems.map((conv) => (
+              <Row
+                key={`search-${conv.conversationId}`}
+                conv={conv}
+                active={conv.conversationId === activeConversationId}
+                onOpen={onOpenConversation}
+                openInPlace={openInPlace}
+                isFavorite={isFavoriteResolved(conv.conversationId)}
+                onToggleFavorite={onToggleFavoriteResolved}
+                resolveHref={resolveHref}
+                surfaceKey={surfaceKey}
+                getSourceMenuCtx={getSourceMenuCtx}
+              />
+            ))}
+          </Section>
+        )}
+
+        {favorites.length > 0 && !searchActive && (
           <Section
             id="favorites"
             label="Favorites"
@@ -720,6 +774,7 @@ const DenseView: React.FC<
         )}
 
         {grouping === "date" &&
+          !searchActive &&
           byDate.map((bucket) => (
             <Section
               key={bucket.key}
@@ -748,6 +803,7 @@ const DenseView: React.FC<
           ))}
 
         {grouping === "agent" &&
+          !searchActive &&
           byAgent.map((bucket) => (
             <Section
               key={bucket.agentId ?? "unknown"}
@@ -792,7 +848,7 @@ const DenseView: React.FC<
             </Section>
           ))}
 
-        {hasMore && (
+        {hasMore && !searchActive && (
           <div className="px-2 py-2">
             <button
               type="button"
@@ -814,7 +870,7 @@ const DenseView: React.FC<
           </div>
         )}
 
-        {!hasMore && count > 0 && (
+        {!hasMore && count > 0 && !searchActive && (
           <div className="px-3 py-2 text-center text-[10px] text-muted-foreground">
             {count} conversation{count === 1 ? "" : "s"}
           </div>

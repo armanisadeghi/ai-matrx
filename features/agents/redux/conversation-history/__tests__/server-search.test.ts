@@ -81,7 +81,7 @@ describe("/chat authoritative server search", () => {
     });
   });
 
-  it("mounts server search only for the chat consumer wrapper", () => {
+  it("keeps the server-search doors on the shared sidebar (on for every variant)", () => {
     const wrapper = read(
       "features/agents/components/chat/ChatHistorySidebar.tsx",
     );
