@@ -20,11 +20,20 @@ const RED = /could not be read|statement timeout|canceling statement|schema cach
 const pageHttp = (since) => ctx.errors.http.slice(since).filter((e) => !/__dev-walk/.test(e.url));
 const mark = () => ctx.errors.http.length;
 
+/** The shared preview parks an idle host; Resume it the way the harness does at sign-in. */
+async function unpark(page) {
+  if (!page.url().includes("__dev-walk")) return false;
+  await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+  await sleep(4000);
+  return true;
+}
+
 async function listingState(page, timeoutMs = 150000) {
   const r = await until(
     "the Tables listing to settle",
-    async () =>
-      page.evaluate(() => {
+    async () => {
+      if (await unpark(page)) return null;
+      return page.evaluate(() => {
         const toggle = document.querySelector('[data-hub-listing-toggle="tables"]');
         if (!toggle) return null;
         const section = document.querySelector('[data-hub-listing="tables"]');
@@ -34,7 +43,8 @@ async function listingState(page, timeoutMs = 150000) {
         if (rows > 0) return { state: "rows", text: text.slice(0, 200) };
         if (/could not be read|not an empty list/i.test(text)) return { state: "error", text: text.replace(/\s+/g, " ").slice(0, 300) };
         return { state: "empty", text: text.replace(/\s+/g, " ").slice(0, 200) };
-      }),
+      });
+    },
     timeoutMs,
   );
   await sleep(800);
@@ -310,7 +320,9 @@ try {
         ctx.cleanup(async () => {
           const p = page;
           await ctx.goto(p, `/data-v2/${tableId}`);
-          await sleep(6000);
+          await sleep(3000);
+          await unpark(p);
+          await sleep(5000);
           if (await p.getByText("This table is archived").count()) return;
           await p.getByRole("button", { name: "Table menu" }).first().click();
           await sleep(1000);
@@ -320,7 +332,8 @@ try {
           await archive.first().click();
           await sleep(1500);
           await archive.last().click();
-          await until("archived", async () => (await p.getByText(/is archived|This table is archived/).count()) > 0 || null, 120000);
+          const done = await until("archived", async () => (await p.getByText(/is archived|This table is archived/).count()) > 0 || null, 120000);
+          if (!done.v) throw new Error(`the fixture table ${tableId} ("${NAME}") was not archived — archive it by hand`);
         });
         await sleep(3000);
         // where did it land? Cedar Ridge's filter lists it; the other organization's does not.
