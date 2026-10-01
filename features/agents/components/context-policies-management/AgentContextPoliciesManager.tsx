@@ -542,7 +542,7 @@ function PolicyEditorFields({
       {/* ──────────────────── Agent access ──────────────────── */}
       <Section
         title="Agent access"
-        subtitle="Whether the agent may change this value, or only read it."
+        subtitle="Whether the agent may change this value, or only read it"
       >
         <AgentEditAccessControl
           value={{
