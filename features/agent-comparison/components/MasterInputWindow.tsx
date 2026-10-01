@@ -70,8 +70,7 @@ export function MasterInputWindow({ id, onClose }: Props) {
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       actionsLeft={
         <span className="text-[11px] text-muted-foreground leading-snug max-w-[360px] select-text">
-          Enter values once and route them into the right slot of each agent.
-          Auto-applies on Submit all.
+          Values route to each agent; applied on Submit all.
         </span>
       }
       actionsRight={

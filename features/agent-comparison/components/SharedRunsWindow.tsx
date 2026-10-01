@@ -12,6 +12,7 @@
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { InfoHint } from "@/components/official/InfoHint";
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { RunsComparisonTable } from "./RunsComparisonTable";
 
@@ -32,11 +33,11 @@ export function SharedRunsWindow({ id, onClose }: SharedRunsWindowProps) {
       onClose={onClose}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       actionsRight={
-        <span
-          title="Every per-run metric, side-by-side. Values stream live from each column — nothing is duplicated. The Model Context section populates after the first turn of a conversation."
-          className="max-w-[280px] truncate text-[11px] text-muted-foreground"
-        >
-          Every per-run metric, side-by-side — streaming live.
+        <span className="flex max-w-[300px] items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="truncate">
+            Every per-run metric, side-by-side — streaming live.
+          </span>
+          <InfoHint text="Per-run metrics side by side, streaming live; model context fills in after the first turn." />
         </span>
       }
     >

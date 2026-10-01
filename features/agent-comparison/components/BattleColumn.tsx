@@ -127,8 +127,7 @@ function EmptyAgentState() {
   return (
     <div className="h-full flex items-center justify-center text-center px-4">
       <div className="text-xs text-muted-foreground max-w-[220px]">
-        Pick an agent above to set up this column. Each column is independent —
-        different agents, different versions, different inputs.
+        Pick an agent above; each column runs on its own.
       </div>
     </div>
   );

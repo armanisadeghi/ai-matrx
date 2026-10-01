@@ -865,8 +865,7 @@ export function RunsComparisonTable() {
         <div className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/5 px-3 py-2">
           <EyeOff className="w-3.5 h-3.5 text-violet-500 shrink-0" />
           <span className="text-[11px] text-muted-foreground">
-            Blind test active — model, tokens, cost, and speed are hidden. Only
-            your evaluations show. Reveal to compare every metric.
+            Blind test: metrics hidden until you reveal.
           </span>
         </div>
       )}
@@ -882,8 +881,8 @@ function ColumnHeaderStrip({ stats }: { stats: ColumnStats[] }) {
     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
       Comparing {stats.length} column{stats.length === 1 ? "" : "s"} ·
       <span className="ml-1 text-emerald-500 font-semibold">green</span> = best,
+      {/* Best/worst is computed per row across the columns that have a value. */}
       <span className="ml-1 text-rose-500 font-semibold">red</span> = worst
-      (computed per row across columns with values)
     </div>
   );
 }

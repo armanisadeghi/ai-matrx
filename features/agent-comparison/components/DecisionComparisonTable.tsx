@@ -249,8 +249,7 @@ export function DecisionComparisonTable() {
       )}
       {answering.length < 2 && (
         <p className="text-[11px] text-muted-foreground">
-          Only one column has answered — the delta fills in when a second one
-          does.
+          The delta appears once a second column answers.
         </p>
       )}
 

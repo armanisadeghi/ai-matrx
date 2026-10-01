@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { InfoHint } from "@/components/official/InfoHint";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 // THE package Separator (the local `<div className="my-2 border-t" />` twin
@@ -51,9 +52,9 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
   const isReady = sampleConversationId != null;
 
   const statusText = isReady
-    ? `Edits broadcast to all ${configured.length} configured column${
+    ? `Edits apply to all ${configured.length} configured column${
         configured.length === 1 ? "" : "s"
-      }. Identical run caps + flags = fair comparison.`
+      } so every run shares the same caps and flags.`
     : "Configure at least one column with an agent to enable shared settings.";
 
   return (
@@ -65,16 +66,16 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
       onClose={onClose}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       actionsRight={
-        <span
-          title={statusText}
-          className="max-w-[220px] truncate text-[11px] text-muted-foreground"
-        >
-          {isReady
-            ? `Broadcasts to ${configured.length} column${
-                configured.length === 1 ? "" : "s"
-              }`
-            // read-gate-exempt: counts this session's configured battle columns (local state; a failed saved-battle open is shown by BattleRouteNotice), not a read
-            : "No columns configured"}
+        <span className="flex max-w-[240px] items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="truncate">
+            {isReady
+              ? `Broadcasts to ${configured.length} column${
+                  configured.length === 1 ? "" : "s"
+                }`
+              : // read-gate-exempt: counts this session's configured battle columns (local state; a failed saved-battle open is shown by BattleRouteNotice), not a read
+                "No columns configured"}
+          </span>
+          <InfoHint text={statusText} />
         </span>
       }
     >
@@ -95,7 +96,7 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
           <SettingToggle
             id="shared-store"
             label="Store turn in DB"
-            description="When off, the turn streams but no cx_message rows are written."
+            description="When off, this turn is not saved to history."
             checked={eff.store}
             onChange={(v) =>
               dispatch(broadcastRunSettings({ changes: { store: v } }))
@@ -134,7 +135,8 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
           <SettingToggle
             id="shared-structured"
             label="Structured system instruction"
-            description="Send the system prompt as a structured object (unlocks intro/outro/etc on the server side)."
+            // Structured mode unlocks intro/outro sections on the server side.
+            description="Sends the system prompt as a structured object."
             checked={eff.useStructuredSystemInstruction}
             onChange={(v) =>
               dispatch(
@@ -147,8 +149,7 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
         </div>
 
         <div className="shrink-0 border-t border-border bg-card/40 px-3 py-2 text-[10px] text-muted-foreground">
-          Per-agent advanced bits (structured instruction body, system prompt
-          edits) stay in each column's own Creator Panel.
+          Per-agent settings stay in each column's Creator Panel.
         </div>
       </div>
     </WindowPanel>
@@ -174,7 +175,7 @@ function SettingToggle({
         <Label htmlFor={id} className="text-xs text-foreground cursor-pointer">
           {label}
         </Label>
-        <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+        <p className="text-[10px] text-muted-foreground/80 mt-0.5 truncate">
           {description}
         </p>
       </div>
@@ -207,7 +208,7 @@ function StepperRow({
     <div className="flex items-center justify-between gap-3 py-1">
       <div className="min-w-0">
         <div className="text-xs text-foreground">{label}</div>
-        <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+        <p className="text-[10px] text-muted-foreground/80 mt-0.5 truncate">
           {description}
         </p>
       </div>

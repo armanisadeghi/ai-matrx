@@ -275,7 +275,7 @@ export function ComparisonSetLoaderDialog({
         title="Delete this battle?"
         description={
           confirmDeleteId && confirmDeleteId === activeSetId
-            ? "This is the battle on screen. It leaves your saved battles and its link stops working; the page keeps what is on screen as a new, unsaved battle. The conversations stay in your chat history."
+            ? "Its link stops working and the page keeps an unsaved copy. The chats stay in your history."
             : "It leaves your saved battles and its link stops working. The conversations stay in your chat history."
         }
         confirmLabel="Delete"

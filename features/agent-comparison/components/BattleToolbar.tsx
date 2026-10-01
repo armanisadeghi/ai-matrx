@@ -351,8 +351,8 @@ export function BattleToolbar({
         title="Start a new battle?"
         description={
           activeSetId
-            ? "Empties the page. This battle stays saved; reopen it from Open a saved battle. Its conversations stay in your chat history."
-            : "Empties the page. This battle was never saved; its conversations stay in your chat history."
+            ? "Empties the page; the battle and its chats stay saved."
+            : "Empties the page; this unsaved battle is lost, chats stay."
         }
         confirmLabel="Start new"
         variant="destructive"
@@ -365,7 +365,7 @@ export function BattleToolbar({
           if (!o) setResetConfirm(false);
         }}
         title="Reset all conversations?"
-        description="Discards every column's typed inputs and streamed responses, and starts a fresh conversation for each agent. The agent + version selections stay in place. The previous conversations remain in your chat history."
+        description="Clears inputs and responses and starts a new chat per agent. Selections and past chats stay."
         confirmLabel="Reset"
         variant="destructive"
         onConfirm={handleResetConversations}
@@ -377,7 +377,7 @@ export function BattleToolbar({
           if (!o) setResetKeepInputsConfirm(false);
         }}
         title="Clear responses, keep inputs?"
-        description="Discards every column's streamed responses + context entries, but restores the current user message and variable values into a fresh conversation. Useful when you want to re-run the same setup against a clean slate."
+        description="Clears responses and context; your message and variables move to a fresh chat."
         confirmLabel="Clear responses"
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}
