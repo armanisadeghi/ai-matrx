@@ -94,7 +94,9 @@ export async function fetchSavedSourcesPage(args: {
     .order("id", { ascending: true })
     .range(args.offset, args.offset + args.limit - 1);
   if (error) throw new Error(`Listing saved ${args.group} Sources failed: ${error.message}`);
-  return ((data ?? []) as { id: string; name: string | null; updated_at: string | null }[]).map((row) => ({
+  // The select string carries the newer-version embed (`withNewerVersionEmbed`), which the typed
+  // client cannot parse, so the row shape is declared here — exactly the columns selected.
+  return ((data ?? []) as unknown as { id: string; name: string | null; updated_at: string | null }[]).map((row) => ({
     id: row.id,
     title: (row.name ?? "").trim() || "Untitled",
     updatedAt: row.updated_at ?? null,
