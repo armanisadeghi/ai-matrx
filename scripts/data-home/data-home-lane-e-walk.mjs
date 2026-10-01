@@ -21,6 +21,8 @@ const SEAT = process.env.DH_SEAT ?? "admin";
 const SHOTS = process.env.DH_SHOTS ?? "tmp/data-home-3e";
 const TAG = process.env.DH_TAG ?? "after";
 const SCHEME = process.env.DH_SCHEME ?? "light";
+// DH_PATH: the same probes on another list for the comparison (`/agents/all`).
+const PATH = process.env.DH_PATH ?? "/data-v2?home=new";
 const ONLY = (process.env.DH_ONLY ?? "search,scroll,1024,390,1440").split(",");
 const EMAIL = process.env.DH_EMAIL;
 const PASSWORD = process.env.DH_PASSWORD;
@@ -64,7 +66,7 @@ log("identity matches seat", who === EMAIL);
 const ROW = "[data-row-id]:visible";
 const shot = (name) => page.screenshot({ path: `${SHOTS}/${TAG}-${SEAT}-${name}-${SCHEME}.png`, fullPage: false });
 const goto = async (query = "") => {
-  await page.goto(`${ORIGIN}/data-v2?home=new${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}${PATH}${query ? (PATH.includes("?") ? query : query.replace(/^&/, "?")) : ""}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await until("rows", async () => (await page.locator(ROW).count()) > 0, 180000);
   await sleep(2500);
 };
@@ -133,7 +135,7 @@ try {
     await goto();
     // 200 per page so 150+ rows are on one page (virtualized), the person's own way: the pager's size select.
     const sizeSel = page.locator("[role=combobox]:visible", { hasText: /^\s*(25|50|100|200)\s*$/ }).last();
-    await sizeSel.click();
+    await sizeSel.click({ force: true });
     await page.getByRole("option", { name: "200" }).click();
     await until("200 rows", async () => (await page.getByText(/1-200 of/).count()) > 0, 60000);
     await sleep(2500);
@@ -188,6 +190,10 @@ try {
       };
     });
     log("scroll", res);
+    // Put the person's page size back (the walk changed a synced preference of the test seat).
+    await page.locator("[role=combobox]:visible", { hasText: /^\s*200\s*$/ }).last().click({ force: true });
+    await page.getByRole("option", { name: "25" }).click();
+    await sleep(1500);
   }
 
   if (ONLY.includes("1024")) {
