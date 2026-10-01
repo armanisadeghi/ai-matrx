@@ -37,6 +37,12 @@ import type { WorkflowRunEvent } from "@/features/workflow-runtime/types";
 
 import records from "@/features/workflow-runtime/__tests__/fixtures/masterwork-run-records.json";
 import { MasterworkRunRow } from "../MasterworksPage";
+
+// The organization's points-per-dollar knob, answered — transport, not the
+// behaviour under test.
+jest.mock("@/components/cost/pointsRate.client", () => ({
+  usePointsRate: () => 20000,
+}));
 import type { MasterworkRun } from "../../../service";
 
 const WATSON = "cef6ae07-4562-4dbd-a8e4-403309cace08";
@@ -149,8 +155,10 @@ describe("a Recent-runs row says what the run produced", () => {
     // row's status map moved here from Encore's own copy of this row).
     expect(text).toContain("Finished");
     expect(text).not.toContain("completed");
-    // (SSR puts a comment marker between the "$" and the number.)
-    expect(text.replace(/\s+/g, "")).toContain("$0.21");
+    // In the viewer's unit — points for everyone, never dollars (Arman,
+    // 2026-09-27). 0.2109 × 20,000 points per dollar.
+    expect(text.replace(/\s+/g, "")).toContain("4,218points");
+    expect(text).not.toContain("$");
   });
 
   it("carries the first line of the Montessori run's real deliverable", () => {

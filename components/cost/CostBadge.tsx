@@ -44,13 +44,24 @@ export interface CostBadgeProps {
 
 export function CostBadge({ usd, className, hideIcon, short }: CostBadgeProps) {
   const { format, toPoints } = useCostDisplay();
-  const tier = costTier(toPoints(usd) ?? 0);
+  // An unmeasured cost is not a free one. `toPoints` is null both for an
+  // unpriced cost AND while the points rate is unanswered; either way the
+  // tier is unknown, and tier "free" ("No AI cost") would be a false claim.
+  const points = toPoints(usd);
+  const tier = points === null ? null : costTier(points);
+  const known = typeof usd === "number" && Number.isFinite(usd);
   return (
     <span
-      title={`An estimate of the AI work this step uses. ${TIER_HINT[tier]}`}
+      title={
+        !known
+          ? "Not priced yet."
+          : tier
+            ? `An estimate of the AI work this step uses. ${TIER_HINT[tier]}`
+            : "An estimate of the AI work this step uses."
+      }
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium leading-none",
-        TIER_CLASS[tier],
+        TIER_CLASS[tier ?? "free"],
         className,
       )}
     >
