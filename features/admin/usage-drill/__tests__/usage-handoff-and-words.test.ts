@@ -12,12 +12,13 @@ const P = "87a6e699-3622-4869-8843-d0867456c0dd";
 // Since lane DRILL-PRESETS-RETIRE the words come from the definition (describe carries `choices` and
 // `empty_label`), read by the one explorer; these dimensions are ai_usage's as declared.
 const dim = (d: Record<string, unknown>) => drillDimensionLabelFor(d as never, { names: undefined })!;
-const feature = dim({ key: "feature", label: "Feature", from: "feature", kind: "choice", empty_label: "No feature recorded" });
+const feature = dim({ key: "feature", label: "Feature", from: "feature", kind: "choice", code_shaped: true, empty_label: "No feature recorded" });
 const model = dim({ key: "model", label: "Model", from: "model", kind: "text", choices: [{ value: "unknown", label: "Model not recorded" }], empty_label: "No model (tools and services)" });
 const provider = dim({ key: "provider", label: "Provider", from: "provider", kind: "choice", choices: [{ value: "unknown", label: "Provider not recorded" }], empty_label: "No model (tools and services)" });
 
 describe("every code reads as words, never a key or an id", () => {
   const UUIDISH = /[0-9a-f]{8}-[0-9a-f]{4}/i;
+  // changed (DRILL-CLOSE-2): the feature Dimension declares `code_shaped`, the only kind of key whose dots split
   it("feature codes: separators become words, an id inside a code drops out", () => {
     expect(feature("agent_service:5d0b07f8-54b5-499b-86a8-557c46ea8a59")).toBe("Agent service");
     expect(feature("mandate:seo.topic_assigner")).toBe("Mandate · seo topic assigner");
@@ -36,7 +37,7 @@ describe("every code reads as words, never a key or an id", () => {
   });
   it("the humanizer never prints an id, whatever the code", () => {
     for (const code of ["agent_service:5d0b07f8-54b5-499b-86a8-557c46ea8a59", "cld_file", "runtime.work_item", "twilio:sms", "5d0b07f8-54b5-499b-86a8-557c46ea8a59"]) {
-      expect(plainWords(code)).not.toMatch(UUIDISH);
+      expect(plainWords(code, { code: true })).not.toMatch(UUIDISH);
     }
   });
 });
@@ -67,9 +68,10 @@ describe("links into AI usage", () => {
 });
 
 describe("names and numbers keep their shape", () => {
-  it("a dot inside a number stays; a dot between words splits them", () => {
+  it("a dot inside a number stays; a dot between words splits them only in a declared code", () => {
     expect(plainWords("Gemini 2.5 Pro TTS")).toBe("Gemini 2.5 Pro TTS");
-    expect(plainWords("runtime.work_item")).toBe("Runtime work item");
+    // changed (DRILL-CLOSE-2): splitting is for a declared code only (`code: true`), never a display name
+    expect(plainWords("runtime.work_item", { code: true })).toBe("Runtime work item");
   });
   it("an id a resolver names reads 'Reading the name…' until the name arrives, never 'Unnamed'", () => {
     const session = drillDimensionLabelFor(

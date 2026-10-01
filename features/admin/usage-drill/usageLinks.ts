@@ -44,7 +44,9 @@ const SPEND_TO_USAGE: Record<string, string> = {
   user: "person", organization: "organization", agent: "agent", app: "app", feature: "feature",
   origin: "origin", trigger: "trigger", source: "source", model: "model",
 };
-const SPEND_WINDOW: Record<string, string> = { today: "today", yesterday: "yesterday", last24h: "24h", last7d: "7d", last30d: "30d" };
+// today / yesterday are calendar days: they open the viewer's LOCAL day, mapped in the browser (DRILL-CLOSE-2).
+const SPEND_WINDOW: Record<string, string> = { last24h: "24h", last7d: "7d", last30d: "30d" };
+const SPEND_LOCAL_DAY_WINDOWS = new Set(["today", "yesterday"]);
 
 function nextDay(day: string): string {
   return new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
@@ -85,13 +87,13 @@ export function spendAddressAsks(params: URLSearchParams): boolean {
  * viewer's own day (`readExplorerUrlState`), so an old link without one opens that day.
  */
 export function spendAddressNeedsZone(params: URLSearchParams): boolean {
-  return Boolean(params.get("f.day") || params.get("f.hour")) || spendWindowDefaulted(params);
+  return Boolean(params.get("f.day") || params.get("f.hour")) || spendWindowDefaulted(params) || SPEND_LOCAL_DAY_WINDOWS.has(params.get("win") ?? "");
 }
 
 /** No `win` the Spend Explorer knew (absent or unknown): it showed Yesterday. */
 function spendWindowDefaulted(params: URLSearchParams): boolean {
   const win = params.get("win");
-  return !win || !(Object.hasOwn(SPEND_WINDOW, win) || win === "custom");
+  return !win || !(Object.hasOwn(SPEND_WINDOW, win) || SPEND_LOCAL_DAY_WINDOWS.has(win) || win === "custom");
 }
 
 /** `YYYY-MM-DD` of instant `now` on `zone`'s calendar. */
@@ -153,8 +155,12 @@ export function spendAddressToUsage(params: URLSearchParams, zone = "UTC", now: 
     const to = params.get("to");
     if (win === "custom" && from && to) window = `${from}..${nextDay(to)}`;
     else if (win && SPEND_WINDOW[win]) window = SPEND_WINDOW[win];
-    else if (spendWindowDefaulted(params)) {
-      // the Spend Explorer's default: Yesterday, the viewer's local calendar day (VERIFY-DRILL-FINAL L-a)
+    else if (win === "today") {
+      const today = zonedDay(now, zone);
+      window = `${zonedMoment(today, 0, zone)}..${zonedMoment(nextDay(today), 0, zone)}`;
+    } else if (win === "yesterday" || spendWindowDefaulted(params)) {
+      // yesterday, and the Spend Explorer's default (no/unknown win): the viewer's local calendar day
+      // (VERIFY-DRILL-FINAL L-a; DRILL-CLOSE-2)
       const today = zonedDay(now, zone);
       window = `${zonedMoment(previousDay(today), 0, zone)}..${zonedMoment(today, 0, zone)}`;
     }

@@ -69,7 +69,7 @@ export function usageNameResolver(organizationId: string, dimension: (typeof NAM
         .rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: { organization: [], person: [], agent: [], session: [], request: [], feature: [], [dimension]: ids } });
       // A door that fails (a timeout on many sign-in sessions) names every id "could not be read" — the
       // cell never keeps saying "Reading the name…" after the read is over.
-      const unnamed = (id: string) => (PLAIN_WORDS_DIMENSIONS.has(dimension) ? plainWords(id) : UNNAMED[dimension]);
+      const unnamed = (id: string) => (PLAIN_WORDS_DIMENSIONS.has(dimension) ? plainWords(id, { code: true }) : UNNAMED[dimension]);
       if (error) return { ok: true, names: Object.fromEntries(ids.map((id) => [id, unnamed(id)])) };
       // Every id asked comes back with words: its name, or — when the door could not name it — a
       // sentence, never the id (VERIFIER-32 F5).

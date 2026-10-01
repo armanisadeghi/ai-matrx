@@ -25,19 +25,25 @@ import type { DrillDefinition } from "@ai-matrx/records";
 
 import type { DrillNameResolver } from "./types";
 
-type Dimension = DrillDefinition["dimensions"][number] & { empty_label?: string };
+/** `code_shaped`: the definition says this Dimension's values are codes ("mandate:seo.topic_assigner"), so a dot separates words. */
+type Dimension = DrillDefinition["dimensions"][number] & { empty_label?: string; code_shaped?: boolean };
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
 /**
  * A code in plain words when nothing declares its label: "save_hook" → "Save hook",
- * "mandate:seo.topic_assigner" → "Mandate · Seo topic assigner". An id inside a code never reaches a
+ * "mandate:seo.topic_assigner" → "Mandate · Seo topic assigner" (`code: true`; without it a dot stays,
+ * so a display name like "Z.ai" is never taken apart). An id inside a code never reaches a
  * person ("agent_service:<uuid>" → "Agent service"); a code that is nothing but an id reads "Unnamed".
  */
-export function plainWords(value: string): string {
-  // a dot splits words ("seo.topic_assigner"), never a number ("Gemini 2.5 Pro")
-  const part = (p: string) =>
-    p.replace(UUID, " ").replace(/(?<=[A-Za-z])\.(?=[A-Za-z])/g, " ").replace(/[_\-/]+/g, " ").replace(/\s+/g, " ").trim();
+export function plainWords(value: string, opts: { code?: boolean } = {}): string {
+  // A dot is a separator ONLY inside a declared code ("seo.topic_assigner": `code: true`, a key the
+  // definition says is a code, e.g. a feature). In a display name it stays ("Z.ai", "Gemini 2.5 Pro")
+  // (lane DRILL-CLOSE-2).
+  const part = (p: string) => {
+    const dotted = opts.code ? p.replace(/(?<=[A-Za-z])\.(?=[A-Za-z])/g, " ") : p;
+    return dotted.replace(UUID, " ").replace(/[_\-/]+/g, " ").replace(/\s+/g, " ").trim();
+  };
   const parts = value.split(":").map(part).filter(Boolean);
   if (parts.length === 0) return value.trim() ? "Unnamed" : value;
   const joined = parts.join(" · ");
@@ -87,7 +93,7 @@ export function drillDimensionLabelFor(
   const choices = new Map((dim.choices ?? []).map((c) => [c.value, c.label]));
   const empty = dim.empty_label ?? resolver?.emptyLabel ?? (hostWords ? hostWords("") : undefined) ?? "None";
   if (dim.kind === "boolean") {
-    return (value) => (value === null || value === "" ? empty : value === "true" ? "Yes" : value === "false" ? "No" : plainWords(value));
+    return (value) => (value === null || value === "" ? empty : value === "true" ? "Yes" : value === "false" ? "No" : plainWords(value, { code: dim.code_shaped === true }));
   }
   if (dim.kind === "text" && choices.size === 0 && !resolver && !hostWords) {
     // a text value reads as written — unless it is a moment, which reads as one (R3)
@@ -109,7 +115,7 @@ export function drillDimensionLabelFor(
       const noun = dim.label.toLowerCase();
       return resolver ? (resolver.missingLabel ?? "Reading the name…") : `${/^[aeiou]/.test(noun) ? "An" : "A"} ${noun} whose name you cannot read`;
     }
-    return plainWords(value);
+    return plainWords(value, { code: dim.code_shaped === true });
   };
 }
 
