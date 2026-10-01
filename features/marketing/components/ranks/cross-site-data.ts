@@ -19,6 +19,7 @@ import type {
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import { getGscKeywordValueForMulti } from "@/features/marketing/search-console/data-insights";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 /** Sparkline / movement window, mirrored by the scoped RPC. */
 export const RANK_HISTORY_DAYS = 90;
@@ -134,11 +135,11 @@ export async function fetchCrossSiteRankPage(
 export async function fetchCrossSiteRankCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const response = await supabase.rpc("seo_rank_target_list_scope_counts", {
+  const response = await readListRpc("seo_rank_target_list_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_org_id: listOrgParam(query),
     p_filters: query.filters,
-  });
+  }, { order: ["scope", "narrow_id"] });
   const data = assertData(response.data, response.error);
   const counts = scopeCountsFromRows(data, "Organization");
   return counts;
@@ -147,11 +148,11 @@ export async function fetchCrossSiteRankCounts(
 export async function fetchCrossSiteRankFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const response = await supabase.rpc("seo_rank_target_list_facets", {
+  const response = await readListRpc("seo_rank_target_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
-  });
+  }, { order: ["kind", "value"] });
   const data = assertData(response.data, response.error);
   const byKind: EntityFacets["byKind"] = {};
   for (const row of data) {

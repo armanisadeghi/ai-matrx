@@ -13,9 +13,11 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     rpc: (...a: unknown[]) => {
       const whole = rpc(...a);
-      return Object.assign(Promise.resolve(whole), {
+      const builder = Object.assign(Promise.resolve(whole), {
+        order: () => builder,
         range: (from: number, to: number) => Promise.resolve(page ? page(from, to) : whole),
       });
+      return builder;
     },
   },
 }));
@@ -89,9 +91,10 @@ it("the facets read past the API's 1,000-row cap: every page until a short one",
     { kind: "shown_to", value: "personal", total: 1 },
     ...Array.from({ length: 1392 }, (_, i) => ({ kind: "tag", value: `t${i}`, total: 1 })),
   ];
-  page = (from, to) => ({ data: rows.slice(from, to + 1), error: null });
+  page = (from, to) => ({ data: rows.slice(from, to + 1), error: null, count: rows.length });
   const facets = await fetchTranscriptFacets(query("active"));
-  expect(rpc).toHaveBeenCalledTimes(2);
+  // The first page with its total, then every page again under a stable order.
+  expect(rpc).toHaveBeenCalledTimes(3);
   expect(facets.byKind.tag).toHaveLength(1392);
   expect(facets.byKind.shown_to).toEqual([
     { value: "internal", count: 687 },

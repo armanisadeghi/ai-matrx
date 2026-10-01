@@ -20,6 +20,7 @@ import type {
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import type { SessionListRow } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 function pgError(error: { message?: string; code?: string }): Error {
   return new Error(
@@ -67,35 +68,37 @@ export async function fetchSessionPage(
 export async function fetchSessionScopeCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const { data, error } = await supabase.rpc(
-    "ivw_list_scope_counts" as never,
+  const { data, error } = await readListRpc<CountRow>(
+    "ivw_list_scope_counts",
     {
       p_search: query.search.trim() || undefined,
       p_org_id: listOrgParam(query),
       p_filters: query.filters,
-    } as never,
+    },
+    { order: ["scope", "narrow_id"] },
   );
   if (error) throw pgError(error);
 
-  const counts = scopeCountsFromRows(data as unknown as CountRow[], "Unnamed");
+  const counts = scopeCountsFromRows(data, "Unnamed");
   return counts;
 }
 
 export async function fetchSessionFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc(
-    "ivw_list_facets" as never,
+  const { data, error } = await readListRpc<FacetRow>(
+    "ivw_list_facets",
     {
       p_scope: query.scope.kind,
       p_org_id: listOrgParam(query),
       p_search: query.search.trim() || undefined,
-    } as never,
+    },
+    { order: ["kind", "value"] },
   );
   if (error) throw pgError(error);
 
   const byKind: EntityFacets["byKind"] = {};
-  for (const row of ((data ?? []) as unknown as FacetRow[])) {
+  for (const row of data ?? []) {
     (byKind[row.kind] ??= []).push({
       value: row.value,
       count: Number(row.total ?? 0),

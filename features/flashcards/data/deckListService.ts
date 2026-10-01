@@ -12,6 +12,7 @@
 import { displayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 const EDU = () => supabase.schema("education");
 
@@ -81,16 +82,16 @@ export async function fetchDeckPage(
 export async function fetchDeckLaneCounts(
   query: Omit<DeckListQuery, "lane">,
 ): Promise<Record<DeckLane, number>> {
-  const { data, error } = await EDU().rpc("fc_set_list_counts", {
+  const { data, error } = await readListRpc<{ scope: string; total: number }>("fc_set_list_counts", {
     // The organization filter narrows every lane's count, as it narrows the list.
     p_org_id: query.orgId ?? undefined,
     p_search: query.search,
     p_filters: query.filters as Json,
     p_archived: query.archived,
-  });
+  }, { order: ["scope"], client: EDU() });
   if (error) fail("counted", error);
   const out: Record<DeckLane, number> = { all: 0, mine: 0, team: 0, orgs: 0, shared: 0, public: 0 };
-  for (const row of (data ?? []) as { scope: string; total: number }[]) {
+  for (const row of data ?? []) {
     if (row.scope in out) out[row.scope as DeckLane] = Number(row.total);
   }
   return out;
@@ -99,16 +100,16 @@ export async function fetchDeckLaneCounts(
 export async function fetchDeckFacets(
   query: DeckListQuery,
 ): Promise<Record<string, { value: string; count: number }[]>> {
-  const { data, error } = await EDU().rpc("fc_set_list_facets", {
+  const { data, error } = await readListRpc<{ facet: string; value: string; total: number }>("fc_set_list_facets", {
     p_scope: query.lane,
     p_org_id: query.orgId ?? undefined,
     p_search: query.search,
     p_filters: query.filters as Json,
     p_archived: query.archived,
-  });
+  }, { order: ["facet", "value"], client: EDU() });
   if (error) fail("filtered", error);
   const out: Record<string, { value: string; count: number }[]> = {};
-  for (const row of (data ?? []) as { facet: string; value: string; total: number }[]) {
+  for (const row of data ?? []) {
     (out[row.facet] ??= []).push({ value: row.value, count: Number(row.total) });
   }
   return out;

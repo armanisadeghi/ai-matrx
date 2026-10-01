@@ -21,6 +21,7 @@ import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import type { InteractionRow } from "@/features/crm/types";
 import type { InboxRow } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 function pgError(error: { message?: string; code?: string }): Error {
   return new Error(
@@ -56,12 +57,12 @@ export async function fetchInboxListPage(
 export async function fetchInboxScopeCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const { data, error } = await supabase.rpc("crm_inbox_list_scope_counts", {
+  const { data, error } = await readListRpc("crm_inbox_list_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_filters: query.filters,
-  });
+  }, { order: ["scope", "narrow_id"] });
 
   if (error) throw pgError(error);
 
@@ -72,12 +73,12 @@ export async function fetchInboxScopeCounts(
 export async function fetchInboxFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc("crm_inbox_list_facets", {
+  const { data, error } = await readListRpc("crm_inbox_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
-  });
+  }, { order: ["kind", "value"] });
 
   if (error) throw pgError(error);
 

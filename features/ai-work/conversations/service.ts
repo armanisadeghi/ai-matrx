@@ -27,6 +27,7 @@ import type {
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import type { ConversationBrowseRow } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 function pgError(error: { message?: string; code?: string }): Error {
   return new Error(
@@ -70,13 +71,13 @@ export async function fetchConversationPage(
 export async function fetchConversationScopeCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const { data, error } = await supabase.rpc("cvx_list_scope_counts", {
+  const { data, error } = await readListRpc("cvx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_archived: query.archived,
     p_filters: filtersJson(query),
-  });
+  }, { order: ["scope", "narrow_id"] });
 
   if (error) throw pgError(error);
 
@@ -96,13 +97,13 @@ export async function fetchConversationScopeCounts(
 export async function fetchConversationFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc("cvx_list_facets", {
+  const { data, error } = await readListRpc("cvx_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_archived: query.archived,
-  });
+  }, { order: ["kind", "value"] });
 
   if (error) throw pgError(error);
 

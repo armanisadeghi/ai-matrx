@@ -29,6 +29,7 @@ import {
   type RunHistoryFilters,
   type SelectedRunRef,
 } from "./runHistoryFilters";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 export type RunHistoryEntry =
   Database["public"]["Functions"]["admin_list_run_history"]["Returns"][number];
@@ -90,11 +91,11 @@ export async function listRunHistoryPage(
 export async function listRunHistoryFacets(
   filters: RunHistoryFilters,
 ): Promise<RunHistoryFacet[]> {
-  const { data, error } = await supabase.rpc("admin_run_history_facets", {
+  const { data, error } = await readListRpc("admin_run_history_facets", {
     p_kinds: filters.kind ? [filters.kind] : undefined,
     p_status_groups: filters.statuses.length ? filters.statuses : undefined,
     ...rangeArgs(filters),
-  });
+  }, { order: ["execution_kind", "task_id", "operation"] });
   if (error) throw pgErrorToError(error);
   return data ?? [];
 }

@@ -46,7 +46,7 @@ const rpc = jest.fn(async (fn: string, args: Record<string, unknown>) => {
   }
   return { data: [], error: null };
 });
-jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: (fn: string, args: Record<string, unknown>) => rpc(fn, args) } }));
+jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: (fn: string, args: Record<string, unknown>) => jest.requireActual("@/lib/entity-list/testing/pagedRpcDouble").asPagedRpc(rpc(fn, args)) } }));
 
 import { useTranscriptList, type TranscriptListState } from "@/features/knowledge/hub/transcripts/useTranscriptList";
 

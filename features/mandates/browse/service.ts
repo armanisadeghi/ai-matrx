@@ -39,6 +39,7 @@ import {
 } from "@/features/mandates/list-door";
 import type { MandateListRow } from "./types";
 import { fetchCandidateCells } from "@/features/mandates/candidates/live";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 /** One organization the caller belongs to — a own organization included. */
 export interface MandateHomeOrganization {
@@ -264,9 +265,9 @@ export async function fetchMandateScopeCounts(
 export async function fetchMandateFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc("mnd_list_facets", {
+  const { data, error } = await readListRpc("mnd_list_facets", {
     ...(query.search.trim() ? { p_search: query.search.trim() } : {}),
-  });
+  }, { order: ["kind", "value"] });
   if (error) throw new Error(error.message);
   const byKind: EntityFacets["byKind"] = {};
   for (const row of data ?? []) {

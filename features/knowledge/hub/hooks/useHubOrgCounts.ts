@@ -30,6 +30,7 @@ import type {
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 /** Sections the hub's own total leaves out (they repeat the items' rows). */
 const NOT_IN_TOTAL = new Set(["top_hit", "segments"]);
@@ -73,11 +74,11 @@ export function transcriptOrgCounter(args: {
   return async () => {
     const out = new Map<string, number>();
     if (args.scope !== "orgs" || args.search) return out;
-    const { data, error } = await supabase.rpc("trx_list_scope_counts", {
+    const { data, error } = await readListRpc("trx_list_scope_counts", {
       p_search: undefined,
       p_deep: false,
       p_filters: args.filters,
-    });
+    }, { order: ["scope", "narrow_id"] });
     if (error) throw new Error(error.message);
     for (const row of (data ?? []) as { scope: string; narrow_id: string | null; total: number | string }[]) {
       if (row.scope === "orgs" && row.narrow_id) out.set(row.narrow_id, Number(row.total ?? 0));

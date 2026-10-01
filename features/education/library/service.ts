@@ -24,6 +24,7 @@ import {
   type PublicDeck,
   type PublicDeckRow,
 } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 function pgError(error: { message?: string; code?: string }): Error {
   return new Error(
@@ -55,11 +56,11 @@ export async function fetchEducationLibraryPage(
 export async function fetchEducationLibraryCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const { data, error } = await supabase.rpc("edu_library_scope_counts", {
+  const { data, error } = await readListRpc("edu_library_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_filters: query.filters,
     p_org_id: listOrgParam(query),
-  });
+  }, { order: ["scope", "narrow_id"] });
   if (error) throw pgError(error);
   // THE ONE READER: every lane the server counts (All, My team, …) reaches its tab.
   return scopeCountsFromRows(data);
@@ -68,10 +69,10 @@ export async function fetchEducationLibraryCounts(
 export async function fetchEducationLibraryFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc("edu_library_facets", {
+  const { data, error } = await readListRpc("edu_library_facets", {
     p_scope: query.scope.kind,
     p_search: query.search.trim() || undefined,
-  });
+  }, { order: ["kind", "value"] });
   if (error) throw pgError(error);
   const byKind: EntityFacets["byKind"] = {};
   for (const row of data ?? []) {

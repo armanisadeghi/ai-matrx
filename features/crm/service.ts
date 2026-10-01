@@ -79,6 +79,7 @@ function pgError(error: { message?: string; code?: string }): Error {
 // without importing this module's Supabase client. Re-exported here because
 // this is where every existing caller reaches for it.
 import { normalizeMediumValue } from "./normalize";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 export { normalizeMediumValue };
 
 // ── List page ───────────────────────────────────────────────────────────────
@@ -294,7 +295,7 @@ export async function fetchPartyPage(
 export async function fetchPartyScopeCounts(
   query: PartyListQuery,
 ): Promise<EntityScopeCounts> {
-  const { data, error } = await supabase.rpc("crm_list_scope_counts", {
+  const { data, error } = await readListRpc("crm_list_scope_counts", {
     p_view: query.view,
     p_kind: query.kind,
     // Same sanitizer the page query uses, so a tab's number can never describe
@@ -310,7 +311,7 @@ export async function fetchPartyScopeCounts(
         : (RECORD_CLASS_FILTER_VALUE[
             query.filters.record_class ?? DEFAULT_RECORD_CLASS_FILTER
           ] ?? "all"),
-  });
+  }, { order: ["scope", "narrow_id"] });
   if (error) throw pgError(error);
 
   const counts: EntityScopeCounts = { byKind: {}, narrow: {} };

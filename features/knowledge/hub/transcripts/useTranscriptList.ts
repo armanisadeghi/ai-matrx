@@ -33,6 +33,7 @@ import {
   type TranscriptFacet,
   type TranscriptFacetSelection,
 } from "./transcriptRows";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 export const TRANSCRIPT_PAGE = 40;
 
@@ -181,12 +182,12 @@ export function useTranscriptList({ enabled, text, selection, orgId, sort, initi
       // filter stays usable) but carry no numbers: a count over the search inside every
       // transcript's text outruns the server's time budget, and a count of the unsearched
       // view beside searched rows would be the wrong number.
-      const { data, error: e } = await supabase.rpc("trx_list_facets", {
+      const { data, error: e } = await readListRpc("trx_list_facets", {
         p_scope: scope,
         p_org_id: orgId ?? undefined,
         p_search: undefined,
         p_deep: false,
-      });
+      }, { order: ["kind", "value"] });
       if (cancelled) return;
       if (e) {
         setFacets(null);

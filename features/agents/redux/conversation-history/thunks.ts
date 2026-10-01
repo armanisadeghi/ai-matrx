@@ -34,6 +34,7 @@ import {
   defaultScopeState,
   type SourceFacet,
 } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 export interface FetchConversationHistoryArgs {
   scopeId: string;
@@ -340,8 +341,10 @@ export const fetchSourceFacets = createAsyncThunk<
 
     dispatch(setSourceFacetsStatus({ status: "loading", error: null }));
 
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await readListRpc(
       "get_cx_conversation_lane_facets",
+      {},
+      { order: ["lane", "source_app", "source_feature"] },
     );
     if (error) {
       dispatch(

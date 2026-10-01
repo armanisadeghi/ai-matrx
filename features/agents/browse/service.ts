@@ -27,6 +27,7 @@ import {
   type EntityScopeCounts as BrowseScopeCounts,
 } from "@/lib/entity-list/types";
 import { LIST_SCOPE_KINDS, listOrgParam } from "@/lib/list-scope/types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 export interface AgentBrowsePage {
   rows: AgentBrowseRow[];
@@ -109,13 +110,13 @@ export async function fetchBrowseScopeCounts(
   query: BrowseQuery,
 ): Promise<BrowseScopeCounts> {
   await requireAuthenticatedSupabaseSession(supabase);
-  const { data, error } = await supabase.rpc("agx_list_scope_counts", {
+  const { data, error } = await readListRpc("agx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_archived: query.archived,
     p_filters: filtersJson(query),
-  });
+  }, { order: ["scope", "narrow_id"] });
 
   if (error) throw pgError(error);
 
@@ -153,13 +154,13 @@ export async function fetchBrowseFacets(
   query: BrowseQuery,
 ): Promise<BrowseFacets> {
   await requireAuthenticatedSupabaseSession(supabase);
-  const { data, error } = await supabase.rpc("agx_list_facets", {
+  const { data, error } = await readListRpc("agx_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_archived: query.archived,
-  });
+  }, { order: ["kind", "value"] });
 
   if (error) throw pgError(error);
 

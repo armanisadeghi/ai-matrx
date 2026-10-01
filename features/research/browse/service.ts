@@ -27,6 +27,7 @@ import type {
 import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import type { ResearchTopicListRow } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 function pgError(error: { message?: string; code?: string }): Error {
   return new Error(
@@ -74,12 +75,12 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
   },
 
   async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
-    const { data, error } = await supabase.rpc("rsx_list_scope_counts", {
+    const { data, error } = await readListRpc("rsx_list_scope_counts", {
       p_search: query.search.trim() || undefined,
       p_org_id: listOrgParam(query),
       p_filters: query.filters,
       p_archived: query.archived,
-    });
+    }, { order: ["scope", "narrow_id"] });
     if (error) throw pgError(error);
     const counts = scopeCountsFromRows(data ?? [], "Organization");
     counts.narrow.orgs?.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
@@ -87,12 +88,12 @@ export const researchTopicListService: EntityListService<ResearchTopicListRow> =
   },
 
   async fetchFacets(query: EntityListQuery): Promise<EntityFacets> {
-    const { data, error } = await supabase.rpc("rsx_list_facets", {
+    const { data, error } = await readListRpc("rsx_list_facets", {
       p_scope: query.scope.kind,
       p_org_id: listOrgParam(query),
       p_search: query.search.trim() || undefined,
       p_archived: query.archived,
-    });
+    }, { order: ["kind", "value"] });
     if (error) throw pgError(error);
     const byKind: EntityFacets["byKind"] = {};
     for (const row of data ?? []) {

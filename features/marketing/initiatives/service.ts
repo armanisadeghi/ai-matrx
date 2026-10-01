@@ -15,6 +15,7 @@ import type {
   InitiativeListRow,
   InitiativeUpdate,
 } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 const db = supabase.schema("marketing");
 const COLUMNS =
@@ -43,14 +44,14 @@ export async function fetchInitiativeListPage(
 export async function fetchInitiativeScopeCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const { data, error } = await supabase.rpc(
+  const { data, error } = await readListRpc(
     "mkt_initiative_list_scope_counts",
     {
       p_search: query.search || undefined,
       p_org_id: listOrgParam(query),
       p_deep: query.deep,
       p_filters: query.filters,
-    },
+    }, { order: ["scope", "narrow_id"] }
   );
   if (error) throw error;
   const byKind: EntityScopeCounts["byKind"] = {};
@@ -63,13 +64,13 @@ export async function fetchInitiativeScopeCounts(
 export async function fetchInitiativeFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc("mkt_initiative_list_facets", {
+  const { data, error } = await readListRpc("mkt_initiative_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: listOrgParam(query),
     p_search: query.search || undefined,
     p_deep: query.deep,
     p_filters: query.filters,
-  });
+  }, { order: ["facet", "value"] });
   if (error) throw error;
   const byKind: EntityFacets["byKind"] = {};
   for (const row of data ?? [])

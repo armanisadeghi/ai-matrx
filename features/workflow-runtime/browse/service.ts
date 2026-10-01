@@ -31,6 +31,7 @@ import { scopeCountsFromRows } from "@/lib/entity-list/types";
 import { listOrgParam } from "@/lib/list-scope/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { WorkflowBrowseRow, WorkflowRowEdit } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 function pgError(error: { message?: string; code?: string }): Error {
   return new Error(
@@ -94,13 +95,13 @@ export async function fetchWorkflowBrowsePage(
 export async function fetchWorkflowScopeCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
-  const { data, error } = await supabase.rpc("wfx_list_scope_counts", {
+  const { data, error } = await readListRpc("wfx_list_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_org_id: listOrgParam(query),
     p_deep: query.deep,
     p_archived: query.archived,
     p_filters: filtersJson(query),
-  });
+  }, { order: ["scope", "narrow_id"] });
 
   if (error) throw pgError(error);
 
@@ -117,13 +118,13 @@ export async function fetchWorkflowScopeCounts(
 export async function fetchWorkflowFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const { data, error } = await supabase.rpc("wfx_list_facets", {
+  const { data, error } = await readListRpc("wfx_list_facets", {
     p_scope: query.scope.kind,
     p_org_id: listOrgParam(query),
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
     p_archived: query.archived,
-  });
+  }, { order: ["kind", "value"] });
 
   if (error) throw pgError(error);
 

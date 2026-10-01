@@ -15,9 +15,12 @@ describe("agent browse authenticated read boundary", () => {
       "agx_list_scope_counts",
       "agx_list_facets",
     ]) {
+      // Facet and count reads go through the paging reader (lib/entity-list/readListRpc.ts).
+      const call = Math.max(source.indexOf(`supabase.rpc("${rpc}"`), source.indexOf(`readListRpc("${rpc}"`));
+      expect(call).toBeGreaterThan(-1);
       expect(
         source.indexOf("requireAuthenticatedSupabaseSession(supabase)"),
-      ).toBeLessThan(source.indexOf(`supabase.rpc(\"${rpc}\"`));
+      ).toBeLessThan(call);
     }
   });
 

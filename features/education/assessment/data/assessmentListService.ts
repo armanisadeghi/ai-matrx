@@ -15,6 +15,7 @@ import { supabase } from "@/utils/supabase/client";
 import { canActOn } from "@/features/access-gate/service/canActOn";
 import type { Json } from "@/types/database.types";
 import type { AssessmentKind } from "./types";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
 
 const EDU = () => supabase.schema("education");
 
@@ -121,17 +122,17 @@ export async function fetchAssessmentPage(
 export async function fetchAssessmentLaneCounts(
   query: Omit<AssessmentListQuery, "lane">,
 ): Promise<Record<AssessmentLane, number>> {
-  const { data, error } = await rpc("assessment_list_counts", {
+  const { data, error } = await readListRpc<{ scope: string; total: number }>("assessment_list_counts", {
     p_kind: query.kind,
     // The organization filter narrows every lane's count, as it narrows the list.
     p_org_id: query.orgId ?? null,
     p_search: query.search,
     p_filters: query.filters as Json,
     p_archived: query.archived,
-  });
+  }, { order: ["scope"], client: EDU() });
   if (error) fail("counted", error);
   const out: Record<AssessmentLane, number> = { all: 0, mine: 0, team: 0, orgs: 0, shared: 0, public: 0 };
-  for (const row of (data ?? []) as { scope: string; total: number }[]) {
+  for (const row of data ?? []) {
     if (row.scope in out) out[row.scope as AssessmentLane] = Number(row.total);
   }
   return out;
@@ -140,17 +141,17 @@ export async function fetchAssessmentLaneCounts(
 export async function fetchAssessmentFacets(
   query: AssessmentListQuery,
 ): Promise<Record<string, { value: string; count: number }[]>> {
-  const { data, error } = await rpc("assessment_list_facets", {
+  const { data, error } = await readListRpc<{ facet: string; value: string; total: number }>("assessment_list_facets", {
     p_kind: query.kind,
     p_scope: query.lane,
     p_org_id: query.orgId ?? null,
     p_search: query.search,
     p_filters: query.filters as Json,
     p_archived: query.archived,
-  });
+  }, { order: ["facet", "value"], client: EDU() });
   if (error) fail("filtered", error);
   const out: Record<string, { value: string; count: number }[]> = {};
-  for (const row of (data ?? []) as { facet: string; value: string; total: number }[]) {
+  for (const row of data ?? []) {
     (out[row.facet] ??= []).push({ value: row.value, count: Number(row.total) });
   }
   return out;
