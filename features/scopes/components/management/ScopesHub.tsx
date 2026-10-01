@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { useWholeScopeTree } from "@/features/scopes/hooks/useWholeScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTypeTables } from "@/features/scopes/hooks/useScopeTypeTables";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
@@ -54,7 +54,10 @@ import {
   currentSelection,
 } from "@/features/scopes/lib/scopes-surface-scope";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectTreeFetchedAt } from "@/features/scopes/redux/selectors/tree";
+import {
+  selectPagedOrganizationsList,
+  selectTreeFetchedAt,
+} from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/utils/cn";
 import type {
   ContextItemRow,
@@ -74,7 +77,14 @@ interface DimensionRow {
 }
 
 export function ScopesHub() {
-  const { organizations, status, error, refresh } = useScopeTree();
+  const tree = useWholeScopeTree();
+  const { status, error, refresh } = tree;
+  // THE PAGED TREE (lane SCOPES-TREE-PAGED): the types paint from the skeleton at once; every type's
+  // scopes arrive with the whole tree, which loads right behind it. Until then a type shows "—" and a
+  // loading block, never "0" or "No … yet". Read switch OFF: the skeleton IS the whole tree.
+  const pagedOrgs = useAppSelector(selectPagedOrganizationsList);
+  const organizations = status === "ready" ? tree.organizations : pagedOrgs;
+  const scopesPending = status !== "ready" && organizations.length > 0;
   const active = useActiveContext();
   const [query, setQuery] = useState("");
 
@@ -197,7 +207,9 @@ export function ScopesHub() {
 
   const emptyOrgs = orderedOrgs.filter((o) => o.scope_types.length === 0);
   const q = query.trim().toLowerCase();
-  const visible = q
+  const visible = q && scopesPending
+    ? dimensions.filter(({ type }) => type.label_plural.toLowerCase().includes(q))
+    : q
     ? dimensions
         .map(({ org, type }) => ({
           org,
@@ -221,8 +233,10 @@ export function ScopesHub() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="text-sm text-muted-foreground">
-          <span className="text-foreground font-medium">{totalScopes}</span>{" "}
-          scope{totalScopes === 1 ? "" : "s"} in{" "}
+          <span className="text-foreground font-medium">
+            {scopesPending ? "—" : totalScopes}
+          </span>{" "}
+          scope{totalScopes === 1 && !scopesPending ? "" : "s"} in{" "}
           <span className="text-foreground font-medium">
             {dimensions.length}
           </span>{" "}
@@ -254,6 +268,7 @@ export function ScopesHub() {
             cellsStatus={tables.status}
             activeScopeIds={activeScopeIds}
             showOrg={showOrg}
+            scopesPending={scopesPending}
           />
         ))
       )}
@@ -293,9 +308,12 @@ function ScopeTypeTable({
   cellsStatus,
   activeScopeIds,
   showOrg,
+  scopesPending = false,
 }: {
   org: OrgNode;
   type: ScopeTypeNode;
+  /** The whole tree is still loading: the type's scopes are not in yet. */
+  scopesPending?: boolean;
   items: ContextItemRow[];
   valuesByScope: Record<string, Record<string, ContextItemValue>>;
   cellsStatus: "idle" | "loading" | "ready" | "error";
@@ -371,7 +389,7 @@ function ScopeTypeTable({
           {type.label_plural}
         </Link>
         <span className="text-[11px] text-muted-foreground tabular-nums">
-          {type.scopes.length}
+          {scopesPending ? "—" : type.scopes.length}
         </span>
         {showOrg && (
           /* The org OWNS these scopes — it has a route and a peek, so it is a
@@ -418,7 +436,16 @@ function ScopeTypeTable({
         </span>
       </div>
 
-      {type.scopes.length === 0 ? (
+      {scopesPending && type.scopes.length === 0 ? (
+        <div className="divide-y divide-border/30" aria-busy="true">
+          {[0, 1, 2].map((j) => (
+            <div key={j} className="px-4 py-2.5 flex gap-6">
+              <div className="h-4 w-40 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+            </div>
+          ))}
+        </div>
+      ) : type.scopes.length === 0 ? (
         <div className="px-4 py-3 text-xs text-muted-foreground italic">
           No {type.label_plural.toLowerCase()} yet.
         </div>
