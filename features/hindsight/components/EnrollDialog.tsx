@@ -631,12 +631,11 @@ export function EnrollDialog({
             {windowMode === "last_n_runs" && (
               <div className="space-y-1.5 pt-1">
                 <Label>How many recent runs?</Label>
-                <Input
-                  type="number"
+                <ClampedNumberInput
                   min={1}
                   max={500}
                   value={windowN}
-                  onChange={(e) => setWindowN(Number(e.target.value) || 25)}
+                  onChange={setWindowN}
                   data-testid="hindsight-window-n"
                 />
                 {windowN > maxExamples && (

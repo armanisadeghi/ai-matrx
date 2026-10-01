@@ -24,6 +24,7 @@ type ClampedNumberInputProps = {
   disabled?: boolean;
   className?: string;
   "aria-label"?: string;
+  "data-testid"?: string;
   onChange: (value: number) => void;
 };
 
@@ -55,6 +56,7 @@ export function ClampedNumberInput({
   disabled,
   className,
   "aria-label": ariaLabel,
+  "data-testid": testId,
   onChange,
 }: ClampedNumberInputProps) {
   const [draft, setDraft] = useState(String(value));
@@ -83,6 +85,7 @@ export function ClampedNumberInput({
       max={max ?? undefined}
       disabled={disabled}
       aria-label={ariaLabel}
+      data-testid={testId}
       className={cn("h-8", className)}
       value={draft}
       onChange={(event) => {
