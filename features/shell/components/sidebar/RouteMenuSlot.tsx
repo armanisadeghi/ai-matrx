@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { useSidebarExpanded } from "../../hooks/useSidebarExpanded";
 import {
+  routeMenuDefaultView,
   routeMenuRegistry,
   type RouteMenuEntry,
 } from "../../constants/route-menu-registry";
@@ -32,7 +33,8 @@ export interface ManualSidebarChoice {
 /**
  * Which nav the sidebar shows. Pure, so the rule is testable and stated once.
  *
- *   • a loaded route menu shows itself (that IS the Large Route behaviour)
+ *   • a loaded route menu shows itself (that IS the Large Route behaviour),
+ *     unless its family opens on the main menu (`defaultView: "main"`)
  *   • a manual choice wins over it — and SURVIVES navigation, which it did not
  *     before: the view was one-shot state, so "Main Menu" was silently undone
  *     by the next navigation inside the same route family
@@ -43,9 +45,10 @@ export function resolveSidebarView(
   manual: ManualSidebarChoice | null,
   matchKey: string | null,
   hasRouteMenu: boolean,
+  defaultView: SidebarView = "route",
 ): SidebarView {
   if (manual && manual.key === matchKey) return manual.view;
-  return hasRouteMenu ? "route" : "main";
+  return hasRouteMenu ? defaultView : "main";
 }
 
 function findMatch(pathname: string): RouteMenuEntry | null {
@@ -123,7 +126,7 @@ export default function RouteMenuSlot() {
   // A matched Large Route IS in the route view from the first render — the
   // server already painted it that way (`initialSidebarView`); resolving to
   // "main" while the menu chunk loads flipped it back and forth.
-  const currentView = resolveSidebarView(manual, matchKey, !!match);
+  const currentView = resolveSidebarView(manual, matchKey, !!match, routeMenuDefaultView(match));
 
   // Find the portal target on mount
   useEffect(() => {

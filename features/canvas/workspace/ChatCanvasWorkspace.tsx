@@ -3,9 +3,14 @@
 /**
  * ChatCanvasWorkspace — "chat beside a canvas" (Amendment 1, A5).
  *
- *   left nav · chat panel · canvas · properties panel
+ *   chat panel · canvas · properties panel   (navigation = the app shell's sidebar)
  *
- * One component, four switches: nav (collapsed / hover / open), chat (docked /
+ * Navigation is the SAME shell sidebar every page has (owner, 2026-09-30: one
+ * sidebar and header a person can always count on). Its Chats side opens
+ * conversations IN this page's chat panel — the page registers itself as the
+ * in-place chat host while mounted.
+ *
+ * One component, three switches: chat (docked /
  * floating, and open / closed — many pages start with it closed), properties
  * (open / closed), and the composer's own input growth. Every side panel is a
  * `DockedSidePanel`: it slides open and closed and the person drags its edge to
@@ -16,16 +21,17 @@
  *
  * Every piece is an existing platform piece with a facelift
  * (common-docs/projects/ai-matrx-composer/MAP.md): the chat is
- * `AgentConversationColumn`, history is `ConversationHistorySidebar`, the user
- * row is the shell's `UserMenuPanel`, the floating window is
+ * `AgentConversationColumn`, history is the shell sidebar's `ChatSidebarMenu`,
+ * the account rail is the shell's own, the floating window is
  * `MatrxFloatingFrame` (container-bounded), Agents / Inbox / Share / comments
  * are the shell's own buttons.
  *
- * The app shell stays mounted underneath, flipped into canvas chrome
- * (<ShellChromeMode/>, styles/shell.css §13c).
+ * The app shell stays mounted around it, flipped into canvas chrome
+ * (<ShellChromeMode/>, styles/shell.css §13c): the shell header steps aside
+ * for this page's header; the sidebar and account rail stay.
  */
 
-import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import {
   ChevronDown,
   Maximize,
@@ -67,12 +73,9 @@ import type { ComposerMode } from "@/features/agents/components/inputs/smart-inp
 import { COMPOSER_KNOBS } from "@/features/agents/components/inputs/smart-input/composer/composer-mode-cookie";
 import type { AttachedContextRailItem } from "@/features/agents/components/inputs/smart-input/ConversationContextRail";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { ShellChromeMode } from "@/features/shell/components/ShellChromeMode";
-import {
-  CanvasNav,
-  CanvasNavToggle,
-  useCanvasNavState,
-} from "@/features/shell/canvas-chrome/CanvasNav";
+import { ShellChromeMode, useShellCanvasFullScreen } from "@/features/shell/components/ShellChromeMode";
+import { registerInPlaceChatHost } from "@/features/agents/components/chat/in-place-chat-host";
+import { openShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
 import { CanvasChatColumn, type CanvasContextEntry } from "./CanvasChatColumn";
 import {
@@ -83,7 +86,6 @@ import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation
 import { ChatPanelTitleMenu, useChatPanelTitle } from "./ChatPanelTitleMenu";
 import {
   CANVAS_CHAT_SIZES,
-  CANVAS_NAV_SIZES,
   CANVAS_PANEL_IDS,
   CANVAS_PROPERTIES_SIZES,
   writeCanvasChatCookie,
@@ -94,10 +96,8 @@ import {
 } from "./workspace-cookies";
 
 const FLOATING_FALLBACK = { width: 340, height: 400 };
-/** Below this the workspace is one pane: the canvas, with chat / nav / properties in sheets. */
+/** Below this the workspace is one pane: the canvas, with chat / properties in sheets (navigation is the shell drawer). */
 const COMPACT_QUERY = "(max-width: 1023px)";
-/** Conversation-history scope for the canvas nav (shared across canvas pages). */
-const CANVAS_HISTORY_SCOPE = "canvas-nav";
 
 export interface ChatCanvasWorkspaceRecord {
   resourceType: ResourceType;
@@ -197,15 +197,15 @@ export function ChatCanvasWorkspace({
   const compact = viewportCompact === true;
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const surfaceKey = `canvas-workspace:${id}`;
-  const nav = useCanvasNavState(initialLayout?.nav ?? "collapsed");
 
   const [chatState, setChatStateRaw] = useState<CanvasChatState>(
     initialLayout?.chat ?? { placement: "side", open: defaultChatOpen },
   );
   const [mobileSheet, setMobileSheet] = useState<
-    "chat" | "nav" | "properties" | null
+    "chat" | "properties" | null
   >(null);
   const [fullScreen, setFullScreen] = useState(false);
+  useShellCanvasFullScreen(fullScreen);
   // The chat is on screen right now — docked or floating on a wide screen, the
   // sheet on a phone. Nothing launches until it is: a chat that starts closed
   // costs nothing, and a phone's first render never launches on a guess.
@@ -235,7 +235,7 @@ export function ChatCanvasWorkspace({
   };
   const closeChat = () => setChatState({ placement, open: false });
   const openMobileChat = () => setMobileSheet("chat");
-  /** Nav "+" / history: the conversation shows wherever the chat is — opening it if hidden. */
+  /** Sidebar Chats "New chat" / history: the conversation shows wherever the chat is — opening it if hidden. */
   const newChatInPanel = () => {
     chat.startNew();
     if (compact) openMobileChat();
@@ -291,14 +291,28 @@ export function ChatCanvasWorkspace({
     else if (!chatState.open || fullScreen) openChat();
   };
 
+  // THE SHELL SIDEBAR'S CHATS HOST HERE: its history rows and "New chat"
+  // open in this panel (in-place-chat-host). The latest handlers ride a ref so
+  // the registration changes only when the shown conversation does.
+  const hostHandlers = useRef({ openFromHistory, newChatInPanel });
+  useEffect(() => {
+    hostHandlers.current = { openFromHistory, newChatInPanel };
+  });
+  useEffect(
+    () =>
+      registerInPlaceChatHost({
+        activeConversationId: conversationId,
+        openConversation: (conversation) => hostHandlers.current.openFromHistory(conversation),
+        startNewChat: () => hostHandlers.current.newChatInPanel(),
+      }),
+    [conversationId],
+  );
+
   const hasProperties = properties !== undefined && properties.tabs.length > 0;
-  const navCollapsed = nav.state !== "open";
-  const navShown = !fullScreen && nav.state !== "collapsed";
   const chatShown = !fullScreen && chatState.open;
   const showDockedChat = chatShown && placement === "side";
   const showFloatingChat = !compact && chatShown && placement === "floating";
   const showProperties = !fullScreen && hasProperties && propertiesOpen;
-  const navToggleInCanvasHeader = !compact && navCollapsed && !showDockedChat;
 
   const chatTitleMenu = (
     <ChatPanelTitleMenu conversationId={conversationId} onNewChat={chat.startNew} />
@@ -332,37 +346,6 @@ export function ChatCanvasWorkspace({
     <div className="relative flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
       <ShellChromeMode mode="canvas" />
 
-      {/* ── Left nav: in the layout when open, sliding over the page on hover ── */}
-      {!compact ? (
-        <DockedSidePanel
-          panelId={CANVAS_PANEL_IDS.nav}
-          edge="left"
-          open={navShown}
-          overlay={nav.overlay}
-          // Hover is tracked on the whole panel — its resize handle included —
-          // so reaching for the handle never closes a hover preview.
-          onPointerEnter={(e) => {
-            if (nav.state === "hover" && e.pointerType === "mouse") nav.hoverEnter();
-          }}
-          onPointerLeave={(e) => {
-            if (nav.state === "hover" && e.pointerType === "mouse") nav.hoverLeave();
-          }}
-          sizes={CANVAS_NAV_SIZES}
-          initialWidth={initialLayout?.widths.nav}
-          onCollapse={() => nav.collapse()}
-          aria-label="Navigation"
-          outerClassName="max-lg:hidden"
-        >
-          <CanvasNav
-            nav={nav}
-            historyScopeId={CANVAS_HISTORY_SCOPE}
-            activeConversationId={conversationId}
-            onOpenConversation={openFromHistory}
-            onNewChat={newChatInPanel}
-          />
-        </DockedSidePanel>
-      ) : null}
-
       {/* ── Chat panel (docked). Stays mounted while closed (the conversation
           keeps its place); the column itself lives in exactly ONE place —
           here while docked, the floating window while floating. ── */}
@@ -379,7 +362,6 @@ export function ChatCanvasWorkspace({
           className="bg-card"
         >
           <div className="flex h-11 shrink-0 items-center gap-1 px-2">
-            {navCollapsed ? <CanvasNavToggle nav={nav} /> : null}
             <div className="min-w-0 flex-1">{chatTitleMenu}</div>
             <ComposerModeSwitch size="panel" initialMode={initialMode} />
             <button
@@ -415,7 +397,7 @@ export function ChatCanvasWorkspace({
           <button
             type="button"
             aria-label="Open navigation"
-            onClick={() => setMobileSheet("nav")}
+            onClick={openShellMobileMenu}
             className={cn(ICON_BUTTON, "h-11 w-11 lg:hidden")}
           >
             <Menu className="h-5 w-5" />
@@ -428,9 +410,6 @@ export function ChatCanvasWorkspace({
           >
             <MessageSquare className="h-5 w-5" />
           </button>
-          {navToggleInCanvasHeader ? (
-            <CanvasNavToggle nav={nav} className="max-lg:hidden" />
-          ) : null}
           {/* The way back to a hidden chat sits where the chat opens — on the left. */}
           {!chatShown ? (
             <button
@@ -584,7 +563,7 @@ export function ChatCanvasWorkspace({
         </div>
       </div>
 
-      {/* ── Compact (< 1024px): one pane; chat, nav and properties in bottom sheets ── */}
+      {/* ── Compact (< 1024px): one pane; chat and properties in bottom sheets ── */}
       {compact ? (
         <Drawer
           open={mobileSheet !== null}
@@ -592,19 +571,13 @@ export function ChatCanvasWorkspace({
         >
           <DrawerContent className="flex h-[85dvh] flex-col pb-safe">
             <DrawerHeader className="py-2">
-              <DrawerTitle className={cn("text-sm", mobileSheet === "nav" && "sr-only")}>
-                {mobileSheet === "nav"
-                  ? "AI Matrx"
-                  : mobileSheet === "properties"
-                    ? "Properties"
-                    : chatTitle}
+              <DrawerTitle className="text-sm">
+                {mobileSheet === "properties" ? "Properties" : chatTitle}
               </DrawerTitle>
               <DrawerDescription className="sr-only">
                 {mobileSheet === "chat"
                   ? `The agent sees ${title ?? "this page"} with each message.`
-                  : mobileSheet === "nav"
-                    ? "Navigation, chat history and your account."
-                    : `Properties of ${title ?? "this page"}.`}
+                  : `Properties of ${title ?? "this page"}.`}
               </DrawerDescription>
             </DrawerHeader>
             <div className="flex min-h-0 flex-1 flex-col">
@@ -618,15 +591,6 @@ export function ChatCanvasWorkspace({
                   </div>
                   {chatColumn}
                 </>
-              ) : mobileSheet === "nav" ? (
-                <CanvasNav
-                  nav={nav}
-                  variant="sheet"
-                  historyScopeId={CANVAS_HISTORY_SCOPE}
-                  activeConversationId={conversationId}
-                  onOpenConversation={openFromHistory}
-                  onNewChat={newChatInPanel}
-                />
               ) : mobileSheet === "properties" && properties ? (
                 <CanvasPropertiesPanel tabs={properties.tabs} variant="sheet" />
               ) : null}

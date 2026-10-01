@@ -1,4 +1,4 @@
-import { routeMenuRegistry } from "@/features/shell/constants/route-menu-registry";
+import { routeMenuDefaultView, routeMenuRegistry } from "@/features/shell/constants/route-menu-registry";
 import { resolveSidebarView } from "./RouteMenuSlot";
 
 const MARKETING = "^\\/marketing(?:\\/|$)";
@@ -32,15 +32,36 @@ describe("route menu registry", () => {
     expect(match("/dashboard")).toBeNull();
   });
 
-  it("gives every entry a distinct pattern and label", () => {
+  it("gives every entry a distinct pattern and every Large Route a distinct label", () => {
     const patterns = routeMenuRegistry.map((e) => e.pathPattern.source);
-    const labels = routeMenuRegistry.map((e) => e.label);
     expect(new Set(patterns).size).toBe(patterns.length);
+    // A main-first family (the canvas workspace) offers ANOTHER family's menu
+    // behind the switch — the same "Chats" — so only route-first labels must differ.
+    const labels = routeMenuRegistry.filter((e) => e.defaultView !== "main").map((e) => e.label);
     expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("puts the Chats menu behind the switch on canvas-workspace pages, main menu in front", () => {
+    const entry = (pathname: string) =>
+      routeMenuRegistry.find((e) => e.pathPattern.test(pathname)) ?? null;
+    for (const pathname of ["/board", "/board/b1", "/education", "/education/progress"]) {
+      expect(entry(pathname)?.label).toBe("Chats");
+      expect(routeMenuDefaultView(entry(pathname))).toBe("main");
+    }
+    // The boards LIST is an ordinary page.
+    expect(entry("/board/all")).toBeNull();
+    // /chat keeps opening on its own menu.
+    expect(routeMenuDefaultView(entry("/chat/abc"))).toBe("route");
   });
 });
 
 describe("resolveSidebarView", () => {
+  it("a main-first family keeps the main menu until the person switches", () => {
+    const BOARD = "board";
+    expect(resolveSidebarView(null, BOARD, true, "main")).toBe("main");
+    expect(resolveSidebarView({ key: BOARD, view: "route" }, BOARD, true, "main")).toBe("route");
+  });
+
   it("shows the route menu once it has loaded", () => {
     expect(resolveSidebarView(null, MARKETING, false)).toBe("main");
     expect(resolveSidebarView(null, MARKETING, true)).toBe("route");
@@ -102,6 +123,7 @@ describe("the first paint of a Large Route is already its route view", () => {
     expect(initialSidebarView("/chat/abc")).toBe("route");
     expect(initialSidebarView("/chat")).toBe("route");
     expect(initialSidebarView("/tasks")).toBe("main");
+    expect(initialSidebarView("/board")).toBe("main");
   });
 
   it("the server Sidebar paints it, and the island never resolves 'main' while its menu loads", () => {
@@ -109,6 +131,6 @@ describe("the first paint of a Large Route is already its route view", () => {
     expect(sidebar).toContain("data-sidebar-view={initialView}");
     expect(sidebar).not.toContain('data-sidebar-view="main"');
     const slot = fs.readFileSync(path.join(__dirname, "RouteMenuSlot.tsx"), "utf8");
-    expect(slot).toContain("resolveSidebarView(manual, matchKey, !!match)");
+    expect(slot).toContain("resolveSidebarView(manual, matchKey, !!match, routeMenuDefaultView(match))");
   });
 });

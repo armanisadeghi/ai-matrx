@@ -7,10 +7,11 @@ their own docs: sidebar `components/sidebar/FEATURE.md`, route headers
 file holds the two laws that span them.
 
 **Canvas chrome** — a page that hosts `ChatCanvasWorkspace` flips this shell to
-`data-shell-chrome="canvas"` (header, sidebar, user block and dock step aside; every
-island stays mounted) and draws its own nav + headers: read
+`data-shell-chrome="canvas"`: the shell header and dock step aside for the page's own
+header; the SIDEBAR and account rail stay (one sidebar everywhere — owner, 2026-09-30),
+and its Chats side opens conversations in the page's chat panel: read
 [`../canvas/workspace/FEATURE.md`](../canvas/workspace/FEATURE.md) before touching
-`ShellChromeMode`, `canvas-chrome-routes.ts`, `canvas-chrome/` or `shell.css` §13c.
+`ShellChromeMode`, `canvas-chrome-routes.ts`, `in-place-chat-host.ts` or `shell.css` §13c.
 
 ## THE HEADER CONTROL SET (owner, 2026-09-19; re-ruled 2026-09-30)
 
@@ -66,7 +67,7 @@ rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
   person's organizations (`pageObjectOrganization.ts`). It reads/writes through
   `useActiveOrganizationPicker` → `chooseActiveOrganization` (cookie + sync
   engine unchanged) and opens the canonical `OrganizationPickerPanel`. Variants:
-  `rail`, `drawer` (phone navigation drawer), `inline` (canvas nav).
+  `rail`, `drawer` (phone navigation drawer), `inline` (a compact row).
   Replaced: the header chip, the avatar menu's Organization group, the canvas
   nav's hand-built drop-up.
 - **Mobile:** no rail; the navigation drawer ends in the same three
@@ -76,6 +77,8 @@ rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
   `#shell-user-menu` checkbox; items sit in `MenuItemCloseLabel`.
 
 ## Change log
+
+- `2026-09-30` — **One sidebar on canvas pages.** /board, /education (signed in) and the canvas demos show the shell sidebar + account rail instead of their own canvas nav (deleted with `CanvasUserRow` and its cookie). Route-menu entries take `defaultView` (`routeMenuDefaultView`, honoured by the desktop slot, the phone drawer and SSR); the canvas-workspace entry is the same `ChatSidebarMenu` with `defaultView: "main"`, hosted in the page's chat panel via `in-place-chat-host`. Guards: `route-menu-slot.test.ts`.
 
 - `2026-09-30` — **The account rail + the header control set** (owner ruling): Settings, Organization and You are the sidebar's three bottom slots, aligned to the nav's icon column (the avatar was 32px and centred 4px left of it; footer icons were 2px right). `ShellOrgSwitcher` is the one org control; `HeaderChooseOrgButton`, `UserMenuOrgSection`, `CanvasOrgDropUp`, `ThemeToggleMenuItem` and the unused `GuestUserMenuPanel` family are deleted. Theme/Media/Preferences moved from the avatar menu into the Settings slot. The header is `HeaderControlSet` (Search, Intelligence, Canvas, Messages, Notifications), shared by the shell header and `/board`; Messages split from Notifications with its own count; Canvas is never disabled (empty opens `CanvasHomeSheet`). The scope tree's organization read now carries `logo_url`.
 

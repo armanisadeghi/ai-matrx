@@ -8,6 +8,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
+  routeMenuDefaultView,
   routeMenuRegistry,
   type RouteMenuEntry,
 } from "../../constants/route-menu-registry";
@@ -36,11 +37,12 @@ export default function MobileRouteMenuSlot() {
   // menu chunk loads. The drawer mounts on open, so the view is set before
   // its first paint (layout effect) and the skeleton shows while it loads.
   const [loading, setLoading] = useState(!!match);
-  const [currentView, setCurrentView] = useState<SidebarView>(match ? "route" : "main");
+  const [currentView, setCurrentView] = useState<SidebarView>(routeMenuDefaultView(match));
   const [routeNavTarget, setRouteNavTarget] = useState<HTMLElement | null>(
     null,
   );
   const matchRef = useRef<RouteMenuEntry | null>(null);
+  // A family that opens on the main menu never auto-switches to its route menu.
   const hasAutoSwitched = useRef(!!match);
 
   // Mount only (a ref, not state): later flips go through the handlers below.
@@ -115,6 +117,11 @@ export default function MobileRouteMenuSlot() {
       return;
     matchRef.current = match;
     hasAutoSwitched.current = false;
+    if (routeMenuDefaultView(match) === "main") {
+      setCurrentView("main");
+      const sheet = document.querySelector<HTMLElement>(".shell-mobile-sheet");
+      if (sheet) sheet.dataset.sidebarView = "main";
+    }
     setRouteMenu(null);
     setLoading(true);
 
@@ -127,6 +134,7 @@ export default function MobileRouteMenuSlot() {
   useEffect(() => {
     if (!RouteMenu || hasAutoSwitched.current) return;
     hasAutoSwitched.current = true;
+    if (routeMenuDefaultView(match) === "main") return;
     const sheet = document.querySelector<HTMLElement>(".shell-mobile-sheet");
     if (sheet) {
       sheet.dataset.sidebarView = "route";

@@ -36,6 +36,16 @@ export const CANVAS_CHROME_ROUTES: readonly RegExp[] = [
  */
 export const SIGNED_IN_CANVAS_CHROME_ROUTES: readonly RegExp[] = [/^\/education(?:\/|$)/];
 
+/**
+ * Every page that can host the canvas workspace, as ONE pattern — the shell
+ * sidebar's Chats menu (route-menu-registry) opens its conversations in that
+ * page's chat panel. Signed-out Education matches too; its chat menu simply
+ * routes like /chat.
+ */
+export const CANVAS_WORKSPACE_MENU_PATTERN = new RegExp(
+  [...CANVAS_CHROME_ROUTES, ...SIGNED_IN_CANVAS_CHROME_ROUTES].map((r) => `(?:${r.source})`).join("|"),
+);
+
 /** Stamped on `.shell-root` for a session, so the client can apply the signed-in list. */
 export const SHELL_SIGNED_IN_ATTRIBUTE = "data-signed-in";
 

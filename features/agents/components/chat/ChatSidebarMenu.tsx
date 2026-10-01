@@ -36,6 +36,10 @@
 //   · The inner ChatHistorySidebar that renders below the chrome passes
 //     `hideSearchAffordance` so it doesn't double up.
 //
+// In-place host: on a page that carries its own chat panel (the Board), the
+// page registers `in-place-chat-host` and this SAME menu opens history rows
+// and new chats in that panel instead of routing to /chat.
+//
 // Whenever this surface diverges from the main app nav's look or spacing,
 // the fix is to align it back to the shell's canonical `.shell-nav-item`
 // pattern — NOT to add a parallel styling system here.
@@ -65,6 +69,7 @@ import {
   ROUTE_MENU_NAV_ITEM_CLASS,
 } from "@/features/shell/constants/route-menu-style";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
+import { useInPlaceChatHost } from "./in-place-chat-host";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
 import {
   beginFreshChat,
@@ -102,7 +107,12 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const { activeConversationId, activeAgentId } = parseChatPath(pathname);
+  // A page that carries its own chat panel (the Board) hosts the history:
+  // rows open IN that panel and "New chat" starts there (in-place-chat-host).
+  const host = useInPlaceChatHost();
+  const routeChat = parseChatPath(pathname);
+  const activeAgentId = routeChat.activeAgentId;
+  const activeConversationId = host ? host.activeConversationId : routeChat.activeConversationId;
   const isVoiceRoute = pathname.startsWith(VOICE_AGENT_HREF);
   const isMessageTemplatesRoute = pathname.startsWith(MESSAGE_TEMPLATES_HREF);
   // Home = the bare `/chat` redirect target and its landing (`/chat/new`).
@@ -110,6 +120,10 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
 
   const handleNewChat = () => {
+    if (host) {
+      host.startNewChat();
+      return;
+    }
     void beginFreshChat({
       dispatch,
       router,
@@ -225,7 +239,11 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
               // default) gate the list; the source tree narrows within them.
               surfaceId="chat"
               activeConversationId={activeConversationId}
-              onOpenConversation={() => setChatSearchOpen(false)}
+              onOpenConversation={(conversation) => {
+                setChatSearchOpen(false);
+                host?.openConversation(conversation);
+              }}
+              openInPlace={!!host}
               initialSearchOpen
               className="h-full"
             />
@@ -318,6 +336,8 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           <ChatHistorySidebar
             scopeId={CHAT_HISTORY_SCOPE}
             activeConversationId={activeConversationId}
+            onOpenConversation={host ? (conversation) => host.openConversation(conversation) : undefined}
+            openInPlace={!!host}
             // The "chat" surface: the lane toggles (Chat + Matrx by
             // default; Auto, Plugins, Subagents off) gate the list; the
             // source tree narrows within the enabled lanes.

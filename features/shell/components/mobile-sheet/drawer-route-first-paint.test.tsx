@@ -14,6 +14,7 @@ import { createRoot } from "react-dom/client";
 
 jest.mock("next/navigation", () => ({ usePathname: () => "/chat/abc" }));
 jest.mock("@/features/shell/constants/route-menu-registry", () => ({
+  routeMenuDefaultView: (entry: { defaultView?: string } | null) => (entry ? (entry.defaultView ?? "route") : "main"),
   routeMenuRegistry: [
     {
       pathPattern: /^\/chat(?:\/|$)/,

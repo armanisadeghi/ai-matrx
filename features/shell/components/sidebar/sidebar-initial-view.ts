@@ -1,4 +1,4 @@
-import { routeMenuRegistry } from "../../constants/route-menu-registry";
+import { routeMenuDefaultView, routeMenuRegistry } from "../../constants/route-menu-registry";
 
 /**
  * 🚨 A LARGE ROUTE'S SIDEBAR IS RESOLVED ON THE SERVER (page-pass shared
@@ -9,5 +9,5 @@ import { routeMenuRegistry } from "../../constants/route-menu-registry";
  * like its menu, and `RouteMenuSlot` fills it in place.
  */
 export function initialSidebarView(pathname: string): "main" | "route" {
-  return routeMenuRegistry.some((entry) => entry.pathPattern.test(pathname)) ? "route" : "main";
+  return routeMenuDefaultView(routeMenuRegistry.find((entry) => entry.pathPattern.test(pathname)) ?? null);
 }

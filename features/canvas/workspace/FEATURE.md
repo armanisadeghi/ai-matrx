@@ -11,15 +11,18 @@
 
 ## Purpose
 
-The ONE "chat beside a canvas" layout: **left nav · chat panel · canvas · properties panel**, with four
-switches — nav (collapsed / hover / open), chat (docked / floating, and open / closed), properties (open /
-closed), input (grows to a knob share of the panel). Every side panel is a `DockedSidePanel`
+The ONE "chat beside a canvas" layout: **chat panel · canvas · properties panel**, beside the app shell's
+OWN sidebar (owner, 2026-09-30: one sidebar and header a person can always count on), with three
+switches — chat (docked / floating, and open / closed), properties (open / closed), input (grows to a knob
+share of the panel). Navigation is the shell sidebar: its main menu is in front, and its **Chats** side (the
+same `ChatSidebarMenu` as /chat, registered `defaultView: "main"` for these pages) opens conversations IN this
+page's chat panel through `in-place-chat-host`. Every side panel is a `DockedSidePanel`
 (`components/official/side-panel`): it slides open and closed and the person drags its edge to any width
-between its min and max — nav 240 (200–360), chat 440 (340–760), properties 250 (220–420) — remembered per
+between its min and max — chat 440 (340–760), properties 250 (220–420) — remembered per
 person across canvas pages; dragging a panel past its minimum closes it. A MODULE can be hosted too: its layout
 renders the workspace with the module's pages as the canvas (education does, for signed-in people), and every
 `<PageHeader>` / `<RouteHeader>` inside portals into the workspace header — the module's own menu sits in the
-canvas header, the app's menu is the canvas nav. Generic: any canvas (a spatial board, a document, a Matrx UI) is a host. There must be only one
+canvas header, the app's menu is the shell sidebar. Generic: any canvas (a spatial board, a document, a Matrx UI) is a host. There must be only one
 such layout in the app.
 
 ---
@@ -29,7 +32,7 @@ such layout in the app.
 - **`ChatCanvasWorkspace`** (`ChatCanvasWorkspace.tsx`) — props: `id` (cookies + chat surface key),
   `canvas`, `title`, `titleMenu?`, `byline?`, `record?` (Share + comments; absent = those controls absent),
   `properties?` (tabs; absent = no panel), `getCanvasContext?`, `contextChip?`, `initialLayout?`
-  (`readCanvasWorkspaceLayout(id, { defaultChatOpen })` — nav, chat, properties, the three widths),
+  (`readCanvasWorkspaceLayout(id, { defaultChatOpen })` — chat, properties, the two widths),
   `defaultChatOpen?` (default true; many pages start with the chat closed), `initialMode?`, `onClose?`. `title` is optional (a hosted module brings its
   own header).
 - **`CanvasChatColumn`** — the platform's ONE chat column (`AgentConversationColumn`) with the COMPACT
@@ -46,9 +49,10 @@ such layout in the app.
 - **`CanvasPropertiesPanel`** — tabs; lists scroll with a bottom fade, scrollbar on hover.
 - **Cookies** — `workspace-cookies.ts` (chat `side` · `floating` · `…:closed`, properties open/closed, sizes,
   panel ids) + `workspace-cookies.server.ts` (`readCanvasWorkspaceLayout`).
-- **Canvas chrome** (`features/shell/canvas-chrome/`): `CanvasNav` (rows sourced from `primaryNavItems`;
-  history = `ConversationHistorySidebar` with `openInPlace`), `CanvasUserRow` (user menu = the shell's
-  `UserMenuPanel` via `ShellUserMenu`; org drop-up = `useActiveOrganizationPicker`).
+- **Navigation** — the shell sidebar + account rail (never a page-local nav). The page registers itself with
+  `registerInPlaceChatHost` (`features/agents/components/chat/in-place-chat-host.ts`) so the sidebar's Chats
+  side opens history and New chat in this panel; on a phone the header's menu button opens the shell drawer
+  (`openShellMobileMenu`). Full screen hides the sidebar too (`useShellCanvasFullScreen`).
 - **Shell mode** — `ShellChromeMode` / `ShellChromeRouteSync` (`features/shell/components/ShellChromeMode.tsx`)
   + `CANVAS_CHROME_ROUTES` (`features/shell/constants/canvas-chrome-routes.ts`) + `styles/shell.css` §13c.
 - **Floating chat** — `MatrxFloatingFrame` with its `container` prop (bounded to the canvas region);
@@ -92,12 +96,8 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
   the (hidden) shell header slots.
 - **Hosted modules for signed-in people only** are listed in `SIGNED_IN_CANVAS_CHROME_ROUTES` (education): a
   guest keeps the ordinary shell (the chat needs an account). `AppShell` stamps `data-signed-in`.
-- **The nav's click-collapse suppresses hover preview** until the pointer moves 40px from the click (the nav
-  slides away for 600ms and carries the toggle icon under a still pointer).
-- **More** in the canvas nav lists every app destination; one with sub-destinations opens them in a submenu
-  (grouped as the sidebar groups them).
 - **List a route in `CANVAS_CHROME_ROUTES` only once its page renders `ChatCanvasWorkspace`** — listing it
-  earlier hides the shell's nav with nothing to replace it.
+  earlier hides the shell header with nothing to replace it.
 - **The Agents menu and Inbox live in the canvas header** on canvas pages (agent disclosure: a surface's
   jobs stay reachable from the Agents menu).
 - **The workspace owns ⌘\\ here** (show / hide the chat); the global canvas side sheet stands down while
@@ -122,6 +122,11 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **2026-09-30** — The canvas re-read fires only for events inside the column's own DOM (React events bubble
   through portals, so the page-chip popover and value panel used to trigger it), and `setContextEntries`
   keeps the conversation's entries identical when the snapshot is unchanged.
+
+- **2026-09-30** — **One sidebar.** The canvas nav (`CanvasNav`, `CanvasUserRow`, its cookie and hover
+  preview) is deleted: these pages show the shell sidebar and account rail, main menu in front, and its Chats
+  side (`ChatSidebarMenu`, `defaultView: "main"`) opens conversations in the page's chat panel via
+  `in-place-chat-host`. Canvas chrome now hides only the shell header and dock.
 
 - **2026-09-28** — Reopening a conversation (history row, a saved board chat tile) runs `resumeConversation`
   instead of `loadConversation` alone, so a turn that was mid-run at reload reattaches and an unanswered

@@ -19,6 +19,7 @@ import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent
 import { RESEARCH_TOPIC_PATH_PATTERN } from "@/features/research/components/shell/research-topic-route";
 import { USER_SETTINGS_PATH_PATTERN } from "@/features/settings/route-shell/settings-route-path";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
+import { CANVAS_WORKSPACE_MENU_PATTERN } from "./canvas-chrome-routes";
 
 export interface RouteMenuEntry {
   pathPattern: RegExp;
@@ -30,6 +31,19 @@ export interface RouteMenuEntry {
   headerImportFn?: () => Promise<{
     default: React.ComponentType<{ expanded: boolean }>;
   }>;
+  /**
+   * Which side the sidebar opens on in this family. Default "route" (a Large
+   * Route shows its own menu). "main" keeps the app menu in front and offers
+   * the route menu behind the switch — the canvas workspace's Chats (owner,
+   * 2026-09-30: the normal menu by default, chat history only on a flip).
+   */
+  defaultView?: "main" | "route";
+}
+
+/** The side a matched family opens on — one rule for the desktop slot, the phone drawer and SSR. */
+export function routeMenuDefaultView(entry: RouteMenuEntry | null): "main" | "route" {
+  if (!entry) return "main";
+  return entry.defaultView ?? "route";
 }
 
 export const routeMenuRegistry: RouteMenuEntry[] = [
@@ -51,6 +65,16 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     iconName: "ShieldCheck",
     label: "Administration",
     importFn: () => import("@/features/admin/components/AdminRouteSidebarMenu"),
+  },
+  {
+    // Pages that carry their own chat panel (the Board, signed-in Education):
+    // the SAME chat menu, opening conversations in that panel
+    // (in-place-chat-host), behind the switch — the app menu stays in front.
+    pathPattern: CANVAS_WORKSPACE_MENU_PATTERN,
+    iconName: "MessageCircle",
+    label: "Chats",
+    defaultView: "main",
+    importFn: () => import("@/features/agents/components/chat/ChatSidebarMenu"),
   },
   {
     pathPattern: /^\/chat(?:\/|$)/,

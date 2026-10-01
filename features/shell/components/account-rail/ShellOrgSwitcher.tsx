@@ -7,7 +7,7 @@
  * The active organization is always on screen: its own icon, or its
  * abbreviation, in the sidebar's account rail directly above the person
  * (`variant="rail"`), and the same control in the phone's navigation drawer
- * (`variant="drawer"`) and the canvas workspace's nav (`variant="inline"`).
+ * (`variant="drawer"`).
  * It replaced three copies: the header's "Choose organization" chip, the
  * avatar menu's Organization group, and the canvas nav's hand-built drop-up.
  *
@@ -45,7 +45,7 @@ import { OrganizationPickerPopover } from "@/features/organizations/components/O
 import { OrganizationMark } from "@/features/organizations/components/OrganizationMark";
 import { usePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 
-type Variant = "rail" | "drawer" | "inline";
+type Variant = "rail" | "drawer";
 
 export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
   const dispatch = useAppDispatch();
@@ -96,13 +96,12 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
           name={name}
           abbreviation={active?.abbreviation}
           logoUrl={active?.logo_url}
-          size={variant === "inline" ? 20 : 24}
+          size={24}
         />
       ) : (
         <span
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-md",
-            variant === "inline" ? "h-5 w-5" : "h-6 w-6",
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
             asking ? "bg-primary/10 text-primary ring-2 ring-primary" : "bg-muted text-muted-foreground",
           )}
           aria-hidden="true"
@@ -159,7 +158,7 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
         <span className="shell-nav-icon">{mark}</span>
         <span className={cn("shell-nav-label", asking && "text-primary")}>{label}</span>
       </button>
-    ) : variant === "drawer" ? (
+    ) : (
       <button
         type="button"
         aria-label={description}
@@ -168,21 +167,6 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
       >
         <span className="shell-nav-icon">{mark}</span>
         <span className={cn("min-w-0 flex-1 truncate text-left", asking && "text-primary")}>{label}</span>
-        <SelectChevron size="sm" />
-      </button>
-    ) : (
-      <button
-        type="button"
-        aria-label={description}
-        title={label}
-        data-shell-org-switcher="inline"
-        className={cn(
-          "flex h-9 max-w-[45%] shrink-0 items-center gap-1.5 rounded-lg px-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground",
-          open && "bg-accent text-foreground",
-        )}
-      >
-        {mark}
-        <span className={cn("min-w-0 truncate", asking && "text-primary")}>{label}</span>
         <SelectChevron size="sm" />
       </button>
     );

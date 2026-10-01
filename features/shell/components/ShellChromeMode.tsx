@@ -3,8 +3,8 @@
 /**
  * ShellChromeMode / ShellChromeRouteSync — the client half of canvas chrome.
  *
- * `.shell-root[data-shell-chrome="canvas"]` hides the shell's own header,
- * sidebar, user block and dock (styles/shell.css §13c). The attribute is
+ * `.shell-root[data-shell-chrome="canvas"]` hides the shell's own header and
+ * dock — the sidebar and account rail stay (styles/shell.css §13c). The attribute is
  * present while EITHER:
  *   - the current pathname is a registered canvas-chrome route
  *     (`canvas-chrome-routes.ts`), or
@@ -58,4 +58,17 @@ export function ShellChromeRouteSync() {
     applyShellChrome();
   }, [pathname]);
   return null;
+}
+
+/**
+ * While a canvas page is in full screen the shell sidebar and account rail
+ * step aside too (`data-canvas-fullscreen`, styles/shell.css §13c).
+ */
+export function useShellCanvasFullScreen(fullScreen: boolean) {
+  useLayoutEffect(() => {
+    const root = document.querySelector<HTMLElement>(".shell-root");
+    if (!root || !fullScreen) return undefined;
+    root.setAttribute("data-canvas-fullscreen", "");
+    return () => root.removeAttribute("data-canvas-fullscreen");
+  }, [fullScreen]);
 }

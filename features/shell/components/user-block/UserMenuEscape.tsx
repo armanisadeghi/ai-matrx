@@ -1,14 +1,14 @@
 "use client";
 
 // Escape closes the profile menu. The menu is a CSS checkbox toggle
-// (`#shell-user-menu`, and the canvas copy) so every item's
+// (`#shell-user-menu`) so every item's
 // `<label htmlFor>` close works without JavaScript — but a checkbox has no
 // keyboard dismissal, and Escape did nothing (page-pass /notes, 2026-09-28).
 // Only an OPEN menu is closed; Escape is left alone otherwise.
 
 import { useEffect } from "react";
 
-const MENU_TOGGLE_IDS = ["shell-user-menu", "canvas-user-menu"];
+const MENU_TOGGLE_IDS = ["shell-user-menu"];
 
 export default function UserMenuEscape() {
   useEffect(() => {
