@@ -38,6 +38,8 @@ import {
 } from "@/features/code-editor/hooks/useAICodeEditor";
 import { CODE_EDITOR_AGENTS } from "@/features/code-editor/agent-code-editor/agents";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
 export type AICodeEditorProps = UseAICodeEditorProps & {
   title?: string;
@@ -443,9 +445,15 @@ export function AICodeEditor({
                             ? "Tool"
                             : "Unknown"}
                   </div>
-                  <div className="whitespace-pre-wrap break-words">
-                    {extractFlatText(msg) || JSON.stringify(msg.content)}
-                  </div>
+                  {/* A kind is never printed as JSON (kind-never-raw S4). */}
+                  {extractFlatText(msg) ? (
+                    <AnswerTextPreview
+                      text={extractFlatText(msg)}
+                      className="whitespace-pre-wrap break-words"
+                    />
+                  ) : (
+                    <AnswerValueView value={msg.content} density="inline" />
+                  )}
                 </div>
               ))}
               {/* Show streaming response in conversation */}
@@ -454,9 +462,10 @@ export function AICodeEditor({
                   <div className="font-semibold text-[10px] uppercase tracking-wide mb-1 text-muted-foreground">
                     Assistant
                   </div>
-                  <div className="whitespace-pre-wrap break-words">
-                    {streamingText}
-                  </div>
+                  <AnswerTextPreview
+                    text={streamingText}
+                    className="whitespace-pre-wrap break-words"
+                  />
                 </div>
               )}
             </div>

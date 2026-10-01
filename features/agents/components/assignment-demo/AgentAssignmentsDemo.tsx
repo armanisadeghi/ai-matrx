@@ -35,6 +35,7 @@ import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
 const MODES: Array<{
   value: AssignmentDemoMode;
@@ -619,11 +620,12 @@ function ResultsPanel() {
                 />
               )}
             </div>
-            <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
-              {JSON.stringify(item.values, null, 2)}
-            </pre>
+            {/* Inputs: a kind (at any depth) is drawn, never dumped. */}
+            <AnswerValueView value={item.values} density="inline" />
             {finalText(item.output) && (
-              <div className="whitespace-pre-wrap text-sm">{finalText(item.output)}</div>
+              <div className="text-sm">
+                <AnswerValueView text={finalText(item.output)} />
+              </div>
             )}
             {item.error && (
               <p className="text-sm text-destructive">{item.error.message} <ErrorAlchemyMenu error={item.error.message} /></p>

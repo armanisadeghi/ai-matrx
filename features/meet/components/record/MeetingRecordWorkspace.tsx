@@ -64,6 +64,7 @@ import {
 import { MeetingOrgScope } from "@/features/meet/components/MeetingOrgScope";
 import { TranscriptPanel } from "@/features/meet/components/record/TranscriptPanel";
 import { ShareWithAudienceButton } from "@/features/sharing/audience/ShareWithAudience";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
 type Side = "transcript" | "chat" | "activity" | "people";
 
@@ -414,9 +415,9 @@ function Workspace({
                 </Button>
               </form>
               {record.answer ? (
-                <p className="whitespace-pre-wrap rounded-md bg-muted/40 px-3 py-2 text-sm">
-                  {record.answer}
-                </p>
+                <div className="rounded-md bg-muted/40 px-3 py-2 text-sm">
+                  <AnswerValueView text={record.answer} />
+                </div>
               ) : null}
               {record.askError ? (
                 <p role="alert" className="text-xs text-destructive">

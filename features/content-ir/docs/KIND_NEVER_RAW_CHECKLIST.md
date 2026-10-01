@@ -64,7 +64,14 @@ Every stream item below adds its case there.
 
 - [ ] R1. Answer-text selectors hand `{"__kind":…}` as plain text to consumers (`extractFlatText`,
       `selectAnswerText`, `selectLatestAnswerText`, `selectResultText`, `selectLatestAccumulatedText`).
+      PARTIAL — selectors stay faithful to stored data by design (`__kind` is data; thunks/JSON parsers/scopes
+      read them). Display/export consumers fixed: rich-document actions + copy, conversation export, hover
+      preview, Pro text actions, agent toast, AI code editor. Not yet audited: agent-app `selectResultText`
+      readers beyond the custom shell, `useAgentRunSurfaceScope`, comparison snapshots, code-editor modal
+      readers of `selectLatestAccumulatedText` (all appear to be machine/scope consumers).
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
+      PARTIAL — kept (stored/passed text). Its display reader, the cleanup pad, previews through `MarkdownStream`;
+      transcript studio reattach is a data path.
 - [ ] R3. `extractInspectableText` pretty-prints the content array → action bar, dialogs, full-screen editor.
       PARTIAL: the action bar and its dialogs send through `contentForDestination` (O1); the message hover
       preview converts with `kindTextToMarkdown`. The full-screen editor is the explicit edit-of-source view
@@ -102,17 +109,19 @@ Every stream item below adds its case there.
       only by the explicit "Edit text" toggle (`CleanupOutput`) and edits the stored source text.
 - [x] S3. Toast overlay answers (raw text, reasoning included). Collapsed line now `AnswerTextPreview`
       (complete kind → markdown, arriving kind → its loader line); expanded view was already `AgentRunner`.
-- [ ] S4. AI code editor message list.
-- [ ] S5. Fully custom agent-app shells.
-- [ ] S6. "Ask about this meeting".
-- [ ] S7. Assignments demo.
-- [ ] S8. Research review/repair page.
-- [ ] S9. Assist cards.
-- [ ] S10. Scheduled-run results.
-- [ ] S11. Vision interview live turn card.
+- [x] S4. AI code editor message list. `AnswerTextPreview` for text + stream, `AnswerValueView` for structured.
+- [ ] S5. Fully custom agent-app shells. PARTIAL — `response` into compiled app code is the app contract (left);
+      the result bar's human copy converts with `kindTextToMarkdown`; `DefaultFallback` was already
+      `MarkdownStream`. Open: "Open in canvas" sends `response` as an `html` canvas (a kind shows as text there).
+- [x] S6. "Ask about this meeting". Answer drawn through `AnswerValueView` (no unit test — workspace too heavy).
+- [x] S7. Assignments demo. Output text and input values through `AnswerValueView` (no unit test).
+- [ ] S8. Research review/repair page. Already `BasicMarkdownContent` — left to the bottom-layer lane (C4).
+- [x] S9. Assist cards. Suspense fallback now `AnswerTextPreview`; the body is `BasicMarkdownContent` (C4 lane).
+- [x] S10. Scheduled-run results. Summary via `kindTextPreview`; kind-carrying result metadata via `AnswerValueView`.
+- [ ] S11. Vision interview live turn card. Already `BasicMarkdownContent` — left to the bottom-layer lane (C4).
 - [x] S12. Old AI chat dialogs (flashcards, strategy brief) on `MarkdownRenderer`.
       Closed at the leaf: `MarkdownRenderer` hands `__kind` text to `MarkdownStream` (`KindTextGate`).
-- [ ] S13. Voice agent transcript.
+- [x] S13. Voice agent transcript. Assistant turns via `kindTextPreview` (spoken text; a kind is never read out).
 
 ## G. Window panels
 

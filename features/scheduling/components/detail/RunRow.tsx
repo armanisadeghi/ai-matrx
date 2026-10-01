@@ -17,6 +17,10 @@ import type { AgendaTask, SchRunRow } from "../../types";
 // 1h 02m. THE UNIT LAW puts the unit in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { kindTextPreview } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
 
 interface Props {
   run: SchRunRow;
@@ -63,7 +67,9 @@ export function RunRow({ run, task = null }: Props) {
             )}
             {run.result_summary && (
               <span className="text-xs truncate max-w-[18rem]">
-                {run.result_summary}
+                {/* A kind is never printed as JSON (kind-never-raw S10). */}
+                {kindTextPreview(run.result_summary).text ||
+                  humanizeKind(kindTextPreview(run.result_summary).pendingKind ?? "result")}
               </span>
             )}
           </div>
@@ -112,9 +118,15 @@ export function RunRow({ run, task = null }: Props) {
               <summary className="cursor-pointer text-muted-foreground">
                 Result metadata
               </summary>
-              <pre className="mt-1 bg-muted rounded-md p-2 overflow-x-auto font-mono text-[11px]">
-                {JSON.stringify(run.result_metadata, null, 2)}
-              </pre>
+              {hasKindKey(JSON.stringify(run.result_metadata)) ? (
+                <div className="mt-1">
+                  <AnswerValueView value={run.result_metadata} density="inline" />
+                </div>
+              ) : (
+                <pre className="mt-1 bg-muted rounded-md p-2 overflow-x-auto font-mono text-[11px]">
+                  {JSON.stringify(run.result_metadata, null, 2)}
+                </pre>
+              )}
             </details>
           )}
         </div>

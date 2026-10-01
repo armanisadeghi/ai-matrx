@@ -35,6 +35,7 @@ import {
   type Assist,
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
 
 // Markdown loads only when a card actually opens — chips stay feather-light.
 const BasicMarkdownContent = lazy(
@@ -292,9 +293,10 @@ export function AssistCard({
           {assist.body && (
             <Suspense
               fallback={
-                <p className="whitespace-pre-wrap text-foreground">
-                  {assist.body}
-                </p>
+                <AnswerTextPreview
+                  text={assist.body}
+                  className="whitespace-pre-wrap text-foreground"
+                />
               }
             >
               <BasicMarkdownContent imagePolicy="ai"

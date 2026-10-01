@@ -63,6 +63,7 @@ import {
   AgentAppStreamProvider,
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -503,7 +504,9 @@ function AppResultBar({
       <CopyButtons
         size="icon"
         label={`${name} result`}
-        human={() => response}
+        // A person's copy reads a kind as its markdown; the agent copy keeps
+        // the data (kind-never-raw S5 — `response` itself is the app contract).
+        human={() => kindTextToMarkdown(response)}
         agent={() => `Result from the "${name}" app:\n\n${response}`}
       />
       <StartOverButton onStartOver={onStartOver} />
