@@ -275,6 +275,58 @@ describe("block-dispatch registry", () => {
     }
   });
 
+  describe("a model's thinking is a machine frame (walk 24, defect G)", () => {
+    // The interviewer's thinking read "I should retry add_rules using the
+    // correct section keys" behind a "Thought process" disclosure on an
+    // Expert's interview. Thinking narrates the machine; an Expert gets the
+    // fact that it is working and nothing else.
+    const ctxFor = (
+      type: "reasoning" | "consolidated_reasoning",
+      machineFramesVisible: boolean | undefined,
+      streaming: boolean,
+    ) => ({
+      block: {
+        type,
+        content: "I should retry add_rules using the correct section keys.",
+        isStreamingBlock: streaming,
+      },
+      index: 0,
+      isStreamActive: streaming,
+      hideReasoning: false,
+      hideToolResults: false,
+      machineFramesVisible,
+      replaceBlockContent: jest.fn(),
+      renderBasicMarkdown: (content: string) =>
+        React.createElement("div", null, content),
+    });
+
+    it("renders nothing for an Expert once the turn has settled", () => {
+      expect(resolveBlockDispatch("reasoning")?.(ctxFor("reasoning", false, false))).toBeNull();
+      expect(
+        resolveBlockDispatch("consolidated_reasoning")?.(
+          ctxFor("consolidated_reasoning", false, false),
+        ),
+      ).toBeNull();
+    });
+
+    it("renders a quiet working line for an Expert while thinking streams", () => {
+      const rendered = resolveBlockDispatch("reasoning")?.(ctxFor("reasoning", false, true));
+      expect(React.isValidElement(rendered)).toBe(true);
+      expect(rendered?.props).toMatchObject({ label: "Working…" });
+      expect(JSON.stringify(rendered?.props)).not.toContain("add_rules");
+    });
+
+    it("keeps the trace for a builder (or creator mode)", () => {
+      for (const visible of [true, undefined]) {
+        const rendered = resolveBlockDispatch("reasoning")?.(ctxFor("reasoning", visible, false));
+        expect(
+          (rendered?.type as React.ComponentType & { displayName?: string })
+            .displayName,
+        ).toBe("ReasoningVisualization");
+      }
+    });
+  });
+
   it("routes the splitter's XML code contract to XmlBlock", () => {
     const dispatch = resolveBlockDispatch("code");
     expect(dispatch).not.toBeNull();

@@ -7,6 +7,7 @@ import {
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 import {
   selectHideReasoning,
   selectHideToolResults,
@@ -533,6 +534,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   const hideToolResults = useAppSelector(
     conversationId ? selectHideToolResults(conversationId) : () => false,
   );
+  // Thinking is a machine frame: the transcript's declared audience decides.
+  const machineFramesVisible = useMachineFramesVisible();
 
   /**
    * RECORD CHROME (THE WRAPPER LAW's other half). A kind component renders
@@ -773,6 +776,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     isLastReasoningBlock,
     hideReasoning,
     hideToolResults,
+    machineFramesVisible,
     replaceBlockContent,
     renderBasicMarkdown,
     outputSchema,

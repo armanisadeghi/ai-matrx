@@ -48,6 +48,8 @@ import { ReferenceRoleCaption } from "@/features/agents/image-roles/ReferenceRol
 import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";
 import { SpeechScriptTranscriptView } from "@/features/agents/speech-script/SpeechScriptTranscriptView";
 import { BlockComponents } from "./BlockComponentRegistry";
+import { InlineStatusIndicator } from "../internal-handlers/InlineStatusIndicator";
+import { EXPERT_WORKING_LABEL } from "@/features/agents/components/shared/transcript-audience";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { InlineCodeSnippet } from "../InlineCodeSnippet";
 import type {
@@ -174,6 +176,13 @@ export interface BlockDispatchContext {
   /** Per-conversation display flags (instanceUIState) — resolved by the component. */
   hideReasoning: boolean;
   hideToolResults: boolean;
+  /**
+   * May this reader see the machinery (`useMachineFramesVisible`)? A model's
+   * thinking narrates its own tool calls ("retry add_rules using the correct
+   * section keys", walk 24), so it is a machine frame like a tool card.
+   * Undefined = a builder surface, unchanged.
+   */
+  machineFramesVisible?: boolean;
   /** Generic handler: replaces `original` substring with `replacement` in the full content string. */
   replaceBlockContent: (original: string, replacement: string) => void;
   /** The shared BasicMarkdownContent renderer, pre-wired with edit/diagnostic props. */
@@ -1148,7 +1157,7 @@ const PROTOCOL_BLOCK_DISPATCH = {
 
   consolidated_reasoning: (ctx) => {
     const { block, index } = ctx;
-    if (ctx.hideReasoning) return null;
+    if (ctx.hideReasoning || ctx.machineFramesVisible === false) return null;
     return (
       <BlockComponents.ConsolidatedReasoningVisualization
         key={index}
@@ -1510,15 +1519,22 @@ const PROTOCOL_BLOCK_DISPATCH = {
 function renderReasoningEntry(ctx: BlockDispatchContext) {
   const { block, index, isStreamActive, isLastReasoningBlock } = ctx;
   if (ctx.hideReasoning) return null;
+  const isStreaming =
+    isStreamActive === true &&
+    (isLastReasoningBlock === true || block.isStreamingBlock === true);
+  if (ctx.machineFramesVisible === false) {
+    // An Expert gets the FACT that the model is working, never its scratch
+    // work: one quiet line while it thinks, nothing once it has spoken.
+    return isStreaming ? (
+      <InlineStatusIndicator key={index} label={EXPERT_WORKING_LABEL} />
+    ) : null;
+  }
   return (
     <BlockComponents.ReasoningVisualization
       key={index}
       reasoningText={block.content}
       showReasoning={true}
-      isStreaming={
-        isStreamActive &&
-        (isLastReasoningBlock || block.isStreamingBlock === true)
-      }
+      isStreaming={isStreaming}
     />
   );
 }

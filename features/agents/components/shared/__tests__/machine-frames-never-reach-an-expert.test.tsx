@@ -168,6 +168,27 @@ describe("every machine frame in the shared transcript renderer is gated", () =>
   });
 });
 
+describe("thinking is gated at the one block renderer", () => {
+  it("BlockRenderer hands the audience answer to every reasoning dispatch", () => {
+    // Walk 24, defect G: the Expert's "Thought process" read "retry add_rules
+    // using the correct section keys". Every reasoning trace — live slot,
+    // persisted segment, inline <reasoning> tags — renders through
+    // BlockRenderer, so the gate lives there, once.
+    const renderer = read(
+      "components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx",
+    );
+    expect(renderer).toContain("const machineFramesVisible = useMachineFramesVisible();");
+    expect(renderer).toMatch(/hideToolResults,\s*machineFramesVisible,/);
+    const dispatch = read(
+      "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
+    );
+    expect(dispatch).toContain("if (ctx.machineFramesVisible === false) {");
+    expect(dispatch).toContain(
+      "if (ctx.hideReasoning || ctx.machineFramesVisible === false) return null;",
+    );
+  });
+});
+
 describe("the composer's raw context chips are gated too", () => {
   it("does not build a chip from a raw context key for an Expert", () => {
     const source = read(
