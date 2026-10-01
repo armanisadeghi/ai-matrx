@@ -35,10 +35,7 @@ function Body({
         <Construction className="h-8 w-8 text-primary" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-1">{featureName}</h3>
-        <p className="text-sm text-muted-foreground">
-          This feature is coming soon for agents. Stay tuned!
-        </p>
+        <h3 className="text-lg font-semibold">{featureName}</h3>
       </div>
       <Button
         variant="outline"

@@ -228,8 +228,7 @@ function BudgetMeter({
           </p>
           <p className="mt-1">
             <span className="font-medium">Second bar:</span> the rest of this
-            message plus the longest single question — each question is read on
-            its own against the whole message.
+            message plus the longest question, each read alone.
           </p>
           <p className="mt-1 text-muted-foreground">Estimated. {source}</p>
         </TooltipContent>

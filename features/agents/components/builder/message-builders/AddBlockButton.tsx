@@ -42,6 +42,7 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { MediaVariableInput } from "@/features/agents/components/inputs/input-components/MediaVariableInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { InfoHint } from "@/components/official/InfoHint";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
   DECISION_QUESTIONS_KIND,
@@ -498,10 +499,9 @@ export function BlockEditor({
                     mediaKind="document"
                     compact
                   />
-                  <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
-                    This sends a file in this message. Use a {"{{variable}}"}
-                    for a per-run file, or Agent Resources for permanent
-                    knowledge.
+                  <p className="mt-1 flex items-center gap-1 text-[10px] leading-snug text-muted-foreground">
+                    Sent with this message only
+                    <InfoHint text="Use a {{variable}} for a per-run file, or Agent Resources for permanent knowledge." />
                   </p>
                 </div>
               ) : multiline ? (

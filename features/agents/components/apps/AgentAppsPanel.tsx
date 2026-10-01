@@ -46,9 +46,6 @@ export function AgentAppsPanel({
             <h1 className="text-2xl font-semibold text-foreground leading-tight">
               {agentName}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Custom apps that run this agent under the hood.
-            </p>
           </div>
           <div className="shrink-0 flex gap-2">
             <AppLink href={`/agent-apps/new?agent_id=${agentId}`}>

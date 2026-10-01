@@ -134,7 +134,7 @@ export function BattleAlchemy({
       agentVariant={{
         id: "everything",
         label: "Everything in this battle",
-        hint: "Setup, each column's request and answer, your scores and run numbers",
+        hint: "Setup, requests, answers, scores and run numbers",
         position: "first",
       }}
       aiVariants={[

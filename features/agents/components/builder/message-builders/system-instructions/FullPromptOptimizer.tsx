@@ -378,7 +378,7 @@ export function FullPromptOptimizer({
               <ProTextarea
                 value={additionalGuidance}
                 onChange={(e) => setAdditionalGuidance(e.target.value)}
-                placeholder="e.g., 'Focus on improving variable names' or 'Optimize for better token efficiency'"
+                placeholder="e.g., Focus on improving variable names"
                 className="text-sm h-16 resize-none"
                 disabled={isOptimizing}
               />

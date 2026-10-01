@@ -101,9 +101,7 @@ export function AgentInlineOverlay({
             This result window is not connected to a run.
           </p>
           <p className="text-xs text-muted-foreground">
-            The action may still have finished and saved its answer — open it
-            from your conversation history, or close this window and run the
-            action again.
+            It may have finished; check your history or run it again
           </p>
           <ErrorAlchemyMenu className="ml-auto" />
         </div>

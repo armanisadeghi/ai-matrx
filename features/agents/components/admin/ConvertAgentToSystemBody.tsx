@@ -230,9 +230,8 @@ export function ConvertAgentToSystemBody({
       <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
         <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <div className="text-xs leading-relaxed text-muted-foreground">
-          <span className="font-medium text-foreground">{agentName}</span> will
-          be copied into the system agent library. System agents are visible to
-          every user across the platform.
+          <span className="font-medium text-foreground">{agentName}</span> goes
+          to the system library, visible to all users
         </div>
       </div>
 
@@ -362,8 +361,7 @@ export function ConvertAgentToSystemBody({
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
           <p className="mt-1.5 pl-6 text-xs text-muted-foreground">
-            Adds a brand-new System Agent. Use this when there's no prior system
-            agent linked to this source.
+            For sources with no linked system agent
           </p>
         </div>
       </RadioGroup>
@@ -403,9 +401,6 @@ export function ConvertAgentToSystemBody({
           ? "Updating system agent…"
           : "Creating system agent…"}
       </div>
-      <p className="text-xs text-muted-foreground max-w-xs">
-        Copying definition, messages, variables, tools, and settings.
-      </p>
     </div>
   );
 
@@ -418,11 +413,6 @@ export function ConvertAgentToSystemBody({
         <div className="text-sm font-medium text-foreground">
           {resultIsUpdate ? "System agent updated" : "System agent created"}
         </div>
-        <p className="text-xs text-muted-foreground max-w-sm">
-          {resultIsUpdate
-            ? "The existing system agent has been refreshed with the latest definition."
-            : "A new system agent is now available to every user on the platform."}
-        </p>
       </div>
 
       <div className="flex items-center gap-2 pt-2">

@@ -96,12 +96,6 @@ export function AgentAssignmentsDemo() {
             </h1>
             <Badge variant="secondary">API + UI demo</Badge>
           </div>
-          <p className="max-w-4xl text-sm text-muted-foreground">
-            Run an ordinary saved agent once with a secure random option, or
-            create a durable coordinated session that pairs, randomizes, or
-            enumerates many variable sets. Reusing the same session key resumes
-            unfinished work without rerunning completed items.
-          </p>
         </header>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -297,11 +291,11 @@ function SingleRandomEditor({ disabled }: { disabled: boolean }) {
             disabled={disabled}
           />
         </div>
+        {/* The normal agent endpoint receives the marker below; the server
+            validates the variable definition and picks with secure, unbiased
+            randomness. */}
         <p className="text-xs text-muted-foreground">
-          The selected agent must define this choice-backed variable with random
-          assignment enabled. The normal agent endpoint receives the exact marker
-          below; the server validates the definition and chooses with secure,
-          unbiased randomness.
+          Needs a choice variable with random assignment enabled
         </p>
         <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
           {`{"${state.singleVariableName || "variable"}": {"type": "auto_assign", "strategy": "random"}}`}

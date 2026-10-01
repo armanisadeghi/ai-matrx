@@ -15,7 +15,7 @@ export function UnsavedAgentAttachmentRow({ label }: { label: string }) {
     <div className="flex min-w-0 items-center gap-2" data-testid="unsaved-agent-attachment-row">
       <Label className="shrink-0 text-xs text-muted-foreground">{label}</Label>
       <span className="min-w-0 truncate text-xs text-muted-foreground">
-        Attach after saving — use Save as agent to keep this variation.
+        Save as agent to attach
       </span>
     </div>
   );

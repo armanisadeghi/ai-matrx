@@ -102,9 +102,10 @@ export function SystemInstructionEditor({
       <Separator />
 
       <Section title="Tools List">
+        {/* The server formats this list when it builds the system prompt. */}
         <StringListField
           label="Tool names"
-          description="Listed in the system prompt (auto-formatted by the server)"
+          description="Listed in the system prompt"
           value={data.tools_list}
           onChange={(v) => update({ tools_list: v.length ? v : undefined })}
           placeholder="tool_name"

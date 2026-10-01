@@ -392,7 +392,7 @@ export function SystemPromptOptimizer({
                 <ProTextarea
                   value={additionalGuidance}
                   onChange={(e) => setAdditionalGuidance(e.target.value)}
-                  placeholder="e.g., 'Make it more concise' or 'Focus on technical accuracy'"
+                  placeholder="e.g., Make it more concise"
                   className="text-sm"
                   disabled={isOptimizing}
                   autoGrow

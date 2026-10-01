@@ -626,12 +626,11 @@ export function AgentSyncBody({
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <Copy className="w-4 h-4 text-primary mt-0.5 shrink-0" />
           <div className="text-xs leading-relaxed text-muted-foreground">
-            Create a personal, editable copy of{" "}
+            Editable copy of{" "}
             <span className="font-medium text-foreground">
               {agent?.name ?? "this system agent"}
             </span>
-            . Your copy stays linked, so you can pull future updates or (as an
-            admin) push your changes back.
+            ; it stays linked for future updates
           </div>
         </div>
         <div className="flex justify-end gap-2">
@@ -750,13 +749,6 @@ export function AgentSyncBody({
             )}
           </div>
         )}
-        <div className="flex items-start gap-3 pb-3">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div className="text-xs leading-relaxed text-muted-foreground">
-            This personal copy stays linked to its system baseline. Compare what
-            changed before choosing a sync direction.
-          </div>
-        </div>
         <div
           className="flex gap-1"
           role="tablist"
@@ -833,8 +825,7 @@ export function AgentSyncBody({
                   />
                 </div>
                 <span className="text-[10px] text-muted-foreground">
-                  Operational identity is excluded; local record state is shown
-                  but not synced
+                  Identity fields excluded; local state shown, not synced
                 </span>
               </div>
               <AgentDiffViewer
@@ -1020,9 +1011,7 @@ export function AgentSyncBody({
                   </li>
                 </ol>
                 <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
-                  This history shows the saved relationship milestones available
-                  today. Use each agent&apos;s Versions door for its full edit
-                  history.
+                  Milestones only; full edits are in each agent&apos;s Versions
                 </p>
               </section>
             </div>
