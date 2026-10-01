@@ -15,8 +15,19 @@ import {
 } from "../unsent-launch-store";
 import type { RootState } from "@/lib/redux/rootReducer";
 
-function stateWith(opts: { cacheOnly?: boolean; displayMode?: string }): RootState {
+function stateWith(opts: {
+  cacheOnly?: boolean;
+  displayMode?: string;
+  messageIds?: string[];
+  requestIds?: string[];
+}): RootState {
   return {
+    messages: {
+      byConversationId: opts.messageIds ? { c1: { orderedIds: opts.messageIds } } : {},
+    },
+    activeRequests: {
+      byConversationId: opts.requestIds ? { c1: opts.requestIds } : {},
+    },
     conversations: {
       byConversationId: {
         c1: {
@@ -62,6 +73,16 @@ describe("the unsent-window recipe", () => {
 
   it("is never kept for a SENT conversation — that one loads from the server", () => {
     expect(buildUnsentLaunchRecipe(stateWith({ cacheOnly: false }), "c1")).toBeNull();
+  });
+
+  // 2026-10-01, /notes page agents panel: the person sent turn one, the page
+  // reloaded before the stream's record_reserved flipped cacheOnly, and the
+  // window came back from this recipe as a fresh EMPTY conversation under the
+  // same id — the server finished the real turn behind it, and the next send
+  // went out is_new:true and was refused "Conversation already exists".
+  it("dies the moment the person sends — before the server confirms the row", () => {
+    expect(buildUnsentLaunchRecipe(stateWith({ requestIds: ["r1"] }), "c1")).toBeNull();
+    expect(buildUnsentLaunchRecipe(stateWith({ messageIds: ["m1"] }), "c1")).toBeNull();
   });
 
   it("is only for a window: a page composer has no address to come back from", () => {

@@ -18,6 +18,12 @@ jest.mock(
   }),
 );
 
+jest.mock(
+  "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight",
+  () => ({ followWhatIsStillInFlight: jest.fn() }),
+);
+import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
+
 function hydrate(
   typeKey: string,
   instanceId: string,
@@ -128,6 +134,23 @@ describe("URL hydration registry", () => {
           conversationId: CONVERSATION_ID,
           expectMaterialized: true,
         }),
+      );
+    });
+
+    // 🚨 2026-10-01 (/notes page agents panel): a reload during the window's
+    // first turn loaded a row that was not committed yet and stopped there.
+    // The server finished the turn behind an empty room, and the next send
+    // went out as a NEW conversation ("Conversation already exists … Pass
+    // is_new=false"). A restore takes the same steps every reopen takes after
+    // its load: follow whatever the server is still doing to its end.
+    it("follows a turn the server is still running, after the load", async () => {
+      jest.mocked(followWhatIsStillInFlight).mockClear();
+      const dispatch = hydrate("agent", CONVERSATION_ID, { m: "flexible-panel" });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(followWhatIsStillInFlight).toHaveBeenCalledWith(
+        dispatch,
+        CONVERSATION_ID,
       );
     });
 

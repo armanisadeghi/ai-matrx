@@ -42,13 +42,38 @@ function bindPagehideFlush(): void {
   });
 }
 
+/**
+ * SENT means the person pressed send — a request exists or the transcript
+ * holds a turn — NOT that the server has confirmed the row. `cacheOnly` only
+ * flips when the stream's `record_reserved` event arrives, seconds into the
+ * first turn (never, if that stream dies first). Keying "unsent" on it kept
+ * the recipe alive across the send, so a reload in that window rebuilt a
+ * fresh, empty, cache-only conversation under the SAME id while the server
+ * finished the real turn behind it — and the next send went out `is_new:true`
+ * and was refused "Conversation already exists … Pass is_new=false"
+ * (2026-10-01, the /notes page agents panel).
+ */
+export function conversationWasSent(
+  state: RootState,
+  conversationId: string,
+): boolean {
+  const conv = state.conversations.byConversationId[conversationId];
+  if (conv?.cacheOnly === false) return true;
+  if ((state.messages?.byConversationId?.[conversationId]?.orderedIds?.length ?? 0) > 0) {
+    return true;
+  }
+  return (state.activeRequests?.byConversationId?.[conversationId]?.length ?? 0) > 0;
+}
+
 /** The recipe for an unsent conversation shown in a window, or null. */
 export function buildUnsentLaunchRecipe(
   state: RootState,
   conversationId: string,
 ): UnsentLaunchRecipe | null {
   const conv = state.conversations.byConversationId[conversationId];
-  if (!conv || conv.cacheOnly === false || !conv.agentId) return null;
+  if (!conv || !conv.agentId || conversationWasSent(state, conversationId)) {
+    return null;
+  }
   const ui = state.instanceUIState.byConversationId[conversationId];
   const displayMode = ui?.displayMode;
   // Only a window has an address to come back from; page composers keep their
@@ -123,8 +148,9 @@ export const unsentLaunchMiddleware: Middleware<
   const state = api.getState();
   const conv = state.conversations.byConversationId[conversationId];
   if (!conv) return result;
-  if (conv.cacheOnly === false) {
-    // Sent and confirmed: it has a server row now and loads like any other.
+  if (conversationWasSent(state, conversationId)) {
+    // Sent: from here on it loads from the server like any other (and the
+    // window's restore follows a turn still in flight to its end).
     if (kept.has(conversationId)) {
       cancel(conversationId);
       kept.delete(conversationId);

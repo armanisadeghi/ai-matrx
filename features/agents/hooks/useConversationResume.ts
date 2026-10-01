@@ -38,8 +38,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
-import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { setFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
@@ -234,10 +233,7 @@ export function useConversationResume({
         loadedKeyRef.current = conversationId;
 
         // (4) + (5) Fire-and-forget resume of anything still in flight.
-        void dispatch(surfaceColdPendingCalls(conversationId));
-        void dispatch(
-          reconnectServerOperation({ conversationId, source: "cold-load" }),
-        );
+        followWhatIsStillInFlight(dispatch, conversationId);
         onSettledRef.current?.(true);
       } catch (err) {
         if (ctrl.signal.aborted) return;

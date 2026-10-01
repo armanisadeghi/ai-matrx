@@ -1,6 +1,7 @@
 import { getHydrator, registerPanelHydrator } from "./UrlPanelRegistry";
 import { restoreUnsentLaunch } from "@/features/agents/redux/execution-system/instance-user-input/restore-unsent-launch.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { DISPLAY_MODE_TO_OVERLAY_ID } from "@/features/agents/redux/execution-system/display-mode-overlay";
 import {
   AGENT_RUN_WINDOW_AGENT_ARG,
@@ -154,6 +155,16 @@ export function initUrlHydration() {
         dispatch(patchConversation({ conversationId, surfaceName })),
       );
     }
+
+    // 5. follow whatever the server is STILL doing for this conversation —
+    //    the same steps every reopen takes after its load
+    //    (`useConversationResume`). A reload during the window's first turn
+    //    used to stop at the load: the row was not committed yet, the room
+    //    stayed empty while the server finished the turn behind it, and the
+    //    next send went out as a new conversation and was refused. Run on a
+    //    failed load too: a not-yet-readable row is exactly that case.
+    const follow = () => followWhatIsStillInFlight(dispatch, conversationId);
+    void Promise.resolve(loading).then(follow, follow);
   });
 
   // Voice Pad — simple
