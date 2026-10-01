@@ -17,7 +17,7 @@ export function ViewOnlyComposerBar() {
     <div
       role="status"
       data-testid="view-only-composer"
-      className="mx-auto flex w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-muted-foreground"
+      className="mx-auto mb-2 flex w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-muted-foreground"
       title="Ask the owner for edit access to reply here."
     >
       <Eye className="h-4 w-4 shrink-0" aria-hidden />
