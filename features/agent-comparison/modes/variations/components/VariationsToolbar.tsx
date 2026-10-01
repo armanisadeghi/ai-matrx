@@ -334,8 +334,8 @@ export function VariationsToolbar({
         title="Start a new battle?"
         description={
           activeSetId
-            ? "Empties the page — variations, template and test input. This battle stays saved; reopen it from Open a saved battle. Its conversations stay in your chat history."
-            : "Empties the page — variations, template and test input. This battle was never saved; its conversations stay in your chat history."
+            ? "Empties the page — variations, template and test input. This battle stays in Open a saved battle; its chats stay in history."
+            : "Empties the page — variations, template and test input. This battle was never saved; its chats stay in history."
         }
         confirmLabel="Start new"
         variant="destructive"
@@ -348,7 +348,7 @@ export function VariationsToolbar({
           if (!o) setResetConfirm(false);
         }}
         title="Reset all variations?"
-        description="Drops every variation's edits and streamed responses. The template + test input are preserved; each variation is re-forked from the template baseline."
+        description="Drops each variation's edits and responses, re-forking it from the template. The template and test input stay."
         confirmLabel="Reset"
         variant="destructive"
         onConfirm={handleResetConversations}
@@ -360,7 +360,7 @@ export function VariationsToolbar({
           if (!o) setResetKeepInputsConfirm(false);
         }}
         title="Clear responses, keep everything else?"
-        description="Discards streamed responses on every variation, but preserves the per-variation edits AND the template input. Useful to re-run the same configuration against a clean slate."
+        description="Clears responses on every variation; edits and the template input stay."
         confirmLabel="Clear responses"
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}

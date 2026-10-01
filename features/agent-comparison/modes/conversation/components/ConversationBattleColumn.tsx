@@ -78,8 +78,7 @@ export function ConversationBattleColumn({
               <div>
                 <div className="text-sm font-semibold">Fork created</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  The durable chat exists, but its conversation bundle could not
-                  be loaded into this column yet.
+                  The chat was created but could not load into this column.
                 </p>
               </div>
               <button

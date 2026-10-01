@@ -326,8 +326,8 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
         title="Start a new battle?"
         description={
           activeSetId
-            ? "Empties the page — models, agent and shared request. This battle stays saved; reopen it from Open a saved battle. Its conversations stay in your chat history."
-            : "Empties the page — models, agent and shared request. This battle was never saved; its conversations stay in your chat history."
+            ? "Empties the page — models, agent and shared request. This battle stays in Open a saved battle; its chats stay in history."
+            : "Empties the page — models, agent and shared request. This battle was never saved; its chats stay in history."
         }
         confirmLabel="Start new"
         variant="destructive"
@@ -340,7 +340,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
           if (!o) setResetConfirm(false);
         }}
         title="Reset all models?"
-        description="Drops every column's model pick and streamed responses. The agent, variables and shared request are kept."
+        description="Drops each column's model pick and responses. The agent, variables and shared request stay."
         confirmLabel="Reset"
         variant="destructive"
         onConfirm={handleResetConversations}
@@ -352,7 +352,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
           if (!o) setResetKeepInputsConfirm(false);
         }}
         title="Clear responses, keep everything else?"
-        description="Discards streamed responses in every column, but keeps each column's model pick and the shared request."
+        description="Clears responses on every column; model picks and the shared request stay."
         confirmLabel="Clear responses"
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}

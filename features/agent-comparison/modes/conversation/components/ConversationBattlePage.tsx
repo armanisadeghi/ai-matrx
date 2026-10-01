@@ -356,8 +356,8 @@ export function ConversationBattlePage({
         title="Start a new conversation battle?"
         description={
           activeSetId
-            ? "This clears the battle view so you can choose another source. This battle stays saved — reopen it from Open a saved battle — and its forks stay in chat history."
-            : "This clears the battle view so you can choose another source. The durable forks you already created stay available in chat history."
+            ? "Clears the view so you can pick another source. This battle stays in Open a saved battle; its forks stay in history."
+            : "Clears the view so you can pick another source. Forks you created stay in chat history."
         }
         confirmLabel="New battle"
         variant="destructive"

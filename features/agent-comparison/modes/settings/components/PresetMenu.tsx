@@ -56,7 +56,7 @@ const PRESETS: Preset[] = [
   {
     id: "reasoning-effort",
     label: "Reasoning effort sweep",
-    hint: "Same model + temp; compare how much reasoning budget changes the answer.",
+    hint: "Same model; see how reasoning effort changes the answer.",
     variants: [
       { label: "Reasoning · low", overrides: { reasoning_effort: "low" } },
       { label: "Reasoning · medium", overrides: { reasoning_effort: "medium" } },
@@ -66,7 +66,7 @@ const PRESETS: Preset[] = [
   {
     id: "thinking-level",
     label: "Thinking level sweep (Anthropic)",
-    hint: "For Claude models — vary the thinking budget across the four levels.",
+    hint: "Claude only — vary the thinking level across four steps.",
     variants: [
       { label: "Thinking · minimal", overrides: { thinking_level: "minimal" } },
       { label: "Thinking · low", overrides: { thinking_level: "low" } },
@@ -77,7 +77,7 @@ const PRESETS: Preset[] = [
   {
     id: "temperature",
     label: "Temperature sweep",
-    hint: "How tight vs creative does the same request get at 0.0, 0.7, 1.2?",
+    hint: "How tight or creative the answer gets at 0.0, 0.7, 1.2.",
     variants: [
       { label: "T = 0.0 (tight)", overrides: { temperature: 0 } },
       { label: "T = 0.7 (balanced)", overrides: { temperature: 0.7 } },
@@ -87,7 +87,7 @@ const PRESETS: Preset[] = [
   {
     id: "top-p",
     label: "Top-p sweep",
-    hint: "Nucleus sampling — narrow vs wide vocabulary at the same temperature.",
+    hint: "Narrow vs wide vocabulary at the same temperature.",
     variants: [
       { label: "top-p = 0.1", overrides: { top_p: 0.1 } },
       { label: "top-p = 0.5", overrides: { top_p: 0.5 } },
@@ -209,8 +209,7 @@ export function PresetMenu() {
         ))}
         <DropdownMenuSeparator />
         <div className="text-[10px] text-muted-foreground/70 px-2 py-1.5 italic">
-          Loading a preset replaces the current variants. Locked input is
-          preserved.
+          Loading replaces variants; locked input stays.
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -154,9 +154,9 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
       />
 
       <div className="pt-2 border-t border-border text-[10px] text-muted-foreground/80">
-        Override values land on the shared model-overrides slice. The
-        executor reads them on submit. Use the column's own Creator Panel
-        for advanced fields not shown here.
+        {/* Override values land on the shared model-overrides slice; the
+            executor reads them on submit. */}
+        More fields in the column's Creator Panel
       </div>
     </div>
   );

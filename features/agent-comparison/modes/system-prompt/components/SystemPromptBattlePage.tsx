@@ -233,8 +233,8 @@ function EmptyState({
         </div>
         <p className="text-sm text-muted-foreground">
           {sourceAgentReady
-            ? "Each variant clones the source agent into its own editable copy. Edit each column's system prompt independently, then hit Submit All to run them side-by-side."
-            : "System Prompt mode locks the source agent, variables, and user message. Each variant edits only the system prompt — everything else stays identical."}
+            ? "Each variant is an editable copy of the source agent. Edit each system prompt, then Submit All."
+            : "Only the system prompt varies; agent, variables and message stay locked."}
         </p>
         {sourceAgentReady && (
           <button

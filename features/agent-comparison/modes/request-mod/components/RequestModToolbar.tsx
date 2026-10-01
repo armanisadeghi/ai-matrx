@@ -327,8 +327,8 @@ export function RequestModToolbar({
         title="Start a new battle?"
         description={
           activeSetId
-            ? "Empties the page — columns, locked agent. This battle stays saved; reopen it from Open a saved battle. Its conversations stay in your chat history."
-            : "Empties the page — columns, locked agent. This battle was never saved; its conversations stay in your chat history."
+            ? "Empties the page — columns and locked agent. This battle stays in Open a saved battle; its chats stay in history."
+            : "Empties the page — columns and locked agent. This battle was never saved; its chats stay in history."
         }
         confirmLabel="Start new"
         variant="destructive"
@@ -341,7 +341,7 @@ export function RequestModToolbar({
           if (!o) setResetConfirm(false);
         }}
         title="Reset all columns?"
-        description="Drops every column's per-column inputs and streamed responses. The locked agent is preserved."
+        description="Drops each column's inputs and responses. The locked agent stays."
         confirmLabel="Reset"
         variant="destructive"
         onConfirm={handleResetConversations}
@@ -353,7 +353,7 @@ export function RequestModToolbar({
           if (!o) setResetKeepInputsConfirm(false);
         }}
         title="Clear responses, keep everything else?"
-        description="Discards streamed responses on every column, but preserves the per-column inputs. Useful when you want to re-run the same requests against a clean slate."
+        description="Clears responses on every column; the per-column inputs stay."
         confirmLabel="Clear responses"
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}

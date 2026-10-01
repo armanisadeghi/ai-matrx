@@ -218,8 +218,8 @@ function EmptyState({
         </div>
         <p className="text-sm text-muted-foreground">
           {sourceAgentReady
-            ? "Each variant clones the source agent. Edit each column's tools independently — the system prompt + LLM settings stay locked — then hit Submit All."
-            : "Tools mode locks the source agent, variables, and user message. Each variant changes only the attached tools."}
+            ? "Each variant clones the source agent. Edit each column's tools, then Submit All."
+            : "Only the tools vary; agent, variables and message stay locked."}
         </p>
         {sourceAgentReady && (
           <button

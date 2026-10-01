@@ -223,8 +223,8 @@ function EmptyState({
         </div>
         <p className="text-sm text-muted-foreground">
           {agentReady
-            ? "Every column runs the SAME agent. Type a different request (and/or different variables) into each column, then hit Submit All to see how the agent handles each."
-            : "Request-mod mode locks the agent. Each column gets its own variables and user message — perfect for testing how the same agent handles different phrasings or different test cases."}
+            ? "Every column runs the same agent. Type a different request in each, then Submit All."
+            : "The agent is locked; each column gets its own variables and message."}
         </p>
         {agentReady && (
           <button

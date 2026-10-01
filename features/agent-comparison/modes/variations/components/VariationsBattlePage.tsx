@@ -280,8 +280,8 @@ function EmptyState({ sourceAgentReady }: { sourceAgentReady: boolean }) {
         </div>
         <p className="text-sm text-muted-foreground">
           {sourceAgentReady
-            ? "Each variation starts as an editable copy of the template. Open the editor to change anything the Agent Builder exposes — model, system prompt, settings, tools — then run them side-by-side. Nothing is saved to your agents."
-            : "Variations mode clones a template agent into N editable copies and runs the same test input against each — entirely in memory, via the manual endpoint."}
+            ? "Each variation is an editable copy of the template; nothing saves to your agents. Open the editor to change it."
+            : "Clones a template into editable copies and runs one test input on each."}
         </p>
         {sourceAgentReady && (
           <div className="flex items-center justify-center gap-2">

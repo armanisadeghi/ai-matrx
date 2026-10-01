@@ -104,7 +104,7 @@ export function TuningSummaryPanel({ syntheticAgentId }: Props) {
 
         {summaryPills.length === 0 && (
           <div className="text-[10px] text-muted-foreground/70 italic px-1.5">
-            Using agent defaults. Click the sliders icon to tune model settings.
+            Agent defaults; click the sliders icon to tune.
           </div>
         )}
       </div>

@@ -220,8 +220,8 @@ function EmptyState({
         </div>
         <p className="text-sm text-muted-foreground">
           {sourceAgentReady
-            ? "Each variant clones the source agent into its own editable copy. Tune the model and full settings per column via the Builder UI, then hit Submit All to compare side-by-side."
-            : "Tuning mode locks everything except the model + agent settings. Each variant gets the full, model-aware Builder settings UI — change the model and the right inputs (reasoning effort / thinking level / temperature) light up automatically."}
+            ? "Each variant is an editable copy of the source agent. Tune model and settings per column, then Submit All."
+            : "Only the model and settings vary; the right inputs appear per model."}
         </p>
         {sourceAgentReady && (
           <button

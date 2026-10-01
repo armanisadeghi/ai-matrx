@@ -332,8 +332,8 @@ export function TuningToolbar({
         title="Start a new battle?"
         description={
           activeSetId
-            ? "Empties the page — variants, source agent and locked input. This battle stays saved; reopen it from Open a saved battle. Its conversations stay in your chat history."
-            : "Empties the page — variants, source agent and locked input. This battle was never saved; its conversations stay in your chat history."
+            ? "Empties the page — variants, source agent and locked input. This battle stays in Open a saved battle; its chats stay in history."
+            : "Empties the page — variants, source agent and locked input. This battle was never saved; its chats stay in history."
         }
         confirmLabel="Start new"
         variant="destructive"
@@ -346,7 +346,7 @@ export function TuningToolbar({
           if (!o) setResetConfirm(false);
         }}
         title="Reset all variants?"
-        description="Drops every variant's per-column tuning edits and streamed responses. The source agent + variables + user message are preserved; each variant is re-forked from the baseline."
+        description="Drops each variant's tuning edits and responses, re-forking it from the baseline. The source agent, variables and message stay."
         confirmLabel="Reset"
         variant="destructive"
         onConfirm={handleResetConversations}
@@ -358,7 +358,7 @@ export function TuningToolbar({
           if (!o) setResetKeepInputsConfirm(false);
         }}
         title="Clear responses, keep everything else?"
-        description="Discards streamed responses on every variant, but preserves the per-column model + settings tuning AND the locked input. Useful when you want to re-run the same configuration against a clean slate."
+        description="Clears responses on every variant; model settings and the locked input stay."
         confirmLabel="Clear responses"
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}

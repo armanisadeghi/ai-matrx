@@ -106,7 +106,7 @@ export function LockedAgentSection() {
           Locked agent
         </span>
         <span className="text-[10px] text-muted-foreground/70">
-          · same agent runs in every column · per-column inputs in each panel
+          · same agent in every column
         </span>
         <div className="flex-1" />
         <button
