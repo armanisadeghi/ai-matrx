@@ -14,6 +14,7 @@ import type { RootState } from "@/lib/redux/store";
 import {
   ambientIncluded,
   buildRequestContext,
+  selectDisplayContextRows,
   selectResolvedContextRows,
 } from "../request-context";
 
@@ -304,5 +305,47 @@ describe("values the server resolves itself are never predicted", () => {
     );
     expect(rows[0]).toMatchObject({ serverResolved: true, chars: null, delivery: "server" });
     expect(context?.note_id).toBe(id);
+  });
+});
+
+describe("the table displays the server's numbers for server-resolved values", () => {
+  it("fills size, limit and delivery from the latest receipt (display only)", () => {
+    const id = "effcbd12-a8ce-4c6f-b846-a219971c4391";
+    const state = makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "note_id", value: id }] });
+    (state as unknown as { instanceContext: Record<string, unknown> }).instanceContext.receiptByConversationId = {
+      c1: {
+        requestId: "r1",
+        receivedAt: 1,
+        receipt: {
+          type: "context_receipt",
+          version: 1,
+          surface: "matrx-user/demo",
+          cap: 50000,
+          model_reads_context: true,
+          rules_error: null,
+          rows: [
+            {
+              key: "note_id",
+              label: "Note Id",
+              surface_key: "_default",
+              origin: "client",
+              chars: null,
+              include: true,
+              max_inline_chars: 0,
+              delivery: "on_request",
+              decided_by: { include: "default", max_inline_chars: "default" },
+              user_rule: null,
+              clamped: false,
+              client_sent_excluded: false,
+              blocked_by: null,
+            },
+          ],
+        },
+      },
+    };
+    const shown = selectDisplayContextRows("c1")(state);
+    expect(shown[0]).toMatchObject({ fromReceipt: true, delivery: "on_request", max_inline_chars: 0 });
+    // The send path still uses the unfilled rows.
+    expect(buildRequestContext(state, "c1", { includeAmbient: false }).rows[0]?.delivery).toBe("server");
   });
 });
