@@ -117,7 +117,7 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
           />
           <StepperRow
             label="Max retries / iteration"
-            description="How many times one iteration may retry on transient errors."
+            description="Retry limit for transient errors."
             value={eff.maxRetriesPerIteration}
             min={0}
             max={10}
