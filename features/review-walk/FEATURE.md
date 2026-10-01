@@ -81,6 +81,7 @@ payload with an honest banner.
 | `features/overlays/openers/reviewWalkWindow.tsx` | multi-instance opener hook; dispatches `openReviewWalk` |
 | `address.ts` | the two identities in one place: instance id `review-walk\|{unit_kind}\|{unit_id}` and address `?panels=review_walk:<unitKind>.<unitId>` (+ parser, `isWalkUnitKind`, exhaustive over the server's `UnitKind`) |
 | `openReviewWalk.ts` | the ONE open primitive (thunk) — opener and URL hydrator both use it, so the same unit already floating is focused (un-minimised + raised), never duplicated or overwritten |
+| `walkTitle.ts` | the window title (`<role> · <agent>`, else agent, else unit kind; 40-char budget; `roleLabel` is persisted with the window, a link without it falls back to the agent name) and `nextStackIndex` (lowest free cascade slot, so a new walk never lands on an open one) |
 
 Overlay registration: `reviewWalkWindow` in
 `features/overlays/catalogue.ts` (`multi`, window — its key is the overlay id), a gated multi-instance
