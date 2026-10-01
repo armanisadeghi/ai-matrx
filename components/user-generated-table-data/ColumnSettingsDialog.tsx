@@ -42,7 +42,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import type { TableField } from "@/utils/user-table-utls/table-utils";
+import type { TableField } from "@/features/data-tables/table-shapes";
 
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
 import {

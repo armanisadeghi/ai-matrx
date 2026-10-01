@@ -2,8 +2,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { registerFunction, FunctionDependencies } from './function-registry';
-import { createSchemaTemplate, getSchemaTemplates, getSchemaTemplateById, deleteSchemaTemplate, updateSchemaTemplate, CreateTemplateParams } from '../user-table-utls/template-utils';
-import type { CreateTableParams, AddColumnParams, AddRowParams } from '../user-table-utls/table-utils';
+import { createSchemaTemplate, getSchemaTemplates, getSchemaTemplateById, deleteSchemaTemplate, updateSchemaTemplate, CreateTemplateParams } from '@/features/data-tables/template-utils';
+import type { CreateTableParams, AddColumnParams, AddRowParams } from '@/features/data-tables/table-shapes';
 // Through the data seam (lane INTEG-CLIENTS): a table is born where its organization keeps
 // tables, and an existing one is located before anything reads or writes it.
 import { addTableColumn, addTableRow, createTable, readTableDetails } from '@/features/data-tables/service';

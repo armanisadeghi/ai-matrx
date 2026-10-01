@@ -37,11 +37,11 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { cn } from "@/lib/utils";
 import { MultiStepLoader } from "@/components/ui/multi-step-loader";
-import type { FieldDefinition, TableField } from "@/utils/user-table-utls/table-utils";
+import type { FieldDefinition, TableField } from "@/features/data-tables/table-shapes";
 import { bulkWrite, createTable, listTablesEverywhere, readTableDetails } from "@/features/data-tables/service";
 import { describeBulkFailures, isBulkOpError, isServiceFailure, type BulkOp } from "@/features/data-tables/types";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { sanitizeFieldName } from "@/features/data-tables/field-name-key";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { reconcileColumns } from "@/features/data-tables/reconcile";

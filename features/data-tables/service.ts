@@ -27,10 +27,10 @@ import {
   type CreateTableParams,
   type CreateTableResult,
   type GetTableResult,
-} from "@/utils/user-table-utls/table-utils";
+} from "@/features/data-tables/table-shapes";
 import { whereANewTableIsBorn } from "./data-source/where-a-table-is-born";
 import { getUserOrganizations } from "@/features/organizations/service";
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { sanitizeFieldName } from "@/features/data-tables/field-name-key";
 import type {
   BulkOp,
   BulkWriteResponse,

@@ -13,7 +13,7 @@
  *
  * See `features/data-tables/FEATURE.md`.
  */
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { sanitizeFieldName } from "@/features/data-tables/field-name-key";
 
 import { addTableColumn, bulkWrite, getTablePage } from "./service";
 import { locateTable } from "./data-source/locate-table";

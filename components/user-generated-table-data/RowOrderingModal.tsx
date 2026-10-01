@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { GripVertical, ArrowUp, ArrowDown, Save, X } from "lucide-react";
-import type { TableField } from "@/utils/user-table-utls/table-utils";
+import type { TableField } from "@/features/data-tables/table-shapes";
 import {
   getTablePage,
   setRowOrdering,

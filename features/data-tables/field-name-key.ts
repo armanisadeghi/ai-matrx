@@ -1,7 +1,5 @@
 /**
- * FIELD NAME → KEY, THE PURE RULE (moved here from `utils/user-table-utls/field-name-sanitizer.ts`
- * by DATA-V2-BASICS-2 so record-store code never imports the older store's module; the old path
- * re-exports this file until it retires with the older grid).
+ * FIELD NAME → KEY, THE PURE RULE (DATA-V2-BASICS-2).
  *
  * Field name sanitization and validation utilities
  * Ensures field names follow snake_case convention for database compatibility

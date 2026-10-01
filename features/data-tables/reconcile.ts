@@ -8,8 +8,8 @@
  *
  * See `features/data-tables/FEATURE.md` for architectural context.
  */
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
-import type { TableField } from "@/utils/user-table-utls/table-utils";
+import { sanitizeFieldName } from "@/features/data-tables/field-name-key";
+import type { TableField } from "@/features/data-tables/table-shapes";
 
 /** Special mapping value meaning "do not write this incoming column". */
 export const SKIP = "__skip__";

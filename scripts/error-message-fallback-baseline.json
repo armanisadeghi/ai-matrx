@@ -943,6 +943,5 @@
   "utils/permissions/orgModeration.ts": 2,
   "utils/permissions/shareLinks.ts": 2,
   "utils/ts-function-registry/applet-utils.ts": 1,
-  "utils/user-table-utls/table-utils.ts": 4,
-  "utils/user-table-utls/template-utils.ts": 3
+  "features/data-tables/template-utils.ts": 3
 }

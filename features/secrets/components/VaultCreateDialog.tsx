@@ -54,7 +54,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { QrCodeInput } from "@/components/qr/QrCodeInput";
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { sanitizeFieldName } from "@/features/data-tables/field-name-key";
 import {
   Credenza,
   CredenzaBody,

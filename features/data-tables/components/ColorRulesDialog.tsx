@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
-import type { TableField } from "@/utils/user-table-utls/table-utils";
+import type { TableField } from "@/features/data-tables/table-shapes";
 
 import {
   COLOR_RULE_OP_LABELS,

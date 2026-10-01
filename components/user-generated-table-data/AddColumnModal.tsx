@@ -13,7 +13,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { addTableColumn } from '@/features/data-tables/service';
-import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
+import { sanitizeFieldName } from '@/features/data-tables/field-name-key';
 import { setFieldFormat } from '@/features/data-tables/service';
 import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
 import { isServiceFailure } from '@/features/data-tables/types';

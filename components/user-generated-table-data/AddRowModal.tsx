@@ -14,7 +14,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DateFieldInput } from "@/features/data-tables/components/DateFieldInput";
-import { type TableField } from '@/utils/user-table-utls/table-utils';
+import { type TableField } from '@/features/data-tables/table-shapes';
 import { addTableRow, readTableDetails } from '@/features/data-tables/service';
 import {
   FormatAwareInput,

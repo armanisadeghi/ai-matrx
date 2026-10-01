@@ -1,5 +1,5 @@
-import type { FieldDefinition } from "./table-utils";
-import { sanitizeFieldName } from "./field-name-sanitizer";
+import type { FieldDefinition } from "./table-shapes";
+import { sanitizeFieldName } from "./field-name-key";
 
 // Extended field definition used during preview/edit flows. The `included`
 // flag lets the caller toggle a detected column out of the create-table

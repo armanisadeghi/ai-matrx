@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { Upload, FileText, X, CheckCircle2, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import Papa from 'papaparse';
-import { cleanGrid, firstRowLooksLikeHeader, tableFromGrid, type Grid } from '@/utils/user-table-utls/grid-import';
+import { cleanGrid, firstRowLooksLikeHeader, tableFromGrid, type Grid } from '@/features/data-tables/grid-import';
 import { ZipCodeData } from '../page';
 import ColumnMapper from './ColumnMapper';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

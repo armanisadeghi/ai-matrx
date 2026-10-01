@@ -73,7 +73,7 @@ import {
 import {
   sanitizeFieldName,
   validateFieldName,
-} from "@/utils/user-table-utls/field-name-sanitizer";
+} from "@/features/data-tables/field-name-key";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {

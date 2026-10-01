@@ -45,7 +45,7 @@ import { Input } from "@ai-matrx/design-system";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 
-import type { TableField } from "@/utils/user-table-utls/table-utils";
+import type { TableField } from "@/features/data-tables/table-shapes";
 
 import {
   buildDeleteOps,

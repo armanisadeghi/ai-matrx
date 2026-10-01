@@ -1,4 +1,4 @@
-// utils/user-table-utls/table-utils.ts — the column and table shapes the table forms and the
+// features/data-tables/table-shapes.ts — the column and table shapes the table forms and the
 // data seam (`features/data-tables/service.ts`) share, and the one data-type normalizer.
 // Every read and write goes through the seam; nothing here calls the database.
 

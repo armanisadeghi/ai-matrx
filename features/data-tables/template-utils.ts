@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { FieldDefinition, normalizeDataType } from './table-utils';
-import { sanitizeFieldName, validateFieldName } from './field-name-sanitizer';
+import { FieldDefinition, normalizeDataType } from './table-shapes';
+import { sanitizeFieldName, validateFieldName } from './field-name-key';
 
 export interface SchemaTemplate {
   id: string;

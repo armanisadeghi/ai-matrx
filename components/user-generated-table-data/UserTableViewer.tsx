@@ -274,7 +274,7 @@ import { toast as notify } from "@/lib/toast";
 import TableReferenceModal from "./TableReferenceModal";
 import ColumnHeaderMenu from "./ColumnHeaderMenu";
 import { TableLayoutMenu } from "@/features/data-tables/components/TableLayoutMenu";
-import type { TableField } from "@/utils/user-table-utls/table-utils";
+import type { TableField } from "@/features/data-tables/table-shapes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   buildDataTablesScope,
