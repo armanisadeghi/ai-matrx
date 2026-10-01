@@ -87,6 +87,11 @@ begin
     perform platform.cutover_carry_removals((v_o ->> 'id')::uuid, null);
     v_report := v_report || format('stand-in: Step 1''s removal carry for %s', v_o ->> 'name');
   end loop;
+  -- (d) Step 1's own orphan-list adoption (platform.final_switch_adopt_orphan_lists — the door Step 1 calls first).
+  if coalesce((platform._final_switch_readiness() ->> 'adopt_orphans')::int, 0) > 0 then
+    perform platform.final_switch_adopt_orphan_lists(v_run);
+    v_report := v_report || 'stand-in: Step 1''s orphan-list adoption'::text;
+  end if;
   v_r := platform._final_switch_readiness();
   if not (v_r ->> 'ready')::boolean then
     raise exception 'C01 PRECONDITION: the clone is not Ready even after the stand-ins: % — blocking: %',
