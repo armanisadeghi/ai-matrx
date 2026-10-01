@@ -7,8 +7,12 @@
    at the BOTTOM of the cascade: every token value below in @layer base wins
    over the package default, and every Tailwind utility wins over the package's
    utility-tier rules — exactly as it worked when those rules lived in this
-   file. Both sheets are imported in app/layout.tsx. */
-@layer matrx-design-system-tokens, matrx-design-system;
+   file. Both sheets are imported in app/layout.tsx.
+   `matrx-tap-lock` comes FIRST of all: it holds the tap-button geometry with
+   !important, and an important declaration in the earliest layer beats every
+   later one — so no class, `!` utility or wrapper selector can resize, pad or
+   space a tap button (@ai-matrx/design-system tap-target.css). */
+@layer matrx-tap-lock, matrx-design-system-tokens, matrx-design-system;
 
 /* Keep automatic discovery out of parked worktrees and build caches. The
  * oxide glob walker traverses those trees even when .gitignore excludes them. */
