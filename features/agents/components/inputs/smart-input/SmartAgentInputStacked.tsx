@@ -164,7 +164,18 @@ export function SmartAgentInputStacked({
           autoFocus={false}
           showExpandToggle={false}
         />
-        <div className="flex min-h-6 items-center justify-end">
+        {/* The SAME context rail every composer renders — so this box shows
+            and governs what it sends, and its conversation follows the page
+            (useConversationFollowsPage rides inside the rail). Compact: the
+            chip plus one overflow menu, on the box's existing action row. */}
+        <div className="flex min-h-6 min-w-0 items-center justify-end gap-1">
+          <ConversationContextRail
+            conversationId={conversationId}
+            className="min-w-0 flex-1 px-0 pb-0"
+            presentation="overflow-only"
+            attachedItems={contextRailAttachedItems}
+            surfaceValueName={surfaceValueAnchors?.context}
+          />
           <SingleRowActionButtons
             conversationId={conversationId}
             uploadRoot={uploadRoot}
