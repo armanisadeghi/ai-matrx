@@ -121,7 +121,6 @@
     "matrx-frontend:features/marketing/seo/keyword-research/data/queries.ts content_ir.kind_instance",
     "matrx-frontend:features/marketing/seo/keyword-research/data/server.ts content_ir.kind_instance",
     "matrx-frontend:features/matrx-envelope/referenceResolvers.ts get_full_table",
-    "matrx-frontend:features/page-extraction/data-review/export-targets.ts @/utils/user-table-utls",
     "matrx-frontend:features/scopes/service/olderContextWrites.ts context.* scope tables",
     "matrx-frontend:features/scopes/service/scopesService.ts context.* scope tables",
     "matrx-frontend:features/scopes/service/scopesService.ts list_udt_dataset_templates",
