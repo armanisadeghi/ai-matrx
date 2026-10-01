@@ -651,6 +651,16 @@ export function EditableCell({
         // row does not jog when a value is cleared and the empty cell still
         // presents a full-height target.
         className="relative flex min-h-[1.25rem] items-center"
+        // A CLICK THAT SELECTS NEVER CALLS (BREAKER-3 B3-22). A Phone cell draws its number as a `tel:`
+        // link, so the click that selected the cell also started a call (an email cell, a new mail). On a
+        // cell that is not selected yet the link does not follow; the cell is selected. Once it is
+        // selected, a click on the number calls, as the link says.
+        onClickCapture={(e) => {
+          if (selected) return;
+          const link = (e.target as HTMLElement | null)?.closest?.("a[href]");
+          const href = link?.getAttribute("href") ?? "";
+          if (/^(tel|mailto|sms):/i.test(href)) e.preventDefault();
+        }}
       >
         {/* THE CLICK LAW in practice — closed sets and two-state values are
             operable in one click; everything else renders as plain display.
