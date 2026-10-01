@@ -72,7 +72,7 @@ Close without Arman, status `closed-by-desk — <reason>`, when:
   onboarding step or starter kit that asks the real customer, or set the knob's default, or
   decide and record. Law: [ask the boss, not the user](/policies/ask-the-builder-not-the-user.md);
 - **it is a fact** — look it up in code, the DB, or the web, and answer the row yourself;
-- **he already ruled** — the owning `DECISIONS.md`, `VISION.md`, the lexicon, `log.md`, the
+- **he already ruled** — the owning `DECISIONS.md`, `VISION.md`, the lexicon, the
   conflicts register (laws 3a/3h, **including its Resolved table**), or this ledger's answered rows
   carry a dated verbatim answer. **Search the SUBJECT, not the asker's framing:** grep the subject
   nouns (the thing being decided — *delete / retention / archive*, *agent instructions / self-prompt*)
@@ -232,8 +232,7 @@ claimable items and the interview screen shows no "waiting for an agent" line.**
 The last message to him, in plain sentences: how many questions he answered, how many the desk
 closed without him and why (in one line each — this is the signal that tightens the gate), how
 many remain and what they wait on, and which chats, if any, he still has to poke. Then one of
-the three closes: done, next-I-am-doing, or met-but. Add one `log.md` line in common-docs with
-the counts.
+the three closes: done, next-I-am-doing, or met-but.
 
 ## Never
 

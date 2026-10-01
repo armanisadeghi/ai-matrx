@@ -157,15 +157,13 @@ standard; the same setup is planned for every user sandbox). Every edit here kee
    `description` (one sentence — index entries reuse it verbatim), `resource` (URI of the
    underlying asset: Supabase dashboard URL, GitHub repo/tree, route), `tags`, `timestamp`
    (ISO 8601, last MEANINGFUL change — not every touch).
-2. **Reserved files:** `index.md` (directory listing) and `log.md` (history) — never concepts.
-   Index bodies are ONLY `# Section` headings + `* [Title](url) - description` bullets; no
-   frontmatter except the bundle-root index, which carries exactly `okf_version: "0.1"`. Log
-   entries group under `## YYYY-MM-DD` headings, newest first, `**Update**`/`**Creation**`/
-   `**Deprecation**` bold-keyword convention.
+2. **Reserved file:** `index.md` (directory listing) — never a concept. Index bodies are ONLY
+   `# Section` headings + `* [Title](url) - description` bullets; no frontmatter except the
+   bundle-root index, which carries exactly `okf_version: "0.1"`. There is no `log.md`: history
+   is git (the four laws, `/policies/document-types.md`).
 3. **Links between concepts are bundle-relative** (`/systems/website-platform/cms/STATE.md`) — stable under moves.
    Broken links are tolerated by consumers (§5.3) but the linter warns; fix or justify.
-4. **After ANY .md create/move/edit:** update the affected `index.md` entries, add a `log.md`
-   line under today's date, and run `python3 meta/scripts/okf_lint.py` — it must print CONFORMANT
+4. **After ANY .md create/move/edit:** update the affected `index.md` entries and run `python3 meta/scripts/okf_lint.py` — it must print CONFORMANT
    (exit 0) before you commit. The linter hard-fails only on the three §9 conformance rules and
    warns on everything else, exactly as the spec's permissive-consumption model requires.
 5. **Body style** (§4.2): favor structural markdown; use the conventional headings `# Schema`,

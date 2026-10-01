@@ -331,8 +331,8 @@ repo it returns hundreds of files and drowns the signal.
 
 1. **The deleted-path grep.** For every path you deleted or renamed, grep every repo plus
    common-docs for that exact path. **This is the check that actually catches a missed reference,
-   and it must come back empty** (historical prose in archives and `log.md` excepted — those
-   correctly describe what was true then).
+   and it must come back empty** (historical prose in archives excepted — it
+   correctly describes what was true then).
 2. **The member re-check.** Re-run the census against your IN-LANE members only. Each survivor
    gets one line: landmine file · SEAM (neighbour's node) · generated · repo skill · archive ·
    code file. **If you cannot justify a survivor, it was not consolidated** — go back to Step 5.
@@ -358,8 +358,8 @@ on disk still holds the old copies — out of scope, but say so if you find one.
   `update platform.taxonomy_node set last_reviewed_at = now(), review_notes = '<one line: consolidated, what moved>' where slug = '<slug>';`
   Mirror any new node into [`meta/registry.yaml`](/meta/registry.yaml). An unstamped run didn't happen.
 - **Board:** add your node's row + result to [`operations/doc-migration.md`](/operations/doc-migration.md) Wave 3.
-- **Bundle conformance:** every new/moved file gets frontmatter with a non-empty `type`, an entry
-  in the affected `index.md`, and a `log.md` line under today's date. Run
+- **Bundle conformance:** every new/moved file gets frontmatter with a non-empty `type`, and an entry
+  in the affected `index.md`. Run
   `python3 meta/scripts/okf_lint.py` — it must print CONFORMANT (exit 0) before you commit.
 - **Board:** add your row to § Consolidate runs on
   [`operations/doc-migration.md`](/operations/doc-migration.md). **Key the row by your NODE SLUG,

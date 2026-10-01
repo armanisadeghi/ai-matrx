@@ -177,7 +177,7 @@ the bundle's lifecycle rules (`docs-steward`), and its pointer lines get re-poin
 
 ## Bookkeeping (every touch)
 
-Register edits follow the bundle laws: full-document read before editing, index.md + log.md
+Register edits follow the bundle laws: full-document read before editing, index.md
 updated, `python3 meta/scripts/okf_lint.py` CONFORMANT, commit and push before ending —
 other contributors read only the remote.
 

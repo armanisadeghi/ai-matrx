@@ -80,9 +80,9 @@ convergence runs.
 4. **Collapse.** Merge unique truth into the survivor; every other copy becomes a pointer
    line or is deleted (git keeps history). Never leave two copies "for safety" — that is
    the disease. Repoint every inbound reference in every repo.
-5. **Record.** Survivor gets a changelog line naming what was merged and what was corrected
-   (with the evidence). Registry updated if the node changed. Escalations filed. One log.md
-   line for the pass.
+5. **Record.** The commit message names what was merged and what was corrected (with the
+   evidence); the survivor carries no changelog. Registry updated if the node changed.
+   Escalations filed.
 
 ## Rules of evidence
 

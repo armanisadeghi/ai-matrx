@@ -55,7 +55,7 @@ numbered DECISIONS in the voice of the best engineer alive, each with its reason
    up, never asked. "Does X exist", "which table", "what does the endpoint return", "what did
    the last run do" — dispatch a `quick` lane if it is tedious. Record where you looked.
 2. **Did he already rule, or delegate?** Search the owning node's `DECISIONS.md` and
-   `VISION.md`, the vocabulary lexicon, `log.md`, the [conflict register](/operations/conflicts.md)
+   `VISION.md`, the vocabulary lexicon, the [conflict register](/operations/conflicts.md)
    (laws 3a and 3h), the ledger's answered rows, and the attention board. A dated verbatim
    ruling → apply it and cite it. His last word was "research the best and decide" → the
    decision is yours: research the champions, decide with the companion machinery

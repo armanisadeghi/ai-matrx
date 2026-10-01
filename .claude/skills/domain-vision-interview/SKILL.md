@@ -60,7 +60,7 @@ an internal docs-system skill: a short conversation with Arman about one Domain.
 3. **The gap analysis is now mechanical:** the node's STATE.md pending list gets two flags —
    items required by the MINIMAL vision (go-live blockers) vs items serving only the FINAL
    vision. Surface the go-live set prominently; that is the whole point.
-4. Commit + push; log.md line; end with the mandatory question: any (more) modifications to
+4. Commit + push; end with the mandatory question: any (more) modifications to
    the skill or the core system?
 
 # Changelog

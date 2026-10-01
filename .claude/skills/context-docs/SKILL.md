@@ -61,7 +61,7 @@ Docs in several repos → each doc follows its own repo's block.
 ### Anywhere else
 
 common-docs, any other repo, the workspace root → the nearest `CLAUDE.md` holds the mechanics.
-common-docs: `index.md` + `log.md` + `python3 meta/scripts/okf_lint.py` after every `.md` change.
+common-docs: `index.md` + `python3 meta/scripts/okf_lint.py` after every `.md` change.
 
 **Editing a `SKILL.md`** → also read the `skill-authoring` skill.
 

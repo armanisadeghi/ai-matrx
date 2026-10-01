@@ -144,8 +144,8 @@ the row's link target) and the handoffs-skill format. Within that:
 - **Register:** never delete a row (you are consolidating, not taking the build work). Update a
   row's link if its handoff moved; move Features → Tails only under the tail law; Notes stays one
   sentence; add `VISION MISSING` where true.
-- **Conformance:** new/moved common-docs files get frontmatter, an `index.md` entry, and a
-  `log.md` line; `python3 meta/scripts/okf_lint.py` must not add violations.
+- **Conformance:** new/moved common-docs files get frontmatter and an `index.md` entry;
+  `python3 meta/scripts/okf_lint.py` must not add violations.
 - **Ship:** commit in small pathspec-scoped batches (shared checkout — never blanket adds, never
   destructive tree-wide git) and **push every touched repo**. Unpushed convergence is lost.
 - **Spin off repairs:** each concrete, sessionable defect found during verification becomes a

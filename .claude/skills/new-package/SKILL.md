@@ -124,7 +124,7 @@ disaster (the scraper lesson).
 
 Package README (external consumer guide) + `FEATURE.md` beside the code · a row in
 `aidream/apps/shared/README.md`'s catalog · the campaign
-[`STATUS.md`](/projects/npm-package-extraction/STATUS.md) board · common-docs `log.md` ·
+[`STATUS.md`](/projects/npm-package-extraction/STATUS.md) board ·
 close/open the register rows you touched. Commit and push everything — unpushed work
 doesn't exist.
 

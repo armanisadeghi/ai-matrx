@@ -61,8 +61,7 @@ after verification, not doc claims):
    urgency set honestly) — the #1 reason fruit rots is that nobody told him it was one
    answer away.
 5. **Scorecard.** End with: candidates found, verified scores, closures completed (with
-   proof), sessions dispatched, blockers escalated — one dated log.md entry under
-   `**Update**: low-hanging-fruit run`.
+   proof), sessions dispatched, blockers escalated — reported in the run's final message and commit, never a log file.
 
 ## Boundaries
 
