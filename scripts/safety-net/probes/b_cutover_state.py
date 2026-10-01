@@ -119,7 +119,9 @@ def main() -> int:
     if not AFTER:
         step(["C01"], "readiness.ready", state == "old" and r.get("ready") is True and tot.get("blocked") == 0 and tot.get("need_copy_again") == 0
              and tot.get("need_context_copy") == 0 and not unmet,
-             f"state {state}; {r.get('says')} totals {json.dumps(tot)}; unmet platform checks {unmet}; blocking {r.get('blocking')[:3] if r.get('blocking') else []}")
+             f"state {state}; {r.get('says')} totals {json.dumps(tot)}; unmet platform checks {unmet}; blocking {r.get('blocking')[:3] if r.get('blocking') else []}"
+             + "".join(f"; needs Step 1: {o['name']} — " + "; ".join((c.get('detail') or c.get('says') or '')[:160] for c in (o.get('rerun_clears') or []) + (o.get('context_clears') or []))
+                       for o in r.get("organizations") or [] if o.get("needs_copy_again") or o.get("needs_context_copy")))
         names = ", ".join(sorted(p["name"] for p in plan))
         step(["C02"], "plan.named", len(plan) > 0 and tot.get("to_switch") == len(plan),
              f"{len(plan)} organizations in the press's plan ({tot.get('to_switch')} to switch): {names}")
@@ -178,7 +180,7 @@ def main() -> int:
                        to_regclass('context.scope_types') is not null,
                        (select count(*) from pg_tables where schemaname = 'graveyard' and (tablename like 'udt\_%' or tablename like 'scope%' or tablename like 'context%')));""")
     parts = kept.split(",")
-    step(["C09"], "graveyard.nothing_moved", parts[:5] == ["true"] * 5 and parts[5] == "0",
+    step(["C09"], "graveyard.nothing_moved", parts[:5] == ["t"] * 5 and parts[5] == "0",
          f"older tables in place (udt_datasets, udt_dataset_rows, udt_structured_lists, context.scopes, context.scope_types): {parts[:5]}; older-system tables in graveyard: {parts[5]}")
     lag = qj("""select jsonb_build_object('n', count(*), 'orgs', count(distinct organization_id), 'oldest', min(created_at))
                   from custom.io_outbox where event_key = 'context.follow' and consumed_at is null and deleted_at is null;""")
