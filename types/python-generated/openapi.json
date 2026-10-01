@@ -22147,7 +22147,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GoogleContactEditPreviewRequest"
+                "$ref": "#/components/schemas/GoogleContactNamePreviewRequest"
               }
             }
           },
@@ -22209,7 +22209,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GoogleContactEditApplyRequest"
+                "$ref": "#/components/schemas/GoogleContactNameApplyRequest"
               }
             }
           },
@@ -149824,6 +149824,10 @@
             ],
             "title": "Google Account"
           },
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
           "contacts": {
             "items": {
               "$ref": "#/components/schemas/ContactCandidate"
@@ -149859,6 +149863,7 @@
         "type": "object",
         "required": [
           "google_account",
+          "connection_id",
           "contacts",
           "count",
           "total_read",
@@ -189883,48 +189888,6 @@
         ],
         "title": "GoogleConnectionReadRequest"
       },
-      "GoogleContactEditApplyRequest": {
-        "properties": {
-          "organization_id": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Organization Id"
-          },
-          "connection_id": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Connection Id"
-          },
-          "resource_name": {
-            "type": "string",
-            "maxLength": 520,
-            "minLength": 9,
-            "pattern": "people/[A-Za-z0-9._-]{1,512}$",
-            "title": "Resource Name"
-          },
-          "edits": {
-            "$ref": "#/components/schemas/GoogleContactEdits"
-          },
-          "review_receipt": {
-            "type": "string",
-            "maxLength": 16384,
-            "minLength": 1,
-            "title": "Review Receipt"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "organization_id",
-          "connection_id",
-          "resource_name",
-          "edits",
-          "review_receipt"
-        ],
-        "title": "GoogleContactEditApplyRequest"
-      },
       "GoogleContactEditPreview": {
         "properties": {
           "resource_name": {
@@ -189976,41 +189939,6 @@
           "receipt"
         ],
         "title": "GoogleContactEditPreview"
-      },
-      "GoogleContactEditPreviewRequest": {
-        "properties": {
-          "organization_id": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Organization Id"
-          },
-          "connection_id": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Connection Id"
-          },
-          "resource_name": {
-            "type": "string",
-            "maxLength": 520,
-            "minLength": 9,
-            "pattern": "people/[A-Za-z0-9._-]{1,512}$",
-            "title": "Resource Name"
-          },
-          "edits": {
-            "$ref": "#/components/schemas/GoogleContactEdits"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "organization_id",
-          "connection_id",
-          "resource_name",
-          "edits"
-        ],
-        "title": "GoogleContactEditPreviewRequest"
       },
       "GoogleContactEditResult": {
         "properties": {
@@ -190064,55 +189992,47 @@
         ],
         "title": "GoogleContactEditResult"
       },
-      "GoogleContactEdits": {
+      "GoogleContactNameApplyRequest": {
         "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/GoogleContactNameEdit"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "organization_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Organization Id"
           },
-          "email_addresses": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/GoogleContactValue"
-                },
-                "type": "array",
-                "maxItems": 100,
-                "minItems": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email Addresses"
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
           },
-          "phone_numbers": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/GoogleContactValue"
-                },
-                "type": "array",
-                "maxItems": 100,
-                "minItems": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone Numbers"
+          "resource_name": {
+            "type": "string",
+            "maxLength": 520,
+            "minLength": 9,
+            "pattern": "people/[A-Za-z0-9._-]{1,512}$",
+            "title": "Resource Name"
+          },
+          "edits": {
+            "$ref": "#/components/schemas/GoogleContactNameOnlyEdits"
+          },
+          "review_receipt": {
+            "type": "string",
+            "maxLength": 16384,
+            "minLength": 1,
+            "title": "Review Receipt"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "GoogleContactEdits",
-        "description": "Selected field families only; email and phone lists replace that family."
+        "required": [
+          "organization_id",
+          "connection_id",
+          "resource_name",
+          "edits",
+          "review_receipt"
+        ],
+        "title": "GoogleContactNameApplyRequest"
       },
       "GoogleContactNameEdit": {
         "properties": {
@@ -190148,35 +190068,53 @@
         "title": "GoogleContactNameEdit",
         "description": "Patch only explicitly named portions of the current primary name."
       },
-      "GoogleContactValue": {
+      "GoogleContactNameOnlyEdits": {
         "properties": {
-          "value": {
-            "type": "string",
-            "maxLength": 320,
-            "minLength": 1,
-            "title": "Value"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 64,
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Type"
+          "name": {
+            "$ref": "#/components/schemas/GoogleContactNameEdit"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "value"
+          "name"
         ],
-        "title": "GoogleContactValue",
-        "description": "One explicit replacement email or phone value; blank values are refused."
+        "title": "GoogleContactNameOnlyEdits"
+      },
+      "GoogleContactNamePreviewRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Organization Id"
+          },
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "resource_name": {
+            "type": "string",
+            "maxLength": 520,
+            "minLength": 9,
+            "pattern": "people/[A-Za-z0-9._-]{1,512}$",
+            "title": "Resource Name"
+          },
+          "edits": {
+            "$ref": "#/components/schemas/GoogleContactNameOnlyEdits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id",
+          "resource_name",
+          "edits"
+        ],
+        "title": "GoogleContactNamePreviewRequest"
       },
       "GoogleDisconnectRequest": {
         "properties": {

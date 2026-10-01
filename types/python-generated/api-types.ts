@@ -64379,6 +64379,8 @@ export interface components {
             provider_key?: string;
             /** Google Account */
             google_account: string | null;
+            /** Connection Id */
+            connection_id: string;
             /** Contacts */
             contacts: components["schemas"]["ContactCandidate"][];
             /** Count */
@@ -81268,18 +81270,6 @@ export interface components {
             /** Organization Id */
             organization_id?: string | null;
         };
-        /** GoogleContactEditApplyRequest */
-        GoogleContactEditApplyRequest: {
-            /** Organization Id */
-            organization_id: string;
-            /** Connection Id */
-            connection_id: string;
-            /** Resource Name */
-            resource_name: string;
-            edits: components["schemas"]["GoogleContactEdits"];
-            /** Review Receipt */
-            review_receipt: string;
-        };
         /** GoogleContactEditPreview */
         GoogleContactEditPreview: {
             /** Resource Name */
@@ -81303,16 +81293,6 @@ export interface components {
              * @default This is a conditional remote update. A later Google Contact change requires a new review; there is no universal undo.
              */
             recovery_notice?: string;
-        };
-        /** GoogleContactEditPreviewRequest */
-        GoogleContactEditPreviewRequest: {
-            /** Organization Id */
-            organization_id: string;
-            /** Connection Id */
-            connection_id: string;
-            /** Resource Name */
-            resource_name: string;
-            edits: components["schemas"]["GoogleContactEdits"];
         };
         /** GoogleContactEditResult */
         GoogleContactEditResult: {
@@ -81341,16 +81321,17 @@ export interface components {
              */
             recovery_notice?: string;
         };
-        /**
-         * GoogleContactEdits
-         * @description Selected field families only; email and phone lists replace that family.
-         */
-        GoogleContactEdits: {
-            name?: components["schemas"]["GoogleContactNameEdit"] | null;
-            /** Email Addresses */
-            email_addresses?: components["schemas"]["GoogleContactValue"][] | null;
-            /** Phone Numbers */
-            phone_numbers?: components["schemas"]["GoogleContactValue"][] | null;
+        /** GoogleContactNameApplyRequest */
+        GoogleContactNameApplyRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Resource Name */
+            resource_name: string;
+            edits: components["schemas"]["GoogleContactNameOnlyEdits"];
+            /** Review Receipt */
+            review_receipt: string;
         };
         /**
          * GoogleContactNameEdit
@@ -81362,15 +81343,19 @@ export interface components {
             /** Family Name */
             family_name?: string | null;
         };
-        /**
-         * GoogleContactValue
-         * @description One explicit replacement email or phone value; blank values are refused.
-         */
-        GoogleContactValue: {
-            /** Value */
-            value: string;
-            /** Type */
-            type?: string | null;
+        /** GoogleContactNameOnlyEdits */
+        GoogleContactNameOnlyEdits: {
+            name: components["schemas"]["GoogleContactNameEdit"];
+        };
+        /** GoogleContactNamePreviewRequest */
+        GoogleContactNamePreviewRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Resource Name */
+            resource_name: string;
+            edits: components["schemas"]["GoogleContactNameOnlyEdits"];
         };
         /** GoogleDisconnectRequest */
         GoogleDisconnectRequest: {
@@ -160518,7 +160503,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GoogleContactEditPreviewRequest"];
+                "application/json": components["schemas"]["GoogleContactNamePreviewRequest"];
             };
         };
         responses: {
@@ -160571,7 +160556,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GoogleContactEditApplyRequest"];
+                "application/json": components["schemas"]["GoogleContactNameApplyRequest"];
             };
         };
         responses: {
