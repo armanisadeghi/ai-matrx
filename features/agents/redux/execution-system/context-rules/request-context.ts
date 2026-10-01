@@ -22,9 +22,11 @@ import {
   DEFAULT_SURFACE_KEY,
   applyReceiptToRows,
   buildContextWire,
+  compareReceipt,
   resolveContextRow,
   type ContextRowSource,
   type ResolvedContextRow,
+  systemRowsToResolved,
   withheldKeys,
 } from "@ai-matrx/agents/context";
 import { getManifest } from "@/features/surfaces/manifests/registry";
@@ -369,15 +371,20 @@ export function contextRowsForRequest(request: object): ResolvedContextRow[] {
 
 const displayMemo = new Map<
   string,
-  { rows: ResolvedContextRow[]; receipt: unknown; out: ResolvedContextRow[] }
+  { rows: ResolvedContextRow[]; receipt: unknown; expected: unknown; out: ResolvedContextRow[] }
 >();
 
 /**
  * The rows the chip and the full view DISPLAY: `selectResolvedContextRows`,
  * with the values the server resolves itself (references, `*_id` lookups)
  * filled in from the latest receipt — their size and delivery are the server's
- * to report, never the client's to guess (`applyReceiptToRows`). Display only:
- * the send path and the receipt check use the unfilled rows.
+ * to report, never the client's to guess (`applyReceiptToRows`) — followed by
+ * every value the SERVER added that turn (its own attachments, scope seeds,
+ * saved off-rules: `compareReceipt(expected, receipt).systemRows`), each a
+ * governable row with the normal Include switch and Inline max, saved under
+ * the surface key the server filed it with. Display only: the send path and
+ * the receipt check use the unfilled rows, and these rows carry no value, so
+ * they can never reach the wire. No receipt yet: only the client's rows.
  */
 export const selectDisplayContextRows =
   (conversationId: string, mandateKillSwitch = false) =>
@@ -385,9 +392,17 @@ export const selectDisplayContextRows =
     const rows = selectResolvedContextRows(conversationId, mandateKillSwitch)(state);
     const receipt = state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt;
     if (!receipt) return rows;
+    const expected = state.instanceContext?.expectedByConversationId?.[conversationId];
     const hit = displayMemo.get(conversationId);
-    if (hit && hit.rows === rows && hit.receipt === receipt) return hit.out;
-    const out = applyReceiptToRows(rows, toContextReceipt(receipt));
-    displayMemo.set(conversationId, { rows, receipt, out });
+    if (hit && hit.rows === rows && hit.receipt === receipt && hit.expected === expected) return hit.out;
+    const actual = toContextReceipt(receipt);
+    const shown = new Set(rows.map((row) => row.key));
+    const serverAdded = expected
+      ? systemRowsToResolved(compareReceipt(expected.rows, actual).systemRows).filter(
+          (row) => !shown.has(row.key),
+        )
+      : [];
+    const out = [...applyReceiptToRows(rows, actual), ...serverAdded];
+    displayMemo.set(conversationId, { rows, receipt, expected, out });
     return out;
   };

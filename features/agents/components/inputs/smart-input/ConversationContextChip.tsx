@@ -32,7 +32,6 @@ import { useIsPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRun
 import {
   selectContextInlineCap,
   selectDisplayContextRows,
-  selectResolvedContextRows,
 } from "@/features/agents/redux/execution-system/context-rules/request-context";
 import {
   reloadContextRules,
@@ -94,7 +93,9 @@ export function useConversationContextChipShown(conversationId: string): boolean
     (state) => state.conversations.byConversationId[conversationId]?.mandateKey ?? null,
   );
   const killSwitch = useMandateKillSwitch(mandateKey);
-  const rows = useAppSelector(selectResolvedContextRows(conversationId, killSwitch));
+  // DISPLAY rows: what the server added on the last turn counts too, so a chat
+  // whose next turn sends nothing of its own still shows (and governs) them.
+  const rows = useAppSelector(selectDisplayContextRows(conversationId, killSwitch));
   const stamped = useAppSelector(
     (state) => state.conversations.byConversationId[conversationId]?.surfaceName ?? null,
   );

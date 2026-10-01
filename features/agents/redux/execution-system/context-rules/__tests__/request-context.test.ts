@@ -450,3 +450,70 @@ describe("the request names what it withheld, from the same rows", () => {
     expect(Object.keys(context ?? {}).sort()).toEqual(sent);
   });
 });
+
+// Break this catches (F3): a document the SERVER attached to the turn (a
+// conversation's durable file edge) reached the model but never appeared in
+// the composer's table, so the person could neither see nor turn it off.
+describe("values the server added are shown and governable", () => {
+  const receiptRow = (key: string, label: string, origin: string, delivery: string) => ({
+    key,
+    label,
+    surface_key: "_default",
+    origin,
+    chars: 18_400,
+    include: true,
+    max_inline_chars: 6000,
+    delivery,
+    decided_by: { include: "default", max_inline_chars: "default" },
+    user_rule: null,
+    clamped: false,
+    client_sent_excluded: false,
+    blocked_by: null,
+  });
+  function afterTurn(withExpected: boolean, withReceipt: boolean): RootState {
+    const state = makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "plain", value: "Standup notes" }] });
+    const ctx = (state as unknown as { instanceContext: Record<string, unknown> }).instanceContext;
+    const sent = build(state).rows.map((row) => ({ ...row, value: undefined }));
+    if (withExpected) ctx.expectedByConversationId = { c1: { requestId: "r1", rows: sent } };
+    if (withReceipt) {
+      ctx.receiptByConversationId = {
+        c1: {
+          requestId: "r1",
+          receivedAt: 1,
+          receipt: {
+            type: "context_receipt",
+            version: 1,
+            surface: "matrx-user/demo",
+            cap: 50000,
+            model_reads_context: true,
+            rules_error: null,
+            rows: [
+              { ...receiptRow("plain", "Plain value", "client", "inline"), surface_key: "matrx-user/demo", chars: 13, max_inline_chars: 200 },
+              receiptRow("attached_document_7d2e", "Harbor Dental vendor contract.pdf", "server", "on_request"),
+              receiptRow("scope_client_name", "Client Name", "server", "inline"),
+            ],
+          },
+        },
+      };
+    }
+    return state;
+  }
+
+  it("lists each server-added value after the client's own, with its real name and surface key", () => {
+    const shown = selectDisplayContextRows("c1")(afterTurn(true, true));
+    expect(shown.map((r) => [r.key, r.label, r.surfaceKey, r.origin])).toEqual([
+      ["plain", "Plain value", "matrx-user/demo", "page"],
+      ["attached_document_7d2e", "Harbor Dental vendor contract.pdf", "_default", "attached"],
+      ["scope_client_name", "Client Name", "_default", "system"],
+    ]);
+  });
+
+  it("shows only the client's rows before any receipt", () => {
+    expect(selectDisplayContextRows("c1")(afterTurn(true, false)).map((r) => r.key)).toEqual(["plain"]);
+  });
+
+  it("never sends a server-added row", () => {
+    const state = afterTurn(true, true);
+    expect(Object.keys(buildRequestContext(state, "c1", { includeAmbient: false }).context ?? {})).toEqual(["plain"]);
+  });
+});
