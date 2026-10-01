@@ -364,7 +364,7 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
             onOpenChange={setSourcesOpen}
             title={
               <span className="flex items-center gap-2">
-                Grounded in
+                Sources
                 <ConfidenceBadge confidence={trust.confidence} />
               </span>
             }
@@ -373,7 +373,7 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
             minSize={24}
             contentClassName="flex min-h-0 flex-1 flex-col p-4"
           >
-            <SourceCitations trust={trust} />
+            <SourceCitations trust={trust} label={null} />
           </MatrxDynamicPanelHost>
         )}
       </div>

@@ -44,6 +44,10 @@ export interface CitationInput {
   fileName?: string | null;
   score?: number | null;
   query?: string | null;
+  /** A recording: the inspector's player starts here (ms). */
+  seekMs?: number | null;
+  /** The citation's own place label, so the viewer names the same place. */
+  placeLabel?: string | null;
 }
 
 export function useOpenCitation() {
@@ -69,6 +73,8 @@ export function useOpenCitation() {
             score: c.score ?? null,
             query: c.query ?? null,
             href: c.href,
+            seekMs: c.seekMs ?? null,
+            placeLabel: c.placeLabel ?? null,
           });
           return;
         case "note":

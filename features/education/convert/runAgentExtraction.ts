@@ -33,8 +33,19 @@ export interface RunAgentExtractionOpts {
    * a new generator cannot forget it and rediscover the same outage.
    */
   organizationId: string | null | undefined;
-  /** Extraction ceiling. Defaults to 180s — generous for a full artifact. */
+  /**
+   * Ceiling on waiting for the extracted value once the stream has ended.
+   * Defaults to 180s. It does NOT bound the stream itself (the launch awaits
+   * the whole stream); a caller that needs an end-to-end deadline passes
+   * `signal` and aborts it — see `segmentedGenerate`.
+   */
   timeoutMs?: number;
+  /**
+   * Abort to give up on this run: the call rejects at once, and the run's
+   * stream is cancelled (server told to stop, local read closed) so a stalled
+   * call never holds the caller — or a browser connection — open.
+   */
+  signal?: AbortSignal;
   pollIntervalMs?: number;
   /** Fires with the live requestId the moment it is known (for live UI). */
   onRequestId?: (requestId: string) => void;
@@ -64,6 +75,7 @@ export interface RunAgentExtractionResult {
 }
 
 const DEFAULT_TIMEOUT_MS = 180_000;
+const ABORTED_MESSAGE = "The generation agent was stopped before it answered";
 const DEFAULT_POLL_MS = 250;
 
 /**
@@ -76,7 +88,31 @@ export async function runAgentExtraction(
   store: AppStore,
   opts: RunAgentExtractionOpts,
 ): Promise<RunAgentExtractionResult> {
-  const result = await runHeadlessAgentJson(dispatch, store.getState, {
+  const { signal } = opts;
+  if (signal?.aborted) throw new Error(ABORTED_MESSAGE);
+  // The run's conversation, once it exists — what an abort cancels.
+  let conversationId: string | null = null;
+  const cancelStream = () => {
+    if (!conversationId) return;
+    const id = conversationId;
+    void import(
+      "@/features/agents/redux/execution-system/thunks/smart-execute.thunk"
+    ).then(({ cancelExecution }) => dispatch(cancelExecution(id)));
+  };
+  let rejectAborted: (reason: Error) => void = () => {};
+  const aborted = new Promise<never>((_, reject) => {
+    rejectAborted = reject;
+  });
+  const onAbort = () => {
+    cancelStream();
+    rejectAborted(new Error(ABORTED_MESSAGE));
+  };
+  signal?.addEventListener("abort", onAbort, { once: true });
+  // An abort that wins the race leaves the run's own promise to settle on its
+  // own; its outcome is no longer anyone's, so it must never surface unhandled.
+  aborted.catch(() => {});
+
+  const run = runHeadlessAgentJson(dispatch, store.getState, {
     mandateKey: opts.mandateKey,
     surfaceKey: opts.surfaceKey,
     sourceFeature: opts.sourceFeature,
@@ -102,7 +138,13 @@ export async function runAgentExtraction(
     // race-lost duplicate of a single live run (both seen live 2026-09-28).
     surfaceOwnsOutput: true,
     onRequestId: opts.onRequestId,
-    ...(opts.onConversationCreated ? { onConversationCreated: opts.onConversationCreated } : {}),
+    onConversationCreated: (id: string) => {
+      conversationId = id;
+      opts.onConversationCreated?.(id);
+      // Aborted while the launch was still creating the conversation.
+      if (signal?.aborted) cancelStream();
+    },
+    ...(signal ? { signal } : {}),
     failureMessages: {
       streamError: "The generation agent failed before returning a result",
       noJson:
@@ -110,6 +152,13 @@ export async function runAgentExtraction(
       timeout: "Timed out waiting for the generation agent to respond",
     },
   });
+
+  let result: Awaited<typeof run>;
+  try {
+    result = signal ? await Promise.race([run, aborted]) : await run;
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+  }
 
   if (!result.success || result.data == null) {
     throw new Error(

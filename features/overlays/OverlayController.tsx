@@ -4868,7 +4868,9 @@ export default function OverlayController() {
             // stuck on the previous source — see review P1).
             key={`${typeof data?.sourceId === "string" ? data.sourceId : ""}:${
               typeof data?.chunkId === "string" ? data.chunkId : ""
-            }:${typeof data?.pageNumber === "number" ? data.pageNumber : ""}`}
+            }:${typeof data?.pageNumber === "number" ? data.pageNumber : ""}:${
+              typeof data?.seekMs === "number" ? data.seekMs : ""
+            }`}
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "sourceInspectorWindow" }))
@@ -4887,6 +4889,10 @@ export default function OverlayController() {
             score={typeof data?.score === "number" ? data.score : null}
             query={typeof data?.query === "string" ? data.query : null}
             href={typeof data?.href === "string" ? data.href : null}
+            seekMs={typeof data?.seekMs === "number" ? data.seekMs : null}
+            placeLabel={
+              typeof data?.placeLabel === "string" ? data.placeLabel : null
+            }
           />
         );
       })()}

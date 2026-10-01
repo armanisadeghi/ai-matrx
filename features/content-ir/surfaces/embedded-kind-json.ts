@@ -14,6 +14,7 @@
 
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
+import { quotedSourceRanges } from "./json-kind-signal";
 
 export interface EmbeddedKindJsonRegion {
   start: number;
@@ -279,12 +280,25 @@ export function frontMatterEnd(source: string): number {
   return 0;
 }
 
+export interface EmbeddedKindSearchOptions {
+  /** Generic XML: code, comments, CDATA and tags are literal (the XML card shows them). */
+  excludeLiteralContexts?: boolean;
+  /**
+   * Markdown: inline code spans and non-JSON fences are the model quoting
+   * source (`quotedSourceRanges`, the owner's ruling 2026-09-30) — never lifted.
+   */
+  excludeQuotedSource?: boolean;
+}
+
 export function findEmbeddedKindJsonRegions(
   source: string,
-  options: { excludeLiteralContexts?: boolean } = {},
+  options: EmbeddedKindSearchOptions = {},
 ): EmbeddedKindJsonRegion[] {
   const regions: EmbeddedKindJsonRegion[] = [];
-  const excluded = options.excludeLiteralContexts ? literalRanges(source) : [];
+  const excluded = [
+    ...(options.excludeLiteralContexts ? literalRanges(source) : []),
+    ...(options.excludeQuotedSource ? quotedSourceRanges(source) : []),
+  ].sort((a, b) => a[0] - b[0]);
   const jsonStrings: Array<[number, number]> = [];
   let excludedIndex = 0;
   let jsonStringIndex = 0;
@@ -472,7 +486,7 @@ function wrapperPieces(
 /** Losslessly partition a container around every recovered kind region. */
 export function splitAroundEmbeddedKindJson(
   source: string,
-  options: { excludeLiteralContexts?: boolean } = {},
+  options: EmbeddedKindSearchOptions = {},
 ): EmbeddedKindJsonPiece[] {
   const regions = findEmbeddedKindJsonRegions(source, options);
   if (regions.length === 0) return [{ type: "container", content: source }];

@@ -404,10 +404,10 @@ function TrustPanel({ media }: { media: StudyMediaRow }) {
   return (
     <div className="space-y-2 rounded-xl border border-border bg-card/60 p-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-foreground">Grounded in</span>
+        <span className="text-sm font-medium text-foreground">Sources</span>
         <ConfidenceBadge confidence={trust.confidence} />
       </div>
-      <SourceCitations trust={trust} />
+      <SourceCitations trust={trust} label={null} />
     </div>
   );
 }

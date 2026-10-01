@@ -32,6 +32,10 @@ export interface OpenSourceInspectorWindowOptions {
   query?: string | null;
   /** Canonical citation deep-link for the "Open source" new-tab action. */
   href?: string | null;
+  /** A recording: the player starts here (ms). */
+  seekMs?: number | null;
+  /** The citation's own place label ("2:50–4:13") — the viewer shows the same. */
+  placeLabel?: string | null;
 }
 
 export interface SourceInspectorWindowHandle {
@@ -56,6 +60,8 @@ export function useOpenSourceInspectorWindow() {
             score: opts.score ?? null,
             query: opts.query ?? null,
             href: opts.href ?? null,
+            seekMs: opts.seekMs ?? null,
+            placeLabel: opts.placeLabel ?? null,
           },
         }),
       );

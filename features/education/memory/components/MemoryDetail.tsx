@@ -399,11 +399,11 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
         >
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">
-              Grounded in
+              Sources
             </span>
             <ConfidenceBadge confidence={trust.confidence} />
           </div>
-          <SourceCitations trust={trust} />
+          <SourceCitations trust={trust} label={null} />
         </div>
       )}
     </div>

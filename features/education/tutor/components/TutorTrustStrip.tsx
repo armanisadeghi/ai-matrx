@@ -18,7 +18,7 @@
 
 import { plainGroundedIn } from "@/features/education/trust/plainWords";
 import { useState } from "react";
-import { ShieldCheck, ChevronDown } from "lucide-react";
+import { BookOpen, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
@@ -51,12 +51,17 @@ export function TutorTrustStrip({ trust }: { trust: TrustEnvelope | null }) {
         className="flex w-full items-center gap-1.5 text-xs text-muted-foreground"
         aria-expanded={open}
       >
-        <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
-        <span className="font-medium text-foreground">
-          Grounded in {plainGroundedIn(trust.groundedIn) ?? "your material"}
+        {/* The badge says how grounded; this slot says only WHAT in (copy law
+            R9: a word never repeats in one strip — same as CardTrustFooter). */}
+        <ConfidenceBadge confidence={trust.confidence} />
+        <BookOpen className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span
+          className="min-w-0 truncate font-medium text-foreground"
+          title={plainGroundedIn(trust.groundedIn) ?? "Your material"}
+        >
+          {plainGroundedIn(trust.groundedIn) ?? "Your material"}
         </span>
-        <ConfidenceBadge confidence={trust.confidence} className="ml-0.5" />
-        <span className="ml-auto flex items-center gap-1">
+        <span className="ml-auto flex shrink-0 items-center gap-1">
           {trust.citations.length} source
           {trust.citations.length === 1 ? "" : "s"}
           <ChevronDown

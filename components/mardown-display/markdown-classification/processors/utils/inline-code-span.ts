@@ -53,3 +53,42 @@ export function indexOutsideInlineCode(line: string, needle: string, from = 0): 
   }
   return -1;
 }
+
+/**
+ * Whether `text` (a line still arriving) holds a backtick run with no closing
+ * run of the same length yet — a code span that may still close. A kind
+ * after it may be inside that span (quoted source), so a live split waits
+ * for the line to end, when the span rule above answers for certain.
+ */
+export function hasUnclosedBacktickRun(text: string): boolean {
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === "\\") {
+      i += 2;
+      continue;
+    }
+    if (text[i] !== "`") {
+      i += 1;
+      continue;
+    }
+    let run = 0;
+    while (text[i + run] === "`") run += 1;
+    let close = -1;
+    for (let j = i + run; j < text.length; ) {
+      if (text[j] !== "`") {
+        j += 1;
+        continue;
+      }
+      let r = 0;
+      while (text[j + r] === "`") r += 1;
+      if (r === run) {
+        close = j;
+        break;
+      }
+      j += r;
+    }
+    if (close === -1) return true;
+    i = close + run;
+  }
+  return false;
+}

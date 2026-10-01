@@ -19,6 +19,7 @@
 // Renders nothing when the turn carries no envelope; the caller then falls back
 // to the grounding-derived TutorTrustStrip.
 
+import { BookOpen } from "lucide-react";
 import { plainGroundedIn } from "@/features/education/trust/plainWords";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
@@ -43,10 +44,11 @@ export function TutorTurnTrust({ trust }: { trust: TrustEnvelope | null }) {
       <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-card/40 px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <ConfidenceBadge confidence={trust.confidence} />
+          {/* The badge says how grounded; this slot is only WHAT in (no repeated word). */}
           {plainGroundedIn(trust.groundedIn) && (
-            <span>
-              Grounded in{" "}
-              <span className="font-medium text-foreground">{plainGroundedIn(trust.groundedIn)}</span>
+            <span className="inline-flex min-w-0 items-center gap-1" title={plainGroundedIn(trust.groundedIn)}>
+              <BookOpen className="h-3 w-3 shrink-0" aria-hidden />
+              <span className="truncate font-medium text-foreground">{plainGroundedIn(trust.groundedIn)}</span>
             </span>
           )}
         </div>

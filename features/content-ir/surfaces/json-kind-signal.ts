@@ -18,7 +18,7 @@
  * reload, a plain markdown fence).
  */
 
-import { fenceOpenerOf, mapCodeRanges } from "@ai-matrx/content-ir/source";
+import { fenceOpenerOf, findCodeRanges } from "@ai-matrx/content-ir/source";
 
 export type JsonKindSignal = "undecided" | "kind" | "not_kind";
 
@@ -233,30 +233,57 @@ export function rootKindSlug(value: unknown): string | null {
 /** Fence languages whose body is a JSON region (an unlabelled fence included). */
 const JSON_FENCE_LANGS = new Set(["", "json", "jsonc", "json5"]);
 
+/** Whether a fence's language makes its body a JSON region (any case; none counts). */
+export function isJsonFenceLanguage(lang: string | null | undefined): boolean {
+  return JSON_FENCE_LANGS.has((lang ?? "").trim().toLowerCase());
+}
+
 /**
- * The MARKDOWN form: does this prose hold a kind REGION a reader would see raw
- * — a `__kind` key inside a JSON fence (any case, unlabelled included), or the
- * whole text being kind JSON? A key in a fence of another language (```xml,
- * ```ts), in an inline code span, or loose inside a sentence is not a region
- * the pipeline can lift (a kind inline with prose is the stream's job, A5) and
- * stays as written.
+ * Where a kind in markdown is the model QUOTING SOURCE, never data (the
+ * owner's ruling, 2026-09-30): inside an inline code span, or inside a fence
+ * whose language is not JSON (```ts, ```xml, ```markdown …). Everything else
+ * — prose, a blockquote, a list item, a table cell, a 4-space indented block,
+ * a JSON fence — is data. [start, end) spans, in order. THE one definition:
+ * the splitter, the live accumulator and the leaf gate all read it, so a leaf
+ * and the pipeline can never disagree about what is a kind region.
+ */
+export function quotedSourceRanges(text: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  for (const range of findCodeRanges(text)) {
+    if (range.kind === "span") {
+      ranges.push([range.start, range.end]);
+      continue;
+    }
+    const raw = text.slice(range.start, range.end);
+    const newline = raw.indexOf("\n");
+    const firstLine = (newline === -1 ? raw : raw.slice(0, newline)).replace(/^ {0,3}(?:> ?)*/, "");
+    const opener = fenceOpenerOf(firstLine.trimStart());
+    if (!opener || !isJsonFenceLanguage(opener.lang)) {
+      ranges.push([range.start, range.end]);
+    }
+  }
+  return ranges;
+}
+
+/**
+ * The MARKDOWN form: does this prose hold a kind REGION — a `__kind` key
+ * anywhere outside quoted source (see `quotedSourceRanges`)? A leaf that
+ * answers yes hands the text to the pipeline (`MarkdownStream`), which lifts
+ * the region by the same definition — prose, table cell, indented block,
+ * blockquote, JSON fence, or the whole text being kind JSON.
  */
 export function markdownCarriesKind(text: string): boolean {
   if (!hasKindKey(text)) return false;
   if (isKindJsonText(text)) return true;
-  let found = false;
-  mapCodeRanges(text, (range, raw) => {
-    if (found || range.kind !== "fence") return raw;
-    const newline = raw.indexOf("\n");
-    const opener = fenceOpenerOf((newline === -1 ? raw : raw.slice(0, newline)).trimStart());
-    if (
-      opener &&
-      JSON_FENCE_LANGS.has(opener.lang.toLowerCase()) &&
-      hasKindKey(newline === -1 ? "" : raw.slice(newline))
-    ) {
-      found = true;
-    }
-    return raw;
-  });
-  return found;
+  const quoted = quotedSourceRanges(text);
+  if (quoted.length === 0) return true;
+  let outside = "";
+  let cursor = 0;
+  for (const [start, end] of quoted) {
+    if (start < cursor) continue;
+    outside += text.slice(cursor, start) + " ";
+    cursor = end;
+  }
+  outside += text.slice(cursor);
+  return hasKindKey(outside);
 }

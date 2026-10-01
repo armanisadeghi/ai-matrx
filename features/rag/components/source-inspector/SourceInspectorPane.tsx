@@ -8,7 +8,9 @@
  * Knowledge hit (`source_kind` + `source_id` + `page_number(s)` + `chunk_id`), this
  * pane:
  *   - resolves the file ↔ processed-document identity (the PDF bridge),
- *   - renders the real PDF AT THE EXACT PAGE (controlled `pageNumber`),
+ *   - renders the real PDF AT THE EXACT PAGE (controlled `pageNumber`), or —
+ *     for a recording (a YouTube video, an uploaded talk) — the Source's own
+ *     player (`OriginalPane`) playing from the cited moment,
  *   - and unifies, in synced tabs that follow the page, everything anchored to
  *     it: the matched chunk (highlighted among its page siblings), the page's
  *     RAW extraction text, the CLEAN text, and any page-level extractions/tables.
@@ -50,8 +52,17 @@ import { useCitedChunk } from "./useCitedChunk";
 import {
   citedPages,
   citedTargetPage,
-  citedPlace,
+  openedPlace,
 } from "./citedAnchor";
+import {
+  useSourceDoc,
+  useSourceMedia,
+} from "@/features/source-studio/hooks/useSourceData";
+import {
+  originalSeeks,
+  resolveOriginalView,
+} from "@/features/source-studio/sourceStudioModel";
+import { OriginalPane } from "@/features/source-studio/components/OriginalPane";
 
 // react-pdf is heavy — keep it out of the inspector chunk until a PDF is shown.
 const PdfPreview = dynamic(
@@ -79,6 +90,10 @@ export interface SourceInspectorPaneProps {
   query: string | null;
   /** Canonical citation deep-link for "Open source" (carries chunk + page). */
   href: string | null;
+  /** A recording's cited moment (ms) — the player starts here. */
+  seekMs?: number | null;
+  /** The citation's own place label, so chip and viewer name the same moment. */
+  placeLabel?: string | null;
 }
 
 type TabKey = "match" | "clean" | "raw" | "extractions";
@@ -94,6 +109,8 @@ export function SourceInspectorPane({
   score,
   query,
   href,
+  seekMs = null,
+  placeLabel = null,
 }: SourceInspectorPaneProps) {
   const isMobile = useIsMobile();
 
@@ -166,12 +183,33 @@ export function SourceInspectorPane({
   // Where the citation points, named by the ONE place function the citation
   // popup also uses — a web section by its heading, a recording by its time,
   // only a real page as "Page N" — so popup and viewer always agree.
-  const place = citedPlace(matchPages, cited.facts);
+  const place = openedPlace(matchPages, cited.facts, seekMs, placeLabel);
   const spanLabel = place.label;
   const onMatchPage = matchPages.includes(activePage) || matchPages.length === 0;
 
+  // A recording plays in the Source's own player from the cited moment — the
+  // same player the Source page uses, never a second one.
+  const startMs = place.kind === "time" ? place.seekMs : null;
+  const recordingDoc = useSourceDoc(startMs != null ? (processedDocumentId ?? null) : null);
+  const recordingMedia = useSourceMedia(recordingDoc.doc);
+  const recordingView =
+    recordingDoc.doc && !recordingMedia.loading
+      ? resolveOriginalView(recordingDoc.doc, recordingMedia.media)
+      : null;
+  const player =
+    recordingDoc.doc && recordingView && originalSeeks(recordingView) && startMs != null ? (
+      <OriginalPane
+        view={recordingView}
+        name={recordingDoc.doc.name}
+        pageNumber={null}
+        seek={{ seconds: startMs / 1000, nonce: 1 }}
+        passage={snippet}
+        organizationId={recordingDoc.doc.organization_id}
+      />
+    ) : null;
+
   // ── Visual pane (the real document) ──────────────────────────────────────
-  const visual = showViewer ? (
+  const visual = player ?? (showViewer ? (
     <PdfPreview
       fileId={fileId!}
       pageNumber={activePage}
@@ -190,7 +228,7 @@ export function SourceInspectorPane({
         />
       </div>
     </ScrollArea>
-  ) : null;
+  ) : null);
 
   // ── Tabs (everything anchored to this page) ──────────────────────────────
   const tabs = (

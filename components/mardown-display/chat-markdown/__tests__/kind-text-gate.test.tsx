@@ -13,6 +13,12 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
+// The stand-in renders a table cell's text through the real leaf (jsdom has none).
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 jest.mock("@/components/markdown-core/MarkdownCore", () => {
   const actual = jest.requireActual(
@@ -126,11 +132,29 @@ describe("markdown leaves hand kind text to the canonical pipeline", () => {
     expect(container.querySelectorAll('[data-pipeline="markdown-stream"]')).toHaveLength(1);
   });
 
+  // V2 (2026-09-30 ruling): everywhere but an inline code span or a non-JSON
+  // fence, a kind is DATA — the leaf decides with the pipeline's own rule
+  // (`quotedSourceRanges`), so the two can never disagree.
+  it.each([
+    ["a sentence", `It returned ${KIND_OBJECT} without a fence.`],
+    ["a table cell", `| set | payload |\n| --- | --- |\n| cells | ${KIND_OBJECT} |`],
+    ["a 4-space indented block", `Result:\n\n    ${KIND_OBJECT}\n\nDone.`],
+    ["a list item", `- first\n- ${KIND_OBJECT}`],
+    ["a blockquote", `> Quoted:\n> ${KIND_OBJECT}`],
+    ["a blockquoted json fence", `> \`\`\`json\n> ${KIND_OBJECT}\n> \`\`\``],
+  ])("a kind in %s is data: handed to the pipeline and reported", (_label, text) => {
+    act(() => root.render(<BasicMarkdownContent content={text} showCopyButton={false} />));
+    expect(mockStreamCalls).toEqual([text]);
+    expect(mockCaptureError).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "content-ir", relation: "flashcard_set" }),
+    );
+  });
+
   it.each([
     ["an xml fence", 'Payload:\n\n```xml\n<a/>\n{"__kind":"artifact","content":"x"}\n```\n'],
+    ["a ts fence", 'Code:\n\n```ts\nconst k = {"__kind": "x"};\n```\n'],
     ["an inline code span", 'The marker is `{"__kind": "x"}` on every payload.'],
-    ["a sentence", 'It returned {"__kind":"x"} without a fence.'],
-  ])("a kind key inside %s is not a kind region and stays as written", (_label, text) => {
+  ])("a kind key inside %s is quoted source and stays as written", (_label, text) => {
     act(() => root.render(<BasicMarkdownContent content={text} showCopyButton={false} />));
     expect(mockStreamCalls).toHaveLength(0);
     expect(container.textContent).toContain('"__kind"');

@@ -32,6 +32,8 @@ export interface SourceInspectorWindowProps {
   score?: number | null;
   query?: string | null;
   href?: string | null;
+  seekMs?: number | null;
+  placeLabel?: string | null;
 }
 
 export default function SourceInspectorWindow({
@@ -47,6 +49,8 @@ export default function SourceInspectorWindow({
   score,
   query,
   href,
+  seekMs,
+  placeLabel,
 }: SourceInspectorWindowProps) {
   if (!isOpen || !sourceKind || !sourceId) return null;
 
@@ -69,6 +73,8 @@ export default function SourceInspectorWindow({
         score,
         query,
         href,
+        seekMs,
+        placeLabel,
       })}
     >
       <NonEditableContextMenu
@@ -90,6 +96,8 @@ export default function SourceInspectorWindow({
           score={score ?? null}
           query={query ?? null}
           href={href ?? null}
+          seekMs={seekMs ?? null}
+          placeLabel={placeLabel ?? null}
         />
       </NonEditableContextMenu>
     </WindowPanel>

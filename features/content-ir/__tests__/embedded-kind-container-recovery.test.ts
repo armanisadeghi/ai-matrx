@@ -139,6 +139,32 @@ describe("embedded __kind recovery across every arrival container", () => {
 
   it.each([
     ["non-JSON fence", `\`\`\`python\nbefore\n${FLASHCARDS}\nafter\n\`\`\``],
+    ["```text fence with two kinds", `\`\`\`text\n${FLASHCARDS}\nmiddle\n${KEYWORD_BATCH}\n\`\`\``],
+    ["```xml fence", `\`\`\`xml\n<a>\n${FLASHCARDS}\n</a>\n\`\`\``],
+    ["inline code span in prose", `before \`${FLASHCARDS}\` after`],
+  ])("a kind in %s is quoted source: stays as written on both paths", (_label, source) => {
+    const expected = splitterBlocks(source);
+    expect(expected.filter((block) => block.kind)).toEqual([]);
+    expect(expected.filter((block) => block.language === "json")).toEqual([]);
+    for (let seed = 1; seed <= 8; seed++) {
+      expect(reduxBlocks(source, seed)).toEqual(expected);
+    }
+  });
+
+  it("a kind in a 4-space indented block is data on both paths", () => {
+    const source = `Here:\n\n    ${FLASHCARDS}\n\nAfter.`;
+    const trimmed = (blocks: ComparableBlock[]) =>
+      blocks.map((block) => ({ ...block, content: block.content.trim() }));
+    const expected = trimmed(splitterBlocks(source));
+    expect(expected.filter((block) => block.kind)).toEqual([
+      expect.objectContaining({ kind: "flashcard_set", content: FLASHCARDS }),
+    ]);
+    for (let seed = 1; seed <= 8; seed++) {
+      expect(trimmed(reduxBlocks(source, seed))).toEqual(expected);
+    }
+  });
+
+  it.each([
     ["recognized XML", `<thinking>\nbefore\n${FLASHCARDS}\nafter\n</thinking>`],
     ["unrecognized XML", `<custom>\nbefore\n${FLASHCARDS}\nafter\n</custom>`],
     ["inline prose", `before ${FLASHCARDS} after`],
@@ -147,9 +173,10 @@ describe("embedded __kind recovery across every arrival container", () => {
       `\`\`\`json\n{"payload":${FLASHCARDS}}\n\`\`\``,
     ],
     [
-      "two kinds in one container",
-      `\`\`\`text\n${FLASHCARDS}\nmiddle\n${KEYWORD_BATCH}\n\`\`\``,
+      "two kinds in one prose container",
+      `${FLASHCARDS}\nmiddle\n${KEYWORD_BATCH}`,
     ],
+    ["a list item", `- first\n- ${FLASHCARDS}\n- third`],
   ])("stream and persisted paths agree for %s", (label, source) => {
     const expected = splitterBlocks(source);
     expect(expected.filter((block) => block.kind)).not.toHaveLength(0);

@@ -16,9 +16,13 @@
 
 import { QuotedKindLift } from "@/features/content-ir/surfaces/quoted-kind-lift";
 import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
-import { indexOutsideInlineCode } from "@/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
+import {
+  hasUnclosedBacktickRun,
+  indexOutsideInlineCode,
+} from "@/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
 import {
   hasKindKey,
+  isJsonFenceLanguage,
   jsonKindSignal,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 import {
@@ -1593,6 +1597,9 @@ export class StreamBlockAccumulator {
     if (startsStructuralLine(fragment)) return;
     const at = proseKindObjectStart(fragment);
     if (at <= 0) return;
+    // An open backtick run before the object may still close around it — a
+    // kind inside an inline code span is quoted source; the line decides.
+    if (hasUnclosedBacktickRun(fragment.slice(0, at))) return;
     this.pendingLineFragment = fragment.slice(at);
     this.processLine(fragment.slice(0, at), dispatch);
   }
@@ -2358,11 +2365,19 @@ export class StreamBlockAccumulator {
       this.subState.kind === "xml_tag" && !this.subState.isAttrXml
         ? this.currentBlockContent.trim()
         : this.currentBlockContent;
+    // A fence of another language (```ts, ```xml, ```markdown …) is the
+    // model QUOTING SOURCE: nothing inside it is lifted (the owner's ruling,
+    // 2026-09-30 — the static splitter and the leaf gate read the same rule).
+    const fence = this.subState.kind === "code_fence" ? this.subState : null;
+    if (fence && this.currentBlockType === "code" && !isJsonFenceLanguage(fence.language)) {
+      return false;
+    }
+    const genericXml = this.subState.kind === "generic_xml";
     const pieces = splitAroundEmbeddedKindJson(recoverySource, {
-      excludeLiteralContexts:
-        this.subState.kind === "generic_xml" ||
-        (this.subState.kind === "code_fence" &&
-          normalizeCodeLanguage(this.subState.language) === "xml"),
+      excludeLiteralContexts: genericXml,
+      // Prose, tables and sections: an inline code span is quoted source.
+      // A JSON fence's body is JSON — a backtick inside a string is no span.
+      excludeQuotedSource: !genericXml && !(fence && isJsonFenceLanguage(fence.language)),
     });
     if (pieces.length === 1 && pieces[0]?.type === "container") return false;
 

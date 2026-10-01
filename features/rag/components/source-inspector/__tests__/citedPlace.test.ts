@@ -1,4 +1,4 @@
-import { citedChunkFacts, citedPages, citedPlace, citedPortion, portionForExcerpt } from "../citedAnchor";
+import { citedChunkFacts, citedPages, citedPlace, citedPortion, openedPlace, portionForExcerpt } from "../citedAnchor";
 
 // Real rows (clone, 2026-09-30). The Wikipedia "Enzyme" Source is a scraped
 // page: its portions are SECTIONS whose page_number is only an ordinal — the
@@ -82,5 +82,21 @@ describe("a transcript picked as a RECORD (no document id): the quote finds its 
   it("a quote that is not in the transcript is no place — never a guess", () => {
     expect(portionForExcerpt(rows, "photosynthesis happens in the chloroplast")).toBeNull();
     expect(portionForExcerpt(rows, "the")).toBeNull();
+  });
+});
+
+describe("a viewer opened at a recording's moment names that moment", () => {
+  it("the opener's time and label win over the part's own page", () => {
+    const partFacts = { pageNumbers: [3], part: true, t0Ms: null, t1Ms: null, portion: null };
+    expect(openedPlace([12], partFacts, 170_000, "2:50–4:13")).toEqual({
+      kind: "time",
+      label: "2:50–4:13",
+      seekMs: 170_000,
+      pageNumber: 12,
+    });
+    expect(openedPlace([12], null, 65_000, null).label).toBe("1:05");
+  });
+  it("no moment → the ordinary place", () => {
+    expect(openedPlace([4], null, null, null)).toMatchObject({ kind: "page", label: "Page 4" });
   });
 });

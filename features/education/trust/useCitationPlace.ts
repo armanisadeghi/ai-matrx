@@ -8,9 +8,11 @@
 // web section is its heading in both, a recording is its time in both, and a
 // PDF is "Page N" in both — never the agent's own locator ("2992").
 //
-// Opening: a recording (a YouTube video, an uploaded talk) opens THE Source
-// page at the cited time — its player is the one with "Play from"; every
-// other place opens the canonical Source Inspector at the cited passage.
+// Opening: every place opens the canonical Source Inspector window — a
+// recording (a YouTube video, an uploaded talk) with its own player playing
+// from the cited time, a page or section at the cited passage. One citation
+// experience for every kind; the Source page stays the inspector's
+// "Open source" link.
 
 import { useCallback } from "react";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
@@ -26,7 +28,11 @@ import {
 } from "@/features/rag/components/source-inspector/citedAnchor";
 import type { SourceCitation } from "./types";
 import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
-import { inspectorArgsForSourceRef, type CardSourceRef } from "./sourceRef";
+import {
+  inspectorArgsForSourceRef,
+  type CardSourceRef,
+  type SourceInspectorOpenArgs,
+} from "./sourceRef";
 
 /**
  * The Source page URL that plays a recording from the cited moment, or null
@@ -42,6 +48,39 @@ export function playerHrefForPlace(
     place.pageNumber != null ? { page: String(place.pageNumber) } : undefined,
   );
   return `${base}${base.includes("?") ? "&" : "?"}t=${Math.max(0, Math.round(place.seekMs))}`;
+}
+
+/** The inspector args for a recording: its document, playing from the cited moment. */
+export interface RecordingInspectorArgs extends SourceInspectorOpenArgs {
+  seekMs: number;
+  /** The chip's place label — the viewer names the same moment. */
+  placeLabel: string | null;
+}
+
+/**
+ * The Source Inspector args that play a recording from the cited time, or
+ * null when the place is not a recording (or its document is unknown).
+ * `href` stays the Source page at that moment — the inspector's new-tab link.
+ */
+export function recordingInspectorArgs(
+  documentId: string | null | undefined,
+  place: CitedPlace | null | undefined,
+  ref: CardSourceRef | null | undefined,
+  citation: SourceCitation | null | undefined,
+): RecordingInspectorArgs | null {
+  const href = playerHrefForPlace(documentId, place);
+  if (!href || !documentId || !place || place.seekMs == null) return null;
+  return {
+    sourceKind: "library_doc",
+    sourceId: documentId,
+    href,
+    chunkId: ref?.chunkId ?? citation?.sourceId ?? null,
+    pageNumber: place.pageNumber,
+    snippet: ref?.excerpt ?? citation?.excerpt ?? null,
+    fileName: ref?.title ?? citation?.title ?? null,
+    seekMs: Math.max(0, Math.round(place.seekMs)),
+    placeLabel: place.label,
+  };
 }
 
 export interface CitationPlaceState {
@@ -77,14 +116,15 @@ export function useCitationPlace(
     (!openable && !recordId) || loading || (recordId && !facts)
       ? null
       : citedPlace(citedPages(null, ref?.page ?? null, facts), facts);
-  const playerHref = playerHrefForPlace(ref?.documentId ?? facts?.documentId ?? null, place);
-  const args = inspectorArgsForSourceRef(ref);
+  const recording = recordingInspectorArgs(
+    ref?.documentId ?? facts?.documentId ?? null,
+    place,
+    ref,
+    citation,
+  );
+  const args = recording ?? inspectorArgsForSourceRef(ref);
   const open = useCallback(() => {
-    if (playerHref) {
-      if (typeof window !== "undefined") window.open(playerHref, "_blank", "noopener,noreferrer");
-      return;
-    }
     if (args) openInspector(args);
-  }, [playerHref, args, openInspector]);
-  return { place, open: playerHref || args ? open : null };
+  }, [args, openInspector]);
+  return { place, open: args ? open : null };
 }

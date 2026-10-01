@@ -122,6 +122,13 @@ describe("nested parser combinations", () => {
             ? child
             : JSON.stringify(`\n${child}\n`);
         expect(expected[0].content).toContain(fragment);
+      } else if (childName === "registered kind" && parent === "Markdown fence") {
+        // A non-JSON fence is the model quoting source (the owner's ruling,
+        // 2026-09-30): the kind stays inside the ```markdown block, whose
+        // renderer draws its body as markdown — where the kind is data again.
+        expect(expected).toHaveLength(1);
+        expect(expected[0].type).toBe(expectedType);
+        expect(expected[0].content).toContain(child);
       } else if (childName !== "registered kind") {
         expect(expected[0].type).toBe(expectedType);
         expect(expected.map((block) => block.content).join("\n")).toContain(

@@ -54,7 +54,10 @@ import {
   normalizeRecoveredContainerPiece,
   splitAroundEmbeddedKindJson,
 } from "@/features/content-ir/surfaces/embedded-kind-json";
-import { jsonKindSignal } from "@/features/content-ir/surfaces/json-kind-signal";
+import {
+  isJsonFenceLanguage,
+  jsonKindSignal,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 import { liftQuotedKindRegions } from "@/features/content-ir/surfaces/quoted-kind-lift";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
@@ -198,6 +201,20 @@ function blockHasResolvedRootKind(block: SplitterBlock): boolean {
   return typeof kind === "string" && kind.length > 0;
 }
 
+/** A `code` block from a fence whose language makes its body JSON (unlabelled included). */
+function isJsonFenceBlock(block: SplitterBlock): boolean {
+  return block.type === "code" && isJsonFenceLanguage(block.language);
+}
+
+/** A `code` block from a fence of another language — quoted source, never lifted. */
+function isQuotedSourceFenceBlock(block: SplitterBlock): boolean {
+  return (
+    block.type === "code" &&
+    block.metadata?.genericXmlContainer !== true &&
+    !isJsonFenceLanguage(block.language)
+  );
+}
+
 /**
  * Detection is recursive across arrival containers: a complete object that
  * directly declares `__kind` becomes its own JSON/Content-IR block even when
@@ -229,16 +246,22 @@ export function recoverEmbeddedKindJsonBlocksWith(
       (block.type === "code" &&
         block.language === "xml" &&
         block.metadata?.isComplete === false) ||
-      blockHasResolvedRootKind(block)
+      blockHasResolvedRootKind(block) ||
+      // A fence of another language (```ts, ```xml, ```markdown …) is the
+      // model QUOTING SOURCE: a kind inside it stays as written (the owner's
+      // ruling, 2026-09-30 — the same definition the leaf gate reads).
+      isQuotedSourceFenceBlock(block)
     ) {
       recovered.push(block);
       continue;
     }
 
+    const genericXml = block.metadata?.genericXmlContainer === true;
     const pieces = splitAroundEmbeddedKindJson(block.content, {
-      excludeLiteralContexts:
-        block.metadata?.genericXmlContainer === true ||
-        block.language === "xml",
+      excludeLiteralContexts: genericXml,
+      // Prose, tables and sections: an inline code span is quoted source.
+      // A JSON fence's body is JSON — a backtick inside a string is no span.
+      excludeQuotedSource: !genericXml && !isJsonFenceBlock(block),
     });
     if (pieces.length === 1 && pieces[0]?.type === "container") {
       recovered.push(block);

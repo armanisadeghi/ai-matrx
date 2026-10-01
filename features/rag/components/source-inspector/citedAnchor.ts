@@ -192,6 +192,27 @@ export function citedPlace(
   return { kind: label ? "page" : "none", label, seekMs: null, pageNumber };
 }
 
+/**
+ * The place the viewer names when it was OPENED at a recording's moment (the
+ * citation already resolved it — a transcript quote found by its words): the
+ * opener's time and label win, so chip and viewer name the same moment. Any
+ * other open names its place by `citedPlace`.
+ */
+export function openedPlace(
+  pages: readonly number[],
+  facts: CitedChunkFacts | null | undefined,
+  seekMs: number | null | undefined,
+  placeLabel: string | null | undefined,
+): CitedPlace {
+  if (seekMs == null) return citedPlace(pages, facts);
+  return {
+    kind: "time",
+    label: placeLabel ?? timeRangeLabel(seekMs, null),
+    seekMs,
+    pageNumber: pages[0] ?? null,
+  };
+}
+
 function normalizeForMatch(text: string): string {
   return text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
