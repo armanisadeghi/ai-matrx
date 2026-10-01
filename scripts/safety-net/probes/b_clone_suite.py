@@ -93,9 +93,8 @@ def step1() -> str:
     return f"Step 1 on the clone finished in {round(time.time() - t0)} s; last event: {last[:400]}"
 
 
-def main() -> int:
-    log = OUT / f"b-clone-suite-{SUITE.stem}.log"
-    notes = []
+def attempt(n: int) -> tuple[int, str, list]:
+    notes = [f"attempt {n}"]
     for _ in range(20):  # a peer's press window: wait, said
         r = readiness()
         if r["state"] != "new":
@@ -103,8 +102,7 @@ def main() -> int:
         notes.append("the clone is pressed by a peer (state new); waiting 30 s")
         time.sleep(30)
     else:
-        print(f"INCONCLUSIVE: the clone stayed pressed by a peer for 10 minutes ({r['says']})")
-        return 1
+        return 1, f"INCONCLUSIVE: the clone stayed pressed by a peer for 10 minutes ({r['says']})", notes
     if not r["ready"] and r["copy_again_needed"]:
         notes.append(f"readiness before: {r['says']}")
         notes.append(step1())
@@ -120,13 +118,28 @@ def main() -> int:
         notes.append("PLANTED: " + plant.splitlines()[0][:200])
     composed = OUT / f"{SUITE.stem}.composed.sql"
     composed.write_text(text)
-    for n in notes:
-        print(f"[b-clone-suite] {n}", flush=True)
     p = subprocess.run([PSQL, DSN, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(composed)], capture_output=True, text=True, timeout=3600, cwd=FE)
-    out = p.stdout + p.stderr
-    log.write_text("\n".join(notes) + "\n" + out)
+    return p.returncode, p.stdout + p.stderr, notes
+
+
+def main() -> int:
+    # The shared clone is written by peers all the time: a run that lost a race (a serialization failure, a peer's
+    # press between readiness and the press, a peer's birth after Step 1) is not a verdict. Up to three attempts,
+    # each one said; a planted break's RED is never retried away (only those three race signatures are).
+    log = OUT / f"b-clone-suite-{SUITE.stem}.log"
+    race = re.compile(r"could not serialize access|INCONCLUSIVE|PRECONDITION: the clone is not Ready")
+    all_out = []
+    for n in (1, 2, 3):
+        code, out, notes = attempt(n)
+        for x in notes:
+            print(f"[b-clone-suite] {x}", flush=True)
+        all_out.append("\n".join(notes) + "\n" + out)
+        if not (code and race.search(out)):
+            break
+        print(f"[b-clone-suite] attempt {n} lost a race with a peer on the shared clone: {race.search(out).group(0)} — trying again", flush=True)
+    log.write_text("\n\n".join(all_out))
     print(out[-6000:])
-    return p.returncode
+    return code
 
 
 if __name__ == "__main__":
