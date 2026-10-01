@@ -32,7 +32,9 @@ import {
   ProvisionalKindBoundary,
   ProvisionalKindFrame,
 } from "@/features/content-ir/react/ProvisionalKindBoundary";
+import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
 import {
+  IR_ENVELOPE_KEY,
   IR_VERSION,
   readPartialKindEvent,
   reconstructRegionValue,
@@ -184,6 +186,72 @@ export function pendingStructuredEnvelope(block: {
 }
 
 /**
+ * The terminal envelope for a settled block that arrived without one: reload
+ * has only the original text when an interrupted run could not stamp a
+ * COMPLETE persistence envelope, so the stream's parser runs at this terminal
+ * boundary — never on a live prefix — and keeps its error status intact.
+ */
+export function withTerminalEnvelope<
+  T extends {
+    content?: string | null;
+    metadata?: Record<string, unknown>;
+    isStreamingBlock?: boolean;
+  },
+>(block: T, isStreamActive: boolean | undefined): T {
+  if (isStreamActive || block.isStreamingBlock || readEnvelope(block.metadata)) {
+    return block;
+  }
+  const metadata = withIrEnvelope(block.content ?? "", block.metadata, {
+    allowTerminalError: true,
+  });
+  return metadata !== block.metadata ? { ...block, metadata } : block;
+}
+
+/**
+ * A SETTLED json region that names its kind in its text while the parser
+ * could not name it — the payload broke before (or around) its `__kind`, or
+ * no envelope exists at all — is that kind's BROKEN state, never the raw JSON
+ * card (A10, the never-raw law). The route takes it with `kindState: "raw"`
+ * (the kernel's "checked and failed" word, FEATURE.md), which is the
+ * broken-instance floor. A complete kindless envelope is genuine JSON (its
+ * nested kinds are the recovery pass's), and a streaming block is the pending
+ * gate's.
+ */
+export function settleBrokenKindRoute<
+  T extends {
+    type: string;
+    content?: string | null;
+    metadata?: Record<string, unknown>;
+    isStreamingBlock?: boolean;
+  },
+>(block: T): T {
+  if (block.type !== "code" || block.isStreamingBlock) return block;
+  const slug = firstKindSlug(block.content ?? "");
+  if (!slug) return block;
+  const envelope = readEnvelope(block.metadata);
+  if (envelope?.root.kind || envelope?.root.status === "complete") return block;
+  const broken: CanonicalBlockIR = {
+    v: IR_VERSION,
+    engine: "fe-kind-parser",
+    fingerprint: "broken-kind-text",
+    root: {
+      role: "structured",
+      kind: slug,
+      kindState: "raw",
+      discriminator: { format: "json", key: "__kind" },
+      status: "error",
+      path: [],
+      value: {},
+      residue: null,
+    },
+  };
+  return applyIrKindRoute({
+    ...block,
+    metadata: { ...(block.metadata ?? {}), [IR_ENVELOPE_KEY]: broken },
+  } as T & { content: string }) as T;
+}
+
+/**
  * A streaming code block NO parser opened for (a fence with no language, or
  * ```jsonc / ```json5, or any arrival path that stamps no envelope) still
  * obeys the first-key rule: JSON text that COULD be a kind shows a kind
@@ -286,18 +354,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // Reload has only the original text when an interrupted run could not stamp
   // a COMPLETE persistence envelope. Reuse the stream's parser at this terminal
   // boundary, never on a live prefix, and keep its error status intact.
-  const terminalMetadata =
-    !isStreamActive &&
-    !inputBlock.isStreamingBlock &&
-    !readEnvelope(inputBlock.metadata)
-      ? withIrEnvelope(inputBlock.content, inputBlock.metadata, {
-          allowTerminalError: true,
-        })
-      : inputBlock.metadata;
-  const rawBlock =
-    terminalMetadata !== inputBlock.metadata
-      ? { ...inputBlock, metadata: terminalMetadata }
-      : inputBlock;
+  const rawBlock = withTerminalEnvelope(inputBlock, isStreamActive);
   // Late-arrival repaint, GRANULAR: subscribe to THIS block's envelope kind
   // only — a schema/component that lands after this block rendered (cold
   // fetch losing the race with region end) re-runs the route on the frozen
@@ -334,7 +391,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // run the compiler, which is why three lanes' tests said this worked.
   // `routeBlockAtRegistryVersion` takes the version, so no compiler pass can
   // decide it is dead. Guard: `pnpm check:registry-repaint`.
-  const block = routeBlockAtRegistryVersion(rawBlock, kindRouteVersion);
+  const block = settleBrokenKindRoute(
+    routeBlockAtRegistryVersion(rawBlock, kindRouteVersion),
+  );
 
   const interruptedEnvelope = readEnvelope(block.metadata);
   const hasInterruptedKind = Boolean(

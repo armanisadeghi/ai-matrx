@@ -61,7 +61,9 @@ Every stream item below adds its case there.
 - [x] A9. Transport drop mid-fence (no `finalize`) → block stuck `streaming` forever.
       `processStream` finalizes on every exit: the commit path, an unexpected throw, and a retained processor
       discarded without a rejoin (`dispose`). Only the live hand-off to a rejoin keeps the region open.
-- [ ] A10. Fence closes on truncated/invalid JSON with `__kind` → should be the kind's broken state, not raw.
+- [x] A10. Fence closes on truncated/invalid JSON with `__kind` → should be the kind's broken state, not raw.
+      Kind-preserving breaks already routed. A break BEFORE `__kind` (kindless error envelope, or none) now
+      settles as that kind with `kindState: "raw"` (`settleBrokenKindRoute`) — the broken-instance floor.
 - [ ] A11. Cold registry at stream end → raw until the registry repaints.
 - [x] A12. Static splitter: ```JSON (capital) gets no envelope (`content-splitter-core.ts` case-sensitive check).
 

@@ -22,7 +22,11 @@
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
-import { pendingStructuredEnvelope } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import {
+  pendingStructuredEnvelope,
+  settleBrokenKindRoute,
+  withTerminalEnvelope,
+} from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { applyIrKindRoute } from "../react/kind-route";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import {
@@ -87,10 +91,17 @@ function streamCharByChar(stream: string, requestId: string): Upsert[] {
   return upserts; // NO finalize — every frame is a live, mid-stream frame
 }
 
-/** BlockRenderer's question: does this frame draw the raw JSON code card? */
+/**
+ * BlockRenderer's question: does this frame draw the raw JSON code card?
+ * The same steps it takes: terminal envelope (settled frames), the kind
+ * route, the broken-kind settle (A10), then the pending gate.
+ */
 function rendersRawJson(block: RenderBlockPayload): boolean {
   if (!(block.content ?? "").trim()) return false; // nothing visible yet
-  const routed = applyIrKindRoute(renderBlockToContentBlock(block));
+  const settled = block.status !== "streaming";
+  const routed = settleBrokenKindRoute(
+    applyIrKindRoute(withTerminalEnvelope(renderBlockToContentBlock(block), !settled)),
+  );
   if (routed.type !== "code") return false; // a kind / its loader / text
   return pendingStructuredEnvelope(routed) === null;
 }
@@ -474,5 +485,35 @@ describe("never stuck: a transport drop mid-fence still settles every block (A9)
         .filter((b) => b.status === "streaming")
         .map((b) => `${b.blockId}: ${(b.content ?? "").slice(0, 30)}`),
     ).toEqual([]);
+  });
+});
+
+describe("never raw: a fence that closes on broken JSON carrying __kind (A10)", () => {
+  const CASES: Array<[string, string]> = [
+    ["grammar slip after __kind", '{"__kind":"flashcard_set","title":"T",,"cards":[]}'],
+    ["grammar slip BEFORE __kind", '{"title":"T",,"__kind":"flashcard_set","cards":[]}'],
+    ["truncated before __kind closes the object", '{"title":"Cells","__kind":"flashcard_set","cards":[{"front":"a"'],
+  ];
+
+  it.each(CASES)("%s: the settled block is the kind's broken state, never the raw card", (_label, body) => {
+    const stream = `Here you go:\n\n\`\`\`json\n${body}\n\`\`\`\n\nAfter.`;
+    const blocks = finalBlocks(stream, `req-broken-${_label}`);
+    const kindBlock = blocks.find((b) => hasKindKey(b.content ?? ""));
+    expect(kindBlock).toBeDefined();
+    expect(rendersRawJson(kindBlock as RenderBlockPayload)).toBe(false);
+    // Reload: the same bytes through the static splitter.
+    const reloaded = splitContentIntoBlocksV2(stream).find((b) => hasKindKey(b.content));
+    expect(reloaded).toBeDefined();
+    expect(
+      rendersRawJson({
+        blockId: "reload",
+        blockIndex: 0,
+        type: reloaded!.type,
+        status: "complete",
+        content: reloaded!.content,
+        data: reloaded!.language ? { language: reloaded!.language } : null,
+        metadata: reloaded!.metadata,
+      } as RenderBlockPayload),
+    ).toBe(false);
   });
 });
