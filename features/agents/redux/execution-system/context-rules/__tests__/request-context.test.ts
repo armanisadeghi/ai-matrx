@@ -508,6 +508,11 @@ describe("values the server added are shown and governable", () => {
     ]);
   });
 
+  it("with no recorded request rows, still lists every value the client did not send", () => {
+    const shown = selectDisplayContextRows("c1")(afterTurn(false, true));
+    expect(shown.map((r) => r.key)).toEqual(["plain", "attached_document_7d2e", "scope_client_name"]);
+  });
+
   it("shows only the client's rows before any receipt", () => {
     expect(selectDisplayContextRows("c1")(afterTurn(true, false)).map((r) => r.key)).toEqual(["plain"]);
   });

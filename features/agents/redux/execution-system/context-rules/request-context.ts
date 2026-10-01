@@ -397,11 +397,13 @@ export const selectDisplayContextRows =
     if (hit && hit.rows === rows && hit.receipt === receipt && hit.expected === expected) return hit.out;
     const actual = toContextReceipt(receipt);
     const shown = new Set(rows.map((row) => row.key));
-    const serverAdded = expected
-      ? systemRowsToResolved(compareReceipt(expected.rows, actual).systemRows).filter(
-          (row) => !shown.has(row.key),
-        )
-      : [];
+    // The rows nobody on this screen sent. Normally `compareReceipt` against
+    // the rows the request was built from; when those are not held (a send
+    // path that recorded none), every row the client did not supply.
+    const unsent = expected
+      ? compareReceipt(expected.rows, actual).systemRows
+      : actual.rows.filter((row) => row.origin !== "client");
+    const serverAdded = systemRowsToResolved(unsent).filter((row) => !shown.has(row.key));
     const out = [...applyReceiptToRows(rows, actual), ...serverAdded];
     displayMemo.set(conversationId, { rows, receipt, expected, out });
     return out;
