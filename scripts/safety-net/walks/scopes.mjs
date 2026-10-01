@@ -26,6 +26,7 @@ const PLURAL2 = `Treatment Programs ${STAMP} (PT)`;
 const SCOPE = `ACL Rehab ${STAMP}`;
 const ITEM = "Home exercise plan";
 const VALUE = "Quad sets 3x10, heel slides 3x15, daily";
+const TASK = `Book the ACL re-check visit ${STAMP}`;
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 
 // ── clone-only database reads (psql, read-only) ─────────────────────────────────────────────
@@ -72,23 +73,36 @@ async function resumeIfPaused(page) {
     await sleep(8000);
   }
 }
+/** Open a task's editor the way a person does: the tasks list, then its row. Returns the Delete control. */
+async function openTask(page, title, url = "/tasks") {
+  await go(page, url.startsWith("http") ? new URL(url).pathname + new URL(url).search : url);
+  const row = page.getByText(title, { exact: true }).locator("visible=true").first();
+  await row.waitFor({ timeout: 120000 });
+  await row.click();
+  const del = page.locator('[title="Delete task"]:visible').first();
+  await del.waitFor({ timeout: 60000 });
+  await sleep(2500);
+  return del;
+}
+async function deleteTask(page, del) {
+  await del.click();
+  // "Move this task to the trash?" — the confirm names the consequence; press its "Move to trash".
+  const confirm = page.getByRole("button", { name: /^Move to trash$/i }).last();
+  await confirm.waitFor({ timeout: 20000 });
+  await confirm.click();
+  await sleep(4000);
+}
 async function sweepLeftoverTasks(page) {
+  const seen = new Set();
   for (let i = 0; i < 4; i += 1) {
     await go(page, "/tasks");
     await sleep(8000);
-    const old = page.getByText(/^Book the ACL re-check visit Oct/).locator("visible=true");
-    if (!(await old.count())) return;
-    const name = (await old.first().innerText()).trim();
-    if (name.endsWith(STAMP)) return;
-    await old.first().click();
-    await until("task opens", async () => /[?&]task=/.test(page.url()), 30000);
-    const del = page.locator('[title="Delete task"]:visible').first();
-    await del.waitFor({ timeout: 60000 });
-    await del.click();
-    const dlg = page.locator('[role="alertdialog"]').last();
-    if (await dlg.isVisible({ timeout: 8000 }).catch(() => false)) await dlg.getByRole("button", { name: /Delete|Move to Trash|Archive/ }).last().click();
-    await sleep(4000);
-    console.log(`[scopes] leftover task deleted through the product: ${name}`);
+    const names = (await page.getByText(/^Book the ACL re-check visit Oct/).locator("visible=true").allInnerTexts()).map((t) => t.trim()).filter((t) => !t.endsWith(STAMP) && !seen.has(t));
+    if (!names.length) return;
+    seen.add(names[0]);
+    const del = await openTask(page, names[0]);
+    await deleteTask(page, del);
+    console.log(`[scopes] leftover task deleted through the product: ${names[0]}`);
   }
 }
 async function go(page, path) {
@@ -234,7 +248,6 @@ try {
   });
 
   // ── 5. S06: a task created with the scope tag, the way the new-task page offers it ───────────
-  const TASK = `Book the ACL re-check visit ${STAMP}`;
   await ctx.step(["S06"], "create a task tagged with the scope", admin, async () => {
     await go(admin, "/tasks/new");
     const title = admin.getByPlaceholder("What do you want to do?").first();
@@ -251,8 +264,8 @@ try {
     await admin.getByRole("button", { name: /Go to task/ }).first().click();
     await until("task page", async () => /[?&]task=/.test(admin.url()), 60000);
     state.taskUrl = admin.url();
-    await go(admin, new URL(state.taskUrl).pathname + new URL(state.taskUrl).search);
-    const shows = await until("task shows its scope", async () => (await text(admin)).includes(TASK) && (await text(admin)).includes(SCOPE), 90000);
+    await openTask(admin, TASK, state.taskUrl);
+    const shows = await until("task shows its scope", async () => (await text(admin)).includes(SCOPE), 60000);
     let dbNote = "";
     if (CLONE_DSN && state.scopeId) {
       const row = db(`select t.id, (select count(*) from platform.associations a where a.target_type = 'scope' and a.target_id = ${q(state.scopeId)} and a.source_id = t.id and a.deleted_at is null) from workspace.tasks t where t.title = ${q(TASK)} order by t.created_at desc limit 1`);
@@ -341,13 +354,12 @@ try {
     if (!state.taskUrl) return;
     const admin = await seat("admin");
     await ctx.step(["S06"], "archive the tagged task", admin, async () => {
-      await go(admin, state.taskUrl);
-      const del = admin.locator('[title="Delete task"]:visible').first();
-      await del.waitFor({ timeout: 120000 });
-      await del.click();
-      const dlg = admin.locator('[role="alertdialog"]').last();
-      if (await dlg.isVisible({ timeout: 8000 }).catch(() => false)) await dlg.getByRole("button", { name: /Delete|Move to Trash|Archive/ }).last().click();
-      await sleep(4000);
+      const del = await openTask(admin, TASK, state.taskUrl);
+      await deleteTask(admin, del);
+      await go(admin, "/tasks");
+      await sleep(6000);
+      const gone = !(await text(admin)).includes(TASK);
+      if (!CLONE_DSN) return { ok: gone, detail: `"${TASK}" gone from the tasks list ${gone}` };
       let dbNote = "";
       if (CLONE_DSN && state.taskId) dbNote = ` · clone: task archived ${db(`select (deleted_at is not null)::text from workspace.tasks where id = ${q(state.taskId)}`)}`;
       return { ok: !CLONE_DSN || /true/.test(dbNote), detail: `Delete task pressed on ${state.taskUrl}${dbNote}` };
