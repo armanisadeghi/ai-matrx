@@ -92,14 +92,18 @@ const FEATURE_SPECIFIER_PATTERN = `(?:${MODULE_ALIASES.flatMap(([prefix, dir]) =
  * moved code. Write the literal exactly as before and wrap it:
  * `featureRegExp(/^features\/agents\//)` or `featureRegExp(/from "@\/features\/x"/)`.
  * Each `@\/features\/` in the source becomes FEATURE_SPECIFIER_PATTERN, each other standalone
- * `features\/` becomes FEATURE_ROOT_PATTERN (non-capturing, so group numbers are unchanged).
+ * `features\/` becomes FEATURE_ROOT_PATTERN (non-capturing, so group numbers are unchanged), and
+ * a bare `features` alternation member — `(app|features)\/` — gains the other roots as members.
  * Flags are kept. While nothing lives under the package root and no import spells `@host/` or
  * `@ai-matrx/chat/`, the result matches exactly what the literal did.
  */
 function featureRegExp(re) {
-  const source = re.source.replace(/(?<![\w-])(@\\\/)?features\\\//g, (_match, at) =>
-    at ? FEATURE_SPECIFIER_PATTERN : FEATURE_ROOT_PATTERN,
-  );
+  const source = re.source
+    .replace(/(?<![\w-])(@\\\/)?features\\\//g, (_match, at) =>
+      at ? FEATURE_SPECIFIER_PATTERN : FEATURE_ROOT_PATTERN,
+    )
+    // A bare alternation member — `^(app|features|components)\/` — gains every feature root.
+    .replace(/(?<=[(|])features(?=[|)])/g, FEATURE_ROOTS.map(escapeRegExp).join("|"));
   return new RegExp(source, re.flags);
 }
 

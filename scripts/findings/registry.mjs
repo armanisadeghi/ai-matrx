@@ -76,13 +76,13 @@ export const FINDINGS_CHECKS = [
   },
   {
     id: "complete-list-reads-postgrest-silently-caps-at-1000",
-    watch: /^(scripts|lib|features|app|utils)\/.*\.tsx?$/,
+    watch: featureRegExp(/^(scripts|lib|features|app|utils)\/.*\.tsx?$/),
     fix: "Read a list you treat as complete with readAllRows from @ai-matrx/data/db (PostgREST caps a bare .select() at 1000 rows), or bound it and say so.",
     ...fromRules("complete-list-reads-postgrest-silently-caps-at-1000"),
   },
   {
     id: "api-contract-ratchet",
-    watch: /(^(features|app|lib|components|hooks)\/.*\.tsx?$)|^scripts\/api-contracts-baseline/,
+    watch: featureRegExp(/(^(features|app|lib|components|hooks)\/.*\.tsx?$)|^scripts\/api-contracts-baseline/),
     fix: "Call the server through the typed client (lib/api/typed-client.ts, generated api-types) instead of importing the raw python client.",
     ...fromRules("api-contract-ratchet"),
   },
@@ -94,13 +94,13 @@ export const FINDINGS_CHECKS = [
   },
   {
     id: "record-naming-toasts-carry-their-record",
-    watch: /(^(features|lib|app|components|hooks)\/.*\.tsx?$)|^scripts\/record-toasts\.baseline\.json$/,
+    watch: featureRegExp(/(^(features|lib|app|components|hooks)\/.*\.tsx?$)|^scripts\/record-toasts\.baseline\.json$/),
     fix: "Route the toast through recordToast (lib/toast.ts) so it carries its record and stays until read.",
     ...fromRules("record-naming-toasts-carry-their-record"),
   },
   {
     id: "access-errors-surfaces-that-guess-why-a-read-failed",
-    watch: /^(app|features|components|lib|hooks)\/.*\.tsx?$/,
+    watch: featureRegExp(/^(app|features|components|lib|hooks)\/.*\.tsx?$/),
     fix: "Render the failure through the shared access presenter (<AccessGate>/recordUnavailable) and read the hook's error instead of guessing why a read failed.",
     ...fromRules("access-errors-surfaces-that-guess-why-a-read-failed"),
   },
@@ -108,7 +108,7 @@ export const FINDINGS_CHECKS = [
   // register row, or a ratchet whose own law says it ONLY SHRINKS by a hand edit carrying a reason.
   {
     id: "no-dead-ends-door-law",
-    watch: /(^(app|features|components|lib)\/.*\.tsx?$)|^scripts\/dead-ends\//,
+    watch: featureRegExp(/(^(app|features|components|lib)\/.*\.tsx?$)|^scripts\/dead-ends\//),
     fix: "Make the named record open (EntityRef / peek / window) or ship the fix for the detected problem — invoke the `no-dead-ends` skill.",
     ...fromRules("no-dead-ends-door-law"),
   },
@@ -120,7 +120,7 @@ export const FINDINGS_CHECKS = [
   },
   {
     id: "ui-primitives-check",
-    watch: /^(app|features|components)\/.*\.tsx$/,
+    watch: featureRegExp(/^(app|features|components)\/.*\.tsx$/),
     fix: "Use the official primitive the check names (components/official/, @/components/ui/*) instead of the raw element.",
     ...fromRules("ui-primitives-check"),
   },
@@ -138,7 +138,7 @@ export const FINDINGS_CHECKS = [
   },
   {
     id: "scroll-chain-clipped-tables-lists",
-    watch: /^(app|features|components)\/.*\.tsx$/,
+    watch: featureRegExp(/^(app|features|components)\/.*\.tsx$/),
     fix: "Make every ancestor of the `flex-1 min-h-0` scroll area `flex flex-col` (the break is usually in another file) and consume useClippedContentGuard (lib/layout/).",
     ...fromRules("scroll-chain-clipped-tables-lists"),
   },
@@ -150,7 +150,7 @@ export const FINDINGS_CHECKS = [
   },
   {
     id: "surfaces-running-an-agent-without-naming-it",
-    watch: featureRegExp(/(^(app|components)\/.*\.tsx?$)|(^features\/.*\.tsx?$)|^features\/surfaces\/manifests\//),
+    watch: featureRegExp(/(^(app|features|components)\/.*\.tsx?$)|^features\/surfaces\/manifests\//),
     fix: "Register the surface's fixed job in the top Agents menu (manifest agentRole with mandateKey, or useDeclaredSurfaceMandates) — invoke the `agent-disclosure` skill; never add visible page content.",
     ...fromRules("surfaces-running-an-agent-without-naming-it"),
   },
