@@ -67,6 +67,19 @@ import { pushAppHref } from "@/lib/deployment/navigate";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { readOf } from "@/components/read-state/ReadGate";
 import { usagePersonHref } from "@/features/admin/usage-drill/usageLinks";
+import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import {
+  PERSON_KIND_LABEL,
+  PERSON_STAGE_LABEL,
+  PERSON_STAGE_RANK,
+} from "../lib/personSegments";
+import {
+  ACCOUNT_SEGMENTS,
+  DEFAULT_ACCOUNT_SEGMENT,
+  isAccountSegment,
+  rowInSegment,
+  type AccountSegment,
+} from "../lib/accountSegments";
 
 const ROSTER_PAGE_SIZE = 50;
 
@@ -78,6 +91,18 @@ function fmtDate(iso: string | null): string {
     day: "numeric",
   });
 }
+
+function fmtCost(usd: number): string {
+  if (usd <= 0) return "—";
+  return usd < 0.01 ? "<$0.01" : `$${usd.toFixed(2)}`;
+}
+
+const KIND_TONE: Record<AdminUserRow["kind"], string> = {
+  person: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
+  team: "text-sky-600 border-sky-500/40 bg-sky-500/10",
+  test: "text-muted-foreground border-border bg-muted",
+  bot: "text-amber-600 border-amber-500/40 bg-amber-500/10",
+};
 
 function levelBadge(level: string | null) {
   if (!level) return <span className="text-xs text-muted-foreground">—</span>;
@@ -102,6 +127,15 @@ export function AccountsTableClient() {
   // `?user=<id>` is THE canonical destination for a named user (AdminUserRef's
   // first door). Same focus-banner shape the sibling consoles already use.
   const focusedUserId = searchParams.get("user");
+  // Which slice of the roster is showing. Default: people who signed up —
+  // bots, test accounts and idle guests are one click away, with their count
+  // on the button, never silently dropped.
+  const segmentParam = searchParams.get("segment");
+  const segment: AccountSegment = isAccountSegment(segmentParam)
+    ? segmentParam
+    : DEFAULT_ACCOUNT_SEGMENT;
+  const { prefs: viewPrefs, setPrefs: setViewPrefs } =
+    useListViewPrefs("admin-user-accounts");
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -308,7 +342,10 @@ export function AccountsTableClient() {
             </Avatar>
             <AdminUserRef
               userId={row.id}
-              name={row.display_name}
+              name={
+                row.display_name ??
+                (row.is_anonymous ? `Guest ${row.id.slice(0, 6)}` : null)
+              }
               email={row.email}
               hideEmail
             />
@@ -317,6 +354,137 @@ export function AccountsTableClient() {
         width: 200,
       },
       { id: "email", accessorKey: "email", header: "Email", width: 220 },
+      {
+        id: "kind",
+        header: "Who",
+        accessorFn: (row) => PERSON_KIND_LABEL[row.kind],
+        filter: "select",
+        cell: (row) => (
+          <Badge
+            variant="outline"
+            className={KIND_TONE[row.kind]}
+            title={row.kind_reason}
+          >
+            {PERSON_KIND_LABEL[row.kind]}
+          </Badge>
+        ),
+        width: 90,
+      },
+      {
+        id: "stage",
+        header: "Stage",
+        accessorFn: (row) => PERSON_STAGE_LABEL[row.stage],
+        sortValue: (row) => PERSON_STAGE_RANK[row.stage],
+        filter: "select",
+        cell: (row) => (
+          <span
+            className={
+              row.stage === "active" || row.stage === "used_ai"
+                ? "text-xs font-medium text-foreground"
+                : "text-xs text-muted-foreground"
+            }
+          >
+            {PERSON_STAGE_LABEL[row.stage]}
+          </span>
+        ),
+        width: 130,
+      },
+      {
+        id: "ai_requests",
+        accessorKey: "ai_requests",
+        header: "AI requests",
+        filter: "number",
+        align: "right",
+        cell: (row) =>
+          row.ai_requests > 0 ? (
+            <span className="text-xs tabular-nums">
+              {row.ai_requests.toLocaleString()}
+              {row.ai_requests_7d > 0 ? (
+                <span
+                  className="ml-1 text-muted-foreground"
+                  title="In the last 7 days"
+                >
+                  ({row.ai_requests_7d.toLocaleString()} 7d)
+                </span>
+              ) : null}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 120,
+      },
+      {
+        id: "last_ai_activity",
+        accessorKey: "last_ai_activity",
+        header: "Last AI use",
+        cell: (row) => (
+          <span className="text-xs text-muted-foreground">
+            {fmtDate(row.last_ai_activity)}
+          </span>
+        ),
+        width: 110,
+      },
+      {
+        id: "ai_cost",
+        accessorKey: "ai_cost",
+        header: "AI cost",
+        filter: "number",
+        align: "right",
+        cell: (row) => (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {fmtCost(row.ai_cost)}
+          </span>
+        ),
+        width: 90,
+      },
+      {
+        id: "source",
+        accessorKey: "source",
+        header: "Source",
+        filter: "select",
+        cell: (row) =>
+          row.source ? (
+            <span
+              className="block max-w-[140px] truncate text-xs"
+              title={row.landing ?? undefined}
+            >
+              {row.source}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 130,
+      },
+      {
+        id: "client",
+        accessorKey: "client",
+        header: "Client",
+        filter: "select",
+        cell: (row) =>
+          row.client ? (
+            <span className="block max-w-[150px] truncate text-xs">
+              {row.client}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 150,
+      },
+      {
+        id: "landing",
+        accessorKey: "landing",
+        header: "Landing page",
+        hidden: true,
+        cell: (row) =>
+          row.landing ? (
+            <span className="block max-w-[220px] truncate text-xs">
+              {row.landing}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 220,
+      },
       {
         id: "organizations",
         header: "Organizations",
@@ -329,9 +497,7 @@ export function AccountsTableClient() {
         // whose only destination was a filtered list of the OTHER entity.
         cell: (row) =>
           row.organizations.length === 0 ? (
-            <span className="text-xs text-muted-foreground">
-              No organizations
-            </span>
+            <span className="text-xs text-muted-foreground">—</span>
           ) : (
             <div className="flex max-w-[280px] items-center gap-1.5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-1.5">
@@ -458,6 +624,7 @@ export function AccountsTableClient() {
         id: "phone",
         accessorKey: "phone",
         header: "Phone",
+        hidden: true,
         cell: (row) =>
           row.phone ? (
             <span className="text-xs">{row.phone}</span>
@@ -484,9 +651,25 @@ export function AccountsTableClient() {
   const focusedUser = focusedUserId
     ? (rows.find((row) => row.id === focusedUserId) ?? null)
     : null;
+  // A focused account always shows, whatever segment it falls in — the admin
+  // asked for that one record by id.
+  const segmentCounts = Object.fromEntries(
+    ACCOUNT_SEGMENTS.map((entry) => [
+      entry.id,
+      rows.filter((row) => rowInSegment(row, entry.id)).length,
+    ]),
+  ) as Record<AccountSegment, number>;
   const visibleRows = focusedUserId
     ? rows.filter((row) => row.id === focusedUserId)
-    : rows;
+    : rows.filter((row) => rowInSegment(row, segment));
+
+  function selectSegment(next: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === DEFAULT_ACCOUNT_SEGMENT) params.delete("segment");
+    else params.set("segment", next);
+    const query = params.toString();
+    pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
+  }
   // The roster loaded and the requested account is not in it. Saying "no
   // accounts match your filters" here would blame a filter for a record that
   // simply is not in this list.
@@ -649,9 +832,67 @@ export function AccountsTableClient() {
                   description: "No accounts match your filters.",
                 }
           }
+          viewTabsStore={{
+            views: viewPrefs.savedViews ?? [],
+            onChange: (savedViews) => setViewPrefs({ savedViews }),
+          }}
+          summary={{
+            metrics: [
+              {
+                id: "accounts",
+                label: "Accounts",
+                value: ({ rows: shown }) => shown.length.toLocaleString(),
+              },
+              {
+                id: "signed_in",
+                label: "Signed in",
+                value: ({ rows: shown }) =>
+                  shown
+                    .filter((row) => !row.is_anonymous && row.last_sign_in_at)
+                    .length.toLocaleString(),
+              },
+              {
+                id: "used_ai",
+                label: "Used AI",
+                value: ({ rows: shown }) =>
+                  shown
+                    .filter((row) => row.ai_requests > 0)
+                    .length.toLocaleString(),
+              },
+              {
+                id: "active_7d",
+                label: "Active this week",
+                value: ({ rows: shown }) =>
+                  shown
+                    .filter((row) => row.ai_requests_7d > 0)
+                    .length.toLocaleString(),
+              },
+              {
+                id: "ai_cost",
+                label: "AI cost",
+                value: ({ rows: shown }) =>
+                  fmtCost(shown.reduce((sum, row) => sum + row.ai_cost, 0)),
+              },
+            ],
+          }}
           toolbar={{
             search: true,
             searchPlaceholder: "Search name, email, id…",
+            facets: focusedUserId
+              ? []
+              : [
+                  {
+                    type: "button-group",
+                    id: "segment",
+                    value: segment,
+                    defaultValue: DEFAULT_ACCOUNT_SEGMENT,
+                    options: ACCOUNT_SEGMENTS.map((entry) => ({
+                      value: entry.id,
+                      label: `${entry.label} ${segmentCounts[entry.id].toLocaleString()}`,
+                    })),
+                    onChange: selectSegment,
+                  },
+                ],
             actions: (
               <Button
                 size="sm"
@@ -676,6 +917,7 @@ export function AccountsTableClient() {
                 `id=${r.id}`,
                 r.admin_level ? `admin=${r.admin_level}` : null,
                 `providers=${r.providers.join("/") || "none"} confirmed=${r.email_confirmed} onboarded=${r.onboarding_completed} mcp_full_access=${Boolean(r.admin_level) || r.mcp_full_access}`,
+                `kind=${r.kind} (${r.kind_reason}) stage=${r.stage} ai_requests=${r.ai_requests} ai_requests_7d=${r.ai_requests_7d} ai_cost=${r.ai_cost.toFixed(4)} source=${r.source ?? "unknown"} client=${r.client ?? "unknown"}`,
                 `created=${r.created_at ?? "?"} last_sign_in=${r.last_sign_in_at ?? "never"}`,
                 `organizations=${r.organizations.map((organization) => `${organization.name}:${organization.role}`).join(",") || "none"}`,
               ]
@@ -688,6 +930,9 @@ export function AccountsTableClient() {
               mcp_full_access: Boolean(r.admin_level) || r.mcp_full_access,
               mcp_full_access_grant: r.mcp_full_access,
               onboarded: r.onboarding_completed,
+              kind: r.kind,
+              stage: r.stage,
+              ai_requests: r.ai_requests,
             }),
             // `all` is the table's DATA prop, which is the focus-filtered
             // array — so the framework's own `total_count` reported 1 while the
@@ -700,6 +945,7 @@ export function AccountsTableClient() {
             listAttributes: (visible) => ({
               visible_count: visible.length,
               total_count: rows.length,
+              segment,
               ...(focusedUserId ? { focused_user_id: focusedUserId } : {}),
             }),
           }}

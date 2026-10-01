@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { GuestAccessSchema } from "./lib/guestAccess";
+import type { PersonKind, PersonStage } from "./lib/personSegments";
 
 /** The FULL user roster row (auth facts + profile + admin level). */
 export interface AdminUserRow {
@@ -27,6 +28,25 @@ export interface AdminUserRow {
   created_at: string | null;
   last_sign_in_at: string | null;
   organizations: AdminUserOrganizationMembership[];
+  /** Who this account is — derived by `lib/personSegments.ts`. */
+  kind: PersonKind;
+  /** Short reason `kind` was chosen (tooltip). */
+  kind_reason: string;
+  /** How far along the journey this account got. */
+  stage: PersonStage;
+  /** All-time AI requests (chat.admin_user_usage_rollup). */
+  ai_requests: number;
+  /** AI requests in the last 7 days. */
+  ai_requests_7d: number;
+  /** All-time stored AI cost, USD. */
+  ai_cost: number;
+  last_ai_activity: string | null;
+  /** First observed browser, e.g. "Chrome 153 · macOS"; null when never seen. */
+  client: string | null;
+  /** First-touch source: utm_source, referring host, "Direct", … */
+  source: string | null;
+  /** First landing host + path, when captured. */
+  landing: string | null;
 }
 
 /** Organization membership shown inline on the global account roster. */

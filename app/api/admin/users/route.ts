@@ -20,6 +20,9 @@ import {
   withMcpFullAccessPermission,
 } from "@/features/admin/users/lib/mcp-access";
 import { extractErrorMessage } from "@/utils/errors";
+import { readAllRows } from "@ai-matrx/data/db";
+import { classifyPerson } from "@/features/admin/users/lib/personSegments";
+import { describeAcquisitionClient } from "@/lib/product-analytics/user-acquisition";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
@@ -42,6 +45,169 @@ function metaString(
     if (typeof meta[k] === "string" && (meta[k] as string).trim())
       return meta[k] as string;
   }
+  return null;
+}
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+interface ProfileRow {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+interface GuestSignalRow {
+  id: string;
+  auth_user_id: string | null;
+  converted_to_user_id: string | null;
+  user_agent: string | null;
+  created_at: string | null;
+  acquisition: Record<string, unknown> | null;
+  acquisition_user_id: string | null;
+}
+
+interface UsageRollupRow {
+  user_id: string;
+  total_requests: number;
+  total_cost: number;
+  last_activity: string | null;
+}
+
+interface GuestSignal {
+  userAgent: string | null;
+  landingHost: string | null;
+  landingPath: string | null;
+  referrer: string | null;
+  referrerState: string | null;
+  utmSource: string | null;
+}
+
+/**
+ * Every guest row that names an account. Script clients write a first-touch
+ * row per request (one test account held thousands on 2026-09-30), so this is
+ * ~8k rows; read one page at a time it took 5 s. The id space is cut into
+ * eight disjoint slices, each read to completion in parallel — same rows,
+ * same completeness proof, an eighth of the wall time.
+ */
+const UUID_SLICE_BOUNDS = ["0", "2", "4", "6", "8", "a", "c", "e"].map(
+  (digit) => `${digit}0000000-0000-0000-0000-000000000000`,
+);
+
+async function readGuestSignalRows(
+  admin: AdminClient,
+): Promise<GuestSignalRow[]> {
+  const slices = await Promise.all(
+    UUID_SLICE_BOUNDS.map((lower, index) => {
+      const upper = UUID_SLICE_BOUNDS[index + 1];
+      return readAllRows<GuestSignalRow>(
+        ({ from, to }) => {
+          let query = admin
+            .schema("users")
+            .from("guest_executions")
+            .select(
+              "id, auth_user_id, converted_to_user_id, user_agent, created_at, acquisition:metadata->acquisition, acquisition_user_id:metadata->>acquisition_user_id",
+              { count: "exact" },
+            )
+            .or(
+              "auth_user_id.not.is.null,converted_to_user_id.not.is.null,metadata->>acquisition_user_id.not.is.null",
+            )
+            .gte("id", lower);
+          if (upper) query = query.lt("id", upper);
+          return query
+            .order("id")
+            .range(from, to)
+            .overrideTypes<GuestSignalRow[], { merge: false }>();
+        },
+        { label: `users.guest_executions (admin roster signals, slice ${index})` },
+      );
+    }),
+  );
+  return slices.flat();
+}
+
+function readUsageRollup(
+  admin: AdminClient,
+  from: string | null,
+): Promise<UsageRollupRow[]> {
+  return readAllRows<UsageRollupRow>(
+    ({ from: start, to }) =>
+      admin
+        .schema("chat")
+        .rpc(
+          "admin_user_usage_rollup",
+          { p_from: from ?? undefined, p_to: undefined },
+          { count: "exact" },
+        )
+        .select("user_id, total_requests, total_cost, last_activity")
+        .order("user_id")
+        .range(start, to),
+    { label: `chat.admin_user_usage_rollup (${from ? "7d" : "all-time"})` },
+  );
+}
+
+function acquisitionText(
+  row: GuestSignalRow,
+  key: string,
+): string | null {
+  const value = row.acquisition?.[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+/**
+ * One signal per account: the EARLIEST row that captured a first touch wins
+ * (it is where the person arrived from); otherwise the earliest linked guest
+ * row still supplies the browser. Later rows never overwrite the first touch.
+ */
+function indexGuestSignals(rows: GuestSignalRow[]): Map<string, GuestSignal> {
+  const sorted = [...rows].sort((a, b) =>
+    (a.created_at ?? "").localeCompare(b.created_at ?? ""),
+  );
+  const byUser = new Map<string, { signal: GuestSignal; hasTouch: boolean }>();
+  for (const row of sorted) {
+    const hasTouch = Boolean(acquisitionText(row, "captured_at"));
+    const signal: GuestSignal = {
+      userAgent: row.user_agent,
+      landingHost: acquisitionText(row, "landing_host"),
+      landingPath: acquisitionText(row, "landing_path"),
+      referrer: acquisitionText(row, "referrer"),
+      referrerState: acquisitionText(row, "referrer_state"),
+      utmSource: acquisitionText(row, "utm_source"),
+    };
+    const ids = new Set(
+      [row.auth_user_id, row.converted_to_user_id, row.acquisition_user_id]
+        .filter((id): id is string => Boolean(id)),
+    );
+    for (const id of ids) {
+      const current = byUser.get(id);
+      if (!current || (hasTouch && !current.hasTouch)) {
+        byUser.set(id, {
+          signal: {
+            ...signal,
+            userAgent: signal.userAgent ?? current?.signal.userAgent ?? null,
+          },
+          hasTouch,
+        });
+      } else if (!current.signal.userAgent && signal.userAgent) {
+        current.signal.userAgent = signal.userAgent;
+      }
+    }
+  }
+  return new Map([...byUser].map(([id, entry]) => [id, entry.signal]));
+}
+
+/** Where the account first came from, as one short label. */
+function describeSource(signal: GuestSignal): string | null {
+  if (signal.utmSource) return signal.utmSource;
+  if (signal.referrerState === "external" && signal.referrer) {
+    try {
+      return new URL(signal.referrer).hostname.replace(/^www\./, "");
+    } catch {
+      return signal.referrer;
+    }
+  }
+  if (signal.referrerState === "direct_or_withheld") return "Direct";
+  if (signal.referrerState === "internal") return "Internal link";
+  if (signal.referrerState === "local_test") return "Local preview";
   return null;
 }
 
@@ -75,13 +241,42 @@ export async function GET() {
   }
 
   // 2. profiles (display name / avatar) — users.profiles is one row per user.
-  const { data: profiles } = await admin
-    .schema("users")
-    .from("profiles")
-    .select("id, display_name, avatar_url, is_online, last_seen_at");
-  const profileById = new Map(
-    (profiles ?? []).map((p) => [p.id as string, p]),
-  );
+  // Paged to completion: a bare select stops at 1000 rows, and every account
+  // past that printed as its UUID even when it had a name.
+  // 2b. The facts that say who an account is and how far it got: the first
+  // browser we saw for it (users.guest_executions) and its AI usage, all-time
+  // and for the last 7 days (chat.admin_user_usage_rollup).
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  let profiles: ProfileRow[];
+  let guestRows: GuestSignalRow[];
+  let usageAll: UsageRollupRow[];
+  let usageWeek: UsageRollupRow[];
+  try {
+    [profiles, guestRows, usageAll, usageWeek] = await Promise.all([
+      readAllRows<ProfileRow>(
+        ({ from, to }) =>
+          admin
+            .schema("users")
+            .from("profiles")
+            .select("id, display_name, avatar_url", { count: "exact" })
+            .order("id")
+            .range(from, to),
+        { label: "users.profiles (admin roster)" },
+      ),
+      readGuestSignalRows(admin),
+      readUsageRollup(admin, null),
+      readUsageRollup(admin, weekAgo),
+    ]);
+  } catch (error) {
+    return NextResponse.json(
+      { error: extractErrorMessage(error, "Failed to read account signals") },
+      { status: 500 },
+    );
+  }
+  const profileById = new Map(profiles.map((p) => [p.id, p]));
+  const usageAllById = new Map(usageAll.map((u) => [u.user_id, u]));
+  const usageWeekById = new Map(usageWeek.map((u) => [u.user_id, u]));
+  const signalsByUserId = indexGuestSignals(guestRows);
 
   // 3. Organization memberships — canonical iam.organization_member view,
   // joined here so the account roster shows the user's organizations without
@@ -137,14 +332,31 @@ export async function GET() {
       : typeof appMeta.provider === "string"
         ? [appMeta.provider]
         : [];
+    const adminLevel = levelByUser.get(u.id) ?? null;
+    const signal = signalsByUserId.get(u.id);
+    const usage = usageAllById.get(u.id);
+    const aiRequests = Number(usage?.total_requests ?? 0);
+    const aiRequests7d = Number(usageWeekById.get(u.id)?.total_requests ?? 0);
+    const segment = classifyPerson({
+      email: u.email ?? null,
+      isAnonymous: Boolean(u.is_anonymous),
+      adminLevel,
+      emailConfirmed: Boolean(u.email_confirmed_at),
+      lastSignInAt: u.last_sign_in_at ?? null,
+      userAgent: signal?.userAgent ?? null,
+      landingHost: signal?.landingHost ?? null,
+      referrer: signal?.referrer ?? null,
+      referrerState: signal?.referrerState ?? null,
+      aiRequests,
+      aiRequests7d,
+    });
     return {
       id: u.id,
       email: u.email ?? null,
       display_name:
-        (profile?.display_name as string | null) ??
-        metaString(meta, "full_name", "name"),
+        profile?.display_name ?? metaString(meta, "full_name", "name"),
       full_name: metaString(meta, "full_name", "name"),
-      avatar_url: (profile?.avatar_url as string | null) ?? null,
+      avatar_url: profile?.avatar_url ?? null,
       phone: u.phone ?? null,
       providers,
       email_confirmed: Boolean(u.email_confirmed_at),
@@ -154,12 +366,26 @@ export async function GET() {
         (u as { banned_until?: string | null }).banned_until &&
           new Date((u as { banned_until: string }).banned_until) > new Date(),
       ),
-      admin_level: levelByUser.get(u.id) ?? null,
+      admin_level: adminLevel,
       mcp_full_access: hasMcpFullAccessPermission(appMeta),
       onboarding_completed: meta[ONBOARDING_METADATA_KEY] === true,
       created_at: u.created_at ?? null,
       last_sign_in_at: u.last_sign_in_at ?? null,
       organizations: organizationsByUserId.get(u.id) ?? [],
+      kind: segment.kind,
+      kind_reason: segment.kindReason,
+      stage: segment.stage,
+      ai_requests: aiRequests,
+      ai_requests_7d: aiRequests7d,
+      ai_cost: Number(usage?.total_cost ?? 0),
+      last_ai_activity: usage?.last_activity ?? null,
+      client: signal?.userAgent
+        ? describeAcquisitionClient(signal.userAgent)
+        : null,
+      source: signal ? describeSource(signal) : null,
+      landing: signal?.landingPath
+        ? `${signal.landingHost ?? ""}${signal.landingPath}`
+        : null,
     };
   });
 

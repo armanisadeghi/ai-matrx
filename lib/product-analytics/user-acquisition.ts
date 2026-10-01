@@ -67,7 +67,7 @@ export function isRetryableAcquisitionTransportFailure(
  * forever.
  */
 const BOT_USER_AGENT =
-  /\b([a-z0-9_-]*bot|crawler|spider|slurp|bingpreview|facebookexternalhit|headlesschrome|lighthouse|semrush|ahrefs|bytespider)\b|\b(curl|wget|python-requests|httpie|okhttp|axios|go-http-client|libwww-perl|java|apache-httpclient|node-fetch|got|undici)\b|^node$/i;
+  /\b([a-z0-9_-]*bot|crawler|spider|slurp|bingpreview|facebookexternalhit|headlesschrome|lighthouse|semrush|ahrefs|bytespider)\b|\b(curl|wget|python-requests|python-httpx|aiohttp|httpie|okhttp|axios|go-http-client|libwww-perl|java|apache-httpclient|node-fetch|got|undici)\b|^node$/i;
 
 export function classifyAcquisitionTraffic(
   userAgent: string | null,
@@ -93,6 +93,9 @@ export function isLocalAcquisitionHost(host: string | null): boolean {
   }
   return (
     hostname === "localhost" ||
+    // Every agent session previews on its own `<session>.localhost:3001`
+    // (docs/official/browser-testing.md) — a bare-name check missed all of them.
+    hostname.endsWith(".localhost") ||
     hostname === "127.0.0.1" ||
     hostname === "[::1]" ||
     hostname === "::1"

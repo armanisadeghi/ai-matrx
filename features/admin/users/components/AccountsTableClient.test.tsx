@@ -8,6 +8,7 @@ import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table/typ
 // eslint-disable-next-line no-restricted-syntax -- the real Surface A organization selection, because the table reads it.
 import appContext, { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import userAuth, { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
+import userPreferences from "@/lib/redux/preferences/userPreferencesSlice";
 import type { AdminUserRow } from "../types";
 import { AccountsTableClient } from "./AccountsTableClient";
 
@@ -19,7 +20,9 @@ import { AccountsTableClient } from "./AccountsTableClient";
  */
 const ORG = "9a0a9f3c-1c2f-4a1b-9c0d-0b3b7e2f4a11";
 function createStore() {
-  const store = configureStore({ reducer: { appContext, userAuth } });
+  const store = configureStore({
+    reducer: { appContext, userAuth, userPreferences },
+  });
   store.dispatch(setUserAuth({ id: "5c2b1f7a-7a4d-4f6a-9c11-0d1a2b3c4d5e" }));
   store.dispatch(setOrganization({ id: ORG }));
   return store;
@@ -172,6 +175,16 @@ describe("AccountsTableClient", () => {
       created_at: null,
       last_sign_in_at: null,
       organizations: [],
+      kind: "person",
+      kind_reason: "Ordinary browser",
+      stage: "signed_in",
+      ai_requests: 0,
+      ai_requests_7d: 0,
+      ai_cost: 0,
+      last_ai_activity: null,
+      client: null,
+      source: null,
+      landing: null,
     };
 
     expect(mcpColumn.accessorFn(base)).toBe(true);

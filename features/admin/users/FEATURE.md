@@ -4,7 +4,7 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/maste
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-09-30`
 
 ---
 
@@ -57,6 +57,27 @@ not own or duplicate organization or membership data.
 - `lib/usage/originClass.ts` owns the shared short labels and stable per-class colors for every admin usage surface, so a class keeps its color between this table and the cx-dashboard Usage tab. The sentence-form labels in `features/ai-work/conversations/presentation.ts` are deliberately separate: "Started by a person" reads well beside one conversation, not inside an eight-entry legend.
 
 No new table or Redux slice is owned by this feature.
+
+### Who an account is, and how far it got
+
+Every Accounts row carries two derived values from
+`features/admin/users/lib/personSegments.ts` — the ONE decision tree; never
+re-derive either in a component:
+
+- **kind** — `person | team | test | bot`. Test: reserved test email
+  domains, a local-preview first touch (`*.localhost` included), or a platform
+  test client. Team: an admin level. Bot: the shared acquisition user-agent
+  classifier, an AI agent browser (`Claude/…`), or a dotted-Gmail signup that
+  never confirmed. Otherwise person. `kind_reason` is the tooltip.
+- **stage** — `guest → guest_used_ai → signed_up → signed_in → used_ai →
+  active` (AI in the last 7 days).
+
+Inputs are read, never stored: the earliest linked `users.guest_executions`
+row (browser + first touch) and `chat.admin_user_usage_rollup` all-time and
+7-day. The preset slices (People default, Using AI, Unverified, Guests,
+Bots & tests, Team, All) live in `lib/accountSegments.ts`, URL `?segment=`,
+each button carrying its count; custom slices are the table's "+" view tabs,
+persisted through `useListViewPrefs("admin-user-accounts")`.
 
 ### Acquisition visibility
 
@@ -184,6 +205,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 - Known sibling path (not closed here): the pre-existing `platform_admin_all` RLS policy still lets any platform admin UPDATE the table directly; the RPC is the only sanctioned writer.
 
 ## Change log
+- `2026-09-30` — Accounts roster triage. Measured live: 979 of 1,071 accounts created in 30 days were guests, 670 of them HeadlessChrome; 91 dotted-Gmail signups never confirmed; ~20 people actually used AI. Added the `kind`/`stage` decision tree, preset segments defaulting to People, AI requests (all-time + 7d), last AI use, AI cost, source, client and landing columns, and a KPI strip. Fixed `users.profiles` being read without paging (names past row 1,000 dropped) and widened the shared classifier to `*.localhost` previews and `python-httpx`/`aiohttp`.
 
 - `2026-09-17` — **The organizations admin no longer pre-picks the first organization in the list.** `effectiveSelectedOrganizationId` ended in `?? visibleOrganizations[0]?.id`, so opening the panel put an admin in front of a tenant nobody chose — and every action in that panel (add member, change role, remove) acts on it. It now honours only what the admin picked: `?org=` in the URL, or the row they opened. With nothing picked the panel shows its existing "Select an organization" state. Guard: `pnpm check:organization-context`.
 
