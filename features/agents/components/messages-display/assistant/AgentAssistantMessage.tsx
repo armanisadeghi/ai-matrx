@@ -470,12 +470,24 @@ export function AgentAssistantMessage({
   const requestAwaitingPerson = useAppSelector(
     requestId ? selectRequestAwaitingPerson(requestId) : () => false,
   );
+  // Can anything still finish this turn? A live server operation, or a
+  // client call waiting on this page (see `turnIsStillOpen`).
+  const operationInFlight = useAppSelector(
+    (state) => state.conversations.byConversationId[conversationId]?.serverOperation != null,
+  );
+  const pendingCallOnPage = useAppSelector((state) =>
+    (state.pendingAsks?.byConversationId[conversationId] ?? []).some(
+      (ask) => ask.status === "pending",
+    ),
+  );
   const answerless = isAnswerlessTurn({
     isTurnAnswer,
     isStreamActive,
     awaitingPerson: turnIsStillOpen({
       instanceStatus,
       requestAwaitingPerson,
+      operationInFlight,
+      pendingCallOnPage,
       rowParts: extractContentBlocks(record),
     }),
     failed,

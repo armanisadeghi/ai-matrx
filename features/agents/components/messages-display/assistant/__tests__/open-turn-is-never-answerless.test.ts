@@ -10,9 +10,11 @@
  * Run it again" — while the work went on (board_read 16:44:53 → board_open_item
  * → apply_surface_write → board_add_tile → the real answer at 16:48:54).
  *
- * The rule, stated once: a row whose last piece of work is a tool call has not
- * finished — the model always speaks again after its tools return. Likewise a
- * conversation the client is still running or resuming.
+ * The rule, stated once: a turn is open only while something can still finish
+ * it — the conversation is running, streaming or parked; a server operation is
+ * still live; or a client call is pending on this page. A row that ends on a
+ * tool call with none of those is DEAD, and must say so (Law 4) rather than
+ * sit silently under its tool cards.
  */
 import { isAnswerlessTurn, turnIsStillOpen, type AnswerlessTurnInput } from "../answerless-turn";
 
@@ -36,46 +38,57 @@ const resumedRowParkedOnClientTool = [
   { type: "tool_call", name: "context", call_id: "toolu_b", arguments: {} },
 ];
 
+type OpenSignals = {
+  instanceStatus?: string;
+  operationInFlight?: boolean;
+  pendingCallOnPage?: boolean;
+  requestAwaitingPerson?: boolean;
+};
+
 const answerlessFor = (
   rowParts: ReadonlyArray<{ type?: string; name?: string }>,
-  instanceStatus: string = "complete",
+  signals: OpenSignals = {},
 ) =>
   isAnswerlessTurn({
     ...settledEmpty,
     awaitingPerson: turnIsStillOpen({
-      instanceStatus,
-      requestAwaitingPerson: false,
+      instanceStatus: signals.instanceStatus ?? "complete",
+      requestAwaitingPerson: signals.requestAwaitingPerson ?? false,
+      operationInFlight: signals.operationInFlight ?? false,
+      pendingCallOnPage: signals.pendingCallOnPage ?? false,
       rowParts,
     }),
   });
 
-describe("a turn that is still moving is never answerless", () => {
-  it("a re-read row that ends on a client tool call is still open (the 16:44Z card)", () => {
-    expect(answerlessFor(resumedRowParkedOnClientTool)).toBe(false);
+describe("a turn is open only while something can still finish it", () => {
+  it("the 16:44Z card: a client call still pending on this page keeps it open", () => {
+    expect(answerlessFor(resumedRowParkedOnClientTool, { pendingCallOnPage: true })).toBe(false);
   });
 
-  it("a row that ends on any tool call is still open — the model speaks after its tools", () => {
-    expect(answerlessFor([{ type: "tool_call", name: "web_search" }])).toBe(false);
+  it("a server operation still running (or waiting on this page) keeps it open", () => {
+    expect(answerlessFor(resumedRowParkedOnClientTool, { operationInFlight: true })).toBe(false);
   });
 
-  it("a conversation the client is running or resuming is still open", () => {
-    for (const status of ["running", "streaming", "paused"]) {
-      expect(answerlessFor([{ type: "thinking" }], status)).toBe(false);
+  it("a conversation the client is running, streaming or has parked keeps it open", () => {
+    for (const instanceStatus of ["running", "streaming", "paused"]) {
+      expect(answerlessFor(resumedRowParkedOnClientTool, { instanceStatus })).toBe(false);
     }
+  });
+
+  it("a turn parked on the person keeps it open", () => {
+    expect(
+      answerlessFor([{ type: "tool_call", name: "ask_person" }], { requestAwaitingPerson: true }),
+    ).toBe(false);
+    expect(answerlessFor([{ type: "tool_call", name: "ask_person" }])).toBe(false);
+  });
+
+  it("DEAD AFTER A TOOL CALL — nothing can finish it — says so (Law 4)", () => {
+    expect(answerlessFor(resumedRowParkedOnClientTool)).toBe(true);
+    expect(answerlessFor([{ type: "tool_call", name: "web_search" }])).toBe(true);
   });
 
   it("still speaks for a settled row that only thought — the original defect", () => {
     expect(answerlessFor([{ type: "thinking" }])).toBe(true);
     expect(answerlessFor([])).toBe(true);
-  });
-
-  it("a row whose tool work is followed by text is judged by its text, not left open", () => {
-    expect(
-      turnIsStillOpen({
-        instanceStatus: "complete",
-        requestAwaitingPerson: false,
-        rowParts: [{ type: "tool_call", name: "board_add_tile" }, { type: "text" }],
-      }),
-    ).toBe(false);
   });
 });

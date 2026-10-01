@@ -118,47 +118,41 @@ export function rowAsksThePerson(
   );
 }
 
-/**
- * True when a row's last piece of work is a tool call — after the model's own
- * thinking is set aside, nothing it SAID follows its tools. The model always
- * speaks again once its tools return, so such a row is an iteration the turn
- * has not finished: a client tool the page has yet to run (`board_read`), a
- * call parked on the person (`ask_person`), or a result the next iteration is
- * still reading. Never the turn's final word.
- */
-export function rowEndsOnToolWork(
-  parts: ReadonlyArray<{ type?: string | null }> | null | undefined,
-): boolean {
-  if (!parts) return false;
-  for (let i = parts.length - 1; i >= 0; i -= 1) {
-    const type = parts[i]?.type ?? "text";
-    if (type === "thinking" || type === "reasoning") continue;
-    return type === "tool_call" || type === "tool_result";
-  }
-  return false;
-}
-
-/** Instance statuses that mean the client is still running or resuming the turn. */
+/** Instance statuses that mean the client is still running, streaming or parked. */
 const IN_FLIGHT_STATUSES: ReadonlySet<string> = new Set(["running", "streaming", "paused"]);
 
 /**
- * Is this turn still open — waiting on the person, on a client tool, or on a
- * continuation that has not streamed yet? An open turn has not finished, so it
- * can never be "finished without writing an answer" (bench 2026-10-01: an
- * answered ask resumed server-side, parked again on `board_read`, and the
- * re-read row — thinking + two tool calls — was called finished while the
- * work went on for four more minutes).
+ * Is this turn still open — is there anything that can still finish it? Only
+ * then is it "not finished"; otherwise an empty turn is answerless and says so.
+ *
+ * Open means one of: the client is running, streaming or has parked the
+ * conversation; a server operation is still live for it (`serverOperation`,
+ * stamped by the runtime follower — including "waiting on a client tool");
+ * a client-delegated call is pending on this page; or the turn is parked on
+ * the person. A row that ends on a tool call with NONE of these is a run that
+ * died after its tools — silent tool cards there would be Law 4 breaking, so
+ * it gets the notice and its "Run it again".
+ *
+ * Bench 2026-10-01: an answered ask resumed server-side and parked on
+ * `board_read`; the re-read row (thinking + tool calls) was called finished
+ * while the work went on. The answer door now follows the turn, which stamps
+ * `serverOperation` and surfaces the pending call — both open signals.
  */
 export function turnIsStillOpen(input: {
   instanceStatus: string | null | undefined;
   requestAwaitingPerson: boolean;
+  /** A non-terminal server operation is recorded for the conversation. */
+  operationInFlight: boolean;
+  /** A client-delegated call for this conversation is pending on this page. */
+  pendingCallOnPage: boolean;
   rowParts: ReadonlyArray<{ type?: string | null; name?: string | null }> | null | undefined;
 }): boolean {
   return (
     IN_FLIGHT_STATUSES.has(input.instanceStatus ?? "") ||
+    input.operationInFlight ||
+    input.pendingCallOnPage ||
     input.requestAwaitingPerson ||
-    rowAsksThePerson(input.rowParts) ||
-    rowEndsOnToolWork(input.rowParts)
+    rowAsksThePerson(input.rowParts)
   );
 }
 
