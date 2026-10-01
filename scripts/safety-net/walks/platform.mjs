@@ -121,11 +121,14 @@ try {
   const home = await timeTo(
     admin,
     `${ctx.origin}/data-v2`,
+    // The new /data-v2 (list shell, 2026-10-01 13:10 PT): its first table rows; the old hub's Tables
+    // listing toggle is kept as the second marker so a switch back is still timed.
     () => {
+      if (document.querySelectorAll("tr[data-row-id]").length > 0) return true;
       const t = document.querySelector('[data-hub-listing-toggle="tables"]')?.textContent ?? "";
-      return t && !/reading|loading/i.test(t);
+      return Boolean(t) && !/reading|loading/i.test(t);
     },
-    "data home Tables listing",
+    "data home rows",
   );
   await ctx.step(["P07"], `data home interactive ≤ ${BUDGET.P07} ms`, admin, async () => ({
     ok: home.used != null && home.used <= BUDGET.P07,
