@@ -91,6 +91,18 @@ def step(items: list[str], name: str, ok: bool | None, detail: str) -> None:
 
 
 def main() -> int:
+    # RETIRED after step two (2026-10-01 20:37Z, lane POST-MOVE-GATES): the six older tables are in the graveyard and the
+    # undo is retired, so the readiness function this probe times and the older-table facts it plans/compares no longer
+    # exist to be judged (platform._final_switch_orphan_lists reads the moved tables -> 42P01). The probe judged the
+    # hour BEFORE the press; it SKIPs, said, once the older tables are gone. The retired board is proven by the
+    # public door (cutover.old-system-unreachable, the census), not by this inner read.
+    if q("select (to_regclass('workbench.udt_datasets') is null)") == "t":
+        step(["C01", "C02", "C04", "C05", "C06", "C08", "C09", "C10", "C12", "A11"], "cutover.state.retired_after_step_two", None,
+             "the older tables moved to the graveyard and the undo is retired: this probe judged the hour before the switch and reads tables that no longer exist")
+        (OUT / "b-cutover-state.json").write_text(json.dumps({"target": TARGET, "after": bool(AFTER), "at": datetime.now(timezone.utc).isoformat(),
+                                                              "results": results, "facts": {"retired": True}}, indent=2, default=str))
+        print(f"\nb_cutover_state: 0 pass · 0 fail · 1 skip (retired after step two) → {OUT / 'b-cutover-state.json'}")
+        return 0
     if TARGET == "live":
         quarantine = q("select count(*) from cron.job where active;")
         facts["active_cron_jobs"] = int(quarantine)
