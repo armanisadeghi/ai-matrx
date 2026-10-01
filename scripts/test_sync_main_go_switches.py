@@ -643,5 +643,92 @@ class CommitHold(Base):
             r = sh(root, "git", "check-ignore", "-q", rel, check=False)
             self.assertEqual(r.returncode, 0, rel + " must be gitignored in " + root)
 
+class HoldAndPauseHardening(CommitHold):
+    """Review findings on the hold: an out-of-range time never crashes a sweep, a staged version
+    is never lost, and no held copy is ever overwritten or unwritable."""
+
+    test_no_hold_file_commits_as_before = None
+    test_held_paths_are_set_aside_restored_and_never_committed = None
+    test_binary_under_hold_is_kept_byte_for_byte = None
+    test_expired_hold_is_renamed_and_ignored_loudly = None
+    test_hold_without_until_is_ignored_loudly = None
+    test_hold_can_never_outlive_four_hours = None
+    test_hold_status_prints_the_held_set = None
+    test_real_checkout_never_commits_the_hold_file = None
+
+    def no_crash(self, res, code):
+        out = res.stdout + res.stderr
+        self.assertNotIn("Traceback", out)
+        self.assertEqual(res.returncode, code, out)
+
+    def test_year_9999_hold_is_ignored_loudly_never_a_crash(self):
+        self.r.write(HOLD, "until: 9999-12-31T23:59:59\nfeatures/chat/\n")
+        self.edits()
+        for args in ((), ("--status",), ("--hold-status",)):
+            self.no_crash(self.r.sweep(*args), 0)
+        self.assertIn("peer edit", self.show("features/chat/kept.ts"))   # hold ignored: committed
+        res = self.r.sweep("--hold-status")
+        self.assertIn("COMMIT HOLD IGNORED", res.stdout)
+
+    def test_year_9999_pause_never_a_crash(self):
+        for until in ("9999-12-31T23:59:59", "9999-12-31T23:59:59-12:00"):
+            self.r.write(PAUSE, "by: owner\nreason: far\nuntil: %s\n" % until)
+            self.no_crash(self.r.sweep("--status"), 0)
+            self.no_crash(self.r.sweep(), 3)            # still a (bounded) pause
+            self.no_crash(self.r.sweep("--pause-active"), 3)
+
+    def test_staged_version_is_kept_beside_the_working_tree_version(self):
+        self.hold()
+        self.r.write("features/chat/kept.ts", "export const kept = 'STAGED A';\n")
+        sh(self.r.work, "git", "add", "features/chat/kept.ts")
+        self.r.write("features/chat/kept.ts", "export const kept = 'TREE B';\n")      # MM
+        self.r.write("features/chat/brandnew.ts", "export const n = 'STAGED NEW';\n")
+        sh(self.r.work, "git", "add", "features/chat/brandnew.ts")
+        os.remove(os.path.join(self.r.work, "features/chat/brandnew.ts"))              # AD
+        res = self.r.sweep()
+        self.no_crash(res, 0)
+        files = sh(self.r.work, "git", "ls-files", "_conflicts").stdout.split()
+        def one(suffix):
+            m = [f for f in files if f.endswith(suffix)]
+            self.assertEqual(len(m), 1, (suffix, files))
+            return self.r.read(m[0])
+        self.assertTrue(one("features/chat/kept.ts.held").endswith(b"'TREE B';\n"))
+        self.assertTrue(one("features/chat/kept.ts.staged.held").endswith(b"'STAGED A';\n"))
+        self.assertTrue(one("features/chat/brandnew.ts.staged.held").endswith(b"'STAGED NEW';\n"))
+        self.assertEqual(self.show("features/chat/kept.ts"), "export const kept = 1;\n")
+        self.assertFalse(self.r.tracked("features/chat/brandnew.ts"))
+        clean = sh(self.r.work, sys.executable, os.path.join(HERE, "check-conflict-markers.py"), check=False)
+        self.assertNotIn("NOT LISTED", clean.stdout)
+
+    def test_long_path_never_crashes_and_is_indexed(self):
+        self.hold()
+        name = "features/chat/" + "x" * 240 + ".ts"
+        self.r.write(name, "export const long = 1;\n")
+        res = self.r.sweep()
+        self.no_crash(res, 0)
+        self.assertFalse(self.r.tracked(name))
+        files = sh(self.r.work, "git", "ls-files", "_conflicts").stdout.split()
+        longs = [f for f in files if "/_long/" in f and f.endswith(".held")]
+        self.assertEqual(len(longs), 1, files)
+        self.assertTrue(self.r.read(longs[0]).endswith(b"export const long = 1;\n"))
+        index = [f for f in files if f.endswith("-held-for-move/INDEX.txt")]
+        self.assertIn(name, self.r.read(index[0]).decode())
+
+    def test_a_second_copy_of_the_same_path_never_overwrites_the_first(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("sm_under_test", SCRIPT)
+        sm = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sm)
+        if not hasattr(sm, "held_copy_path"):
+            self.fail("sync-main has no unique held-copy naming")
+        base = os.path.join(self.r.tmp, "held")
+        a = sm.held_copy_path(base, "features/chat/kept.ts", ".held")
+        with open(a, "w") as f:
+            f.write("first")
+        b = sm.held_copy_path(base, "features/chat/kept.ts", ".held")
+        self.assertNotEqual(a, b)
+        with open(a) as f:
+            self.assertEqual(f.read(), "first")
+
 if __name__ == "__main__":
     unittest.main()

@@ -271,7 +271,7 @@ def read_pause():
                     info[k.strip().lower()] = v.strip()
         # A future-dated mtime would stretch the cap; never trust a write time later than now.
         written = min(datetime.datetime.fromtimestamp(os.path.getmtime(PAUSE_REL)).astimezone(), _now())
-    except OSError as e:
+    except (OSError, OverflowError, ValueError) as e:
         say("SYNC PAUSE MARKER IGNORED: %s is unreadable (%s) — syncing normally. Remove it, then "
             "pause again with: python3 scripts/sync-main.py --pause \"<reason>\"" % (PAUSE_REL, e))
         return None
@@ -279,7 +279,7 @@ def read_pause():
     note = ""
     try:
         until = datetime.datetime.fromisoformat(info.get("until", "")).astimezone()
-    except ValueError:
+    except (ValueError, OverflowError, OSError):
         until = written + datetime.timedelta(minutes=PAUSE_DEFAULT_MIN)
         note = "its until: line is unreadable, so it ends %d min after the file was written" % PAUSE_DEFAULT_MIN
     if until > cap:
@@ -442,7 +442,7 @@ def refuse_old_paths(stamp):
         if not hit or blob_at("HEAD", path):
             continue
         old, new = hit
-        held = os.path.join(HOLD_ROOT, "%s-%s" % (stamp, REFUSED_DIR), path + ".held")
+        held = held_copy_path(os.path.join(HOLD_ROOT, "%s-%s" % (stamp, REFUSED_DIR)), path, ".held")
         header = ("%s\n\n"
                   "OLD PATH REFUSED, written by scripts/sync-main.py\n"
                   "File:        %s\n"
@@ -459,15 +459,12 @@ def refuse_old_paths(stamp):
             with open(path, "rb") as f:
                 data = f.read()
             binary = is_binary(data)
-        os.makedirs(os.path.dirname(held), exist_ok=True)
         if binary:
-            with open(held, "wb") as f:
-                f.write(data)
-            with open(held + "-note.txt", "wb") as f:
-                f.write(header.replace(b"THE REFUSED FILE BELOW", b"THE REFUSED FILE IS NEXT TO THIS NOTE"))
+            safe_write(held, data, path)
+            safe_write(held + "-note.txt", header.replace(
+                b"THE REFUSED FILE BELOW", b"THE REFUSED FILE IS NEXT TO THIS NOTE"), path)
         else:
-            with open(held, "wb") as f:
-                f.write(header + data)
+            safe_write(held, header + data, path)
         if path in staged:
             git("rm", "-q", "--cached", "--", path)
         os.remove(path)
@@ -517,12 +514,12 @@ def read_hold():
                 else:
                     entries.append(line)
         written = min(datetime.datetime.fromtimestamp(os.path.getmtime(HOLD_REL)).astimezone(), _now())
-    except OSError as e:
+    except (OSError, OverflowError, ValueError) as e:
         say("COMMIT HOLD IGNORED: %s is unreadable (%s) — nothing is held; syncing normally." % (HOLD_REL, e))
         return None
     try:
         until = datetime.datetime.fromisoformat(info.get("until", "")).astimezone()
-    except ValueError:
+    except (ValueError, OverflowError, OSError):
         say("COMMIT HOLD IGNORED: %s has no readable `until: <ISO time>` line — nothing is held; "
             "syncing normally. Add the line to hold (max %d min)." % (HOLD_REL, HOLD_MAX_MIN))
         return None
@@ -582,41 +579,51 @@ def hold_changed_paths(stamp):
             continue
         if not held_entry(path, h["entries"]):
             continue
-        in_head = bool(blob_at("HEAD", path))
-        held = os.path.join(HOLD_ROOT, "%s-%s" % (stamp, HELD_FOR_MOVE_DIR), path + ".held")
+        head_blob = blob_at("HEAD", path)
+        in_head = bool(head_blob)
+        base = os.path.join(HOLD_ROOT, "%s-%s" % (stamp, HELD_FOR_MOVE_DIR))
         if os.path.islink(path):
             data, binary, what = ("(a symlink to %s)\n" % os.readlink(path)).encode(), False, "changed"
+            tree_blob = None
         elif os.path.isfile(path):
             with open(path, "rb") as f:
                 data = f.read()
             binary, what = is_binary(data), ("changed" if in_head else "new")
+            _, tree_blob, _ = git("hash-object", "--", path)
+            tree_blob = tree_blob.strip()
         else:
             data, binary, what = b"(this file was DELETED locally; re-apply the deletion after GO)\n", False, "deleted"
-        header = ("%s\n\n"
-                  "HELD FOR THE MOVE, written by scripts/sync-main.py\n"
-                  "File:        %s (%s locally, git status '%s')\n"
-                  "Why:         held for %s; re-apply after GO. Its path is listed in %s, so the\n"
-                  "             sweep did not commit this edit there; the working tree was put back to HEAD.\n"
-                  "Done with it: the edit is re-applied at the file's new home, this .held file is deleted,\n"
-                  "and its line in %s is deleted.\n"
-                  "---------------- THE HELD FILE BELOW ----------------\n"
-                  % (HELD_MARK, path, what, code, h["reason"], HOLD_REL, LOG_REL)).encode()
-        os.makedirs(os.path.dirname(held), exist_ok=True)
-        if binary:
-            want = {held: data, held + "-note.txt": header.replace(
-                b"THE HELD FILE BELOW", b"THE HELD FILE IS NEXT TO THIS NOTE")}
-        else:
-            want = {held: header + data}
-        for p, b in want.items():
-            with open(p, "wb") as f:
-                f.write(b)
-                f.flush()
-                os.fsync(f.fileno())
-            with open(p, "rb") as f:
-                if f.read() != b:
-                    die("could not safely write %s; %s was left untouched and nothing was committed."
-                        % (p, path))
-        # Only now, with the copy verified on disk, put the working tree back.
+            tree_blob = None
+        # A STAGED version that differs from both HEAD and the working tree (staged A, then
+        # edited to B; or staged, then deleted from the tree) is a second piece of work: kept too.
+        rc, idx_blob, _ = git("rev-parse", "-q", "--verify", ":%s" % path, check=False)
+        idx_blob = idx_blob.strip() if rc == 0 else None
+        copies = [(".held", data, binary, "THE HELD FILE (the working tree's version)")]
+        if idx_blob and idx_blob != head_blob and idx_blob != tree_blob:
+            staged = content(idx_blob)
+            copies.append((".staged.held", staged, is_binary(staged), "THE STAGED VERSION (git's index)"))
+        written = []
+        for suffix, body, is_bin, label in copies:
+            held = held_copy_path(base, path, suffix)
+            header = ("%s\n\n"
+                      "HELD FOR THE MOVE, written by scripts/sync-main.py\n"
+                      "File:        %s (%s locally, git status '%s')\n"
+                      "Copy:        %s\n"
+                      "Why:         held for %s; re-apply after GO. Its path is listed in %s, so the\n"
+                      "             sweep did not commit this edit there; the working tree was put back to HEAD.\n"
+                      "Done with it: the edit is re-applied at the file's new home, this .held file is deleted,\n"
+                      "and its line in %s is deleted.\n"
+                      "---------------- THE HELD FILE BELOW ----------------\n"
+                      % (HELD_MARK, path, what, code, label, h["reason"], HOLD_REL, LOG_REL)).encode()
+            if is_bin:
+                want = {held: body, held + "-note.txt": header.replace(
+                    b"THE HELD FILE BELOW", b"THE HELD FILE IS NEXT TO THIS NOTE")}
+            else:
+                want = {held: header + body}
+            for p, b in want.items():
+                safe_write(p, b, path)
+            written.append((held, suffix))
+        # Only now, with every copy verified on disk, put the working tree back.
         if in_head:
             git("checkout", "-q", "HEAD", "--", path)
         else:
@@ -627,9 +634,57 @@ def hold_changed_paths(stamp):
                 os.removedirs(os.path.dirname(path))
             except OSError:
                 pass
-        say("HELD: %s held for %s; re-apply after GO -> %s" % (path, h["reason"], held))
-        held_items.append((path, held, "%s held for %s; re-apply after GO" % (path, h["reason"])))
+        for held, suffix in written:
+            kind = "staged version " if suffix == ".staged.held" else ""
+            say("HELD: %s %sheld for %s; re-apply after GO -> %s" % (path, kind, h["reason"], held))
+            held_items.append((path, held, "%s %sheld for %s; re-apply after GO" % (path, kind, h["reason"])))
     return held_items
+
+
+HELD_NAME_MAX = 200     # bytes per path component; filesystems refuse 255+
+HELD_PATH_MAX = 900     # bytes for the whole relative path; macOS refuses 1024+
+
+
+def held_copy_path(base, path, suffix):
+    """A fresh, writable path for one held copy under `base`. Never reuses a name (a later attempt
+    in the same sweep gets .2, .3, ...), and a path too long for the filesystem becomes
+    _long/<hash><suffix>. Every copy is recorded in <base>/INDEX.txt (copy -> original path)."""
+    cand = os.path.join(base, path + suffix)
+    too_long = (len(cand.encode()) > HELD_PATH_MAX
+                or any(len(c.encode()) > HELD_NAME_MAX for c in cand.split(os.sep)))
+    if too_long:
+        import hashlib
+        stem = os.path.join(base, "_long", hashlib.sha256(path.encode()).hexdigest()[:24])
+    else:
+        stem = os.path.join(base, path)
+    n, held = 1, stem + suffix
+    while os.path.lexists(held) or os.path.lexists(held + "-note.txt"):
+        n += 1
+        held = "%s.%d%s" % (stem, n, suffix)
+    os.makedirs(os.path.dirname(held), exist_ok=True)
+    with open(os.path.join(base, "INDEX.txt"), "a", encoding="utf-8") as f:
+        f.write("%s\t%s\n" % (os.path.relpath(held, base), path))
+    return held
+
+
+def safe_write(p, b, path):
+    """Write, fsync, read back. Any failure stops the sweep before anything is restored or
+    committed (the original file is still in place)."""
+    try:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "wb") as f:
+            f.write(b)
+            f.flush()
+            os.fsync(f.fileno())
+        with open(p, "rb") as f:
+            ok = f.read() == b
+    except OSError as e:
+        ok, why = False, str(e)
+    else:
+        why = "read-back differs"
+    if not ok:
+        die("could not safely write %s (%s); %s was left untouched and nothing was committed."
+            % (p, why, path))
 
 
 # ── step 1 ──────────────────────────────────────────────────────────────────────────────────
