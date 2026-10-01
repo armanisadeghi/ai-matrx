@@ -69,8 +69,12 @@ function openChat() {
       instanceUIState: fixed({ byConversationId: {} }),
     },
   });
-  // The agent as the LIST fetch leaves it: name and card fields, nothing more.
-  store.dispatch(mergePartialAgent({ id: AGENT, name: "Meeting brief writer" }));
+  // The agent as a list fetch plus a narrower read leave it: card fields and
+  // the two fields the old readiness check looked for — but never its kill
+  // switch. Readiness must come from the fetch status, not field presence.
+  store.dispatch(
+    mergePartialAgent({ id: AGENT, name: "Meeting brief writer", variableDefinitions: [], contextPolicies: [] }),
+  );
   store.dispatch(setAgentFetchStatus({ id: AGENT, status: "list" }));
   return store;
 }
