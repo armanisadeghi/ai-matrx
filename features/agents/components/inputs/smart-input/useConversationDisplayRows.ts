@@ -27,8 +27,12 @@ import {
 } from "@/features/agents/redux/execution-system/context-rules/request-context";
 import { selectConversationAttachmentsEntry } from "@/features/connectors/redux/attachments.slice";
 import type { RootState } from "@/lib/redux/store";
-
-const DOCUMENT_TOKENS = ["processed_document", "file"] as const;
+import {
+  ATTACHED_DOCUMENT_TOKENS,
+  attachedDocumentFileId,
+  resolveAttachedDocumentDisplayName,
+  useAttachedDocumentFileNames,
+} from "@/features/agents/components/inputs/resources/attached-documents";
 
 export function useConversationDisplayRows(
   conversationId: string,
@@ -46,15 +50,32 @@ export function useConversationDisplayRows(
     containerId: isMaterialized ? conversationId : null,
     orgId: convOrgId ?? activeOrgId,
   });
-  const documents: DurableAttachment[] | null =
+  const documentLinks =
     isMaterialized && links.status === "ready"
-      ? DOCUMENT_TOKENS.flatMap((token) =>
-          links.linksFor(token).flatMap((link) => {
-            const key = durableAttachmentKey(token, link.resourceId);
-            return key ? [{ key, label: link.label?.trim() || "Attached document" }] : [];
-          }),
+      ? ATTACHED_DOCUMENT_TOKENS.flatMap((token) =>
+          links.linksFor(token).map((link) => ({
+            token,
+            link,
+            fileId: attachedDocumentFileId(token, link),
+          })),
         )
       : null;
+  // Named exactly as the tiles beside the chip name them: the file's own
+  // name, then a sane edge label (an edge saved without one read "Attached
+  // document" after every reload).
+  const fileNames = useAttachedDocumentFileNames(
+    (documentLinks ?? []).flatMap(({ fileId }) => (fileId ? [fileId] : [])),
+  );
+  const documents: DurableAttachment[] | null =
+    documentLinks?.flatMap(({ token, link, fileId }) => {
+      const key = durableAttachmentKey(token, link.resourceId);
+      if (!key) return [];
+      const label = resolveAttachedDocumentDisplayName({
+        fileName: fileId ? fileNames[fileId] : null,
+        edgeLabel: link.label,
+      });
+      return [{ key, label }];
+    }) ?? null;
   const resourcesEntry = useAppSelector(selectConversationAttachmentsEntry(conversationId));
   const resources: DurableAttachment[] | null =
     resourcesEntry.status === "succeeded"

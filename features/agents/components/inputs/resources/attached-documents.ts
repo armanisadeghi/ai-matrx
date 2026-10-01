@@ -1,7 +1,9 @@
 "use client";
 
 import type { RootState } from "@/lib/redux/store";
+import { useEffect, useState } from "react";
 import { useFile } from "@/features/files/handler/hooks/useFile";
+import { fileHandler } from "@/features/files/handler/handler";
 
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.
@@ -167,4 +169,50 @@ export function useAttachedDocumentDisplayName(
     fileName: file?.meta.fileName,
     edgeLabel,
   });
+}
+
+/**
+ * The binary file behind an attachment edge: a `file` edge IS the file; a
+ * legacy `processed_document` edge names it in its metadata.
+ */
+export function attachedDocumentFileId(
+  token: AttachedDocumentToken,
+  link: { resourceId: string; metadata: unknown },
+): string | null {
+  if (token === "file") return link.resourceId;
+  return parseAttachedDocumentMetadata(link.metadata as Json).file_id ?? null;
+}
+
+/**
+ * {@link useAttachedDocumentDisplayName} for many documents at once (the
+ * context chip lists every attachment as a row). Same loader, same naming
+ * rule — so a row and its tile always name a document identically.
+ * Returns file id → file name for the ids resolved so far.
+ */
+export function useAttachedDocumentFileNames(
+  fileIds: readonly string[],
+): Record<string, string> {
+  const [names, setNames] = useState<Record<string, string>>({});
+  const idsKey = [...new Set(fileIds)].sort().join(",");
+  useEffect(() => {
+    if (!idsKey) return undefined;
+    let cancelled = false;
+    for (const fileId of idsKey.split(",")) {
+      fileHandler
+        .resolve({ kind: "file_id", fileId })
+        .then((file) => {
+          const name = file.meta.fileName?.trim();
+          if (cancelled || !name) return;
+          setNames((prev) => (prev[fileId] === name ? prev : { ...prev, [fileId]: name }));
+        })
+        .catch(() => {
+          // The row keeps its edge label; the tile beside it shows the same
+          // fallback through useAttachedDocumentDisplayName.
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
+  return names;
 }
