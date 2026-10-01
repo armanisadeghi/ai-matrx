@@ -18,7 +18,7 @@
  * `features/prompts/components/results-display/QuickChatHistorySheet.tsx`.
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Flame, History } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -125,6 +125,21 @@ function useChatHistoryBrowser(opts: {
     },
     [dispatch, store],
   );
+
+  // A window reopened from its address (`?panels=chat_history:<id>`, a reload)
+  // starts with a selection nobody clicked: read that conversation once so the
+  // main pane shows it instead of an empty room.
+  const initialId = opts.initialSelectedConversationId;
+  useEffect(() => {
+    if (!initialId) return;
+    hydrateConversationForReading(dispatch, () => store.getState() as RootState, {
+      conversationId: initialId,
+      agentId: null,
+      surfaceKey: SURFACE_KEY,
+    }).catch((err: unknown) => {
+      console.error("[chat-history] could not read the conversation named in the address", initialId, err);
+    });
+  }, [initialId, dispatch, store]);
 
   // "Open in new tab" / "Copy link" target for each row's context menu.
   const getConversationHref = useCallback(
@@ -344,6 +359,7 @@ function ChatHistoryWindowInner({
       minWidth={520}
       minHeight={360}
       overlayId="quickChatHistory"
+      urlSyncId={b.selectedId ?? undefined}
       onCollectData={collectData}
       sidebarDefaultSize={280}
       sidebarMinSize={220}
