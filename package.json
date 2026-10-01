@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2636",
+  "version": "0.4.2637",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
