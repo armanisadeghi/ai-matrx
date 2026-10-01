@@ -13,6 +13,7 @@
 // instead of flashing it in a toast.
 
 import { callApi } from "@/lib/api/call-api";
+import { serverRefusal } from "@/lib/progress/failureSentence";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 import { refusalCode } from "@/features/mandates/test-run";
@@ -47,9 +48,13 @@ export class LiveCandidateRefusal extends Error {
   }
 }
 
-/** The sentence a screen prints for any failure of these doors. */
+/**
+ * The sentence a screen prints for any failure of these doors — the server's
+ * own words through the one failure-sentence rule (no trace id, no machine
+ * text). No remedy is appended: each refusal already says what to do.
+ */
 export function candidateFailureSentence(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return serverRefusal(error, { remedy: "" }).text;
 }
 
 function refusalOf(

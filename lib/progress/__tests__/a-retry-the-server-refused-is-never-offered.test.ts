@@ -176,3 +176,34 @@ describe("the run box's own sentence is the same reading", () => {
     ).toBe(true);
   });
 });
+
+describe("a table the live database does not have yet is never offered a retry", () => {
+  // aidream `_schema_mismatch_response`, live 2026-10-01: the mandate page read
+  // candidates before their tables existed on live. The envelope used to be
+  // `internal_error` + "Something went wrong. Please try again later."
+  const SCHEMA_MISMATCH_ENVELOPE = {
+    error: "schema_mismatch",
+    message: 'Table / relation does not exist in the live database: relation "mandate.candidate" does not exist',
+    user_message:
+      "This part of the app needs a database update that has not been applied yet, " +
+      "so it cannot load. That is our defect, not anything you did, and trying again " +
+      `will fail the same way until the update is applied. It was recorded as ${TRACE_ID} ` +
+      "so it can be traced. Nothing you sent was changed or lost.",
+    request_id: TRACE_ID,
+  };
+
+  it("is recognised by its code and keeps the sentence clean", () => {
+    expect(retryIsPointless(SCHEMA_MISMATCH_ENVELOPE)).toBe(true);
+    const refusal = serverRefusal(SCHEMA_MISMATCH_ENVELOPE);
+    expect(refusal.retryIsPointless).toBe(true);
+    expect(refusal.text).toContain("database update that has not been applied yet");
+    expect(namesATraceId(refusal.text)).toBe(false);
+    expect(refusal.traceId).toBe(TRACE_ID);
+  });
+
+  it("is recognised by the code alone, without the prose net", () => {
+    expect(
+      retryIsPointless({ error: "schema_mismatch", user_message: "This part of the app cannot load." }),
+    ).toBe(true);
+  });
+});

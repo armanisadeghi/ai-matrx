@@ -501,6 +501,9 @@ const RECORDED_CLAUSE =
 const RETRY_IS_POINTLESS_CODES: ReadonlySet<string> = new Set([
   "build_defect",
   "definition_invalid",
+  // aidream `_schema_mismatch_response`: the code reads a table/column the live
+  // database does not have yet; nothing changes until the database update lands.
+  "schema_mismatch",
 ]);
 
 /**
