@@ -89,6 +89,11 @@ interface GuestSignal {
  * eight disjoint slices, each read to completion in parallel — same rows,
  * same completeness proof, an eighth of the wall time.
  */
+// Widened to `string` so supabase-js does not parse the json-path select into a
+// row type (TS2589); the shape is declared once, by GuestSignalRow.
+const GUEST_SIGNAL_SELECT: string =
+  "id, auth_user_id, converted_to_user_id, user_agent, created_at, acquisition:metadata->acquisition, acquisition_user_id:metadata->>acquisition_user_id";
+
 const UUID_SLICE_BOUNDS = ["0", "2", "4", "6", "8", "a", "c", "e"].map(
   (digit) => `${digit}0000000-0000-0000-0000-000000000000`,
 );
@@ -104,10 +109,7 @@ async function readGuestSignalRows(
           let query = admin
             .schema("users")
             .from("guest_executions")
-            .select(
-              "id, auth_user_id, converted_to_user_id, user_agent, created_at, acquisition:metadata->acquisition, acquisition_user_id:metadata->>acquisition_user_id",
-              { count: "exact" },
-            )
+            .select(GUEST_SIGNAL_SELECT, { count: "exact" })
             .or(
               "auth_user_id.not.is.null,converted_to_user_id.not.is.null,metadata->>acquisition_user_id.not.is.null",
             )
@@ -297,7 +299,7 @@ export async function GET() {
   // 3. Organization memberships — canonical iam.organization_member view,
   // joined here so the account roster shows the user's organizations without
   // inventing a second membership query path.
-  const organizationDirectory = await loadAdminOrganizationDirectory();
+  const organizationDirectory = await loadAdminOrganizationDirectory("all");
   const organizationById = new Map(
     organizationDirectory.organizations.map((organization) => [
       organization.id,
