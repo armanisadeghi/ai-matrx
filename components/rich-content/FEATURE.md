@@ -20,7 +20,7 @@ import { RichContent } from "@/components/rich-content/RichContent";
 | Level | Renders | Use it for | Loading boundary |
 |---|---|---|---|
 | `inline` | markdown + math, **phrasing only** (every block element is a `<span>`) — valid inside `<p>`, `<button>`, `<td>`, headings | card faces, quiz prompts/options, key terms, previews, titles, cells | MarkdownCore's shared edge |
-| `standard` | + code, tables, mermaid, XML sections, ```markdown fences, nested blocks — no kinds, no actions | notes-like bodies, nested content | one dynamic edge (`RichContentStandardImpl`) |
+| `standard` | + code, tables, mermaid, XML sections, ```markdown fences, nested blocks — no actions; a `__kind` JSON region routes to its kind (`standard/StandardKindRegion`, one React.lazy edge; never raw JSON) | notes-like bodies, nested content | one dynamic edge (`RichContentStandardImpl`) |
 | `full` | the chat engine (`MarkdownStream` → block registry → kinds, actions) | assistant answers, documents | MarkdownStream's edge |
 
 ## One core (invariants)

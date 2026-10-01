@@ -128,8 +128,11 @@ Every stream item below adds its case there.
 
 ## I. Public pages and other features
 
-- [ ] U1. Shared conversations / shared notes / public resource pages use the `standard` level, which renders
-      kinds as JSON fences by design.
+- [x] U1. Shared conversations / shared notes / public resource pages use the `standard` level, which renders
+      kinds as JSON fences by design. (→ `StandardBlock` runs the first-key rule on json/unlabelled fences and
+      promoted blocks; a kind goes to `standard/StandardKindRegion` behind one React.lazy edge — loader while
+      undecided, broken state + "View source" when unreadable. Covers the static/share path too, which hands
+      engine blocks to `StandardBlock`. The kind body is client-only, so share-page HTML carries the loader.)
 - [ ] U2. Research synthesis truncates JSON at 20,000 chars.
 - [ ] U3. Content-plan step rail and AI runs view.
 - [ ] U4. Transcript studio module column.

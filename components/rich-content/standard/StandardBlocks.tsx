@@ -8,8 +8,11 @@
 // shared nested-fence rule), the SAME prose leaf (BasicMarkdownContent →
 // MarkdownCore preset "chat"), the SAME block components (XmlBlock,
 // MarkdownPreviewBlock, CodeBlock, MermaidBlock). What it leaves out is the
-// kind registry / interactive-block routing, so a structured payload shows as
-// its JSON source here — the `full` level is where kinds render.
+// interactive-block routing and actions. One exception, by ruling (Arman,
+// 2026-09-30: a kind is never drawn as raw JSON): a JSON region that carries
+// `__kind` renders through the kind route (`StandardKindRegion`, behind one
+// React.lazy edge) — its loader while it arrives, its broken state when it
+// cannot be read. Kindless JSON still shows as its source.
 //
 // Nested content (an <info> body, a ```markdown fence's document, an XML
 // section's prose) goes through `NestedRichContent`, which renders one level
@@ -43,6 +46,10 @@ import {
   useMarkdownStreaming,
 } from "@/components/markdown-core/streaming-context";
 import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
+import {
+  firstKindSlug,
+  jsonKindSignal,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 
 // Heavy engines stay behind React.lazy (an async edge inside the parent's
 // existing chunk graph — no new loadable; code-splitting rule 3), exactly as
@@ -52,6 +59,12 @@ const CodeBlock = lazy(
 );
 const MermaidBlock = lazy(
   () => import("@/components/mardown-display/blocks/mermaid/MermaidBlock"),
+);
+// The kind route ends in the full block engine, which statically imports this
+// file — lazy, so there is no module cycle and no engine on kindless pages.
+const StandardKindValue = lazy(() => import("./StandardKindRegion"));
+const StandardBrokenKind = lazy(() =>
+  import("./StandardKindRegion").then((m) => ({ default: m.StandardBrokenKind })),
 );
 
 /** XML control sections whose body is prose that may carry nested blocks. */
@@ -110,6 +123,50 @@ function CodeFence({
         className="my-3"
         isStreamActive={isStreaming}
       />
+    </Suspense>
+  );
+}
+
+/** Languages a kind's JSON can arrive under (plus an unlabelled fence). */
+const JSON_LANGUAGES = new Set(["json", "jsonc", "json5"]);
+
+/** The loader a kind region shows while it arrives — never its JSON. */
+function KindLoader() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading"
+      data-standard-kind-loading=""
+      className="my-3 h-20 animate-pulse rounded-md border border-border bg-muted/40"
+    />
+  );
+}
+
+/**
+ * A JSON region by the first-key rule (`jsonKindSignal`): a kind renders as
+ * its kind; an undecided region shows the loader; a kindless one returns
+ * null (the caller draws it as JSON, which is correct).
+ */
+function kindRegion(content: string, isStreaming?: boolean) {
+  const trimmed = content.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
+  const signal = jsonKindSignal(trimmed);
+  if (signal === "not_kind") return null;
+  if (signal === "undecided") return isStreaming ? <KindLoader /> : null;
+  let value: unknown;
+  try {
+    value = JSON.parse(trimmed);
+  } catch {
+    if (isStreaming) return <KindLoader />;
+    return (
+      <Suspense fallback={<KindLoader />}>
+        <StandardBrokenKind slug={firstKindSlug(trimmed)} source={content} />
+      </Suspense>
+    );
+  }
+  return (
+    <Suspense fallback={<KindLoader />}>
+      <StandardKindValue value={value} />
     </Suspense>
   );
 }
@@ -178,6 +235,10 @@ export function StandardBlock({
         <CsvBlock content={content} delimiter={language === "tsv" ? "\t" : ","} className="my-3" />
       );
     }
+    if (!language || JSON_LANGUAGES.has(language)) {
+      const kind = kindRegion(content, isStreaming);
+      if (kind) return kind;
+    }
     const fenceMeta = block.metadata?.[FENCE_META_KEY];
     return (
       <CodeFence
@@ -218,10 +279,12 @@ export function StandardBlock({
     return <hr className="my-4 border-border" />;
   }
 
-  // Everything else — structured kinds, promoted fences (html, react, diff,
-  // chart…), media, artifacts — is shown as its source at this level. The
-  // `full` level is where those render as components.
+  // Everything else — promoted fences (html, react, diff, chart…), media,
+  // artifacts — is shown as its source at this level; the `full` level is
+  // where those render as components. A kind is the exception: never JSON.
   if (!content.trim()) return null;
+  const kind = kindRegion(content, isStreaming);
+  if (kind) return kind;
   if (looksLikeJson(content)) {
     return <CodeFence code={content} language="json" isStreaming={isStreaming} />;
   }
