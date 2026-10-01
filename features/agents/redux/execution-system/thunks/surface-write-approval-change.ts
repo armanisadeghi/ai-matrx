@@ -60,12 +60,15 @@ import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approva
  * What approving the write will actually do, in the user's terms. Stated per
  * `mode` because "approve" means three genuinely different things.
  */
-function timingSentence(
-  mode: SurfaceWriteApprovalProposal["target"]["mode"],
-): string {
+function timingSentence(target: SurfaceWriteApprovalProposal["target"]): string {
+  const { mode } = target;
   if (mode === "entity") return "This saves immediately if approved.";
   if (mode === "draft") {
-    return "Approval only stages it in the editor; you still review and save.";
+    // An editor that saves itself (`savedBy: "autosave"`) has nothing left
+    // for the person to save — saying so was false (2026-10-01).
+    return target.savedBy === "autosave"
+      ? "The editor saves it automatically if approved; you can undo it there."
+      : "Approval only stages it in the editor; you still review and save.";
   }
   return "Approval changes the current interface state.";
 }
@@ -81,7 +84,7 @@ export function buildSurfaceWriteApprovalChange(
     verb: target.name.startsWith("append") ? "append" : "update",
     entity: "proposed change",
     title: target.label,
-    description: `${who} proposed this change. ${target.description} ${timingSentence(target.mode)}`,
+    description: `${who} proposed this change. ${target.description} ${timingSentence(target)}`,
     ...(actor ? { actor } : {}),
     fields: [],
   };

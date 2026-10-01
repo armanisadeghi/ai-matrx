@@ -15,6 +15,8 @@
 import { surfaceWriteToolOutput } from "../surface-write-tool-output";
 import { notesEditorManifest } from "../../manifests/notes-editor.manifest";
 import type { SurfaceWriteTarget } from "../../types";
+import { buildSurfaceWriteApprovalChange } from "@/features/agents/redux/execution-system/thunks/surface-write-approval-change";
+import type { SurfaceWriteApprovalProposal } from "../surface-writeback";
 
 function targetNamed(name: string): SurfaceWriteTarget {
   const target = notesEditorManifest.writeTargets?.find((t) => t.name === name);
@@ -60,5 +62,28 @@ describe("a draft write into an autosaving editor", () => {
     const output = messageFor(manual);
     expect(String(output.message)).toMatch(/the user still reviews and saves/);
     expect(output.saved_by).toBe("user");
+  });
+});
+
+/**
+ * The same false sentence reached the PERSON: the approval card for a draft
+ * write said "Approval only stages it in the editor; you still review and
+ * save." over a note editor that saves on its own.
+ */
+
+describe("the approval card for a draft write", () => {
+  const proposalFor = (target: SurfaceWriteTarget) =>
+    ({ target, value: "new body" }) as unknown as SurfaceWriteApprovalProposal;
+
+  it("says an autosaving editor saves it", () => {
+    const change = buildSurfaceWriteApprovalChange(proposalFor(targetNamed("note_content")));
+    expect(change.description).not.toMatch(/you still review and save/);
+    expect(change.description).toMatch(/saves automatically/);
+  });
+
+  it("still says a Save-button draft waits for the person", () => {
+    const manual = { ...targetNamed("note_content"), savedBy: undefined };
+    const change = buildSurfaceWriteApprovalChange(proposalFor(manual));
+    expect(change.description).toMatch(/you still review and save/);
   });
 });
