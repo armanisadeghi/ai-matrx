@@ -1,12 +1,13 @@
 # Mandates admin pieces
 
-Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/mandates/ — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/ — read it before touching this feature in ANY repo.
 
 Routes (all under `/administration/intelligence/mandates`, hrefs from `../admin-routes.ts`): the list is `../admin-list/MandateAdminListPage.tsx` and the record is `../record-next/MandateRecordPage.tsx`, whose Test/Access/Usage/Health tab bodies render `MandateDetailView` via `RecordAdminPanels` · `/new` (`../authoring/NewMandatePage.tsx`) · `/advanced` (`advanced/AdvancedMandateCrud.tsx`) · `/references` (`MandateReferenceBoardView.tsx`). The original console and record page were removed on 2026-09-27; their old addresses redirect.
 
 Map: `service.ts` (console bundle, code-truth `GET /mandates/code-truth`, `POST /mandates/{key}/variable-verdicts`) · `mandate-health.ts` (`MandateRow`/`buildRow`, ONE worst-first health order) · `MandateDetailPanel.tsx` (`MandateDetailView`) · `MandateTestBench.tsx` + `TryItNowPanel.tsx` + `ProvisionOfferComposer.tsx` + `bench-draft.ts` · `impact.ts`/`impact-cells.tsx`/`impact-advance.tsx`/`ImpactBatchPanel.tsx`/`impact-settings-fix.tsx`/`useAgentChangeReach.tsx` (Agent Change Impact; window `features/window-panels/windows/mandates/ImpactBatchWindow.tsx`) · `rebind-impact.ts` + `useGuardedRebind.tsx` + `variable-verdict-presentation.tsx` · `mandate-actions.tsx` · `references.ts` + `MandateSourceUsage.tsx`. Surface: `matrx-admin/mandates` (`features/surfaces/manifests/mandates.manifest.ts`; write targets `select_mandate`, `mandate_exemplar_draft` — JUDGMENT BAR in the manifest before adding a third); the mandate page is `matrx-admin/mandate-workspace` (`mandate-workspace.manifest.ts`, target `mandate_goal_draft`).
 
 Landmines:
+- Desktop admin records use the available page width. Saved test-case inputs use `ConfigurationValueList` (labels above values), so structured shape cards are not squeezed into a two-column label/value table.
 - Every protected read/mutation establishes a browser session before building a Supabase query or `callApi`; wait for the explicit Redux `organization_id` before coverage/goals/code-truth.
 - Admin system-default picker offers system agents only (`selectBuiltinAgents`); never a raw `.from("definition")` list.
 - Code-truth read allows 60 s to headers; failures stay visible (amber banner), `console.warn` not `console.error`.
