@@ -181,6 +181,9 @@ describe("every window has an address (R35)", () => {
       "googleConnectWindow",
       "approvalsWindow",
       "detailWindow",
+      // The account menu's Chat History window vanished on every reload and
+      // never wrote `?panels=` (seen on /board, 2026-10-01).
+      "quickChatHistory",
     ];
     const addresses = Object.fromEntries(
       mustBeAddressed.map((id) => [
@@ -197,6 +200,7 @@ describe("every window has an address (R35)", () => {
       googleConnectWindow: "google_connect",
       approvalsWindow: "approvals",
       detailWindow: "detail",
+      quickChatHistory: "chat_history",
     });
   });
 });

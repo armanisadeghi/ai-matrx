@@ -332,6 +332,18 @@ export function initUrlHydration() {
     dispatch(openOverlay({ overlayId: "jsonTruncator" }));
   });
 
+  // Chat History Window — `?panels=chat_history:<conversationId>` reopens the
+  // window on that conversation; the bare overlay id reopens it with none picked.
+  registerPanelHydrator("chat_history", (dispatch, id) => {
+    const selected = getRestorableResourceId(id, "quickChatHistory");
+    dispatch(
+      openOverlay({
+        overlayId: "quickChatHistory",
+        data: selected ? { initialSelectedConversationId: selected } : null,
+      }),
+    );
+  });
+
   // Quick Tasks Window
   registerPanelHydrator("quick_tasks", (dispatch) => {
     dispatch(openOverlay({ overlayId: "quickTasksWindow" }));

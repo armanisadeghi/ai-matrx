@@ -1760,6 +1760,10 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     label: "Chat History",
     defaultData: { selectedConversationId: null, groupBy: "date" },
     mobilePresentation: "fullscreen",
+    // `?panels=chat_history:<conversationId>` — the selected conversation, or
+    // the overlay id when none is picked. Without it the window vanished on
+    // every reload (seen on /board, 2026-10-01).
+    urlSync: { key: "chat_history" },
   },
 
   // ── Stream Debug ──────────────────────────────────────────────────────────
