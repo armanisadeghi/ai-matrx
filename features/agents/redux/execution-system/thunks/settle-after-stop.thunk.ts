@@ -165,7 +165,7 @@ export const settleAfterStop = createAsyncThunk<
     while (Date.now() < deadline) {
       let byLink: RuntimeOperationsByLinkResponse | null = null;
       try {
-        byLink = await fetchOperationsByLink(backend, conversationId);
+        byLink = await fetchOperationsByLink(backend, conversationId); // org-filter: server-call the conversation's own organization rides the backend headers; the read is by conversation id
       } catch (err) {
         console.warn("[settle-after-stop] spine read failed; retrying", {
           conversationId,
