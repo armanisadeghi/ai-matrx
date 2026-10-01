@@ -1,5 +1,7 @@
 'use client';
 
+import { durableRecordId } from '@/lib/ids/durable-record-id';
+
 /**
  * HTMLPageService
  *
@@ -63,7 +65,8 @@ export class HTMLPageService {
             metaTitle,
             metaDescription,
             metaFields,
-            ...(sourceMessageId ? { sourceMessageId } : {}),
+            // `source_message_id` is a uuid: a client-temp answer has no row to dedupe on.
+            ...(durableRecordId(sourceMessageId) ? { sourceMessageId } : {}),
             ...(sourceConversationId ? { sourceConversationId } : {}),
             ...(contextMetadata ? { contextMetadata } : {}),
             ...(forceNew ? { forceNew: true } : {}),
