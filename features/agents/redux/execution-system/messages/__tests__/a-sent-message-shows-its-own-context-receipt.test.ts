@@ -183,7 +183,10 @@ describe("receiptRowToResolved", () => {
     const byKey = Object.fromEntries(rows.map((r) => [r.key, r]));
     expect(byKey.client.origin).toBe("attached");
     expect(byKey.note_bundle.origin).toBe("page");
-    expect(byKey.note_bundle.layers?.default_max).toBe(12000);
+    // The limit the server APPLIED, on the layer that decided it (the page).
+    expect(byKey.note_bundle.max_inline_chars).toBe(12000);
+    expect(byKey.note_bundle.decided_by.max_inline_chars).toBe("page");
+    expect(byKey.note_bundle.layers?.surface?.max_inline_chars).toBe(12000);
     expect(byKey.route_brief.delivery).toBe("on_request");
   });
 

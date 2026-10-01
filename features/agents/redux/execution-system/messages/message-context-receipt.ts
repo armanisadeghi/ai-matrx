@@ -115,13 +115,10 @@ function cleanUserRule(rule: ContextReceiptRow["user_rule"]): SavedContextRule |
 
 /**
  * One receipt row → the row a read-only `ContextRulesTable` renders — the
- * package's `receiptRowToResolved` (`@ai-matrx/agents/context`), with two
- * additions this app needs until the package carries them:
- *   - a label that is just the key (the server's `origin: "rule"` rows,
- *     2026-09-30) is named in words, the way every other surface names it;
- *   - `layers.default_max` is the limit the server APPLIED, so the table's
- *     muted "inherited" limit shows the server's number instead of
- *     re-deriving 200 from no layers (a receipt carries results, not layers).
+ * package's `receiptRowToResolved` (`@ai-matrx/agents/context`, which rebuilds
+ * the deciding layer from what the server applied), plus one thing for history:
+ * receipts persisted before 2026-10-01 named `origin: "rule"` rows by their raw
+ * key; those are named in words, the way every other surface names them.
  */
 export function receiptRowToResolved(row: ContextReceiptRow): ResolvedContextRow {
   const base = packageReceiptRowToResolved({
@@ -135,6 +132,5 @@ export function receiptRowToResolved(row: ContextReceiptRow): ResolvedContextRow
   return {
     ...base,
     label: contextEntryLabel({ key: row.key, label: row.label }),
-    layers: { default_max: row.max_inline_chars },
   };
 }

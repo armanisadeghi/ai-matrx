@@ -77,10 +77,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-function isTopLevelResourceRef(value: unknown): boolean {
-  return isRecord(value) && value.__kind === "resource_ref";
-}
-
 function validLimit(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
@@ -238,14 +234,6 @@ export function buildRequestContext(
     resolveContextRow(source, saved, cap),
   );
   const wire = buildContextWire(rows);
-  // STOPGAP (2026-09-30) until @ai-matrx/agents ships the resource-reference
-  // pass-through in buildContextWire: the server resolves an attached file
-  // only from a TOP-LEVEL `__kind: "resource_ref"`; wrapped in an envelope it
-  // becomes plain JSON and the document silently stops resolving. Remove this
-  // block when the package's buildContextWire passes references through.
-  for (const row of rows) {
-    if (row.include && isTopLevelResourceRef(row.value)) wire[row.key] = row.value;
-  }
   return { rows, context: Object.keys(wire).length > 0 ? wire : undefined };
 }
 
