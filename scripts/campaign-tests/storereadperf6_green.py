@@ -31,7 +31,16 @@ import os, re, subprocess, sys, tempfile, collections
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FILE = os.path.join(ROOT, "migrations/campaign/storereadperf6_one_walk_for_every_table_the_tree_names.sql")
-CLONE_REF = "nwvvyzngqicrmnbuzauy"
+def _clone_ref() -> str:
+    # the clone of tonight (rewritten by the nightly refresh): common-docs/operations/clone/CLONE-REF
+    path = os.path.join(os.path.dirname(ROOT), "common-docs/operations/clone/CLONE-REF")
+    for line in open(path):
+        m = re.match(r"^\s*clone_ref\s*=\s*(\w+)", line)
+        if m:
+            return m.group(1)
+    sys.exit("REFUSED: no clone_ref in " + path)
+
+CLONE_REF = _clone_ref()
 PSQL = os.environ.get("PSQL", "/opt/homebrew/opt/libpq/bin/psql")
 
 def clone_url() -> str:
@@ -66,7 +75,7 @@ PLANTS = {
     "all_v": ("query_visible_ids", "when s.all_v then true", "when s.all_v then r.created_by = v_user", 1),
     "carried_none": ("read_door_carried_ids",
                      "        o_ids := case when v_ids = '~' then null",
-                     "        o_ids := '{}'::uuid[];\n        o_ids := case when false then o_ids when v_ids = '~' then null", 0),
+                     "        v_ids := case when v_ids = '~' then v_ids else '' end;\n        o_ids := case when v_ids = '~' then null", 0),
     "down_any": ("read_door_carried_ids",
                  "                                        and r.table_id is not distinct from c.tbl\n                                      where x.org = c.org",
                  "                                      where x.org = c.org", 0),
