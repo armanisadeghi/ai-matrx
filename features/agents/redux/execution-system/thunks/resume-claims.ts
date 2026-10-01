@@ -75,8 +75,20 @@ export function onResumeStreamOpened(userRequestId: string): void {
   streamClosingAttempts.delete(userRequestId);
 }
 
-export const RESUME_STREAM_CLOSING_MAX_RETRIES = 6;
-export const RESUME_STREAM_CLOSING_BACKOFF_MS = 250;
+/**
+ * How long one resume attempt waits for the suspending stream to close.
+ *
+ * The wait is event-driven (`whenAbortControllerReleased`) — it ends the
+ * instant the stream unregisters. The bound only matters when the stream
+ * never closes, and it must cover a HEALTHY close: after the client tool's
+ * result lands, the server still finishes the suspended turn (kind records,
+ * completion, `end`) on the original stream, and the client's own guard gives
+ * a post-terminal socket 30 s (POST_TERMINAL_GRACE_MS in process-stream).
+ * The old fixed 250 ms × 1..6 poll (≈5 s in total) gave up mid-close on the
+ * /files page agent, 2026-10-01. Total budget: WAIT × MAX = 45 s.
+ */
+export const RESUME_STREAM_CLOSING_WAIT_MS = 15_000;
+export const RESUME_STREAM_CLOSING_MAX_RETRIES = 3;
 
 /**
  * A fast client tool can post its result before the original NDJSON reader has
@@ -90,6 +102,14 @@ export function nextResumeStreamClosingAttempt(
   if (attempts > RESUME_STREAM_CLOSING_MAX_RETRIES) return null;
   streamClosingAttempts.set(userRequestId, attempts);
   return attempts;
+}
+
+/**
+ * A spent stream-closing budget starts fresh — the person's explicit
+ * "Continue agent" after an exhausted wait gets a full new wait.
+ */
+export function resetResumeStreamClosingAttempts(userRequestId: string): void {
+  streamClosingAttempts.delete(userRequestId);
 }
 
 export const RESUME_CONFLICT_MAX_RETRIES = 4;

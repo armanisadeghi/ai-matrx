@@ -45,7 +45,10 @@ import {
   warmLocalEngineForConversation,
 } from "./resolve-base-url";
 import { buildToolInjection } from "../utils/build-tool-injection";
-import { hasAbortController } from "./abort-registry";
+import {
+  hasAbortController,
+  whenAbortControllerReleased,
+} from "./abort-registry";
 import {
   runAiStream,
   ResumeConflictError,
@@ -60,7 +63,8 @@ import {
   RESUME_CONFLICT_BACKOFF_MS,
   RESUME_CONFLICT_MAX_RETRIES,
   nextResumeStreamClosingAttempt,
-  RESUME_STREAM_CLOSING_BACKOFF_MS,
+  resetResumeStreamClosingAttempts,
+  RESUME_STREAM_CLOSING_WAIT_MS,
   RESUME_STREAM_CLOSING_MAX_RETRIES,
 } from "./resume-claims";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
@@ -139,24 +143,27 @@ export const resumeInstance = createAsyncThunk<
       // already-in-flight reducer, and starting a second one would split the
       // stream into two parallel readers writing to the same Redux entries.
       // The most important case is a fast client tool: its result POST can
-      // return continuation_needed while the just-suspended reader is still
-      // unregistering. There may be no next tool result, so discarding that
-      // signal wedges the durable request forever. Retry after a bounded,
-      // linear delay; single-flight claims still prevent parallel resumes.
+      // return continuation_needed while the just-suspended stream is still
+      // open — the server finishes the suspended turn (kind records,
+      // completion, `end`) on it AFTER /tool_results has already answered.
+      // There may be no next tool result, so discarding that signal wedges the
+      // durable request forever. Wait for that stream's ACTUAL close (event-
+      // driven, bounded per attempt), then re-dispatch; single-flight claims
+      // still prevent parallel resumes.
       if (hasAbortController(conversationId)) {
         releaseResumeClaim(userRequestId);
         const attempt = nextResumeStreamClosingAttempt(userRequestId);
         if (attempt !== null) {
-          const delay = RESUME_STREAM_CLOSING_BACKOFF_MS * attempt;
           console.warn(
-            `[resumeInstance] suspending stream still closing — retrying in ${delay}ms (attempt ${attempt}/${RESUME_STREAM_CLOSING_MAX_RETRIES})`,
+            `[resumeInstance] suspending stream still closing — continuing when it closes (wait ${attempt}/${RESUME_STREAM_CLOSING_MAX_RETRIES}, up to ${RESUME_STREAM_CLOSING_WAIT_MS}ms)`,
             { conversationId, userRequestId },
           );
-          setTimeout(() => {
-            void dispatch(
-              resumeInstance({ conversationId, userRequestId, debug }),
-            );
-          }, delay);
+          void whenAbortControllerReleased(
+            conversationId,
+            RESUME_STREAM_CLOSING_WAIT_MS,
+          ).then(() =>
+            dispatch(resumeInstance({ conversationId, userRequestId, debug })),
+          );
           return rejectWithValue(
             `suspending stream still closing — retry ${attempt} scheduled`,
             // Not a failure — the retry above carries the turn. Only the
@@ -165,10 +172,29 @@ export const resumeInstance = createAsyncThunk<
           );
         }
         console.error(
-          "[resumeInstance] suspending stream did not close within retry budget; leaving the durable operation recoverable from reconnect UI.",
+          "[resumeInstance] suspending stream did not close within retry budget; offering Continue on the conversation.",
           { conversationId, userRequestId },
         );
+        // Never a silent stall: the answer is saved server-side and the turn
+        // is resumable, so put the honest state on screen — the
+        // ServerOperationBanner's "Continue agent" face, which re-dispatches
+        // this thunk with a fresh wait budget.
+        resetResumeStreamClosingAttempts(userRequestId);
         dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+        dispatch(
+          patchConversation({
+            conversationId,
+            serverOperation: {
+              executionId: "",
+              userRequestId,
+              status: "waiting_input",
+              waitingInput: true,
+              recoveryState: "needs_action",
+              startedAt: null,
+              checkedAt: new Date().toISOString(),
+            },
+          }),
+        );
         return rejectWithValue(
           "suspending stream still closing — retries exhausted",
         );

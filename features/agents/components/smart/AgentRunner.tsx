@@ -38,6 +38,7 @@ import { PreExecutionAgentInput } from "../inputs/PreExecutionAgentInput";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
+import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
 
 interface AgentRunnerProps {
   conversationId: string;
@@ -171,6 +172,9 @@ export function AgentRunner({
       {/* Input panel — pinned to bottom, grows upward, never taller than 70% of container */}
       {shouldShowInput && (
         <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-stretch justify-end px-1.5 pb-1.5 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
+          {/* Same reconnect / Continue face as AgentConversationColumn — a
+              resume that could not continue is never a silent stall here. */}
+          <ServerOperationBanner conversationId={conversationId} />
           <PendingAsksZone conversationId={conversationId} />
           <ProposedDirectivesZone conversationId={conversationId} />
           <SmartAgentInput

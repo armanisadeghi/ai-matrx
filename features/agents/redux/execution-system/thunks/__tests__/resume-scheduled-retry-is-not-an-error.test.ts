@@ -6,65 +6,77 @@
  * "suspending stream still closing — retry N scheduled". The capture middleware
  * filed every one of those as a RED redux-rejected "dead user turn" — although
  * the next dispatch carried the turn. Drives the REAL thunk through the REAL
- * capture middleware and tier rules; only the abort registry is pinned to
- * "a stream is still registered for this conversation".
+ * capture middleware and tier rules; a real AbortController stays registered
+ * for the conversation ("the suspending stream never closes").
  */
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, type Middleware } from "@reduxjs/toolkit";
 import {
   clearCapturedErrors,
   getSnapshot,
 } from "@/lib/diagnostics/errorCaptureStore";
 import { reduxErrorCaptureMiddleware } from "@/lib/diagnostics/reduxErrorCaptureMiddleware";
 
-jest.mock("../abort-registry", () => ({
-  ...jest.requireActual("../abort-registry"),
-  hasAbortController: () => true,
-}));
-
+import {
+  registerAbortController,
+  unregisterAbortController,
+} from "../abort-registry";
 import { resumeInstance } from "../resume-instance.thunk";
-import { RESUME_STREAM_CLOSING_MAX_RETRIES } from "../resume-claims";
+import {
+  RESUME_STREAM_CLOSING_MAX_RETRIES,
+  RESUME_STREAM_CLOSING_WAIT_MS,
+} from "../resume-claims";
 
 const CONVERSATION = "7c1d2f4e-3a8b-4c55-9e21-6b0f8d4a2c19";
 const USER_REQUEST = "b3e9a1c7-52d4-4f0e-8a6b-1d7c9e2f4a83";
 
 function makeStore() {
-  return configureStore({
-    reducer: () => ({}),
+  const payloads: string[] = [];
+  const recordRejections: Middleware = () => (next) => (action) => {
+    const a = action as { type: string; payload?: unknown };
+    if (a.type === resumeInstance.rejected.type) payloads.push(String(a.payload));
+    return next(action);
+  };
+  const store = configureStore({
+    reducer: () => ({ conversations: { byConversationId: {} } }),
     middleware: (d) =>
-      d({ serializableCheck: false, immutableCheck: false }).concat(
-        reduxErrorCaptureMiddleware,
-      ),
+      d({ serializableCheck: false, immutableCheck: false })
+        .concat(reduxErrorCaptureMiddleware)
+        .concat(recordRejections),
   });
+  return { store, payloads };
 }
 
 describe("resumeInstance scheduled retry", () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => {});
     clearCapturedErrors();
+    registerAbortController(CONVERSATION, new AbortController());
   });
   afterEach(() => {
+    unregisterAbortController(CONVERSATION);
+    jest.restoreAllMocks();
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
   it("files nothing while a retry is scheduled, and red once the budget is spent", async () => {
-    const store = makeStore();
-
-    for (let attempt = 1; attempt <= RESUME_STREAM_CLOSING_MAX_RETRIES; attempt++) {
-      const r = await store.dispatch(
-        resumeInstance({ conversationId: CONVERSATION, userRequestId: USER_REQUEST }),
-      );
-      expect(r.payload).toBe(
-        `suspending stream still closing — retry ${attempt} scheduled`,
-      );
-      jest.clearAllTimers(); // the scheduled re-dispatch is driven by this loop
-    }
-    expect(getSnapshot()).toEqual([]);
-
-    const final = await store.dispatch(
+    const { store, payloads } = makeStore();
+    void store.dispatch(
       resumeInstance({ conversationId: CONVERSATION, userRequestId: USER_REQUEST }),
     );
-    expect(final.payload).toBe("suspending stream still closing — retries exhausted");
+
+    for (let attempt = 1; attempt <= RESUME_STREAM_CLOSING_MAX_RETRIES; attempt++) {
+      await jest.advanceTimersByTimeAsync(0);
+      expect(payloads[attempt - 1]).toBe(
+        `suspending stream still closing — retry ${attempt} scheduled`,
+      );
+      expect(getSnapshot()).toEqual([]);
+      await jest.advanceTimersByTimeAsync(RESUME_STREAM_CLOSING_WAIT_MS);
+    }
+
+    expect(payloads.at(-1)).toBe("suspending stream still closing — retries exhausted");
     const captured = getSnapshot();
     expect(captured).toHaveLength(1);
     expect(captured[0]).toMatchObject({
