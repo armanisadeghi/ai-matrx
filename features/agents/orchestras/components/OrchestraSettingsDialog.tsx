@@ -204,10 +204,8 @@ function SettingsForm({
             })}
           </div>
           <p className="text-[11px] leading-snug text-muted-foreground">
-            How many levels deep members may bring in their own helpers.
-            Standard is {DEFAULT_ORCHESTRA_DEPTH_BUDGET} — raise it only if
-            members need helpers of their own; lower it to keep every answer
-            first-hand.
+            How many levels deep members may call helpers (standard{" "}
+            {DEFAULT_ORCHESTRA_DEPTH_BUDGET})
           </p>
         </div>
         <div className="space-y-1.5">

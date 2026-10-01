@@ -155,7 +155,5 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   },
   emptyState: {
     title: "No mandates match",
-    description:
-      "Every named job the platform delegates to an agent appears here. Clear the filters to see the full registry.",
   },
 };

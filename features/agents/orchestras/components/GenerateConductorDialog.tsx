@@ -1,6 +1,6 @@
 // features/agents/orchestras/components/GenerateConductorDialog.tsx
 //
-// "Generate an conductor" — a QUICK name prompt, not an agent picker. We create
+// "Generate a conductor" — a QUICK name prompt, not an agent picker. We create
 // the conductor from the template immediately and drop the user into the builder,
 // where they choose the agents it coordinates on the canonical rail (search / filter
 // / tabs / peek / drag-drop) and click "Sync agent listings" to fill its prompt.
@@ -72,13 +72,12 @@ export function GenerateConductorDialog({ open, onOpenChange }: GenerateConducto
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Network className="h-4 w-4 text-primary" />
-            Generate an conductor
+            Generate a conductor
           </DialogTitle>
           <DialogDescription>
-            Just name it. We&apos;ll create an conductor agent from the template and
-            open the builder — you pick the agents it coordinates there, then click
-            <span className="font-medium text-foreground"> Sync agent listings</span> to
-            teach it about them.
+            Name it and we&apos;ll create a conductor from the template. Then pick its
+            agents and click
+            <span className="font-medium text-foreground"> Sync agent listings</span>.
           </DialogDescription>
         </DialogHeader>
 

@@ -45,7 +45,7 @@ export function OrgMandateCreateRefusal({
         />
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5">
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-            You can make one of your own right now. It is yours alone until you share it.
+            Make your own; it stays yours until you share it.
           </p>
           <Button asChild size="sm" variant="outline" className="h-8 gap-1">
             <Link href={newSoftMandateHref("person")}>

@@ -161,12 +161,7 @@ export function ListsHubView() {
   return (
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <header className="border-b border-border px-4 py-2.5 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">Agent lists</h1>
-          <p className="text-xs text-muted-foreground">
-            Plans, tasks, and todos from every conversation
-          </p>
-        </div>
+        <h1 className="text-lg font-semibold">Agent lists</h1>
       </header>
       <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
         {!loaded && (

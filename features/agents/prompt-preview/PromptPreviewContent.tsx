@@ -169,8 +169,7 @@ export function PromptPreviewContent({
           </div>
 
           <p className="text-[10px] text-muted-foreground">
-            Read-only preview of the assembled request — no model was called and
-            nothing was saved.
+            Read-only preview; nothing was sent or saved.
           </p>
         </div>
       ) : null}

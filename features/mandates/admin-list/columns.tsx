@@ -97,7 +97,7 @@ function Checking({ what }: { what: string }) {
   return (
     <span
       className="text-xs text-muted-foreground animate-pulse"
-      title={`Still reading ${what} from the server — this fills in on its own.`}
+      title={`Still reading ${what} — fills in on its own`}
     >
       Checking…
     </span>

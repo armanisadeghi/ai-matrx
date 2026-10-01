@@ -117,7 +117,6 @@ export function TaskPanel({
       open={open}
       onOpenChange={onOpenChange}
       title="Agent lists"
-      description="Plan, agent tasks, and items the agent assigned to you for this conversation."
       position="right"
       defaultSize={32}
       contentClassName="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3"

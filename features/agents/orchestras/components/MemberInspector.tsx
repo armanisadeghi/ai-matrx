@@ -30,6 +30,7 @@ import {
 } from "../constants";
 import type { OrchestraMember } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { InfoHint } from "@/components/official/InfoHint";
 
 export interface MemberInspectorProps {
   conductorId: string;
@@ -145,13 +146,14 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
             finish cleanly without successfully consulting this member. */}
         <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-background p-3">
           <div className="min-w-0 space-y-0.5">
-            <label htmlFor="member-required" className="text-xs font-medium text-foreground">
-              Must be consulted
-            </label>
+            <div className="flex items-center gap-1">
+              <label htmlFor="member-required" className="text-xs font-medium text-foreground">
+                Must be consulted
+              </label>
+              <InfoHint text="If skipped, the conductor is corrected; a run that still skips them is never marked complete." />
+            </div>
             <p className="text-[11px] leading-snug text-muted-foreground">
-              The conductor has to bring this member in before it can finish.
-              If it tries to skip them, it is corrected automatically — and a run
-              that still skips them is never marked complete.
+              The conductor must consult this member before finishing.
             </p>
           </div>
           <Switch id="member-required" checked={required} onCheckedChange={setRequired} />

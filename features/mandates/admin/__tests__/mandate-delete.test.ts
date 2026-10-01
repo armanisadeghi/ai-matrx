@@ -61,10 +61,10 @@ describe("the admin list's remove affordance", () => {
 
   it("confirms with the CONSEQUENCE, not a bare 'are you sure?'", () => {
     // What is lost…
-    expect(handler).toContain("stops finding it");
-    expect(handler).toContain("stop applying with it");
+    expect(handler).toContain("stop finding it");
+    expect(handler).toContain("applying`");
     // …and what survives, which is what makes it safe to offer on a list.
-    expect(handler).toContain("soft removal");
+    expect(handler).toContain("An admin can restore it.");
     expect(handler).toContain('variant: "destructive"');
     expect(handler).not.toMatch(/are you sure/i);
   });

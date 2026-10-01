@@ -408,8 +408,7 @@ export function MandateAgentPicker({
                 {data.mandate.label ?? data.mandate.mandate_key}
               </p>
               <p className="text-[11.5px] text-muted-foreground">
-                Pick which agent runs this step. Yours must accept the same
-                inputs.
+                Pick an agent with matching inputs.
               </p>
             </div>
 
@@ -475,8 +474,7 @@ export function MandateAgentPicker({
             ) : null}
 
             <p className="text-[10.5px] text-muted-foreground">
-              Settings-only overrides (model, thinking level) and org-wide
-              overrides live in{" "}
+              Model and org-wide overrides live in{" "}
               <Link
                 href="/mandates"
                 className="underline underline-offset-2 hover:text-foreground"

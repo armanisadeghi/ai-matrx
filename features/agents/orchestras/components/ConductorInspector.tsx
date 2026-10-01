@@ -90,10 +90,7 @@ export function ConductorInspector({
           >
             <FileText className="h-3.5 w-3.5" /> View system prompt
           </Button>
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            The conductor&apos;s instructions — including its auto-generated
-            <span className="whitespace-nowrap"> &lt;available_agents&gt;</span> listing.
-          </p>
+          {/* The prompt includes the auto-generated <available_agents> listing. */}
         </div>
 
         {/* Same core I/O detail members get — what the conductor consumes + produces. */}

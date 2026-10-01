@@ -113,10 +113,7 @@ export function OrchestrasBrowser() {
                 Build your first Orchestra
               </h2>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Don&apos;t have an conductor yet? Pick the specialists you
-                want and we&apos;ll generate one for you — an agent that knows
-                each member and coordinates them. Or use an agent you already
-                have.
+                Pick specialists and we&apos;ll build a conductor for you
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                 <Button
@@ -124,7 +121,7 @@ export function OrchestrasBrowser() {
                   className="gap-1.5"
                 >
                   <Workflow className="h-4 w-4" />
-                  Generate an conductor
+                  Generate a conductor
                 </Button>
                 <Button
                   variant="outline"

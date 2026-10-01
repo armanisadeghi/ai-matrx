@@ -234,12 +234,8 @@ export function OrchestraBuilder({
           <Network className="h-7 w-7" />
         </div>
         <h2 className="text-base font-semibold text-foreground">
-          Make {conductor?.name ?? "this agent"} an conductor?
+          Make {conductor?.name ?? "this agent"} a conductor?
         </h2>
-        <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
-          It will preside over an Orchestra you assemble — each filling a gap in
-          the bigger picture.
-        </p>
         <div className="mt-5 flex gap-2">
           <Button
             variant="ghost"
@@ -409,8 +405,7 @@ export function OrchestraBuilder({
               <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card/70 px-6 py-5 text-center backdrop-blur">
                 <MousePointerClick className="h-5 w-5 text-muted-foreground" />
                 <p className="max-w-[15rem] text-xs text-muted-foreground">
-                  Drag agents from the library — or click one — to add them to
-                  this Orchestra.
+                  Drag or click agents in the library to add them.
                 </p>
               </div>
             </div>

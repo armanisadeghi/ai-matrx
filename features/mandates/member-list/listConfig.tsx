@@ -75,8 +75,7 @@ async function removeMandate(row: MandateMemberRow, onChanged: () => void): Prom
   const ok = await confirm({
     title: `Remove "${row.name}"?`,
     description:
-      "It disappears from every list and picker, and anything that runs it by name will report it missing. " +
-      "This is a soft removal: the record and its history are kept and can be restored.",
+      "Lists, pickers and anything that runs it by name stop finding it. It can be restored.",
     confirmLabel: "Remove it",
     cancelLabel: "Keep it",
     variant: "destructive",
