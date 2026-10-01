@@ -7,4 +7,5 @@ export default [
   { id: "tables.sql-trash-store-doors", area: "tables", kind: "sql", file: "scripts/campaign-tests/storerestoredoors_green.sql", items: ["T50", "T51", "T52", "T53", "T54", "T55"], targets: ["clone"] },
   { id: "tables.sql-trash-meetings", area: "tables", kind: "sql", file: "scripts/campaign-tests/doorsdecidelast_green.sql", items: ["T56"], targets: ["clone"] },
   { id: "tables.sql-trash-terms", area: "tables", kind: "sql", file: "scripts/campaign-tests/sntrash_terms_green.sql", items: ["T57"], targets: ["clone"] },
+  { id: "tables.walk-trash", area: "tables", kind: "walk", file: "scripts/safety-net/walks/trash.mjs", walkName: "trash", items: ["T47", "T48", "T49", "T50", "T54"], targets: ["live", "clone"] },
 ];
