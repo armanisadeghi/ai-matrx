@@ -395,6 +395,8 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-10-01` — An anchored surface edit (`str_replace`) is reviewed as the lines it touched: `buildSurfaceWriteApprovalChange` diffs `proposal.patch` (before/after cut from the live text by the seam), so a one-word note edit shows a one-line diff, not the whole note. Guard: `features/surfaces/runtime/__tests__/note-content-one-word-patch.test.ts`.
+
 - `2026-09-22` — Removed the retired SMS exact-action card, parser, pending-ask state and delegated-call interception after the backend removed its confirmation endpoint. Ordinary client-tool questions, surface-edit approvals and Gmail review still use their existing paths.
 
 - `2026-09-18` — Surface replacement approvals preserve the live original for
