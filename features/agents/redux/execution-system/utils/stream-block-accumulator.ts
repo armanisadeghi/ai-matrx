@@ -2210,22 +2210,26 @@ export class StreamBlockAccumulator {
       // Array punctuation between kinds is never a block (A6).
       if (piece.type === "chrome") continue;
       const isKind = piece.type === "kind";
-      const content =
-        !isKind && containerType === "text"
+      // A JSON wrapper's own data, kinds removed (A7) — genuine JSON.
+      const isResidual = piece.type === "residual";
+      const content = isResidual
+        ? piece.json
+        : !isKind && containerType === "text"
           ? normalizeRecoveredProsePiece(piece.content, followsKind)
           : piece.content;
       followsKind = isKind;
       if (!content) continue;
       if (emitted > 0) this.currentBlockIndex++;
 
+      const asJson = isKind || isResidual;
       const block: RenderBlockPayload = {
         blockId: this.currentBlockId,
         blockIndex: this.currentBlockIndex,
-        type: isKind ? "code" : containerType,
+        type: asJson ? "code" : containerType,
         status: "complete",
         content,
-        data: isKind ? { language: "json" } : containerData,
-        metadata: isKind ? withIrEnvelope(piece.content, undefined) : undefined,
+        data: asJson ? { language: "json" } : containerData,
+        metadata: asJson ? withIrEnvelope(content, undefined) : undefined,
       };
       dispatch(this.upsertAction({ requestId: this.requestId, block }));
       emitted++;

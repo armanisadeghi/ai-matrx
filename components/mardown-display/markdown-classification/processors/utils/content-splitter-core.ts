@@ -249,6 +249,17 @@ export function recoverEmbeddedKindJsonBlocksWith(
       // Array punctuation between kinds is never a block (A6); what follows
       // it still follows the kind.
       if (piece.type === "chrome") continue;
+      // A JSON wrapper's own data, kinds removed (A7) — genuine JSON.
+      if (piece.type === "residual") {
+        recovered.push({
+          type: "code",
+          content: piece.json,
+          language: "json",
+          metadata: envelopes.withIrEnvelope(piece.json, undefined),
+        });
+        followsKind = false;
+        continue;
+      }
       if (piece.type === "kind") {
         followsKind = true;
         // ONE PIPELINE: a recovered object whose `__kind` sits in the reserved

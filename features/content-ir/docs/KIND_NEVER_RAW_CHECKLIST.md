@@ -45,8 +45,9 @@ Every stream item below adds its case there.
 - [x] A6. Array of kinds → raw mid-stream; leftover `[` `,` `]` render as tiny JSON cards after.
       Bare: each element is its own live region (`kind_array` substate, held until the first key). Fenced: the
       first-key gate holds a kindless/errored envelope. `[` `,` `]` are `chrome` pieces, never blocks (both hosts).
-- [ ] A7. Kind nested inside a non-kind object → whole region should show as could-be-kind; wrapper
-      fragments left broken after recovery.
+- [x] A7. Kind nested inside a non-kind object → whole region should show as could-be-kind; wrapper
+      fragments left broken after recovery. Mid-stream the first-key gate already held (now guarded); after
+      recovery a JSON wrapper splits into its kinds + ONE `residual` piece (its data, kinds removed, valid JSON).
 - [ ] A8. Kind inside a simple XML tag → rescued only at tag close.
 - [ ] A9. Transport drop mid-fence (no `finalize`) → block stuck `streaming` forever.
 - [ ] A10. Fence closes on truncated/invalid JSON with `__kind` → should be the kind's broken state, not raw.

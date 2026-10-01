@@ -30,7 +30,14 @@ export type EmbeddedKindJsonPiece =
    * an array of kinds. Kept so the partition stays lossless; never rendered
    * (a lone `[` drawn as a JSON card is noise, not content — A6).
    */
-  | { type: "chrome"; content: string };
+  | { type: "chrome"; content: string }
+  /**
+   * The non-kind DATA of a JSON wrapper around kinds (`{"result":{…kind…},
+   * "note":"x"}`, A7): `content` is the source span it replaces (lossless),
+   * `json` is the wrapper's value with every kind removed — valid JSON, drawn
+   * as genuine JSON. A wrapper that holds only kinds has no residual piece.
+   */
+  | { type: "residual"; content: string; json: string };
 
 function matchingJsonObjectEnd(source: string, start: number): number | null {
   if (source[start] !== "{" && source[start] !== "[") return null;
@@ -372,6 +379,96 @@ function kindArrayChromeSpans(
   return spans;
 }
 
+/** True when a value is a JSON object that directly declares a non-empty `__kind`. */
+function isKindValue(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const kind = (value as Record<string, unknown>).__kind;
+  return typeof kind === "string" && kind.trim().length > 0;
+}
+
+/** The value with every kind object removed (array items and object members). */
+function withoutKinds(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.filter((item) => !isKindValue(item)).map(withoutKinds);
+  }
+  if (typeof value === "object" && value !== null) {
+    const out: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value)) {
+      if (!isKindValue(item)) out[key] = withoutKinds(item);
+    }
+    return out;
+  }
+  return value;
+}
+
+/** Whether anything but empty containers is left. */
+function carriesData(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(carriesData);
+  if (typeof value === "object" && value !== null) {
+    return Object.values(value).some(carriesData);
+  }
+  return true;
+}
+
+/** Only braces, brackets, commas, colons, whitespace and object KEYS. */
+function isPureJsonStructure(span: string): boolean {
+  return /^[\s{}[\],:]*$/.test(
+    span.replace(/"(?:[^"\\]|\\.)*"\s*:/g, ""),
+  );
+}
+
+/**
+ * A container that is, as a whole, a JSON object or array holding kinds (A7):
+ * every non-kind span is chrome, and the wrapper's own data — the value with
+ * its kinds removed — rides ONE residual piece at the first span that carries
+ * any. Null when the source is not a parseable JSON wrapper.
+ */
+function wrapperPieces(
+  source: string,
+  regions: EmbeddedKindJsonRegion[],
+): EmbeddedKindJsonPiece[] | null {
+  const trimmed = source.trim();
+  if (!/^[[{]/.test(trimmed)) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null || isKindValue(parsed)) {
+    return null;
+  }
+  const residual = withoutKinds(parsed);
+  const residualJson = carriesData(residual) ? JSON.stringify(residual, null, 2) : null;
+
+  const pieces: EmbeddedKindJsonPiece[] = [];
+  let residualPlaced = residualJson === null;
+  const pushSpan = (content: string) => {
+    if (!content) return;
+    if (!residualPlaced && !isPureJsonStructure(content)) {
+      pieces.push({ type: "residual", content, json: residualJson as string });
+      residualPlaced = true;
+      return;
+    }
+    pieces.push({ type: "chrome", content });
+  };
+  let cursor = 0;
+  for (const region of regions) {
+    pushSpan(source.slice(cursor, region.start));
+    pieces.push({ type: "kind", content: region.content, kind: region.kind });
+    cursor = region.end;
+  }
+  pushSpan(source.slice(cursor));
+  if (!residualPlaced) {
+    // Data the scan could not pin to a span (it sits between keys only):
+    // still shown, after the kinds.
+    pieces.push({ type: "residual", content: "", json: residualJson as string });
+  }
+  return pieces;
+}
+
 /** Losslessly partition a container around every recovered kind region. */
 export function splitAroundEmbeddedKindJson(
   source: string,
@@ -379,6 +476,9 @@ export function splitAroundEmbeddedKindJson(
 ): EmbeddedKindJsonPiece[] {
   const regions = findEmbeddedKindJsonRegions(source, options);
   if (regions.length === 0) return [{ type: "container", content: source }];
+
+  const wrapped = wrapperPieces(source, regions);
+  if (wrapped) return wrapped;
 
   // Every boundary in order: kind regions and chrome spans never overlap.
   const marks: Array<

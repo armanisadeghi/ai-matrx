@@ -302,3 +302,49 @@ describe("never raw: an array of kinds (A6)", () => {
     expect(blocks.map((b) => (b.content ?? "").trim())).toEqual(["Rows:", '[{"id":1},{"id":2}]']);
   });
 });
+
+describe("never raw: a kind nested inside a non-kind object (A7)", () => {
+  const WRAPPED = `{"result":${KIND_PAYLOAD_ONE_LINE},"note":"checked"}`;
+  const ITEMS_ONLY = `{"items":[${KIND_PAYLOAD_ONE_LINE}]}`;
+  const CASES: Array<[string, string]> = [
+    ["bare wrapper", `Here you go:\n\n${WRAPPED}\n\nAfter.`],
+    ["```json wrapper", `Here you go:\n\n\`\`\`json\n${WRAPPED}\n\`\`\`\n\nAfter.`],
+    [
+      "```json pretty wrapper",
+      `Here you go:\n\n\`\`\`json\n${JSON.stringify(JSON.parse(WRAPPED), null, 2)}\n\`\`\`\n\nAfter.`,
+    ],
+  ];
+
+  it.each(CASES)("%s: once a __kind key is visible, no frame draws raw JSON", (_label, stream) => {
+    const frames = streamingFrames(streamCharByChar(stream, `req-nested-${_label}`));
+    const afterKind = frames.filter((b) => hasKindKey(b.content ?? ""));
+    expect(afterKind.length).toBeGreaterThan(0);
+    expect(
+      afterKind
+        .filter((b) => (b.type === "text" ? textShowsRawKind(b) : rendersRawJson(b)))
+        .map((b) => (b.content ?? "").slice(0, 40)),
+    ).toEqual([]);
+  });
+
+  it.each(CASES)("%s: final — the kind, then the wrapper's own data as valid JSON; no broken fragments", (_label, stream) => {
+    const expected = ["Here you go:", KIND_PAYLOAD_ONE_LINE, '{"note":"checked"}', "After."];
+    const normalize = (content: string) => {
+      const t = content.trim();
+      try {
+        return JSON.stringify(JSON.parse(t));
+      } catch {
+        return t;
+      }
+    };
+    const blocks = finalBlocks(stream, `req-nested-final-${_label}`);
+    expect(blocks.map((b) => normalize(b.content ?? ""))).toEqual(expected);
+    const reloaded = splitContentIntoBlocksV2(stream).filter((b) => b.content.trim());
+    expect(reloaded.map((b) => normalize(b.content))).toEqual(expected);
+  });
+
+  it("a wrapper that only holds kinds leaves nothing but the kinds", () => {
+    const stream = `\`\`\`json\n${ITEMS_ONLY}\n\`\`\`\n`;
+    const blocks = finalBlocks(stream, "req-nested-items");
+    expect(blocks.map((b) => (b.content ?? "").trim())).toEqual([KIND_PAYLOAD_ONE_LINE]);
+  });
+});
