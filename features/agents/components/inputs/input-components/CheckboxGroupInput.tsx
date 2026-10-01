@@ -2,6 +2,7 @@ import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { focusWithoutScroll } from "./focusWithoutScroll";
 
 interface CheckboxGroupInputProps {
   value: string;
@@ -158,7 +159,7 @@ export function CheckboxGroupInput({
                   className={
                     compact ? "min-h-[80px] text-xs" : "min-h-[100px] text-sm"
                   }
-                  autoFocus
+                  ref={focusWithoutScroll}
                 />
               </div>
             )}

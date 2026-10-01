@@ -124,3 +124,58 @@ it("a served form field never takes focus when its page mounts", async () => {
     focus.restore();
   }
 });
+
+/**
+ * Leg 3 — the "Other" free-text editors (SelectInput's three modes,
+ * RadioGroupInput, CheckboxGroupInput). They mounted with the `autoFocus`
+ * attribute, so a form restored with an "Other: …" answer focused that editor
+ * on page load and the browser scrolled to it. Focus, when it is taken, never
+ * scrolls. PROVEN FAILING FIRST: React's `autoFocus` calls `focus()` with no
+ * options.
+ */
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { SelectInput } = require("../SelectInput") as typeof import("../SelectInput");
+const { RadioGroupInput } = require("../RadioGroupInput") as typeof import("../RadioGroupInput");
+const { CheckboxGroupInput } = require("../CheckboxGroupInput") as typeof import("../CheckboxGroupInput");
+/* eslint-enable @typescript-eslint/no-require-imports */
+
+const OPTIONS = ["Recoat", "Resand", "Replace"];
+const RESTORED_OTHER = "Other: screen and recoat the hallway only";
+
+it.each([
+  ["SelectInput (dropdown)", () => <SelectInput value={RESTORED_OTHER} onChange={() => undefined} options={OPTIONS} variableName="Verdict" allowOther />],
+  ["SelectInput (expanded)", () => <SelectInput value={RESTORED_OTHER} onChange={() => undefined} options={OPTIONS} variableName="Verdict" allowOther expanded />],
+  ["SelectInput (searchable)", () => <SelectInput value={RESTORED_OTHER} onChange={() => undefined} options={Array.from({ length: 14 }, (_, i) => `Grade ${i + 1}`)} variableName="Grade" allowOther />],
+  ["RadioGroupInput", () => <RadioGroupInput value={RESTORED_OTHER} onChange={() => undefined} options={OPTIONS} variableName="Verdict" allowOther />],
+  ["CheckboxGroupInput", () => <CheckboxGroupInput value={RESTORED_OTHER} onChange={() => undefined} options={OPTIONS} variableName="Verdicts" allowOther />],
+])("%s: a restored 'Other' answer never scrolls the page to its editor", async (_name, render) => {
+  const focus = recordFocus();
+  try {
+    const unmount = await mount(render());
+    expect(document.querySelector("textarea")).not.toBeNull();
+    for (const call of focus.calls.filter((c) => c.tag === "TEXTAREA")) {
+      expect(call.options?.preventScroll).toBe(true);
+    }
+    await unmount();
+  } finally {
+    focus.restore();
+  }
+});
+
+/**
+ * Leg 4 — the composer's own textarea (AgentTextarea) defaults `autoFocus` on
+ * and re-focuses on every conversation change, 100ms after mount. Rendering it
+ * needs the whole execution store, so its focus call is held at the source:
+ * every `.focus(` in it passes `preventScroll: true`.
+ */
+it("the composer textarea focuses without scrolling the page", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { readFileSync } = require("node:fs") as typeof import("node:fs");
+  const source = readFileSync(
+    require.resolve("../../smart-input/AgentTextarea"),
+    "utf8",
+  );
+  const calls = source.match(/\.focus\([^)]*\)/g) ?? [];
+  expect(calls.length).toBeGreaterThan(0);
+  for (const call of calls) expect(call).toContain("preventScroll: true");
+});

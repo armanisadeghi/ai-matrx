@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { focusWithoutScroll } from "./focusWithoutScroll";
 import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
 import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
 import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
@@ -153,7 +154,7 @@ export function SelectInput({
                     className={
                       compact ? "min-h-[80px] text-xs" : "min-h-[100px] text-sm"
                     }
-                    autoFocus
+                    ref={focusWithoutScroll}
                   />
                 </div>
               )}
@@ -174,7 +175,7 @@ export function SelectInput({
       onChange={(e) => handleCustomTextChange(e.target.value)}
       placeholder="Enter any text, markdown, or custom value..."
       className={compact ? "min-h-[80px] text-xs" : "min-h-[100px] text-sm"}
-      autoFocus
+      ref={focusWithoutScroll}
     />
   );
   if (choice === "aspect-ratio" || choice === "searchable") {
@@ -234,7 +235,7 @@ export function SelectInput({
           onChange={(e) => handleCustomTextChange(e.target.value)}
           placeholder="Enter any text, markdown, or custom value..."
           className={compact ? "min-h-[80px] text-xs" : "min-h-[100px] text-sm"}
-          autoFocus
+          ref={focusWithoutScroll}
         />
       )}
     </div>

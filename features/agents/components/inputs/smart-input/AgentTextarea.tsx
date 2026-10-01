@@ -383,7 +383,12 @@ export function AgentTextarea({
   // ── Auto-focus ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!autoFocus) return undefined;
-    const t = setTimeout(() => textareaRef.current?.focus(), 100);
+    // preventScroll: the composer re-focuses on every conversation change; a
+    // composer below the fold must never pull the page down to itself.
+    const t = setTimeout(
+      () => textareaRef.current?.focus({ preventScroll: true }),
+      100,
+    );
     return () => clearTimeout(t);
   }, [autoFocus, conversationId]);
 

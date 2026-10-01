@@ -2,6 +2,7 @@ import React from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { focusWithoutScroll } from "./focusWithoutScroll";
 
 interface RadioGroupInputProps {
   value: string;
@@ -121,7 +122,7 @@ export function RadioGroupInput({
                     className={
                       compact ? "min-h-[80px] text-xs" : "min-h-[100px] text-sm"
                     }
-                    autoFocus
+                    ref={focusWithoutScroll}
                   />
                 </div>
               )}
