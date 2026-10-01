@@ -15,6 +15,7 @@
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
+import { writeDevLoginNonce } from "./lib/dev-login-nonce.mjs";
 
 const PHASE = process.argv[2] === "after" ? "after" : "before";
 const ORIGIN = "http://127.0.0.1:3001";
@@ -30,7 +31,7 @@ async function main() {
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
 
   const nonce = randomBytes(16).toString("hex");
-  writeFileSync("/Users/armanisadeghi/code/matrx-frontend/.dev-login-nonce.127.0.0.1", `${nonce}\n`);
+  writeDevLoginNonce("127.0.0.1", nonce);
   await page.goto(
     `${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data/${CALLS}?ps=50`)}`,
     { waitUntil: "domcontentloaded", timeout: 240000 },

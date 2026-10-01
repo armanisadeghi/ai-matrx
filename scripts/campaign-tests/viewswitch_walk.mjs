@@ -12,6 +12,7 @@
 // through the store's doors as admin. Credentials come from .env.local and are never printed.
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { writeDevLoginNonce } from "../lib/dev-login-nonce.mjs";
 import { randomBytes } from "node:crypto";
 
 import { signIn, sleep, until } from "../lib/seat-browser.mjs";
@@ -104,7 +105,7 @@ async function seat(which) {
     check(who === "admin@admin.com", "admin seat is admin@admin.com", who);
   } else {
     const nonce = randomBytes(16).toString("hex");
-    writeFileSync(`/Users/armanisadeghi/code/matrx-frontend/.dev-login-nonce.${HOST}`, `${nonce}\n`);
+    writeDevLoginNonce(HOST, nonce);
     await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=/dashboard&as=${encodeURIComponent("test@test.com")}`, { waitUntil: "domcontentloaded" });
     const { v } = await until("test sign-in", async () => {
       const seen = await page.evaluate(async () => { try { return await (await fetch("/api/whoami")).json(); } catch { return null; } });

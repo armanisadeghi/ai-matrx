@@ -16,16 +16,16 @@
  */
 
 import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
-import { mkdtempSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, existsSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { NextRequest } from "next/server";
 
-// The route resolves its nonce file from process.cwd() AT MODULE LOAD. Point
-// that at a throwaway directory before importing it, so the suite can never
-// consume (the route deletes it) a real .dev-login-nonce another agent is
-// mid-handshake with in this shared checkout.
+// The route reads MATRX_DEV_LOGIN_NONCE_DIR (default: /tmp, never the checkout).
+// Point that at a throwaway directory before importing it, so the suite can never
+// consume (the route deletes it) a real nonce another agent is mid-handshake with.
 const FAKE_CWD = mkdtempSync(join(tmpdir(), "dev-login-guard-"));
+process.env.MATRX_DEV_LOGIN_NONCE_DIR = FAKE_CWD;
 // A nonce belongs to a HOST *and* to its own MINT (W56c, extended 2026-09-26).
 // One shared `.dev-login-nonce` meant any agent's failed navigation consumed
 // the nonce another agent had just minted; one file PER HOST still meant a
@@ -229,7 +229,7 @@ describe("each agent session gets its own hostname and its own nonce", () => {
     expect(body.error ?? "").toContain("pnpm dev-login");
   });
 
-  it("never writes or reads outside the checkout, whatever the host looks like", () => {
+  it("a host cannot escape the nonce directory, and that directory is not the checkout", () => {
     const source = require("node:fs").readFileSync(
       join(__dirname, "route.ts"),
       "utf8",
@@ -237,6 +237,19 @@ describe("each agent session gets its own hostname and its own nonce", () => {
     // The host becomes part of a PATH; it is re-validated, not trusted.
     expect(source).toContain('/^[a-z0-9.-]{1,253}$/');
     expect(source).toContain('!hostname.includes("..")');
+    expect(source).toContain('join("/tmp", `matrx-dev-login-${uid}`)');
+    expect(source).not.toContain("REPO_ROOT");
+  });
+
+  it("deletes a nonce that was minted and never opened", async () => {
+    const staleNonce = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    const stale = nonceFile("localhost", staleNonce);
+    writeFileSync(stale, `${staleNonce}\n`);
+    const past = new Date(Date.now() - 16 * 60 * 1000);
+    utimesSync(stale, past, past);
+    const response = await GET(get("?nonce=ffffffffffffffffffffffffffffffff"));
+    expect(response.status).toBe(401);
+    expect(existsSync(stale)).toBe(false);
   });
 });
 

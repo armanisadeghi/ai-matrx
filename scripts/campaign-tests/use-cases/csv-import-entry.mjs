@@ -3,7 +3,8 @@
 // exactly what happens (works / partly / absent).
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
+import { writeDevLoginNonce } from "../../lib/dev-login-nonce.mjs";
 import { resolve } from "node:path";
 
 const ROOT = process.cwd();
@@ -24,7 +25,7 @@ async function main() {
   const page = await context.newPage();
 
   const nonce = randomBytes(16).toString("hex");
-  writeFileSync(resolve(ROOT, `.dev-login-nonce.${HOST}`), `${nonce}\n`);
+  writeDevLoginNonce(HOST, nonce);
   await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data-v2/${tableId}`)}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,

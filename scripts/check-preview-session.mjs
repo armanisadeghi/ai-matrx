@@ -25,7 +25,7 @@ import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { createServer } from "node:http";
 import { lookup } from "node:dns/promises";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -123,9 +123,15 @@ await check("a session hostname really resolves to loopback", async () => {
   );
 });
 
-await check("the harness and the route name the SAME nonce file", () => {
+await check("the harness and the route name the SAME nonce file, outside the checkout", () => {
+  const uid = process.getuid?.() ?? 0;
   const fromShell = sessionShell('preview_nonce_file "abc.localhost" "deadbeefdeadbeef"');
-  assert.equal(fromShell, ".dev-login-nonce.abc.localhost.deadbeefdeadbeef");
+  const expected = `/tmp/matrx-dev-login-${uid}/.dev-login-nonce.abc.localhost.deadbeefdeadbeef`;
+  assert.equal(fromShell, expected);
+  assert.ok(
+    !fromShell.startsWith(REPO_ROOT),
+    `nonce file landed in the checkout: ${fromShell}`,
+  );
   const route = readFileSync(ROUTE_TS, "utf8");
   // The route builds it from the request hostname AND the presented nonce
   // (2026-09-26 — a file per host alone still let a second mint for the same
@@ -135,6 +141,43 @@ await check("the harness and the route name the SAME nonce file", () => {
     route.includes("`.dev-login-nonce.${safeHostname(hostname)}.${safeNonce}`"),
     "app/api/dev-login/route.ts no longer derives the nonce file from the host and nonce",
   );
+  assert.ok(
+    route.includes('join("/tmp", `matrx-dev-login-${uid}`)'),
+    "app/api/dev-login/route.ts no longer keeps nonces under /tmp",
+  );
+});
+
+await check("nothing mints a nonce file inside the checkout", () => {
+  const names = readdirSync(REPO_ROOT).filter(
+    (name) => name === ".dev-login-nonce" || name.startsWith(".dev-login-nonce."),
+  );
+  assert.deepEqual(names, [], `checkout root still holds ${names.length} nonce file(s)`);
+  let hits = "";
+  try {
+    hits = execFileSync(
+      "rg",
+      [
+        "-n",
+        "--glob", "!**/*.md",
+        "--glob", "!docs/**",
+        "--glob", "!**/.claude/**",
+        "--glob", "!**/.agents/**",
+        "--glob", "!scripts/check-preview-session.mjs",
+        "-e", "matrx-frontend/.dev-login-nonce",
+        "-e", "join(REPO_ROOT, `.dev-login-nonce",
+        "-e", "resolve(ROOT, `.dev-login-nonce",
+        "-e", "resolve(ROOT,`.dev-login-nonce",
+        "-e", 'resolve(ROOT, ".dev-login-nonce',
+        "-e", 'parents[2] / ".dev-login-nonce"',
+        REPO_ROOT,
+      ],
+      { encoding: "utf8" },
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "status" in error && error.status === 1) return;
+    throw error;
+  }
+  assert.equal(hits.trim(), "", `nonce minted inside the checkout:\n${hits}`);
 });
 
 await check("two mints for the SAME host do not overwrite each other's file", () => {

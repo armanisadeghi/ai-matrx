@@ -1,8 +1,6 @@
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
-import { writeFileSync } from "node:fs";
-import { resolve } from "node:path";
-const ROOT = process.cwd();
+import { writeDevLoginNonce } from "../lib/dev-login-nonce.mjs";
 const HOST = "front-door.localhost", ORIGIN = `http://${HOST}:3001`;
 const ADMIN="87a6e699-3622-4869-8843-d0867456c0dd", RINCON="6069a466-1445-42df-a64e-cf37ecdc1b99", JOBS="af3bfff6-a255-41e5-9ac2-879d53816163";
 const b = await chromium.launch({headless:true});
@@ -12,7 +10,7 @@ const p = await c.newPage();
 const rpc=[];
 p.on("request",r=>{const u=r.url(); if(u.includes("/rest/v1/rpc/")) rpc.push({t:Date.now(),n:u.split("/rpc/")[1].split("?")[0]});});
 const n=randomBytes(16).toString("hex");
-writeFileSync(resolve(ROOT,`.dev-login-nonce.${HOST}`), n+"\n");
+writeDevLoginNonce(HOST, n);
 await p.goto(`${ORIGIN}/api/dev-login?nonce=${n}&next=%2Fdata-v2`,{waitUntil:"domcontentloaded",timeout:180000});
 const who = await p.evaluate(async () => (await fetch("/api/whoami")).json());
 if(!who?.email) throw new Error("no identity");

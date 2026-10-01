@@ -67,8 +67,11 @@ async def main():
         # so every run wrote it into the browser profile's history and the dev
         # server's log. This nonce is dead the moment the route reads it.
         nonce = secrets.token_hex(16)
-        nonce_file = pathlib.Path(__file__).resolve().parents[2] / ".dev-login-nonce"
+        nonce_dir = pathlib.Path(f"/tmp/matrx-dev-login-{os.getuid()}")
+        nonce_dir.mkdir(mode=0o700, exist_ok=True)
+        nonce_file = nonce_dir / f".dev-login-nonce.localhost.{nonce}"
         nonce_file.write_text(nonce + "\n", encoding="utf-8")
+        nonce_file.chmod(0o600)
         try:
             await page.goto(f"{ORIGIN}/api/dev-login?nonce={nonce}&next=/hr/people",
                             wait_until="domcontentloaded")

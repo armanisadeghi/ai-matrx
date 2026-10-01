@@ -298,16 +298,18 @@ announce_database() {
 # which is one of the two ways it leaked (2026-08-31, again 2026-09-11). The
 # nonce is generated here, consumed by the first request, and worthless after.
 mint_nonce() {
-  # Per HOST, not per checkout. With one shared .dev-login-nonce, any agent's
-  # failed navigation consumed (the route deletes on ANY presentation) the nonce
-  # another agent had just minted, and that agent's sign-in failed for reasons
-  # nothing on its screen could explain (W56c). The file name is part of the
-  # contract with app/api/dev-login/route.ts; check:preview-session pins that.
+  # Per HOST and per mint, and OUTSIDE the checkout. With one shared
+  # .dev-login-nonce in the repo root, any agent's failed navigation consumed
+  # (the route deletes on ANY presentation) the nonce another agent had just
+  # minted, and abandoned mints piled up in the working tree (W56c). The path
+  # is part of the contract with app/api/dev-login/route.ts;
+  # check:preview-session pins that.
   NONCE=""
-  NONCE_PATH="$REPO_ROOT/$(preview_nonce_file "${1:-$SESSION_HOST}")"
   command -v openssl >/dev/null 2>&1 || return 0
   NONCE="$(openssl rand -hex 16)"
+  NONCE_PATH="$(preview_nonce_file "${1:-$SESSION_HOST}" "$NONCE")"
   printf '%s\n' "$NONCE" > "$NONCE_PATH" || NONCE=""
+  chmod 600 "$NONCE_PATH" 2>/dev/null || true
 }
 
 killtree() {

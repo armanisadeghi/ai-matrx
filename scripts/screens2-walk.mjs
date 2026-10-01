@@ -15,10 +15,10 @@
  */
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
+import { writeDevLoginNonce } from "./lib/dev-login-nonce.mjs";
 import { resolve } from "node:path";
 
-const ROOT = process.cwd();
 const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const HOST = "127.0.0.1";
 const ORIGIN = `http://${HOST}:${PORT}`;
@@ -58,7 +58,7 @@ const main = async () => {
   page.setDefaultTimeout(90_000);
 
   const nonce = randomBytes(16).toString("hex");
-  writeFileSync(resolve(ROOT, `.dev-login-nonce.${HOST}`), `${nonce}\n`);
+  writeDevLoginNonce(HOST, nonce);
   await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent("/data-v2")}`, {
     waitUntil: "domcontentloaded",
   });

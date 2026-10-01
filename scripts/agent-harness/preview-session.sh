@@ -106,7 +106,12 @@ preview_session_url() {
 # app/api/dev-login/route.ts — the guard app/api/dev-login/route.test.ts pins
 # the shape, and scripts/check-preview-session.mjs pins that the two agree.
 #
-# It is now keyed by HOST *and* by the nonce itself, not just the host
+# The file is OUTSIDE the checkout: /tmp/matrx-dev-login-<uid>/. A mint whose
+# URL was never opened used to leave `.dev-login-nonce.<host>.<nonce>` in the
+# repo root forever. /tmp, not $TMPDIR, because a terminal and a launchd job
+# do not share TMPDIR and a mismatch 401s every sign-in.
+#
+# It is keyed by HOST *and* by the nonce itself, not just the host
 # (2026-09-26). One file per host meant a SECOND `pnpm dev-login` for the same
 # host overwrote the first mint's file before its URL was ever opened — which
 # is exactly what several parallel subagents landing on the same host (or one
@@ -116,11 +121,29 @@ preview_session_url() {
 # that never collide, while a wrong guess still can't touch a real pending
 # mint (it hashes out to a filename nothing wrote). Called with one argument
 # it returns the legacy host-only shape (used where no nonce is known yet).
+preview_nonce_dir() {
+  if [[ -n "${MATRX_DEV_LOGIN_NONCE_DIR:-}" ]]; then
+    printf '%s' "$MATRX_DEV_LOGIN_NONCE_DIR"
+    return
+  fi
+  printf '/tmp/matrx-dev-login-%s' "${UID:-$(id -u)}"
+}
+
+preview_nonce_sweep() {
+  local dir="$1"
+  [[ -d "$dir" ]] || return 0
+  find "$dir" -maxdepth 1 -name '.dev-login-nonce.*' -mmin +15 -delete 2>/dev/null || true
+}
+
 preview_nonce_file() {
-  local host="${1:-localhost}" nonce="${2:-}"
+  local host="${1:-localhost}" nonce="${2:-}" dir
+  dir="$(preview_nonce_dir)"
+  mkdir -p "$dir"
+  chmod 700 "$dir" 2>/dev/null || true
+  preview_nonce_sweep "$dir"
   if [[ -n "$nonce" ]]; then
-    printf '.dev-login-nonce.%s.%s' "$host" "$nonce"
+    printf '%s/.dev-login-nonce.%s.%s' "$dir" "$host" "$nonce"
   else
-    printf '.dev-login-nonce.%s' "$host"
+    printf '%s/.dev-login-nonce.%s' "$dir" "$host"
   fi
 }

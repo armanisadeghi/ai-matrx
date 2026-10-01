@@ -20,6 +20,7 @@
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
 import { writeFileSync, mkdirSync } from "node:fs";
+import { writeDevLoginNonce } from "./lib/dev-login-nonce.mjs";
 
 const ORIGIN = "http://127.0.0.1:3001";
 const CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
@@ -44,7 +45,7 @@ async function main() {
   page.on("response", (r) => { if (r.status() >= 400) bad.push(`${r.status()} ${r.url()}`); });
 
   const nonce = randomBytes(16).toString("hex");
-  writeFileSync("/Users/armanisadeghi/code/matrx-frontend/.dev-login-nonce.127.0.0.1", `${nonce}\n`);
+  writeDevLoginNonce("127.0.0.1", nonce);
   const dest = `/data/${CALLS}?ps=50`;
   await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(dest)}`, {
     waitUntil: "domcontentloaded", timeout: 240000,

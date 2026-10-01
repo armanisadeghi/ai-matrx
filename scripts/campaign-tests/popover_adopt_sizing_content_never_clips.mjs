@@ -32,7 +32,8 @@
 //   node scripts/campaign-tests/popover_adopt_sizing_content_never_clips.mjs <your-host>
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
+import { writeDevLoginNonce } from "../lib/dev-login-nonce.mjs";
 
 const HOST = process.argv[2] ?? "s8d677a69.localhost";
 const ORIGIN = `http://${HOST}:3001`;
@@ -83,7 +84,7 @@ const MEASURE = () => {
 
 async function open(page, route, width) {
   const nonce = randomBytes(16).toString("hex");
-  writeFileSync(`/Users/armanisadeghi/code/matrx-frontend/.dev-login-nonce.${HOST}`, `${nonce}\n`);
+  writeDevLoginNonce(HOST, nonce);
   await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(route)}`, {
     waitUntil: "domcontentloaded",
     timeout: 180000,

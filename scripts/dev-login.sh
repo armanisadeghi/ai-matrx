@@ -51,8 +51,9 @@ NONCE="$(openssl rand -hex 16)"
 # The nonce file is keyed by the nonce itself as well as the host, so a second
 # `pnpm dev-login` for this same host (another subagent, or a re-run) mints an
 # independent file and cannot overwrite this one's pending mint.
-NONCE_FILE="$REPO_ROOT/$(preview_nonce_file "$HOST" "$NONCE")"
+NONCE_FILE="$(preview_nonce_file "$HOST" "$NONCE")"
 printf '%s\n' "$NONCE" >"$NONCE_FILE" || { echo "[dev-login] ERROR: could not write $NONCE_FILE" >&2; exit 1; }
+chmod 600 "$NONCE_FILE" 2>/dev/null || true
 
 echo "[dev-login] host   : $HOST  (your session's own cookie jar; server mode: ${RUNNING_MODE:-not running})"
 echo "[dev-login] nonce  : $(basename "$NONCE_FILE")  (single use, consumed on any presentation)"

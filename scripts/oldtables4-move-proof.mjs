@@ -24,10 +24,9 @@
  */
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { writeDevLoginNonce } from "./lib/dev-login-nonce.mjs";
 
-const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const PORT = 3001; // the one dev server machine-wide (pnpm preview:start)
 const HOST = "127.0.0.1";
 const ORIGIN = `http://${HOST}:${PORT}`;
@@ -60,7 +59,7 @@ async function main() {
     page.on("response", (r) => { if (r.status() >= 400) bad.push(`${r.status()} ${r.url()}`); });
 
     const nonce = randomBytes(16).toString("hex");
-    writeFileSync(resolve(ROOT, `.dev-login-nonce.${HOST}`), `${nonce}\n`);
+    writeDevLoginNonce(HOST, nonce);
     await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(`/data/${CALLS}`)}`,
       { waitUntil: "domcontentloaded", timeout: 240000 });
     const who = await page.evaluate(async () => (await fetch("/api/whoami")).json());

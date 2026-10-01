@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { readFileSync, rmSync } from "node:fs";
+import { readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
@@ -20,8 +20,9 @@ import {
  * login proves identity by WRITING A FILE into this checkout, which anything
  * with shell access can do and no hostile web page can:
  *
- *   1. shell:   pnpm dev-login [/next/path]   (mints .dev-login-nonce.<host>,
- *                                              gitignored, and prints the URL)
+ *   1. shell:   pnpm dev-login [/next/path]   (mints a nonce OUTSIDE this
+ *                                              checkout, under /tmp, and prints
+ *                                              the URL)
  *   2. browser: open the printed URL — it is on YOUR session's hostname
  *   3. route:   compares, DELETES that host's file, signs in.
  *
@@ -45,9 +46,45 @@ import {
  * why and hands over the two-step replacement — see below. The guard for all
  * of this is `route.test.ts`.
  */
-// Runtime-only, single-file root. Excluding this dynamic cwd segment prevents
-// Turbopack from conservatively tracing the whole checkout into the route.
-const REPO_ROOT = /* turbopackIgnore: true */ process.cwd();
+/**
+ * Nonces do not live in the checkout. A mint whose URL is never opened used
+ * to leave `.dev-login-nonce.<host>.<nonce>` in the repo root forever — one
+ * file per `pnpm dev-login`, hundreds of them, and the dev server's watcher
+ * saw every one. The directory is per-user under /tmp so the Next server and
+ * the shell agree without inheriting TMPDIR (a terminal and a launchd job do
+ * not share it). `MATRX_DEV_LOGIN_NONCE_DIR` exists so the route test can
+ * point at a throwaway directory. Abandoned mints are deleted after 15 minutes.
+ *
+ * Must stay in exact agreement with preview_nonce_dir in
+ * scripts/agent-harness/preview-session.sh. pnpm check:preview-session pins it.
+ */
+const NONCE_TTL_MS = 15 * 60 * 1000;
+
+function nonceDirectory(): string {
+  const override = process.env.MATRX_DEV_LOGIN_NONCE_DIR?.trim();
+  if (override) return override;
+  const uid = typeof process.getuid === "function" ? process.getuid() : 0;
+  return join("/tmp", `matrx-dev-login-${uid}`);
+}
+
+function sweepStaleNonces(dir: string): void {
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return;
+  }
+  const cutoff = Date.now() - NONCE_TTL_MS;
+  for (const name of names) {
+    if (!name.startsWith(".dev-login-nonce.")) continue;
+    const file = join(dir, name);
+    try {
+      if (statSync(file).mtimeMs < cutoff) rmSync(file);
+    } catch {
+      /* a consumer already removed it */
+    }
+  }
+}
 
 /**
  * A NONCE BELONGS TO A HOST *AND* TO ITS OWN MINT (W56c 2026-09-12, extended
@@ -88,19 +125,18 @@ function nonceFileFor(hostname: string, nonce: string): string {
   // The nonce also becomes part of a PATH. It is always openssl-rand hex, but
   // re-validated rather than trusted, exactly like the hostname above.
   const safeNonce = /^[a-f0-9]{16,64}$/.test(nonce) ? nonce : "invalid-nonce";
-  return join(REPO_ROOT, `.dev-login-nonce.${safeHostname(hostname)}.${safeNonce}`);
+  return join(nonceDirectory(), `.dev-login-nonce.${safeHostname(hostname)}.${safeNonce}`);
 }
 
-// The pre-2026-09-26 shape (one file per HOST, no nonce in the name). A
-// handful of one-off screenshot/verification scripts under scripts/campaign-*
-// still hand-write this file directly rather than going through
-// `pnpm dev-login`; this keeps them working unchanged while the primary path
-// (dev-login.sh) gets the per-mint isolation below.
+// The pre-2026-09-26 shape (one file per HOST, no nonce in the name). Kept so a
+// mint written before this process restarted can still be consumed. New mints
+// go through the per-mint name in the same directory outside the checkout.
 function legacyNonceFileFor(hostname: string): string {
-  return join(REPO_ROOT, `.dev-login-nonce.${safeHostname(hostname)}`);
+  return join(nonceDirectory(), `.dev-login-nonce.${safeHostname(hostname)}`);
 }
 
 function consumeNonce(presented: string, hostname: string): boolean {
+  sweepStaleNonces(nonceDirectory());
   // THE PER-MINT FILE FIRST. A session driving `s3f1eb9c52.localhost` mints
   // `.dev-login-nonce.s3f1eb9c52.localhost.<nonce>`, so two mints for the same
   // host — e.g. two subagents dispatched from one parent Claude session,
@@ -262,12 +298,12 @@ export async function GET(request: NextRequest) {
       {
         error:
           `Expired, missing, or mismatched nonce for host '${hostname}'. Nonces are ` +
-          `PER HOST AND PER MINT now (the file is .dev-login-nonce.${hostname}.<nonce>), ` +
-          "so neither another agent's failed navigation nor a second mint for this same " +
-          "host can burn this one's. Run `pnpm dev-login` in a shell in this checkout — " +
-          "it mints a fresh nonce for YOUR session's hostname and prints the URL to open. " +
-          "Each nonce is good for exactly one request. If you wrote `.dev-login-nonce` by " +
-          "hand, that is the old shared file and no host reads it any more.",
+          `PER HOST AND PER MINT now (the file is .dev-login-nonce.${hostname}.<nonce>, ` +
+          "outside this checkout). Neither another agent's failed navigation nor a second " +
+          "mint for this same host can burn this one's. Run `pnpm dev-login` in a shell in " +
+          "this checkout — it mints a fresh nonce for YOUR session's hostname and prints " +
+          "the URL to open. Each nonce is good for exactly one request and is deleted after " +
+          "15 minutes if that URL is never opened. Do not write a nonce file into the repo.",
       },
       { status: 401 },
     );

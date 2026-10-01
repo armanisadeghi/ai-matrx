@@ -23,6 +23,7 @@
 import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { writeDevLoginNonce } from "../lib/dev-login-nonce.mjs";
 import { resolve, dirname } from "node:path";
 
 const ROOT = process.cwd();
@@ -821,7 +822,7 @@ async function probeHistory(page) {
 
 async function devLogin(page) {
   const nonce = randomBytes(16).toString("hex");
-  writeFileSync(resolve(ROOT, `.dev-login-nonce.${HOST}`), `${nonce}\n`);
+  writeDevLoginNonce(HOST, nonce);
   await page.goto(`${ORIGIN}/api/dev-login?nonce=${nonce}&next=${encodeURIComponent(TABLE_URL)}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
