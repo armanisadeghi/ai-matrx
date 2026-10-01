@@ -689,7 +689,7 @@ export function NotesView({
           tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
         />
       ) : (
-        <div className="w-9 shrink-0" aria-hidden />
+        <div className="w-[calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] shrink-0" aria-hidden />
       )}
 
       {/* Center — view / style modes only */}
@@ -757,7 +757,7 @@ export function NotesView({
           )}
         </TapTargetButtonGroup>
       ) : (
-        <div className="w-9 shrink-0" aria-hidden />
+        <div className="w-[calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] shrink-0" aria-hidden />
       )}
     </div>
   );
