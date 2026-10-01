@@ -145,11 +145,12 @@ export async function sendDm(options: SendDmOptions): Promise<SendDmResult> {
         return { ok: false, conversationId, error: readError?.message ?? "Assignment DM replay row missing" };
       }
       const action = existing.action_data;
-      const actionObject = action && typeof action === "object" && !Array.isArray(action)
-        ? action : null;
+      const actionObject: Record<string, unknown> | null = action &&
+        typeof action === "object" && !Array.isArray(action)
+          ? action as Record<string, unknown> : null;
       const payload = actionObject?.payload;
       const existingTaskId = payload && typeof payload === "object" && !Array.isArray(payload)
-        ? payload.task_id : null;
+        ? (payload as Record<string, unknown>).task_id : null;
       if (existing.conversation_id !== conversationId ||
           existing.organization_id !== organizationId ||
           existing.sender_id !== senderId ||
