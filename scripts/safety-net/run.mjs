@@ -150,7 +150,7 @@ function run(cmd, argv, { cwd = REPO, env = {}, input = null, timeoutMs = 45 * 6
 }
 
 function psqlSync(sql, { readOnly = false } = {}) {
-  const body = readOnly ? `begin read only;\n${sql}\ncommit;` : sql;
+  const body = readOnly ? `set session characteristics as transaction read only;\nset default_transaction_read_only = on;\n${sql}` : sql;
   const r = spawnSync(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-At", "-f", "-"], { input: body, encoding: "utf8", cwd: REPO });
   return { code: r.status, out: `${r.stdout}${r.stderr}` };
 }
@@ -179,10 +179,29 @@ async function runCheck(c) {
     // A `vars` plant switches one of the suite's OWN built-in plants on (`-v plant=nolane` etc.).
     const allVars = { ...(c.vars ?? {}), ...(plant && plant.mode === "vars" ? plant.vars : {}) };
     const vars = Object.entries(allVars).map(([k, v]) => `\\set ${k} '${v}'`).join("\n");
-    const plantSql = plant && plant.mode === "in-transaction" ? `begin;\n${plant.apply}\n` : "";
+    // IN-TRANSACTION PLANTS GO INSIDE THE SUITE'S OWN TRANSACTION. Every campaign suite includes
+    // _preamble.sql, which runs its own begin … commit: a plant sent before `\i suite` is COMMITTED
+    // by that commit (caught by SN-SCOPES, 2026-10-01 ~02:05 PT, before any plant had run). So the
+    // suite's text is composed with the plant inserted right after the suite's first `begin` that
+    // follows the preamble, and a suite with no such begin — or with a `commit` after it — is
+    // refused for an in-transaction plant (use a committed plant with a restore instead).
+    let suiteRef = `\\i ${c.file}`;
+    if (plant && plant.mode === "in-transaction") {
+      const lines = readFileSync(join(REPO, c.file), "utf8").split("\n");
+      const pre = lines.findIndex((l) => /^\s*\\i\s+\S*_preamble\.sql/.test(l));
+      const at = lines.findIndex((l, i) => i > pre && /^\s*begin\b/i.test(l));
+      if (at < 0) throw new Error(`refused: ${c.file} opens no transaction after its preamble, so an in-transaction plant would commit`);
+      if (lines.slice(at + 1).some((l) => /^\s*commit\s*;/i.test(l))) throw new Error(`refused: ${c.file} commits after its begin, so an in-transaction plant would commit`);
+      lines.splice(at + 1, 0, "-- ── SAFETY-NET PLANT (rolled back with the suite) ──", plant.apply, "-- ── end of plant ──");
+      const composed = join(OUT, "logs", `${c.id}.planted.sql`);
+      writeFileSync(composed, lines.join("\n"));
+      suiteRef = `\\i ${composed}`;
+    }
     const wrapped = readOnly
-      ? `begin read only;\n${vars}\n\\i ${c.file}\ncommit;\n`
-      : `\\set expect '${TARGET === "clone" ? "clone" : "main"}'\n${vars}\n${plantSql}\\i ${c.file}\n${plantSql ? "rollback;\n" : ""}`;
+      ? // LIVE: the whole SESSION is read-only, so a suite's own begin … commit (the preamble has one)
+        // cannot open a writing transaction on production.
+        `set session characteristics as transaction read only;\nset default_transaction_read_only = on;\n${vars}\n\\i ${c.file}\n`
+      : `\\set expect '${TARGET === "clone" ? "clone" : "main"}'\n${vars}\n${suiteRef}\n`;
     let r = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 20 * 60 * 1000 });
     // The clone is shared by many lanes: a lock / statement timeout is the neighbours, not the
     // product. Retry ONCE after a pause, and say so in the log; a second timeout is a FAIL.
@@ -250,7 +269,13 @@ try {
     while (queue.length) {
       const c = queue.shift();
       console.log(`[safety-net] ▶ ${c.id}`);
-      const r = await runCheck(c);
+      let r;
+      try {
+        r = await runCheck(c);
+      } catch (e) {
+        r = { code: 98, steps: [], tail: String(e?.message ?? e) };
+        appendFileSync(join(OUT, "logs", `${c.id}.log`), `\n[runner] ${r.tail}\n`);
+      }
       const status = r.skip ? "SKIP" : r.code === 0 ? "PASS" : "FAIL";
       rows.push({ check: c, status, ...r });
       console.log(`[safety-net] ${status} ${c.id} (${Math.round((r.ms ?? 0) / 1000)} s)`);
