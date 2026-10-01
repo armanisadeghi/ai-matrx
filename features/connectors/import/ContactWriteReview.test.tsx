@@ -21,6 +21,7 @@ jest.mock("@/lib/python-client", () => ({
 const props = {
   organizationId: "org-1", connectionId: "connection-1",
   resourceName: "people/contact-1", displayName: "Ada Lovelace",
+  accountLabel: "reviewer@example.invalid",
 };
 const names = (givenName: string) => ({
   resourceName: props.resourceName, etag: "etag-1", names: [{ givenName, familyName: "Lovelace" }],

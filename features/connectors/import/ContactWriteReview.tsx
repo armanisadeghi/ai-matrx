@@ -44,11 +44,12 @@ function nameText(name: Name): string {
   return [name.given_name, name.family_name].filter(Boolean).join(" ") || "Unnamed";
 }
 
-export function ContactWriteReview({ organizationId, connectionId, resourceName, displayName }: {
+export function ContactWriteReview({ organizationId, connectionId, resourceName, displayName, accountLabel }: {
   organizationId: string;
   connectionId: string;
   resourceName: string;
   displayName: string;
+  accountLabel: string;
 }) {
   const admission = useQuery({
     queryKey: ["google", "contacts-write", "admission"],
@@ -143,6 +144,7 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
 
   return <section className="mt-2 space-y-3 rounded-md border p-3" aria-label={`Edit ${displayName} in Google`}>
     <p className="text-sm font-medium">Edit Google Contact name</p>
+    <p className="text-xs text-muted-foreground">{accountLabel}</p>
     <div className="grid gap-2 sm:grid-cols-2">
       <label className="text-xs">Given name<Input value={givenName} maxLength={256} disabled={busy} onChange={(event) => { invalidate(); setGivenName(event.target.value); }} /></label>
       <label className="text-xs">Family name<Input value={familyName} maxLength={256} disabled={busy} onChange={(event) => { invalidate(); setFamilyName(event.target.value); }} /></label>

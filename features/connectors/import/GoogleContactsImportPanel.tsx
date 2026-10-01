@@ -348,6 +348,7 @@ export function GoogleContactsImportPanel({
       const controller = new AbortController();
       ref.current = controller;
       const seq = ++callSeqRef.current;
+      setEditingGoogleContact(null);
       setLoading(true);
       setError(null);
       try {
@@ -1123,7 +1124,8 @@ export function GoogleContactsImportPanel({
                 <div className="w-full">
                 <ContactWriteReview key={`${effectiveOrganizationId}:${writeConnection.id}:${contact.external_id}`}
                   organizationId={effectiveOrganizationId} connectionId={writeConnection.id}
-                  resourceName={contact.external_id} displayName={contact.display_name} />
+                  resourceName={contact.external_id} displayName={contact.display_name}
+                  accountLabel={search?.google_account ?? "Google account"} />
                 </div>
               ) : null}
             </li>
