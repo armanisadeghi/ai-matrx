@@ -245,7 +245,7 @@ function IconPickerTapestry({
   onPick: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-y-1">
       {ids.map((id) => (
         <TapTargetLabeled key={id} label={id}>
           <TapTargetButton
@@ -274,7 +274,7 @@ function AiTapTapestry({
   onPick: (selectValue: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-y-1">
       {entries.map((entry) => {
         const { Component, label, selectValue, colored } = entry;
         return (
