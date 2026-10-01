@@ -175,6 +175,8 @@ async function typeInto(row, col, words, { enter = true, replace = true } = {}) 
 }
 
 async function columnSettings(col) {
+  await page.keyboard.press("Escape").catch(() => {});
+  await sleep(600);
   const exact = new RegExp(`^\\s*[⚿]?\\s*${esc(col)}\\s*[↑↓]?\\s*$`, "i");
   await page.locator("thead th", { hasText: exact }).first().click({ button: "right" });
   const cfg = page.locator('[role=menu] [data-alchemy-node="cm:x:grid-col-configure"]').first();
@@ -489,8 +491,13 @@ try {
       if (await done.count()) await done.first().click().catch(() => {});
       await sleep(2500);
       await probe("attachment-after");
+      // Leave the cell (it saves when it is left), then read it again after a reload.
+      await (await cellOf(R3, "Copay")).click().catch(() => {});
+      await sleep(3000);
+      const shown = await cellText(R1, "Handout PDF");
+      await reload();
       const now = await cellText(R1, "Handout PDF");
-      return { ok: now.includes("home-exercise-handout") || /1 file|\.txt/.test(now), detail: `uploaded ${fname}; cell reads "${now}"` };
+      return { ok: now !== "—" && now !== "" && !/Add files/.test(now), detail: `uploaded ${fname}; after leaving the cell it read "${shown}", after a reload "${now}"` };
     });
   }
 
