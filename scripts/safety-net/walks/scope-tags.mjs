@@ -178,7 +178,8 @@ try {
   await ctx.step(["S05"], "tag a chat with the scope", admin, async () => {
     if (!state.madeScope) return { ok: false, detail: "no scope to tag with" };
     await go(admin, "/chat/new");
-    const chipSel = 'button[aria-label^="Context: "]:not([aria-label="Context: Context"]), button[aria-label="Set context"]';
+    // The scope chip names the organization first ("Context: CRP · 1 scope"); the "Context: 7 sent" chip beside it is the delivery table.
+    const chipSel = 'button[aria-label^="Context: CRP"], button[aria-label="Set context"]';
     const chip = admin.locator(chipSel).locator("visible=true").first();
     await chip.waitFor({ timeout: 180000 });
     await sleep(3000);
@@ -210,12 +211,12 @@ try {
     // nothing picked in the sidebar any more: the chat's own tag must carry the chip
     const c2 = admin.locator(chipSel).locator("visible=true").first();
     await c2.click().catch(() => {});
-    await admin.getByRole("button", { name: /^Clear/ }).first().click({ timeout: 8000 }).catch(() => {});
+    await admin.getByRole("button", { name: /clear/i }).first().click({ timeout: 8000 }).catch(() => {});
     await sleep(1500);
     await admin.keyboard.press("Escape");
     await go(admin, state.chatUrl);
     await admin.locator(chipSel).locator("visible=true").first().waitFor({ timeout: 180000 });
-    const shown = await until("chat chip", async () => /scope/.test((await admin.locator(chipSel).locator("visible=true").first().getAttribute("aria-label").catch(() => "")) ?? ""), 60000);
+    const shown = await until("chat chip", async () => /1 scope/.test((await admin.locator(chipSel).locator("visible=true").first().getAttribute("aria-label").catch(() => "")) ?? ""), 60000);
     const chipAfter = await admin.locator(chipSel).locator("visible=true").first().getAttribute("aria-label").catch(() => "");
     return { ok: Boolean(shown.v), detail: `the chat reopened at ${new URL(state.chatUrl).pathname} reads "${chipAfter}" (picked before send: "${chipBefore}")` };
   });
