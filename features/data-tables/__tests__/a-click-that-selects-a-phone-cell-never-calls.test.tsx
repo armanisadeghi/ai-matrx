@@ -70,6 +70,20 @@ test("on a cell that is not selected, the click selects and the call does not st
   expect(clickLink()).toBe(true);
 });
 
+test("the grid selects on the press: a cell that became selected during this click still does not call", () => {
+  act(() => root.render(phone(false)));
+  const link = container.querySelector("a[href^='tel:']")!;
+  act(() => {
+    link.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+  });
+  act(() => root.render(phone(true)));
+  const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+  act(() => {
+    container.querySelector("a[href^='tel:']")!.dispatchEvent(ev);
+  });
+  expect(ev.defaultPrevented).toBe(true);
+});
+
 test("on a selected cell, a click on the number calls", () => {
   act(() => root.render(phone(true)));
   expect(clickLink()).toBe(false);

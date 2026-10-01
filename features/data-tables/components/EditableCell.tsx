@@ -215,6 +215,8 @@ export function EditableCell({
    */
   const [unsent, setUnsent] = useState<{ value: unknown; add?: string[] } | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  /** Whether this cell was already selected when the current press began (B3-22). */
+  const selectedAtPress = useRef<boolean | null>(null);
 
   // Sync draft with prop when value changes from upstream (e.g. realtime).
   useEffect(() => {
@@ -655,8 +657,14 @@ export function EditableCell({
         // link, so the click that selected the cell also started a call (an email cell, a new mail). On a
         // cell that is not selected yet the link does not follow; the cell is selected. Once it is
         // selected, a click on the number calls, as the link says.
+        // The grid selects on the press, so "selected" is judged as the press began, never at the click.
+        onPointerDownCapture={() => {
+          selectedAtPress.current = selected;
+        }}
         onClickCapture={(e) => {
-          if (selected) return;
+          const wasSelected = selectedAtPress.current ?? selected;
+          selectedAtPress.current = null;
+          if (wasSelected) return;
           const link = (e.target as HTMLElement | null)?.closest?.("a[href]");
           const href = link?.getAttribute("href") ?? "";
           if (/^(tel|mailto|sms):/i.test(href)) e.preventDefault();
