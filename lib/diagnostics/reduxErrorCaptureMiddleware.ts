@@ -13,6 +13,7 @@
  *   - `meta.condition` (the thunk's `condition` returned false — never ran)
  *   - AbortError / ConditionError by name
  *   - SessionUnavailableError (an expected auth-lifecycle pause)
+ *   - a rejection marked ResumeRetryScheduled (its own retry is already queued)
  *
  * `relation` is the thunk name (the action type minus `/rejected`) so an admin
  * can downgrade a whole slice or a single thunk by `relation` in
@@ -27,6 +28,7 @@ import type { Middleware } from "@reduxjs/toolkit";
 import { captureError, getSnapshot } from "@/lib/diagnostics/errorCaptureStore";
 import {
   isPersonCancellationErrorName,
+  isScheduledRetryErrorName,
   type ExecutionRejectionMeta,
 } from "./executionRejectionMeta";
 
@@ -110,6 +112,14 @@ export const reduxErrorCaptureMiddleware: Middleware =
         if (
           isPersonCancellationErrorName(a.meta?.originalErrorName) ||
           isPersonCancellationErrorName(a.error?.originalErrorName)
+        ) {
+          return result;
+        }
+        // A rejection whose own retry is already scheduled hands the turn on;
+        // only the final, unrecovered rejection (no marker) is a failure.
+        if (
+          isScheduledRetryErrorName(a.meta?.originalErrorName) ||
+          isScheduledRetryErrorName(a.error?.originalErrorName)
         ) {
           return result;
         }

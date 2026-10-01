@@ -42,3 +42,18 @@ export const PERSON_CANCELLATION_ERROR_NAMES: ReadonlySet<string> = new Set([
 export function isPersonCancellationErrorName(name: unknown): boolean {
   return typeof name === "string" && PERSON_CANCELLATION_ERROR_NAMES.has(name);
 }
+
+/**
+ * A rejection that HANDS THE TURN ON instead of failing it. `resumeInstance`
+ * rejects while it has already scheduled its own bounded retry (the suspending
+ * stream is still closing, or a 409 resume_conflict); the next dispatch carries
+ * the turn. It is control flow, not a failure: the capture middleware files
+ * nothing for it (2026-10-01 — every scheduled retry landed as a red
+ * "redux-rejected" dead turn). The FINAL failure after the retry budget is spent
+ * carries no marker and stays red.
+ */
+export const RESUME_RETRY_SCHEDULED_ERROR_NAME = "ResumeRetryScheduled";
+
+export function isScheduledRetryErrorName(name: unknown): boolean {
+  return name === RESUME_RETRY_SCHEDULED_ERROR_NAME;
+}

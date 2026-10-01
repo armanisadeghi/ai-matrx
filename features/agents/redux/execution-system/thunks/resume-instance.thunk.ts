@@ -1,4 +1,8 @@
-import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagnostics/executionRejectionMeta";
+import {
+  executionRejectionMeta,
+  RESUME_RETRY_SCHEDULED_ERROR_NAME,
+  type ExecutionRejectionMeta,
+} from "@/lib/diagnostics/executionRejectionMeta";
 /**
  * resumeInstance — continue an agent loop whose original stream has ended
  * because a client-delegated tool was answered after the hard-suspend.
@@ -155,6 +159,9 @@ export const resumeInstance = createAsyncThunk<
           }, delay);
           return rejectWithValue(
             `suspending stream still closing — retry ${attempt} scheduled`,
+            // Not a failure — the retry above carries the turn. Only the
+            // retries-exhausted rejection below is filed (red).
+            RESUME_RETRY_SCHEDULED_ERROR_NAME,
           );
         }
         console.error(
@@ -389,6 +396,9 @@ export const resumeInstance = createAsyncThunk<
           }, delay);
           return rejectWithValue(
             `resume_conflict — retry ${attempt} scheduled`,
+            // Not a failure — the retry above carries the turn. Only the
+            // retries-exhausted rejection below is filed (red).
+            RESUME_RETRY_SCHEDULED_ERROR_NAME,
           );
         }
         // Budget spent. Benign: the conflicting run owns the conversation
