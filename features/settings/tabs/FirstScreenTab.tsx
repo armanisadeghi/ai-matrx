@@ -7,13 +7,19 @@
 // little things — plus a couple of simple AI settings since that's what we do":
 //
 //   1. Theme                          — theme slice, boot-critical, via useSetting
-//   2. Default organization           — userPreferences.organization, via useSetting
-//   3. Default AI model for basic work — agents.model_prefs.chat_default_model,
+//   2. Default AI model for basic work — agents.model_prefs.chat_default_model,
 //      named "Anthropic Sonnet 5" style from the AI catalog, through the ladder
-//   4. Default voice                  — media.listening.voice through the ladder,
+//   3. Default voice                  — media.listening.voice through the ladder,
 //      with pick-and-instantly-hear preview
 //   Below the fold: the agent-builder model and the default DECISION model
 //   (agents.model_prefs.decision_default_model, decision-contract picker only).
+//
+// There is no "Default organization" row (removed 2026-10-01): since
+// 2026-09-19 nothing reads a default organization (no-default-organization
+// law), so "Where you land at sign-in" was a false sentence. The organization
+// picker's favorites (platform.user_entity_state) replace the starred default;
+// the stored `userPreferences.organization.defaultOrganizationId` value is kept
+// because the favorites hook carries it over once.
 //
 // The two ladder rows are the ONE editor (KnobOverrideRow) at the user rung,
 // so this screen is the proof the whole system works end to end: value, origin
@@ -27,7 +33,6 @@ import { SettingsCallout } from "@/components/official/settings/layout/SettingsC
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
-import { DefaultOrganizationChooser } from "@/features/organizations/components/DefaultOrganizationChooser";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { useSetting, useSettingReset } from "../hooks/useSetting";
@@ -38,8 +43,6 @@ import {
   UniversalSettingsRows,
 } from "../universal/UniversalSettingsPane";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { PreferencesLoadGate } from "@/components/read-state/PreferencesLoadGate";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useSurfaceScopeContribution, useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -57,9 +60,6 @@ export const FIRST_SCREEN_MORE_KEYS = [
 export default function FirstScreenTab() {
   const [mode, setMode] = useSetting<ThemeMode>("theme.mode");
   const themeReset = useSettingReset<ThemeMode>("theme.mode");
-  const [defaultOrganizationId, setDefaultOrganizationId] = useSetting<string | null>(
-    "userPreferences.organization.defaultOrganizationId",
-  );
   const settings = useUniversalSettings();
   // The write handler outlives this render; it reads the freshest settings
   // through this ref when it waits for its own write to show on the page.
@@ -98,17 +98,11 @@ export default function FirstScreenTab() {
   const missingKeys = registerConsulted
     ? absent([FIRST_SCREEN_MODEL_KEY, FIRST_SCREEN_VOICE_KEY, ...FIRST_SCREEN_MORE_KEYS])
     : [];
-  const defaultOrganization = defaultOrganizationId
-    ? settings.organizations.find((org) => org.id === defaultOrganizationId) ?? null
-    : null;
 
   // What this screen shows, as values an agent on the page can read
   // (`first_screen` group of matrx-user/settings). Read from state already
   // rendered here; nothing is fetched for the agent.
   useSurfaceScopeContribution("matrx-user/settings", "first-screen", () => ({
-    default_organization: defaultOrganizationId
-      ? { id: defaultOrganizationId, name: defaultOrganization?.name ?? null }
-      : null,
     organization_state: organizationState,
     ...(settings.isLoading
       ? {}
@@ -144,34 +138,7 @@ export default function FirstScreenTab() {
         throw new Error(`${knob.label} must be one of: ${knob.allowed_values.join(", ")}.`);
     }
   };
-  // Agent twin of the Default organization row. A display preference only —
-  // which organization opens at sign-in; it never changes the one the person
-  // is working in. Accepts an organization id or exact name, or null to clear.
-  const resolveDefaultOrganization = (value: unknown): string | null => {
-    if (value === null) return null;
-    if (typeof value !== "string" || !value.trim())
-      throw new Error("default_organization expects an organization id or exact name, or null for none.");
-    const byId = settings.organizations.find((org) => org.id === value);
-    if (byId) return byId.id;
-    const byName = settings.organizations.filter((org) => org.name.toLowerCase() === value.trim().toLowerCase());
-    if (byName.length === 1) return byName[0].id;
-    if (byName.length > 1)
-      throw new Error(`"${value}" matches ${byName.length} of your organizations; send the id (${byName.map((o) => o.id).join(", ")}).`);
-    throw new Error(`"${value}" is not one of your organizations.`);
-  };
   useSurfaceWriteHandlers("matrx-user/settings", {
-    default_organization: {
-      validate: (value: unknown) => void resolveDefaultOrganization(value),
-      apply: (value: unknown) => {
-        const next = resolveDefaultOrganization(value);
-        setDefaultOrganizationId(next);
-        const name = next ? settings.organizations.find((org) => org.id === next)?.name ?? next : null;
-        return {
-          summary: next ? `Default organization set to ${name}.` : "Default organization cleared.",
-          data: { default_organization: next ? { id: next, name } : null },
-        };
-      },
-    },
     ai_voice_defaults: {
       validate: validateAiVoice,
       apply: async (value: unknown) => {
@@ -240,34 +207,6 @@ export default function FirstScreenTab() {
       </SettingsSection>
       }
 
-      {settings.editingContext === "user" && <PreferencesLoadGate what="your account defaults">
-        <SettingsSection title="Account defaults">
-          <SettingsRow
-            label="Default organization"
-            description="Where you land at sign-in; switch any time from the header."
-            id="settings-default-organization"
-            // Stacks under its label on a narrow screen, like every select row.
-            controlLayout="wide"
-            modified={Boolean(defaultOrganizationId)}
-            onReset={() => setDefaultOrganizationId(null)}
-            resetLabel="Clear default organization"
-            last={settings.organizationsStatus !== "error"}
-          >
-            {/* The same organization control the header uses (search, rarely
-                used folded, test organizations hidden, address on duplicate
-                names) — choosing here only sets the default. */}
-            <DefaultOrganizationChooser id="settings-default-organization" className="w-80 max-w-full" />
-          </SettingsRow>
-          {settings.organizationsStatus === "error" && (
-            <ReadFailure
-              error={settings.organizationsError ?? true}
-              what="your organizations"
-              onRetry={settings.refreshOrganizations}
-            />
-          )}
-        </SettingsSection>
-      </PreferencesLoadGate>
-      }
       </div>
 
       <div>
@@ -325,7 +264,7 @@ export const FIRST_SCREEN_TAB: SettingsTabDef = {
   id: "firstScreen",
   label: "Settings",
   icon: SlidersHorizontal,
-  description: "Theme, default organization, AI model and voice.",
+  description: "Theme, AI model and voice.",
   component: FirstScreenTab,
   persistence: "server",
 };

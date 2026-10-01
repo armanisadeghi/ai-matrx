@@ -305,17 +305,6 @@ const surfaceSpecific: SurfaceValue[] = [
 
   // ── First screen (descendant-owned: FirstScreenTab) ───────────────────
   {
-    name: "default_organization",
-    label: "Default organization",
-    description:
-      "The organization the user chose to land in when they sign in, as { id, name }, or null when none is chosen. Change it with the default_organization target. Absent outside the Settings landing page.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 90,
-    sortOrder: 590,
-    group: "first_screen",
-  },
-  {
     name: "organization_state",
     label: "Organization state",
     description:
@@ -471,18 +460,6 @@ const surfaceSpecific: SurfaceValue[] = [
  * visible, self-correcting change. The confirm is the point.
  */
 const writeTargets: SurfaceWriteTarget[] = [
-  {
-    name: "default_organization",
-    label: "Default organization",
-    description:
-      "Set which organization opens when the person signs in (a display preference only — it does NOT change the organization they are working in now). Expects one of their organizations by id or exact name, or null to clear it. Only while the Settings landing page is open.",
-    valueType: "string",
-    updatesValue: "default_organization",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "first_screen",
-    sortOrder: 591,
-  },
   {
     name: "ai_voice_defaults",
     label: "AI and voice defaults",

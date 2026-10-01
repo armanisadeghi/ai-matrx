@@ -11,7 +11,6 @@ import { createSettingsWriteHandlers } from "./write-handlers";
  */
 const DESCENDANT_OWNED_TARGETS: Readonly<Record<string, string>> = {
   ai_voice_defaults: "features/settings/tabs/FirstScreenTab.tsx",
-  default_organization: "features/settings/tabs/FirstScreenTab.tsx",
   notification_preferences: "features/settings/tabs/NotificationsTab.tsx",
   hidden_models: "components/user-preferences/AiModelsPreferences.tsx",
 };
