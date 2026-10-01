@@ -1397,11 +1397,13 @@ export async function changeFieldType(
   // THE LOOK GOES WITH THE KIND (TABLE-EDIT-DEFECTS T26): a look that no longer fits what the column
   // stores is cleared in the same change — "Patient Notes" changed back to text kept its Number look,
   // and every word typed into it afterwards was read as a number and dropped. Read before the retype.
-  const before = await fieldById(home, args.tableId, args.fieldId);
-  const shownAs = before.success
-    ? ((before.data as { data?: { display_format?: { id?: unknown } | null } }).data?.display_format?.id ?? null)
-    : null;
-  const staleLook = typeof shownAs === "string" && !lookFitsKind(shownAs, kind);
+  // One read of the columns (not the whole table snapshot). The look rides the Field's
+  // `display_format` ({id, options}), as `olderColumnFromField` reads it. A failed read leaves the
+  // look as it is — the retype itself is the person's ask and still goes.
+  const columnsNow = await clientFor(home).fields({ table_id: args.tableId });
+  const before = columnsNow.ok ? columnsNow.data.find((f) => f.id === args.fieldId) : undefined;
+  const shownAs = (before as { display_format?: { id?: unknown } | null } | undefined)?.display_format?.id ?? null;
+  const staleLook = typeof shownAs === "string" && shownAs !== "" && !lookFitsKind(shownAs, kind);
   // FLD-4 / T12: the store converts what converts and keeps what does not in
   // `_retired`, with the reason — neither coerced nor deleted.
   const behaviour = kind === "text" ? "text" : kind === "checkbox" ? "boolean" : "range";
@@ -1731,7 +1733,9 @@ export function specForNewColumn(dataType: string): Record<string, unknown> | nu
     case "date":
       return { type: "datetime" };
     case "datetime":
-      return { type: "datetime" };
+      // `kind` is what makes it a day AND a time: `type: "datetime"` alone is stored as a day
+      // (custom._field_document_for: config.kind "date" unless the spec says "datetime").
+      return { type: "datetime", kind: "datetime" };
     case "json":
       return { plain: "text", display_format: { id: "json" } };
     case "array":

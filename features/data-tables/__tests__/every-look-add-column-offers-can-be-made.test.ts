@@ -24,6 +24,6 @@ it("every look's storage type has a spec (the picker sends the look's base)", ()
   expect(missing).toEqual([]);
 });
 
-it("Date & time makes a date-and-time column", () => {
-  expect(specForNewColumn("datetime")).toEqual({ type: "datetime" });
+it("Date & time makes a date-AND-time column, not a day (custom._field_document_for reads spec.kind)", () => {
+  expect(specForNewColumn("datetime")).toEqual({ type: "datetime", kind: "datetime" });
 });
