@@ -121,7 +121,7 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
           <div className="flex min-w-0 flex-1 items-center justify-center">
             <NoteModeSwitch noteId={noteId} labels="container" />
           </div>
-          <TapTargetButtonGroup className="shrink-0">
+          <TapTargetButtonGroup>
             <NoteRecordTools
               instanceId={instanceId}
               noteId={noteId}

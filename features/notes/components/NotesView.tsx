@@ -721,7 +721,7 @@ export function NotesView({
       </div>
 
       {hidePageHeader ? (
-        <TapTargetButtonGroup className="shrink-0 pr-1">
+        <TapTargetButtonGroup>
           {activeTabId && (
             <>
               <ListTapButton
