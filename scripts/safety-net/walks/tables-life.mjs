@@ -27,6 +27,7 @@ const TABLE_NAME = `Home Exercise Plans ${STAMP}`;
 const TABLE_RENAMED = `Home Exercise Programs ${STAMP}`;
 const R1 = "Clamshells, left hip";
 const R2 = "Wall angels";
+const R3 = "Bird dog";
 
 // ── the clone's record store, read for the deciding marker (clone only) ──────────────────────────
 const CLONE_DSN = (() => {
@@ -111,6 +112,34 @@ async function open(query = "?view=sheet", { needRows = false } = {}) {
     if (await again.count()) await again.first().click().catch(() => {});
   }
   await sleep(2000);
+}
+/** Reload the page at its own address (the view state a person built stays in it). */
+async function reload() {
+  const url = page.url();
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await until("the grid", async () => (await page.locator("tbody tr").count()) > 1 || (await unpark()), 120000);
+  if (page.url() !== url) await page.goto(url, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await until("the grid", async () => (await page.locator("tbody tr").count()) > 1, 120000);
+  await sleep(2500);
+}
+/** Drag a header onto the left half of another, with the browser's own drag events. */
+async function dragHeader(from, onto) {
+  await page.evaluate(([a, b]) => {
+    const th = (n) => [...document.querySelectorAll("thead th")].find((t) => t.innerText.replace(/[↑↓⚿]/g, "").trim() === n);
+    const A = th(a);
+    const B = th(b);
+    if (!A || !B) return false;
+    const dt = new DataTransfer();
+    const r = B.getBoundingClientRect();
+    const at = { bubbles: true, cancelable: true, dataTransfer: dt, clientX: r.left + 4, clientY: r.top + r.height / 2 };
+    (A.querySelector("[draggable=true]") ?? A).dispatchEvent(new DragEvent("dragstart", { ...at, clientX: A.getBoundingClientRect().left + 10 }));
+    B.dispatchEvent(new DragEvent("dragenter", at));
+    B.dispatchEvent(new DragEvent("dragover", at));
+    B.dispatchEvent(new DragEvent("drop", at));
+    (A.querySelector("[draggable=true]") ?? A).dispatchEvent(new DragEvent("dragend", at));
+    return true;
+  }, [from, onto]);
+  await sleep(2500);
 }
 async function sheet() {
   if (await page.locator("[data-sheet-layout]").count()) return;
@@ -234,6 +263,23 @@ async function addRow(title) {
   return shown;
 }
 
+/** Open a cell's own editor the way a person does: select it, then click it again / Enter / double-click. */
+async function openEditor(row, col) {
+  const overlay = page.locator("[data-radix-popper-content-wrapper], [role=dialog]");
+  const before = await overlay.count();
+  const c = await cellOf(row, col);
+  await c.click();
+  await sleep(600);
+  for (const how of ["click", "Enter", "dblclick"]) {
+    if (how === "click") await c.click();
+    else if (how === "Enter") await page.keyboard.press("Enter");
+    else await c.dblclick();
+    await sleep(1500);
+    if ((await overlay.count()) > before || (await c.locator("input, textarea, button").count()) > 1) return how;
+  }
+  return null;
+}
+
 /** The enum ask after typing an off-list word; returns { asked, keep, add, text }. */
 async function askAfterTyping(row, col, word) {
   const c = await cellOf(row, col);
@@ -333,6 +379,7 @@ try {
     return { ok, detail: `form showed default 3: ${/\b3\b/.test(form)}, Knee: ${/Knee/.test(form)}; row reads Sets "${sets}", Body Area "${area}"` };
   });
   await addRow(R2).catch(() => {});
+  await addRow(R3).catch(() => {});
 
   // ── T10–T18 edit a cell of each plain kind ─────────────────────────────────────────────────────
   for (const c of COLS.filter((x) => x.type)) {
@@ -362,18 +409,12 @@ try {
   for (const [col, item, n] of [["Supply Item", "T19", 1], ["Supplies Used", "T20", 2]]) {
     if (!made[col]) continue;
     await step([item], `edit relation cell "${col}" (pick ${n})`, async () => {
-      const c = await cellOf(R1, col);
-      await c.click();
-      await sleep(500);
-      await c.click();
-      await sleep(800);
-      await page.keyboard.press("Enter");
-      await sleep(1800);
+      const how = await openEditor(R1, col);
       await probe(`relation-picker-${col}`);
       const opts = page.locator("[role=listbox] [role=option], [cmdk-item], [role=dialog] [role=option]");
       await until("the records to pick", async () => (await opts.count()) > 0, 20000);
       const names = (await opts.allInnerTexts()).map(clean).filter(Boolean);
-      if (!names.length) return { ok: false, detail: "no record offered to pick" };
+      if (!names.length) return { ok: false, detail: `no record offered to pick (editor opened by ${how ?? "nothing"})` };
       for (let k = 0; k < n && k < names.length; k++) {
         await opts.nth(k).click();
         await sleep(1200);
@@ -391,15 +432,11 @@ try {
   // T21 attachments: the cell's Add files… goes through the platform file picker.
   if (made["Handout PDF"]) {
     await step(["T21"], "edit attachments cell \"Handout PDF\"", async () => {
-      const c = await cellOf(R1, "Handout PDF");
-      await c.click();
-      await sleep(400);
-      await c.dblclick();
-      await sleep(1500);
+      const how = await openEditor(R1, "Handout PDF");
       const add = page.getByRole("button", { name: /Add files/ });
       if (!(await add.count())) {
         await probe("attachment-editor");
-        return { ok: false, detail: "the attachments cell opened no Add files…" };
+        return { ok: false, detail: `the attachments cell opened no Add files… (editor opened by ${how ?? "nothing"})` };
       }
       const chooser = page.waitForEvent("filechooser", { timeout: 8000 }).catch(() => null);
       await add.first().click();
@@ -453,17 +490,40 @@ try {
     return { ok: /Lumbar spine/.test(now) && listed > 0, detail: `asked "${r.text.slice(0, 120)}" (keep offered: ${r.keep}); cell "${now}"; now in the list: ${listed > 0}` };
   });
   // ── T24 enum ASK, multi choice ─────────────────────────────────────────────────────────────────
-  await step(["T24"], "Equipment: an off-list word asks; Keep as typed (or Add) saves it", async () => {
-    const r = await askAfterTyping(R2, "Equipment", "Ankle weights");
-    if (!r.asked) return { ok: false, detail: `typing "Ankle weights" asked nothing; cell reads "${await cellText(R2, "Equipment")}"` };
-    const how = r.keep ? "Keep as typed" : "Add";
-    await r.ask.getByRole("button", { name: how, exact: true }).first().click();
-    await sleep(3500);
+  await step(["T24"], "Equipment: an off-list word typed in the chooser asks; Keep as typed (or Add) saves it", async () => {
+    const how = await openEditor(R2, "Equipment");
+    const search = page.locator("[cmdk-input]").last();
+    if (!(await search.count())) {
+      await probe("multi-chooser");
+      return { ok: false, detail: `the Equipment cell opened no chooser (by ${how ?? "nothing"})` };
+    }
+    await search.fill("Ankle weights");
+    await sleep(1200);
+    await probe("multi-chooser-typed");
+    const ask = page.locator("[data-matrx-choice-nudge], [data-radix-popper-content-wrapper], [role=dialog], [role=alertdialog]").filter({ hasText: "to the choices for" });
+    if (!(await ask.count())) {
+      // The chooser's own offer for a word that is none of its choices, then Enter.
+      const offer = page.locator("[cmdk-item]").filter({ hasText: "Ankle weights" });
+      if (await offer.count()) await offer.first().click();
+      else await page.keyboard.press("Enter");
+      await sleep(1500);
+    }
+    const asked = await until("the ask", async () => (await ask.count()) > 0, 10000);
+    if (!asked.v) {
+      await probe("multi-no-ask");
+      await page.keyboard.press("Escape").catch(() => {});
+      return { ok: false, detail: `typing "Ankle weights" in the Equipment chooser asked nothing; cell reads "${await cellText(R2, "Equipment")}"` };
+    }
+    const text = clean(await ask.first().innerText());
+    const keep = (await ask.first().getByRole("button", { name: "Keep as typed", exact: true }).count()) > 0;
+    const pick = keep ? "Keep as typed" : "Add";
+    await ask.first().getByRole("button", { name: pick, exact: true }).first().click();
+    await sleep(3000);
     await page.keyboard.press("Escape").catch(() => {});
-    await open("?view=sheet", { needRows: true });
-    await sheet();
+    await sleep(1500);
+    await reload();
     const now = await cellText(R2, "Equipment");
-    return { ok: /Ankle weights/.test(now), detail: `asked "${r.text.slice(0, 120)}"; answered ${how}; after reload the cell reads "${now}"` };
+    return { ok: /Ankle weights/.test(now), detail: `asked "${text.slice(0, 120)}"; answered ${pick}; after reload the cell reads "${now}"` };
   });
 
   // ── T26 + T29 type change with data: values set aside, Undo brings them back ───────────────────
@@ -489,8 +549,9 @@ try {
     const look = clean(await d2.getByRole("combobox").first().innerText());
     await d2.getByRole("button", { name: "Cancel", exact: true }).click().catch(() => page.keyboard.press("Escape"));
     await sleep(800);
+    const db = cloneSql(`select data ->> 'type' from custom.record where table_id = custom.field_kernel_id() and deleted_at is null and data ->> 'entity_definition_id' = '${tid}' and data ->> 'label' = 'Patient Notes'`);
     const ok = /set aside/.test(said) && !!offered.v && after === before && /Text/.test(look);
-    return { ok, detail: `confirm "${said.slice(0, 140)}"; while Number the cell read "${whileNumber}"; Undo offered ${!!offered.v}; after Undo + reload "${after}" (was "${before}"), shows as ${look}` };
+    return { ok, detail: `confirm "${said.slice(0, 140)}"; while Number the cell read "${whileNumber}"; Undo offered ${!!offered.v}; after Undo + reload "${after}" (was "${before}"), shows as ${look}${db ? `; clone field type ${db}` : ""}` };
   });
   await step(["T26"], "Sets (number) → Text: a value that fits is kept", async () => {
     const before = await cellText(R1, "Sets");
@@ -509,15 +570,15 @@ try {
   });
 
   // ── T28 click-off blur saves the cell ──────────────────────────────────────────────────────────
-  await step(["T28"], "type into a cell, click off the table (no Enter): the value is saved", async () => {
+  await step(["T28"], "type into a cell, click another cell (no Enter): the value is saved", async () => {
     const words = "Band above the knees, 3 x 12";
     await typeInto(R2, "Patient Notes", words, { enter: false });
-    await page.locator("header, [data-shell-header]").first().click({ position: { x: 700, y: 20 } }).catch(() => page.mouse.click(800, 20));
+    await (await cellOf(R3, "Copay")).click();
     await sleep(3500);
-    await open("?view=sheet", { needRows: true });
-    await sheet();
+    const shown = await cellText(R2, "Patient Notes");
+    await reload();
     const now = await cellText(R2, "Patient Notes");
-    return { ok: now === words, detail: `after the click-off and a reload the cell reads "${now}"` };
+    return { ok: now === words, detail: `right after the click-off the cell read "${shown}"; after a reload "${now}"` };
   });
 
   // ── T29 undo a cell edit with Cmd/Ctrl-Z ───────────────────────────────────────────────────────
@@ -537,43 +598,39 @@ try {
   });
 
   // ── T27 sort and filter persist after an edit ──────────────────────────────────────────────────
-  await step(["T27"], "sort by Title (Z→A) and filter, edit a cell, reload: both are still applied", async () => {
-    await open("?view=sheet", { needRows: true });
-    await sheet();
-    await page.locator("thead th", { hasText: /^\s*⚿?\s*Title/i }).first().click({ button: "right" });
-    await sleep(900);
-    const items = page.locator("[role=menu] [role^=menuitem]");
-    const texts = await items.allInnerTexts();
-    const desc = texts.findIndex((t) => /^Sort/i.test(t.trim()) && /(Z\s*[→-]\s*A|descending|largest|newest|last)/i.test(t));
-    if (desc < 0) {
-      await probe("title-header-menu");
-      await page.keyboard.press("Escape");
-      return { ok: false, detail: `no descending sort in the Title header menu: ${texts.join(" | ")}` };
-    }
-    await items.nth(desc).click();
-    await sleep(2500);
-    // The filter: the Sheet's Filter control, Body Area is Hip / Lumbar spine (both rows) — a filter
-    // that keeps every row lets the edit be seen without the row leaving the view.
-    const fbtn = page.getByRole("button", { name: /^Filter/ }).first();
-    let filtered = "no Filter control";
-    if (await fbtn.count()) {
-      await fbtn.click();
+  await step(["T27"], "sort by Title Z to A and filter Title contains \"l\", edit a cell, reload: both still applied", async () => {
+    const menuItem = async (col, node) => {
+      const exact = new RegExp(`^\\s*[⚿]?\\s*${esc(col)}\\s*[↑↓]?\\s*$`, "i");
+      await page.locator("thead th", { hasText: exact }).first().click({ button: "right" });
+      const item = page.locator(`[role=menu] [data-alchemy-node="${node}"]`).first();
+      await item.waitFor({ timeout: 15000 });
+      await item.click();
       await sleep(1500);
-      await probe("filter-open");
-      filtered = "opened";
-    }
-    const order1 = (await page.locator("tbody tr").allInnerTexts()).map(clean).filter((r) => r.includes(R1) || r.includes(R2)).map((r) => (r.includes(R1) ? "R1" : "R2"));
+    };
+    const order = async () =>
+      (await page.locator("tbody tr").allInnerTexts()).map(clean).map((r) => (r.includes(R1) ? "R1" : r.includes(R2) ? "R2" : r.includes(R3) ? "R3" : null)).filter(Boolean);
+    await menuItem("Title", "cm:x:grid-col-sort-desc");
+    const sorted = await order();
+    await menuItem("Title", "cm:x:grid-col-filter");
+    await probe("title-filter");
+    const box = page.locator("[data-radix-popper-content-wrapper] input, [role=dialog] input").filter({ hasNot: page.locator("[type=checkbox]") }).last();
+    if (!(await box.count())) return { ok: false, detail: `sorted ${sorted.join(">")}; "Filter this column…" opened no box to type in` };
+    await box.fill("l");
+    await page.keyboard.press("Enter");
+    await sleep(2500);
     await page.keyboard.press("Escape").catch(() => {});
-    await typeInto(R1, "Adherence", "90");
-    const urlAfterEdit = page.url().replace(ctx.origin, "");
-    await open(urlAfterEdit.replace(`/data-v2/${tid}`, "") || "?view=sheet", { needRows: true });
-    await sheet();
-    const order2 = (await page.locator("tbody tr").allInnerTexts()).map(clean).filter((r) => r.includes(R1) || r.includes(R2)).map((r) => (r.includes(R1) ? "R1" : "R2"));
-    const arrow = await page.evaluate(() => [...document.querySelectorAll("thead th")].find((t) => /title/i.test(t.innerText))?.innerText ?? "");
-    const adh = await cellText(R1, "Adherence");
-    // Z→A: "Wall angels" (R2) above "Clamshells…" (R1).
-    const ok = order1.join() === "R2,R1" && order2.join() === "R2,R1" && /90/.test(adh);
-    return { ok, detail: `sorted ${order1.join(">")}; filter ${filtered}; edit Adherence → "${adh}"; after reload ${order2.join(">")} (header "${clean(arrow)}", url ${urlAfterEdit.slice(0, 120)})` };
+    await sleep(800);
+    const filtered = await order();
+    await typeInto(R1, "Copay", "40");
+    const afterEdit = await order();
+    const url = page.url().replace(ctx.origin, "");
+    await reload();
+    const afterReload = await order();
+    const copay = await cellText(R1, "Copay");
+    // Z→A: Wall angels (R2) above Clamshells (R1); "l" keeps both and hides Bird dog (R3).
+    const want = "R2,R1";
+    const ok = sorted.join() === "R2,R3,R1" && filtered.join() === want && afterEdit.join() === want && afterReload.join() === want && /40/.test(copay);
+    return { ok, detail: `sorted ${sorted.join(">")}; filtered ${filtered.join(">")}; after the edit ${afterEdit.join(">")}; after reload ${afterReload.join(">")} (Copay "${copay}", address ${url.slice(0, 160)})` };
   });
 
   // ── T06 rename a column ────────────────────────────────────────────────────────────────────────
@@ -591,58 +648,53 @@ try {
 
   // ── T09 recolor a choice ───────────────────────────────────────────────────────────────────────
   await step(["T09"], "recolor the Body Area choice Hip from its column settings", async () => {
+    const paint = () => page.evaluate(() => [...document.querySelectorAll("tbody td")].map((td) => td.innerHTML).find((h) => />Hip</.test(h))?.match(/(bg|text|border)-[a-z]+-\d+/g)?.join(" ") ?? "");
+    const before = await paint();
     const d = await columnSettings("Body Area");
-    await probe("body-area-settings");
-    const swatch = d.locator("[aria-label*='olor' i]").filter({ hasText: /|/ });
-    const labels = await d.locator("[aria-label]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
-    const hip = labels.find((l) => /colou?r/i.test(l) && /Hip/.test(l));
-    if (!hip) {
-      await d.getByRole("button", { name: "Cancel", exact: true }).click().catch(() => page.keyboard.press("Escape"));
-      return { ok: false, detail: `no colour control for the choice Hip in Body Area's settings (labels: ${labels.filter(Boolean).slice(0, 30).join(" | ")})` };
-    }
-    const before = await page.evaluate(() => [...document.querySelectorAll("tbody td")].map((td) => td.innerHTML).find((h) => />Hip</.test(h))?.match(/(bg|text)-\w+-\d+/g)?.join(" ") ?? "");
-    await d.locator(`[aria-label="${hip}"]`).first().click();
+    const rows = d.locator("div", { has: page.locator('input[aria-label="Option value"]') }).filter({ has: page.getByRole("combobox", { name: "Option color" }) });
+    const values = await d.locator('input[aria-label="Option value"]').evaluateAll((els) => els.map((e) => e.value));
+    const i = values.indexOf("Hip");
+    if (i < 0) return { ok: false, detail: `no choice Hip in Body Area's settings (${values.join(", ")})` };
+    void rows;
+    await d.getByRole("combobox", { name: "Option color" }).nth(i).click();
     await sleep(800);
-    await probe("color-picker");
-    const swatches = page.locator("[role=menu] [role^=menuitem], [role=listbox] [role=option], [data-radix-popper-content-wrapper] button[aria-label]");
-    const n = await swatches.count();
-    if (n < 2) return { ok: false, detail: `the colour control opened ${n} swatches` };
-    await swatches.nth(n - 2).click();
+    const opts = page.getByRole("option");
+    const names = (await opts.allInnerTexts()).map(clean);
+    const target = names.findIndex((n) => /^Green$/i.test(n)) >= 0 ? names.findIndex((n) => /^Green$/i.test(n)) : names.findIndex((n) => n && !/^Plain$/i.test(n));
+    if (target < 0) return { ok: false, detail: `the colour list offers nothing but ${names.join(", ")}` };
+    await opts.nth(target).click();
     await sleep(600);
     await d.getByRole("button", { name: "Save", exact: true }).click();
     await sleep(4000);
-    await open("?view=sheet", { needRows: true });
-    await sheet();
-    const after = await page.evaluate(() => [...document.querySelectorAll("tbody td")].map((td) => td.innerHTML).find((h) => />Hip</.test(h))?.match(/(bg|text)-\w+-\d+/g)?.join(" ") ?? "");
-    void swatch;
-    return { ok: after !== before && after !== "", detail: `Hip chip paint "${before}" → "${after}" after reload` };
+    await reload();
+    const after = await paint();
+    const d2 = await columnSettings("Body Area");
+    const said = clean(await d2.getByRole("combobox", { name: "Option color" }).nth(i).innerText());
+    await d2.getByRole("button", { name: "Cancel", exact: true }).click().catch(() => page.keyboard.press("Escape"));
+    await sleep(800);
+    return { ok: said === names[target] && after !== before, detail: `Hip set to ${names[target]}; settings now read "${said}"; chip paint "${before}" → "${after}" after reload` };
   });
 
   // ── T08 reorder columns ────────────────────────────────────────────────────────────────────────
-  await step(["T08"], "move Copay to the left of Sets; the order holds after reload", async () => {
+  await step(["T08"], "move Copay up past Sets (Settings rail's field list); the Sheet shows the new order after reload", async () => {
     const before = await headers();
-    const iC = before.indexOf("Copay");
-    const iS = before.indexOf("Sets");
-    // The header menu's own move items first; else drag the header.
-    await page.locator("thead th", { hasText: /^\s*Copay\s*[↑↓]?\s*$/ }).first().click({ button: "right" });
-    await sleep(900);
-    const items = page.locator("[role=menu] [role^=menuitem]");
-    const texts = await items.allInnerTexts();
-    const left = texts.findIndex((t) => /Move (left|before)|to the left/i.test(t));
-    if (left >= 0) {
-      await items.nth(left).click();
+    await open("?rail=settings");
+    const up = page.getByRole("button", { name: "Move Copay up", exact: true });
+    await until("the field list", async () => (await up.count()) > 0, 40000);
+    const viaRail = (await up.count()) > 0;
+    if (!viaRail) {
+      // The Sheet's own gesture: drag the Copay header onto the left half of Sets.
+      await open("?view=sheet", { needRows: true });
+      await sheet();
+      await dragHeader("Copay", "Sets");
     } else {
-      await probe("copay-header-menu");
-      await page.keyboard.press("Escape");
-      const from = page.locator("thead th", { hasText: /^\s*Copay\s*[↑↓]?\s*$/ }).first();
-      const to = page.locator("thead th", { hasText: /^\s*Sets\s*[↑↓]?\s*$/ }).first();
-      await from.dragTo(to, { targetPosition: { x: 4, y: 10 } }).catch(() => {});
+      await up.first().click();
+      await sleep(3500);
     }
-    await sleep(4000);
     await open("?view=sheet", { needRows: true });
     await sheet();
     const after = await headers();
-    return { ok: after.indexOf("Copay") >= 0 && after.indexOf("Copay") < after.indexOf("Sets"), detail: `before ${iS}/${iC} (Sets/Copay) → after ${after.indexOf("Sets")}/${after.indexOf("Copay")}; menu: ${texts.map(clean).join(" | ").slice(0, 200)}` };
+    return { ok: after.indexOf("Copay") >= 0 && after.indexOf("Copay") < after.indexOf("Sets"), detail: `${viaRail ? "Move Copay up" : "header drag"}: before ${before.join(", ").slice(0, 120)} → after ${after.join(", ").slice(0, 120)}` };
   });
 
   // ── T07 retire a column ────────────────────────────────────────────────────────────────────────
@@ -663,31 +715,43 @@ try {
 
   // ── T02 rename the table ───────────────────────────────────────────────────────────────────────
   await step(["T02"], `rename the table → "${TABLE_RENAMED}"`, async () => {
-    await open("?rail=settings");
-    await sleep(3000);
-    await probe("settings-rail");
-    const box = page.locator("input").filter({ hasNot: page.locator("xx") });
-    const idx = await box.evaluateAll((els, n) => els.findIndex((e) => e.value === n), TABLE_NAME);
+    const tried = [];
+    // 1. The table page's own menu (the "…" beside Share).
+    await open("");
+    const menu = page.getByRole("button", { name: "Table menu" });
+    if (await menu.count()) {
+      await menu.first().click();
+      await sleep(1200);
+      const items = (await page.locator("[role=menu] [role^=menuitem]").allInnerTexts()).map(clean);
+      tried.push(`table menu: ${items.join(" | ")}`);
+      const ri = items.findIndex((t) => /Rename/i.test(t));
+      if (ri >= 0) await page.locator("[role=menu] [role^=menuitem]").nth(ri).click();
+      else await page.keyboard.press("Escape");
+      await sleep(1000);
+    }
+    // 2. A box holding the table's name (the Settings rail, or one the menu opened).
+    let box = page.locator(`input`).filter({ hasNot: page.locator("x") });
+    let idx = await box.evaluateAll((els, n) => els.findIndex((e) => e.value === n), TABLE_NAME);
     if (idx < 0) {
-      // The page's own title control.
+      await open("?rail=settings");
+      await sleep(3000);
+      box = page.locator("input");
+      idx = await box.evaluateAll((els, n) => els.findIndex((e) => e.value === n), TABLE_NAME);
+      tried.push(`settings rail: ${idx < 0 ? "no box holding the table's name" : "a name box"}`);
+    }
+    // 3. The header's title (it opens the table switcher).
+    if (idx < 0) {
       const title = page.getByRole("button", { name: new RegExp(esc(TABLE_NAME)) }).first();
       if (await title.count()) {
         await title.click();
         await sleep(1200);
-        await probe("title-control");
-        const items = await page.locator("[role=menu] [role^=menuitem]").allInnerTexts();
-        const ri = items.findIndex((t) => /Rename/i.test(t));
-        if (ri >= 0) {
-          await page.locator("[role=menu] [role^=menuitem]").nth(ri).click();
-          await sleep(800);
-        } else {
-          await page.keyboard.press("Escape");
-          return { ok: false, detail: `no way to rename found: no name box on the Settings rail, the title menu reads ${items.join(" | ") || "(nothing)"}` };
-        }
+        const sw = clean(await page.locator("[data-table-switcher-content]").first().innerText().catch(() => ""));
+        tried.push(`header title: ${sw ? "opens the table switcher (Find a table)" : "opens nothing"}`);
+        await page.keyboard.press("Escape");
       }
+      return { ok: false, detail: `no control renames the table: ${tried.join("; ").slice(0, 400)}` };
     }
-    const input = idx >= 0 ? box.nth(idx) : page.locator(`input:focus`);
-    await input.fill(TABLE_RENAMED);
+    await box.nth(idx).fill(TABLE_RENAMED);
     await page.keyboard.press("Enter");
     await sleep(2500);
     const save = page.getByRole("button", { name: /^(Save|Rename)$/ });
