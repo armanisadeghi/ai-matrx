@@ -44,6 +44,7 @@ export function AgentSharePanel({
     childRecord,
     setShownTo,
     organizationDefault,
+    homeOrganizationId,
   } = useSharing("agent", agentId, true);
 
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -157,6 +158,7 @@ export function AgentSharePanel({
                   onSuccess={refresh}
                   resourceType="agent"
                   resourceId={agentId}
+                  {...(homeOrganizationId ? { organizationId: homeOrganizationId } : {})}
                   alreadySharedUserIds={userPermissions
                     .map((p) => p.grantedToUserId)
                     .filter((id): id is string => !!id)}

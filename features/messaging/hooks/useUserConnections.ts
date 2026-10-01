@@ -29,6 +29,7 @@
  */
 
 import {
+  forgetOrganizationMemberRows,
   readOrganizationMemberRows,
   type OrganizationMemberRow,
 } from "@/features/organizations/service/orgMemberRows";
@@ -75,6 +76,23 @@ type _CheckLookupRow =
   LookupUserByEmailRow extends DbRpcRow<"lookup_user_by_email"> ? true : false;
 declare const _lookupRow: _CheckLookupRow;
 true satisfies typeof _lookupRow;
+
+/**
+ * 🚨 A PEOPLE LIST ANSWERS WITHIN SECONDS (PB-07, 2026-10-01).
+ *
+ * The Share dialog sat on "Loading contacts…" for minutes: it named no organization, so this hook
+ * read the roster of EVERY organization the viewer belongs to — one request after another, about
+ * 120 ms each, sixty organizations deep for a test admin — and a roster request that never
+ * answered held the list forever. Now the rosters are read a few at a time, the whole read has a
+ * deadline, a roster that misses it is NAMED as unread (never silently dropped), and the hook
+ * itself stops loading at its own deadline and says so, with Retry.
+ */
+export const ROSTER_READ_CONCURRENCY = 6;
+/** The whole roster sweep's budget; a roster still unanswered is reported as unread. */
+export const ROSTER_SWEEP_DEADLINE_MS = 5_000;
+/** The hook's own ceiling — covers the organizations read and anything else upstream. */
+export const CONNECTIONS_LOAD_DEADLINE_MS = 8_000;
+const DEADLINE_MISSED = Symbol("deadline-missed");
 
 /** One source of the roster that could not be read while others could. */
 export interface ConnectionReadFailure {
@@ -133,7 +151,12 @@ export function useUserConnections(
   const { conversations, isInitialLoading: convoLoading } = useConversations();
 
   // Get user's organizations
-  const { organizations, loading: orgsLoading } = useUserOrganizations();
+  const {
+    organizations,
+    loading: orgsLoading,
+    error: orgsError,
+    refresh: refreshOrganizations,
+  } = useUserOrganizations();
 
   const [supabase] = useState(createClient);
   const [nonce, setNonce] = useState(0);
@@ -209,9 +232,21 @@ export function useUserConnections(
 
   // Wait for orgs to load — and for conversations only when this surface uses them, so a
   // share dialog never sits on the messaging engine's spinner for a list it will not show.
-  const isLoading = currentUserId
+  const waiting = currentUserId
     ? (includeConversations && convoLoading) || orgsLoading || current === null
     : false;
+
+  // THE HOOK'S OWN DEADLINE: whatever upstream stalls (the organizations read, auth that never
+  // hydrates, a request that never answers), the list stops loading and says so.
+  const attemptKey = `${currentUserId ?? ""}:${organizationId ?? ""}:${nonce}`;
+  const [stalledKey, setStalledKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = setTimeout(() => setStalledKey(attemptKey), CONNECTIONS_LOAD_DEADLINE_MS);
+    return () => clearTimeout(timer);
+  }, [waiting, attemptKey]);
+  const stalled = waiting && stalledKey === attemptKey;
+  const isLoading = waiting && !stalled;
 
   let connections: ConnectionUser[] = [];
   if (currentUserId && !isLoading && current) {
@@ -234,8 +269,9 @@ export function useUserConnections(
     });
   }
 
-  // Re-read every organization in scope.
+  // Re-read every organization in scope (and the organization list, if that is what failed).
   const refresh = async () => {
+    if (orgsError || stalled) refreshOrganizations();
     setNonce((value) => value + 1);
   };
   const partialFailures = current?.partialFailures ?? [];
@@ -246,10 +282,13 @@ export function useUserConnections(
     // A roster failure is a full read failure only when no source supplied a row. In particular,
     // conversation rows are merged above and must turn a failed roster read into a visible
     // partial-read notice rather than silently hiding it.
-    error:
-      connections.length === 0 && partialFailures.length > 0
-        ? `Couldn't load ${describeConnectionFailures(partialFailures)}`
-        : current?.error ?? null,
+    error: stalled
+      ? "Contacts did not load in time"
+      : !isLoading && orgsError && connections.length === 0
+        ? `Couldn't load your organizations: ${orgsError}`
+        : connections.length === 0 && partialFailures.length > 0
+          ? `Couldn't load ${describeConnectionFailures(partialFailures)}`
+          : current?.error ?? null,
     partialFailures,
     refresh,
   };
@@ -293,6 +332,8 @@ async function fetchOrgConnections(
     invitationOrganizationId,
     isActive,
     fresh = false,
+    concurrency = ROSTER_READ_CONCURRENCY,
+    deadlineMs = ROSTER_SWEEP_DEADLINE_MS,
   }: {
     currentUserId: string;
     organizations: ScopeOrg[];
@@ -300,6 +341,8 @@ async function fetchOrgConnections(
     isActive: () => boolean;
     /** An explicit refresh re-reads rather than reusing a settled roster. */
     fresh?: boolean;
+    concurrency?: number;
+    deadlineMs?: number;
   },
 ): Promise<{ users: ConnectionUser[]; failures: ConnectionReadFailure[] }> {
   const usersMap = new Map<string, ConnectionUser>();
@@ -309,21 +352,66 @@ async function fetchOrgConnections(
   // `organizations` is already narrowed to THE ONE ORGANIZATION when the surface named one.
   // It is the caller's own membership list, so narrowing can only ever REMOVE other
   // organizations' people — it can never reach an organization the caller is not in.
-  for (const org of organizations) {
-    if (!isActive()) break;
-    try {
-      // Fetch members via RPC
-      // THE ONE ROSTER READ — joined while in flight, reused for 30 s, so
-      // every picker on a page shares one request per organization.
-      let members: OrganizationMemberRow[];
-      try {
-        members = await readOrganizationMemberRows(org.id, { client: supabase, fresh });
-      } catch (membersError) {
-        console.error(`Error fetching members for org ${org.id}:`, membersError);
-        failures.push({ orgName: org.name, error: membersError });
+  //
+  // Read a few rosters at a time against ONE deadline for the whole sweep (see
+  // ROSTER_SWEEP_DEADLINE_MS). Rows are merged in membership order afterwards, so the result is
+  // the same as the old one-after-another read, minus the wait.
+  let expired = false;
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<typeof DEADLINE_MISSED>((resolve) => {
+    deadlineTimer = setTimeout(() => {
+      expired = true;
+      resolve(DEADLINE_MISSED);
+    }, deadlineMs);
+  });
+  const missedDeadline = () => new Error(`did not answer within ${Math.round(deadlineMs / 1000)} s`);
+  const rosters: Array<OrganizationMemberRow[] | null> = new Array(organizations.length).fill(null);
+  // Indexed so failures are reported in membership order, whichever answered first.
+  const rosterFailures: unknown[] = new Array(organizations.length).fill(undefined);
+  let next = 0;
+  const worker = async () => {
+    while (next < organizations.length && isActive()) {
+      const index = next++;
+      const org = organizations[index];
+      if (expired) {
+        // Never started: the sweep is out of time, so it is named unread rather than asked.
+        rosterFailures[index] = missedDeadline();
         continue;
       }
+      try {
+        // THE ONE ROSTER READ — joined while in flight, reused for 30 s, so
+        // every picker on a page shares one request per organization.
+        const answer = await Promise.race([
+          readOrganizationMemberRows(org.id, { client: supabase, fresh }),
+          deadline,
+        ]);
+        if (answer === DEADLINE_MISSED) {
+          // A read still in flight is joined by the next caller; drop it so Retry asks again.
+          forgetOrganizationMemberRows(org.id);
+          rosterFailures[index] = missedDeadline();
+          continue;
+        }
+        rosters[index] = answer;
+      } catch (membersError) {
+        console.error(`Error fetching members for org ${org.id}:`, membersError);
+        rosterFailures[index] = membersError;
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, organizations.length) }, () => worker()),
+  );
+  clearTimeout(deadlineTimer);
 
+  for (const [index, org] of organizations.entries()) {
+    if (!isActive()) break;
+    if (rosterFailures[index] !== undefined) {
+      failures.push({ orgName: org.name, error: rosterFailures[index] });
+      continue;
+    }
+    const members = rosters[index];
+    if (!members) continue;
+    try {
       // Add members (excluding current user)
       (members as unknown as OrgMemberRow[]).forEach((member) => {
         if (member.user_id !== currentUserId && !usersMap.has(member.user_id)) {

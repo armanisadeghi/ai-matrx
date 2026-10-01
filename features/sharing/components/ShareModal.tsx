@@ -267,6 +267,7 @@ export function ShareModal({
     revokeAccess,
     updateLevel,
     refresh,
+    homeOrganizationId,
   } = useSharing(
     resourceType,
     resourceId,
@@ -276,6 +277,8 @@ export function ShareModal({
     // notification is filed there and never asks which workspace this is for.
     organizationId ?? null,
   );
+
+  const contactsOrganizationId = organizationId ?? homeOrganizationId ?? undefined;
 
   // Filter permissions by type for each tab
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -485,7 +488,11 @@ export function ShareModal({
                     onSuccess={refresh}
                     resourceType={resourceType}
                     resourceId={resourceId}
-                    {...(organizationId ? { organizationId } : {})}
+                    // The people offered are the THING'S organization: the opener's answer, else the
+                    // row's own (never every organization the viewer is in — that sweep read one
+                    // roster per membership, one after another, and never finished for a member
+                    // of sixty organizations; PB-07, 2026-10-01).
+                    {...(contactsOrganizationId ? { organizationId: contactsOrganizationId } : {})}
                     alreadySharedUserIds={userPermissions
                       .map((p) => p.grantedToUserId)
                       .filter((id): id is string => !!id)}

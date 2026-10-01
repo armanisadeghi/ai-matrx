@@ -143,6 +143,7 @@ export default function ShareModalWindow({
     revokeAccess,
     updateLevel,
     refresh,
+    homeOrganizationId,
   } = useSharing(resourceType, resourceId, isOpen);
 
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -310,6 +311,7 @@ export default function ShareModalWindow({
                   onSuccess={refresh}
                   resourceType={resourceType}
                   resourceId={resourceId}
+                  {...(homeOrganizationId ? { organizationId: homeOrganizationId } : {})}
                   alreadySharedUserIds={userPermissions
                     .map((p) => p.grantedToUserId)
                     .filter((id): id is string => !!id)}

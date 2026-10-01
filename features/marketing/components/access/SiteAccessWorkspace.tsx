@@ -372,6 +372,7 @@ export function SiteAccessWorkspace({
                       onSuccess={refresh}
                       resourceType="web_site"
                       resourceId={site.id}
+                      {...(site.organization_id ? { organizationId: site.organization_id } : {})}
                       copy={copyContext}
                       alreadySharedUserIds={userPermissions
                         .map((p) => p.grantedToUserId)

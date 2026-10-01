@@ -91,15 +91,16 @@ jest.mock("@ai-matrx/messaging/react", () => ({
   useConversations: () => conversationsResult,
 }));
 
-const ORGANIZATIONS_RESULT = {
+const TWO_ORGANIZATIONS = {
   organizations: [
     { id: ORG_A, name: "Ashford Labs", role: "owner" },
     { id: ORG_B, name: "Cedar Ridge Dental", role: "member" },
   ],
   loading: false,
 };
+let organizationsResult = TWO_ORGANIZATIONS;
 jest.mock("@/features/organizations/hooks", () => ({
-  useUserOrganizations: () => ORGANIZATIONS_RESULT,
+  useUserOrganizations: () => organizationsResult,
 }));
 
 jest.mock("@/features/organizations/service/invitationsService", () => ({
@@ -110,11 +111,14 @@ jest.mock("@/features/organizations/types", () => ({
   canManageInvitations: () => true,
 }));
 
-import { useUserConnections } from "../useUserConnections";
+import { useUserConnections, ROSTER_READ_CONCURRENCY } from "../useUserConnections";
 import { forgetOrganizationMemberRows } from "@/features/organizations/service/orgMemberRows";
 
 // The roster read is shared for 30 s across callers; each test starts cold.
-beforeEach(() => forgetOrganizationMemberRows());
+beforeEach(() => {
+  forgetOrganizationMemberRows();
+  organizationsResult = TWO_ORGANIZATIONS;
+});
 
 type Options = Parameters<typeof useUserConnections>[0];
 
@@ -201,15 +205,25 @@ describe("useUserConnections — one member fetch per organization, not per inbo
     gate = new Promise<void>((r) => {
       open = r;
     });
+    // More organizations than the sweep reads at once, so there IS a queue left to abandon.
+    organizationsResult = {
+      organizations: Array.from({ length: ROSTER_READ_CONCURRENCY + 3 }, (_, i) => ({
+        id: `${String(i).padStart(8, "0")}-0000-4000-8000-000000000000`,
+        name: `Org ${i}`,
+        role: "member",
+      })),
+      loading: false,
+    };
     const { hook } = await renderWithRerender({ includeConversations: true });
     await drain(hook);
-    expect(memberCalls()).toBe(1); // first organization in flight, parked on the gate
+    // The first batch is in flight, parked on the gate; the rest wait their turn.
+    expect(memberCalls()).toBe(ROSTER_READ_CONCURRENCY);
 
     await hook.unmount();
     open();
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(memberCalls()).toBe(1);
+    expect(memberCalls()).toBe(ROSTER_READ_CONCURRENCY);
   });
 
   it("refresh re-reads the organizations exactly once", async () => {
