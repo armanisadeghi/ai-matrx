@@ -177,7 +177,7 @@ function attachPage() {
   const id = latest?.conversationId;
   if (!id) throw new Error("composer has no conversation id");
   store.dispatch(
-    addResource({ conversationId: id, blockType: "webpage", source: PAGE }),
+    addResource({ conversationId: id, blockType: "input_webpage", source: PAGE }),
   );
   return id;
 }
