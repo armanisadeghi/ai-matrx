@@ -80,6 +80,15 @@ begin
     perform platform.cutover_carry_removals((v_o ->> 'id')::uuid, null);
     v_report := v_report || format('stand-in: Step 1''s removal carry for %s', v_o ->> 'name');
   end loop;
+  -- (c2) Rows peers add to older tables AFTER Step 1 (clone fixtures, all night) — set aside (archived) inside this
+  -- rolled-back transaction, counted; P1 then plants its own un-copied row and must still be named.
+  update workbench.udt_dataset_rows r set deleted_at = clock_timestamp()
+   where r.deleted_at is null
+     and exists (select 1 from workbench.udt_datasets d where d.id = r.table_id and d.deleted_at is null
+                  and exists (select 1 from custom.record t where t.id = d.id and t.data_class = 'table' and t.deleted_at is null))
+     and not exists (select 1 from custom.record c where c.id = r.id);
+  get diagnostics v_n = row_count;
+  if v_n > 0 then v_report := v_report || format('stand-in: %s older rows with no copy (added after Step 1) set aside', v_n); end if;
   -- (d) Step 1's own orphan-list adoption (platform.final_switch_adopt_orphan_lists — the door Step 1 calls first).
   if coalesce((platform._final_switch_readiness() ->> 'adopt_orphans')::int, 0) > 0 then
     perform platform.final_switch_adopt_orphan_lists(v_run);

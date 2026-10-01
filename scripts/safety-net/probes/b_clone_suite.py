@@ -101,7 +101,9 @@ def attempt(n: int) -> tuple[int, str, list]:
         time.sleep(30)
     else:
         return 1, f"INCONCLUSIVE: the clone stayed pressed by a peer for 10 minutes ({r['says']})", notes
-    if not r["ready"] and r["copy_again_needed"]:
+    # Attempt 1 trusts the suite's own named stand-ins (they cover what peers do to the clone between Step 1s);
+    # only when that loses does attempt 2 run the real Step 1 first (6 minutes on this clone).
+    if n >= 2 and not r["ready"] and r["copy_again_needed"]:
         notes.append(f"readiness before: {r['says']}")
         notes.append(step1())
         r = readiness()
