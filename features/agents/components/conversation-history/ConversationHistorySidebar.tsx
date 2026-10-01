@@ -643,34 +643,37 @@ const DenseView: React.FC<
               />
             </div>
           )}
-          {status === "loading" ? (
-            <LoadingTapButton
-              variant="group"
-              disabled
-              ariaLabel="Refreshing conversations"
-              className="text-muted-foreground"
-              tooltipSide="bottom"
-            />
-          ) : (
-            <RefreshCwTapButton
-              variant="group"
-              onClick={onRefresh}
-              ariaLabel="Refresh conversations"
-              className="text-muted-foreground"
-              tooltipSide="bottom"
-            />
-          )}
-          {surfaceId && (
-            <ConversationSourceFilterTree
-              scopeId={scopeId}
-              surfaceId={surfaceId}
-              align="end"
-            />
-          )}
-          {showGroupingToggle && (
-            <GroupingToggle value={grouping} onChange={onGroupingChange} />
-          )}
-          {headerActions}
+          {/* Tap buttons space themselves: no gap between them. */}
+          <div className="flex shrink-0 items-center">
+            {status === "loading" ? (
+              <LoadingTapButton
+                variant="group"
+                disabled
+                ariaLabel="Refreshing conversations"
+                className="text-muted-foreground"
+                tooltipSide="bottom"
+              />
+            ) : (
+              <RefreshCwTapButton
+                variant="group"
+                onClick={onRefresh}
+                ariaLabel="Refresh conversations"
+                className="text-muted-foreground"
+                tooltipSide="bottom"
+              />
+            )}
+            {surfaceId && (
+              <ConversationSourceFilterTree
+                scopeId={scopeId}
+                surfaceId={surfaceId}
+                align="end"
+              />
+            )}
+            {showGroupingToggle && (
+              <GroupingToggle value={grouping} onChange={onGroupingChange} />
+            )}
+            {headerActions}
+          </div>
         </div>
       )}
 
@@ -917,7 +920,7 @@ const ConsumerView: React.FC<
           <span className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
             {historyLabel}
           </span>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center">
             {status === "loading" ? (
               <LoadingTapButton
                 variant="group"

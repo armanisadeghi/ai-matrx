@@ -41,7 +41,7 @@ export function SidebarHeader({
   backHref,
 }: SidebarHeaderProps) {
   return (
-    <div className="flex items-center shrink-0 w-full h-10 px-1 gap-1">
+    <div className="flex items-center shrink-0 w-full h-10">
       <Link href={backHref ?? basePath} aria-label="Back to Agents">
         <ChevronLeftTapButton />
       </Link>
