@@ -237,4 +237,16 @@ END;
 $function$
 ;
 
-DROP FUNCTION IF EXISTS mandate._admin_list_candidate(uuid);
+-- Pure DROP headers are documentary; enforce the exact body inside the transaction.
+DO $rollback_body$
+DECLARE
+  body_hash text;
+BEGIN
+  SELECT encode(sha256(convert_to(pg_get_functiondef(to_regprocedure('mandate._admin_list_candidate(uuid)')), 'utf8')), 'hex')
+    INTO body_hash;
+  IF body_hash IS DISTINCT FROM '273548e39781dbc429725a46034d49d15a26304fe7ebcfe826305212720cc71c' THEN
+    RAISE EXCEPTION 'Refusing rollback: mandate._admin_list_candidate(uuid) is missing or changed since the candidate migration';
+  END IF;
+  DROP FUNCTION mandate._admin_list_candidate(uuid);
+END
+$rollback_body$;
