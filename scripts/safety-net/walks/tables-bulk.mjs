@@ -105,9 +105,17 @@ async function newTable(name) {
   await ctx.goto(admin, "/data-v2");
   const nt = admin.getByRole("button", { name: "New table", exact: true }).first();
   await until("New table", async () => (await nt.count()) > 0, 90000);
-  await nt.click();
-  await sleep(1200);
-  await admin.getByPlaceholder("Table name").fill(name);
+  // The header button is server-rendered before the page hydrates; a click that lands first is lost
+  // (live 15:00 and 15:34 PT: no dialog, ever). Click again until the dialog is up, never after.
+  const nameInput = admin.getByPlaceholder("Table name");
+  const opened = await until("the New table dialog", async () => {
+    if ((await nameInput.count()) > 0) return true;
+    await nt.click().catch(() => {});
+    await sleep(1500);
+    return (await nameInput.count()) > 0;
+  }, 60000);
+  if (!opened.v) throw new Error("New table never opened the dialog after repeated clicks");
+  await nameInput.fill(name);
   await admin.getByRole("button", { name: "Create", exact: true }).click();
   await until("the new table", async () => /\/data-v2\/[0-9a-f-]{36}/.test(admin.url()), 120000);
   const id = admin.url().match(/\/data-v2\/([0-9a-f-]{36})/)?.[1] ?? null;
