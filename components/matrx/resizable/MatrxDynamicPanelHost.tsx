@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
+import { mayTakeFocusOnOpen } from "@/components/matrx/resizable/focusOnOpen";
 import type { FloatingFrameSize } from "@/components/matrx/resizable/MatrxFloatingFrame";
 
 /**
@@ -192,6 +193,10 @@ export function MatrxDynamicPanelHost({
       // A dynamically loaded panel body may appear a frame after the shell.
       // Retry only while focus is still on the opener/shell; never steal it
       // back after the user has already moved into another panel control.
+      // ...and never out of a field she is typing in outside the panel
+      // (focusOnOpen.ts — cold walk 23: the interview panel closed the
+      // title's inline rename on `?interview=1&rename=1`).
+      if (!mayTakeFocusOnOpen(panel)) return true;
       const active = document.activeElement;
       if (
         active !== document.body &&

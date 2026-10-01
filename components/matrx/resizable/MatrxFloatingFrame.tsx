@@ -51,6 +51,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { PortalContainerProvider } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import { mayTakeFocusOnOpen } from "@/components/matrx/resizable/focusOnOpen";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -322,6 +323,9 @@ export function MatrxFloatingFrame({
   useEffect(() => {
     if (!initialFocus || !frameEl) return undefined;
     const frame = requestAnimationFrame(() => {
+      // Never out of a field she is typing in outside this window
+      // (focusOnOpen.ts — the same rule as the docked host).
+      if (!mayTakeFocusOnOpen(frameEl)) return;
       const content =
         frameEl.querySelector<HTMLElement>("[data-panel-content]") ?? frameEl;
       const target =

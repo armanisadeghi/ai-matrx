@@ -23,9 +23,11 @@ right/top or goes fullscreen now claims nothing.
 |---|---|
 | `MatrxDynamicPanel.tsx` | Panel primitive |
 | `MatrxDynamicPanelHost.tsx` | Portal host + dialog labeling + focus |
+| `focusOnOpen.ts` | Focus-on-open rule shared with `MatrxFloatingFrame.tsx` |
 
 ## Change log
 
+- `2026-09-30` — **An opening window never takes focus out of a field she is typing in.** Both the docked host and the floating frame now skip focus-on-open while an editable field outside them holds focus (`focusOnOpen.ts`). Masterwork cold walk 23: `?interview=1&rename=1` closed the title's inline rename because the interview panel's focus blurred it. Guard: `__tests__/an-opening-panel-never-takes-focus-from-a-field.test.tsx`.
 - `2026-09-19` — **Avatar cover retired.** The shell profile menu moved bottom-left (`ShellUserBlock`); `ElevatedShellUserMenu.tsx`, `elevatedShellUserMenuStore.ts` and the panel's `claimDynamicPanelAvatarCover()` effect were deleted.
 - `2026-08-25` — **One centered header row:** host titles, caller actions, and
   the three built-in panel controls share a 24px centered track; icon buttons
