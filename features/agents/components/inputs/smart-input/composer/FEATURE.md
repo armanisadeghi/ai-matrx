@@ -166,6 +166,12 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 - **2026-09-30** — Tools owns only the registry/configured tool list; connections and attached repositories/files use the shared Connections panel in the cascading menu, classic attach menu, run-controls window, and mobile sheet. Latest-run MCP failures/counts remain visible there. Tabbed sheet headers stay fixed while their lists scroll.
 
+- **2026-09-30** — Context is ONE system (common-docs `context-delivery/RULES.md`): the context chip lists every value
+  the next turn carries (Item | Include | Chars | Inline max) from the same rows the send path builds; per-value rules
+  save to the person and the server reads them every turn; the server's `context_receipt` is shown on sent messages
+  and compared every turn (amber on a difference). Every composer follows the page it is shown on via the rail
+  (`useConversationFollowsPage(id)` — no `startsOn`, Quick Chat's stored "off" and the canvas `followPageSurface` flag
+  removed); the page's own conversation is the one exception. The send path re-reads the live page itself.
 - **2026-09-29** — Review fixes: "auto" effort guarded at the API selector (never sent, whichever panel wrote it); overrides survive a same-id re-create; the touch Enter rule covers every multi-line input (variable inputs, mention composer, AI chat modal, prompt input) while single-line `ProInput` keeps Go-to-submit; Quick Chat's duplicate header agent picker and "Page context" button removed — the pill and the page chip are the one control each (`useConversationFollowsPage(id, startsOn)`: Quick Chat starts off, showing the eye-off chip naming the page).
 - **2026-09-29** — Batch 1 of the page-by-page rollout: Quick Chat, the Chat window, the AI Results tab, the agent
   run page, the builder test panel, the record chat and the AI tutor render the composer (sizes and agent
