@@ -13,7 +13,6 @@ import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 const ORIGIN = process.env.ORIGIN ?? "http://drillpresets.localhost:3001";
 const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-presets";
 mkdirSync(SHOTS, { recursive: true });
-const MOUNTS = { "/administration/usage": null, "/administration/usage/calls": null, "/administration/usage/executions": null };
 const CALL_VIEWS = ["cx_by_model", "cx_by_provider", "cx_by_day", "cx_by_origin", "cx_cost_share", "cx_latency", "reconcile_calls"];
 const EXECUTION_VIEWS = ["by_conversation", "by_session", "costliest_requests", "reconcile_ledger"];
 const ONLY = process.env.ONLY ?? "all";
@@ -40,6 +39,19 @@ async function answered() {
     return null;
   }, 180000).catch((e) => `timeout: ${e.message}`);
 }
+
+async function resume() {
+  for (let n = 1; n <= 8; n += 1) {
+    await sleep(1500);
+    const parked = page.url().includes("__dev-walk") || (await page.getByRole("button", { name: /^Resume$/ }).count()) > 0;
+    if (!parked) return;
+    console.log(`[walk] parked by the walk cap (try ${n}) — resuming`);
+    await page.getByRole("button", { name: /^Resume$/ }).first().click().catch(() => {});
+    await sleep(5000 * n);
+  }
+}
+const _goto = page.goto.bind(page);
+page.goto = async (u, o) => { const r = await _goto(u, o); await resume(); if (page.url().includes("__dev-walk")) return _goto(u, o); return r; };
 try {
   await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 240000 });
   const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
@@ -47,11 +59,11 @@ try {
   out.who = who;
   const plan = [
     ...(ONLY === "all" || ONLY === "usage" ? VIEWS.map((k) => ["/administration/usage", k]) : []),
-    ...(ONLY === "all" || ONLY === "grains" ? CALL_VIEWS.map((k) => ["/administration/usage/calls", k]) : []),
-    ...(ONLY === "all" || ONLY === "grains" ? EXECUTION_VIEWS.map((k) => ["/administration/usage/executions", k]) : []),
+    ...(ONLY === "all" || ONLY === "grains" ? CALL_VIEWS.map((k) => ["/administration/usage?def=ai_calls", k]) : []),
+    ...(ONLY === "all" || ONLY === "grains" ? EXECUTION_VIEWS.map((k) => ["/administration/usage?def=ai_usage_executions", k]) : []),
   ];
   for (const [path, key] of plan) {
-    await page.goto(`${ORIGIN}${path}?view=builtin:${key}&w=30d`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}${path}${path.includes("?") ? "&" : "?"}view=builtin:${key}&w=30d`, { waitUntil: "domcontentloaded", timeout: 240000 });
     const outcome = await answered();
     await sleep(5000); // names arrive after the answer
     const address = decodeURIComponent(page.url().replace(ORIGIN, ""));
@@ -69,7 +81,7 @@ try {
   }
   // the findings panel on the executions mount (the Spend page's dig-here signals)
   if (ONLY !== "usage") {
-    await page.goto(`${ORIGIN}/administration/usage/executions?w=30d`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.goto(`${ORIGIN}/administration/usage?def=ai_usage_executions&w=30d`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await answered();
     const findings = page.locator("[data-drill-findings], [data-drill-explorer-findings]").first();
     const btn = page.getByRole("button", { name: /Findings/ }).first();
@@ -93,7 +105,7 @@ try {
   console.error(e);
 } finally {
   out.finished = new Date().toISOString();
-  writeFileSync(`${SHOTS}/walk.json`, JSON.stringify(out, null, 2));
+  writeFileSync(`${SHOTS}/walk-${ONLY}.json`, JSON.stringify(out, null, 2));
   console.log(`frictions: ${out.frictions.length}; console errors: ${out.console_errors.length}`);
   await browser.close();
 }

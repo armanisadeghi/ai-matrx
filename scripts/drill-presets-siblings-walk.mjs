@@ -22,6 +22,19 @@ page.on("console", (m) => m.type() === "error" && out.console_errors.push(`${pag
 const groups = () => page.locator("[data-matrx-drill-into]");
 const addr = () => decodeURIComponent(page.url().replace(ORIGIN, ""));
 const answered = () => until("answer", async () => ((await groups().count()) > 0 ? "answered" : null), 180000).then((r) => r?.v ?? r).catch((e) => `timeout ${e.message}`);
+
+async function resume() {
+  for (let n = 1; n <= 8; n += 1) {
+    await sleep(1500);
+    const parked = page.url().includes("__dev-walk") || (await page.getByRole("button", { name: /^Resume$/ }).count()) > 0;
+    if (!parked) return;
+    console.log(`[walk] parked by the walk cap (try ${n}) — resuming`);
+    await page.getByRole("button", { name: /^Resume$/ }).first().click().catch(() => {});
+    await sleep(5000 * n);
+  }
+}
+const _goto = page.goto.bind(page);
+page.goto = async (u, o) => { const r = await _goto(u, o); await resume(); if (page.url().includes("__dev-walk")) return _goto(u, o); return r; };
 try {
   await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 240000 });
   const who = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
