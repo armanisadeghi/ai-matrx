@@ -171,6 +171,13 @@ transcript is the script: a browser-only `quick` agent replays the same sheet fo
 run, and the owner grades from captures without re-reading the product. A fresh, unscripted runner is used
 twice only: the baseline and the final after-run. Never let the expensive owner model drive the browser.
 
+**Reset, then verify, before every run.** The grader restores the start state (the fixture's canonical content,
+values, chips) and PROVES it with the same queries the sealed checks use, before handing out the sheet. A run on a
+dirty start state is INCONCLUSIVE whatever it shows (2026-10-01: a fault proof ran on a note still holding the
+previous run's finished line; the agent "corrected" it instead of filling it, and the proof had to be repeated).
+A shared preview that other lanes are editing hot-reloads the runner's page mid-run; sequence runs after fixes
+land, or run on production, and treat "page changed by itself" as INCONCLUSIVE.
+
 ## 5. Fault proof — a test is trusted only after it catches a break it was not told about
 
 - **One per playbook**, each aimed at a different channel, so that across the set every channel's
