@@ -37,7 +37,7 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 **API endpoints (aidream, called directly)**
 - `POST /sources/manifest` / `POST /sources/resolve` / `POST /sources/parts/search` — `sourcesClient` (`sourceSetApi.ts`: the package's `createSourcesClient` over typed `apiPost` / `api-types.ts`), sent as `bodyCarriedRead` (the server admits both without a selected organization); wire types from `@ai-matrx/agents/sources` (frozen v1 + amendments; A5 `segments[].preview`).
 - `POST /sources/land`, `POST /sources/{id}/keep` — via `features/sources/api/sourcesApi.ts`.
-- Scraper quick-scrape (lands at its result boundary) — through `WebpageResourcePickerCore` (its `onSelect` second argument carries the landed `processedDocumentId`), or `useScraperApi().scrapeUrl` when a link is re-landed after a reload.
+- Scraper quick-scrape (lands at its result boundary) — `useScraperApi().scrapeUrlSilent` inside the intake's web door (`addWebPage`); `WebpageResourcePickerCore` only checks the link and hands it over (`onReadUrl`).
 - `POST /media/youtube/transcript`, `POST /audio/transcribe-file` — Start's readers, then landed.
 
 **Redux**
@@ -56,7 +56,7 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 | Tile | Door | Pointer |
 |---|---|---|
 | Paste text | `buildPastedTextLanding` → `POST /sources/land` (kept, filed against `attachTo`) | `processed_document` |
-| Web page | `WebpageResourcePickerCore` (scrape, preview, confirm) → the landed Source → `keep` against `attachTo` | `processed_document` |
+| Web page | `WebpageResourcePickerCore` (`onReadUrl`, no preview) → `addWebPage` → organization ask → scrape → the landed Source → `keep` against `attachTo` | `processed_document` |
 | Upload / Image | `InlineUploadArea` (the canonical upload surface: compression, folder drops, Google import, `accept`) through the one upload choke point; filed at once through `associationsService` in the direction the package registry registers (`isRegisteredPair` from `@ai-matrx/associations`) (`fc_set → file`, `file → task`); then `useSourceRecovery` reads the server's state and starts the one run (`runForCldFile` → the orchestrator's file adapters, which land the Source) only when nothing is reading it; the Source is kept + filed through `keepSource` | `file` |
 | YouTube | `YouTubeResourcePicker` → `fetchYouTubeTranscript` → `POST /sources/land` (identity `youtube:<id>`) | `processed_document` |
 | Recording | `InlineUploadArea` (`audio/*,video/*`) → `transcribeCloudFile` → `POST /sources/land` (identity `audio-transcript:<fileId>`) | `processed_document` |
@@ -85,6 +85,8 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 ---
 
 ## Change log
+
+- 2026-09-30 — V5-A.3/7 (verify-5 #3, #7): the web page door bypassed the intake — the picker scraped the page itself, so with no organization the scraper's refusal ("pick the one you are working in from the avatar menu") sat under the link box and stayed after an organization was picked, and a read page needed a second "Add page" step. Now the picker hands the link over (`WebpageResourcePickerCore` `onReadUrl`; `onReadStart`/`onReadEnd` removed) and `WebPageRead` calls `intake.addWebPage`: the card waits ("Choose organization") and continues by itself like every other door, and the page is added once read (parts and version stay on the card). The scrape door uses the throwing `scrapeUrlSilent`, so an organization refusal reaches the intake as itself and other failures read as the scraper's plain words; a read the browser cuts on unload leaves the card pending (re-read after reload). Guard `webPageDoor.test.tsx` red 3 → green 6. Measured on the preview's aidream: quick-scrape 9.7–13.1 s (first byte ~3 s) — the ~2 min was not the scraper. Known gap: the scraper lands a new Source per read (no content dedupe; four tabs on one draft re-read one page four times).
 
 - 2026-09-30 — V5-A (Arman: "Just a list of the things that are in either sources or sources and outputs"): Use existing offered 15 kinds from `platform.entity_types.content_role` (Deals, People & Companies, Folders, Code Files, Rulebooks, Recordings, Data Stores, Cloud documents, Saved sources…) while the org page's grid shows 7 — two definitions of "Sources". Now both read the grid's definition (`sourceRoleEntries()`); Websites lists saved web-page Sources (`savedWebPages.ts`; `useKindItems` gained an optional `fetchPage`). Divergence left in the registry: `content_role` still marks the wider set. Guard `useExistingKinds.test.ts` red 3 → green 3. A loading card no longer repeats its name as its kind ("YouTube video / YouTube video").
 - 2026-09-30 — V4-F copy: the review budget line names its noun — "Fine · 0% of the AI's limit" (was "Fine 0% full"). Webpage preview: "Keep  All" slider label and one-word value (was "Limit chars 105,447 / 105,447", wrapped); footer says "characters", not "chars". Open: the processing line's "Still cleaning — the raw extracted text is used until it is ready. Done so far: Starting." is the server's `state_detail` (aidream `source_resolution.py`) plus `SourceCard.tsx`'s "Done so far" — owned by another lane.

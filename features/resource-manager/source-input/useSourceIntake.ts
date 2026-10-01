@@ -55,6 +55,16 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 
 export type UseSourceIntakeResult = SourceIntake;
 
+/** Set once the page starts to unload; a read the browser cuts then is not a failure. */
+let pageIsLeaving = false;
+if (typeof window !== "undefined") {
+  const leaving = () => {
+    pageIsLeaving = true;
+  };
+  window.addEventListener("beforeunload", leaving);
+  window.addEventListener("pagehide", leaving);
+}
+
 /** True when a landing stopped only because no organization is chosen yet. */
 export function waitsForOrganization(error: unknown): boolean {
   return isOrganizationRequiredError(error) || isOrganizationSelectionCancelled(error);
@@ -103,6 +113,10 @@ export function useSourceIntake(
             : null;
         } catch (err) {
           if (waitsForOrganization(err)) throw err;
+          // The page is going away (reload, navigation): the browser cut the
+          // read. Leave the card pending — its kept link is read again after
+          // the reload — instead of failing it with "could not read".
+          if (pageIsLeaving) return new Promise<never>(() => undefined);
           console.error("[useSourceIntake] web page read failed:", err);
           const failure = classifyScrapeFailure({ error: err, diagnostics: null });
           throw new Error(`${failure.title} ${failure.remedy}`.trim(), { cause: err });

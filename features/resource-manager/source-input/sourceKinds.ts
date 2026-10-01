@@ -10,7 +10,7 @@
  *                    its transcript lands as text; "Upload a recording" →
  *                    `InlineUploadArea` → `addUploadedRecording`.
  *   paste          → `POST /sources/land`.
- *   web page       → `WebpageResourcePickerCore` (scrape, preview, confirm);
+ *   web page       → `WebpageResourcePickerCore` (`onReadUrl`) → `addWebPage`;
  *                    the scraper lands the page at its result boundary.
  *   YouTube        → `YouTubeResourcePicker` → the transcript door.
  *   topic          → the set's topic.

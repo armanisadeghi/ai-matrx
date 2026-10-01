@@ -175,4 +175,22 @@ describe("the intake's web page door", () => {
     expect(sentence.toLowerCase()).toContain("paste");
     await hook.unmount();
   });
+
+  it("a read the browser cuts because the page is unloading leaves the card pending (re-read after reload)", async () => {
+    ensureOrgId.mockResolvedValue("org-1");
+    let cut: (e: unknown) => void = () => undefined;
+    scrapeUrlSilent.mockReturnValue(new Promise((_, reject) => (cut = reject)));
+    const set = fakeSet();
+    const hook = await renderHook(() => useSourceIntake(set, {}));
+    await hook.act(async () => {
+      void hook.current.addWebPage(URL_IN);
+      await new Promise((r) => setTimeout(r, 0));
+      window.dispatchEvent(new Event("beforeunload"));
+      cut(new TypeError("Failed to fetch"));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(set.fail).not.toHaveBeenCalled();
+    expect(set.settle).not.toHaveBeenCalled();
+    await hook.unmount();
+  });
 });
