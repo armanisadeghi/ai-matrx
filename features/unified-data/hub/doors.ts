@@ -26,6 +26,8 @@ export interface DoorFailure {
   /** The store's own words. Never rewritten, never swallowed. */
   message: string;
   hint?: string | undefined;
+  /** The SQLSTATE the store answered with (57014 = its statement timeout), when it gave one. */
+  sqlstate?: string | undefined;
 }
 
 export type DoorAnswer<T> = { ok: true; data: T } | { ok: false; error: DoorFailure };
@@ -77,6 +79,7 @@ async function call<T>(
       error: {
         message: answered.error.message ?? `custom.${fn} did not answer.`,
         hint: answered.error.hint ?? undefined,
+        ...(answered.error.code ? { sqlstate: answered.error.code } : {}),
       },
     };
   }

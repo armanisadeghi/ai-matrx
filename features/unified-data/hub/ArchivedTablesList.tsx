@@ -42,9 +42,26 @@ export interface ArchivedTablesListProps {
   note: string | null;
   /** Bring one table back. Answers `null` when it came back, or the store's refusal. */
   onBringBack: (tableId: string) => Promise<RecordsError | null>;
+  /**
+   * The archive READ's refusal as a `RecordsError` (DATA-HOME-3F). When given it is drawn through
+   * records-ui's `RefusalNotice` — the people-facing path, never the store's raw text — with Try
+   * again. Callers that pass only `readTrouble` render exactly as before.
+   */
+  readRefusal?: RecordsError | null | undefined;
+  onRetry?: (() => void) | undefined;
+  /** A paged archive: more may exist past the rows shown. Absent = the list is the whole answer. */
+  more?: { onShowMore: () => void; loading: boolean } | null | undefined;
 }
 
-export function ArchivedTablesList({ tables, readTrouble, note, onBringBack }: ArchivedTablesListProps) {
+export function ArchivedTablesList({
+  tables,
+  readTrouble,
+  note,
+  onBringBack,
+  readRefusal,
+  onRetry,
+  more,
+}: ArchivedTablesListProps) {
   const [restoring, setRestoring] = useState<string | null>(null);
   const [refused, setRefused] = useState<{ tableId: string; error: RecordsError } | null>(null);
 
@@ -59,7 +76,21 @@ export function ArchivedTablesList({ tables, readTrouble, note, onBringBack }: A
   return (
     <>
       {note ? <p className="py-2 text-xs text-muted-foreground">{note}</p> : null}
-      {readTrouble ? (
+      {readRefusal ? (
+        <div className="py-2" data-archive-read-trouble="">
+          <RefusalNotice
+            error={readRefusal}
+            actions={
+              onRetry ? (
+                <Button size="sm" variant="outline" onClick={onRetry}>
+                  Try again
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
+      ) : null}
+      {readRefusal && tables === null ? null : readTrouble ? (
         <p className="py-2 text-xs text-destructive" data-archive-read-trouble="">
           The archive did not answer, so nothing was read — this is not an empty archive.{" "}
           {readTrouble}
@@ -112,6 +143,14 @@ export function ArchivedTablesList({ tables, readTrouble, note, onBringBack }: A
           ))}
         </ul>
       )}
+      {tables && tables.length > 0 && more ? (
+        <div className="flex items-center gap-2 border-t border-border pt-2" data-archived-tables-more="">
+          <span className="text-xs tabular-nums text-muted-foreground">{tables.length.toLocaleString()} shown</span>
+          <Button size="sm" variant="outline" disabled={more.loading} onClick={more.onShowMore}>
+            {more.loading ? "Loading…" : "Show more"}
+          </Button>
+        </div>
+      ) : null}
     </>
   );
 }

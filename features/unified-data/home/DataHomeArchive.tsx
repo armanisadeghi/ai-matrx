@@ -8,18 +8,53 @@
 // narrows what is shown, and a restore asks the organization the row lives in. Folding this into
 // the shell's archive axis is a later convergence, not this rebuild.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArchivedDisclosure } from "@ai-matrx/records-ui";
-import type { RecordsDataSource } from "@ai-matrx/records";
+import { ArchivedDisclosure, refusal } from "@ai-matrx/records-ui";
+import type { RecordsDataSource, RecordsError } from "@ai-matrx/records";
 
 import * as doors from "@/features/unified-data/hub/doors";
 import { ArchivedTablesList, type ArchivedTable } from "@/features/unified-data/hub/ArchivedTablesList";
 import { ArchivedPortalsEverywhere } from "@/features/unified-data/hub/ArchivedPortalsEverywhere";
 
-// One call returns the whole archive (the door serves up to 1000 rows a call); 5 pages keep the 5000 cap.
-const PAGE = 1000;
-const MAX_PAGES = 5;
+// NEVER THOUSANDS AT ONCE (DATA-HOME-3F; VERIFY-DATA-HOME-3 W4). The member's archive is 1,769
+// Tables: drawn in one list it was 7,116 lines of text, and the second read hit the signed-in
+// statement clock (57014). The archive is read 200 at a time — the first page answers fast, "Show
+// more" asks for the next 200 — and the door serves at most 1000 a call (DATA-HOME-3B2).
+export const ARCHIVE_PAGE = 200;
+
+/**
+ * The archive read's failure as a people-facing refusal (drawn by records-ui's RefusalNotice, which
+ * runs `refusalForAPerson`). The statement timeout is ours to word — "canceling statement due to
+ * statement timeout" is Postgres's sentence, never a person's — and its raw text rides out of sight.
+ */
+export function archiveReadRefusal(failure: doors.DoorFailure): RecordsError {
+  if (failure.sqlstate === "57014") {
+    return refusal(
+      "timed_out",
+      "The archive took too long to answer.",
+      "Try again in a moment.",
+      `SQLSTATE 57014. ${failure.message}`,
+    );
+  }
+  return {
+    code: "internal",
+    message: failure.message,
+    ...(failure.hint ? { hint: failure.hint } : {}),
+    ...(failure.sqlstate ? { sqlstate: failure.sqlstate } : {}),
+  } as RecordsError;
+}
+
+function toArchived(row: doors.ArchivedEverywhereRow): ArchivedTable {
+  return {
+    id: row.id,
+    name: row.document?.name?.trim() || "(unnamed table)",
+    archivedAt: row.archived_at ?? "",
+    archivedByName: row.archived_by_name,
+    organizationName: row.organization_name,
+    organizationId: row.organization_id,
+  };
+}
 
 export function DataHomeArchive({
   dataSource,
@@ -31,41 +66,43 @@ export function DataHomeArchive({
 }) {
   const router = useRouter();
   const [tables, setTables] = useState<ArchivedTable[] | null>(null);
-  const [trouble, setTrouble] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
+  const [complete, setComplete] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [trouble, setTrouble] = useState<RecordsError | null>(null);
+  // A newer read (a restore, a retry) wins; an older answer arriving late is dropped.
+  const generation = useRef(0);
 
-  const read = useCallback(async () => {
-    const all: doors.ArchivedEverywhereRow[] = [];
-    let complete = false;
-    for (let page = 0; page < MAX_PAGES; page += 1) {
-      const answered = await doors.archivedTablesEverywhere(dataSource, { limit: PAGE, offset: page * PAGE });
+  const readPage = useCallback(
+    async (offset: number, prior: ArchivedTable[]) => {
+      const mine = ++generation.current;
+      setLoading(true);
+      const answered = await doors.archivedTablesEverywhere(dataSource, { limit: ARCHIVE_PAGE, offset });
+      if (mine !== generation.current) return;
+      setLoading(false);
       if (!answered.ok) {
-        setTrouble(answered.error.message);
+        setTrouble(archiveReadRefusal(answered.error));
         return;
       }
-      all.push(...answered.data);
-      if (answered.data.length < PAGE) {
-        complete = true;
-        break;
-      }
-    }
-    setTrouble(null);
-    setNote(complete ? null : `More than ${PAGE * MAX_PAGES} tables are archived; the newest ${PAGE * MAX_PAGES} are listed.`);
-    setTables(
-      all.map((row) => ({
-        id: row.id,
-        name: row.document?.name?.trim() || "(unnamed table)",
-        archivedAt: row.archived_at ?? "",
-        archivedByName: row.archived_by_name,
-        organizationName: row.organization_name,
-        organizationId: row.organization_id,
-      })),
-    );
-  }, [dataSource]);
+      setTrouble(null);
+      setComplete(answered.data.length < ARCHIVE_PAGE);
+      setTables([...prior, ...answered.data.map(toArchived)]);
+    },
+    [dataSource],
+  );
+
+  const read = useCallback(() => readPage(0, []), [readPage]);
 
   useEffect(() => {
     void read();
   }, [read]);
+
+  const showMore = useCallback(() => {
+    void readPage(tables?.length ?? 0, tables ?? []);
+  }, [readPage, tables]);
+
+  const retry = useCallback(() => {
+    void readPage(tables?.length ?? 0, tables ?? []);
+  }, [readPage, tables]);
 
   const shown = tables && organizationFilter ? tables.filter((t) => t.organizationId === organizationFilter) : tables;
 
@@ -91,8 +128,17 @@ export function DataHomeArchive({
   return (
     <section data-data-home-archive="" className="rounded-lg border border-border bg-card p-3">
       {/* read-gate-exempt: a troubled first read shows no count; the list says the trouble inside */}
-      <ArchivedDisclosure noun="tables" count={trouble && tables === null ? undefined : shown?.length}>
-        <ArchivedTablesList tables={shown} readTrouble={trouble} note={note} onBringBack={bringBack} />
+      {/* The count is said only when the whole archive is in hand; a partial count would be a guess. */}
+      <ArchivedDisclosure noun="tables" count={complete && !trouble ? shown?.length : undefined}>
+        <ArchivedTablesList
+          tables={shown}
+          readTrouble={null}
+          readRefusal={trouble}
+          onRetry={retry}
+          note={null}
+          more={complete ? null : { onShowMore: showMore, loading }}
+          onBringBack={bringBack}
+        />
       </ArchivedDisclosure>
       <div className="mt-2">
         <ArchivedPortalsEverywhere dataSource={dataSource} />

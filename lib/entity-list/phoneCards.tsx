@@ -199,6 +199,7 @@ export function EntityPhoneCard<TRow>({
   rowId,
   rowName,
   row,
+  density = "fields",
 }: {
   layout: PhoneCardLayout<TRow>;
   controls: MatrxDataTableMobileCardControls;
@@ -206,6 +207,8 @@ export function EntityPhoneCard<TRow>({
   rowName: string;
   /** The row itself: a field with nothing in it is left off this card. */
   row?: TRow;
+  /** `config.phoneCardDensity` — `line` is the two-line card (see EntityPhoneLine). */
+  density?: "fields" | "line";
 }) {
   const [open, setOpen] = useState(false);
   const restId = useId();
@@ -219,6 +222,10 @@ export function EntityPhoneCard<TRow>({
     meta: filled(declaredLayout.meta),
     rest: filled(declaredLayout.rest),
   };
+
+  if (density === "line") {
+    return <EntityPhoneLine layout={layout} controls={controls} rowId={rowId} rowName={rowName} />;
+  }
 
   return (
     <article
@@ -353,6 +360,87 @@ export function EntityPhoneCard<TRow>({
           ) : null}
         </>
       ) : null}
+    </article>
+  );
+}
+
+/**
+ * THE TWO-LINE PHONE CARD (`phoneCardDensity: "line"`; DATA-HOME-3F, 2026-10-01).
+ *
+ * The labelled card is right for a record whose fields decide what it is; it is
+ * wrong for a list a person scans for a NAME (the data home measured ~215 px a
+ * card, three per screen, with an empty line and "2 more fields" on each).
+ * Linear's mobile list is the champion: line one is the title with the star
+ * and the row's controls, line two the `primary` then `meta` values joined by
+ * " · " with no labels. `rest` columns are not drawn — no disclosure; the row
+ * opens the record. Same cells (`controls.renderCell`), same door, same
+ * actions — a density of the one card, never a second card.
+ */
+function EntityPhoneLine<TRow>({
+  layout,
+  controls,
+  rowId,
+  rowName,
+}: {
+  layout: PhoneCardLayout<TRow>;
+  controls: MatrxDataTableMobileCardControls;
+  rowId: string;
+  rowName: string;
+}) {
+  const facts = [
+    ...layout.primary.map((spec) => ({ spec, quiet: false })),
+    ...layout.meta.map((spec) => ({ spec, quiet: true })),
+  ];
+  return (
+    <article
+      data-row-id={rowId}
+      data-entity-phone-card
+      data-entity-phone-card-density="line"
+      className="matrx-touch-targets shrink-0 rounded-lg border border-border bg-card px-2 py-0.5"
+    >
+      <div className="flex min-w-0 items-center gap-1">
+        {controls.selectable ? (
+          <label
+            className="matrx-tap-area mr-0.5 flex shrink-0 items-center"
+            data-entity-phone-card-select
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              className="h-4 w-4 cursor-pointer accent-primary"
+              checked={controls.selected}
+              aria-label={`Select ${rowName}`}
+              onChange={(event) => controls.onSelectedChange(event.target.checked)}
+            />
+          </label>
+        ) : null}
+        {layout.favorite ? (
+          <div className="-ml-1 shrink-0">{controls.renderCell(layout.favorite.id)}</div>
+        ) : null}
+        <div className="min-w-0 flex-1 py-1">
+          {/* The title anchor is the card's door; one line, cut at the card's width. */}
+          <div className="min-w-0 text-sm font-medium leading-5 text-foreground [&_a]:block [&_a]:truncate">
+            {layout.title ? controls.renderCell(layout.title.id) : rowName}
+          </div>
+          {facts.length > 0 ? (
+            <div
+              className="flex min-w-0 items-baseline gap-1 whitespace-nowrap text-xs leading-4 text-muted-foreground"
+              data-entity-phone-card-line
+            >
+              {facts.map(({ spec, quiet }, index) => (
+                <span
+                  key={spec.id}
+                  className={cn("flex min-w-0 items-baseline gap-1", quiet ? "shrink-0" : "truncate")}
+                >
+                  {index > 0 ? <span aria-hidden>·</span> : null}
+                  <span className="min-w-0 truncate">{controls.renderCell(spec.id)}</span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">{controls.actions}</div>
+      </div>
     </article>
   );
 }

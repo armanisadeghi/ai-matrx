@@ -387,6 +387,7 @@ export function EntityListTable<TRow>({
     <EntityPhoneCard
       row={row}
       layout={phoneLayout}
+      density={config.phoneCardDensity ?? "fields"}
       controls={controls}
       rowId={config.getRowId(row)}
       rowName={config.getRowName(row)}

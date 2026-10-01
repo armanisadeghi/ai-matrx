@@ -16,8 +16,10 @@ import {
   ExternalLink,
   FileText,
   Inbox,
+  Layers,
   LayoutDashboard,
   Link2,
+  List,
   ListChecks,
   Send,
   Star,
@@ -35,6 +37,9 @@ import { ACCESS_WHY, ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type Da
 
 const KIND_ICON: Record<string, LucideIcon> = {
   table: Table2,
+  // A List and a Scope are Tables too, but must not read as one at a glance (VERIFY-DATA-HOME-3 W7).
+  list: List,
+  scope: Layers,
   form: FileText,
   booking: CalendarClock,
   portal: Inbox,
@@ -152,7 +157,12 @@ export interface DataHomeColumnContext {
  * (one batched `custom.table_row_counts` call per organization). Only the home's Table rows (any
  * Table kind: list, scope, form …) are counted; a form, portal or digest row is not a Table.
  */
-export function RecordsCell({ row, store }: { row: DataHomeRow; store: RecordCountStore | undefined }) {
+/**
+ * A row's Records count from the ONE lazy store — the table's cell and the cards view both read it
+ * here, so the two never disagree (VERIFY-DATA-HOME-3 W5: a card read `row.records`, `—`, while the
+ * table counted 5). A mounted row on screen asks; `undefined` until the answer arrives.
+ */
+export function useRecordCount(row: DataHomeRow, store: RecordCountStore | undefined): number | undefined {
   const { organizationId, tableId } = row;
   // The count is read THROUGH the subscription (a snapshot of this Table's own count), never from
   // a mutable store read in render: the compiler caches a render-time read on its (unchanged) inputs.
@@ -165,7 +175,11 @@ export function RecordsCell({ row, store }: { row: DataHomeRow; store: RecordCou
   useEffect(() => {
     if (asks && store && organizationId && tableId) store.want(organizationId, tableId);
   }, [asks, store, organizationId, tableId]);
-  const known = row.records ?? counted;
+  return row.records ?? counted;
+}
+
+export function RecordsCell({ row, store }: { row: DataHomeRow; store: RecordCountStore | undefined }) {
+  const known = useRecordCount(row, store);
   if (known === undefined || known === null) {
     return (
       <Tooltip>

@@ -203,9 +203,16 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
                 : String(value),
       },
       virtualize: { enabled: true, threshold: 150, overscan: 8 },
+      // A phone row is two lines — name, then kind · organization · updated (Linear's mobile list).
+      phoneCardDensity: "line",
       views: {
         cards: (p) => (
-          <DataHomeCards {...p} isStarred={(row) => starredSet.has(row.id)} onOpened={(row) => marks.opened(row.id)} />
+          <DataHomeCards
+            {...p}
+            isStarred={(row) => starredSet.has(row.id)}
+            onOpened={(row) => marks.opened(row.id)}
+            recordCounts={recordCounts}
+          />
         ),
         rows: (p) => (
           <DataHomeRows {...p} isStarred={(row) => starredSet.has(row.id)} onOpened={(row) => marks.opened(row.id)} />

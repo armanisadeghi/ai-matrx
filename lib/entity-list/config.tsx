@@ -462,6 +462,15 @@ export interface EntityListConfig<TRow> {
   copy?: MatrxDataTableCopyConfig<TRow>;
 
   /**
+   * How dense the shell's own phone card is (below `sm`; ignored when
+   * `mobileCards` is supplied). `fields` (default): label/value pairs and a
+   * "N more fields" disclosure. `line` (Linear's mobile list): two lines — the
+   * title, then the `primary` and `meta` values joined by " · " with no labels;
+   * `rest` columns are not on the card at all (the row opens the record).
+   */
+  phoneCardDensity?: "fields" | "line";
+
+  /**
    * Optional phone-only rendering for the table view. The canonical table
    * still owns the loaded page, pagination, copy controls, and row actions;
    * the feature supplies only the compact record summary its users need.

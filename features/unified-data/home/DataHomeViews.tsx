@@ -15,13 +15,24 @@ import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import { dataHomeKindWord, type DataHomeRow } from "./dataHomeRows";
-import { KindIcon } from "./dataHomeColumns";
+import { KindIcon, useRecordCount } from "./dataHomeColumns";
+import type { RecordCountStore } from "./dataHomeRecordCounts";
 
 export type DataHomeViewProps = EntityAltViewProps<DataHomeRow> & {
   isStarred: (row: DataHomeRow) => boolean;
   /** A row was opened by its link (Recent); the link itself navigates. */
   onOpened: (row: DataHomeRow) => void;
+  /** The ONE lazy Records counter the table's cells read too (dataHomeRecordCounts.ts). */
+  recordCounts?: RecordCountStore | undefined;
 };
+
+/** A card's Records: the same store as the table's Records cell; `—` until counted, never 0. */
+function CardRecords({ row, store }: { row: DataHomeRow; store: RecordCountStore | undefined }) {
+  const known = useRecordCount(row, store);
+  return (
+    <span data-data-home-card-records="">{known === undefined || known === null ? "—" : `${known.toLocaleString()} records`}</span>
+  );
+}
 
 function StarButton({
   row,
@@ -98,7 +109,7 @@ export function DataHomeCards(props: DataHomeViewProps) {
           <span className="flex items-center gap-2 text-xs tabular-nums text-muted-foreground">
             <span>{row.updatedAt ? formatRelativeTime(row.updatedAt) : "—"}</span>
             <span aria-hidden>·</span>
-            <span>{row.records === null ? "—" : `${row.records.toLocaleString()} records`}</span>
+            <CardRecords row={row} store={props.recordCounts} />
           </span>
         </Link>
       ))}
