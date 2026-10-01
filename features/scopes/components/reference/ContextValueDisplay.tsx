@@ -24,6 +24,8 @@ import {
 import { cn } from "@/utils/cn";
 import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 import type { ContextValueType } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 
@@ -137,6 +139,14 @@ function renderTyped(
     }
     case "markdown":
       if (!text) return undefined;
+      // A kind is drawn as its kind, never as JSON (kind-never-raw O2).
+      if (hasKindKey(text)) {
+        return (
+          <div className={className}>
+            <AnswerValueView text={text} />
+          </div>
+        );
+      }
       return (
         <div className={cn("prose-sm max-w-none", className)}>
           <BasicMarkdownContent imagePolicy="other" content={text} />
@@ -207,6 +217,13 @@ export function ContextValueDisplay({
   if (rendered !== undefined) return rendered;
 
   if (value.value_text != null) {
+    if (hasKindKey(value.value_text)) {
+      return (
+        <div className={className}>
+          <AnswerValueView text={value.value_text} />
+        </div>
+      );
+    }
     return (
       <span className={cn("whitespace-pre-wrap break-words", className)}>
         {value.value_text}
@@ -254,10 +271,12 @@ export function ContextValueDisplay({
     return <span className={className}>→ {value.value_reference_id}</span>;
   }
   if (value.value_json != null) {
+    // The one value view: a kind (at any depth) as its kind, other JSON as
+    // the structured view — never a stringified dump (kind-never-raw O2).
     return (
-      <span className={cn("font-mono text-xs", className)}>
-        {JSON.stringify(value.value_json)}
-      </span>
+      <div className={className}>
+        <AnswerValueView value={value.value_json} density="inline" />
+      </div>
     );
   }
 

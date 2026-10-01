@@ -33,6 +33,32 @@ import {
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+
+/**
+ * The structured value of a variable that carries a `__kind` (at any depth),
+ * or null. A kind is drawn as its kind, never printed as JSON text
+ * (kind-never-raw R5); a string holding kind JSON is read the same way.
+ */
+function kindCarryingValue(value: unknown): unknown {
+  if (value != null && typeof value === "object") {
+    try {
+      return hasKindKey(JSON.stringify(value)) ? value : null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof value === "string" && hasKindKey(value)) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return parsed != null && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 interface FirstTurnVariablesProps {
   conversationId: string;
@@ -64,7 +90,11 @@ export function UserMessageVariables({
           className="text-xs leading-snug text-foreground/90"
         >
           <span className="font-medium text-foreground">{l.label}:</span>{" "}
-          {l.entity ? (
+          {kindCarryingValue(values[l.key]) !== null ? (
+            <div className="mt-0.5">
+              <AnswerValueView value={kindCarryingValue(values[l.key])} density="inline" />
+            </div>
+          ) : l.entity ? (
             <EntityRef
               token={l.entity.token}
               id={l.entity.id}

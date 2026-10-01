@@ -11,6 +11,16 @@
  */
 
 import type { ContextItemBodyProps } from "../types";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+
+function carriesKind(value: unknown): boolean {
+  try {
+    return hasKindKey(JSON.stringify(value) ?? "");
+  } catch {
+    return false;
+  }
+}
 
 function countRefs(item: ContextItemBodyProps["item"]): [string, number][] {
   const r = item.refs;
@@ -29,12 +39,29 @@ function countRefs(item: ContextItemBodyProps["item"]): [string, number][] {
 export function GenericBody({ item }: ContextItemBodyProps) {
   const text = item.refs.text;
 
+  // A kind is drawn as its kind, never as JSON text (kind-never-raw O2).
+  if (text && hasKindKey(text)) {
+    return (
+      <div className="h-full min-h-0 overflow-y-auto p-4">
+        <AnswerValueView text={text} />
+      </div>
+    );
+  }
+
   if (text) {
     return (
       <div className="h-full min-h-0 overflow-y-auto p-4">
         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
           {text}
         </p>
+      </div>
+    );
+  }
+
+  if (carriesKind(item.raw)) {
+    return (
+      <div className="h-full min-h-0 overflow-y-auto p-4">
+        <AnswerValueView value={item.raw} />
       </div>
     );
   }

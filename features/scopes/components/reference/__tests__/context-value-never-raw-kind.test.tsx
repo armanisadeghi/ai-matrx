@@ -1,0 +1,57 @@
+/**
+ * kind-never-raw O2: a context value carrying a `__kind` (markdown text, plain
+ * text, or json) is drawn through the one answer view, never as JSON text.
+ * Kindless values keep their own rendering.
+ */
+import React from "react";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+jest.mock("@/features/matrx-envelope/MatrxEnvelopeBlock", () => ({ __esModule: true, default: () => null }));
+jest.mock("@/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
+  BasicMarkdownContent: ({ content }: { content: string }) => <div data-testid="basic-md">{content}</div>,
+}));
+jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
+  AnswerValueView: () => <div data-testid="answer-value-view" />,
+}));
+
+import { ContextValueDisplay } from "../ContextValueDisplay";
+
+const SET_JSON = JSON.stringify({
+  __kind: "flashcard_set",
+  title: "Cell biology",
+  cards: [{ __kind: "flashcard", front: "Powerhouse?", back: "Mitochondria" }],
+});
+
+let root: Root | null = null;
+function mount(el: React.ReactNode) {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  root = createRoot(host);
+  act(() => root!.render(el));
+  return host;
+}
+afterEach(() => {
+  act(() => root?.unmount());
+  document.body.innerHTML = "";
+});
+
+describe("ContextValueDisplay", () => {
+  it.each([
+    ["markdown text", { value_text: SET_JSON }, "markdown"],
+    ["plain text", { value_text: SET_JSON }, null],
+    ["json", { value_json: JSON.parse(SET_JSON) }, null],
+  ])("a kind in %s renders as the kind", (_label, value, valueType) => {
+    const host = mount(<ContextValueDisplay value={value as never} valueType={valueType as never} />);
+    expect(host.textContent).not.toContain("__kind");
+    expect(host.querySelector('[data-testid="answer-value-view"]')).not.toBeNull();
+  });
+
+  it("kindless markdown and text keep their rendering", () => {
+    expect(mount(<ContextValueDisplay value={{ value_text: "**hi**" }} valueType="markdown" />).querySelector('[data-testid="basic-md"]')).not.toBeNull();
+    act(() => root?.unmount());
+    expect(mount(<ContextValueDisplay value={{ value_text: "plain" }} />).textContent).toBe("plain");
+  });
+});

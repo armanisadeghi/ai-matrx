@@ -40,7 +40,8 @@ Every stream item below adds its case there.
       Mid-stream now held by the renderer's first-key gate. Still open: jsonc WITH comments never parses at close.
 - [x] A4. `~~~json` fences → only work by accident; stray empty code blocks left behind.
       `~~~` is a real fence in the prefilter, accumulator (FenceReader closer) and static splitter.
-- [ ] A5. Kind object on the same line as prose → raw until stream end.
+- [x] A5. Kind object on the same line as prose → raw until stream end.
+      Split live the moment `__kind` is visible (fragment) or the line completes; reload trims prose pieces the same way.
 - [ ] A6. Array of kinds → raw mid-stream; leftover `[` `,` `]` render as tiny JSON cards after.
 - [ ] A7. Kind nested inside a non-kind object → whole region should show as could-be-kind; wrapper
       fragments left broken after recovery.
@@ -71,7 +72,9 @@ Every stream item below adds its case there.
 - [x] R4. Pencil "edit answer" opens raw JSON. Deliberate edit-of-source view, kept: `InPlaceAnswerEditor`
       mounts only when the edit action's explicit click sets `_editingInPlace` (`handlers/edit.ts`,
       `handlers/fullscreen-editor.ts` are the only writers); a structured payload opens the read-only raw viewer.
-- [ ] R5. "Started with" strip prints object variables as JSON (`variableValueToInputText`).
+- [x] R5. "Started with" strip prints object variables as JSON (`variableValueToInputText`). A variable whose
+      value (object, or string of JSON) carries `__kind` renders through `AnswerValueView` in
+      `UserMessageVariables`. `variableValueToInputText` itself feeds text INPUTS (lossless edit) — unchanged.
 
 ## D. Tool calls
 
@@ -124,7 +127,11 @@ Every stream item below adds its case there.
       `kindValueToMarkdown`), applied in `contentForDestination`, "Copy with thinking", conversation transfer
       and `documentMarkdown`. A kind with no `toMarkdown` facet still exports `genericKindMarkdown`'s fenced
       JSON (the converter's zero-loss floor) — a facet per kind is the fix there.
-- [ ] O2. Context values and context items show it raw.
+- [x] O2. Context values and context items show it raw. `ContextValueDisplay` (markdown / text with a kind →
+      `AnswerValueView`; every `value_json` → `AnswerValueView`) and `GenericBody` (kind text or kind-carrying
+      payload → `AnswerValueView`). A kind NESTED in a kindless payload reaches `StructuredValueView`, which
+      the bottom-layer lane (C4/C5/W4) is making route nested kinds. Kindless markdown stays on
+      `BasicMarkdownContent` (bottom layer).
 
 ## I. Public pages and other features
 
