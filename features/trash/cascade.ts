@@ -106,8 +106,16 @@ export function followRemoval(
 }
 
 /**
+ * How long a removal's parts may keep following before progress earns its own toast. The screen
+ * that removed or restored the record already said so ("Restored 1 Source."); parts that finish
+ * within this grace are not news, and a second "Item restored" beside the host's sentence was a
+ * duplicate (V6-B, 2026-10-01).
+ */
+export const FOLLOW_TOAST_GRACE_MS = 2_500;
+
+/**
  * `followRemoval` with a progress toast — shown only when the job outlives the
- * removing request (a large record); a small one finishes in-line and says nothing.
+ * removing request by the grace period (a large record); a small one says nothing.
  */
 export async function followRemovalWithToast(
   entityToken: string,
@@ -115,14 +123,19 @@ export async function followRemovalWithToast(
   noun: string,
 ): Promise<void> {
   let toastId: string | number | undefined;
+  const startedAt = Date.now();
+  let followed = false;
   try {
     const final = await followRemoval(entityToken, id, (progress) => {
+      followed = true;
+      if (toastId === undefined && Date.now() - startedAt < FOLLOW_TOAST_GRACE_MS) return;
       const verb = progress.direction === "restore" ? "Restoring" : "Removing";
       const count = progress.rowsDone.toLocaleString();
       const total = progress.rowsTotal ? ` of ${progress.rowsTotal.toLocaleString()}` : "";
       toastId = toast.loading(`${verb} ${noun} — ${count}${total} parts`, { id: toastId });
     });
-    if (toastId === undefined || !final) return;
+    // A failure is always said, grace or not; success and "still going" only after a progress toast.
+    if (!final || !followed || (toastId === undefined && final.state !== "failed")) return;
     if (final.state === "done") {
       toast.success(
         final.direction === "restore" ? `${noun} restored` : `${noun} removed`,
