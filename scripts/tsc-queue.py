@@ -40,6 +40,11 @@ import time
 import uuid
 
 POLL_SECONDS = 0.1
+# A waiter's turn and a compiler's memory are minutes-scale; checking them 10x
+# a second meant every waiter rewrote+fsynced state.json and the supervisor ran
+# `ps` over ~1,600 processes ten times a second (2026-09-30, load 74 on 32 cores).
+WAITER_POLL_SECONDS = 0.5
+MEMORY_CHECK_SECONDS = 1.0
 RESULT_TTL_SECONDS = 86400
 MAX_LOG_BYTES = 128 * 1024 * 1024
 MAX_RETAINED_BYTES = 1024 * 1024 * 1024
@@ -49,12 +54,13 @@ DEFAULT_MAX_MEMORY_GB = 24
 WAITER_CHECK_SECONDS = 1.0
 ABANDON_GRACE_SECONDS = 10.0
 CALLER_SIGNALS = (signal.SIGTERM, signal.SIGHUP)
-# Shell/terminal bookkeeping does not affect TypeScript. Everything else is
-# hashed (never stored), including compiler runtime and memory settings.
-ENV_NOISE = {'_', 'SHLVL', 'PWD', 'OLDPWD', 'TERM', 'COLORTERM',
-             'MATRX_TSC_MAX_CONCURRENT',
-             'npm_lifecycle_event', 'npm_lifecycle_script', 'npm_command',
-             'npm_execpath', 'npm_node_execpath'}
+# Only these environment variables can change what a check reports, so only
+# these split one check from another (hashed, never stored). An allow-list, not
+# a deny-list: on 2026-09-30 nine waiting callers differed in 91 shell vars
+# (release stamps, PATH, session ids, tokens, locale) and no two ever coalesced.
+# The compiler binary is an absolute path, so PATH never selects it.
+RESULT_ENV = {'NODE_PATH', 'NODE_OPTIONS', 'MATRX_TSC_MAX_RSS_GB', 'MATRX_TSC_REPORT_PEAK'}
+RESULT_ENV_PREFIXES = ('TSC_', 'TS_')
 
 
 def process_snapshot():
@@ -216,12 +222,17 @@ class Queue:
         fcntl.flock(fd, fcntl.LOCK_EX)
         try:
             try:
-                data = json.loads(self.state_path.read_text())
+                original = self.state_path.read_text()
+                data = json.loads(original)
             except FileNotFoundError:
+                original = None
                 data = {'version': 1, 'runs': {}}
             if data.get('version') != 1 or not isinstance(data.get('runs'), dict):
                 raise RuntimeError('invalid queue state; refusing to launch a compiler')
             yield data, fd
+            # Most polls change nothing; never rewrite and fsync an identical file.
+            if original is not None and json.dumps(data) == original:
+                return
             staging = self.base / 'state.tmp'
             with staging.open('w') as output:
                 json.dump(data, output)
@@ -327,8 +338,7 @@ class Queue:
         identity = {'root': str(root), 'cwd': str(cwd), 'binary': str(binary),
                     'binary_mtime': stat.st_mtime_ns, 'binary_size': stat.st_size,
                     'args': args, 'env': {k: v for k, v in env.items()
-                                        if k not in ENV_NOISE and not k.startswith(
-                                            ('CODEX_', 'CLAUDE_', 'npm_package_'))}}
+                                        if k in RESULT_ENV or k.startswith(RESULT_ENV_PREFIXES)}}
         return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
     def run(self, root, compiler_bin, compiler_name, args, env, cwd, stdout, stderr):
@@ -436,7 +446,7 @@ class Queue:
                         pass
                 except ChildProcessError:
                     pass
-                time.sleep(POLL_SECONDS)
+                time.sleep(WAITER_POLL_SECONDS)
         finally:
             if target is not None:
                 self.leave(target, me)
@@ -480,25 +490,28 @@ class Queue:
                     data['runs'][run['id']].update(guard_pid=child.pid, process_group=child.pid)
                 peak = 0
                 next_waiter_check = 0.0
+                next_memory_check = 0.0
                 orphaned_since = None
                 while child.poll() is None:
-                    rows = process_snapshot()
-                    descendants = {child.pid}
-                    for _ in rows:
-                        before = len(descendants)
-                        descendants.update(row['pid'] for row in rows if row['ppid'] in descendants)
-                        if len(descendants) == before: break
-                    # Real memory (macOS physical footprint), never bare RSS.
-                    memory = sum(process_memory_bytes(row) for row in rows
-                                 if row['pid'] in descendants or row['pgid'] == child.pid)
-                    peak = max(peak, memory)
-                    if memory > rss_gb * 1024 ** 3:
-                        error = (f'KILLED: compiler exceeded its {rss_gb} GB memory ceiling '
-                                 f'({memory / 1024 ** 3:.1f} GB physical footprint)')
-                        kill_compiler_group(child.pid)
-                        status = 137
-                        break
                     now = time.monotonic()
+                    if now >= next_memory_check:
+                        next_memory_check = now + MEMORY_CHECK_SECONDS
+                        rows = process_snapshot()
+                        descendants = {child.pid}
+                        for _ in rows:
+                            before = len(descendants)
+                            descendants.update(row['pid'] for row in rows if row['ppid'] in descendants)
+                            if len(descendants) == before: break
+                        # Real memory (macOS physical footprint), never bare RSS.
+                        memory = sum(process_memory_bytes(row) for row in rows
+                                     if row['pid'] in descendants or row['pgid'] == child.pid)
+                        peak = max(peak, memory)
+                        if memory > rss_gb * 1024 ** 3:
+                            error = (f'KILLED: compiler exceeded its {rss_gb} GB memory ceiling '
+                                     f'({memory / 1024 ** 3:.1f} GB physical footprint)')
+                            kill_compiler_group(child.pid)
+                            status = 137
+                            break
                     if now >= next_waiter_check:
                         next_waiter_check = now + WAITER_CHECK_SECONDS
                         with self.state() as (data, _):

@@ -221,6 +221,25 @@ sys.exit(int((base / 'exit-code').read_text()))
         for name in ['A', 'B', 'C', 'D']: self.result(name)
         self.assertEqual(len(self.started()), 2)
 
+    def test_caller_shell_environment_does_not_split_equivalent_checks(self):
+        # 2026-09-30: nine waiting callers differed in 91 env vars (release
+        # stamps, PATH, session ids, tokens, locale), so no two ever coalesced
+        # and the queue ran nine full type-checks back to back.
+        self.launch('A')
+        self.wait(lambda: len(self.started()) == 1, 'A did not start')
+        for name in ['B', 'C', 'D']:
+            self.launch(name, env={**self.env, 'RELEASE_SHA': name, 'NEW_VERSION': name,
+                                  'PATH': f'/tmp/{name}:' + self.env['PATH'],
+                                  'SUPABASE_ACCESS_TOKEN': name, 'LANG': name,
+                                  'AI_AGENT': name, 'SECURITYSESSIONID': name})
+        self.joined(3)
+        (self.base / 'source').write_text('D')
+        (self.base / 'release-A').touch()
+        (self.base / 'release-D').touch()
+        for name in ['B', 'C', 'D']:
+            self.assertEqual(self.result(name), (b'stdout:D\n', b'stderr:D\n'))
+        self.assertEqual(len(self.started()), 2)
+
     def test_corrupt_state_refuses_to_start(self):
         (self.base / 'queue').mkdir(mode=0o700)
         (self.base / 'queue/state.json').write_text('{broken')
