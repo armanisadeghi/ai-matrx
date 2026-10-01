@@ -10,7 +10,7 @@
 import { ArrowDownToLine, Replace } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { selectWidgetHandleIdFor } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { getSelectionWriteBack } from "@/features/context-menu-v3/utils/selection-write-back";
+import { getSelectionWriteBack } from "@/features/agents/utils/launch-widget-handles";
 import type { SelectionWriteBack } from "@/features/agents/types/widget-handle.types";
 import { registerAction } from "../provider";
 import { contentForDestination } from "../utils";

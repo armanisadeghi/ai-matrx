@@ -23,10 +23,8 @@ import {
 } from "@/features/agents/types/widget-handle.types";
 import { callbackManager } from "@/utils/callbackManager";
 import { buildEditableWidgetHandle } from "../utils/widget-handle";
-import {
-  buildSelectionWriteBack,
-  registerLaunchWidgetHandle,
-} from "../utils/selection-write-back";
+import { buildSelectionWriteBack } from "../utils/selection-write-back";
+import { registerLaunchWidgetHandle } from "@/features/agents/utils/launch-widget-handles";
 
 const JUNK = "Skip to main content | Patient portal | Cookie settings";
 const CLEAN = "Patient portal";

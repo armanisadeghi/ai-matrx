@@ -24,12 +24,7 @@
 // `insertAtCaret` replaces the live selection, `onTextInsertAfter` inserts a
 // block after it.
 
-import type {
-  SelectionWriteBack,
-  WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
-import { WIDGET_TOOL_NAME_TO_HANDLE_METHOD } from "@/features/agents/types/widget-handle.types";
-import { callbackManager } from "@/utils/callbackManager";
+import type { SelectionWriteBack } from "@/features/agents/types/widget-handle.types";
 import { spliceInputValue, type SelectionRange } from "./selection-tracking";
 
 export interface BuildSelectionWriteBackArgs {
@@ -138,48 +133,4 @@ export function buildSelectionWriteBack(
       return true;
     },
   };
-}
-
-/**
- * Register a launch-scoped widget handle: every widget_* method forwards (at
- * call time) to the surface's own handle, plus this launch's `selection`
- * write-back. Returns the id to pass as `runtime.widgetHandleId`, or the
- * surface id unchanged when there is no write-back to add.
- */
-export function registerLaunchWidgetHandle(
-  surfaceHandleId: string | null | undefined,
-  selection: SelectionWriteBack | null,
-): string | undefined {
-  if (!selection) return surfaceHandleId ?? undefined;
-  const handle: WidgetHandle = { selection };
-  const keys = [
-    ...Object.values(WIDGET_TOOL_NAME_TO_HANDLE_METHOD),
-    "onComplete",
-    "onCancel",
-    "onError",
-  ] as const;
-  for (const key of keys) {
-    Object.defineProperty(handle, key, {
-      enumerable: true,
-      configurable: true,
-      get() {
-        const surface = surfaceHandleId
-          ? callbackManager.get<WidgetHandle>(surfaceHandleId)
-          : undefined;
-        const method = surface?.[key];
-        return typeof method === "function"
-          ? (method as (...a: unknown[]) => unknown).bind(surface)
-          : undefined;
-      },
-    });
-  }
-  return callbackManager.registerWidgetHandle(handle);
-}
-
-/** The write-back a conversation's launch carried, if any. */
-export function getSelectionWriteBack(
-  widgetHandleId: string | null | undefined,
-): SelectionWriteBack | null {
-  if (!widgetHandleId) return null;
-  return callbackManager.get<WidgetHandle>(widgetHandleId)?.selection ?? null;
 }

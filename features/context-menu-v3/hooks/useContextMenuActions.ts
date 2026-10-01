@@ -125,10 +125,8 @@ import {
   type ResolvedActionText,
 } from "../value-resolution";
 import { spliceInputValue } from "../utils/selection-tracking";
-import {
-  buildSelectionWriteBack,
-  registerLaunchWidgetHandle,
-} from "../utils/selection-write-back";
+import { buildSelectionWriteBack } from "../utils/selection-write-back";
+import { registerLaunchWidgetHandle } from "@/features/agents/utils/launch-widget-handles";
 import {
   buildJsonMenuSection,
   type JsonMenuSection,

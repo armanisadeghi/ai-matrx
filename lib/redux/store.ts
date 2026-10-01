@@ -34,6 +34,7 @@ import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definiti
 import { composerDraftMiddleware } from "@/features/agents/redux/execution-system/instance-user-input/composer-draft.middleware";
 import { unsentLaunchMiddleware } from "@/features/agents/redux/execution-system/instance-user-input/unsent-launch.middleware";
 import { inboxTurnEndMiddleware } from "@/features/agents/redux/execution-system/inbox/inbox-turn-end.middleware";
+import { launchHandleReleaseMiddleware } from "@/features/agents/redux/execution-system/instance-ui-state/launch-handle-release.middleware";
 import { runConfigurationPersistMiddleware } from "@/features/agents/redux/execution-system/instance-ui-state/run-configuration-persist";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 import { activeOrgCookieMiddleware } from "@/lib/organizations/activeOrgCookieMiddleware";
@@ -279,6 +280,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         composerDraftMiddleware,
         unsentLaunchMiddleware,
         inboxTurnEndMiddleware,
+        launchHandleReleaseMiddleware,
         runConfigurationPersistMiddleware,
         mandateOrgSwitchCacheMiddleware,
         activeOrgCookieMiddleware,
