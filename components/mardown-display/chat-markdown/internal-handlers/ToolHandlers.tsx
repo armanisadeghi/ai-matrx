@@ -26,6 +26,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
 import { persistedToolEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import { AgentCallChildTrace } from "./AgentCallChildTrace";
 
 // ============================================================================
 // TOOL CARD — THE one element for a tool call in a transcript, live or
@@ -78,7 +79,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
   if (hidden) return null;
   if (!entry) return null;
 
-  return (
+  const card = (
     <ToolCallVisualization
       entries={[entry]}
       requestId={segment ? undefined : requestId}
@@ -86,6 +87,20 @@ export const ToolCard: React.FC<ToolCardProps> = ({
       hasContent
       isPersisted={!!segment}
     />
+  );
+  if (entry.toolName !== "agent_call") return card;
+  // A sub-agent's thinking and tool calls sit in the transcript right under
+  // the card that ran it — live and after a reload (Arman, 2026-10-01).
+  return (
+    <>
+      {card}
+      <AgentCallChildTrace
+        entry={entry}
+        conversationId={conversationId}
+        requestId={segment ? undefined : requestId}
+        ToolCardComponent={ToolCard}
+      />
+    </>
   );
 };
 

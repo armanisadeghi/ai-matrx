@@ -652,7 +652,10 @@ const activeRequestsSlice = createSlice({
         for (const t of Object.values(request.toolLifecycle)) {
           if (t.toolName !== "agent_call") continue;
           if (t.status === "completed" || t.status === "error") continue;
-          if (!owner || t.startedAt > owner.startedAt) owner = t;
+          // `>=`: two calls started in the same millisecond (a child's own
+          // agent_call right after its parent's) resolve to the LATER entry —
+          // with `>` the outer call kept the inner child's range.
+          if (!owner || t.startedAt >= owner.startedAt) owner = t;
         }
         opEntry.toolCallId = owner?.callId ?? null;
       }

@@ -12,6 +12,10 @@
  */
 
 import { computeChildOwnedRanges } from "../utils/child-owned-ranges";
+import {
+  liveAgentCallTrace,
+  type LiveAgentCallTrace,
+} from "../utils/agent-call-trace";
 import { createSelector } from "@reduxjs/toolkit";
 import { blockMediaFileId } from "@/features/agents/redux/execution-system/utils/block-media-identity";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
@@ -1703,6 +1707,36 @@ export interface AgentCallChildStream {
   childConversationId: string | null;
   text: string;
 }
+
+/**
+ * The child agent's thinking and tool calls under ONE agent_call card, live —
+ * the items `computeChildOwnedRanges` takes off the parent's top level. Null
+ * when no `sub_agent` operation is owned by this call. Factory: callers
+ * memoize the instance per (requestId, callId).
+ */
+export const selectAgentCallTrace = (requestId: string, callId: string) =>
+  createSelector(
+    (state: RootState) => state.activeRequests.byRequestId[requestId]?.timeline,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.activeOperations,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.completedOperations,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.toolLifecycle,
+    (
+      timeline,
+      activeOperations,
+      completedOperations,
+      toolLifecycle,
+    ): LiveAgentCallTrace | null =>
+      liveAgentCallTrace({
+        callId,
+        timeline,
+        activeOperations,
+        completedOperations,
+        toolLifecycle,
+      }),
+  );
 
 export const selectAgentCallChildStream = (requestId: string, callId: string) =>
   createSelector(
