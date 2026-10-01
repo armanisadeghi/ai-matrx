@@ -133,6 +133,7 @@ export const ITEMS = {
   C12: "Rollback path per step, with the exact command (SAFETY-NET-B)",
   C13: "W-rows the chain proves in one transaction: W10 outside FKs, W15 a cut press leaves all-old, W16 a birth after Step 1 refuses by name (SAFETY-NET-B)",
   C14: "W4: after the press no older READ door answers a moved table with a frozen value (SAFETY-NET-B)",
+  C15: "W14: after the press a record-store-off organization can make a table, or is told the truth (SAFETY-NET-B)",
   // Platform
   P01: "Sign-in",
   P02: "Organization switch",

@@ -17,6 +17,17 @@ export default [
     targets: ["live", "clone"],
     timeoutMs: 20 * 60 * 1000,
   },
+  {
+    // Save to a table from a note, a Read-mode selection and a chat answer → a store Table with the right columns.
+    id: "agents.walk-save-as-table",
+    area: "agents",
+    kind: "walk",
+    file: "scripts/safety-net/walks/b-save-as-table.mjs",
+    walkName: "b-save-as-table",
+    items: ["A03", "A04", "A05"],
+    targets: ["live", "clone"],
+    timeoutMs: 30 * 60 * 1000,
+  },
   // NOT REGISTERED by default (it would read FAIL on every clone run before a press):
   //   {
   //     // AFTER-THE-PRESS ONLY: it SKIPS (= FAIL here, honestly) until admin's Workspace is moved; run it on a clone that

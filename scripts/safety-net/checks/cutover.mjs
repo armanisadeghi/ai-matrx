@@ -45,6 +45,18 @@ export default [
     timeoutMs: 25 * 60 * 1000,
   },
   {
+    // W14: after the press a record-store-off organization (Ojai Branch d46f323b) can still make a table, or is told
+    // the truth (clone, rolled back).
+    id: "cutover.store-off-after-press",
+    area: "cutover",
+    kind: "sql",
+    file: "scripts/safety-net/probes/b_store_off_after_press.sql",
+    items: ["C15"],
+    targets: ["clone"],
+    passWhen: "W14 GREEN",
+    timeoutMs: 25 * 60 * 1000,
+  },
+  {
     // The static census: nothing outside the baseline names an old door. Its own red: `pnpm check:old-system-unreachable:self-test`.
     id: "cutover.old-system-unreachable",
     area: "cutover",
