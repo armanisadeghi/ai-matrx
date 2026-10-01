@@ -43,7 +43,7 @@ export function TutorTurnTrust({ trust }: { trust: TrustEnvelope | null }) {
     <div className="mx-auto w-full max-w-3xl px-4 pb-2">
       <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-card/40 px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <ConfidenceBadge confidence={trust.confidence} />
+          <ConfidenceBadge confidence={trust.confidence} className="shrink-0" />
           {/* The badge says how grounded; this slot is only WHAT in (no repeated word). */}
           {plainGroundedIn(trust.groundedIn) && (
             <span className="inline-flex min-w-0 items-center gap-1" title={plainGroundedIn(trust.groundedIn)}>

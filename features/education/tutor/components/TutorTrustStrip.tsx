@@ -53,7 +53,7 @@ export function TutorTrustStrip({ trust }: { trust: TrustEnvelope | null }) {
       >
         {/* The badge says how grounded; this slot says only WHAT in (copy law
             R9: a word never repeats in one strip — same as CardTrustFooter). */}
-        <ConfidenceBadge confidence={trust.confidence} />
+        <ConfidenceBadge confidence={trust.confidence} className="shrink-0" />
         <BookOpen className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span
           className="min-w-0 truncate font-medium text-foreground"
