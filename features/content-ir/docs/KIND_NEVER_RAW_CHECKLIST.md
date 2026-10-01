@@ -79,9 +79,9 @@ Every stream item below adds its case there.
 
 - [x] W1. Run board emissions call `DbEmitRenderer` directly, skipping the kind route. (→ `EmissionRender`)
 - [x] W2. Seven bakeoff run-page variants do the same. (→ `EmissionRender`; guard `kind-emissions/__tests__/emissions-route-through-the-kind-door.test.tsx`)
-- [ ] W3. `SettledOutputBody` sends `__kind` output to the generic grid when no output kind is declared.
+- [x] W3. `SettledOutputBody` sends `__kind` output to the generic grid when no output kind is declared. (→ `AnswerValueView` by the value's own `__kind`; truncated kind text → json region)
 - [ ] W4. `StructuredValueView` strips nested kinds instead of rendering them.
-- [ ] W5. Readout summary table prints 80 chars of stringified output.
+- [x] W5. Readout summary table prints 80 chars of stringified output. (→ `invocation-summary.ts`: kind name · instance title)
 
 ## F. Screens rendering answer text outside the pipeline
 

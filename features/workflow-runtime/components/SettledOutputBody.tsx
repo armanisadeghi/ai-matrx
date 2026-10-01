@@ -23,24 +23,26 @@
  */
 
 import MarkdownStream from "@/components/MarkdownStream";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 
 import { looksLikeJsonDocument, readAgentRunOutput } from "../agent-run-output";
 import { AgentContentList } from "./AgentContentList";
 
 /**
- * Structured output whose shape has no kind component. It renders as a human
- * DOCUMENT through the platform floor: prose through the canonical markdown
- * renderer, uniform object arrays as a real table, media through
- * `InlineMediaRef`, nested objects as titled sections with humanized keys —
- * with the raw data one click away for us.
+ * Structured output with no DECLARED kind. A value that carries its own
+ * `__kind` is still a kind — it renders as that kind's component (the value's
+ * own claim routes it, the way `AgentResultBlock` does; Arman, 2026-09-30: a
+ * kind is never drawn as raw JSON). Anything else renders as a human DOCUMENT
+ * through the platform floor (`StructuredValueView`) — both through the one
+ * settled-answer door, `AnswerValueView`.
  */
 export function JsonBody({
   value,
 }: {
   value: Record<string, unknown> | unknown[];
 }) {
-  return <StructuredValueView value={value} />;
+  return <AnswerValueView value={value} />;
 }
 
 /**
@@ -54,9 +56,17 @@ export function JsonTextBody({ text }: { text: string }) {
   try {
     parsed = JSON.parse(text) as unknown;
   } catch {
-    return <MarkdownStream imagePolicy="ai" content={text} />;
+    // Unparseable text that claims a kind is a broken kind, not prose: hand
+    // it to the kind parser as a json region so it shows the kind's broken
+    // state instead of the raw characters.
+    return (
+      <MarkdownStream
+        imagePolicy="ai"
+        content={hasKindKey(text) ? `\u0060\u0060\u0060json\n${text}\n\u0060\u0060\u0060` : text}
+      />
+    );
   }
-  return <StructuredValueView value={parsed} />;
+  return <AnswerValueView value={parsed} />;
 }
 
 /** What a settled step PRODUCED, for a step whose shape has no component. */

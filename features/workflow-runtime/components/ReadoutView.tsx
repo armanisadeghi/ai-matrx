@@ -73,6 +73,7 @@ import {
 } from "../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 import { InvocationBody, PhaseIcon, PHASE_LABEL } from "./readout-parts";
+import { invocationSummary } from "./invocation-summary";
 import { RUN_STATUS_LABEL, RUN_STATUS_PHASE } from "../run-status";
 import { ProgressRailReadout } from "./ProgressRailReadout";
 import { definitionNodeLabels, RunSurfaceView } from "./RunSurfaceView";
@@ -145,18 +146,10 @@ function invocationHasBody(inv: NodeInvocationState): boolean {
   );
 }
 
-/** One-line summary for the compact table mode — honest v1: the output kind
- * when declared, else the first 80 chars of the text tail / raw output. */
-function invocationSummary(inv: NodeInvocationState): string {
-  if (inv.outputKind) return inv.outputKind;
-  const text =
-    inv.textTail.length > 0
-      ? inv.textTail
-      : inv.output !== null
-        ? JSON.stringify(inv.output)
-        : inv.error?.message ?? "";
-  if (!text) return PHASE_LABEL[inv.phase] ?? inv.phase;
-  return text.length > 80 ? `${text.slice(0, 80)}…` : text;
+/** One-line summary for the compact table mode — a kind reads as its name
+ * and title, never as its JSON (`invocation-summary.ts`). */
+function summaryOf(inv: NodeInvocationState): string {
+  return invocationSummary(inv) ?? PHASE_LABEL[inv.phase] ?? inv.phase;
 }
 
 /** The real "table" multi-run mode: one canonical MatrxDataTable over the
@@ -188,9 +181,9 @@ const INVOCATION_COLUMNS: MatrxColumnDef<NodeInvocationState>[] = [
   {
     id: "output",
     header: "Output",
-    accessorFn: (inv) => invocationSummary(inv),
+    accessorFn: (inv) => summaryOf(inv),
     cell: (inv) => (
-      <span className="block max-w-96 truncate">{invocationSummary(inv)}</span>
+      <span className="block max-w-96 truncate">{summaryOf(inv)}</span>
     ),
   },
   {
