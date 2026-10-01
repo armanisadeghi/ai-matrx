@@ -3716,6 +3716,12 @@
       "checksum": "027f65f5f7eb953962064d608b58ac1b627140ead2c914c275d9ffb624a4e990",
       "applied_at": "2026-09-20 03:48:13.637573+00"
     },
+    "migrations/campaign/orphanchoices_an_adopted_lists_choices_take_its_organization.sql": {
+      "source": "matrx-frontend",
+      "filename": "orphanchoices_an_adopted_lists_choices_take_its_organization.sql",
+      "checksum": "5545a43e42134332187f80aa65d3c220e64036dbd717f27ee97cec3383b8081e",
+      "applied_at": "2026-10-01 11:41:52.315126+00"
+    },
     "migrations/campaign/paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql": {
       "source": "campaign",
       "filename": "paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql",
