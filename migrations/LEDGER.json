@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T09:43:02.809Z",
+  "generated_at": "2026-10-01T09:46:05.403Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2179,6 +2179,12 @@
       "filename": "fieldadd_the_switch_screen_can_be_operated.sql",
       "checksum": "7395e50be61b9b822a0884e37865375065026063614033975f057dbd94607e2d",
       "applied_at": "2026-09-19 17:51:07.452364+00"
+    },
+    "migrations/campaign/fieldarchivecascade_a_tables_fields_go_and_come_back_with_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "fieldarchivecascade_a_tables_fields_go_and_come_back_with_it.sql",
+      "checksum": "909248415302eb8a3e226678aa7a16bda4e0e6fa65bef3156e1a5fb397c3e1ed",
+      "applied_at": "2026-10-01 09:46:03.86196+00"
     },
     "migrations/campaign/fieldguards_a_refusal_is_a_whole_sentence.sql": {
       "source": "matrx-frontend",
