@@ -106,6 +106,10 @@ export const SHARED_ALLOWED_EXACT: ReadonlySet<string> = new Set([
   "/manifest.webmanifest",
   "/favicon.ico",
   "/blob-sw.js",
+  // Auth-free, origin-isolated Shape runtime used by every app surface.
+  "/kind-sandbox",
+  "/kind-sandbox.js",
+  "/kind-sandbox.css",
 ]);
 export const SHARED_ALLOWED_PREFIXES: readonly string[] = [
   "/auth",

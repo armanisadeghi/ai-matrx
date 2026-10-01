@@ -20,6 +20,7 @@ import {
 import {
   BUILD_PROFILE,
   DEPLOYMENT_SURFACES,
+  isSharedAllowedPath,
 } from "@/lib/deployment/surfaces";
 import {
   applyRecordRobotsHeader,
@@ -144,19 +145,6 @@ function isCaptureOnlyPath(pathname: string): boolean {
 // Paths every profile compiles — allowed on the satellite hosts so login and
 // error surfaces work in place. (/api, /auth, /_next are outside the matcher;
 // listed defensively, mirroring the edu gate.)
-const SHARED_ALLOWED_EXACT = new Set([
-  "/login",
-  "/sign-up",
-  "/forgot-password",
-  "/error",
-  "/reset-password",
-  "/sitemap.xml",
-  "/robots.txt",
-  "/manifest.webmanifest",
-  "/favicon.ico",
-  "/blob-sw.js",
-]);
-const SHARED_ALLOWED_PREFIXES = ["/auth", "/api", "/_next"];
 
 /**
  * Satellite-host gate: serve the host's own surface + shared auth paths,
@@ -175,8 +163,7 @@ function satelliteGate(
   if (
     pathname === surfacePrefix ||
     pathname.startsWith(`${surfacePrefix}/`) ||
-    SHARED_ALLOWED_EXACT.has(pathname) ||
-    SHARED_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
+    isSharedAllowedPath(pathname)
   ) {
     return null;
   }
@@ -335,6 +322,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     if (response) return response;
   }
   stampAdminLane(request);
+  // The sandbox shell carries no session or app data. Its opaque frame
+  // must load in place even when the parent is on a satellite origin.
+  if (request.nextUrl.pathname === "/kind-sandbox") {
+    return NextResponse.next({ request });
+  }
   // The admin section's Route Handlers are matched ONLY to receive the lane
   // stamp: API routes gate their own auth, capture nothing, and never run the
   // session pass here.

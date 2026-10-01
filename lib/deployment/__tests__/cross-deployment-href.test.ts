@@ -81,6 +81,15 @@ describe("the satellite build sends everything that is not its own home", () => 
     expect(crossDeploymentHref("/api/version")).toBeNull();
   });
 
+  it.each(["admin", "demos"])("keeps Shape frames and assets on the %s origin", async (profile) => {
+    const { crossDeploymentHref, isSharedAllowedPath } = await load(profile);
+    for (const path of ["/kind-sandbox", "/kind-sandbox.js", "/kind-sandbox.css"]) {
+      expect(isSharedAllowedPath(path)).toBe(true);
+      expect(crossDeploymentHref(path)).toBeNull();
+    }
+    expect(isSharedAllowedPath("/kind-sandbox-other")).toBe(false);
+  });
+
   it("holds for the demos satellite too, and sends it the admin surface", async () => {
     const { crossDeploymentHref } = await load("demos");
     expect(crossDeploymentHref("/dashboard")).toBe(
