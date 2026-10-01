@@ -372,6 +372,26 @@ function contentForDisplay(record: MessageRecord): MessageRecord["content"] {
 }
 
 /**
+ * The ONE exception to "consecutive text parts join directly": a fence
+ * boundary. A part that opens a code fence (a ```matrx reference envelope is
+ * persisted as its own text part) must start on its own line, and a part that
+ * follows a closing fence must too — otherwise the opener is no longer a
+ * fence and its raw markers print in the bubble (PB-01 S14, 2026-10-01).
+ * Citation segments never start or end on a fence, so they still join flush.
+ */
+const FENCE_OPEN_AT_START = /^[ \t]{0,3}(`{3,}|~{3,})/;
+const FENCE_LINE_AT_END = /(^|\n)[ \t]{0,3}(`{3,}|~{3,})[ \t]*$/;
+export function fenceBoundarySeparator(prev: string, next: string): string {
+  if (prev.length === 0 || prev.endsWith("\n") || next.startsWith("\n")) {
+    return "";
+  }
+  if (FENCE_OPEN_AT_START.test(next) || FENCE_LINE_AT_END.test(prev)) {
+    return "\n";
+  }
+  return "";
+}
+
+/**
  * Flat text extracted from a MessageRecord's content blocks. Used by
  * components that render plain-text previews (copy buttons, TTS, save, etc.).
  *
@@ -425,12 +445,14 @@ export function extractFlatText(
       // punctuation onto new lines. Non-text block types keep the
       // newline separator.
       const isText = b.type === "text" || b.type === undefined;
-      if (out.length > 0 && !(isText && prevWasText)) out += "\n";
       const markers = citationIndex?.markersByPartIndex[blockIndex];
-      out +=
+      const segment =
         markers && markers.length > 0
           ? insertCitationMarkers(b.text, markers)
           : b.text;
+      if (out.length > 0 && !(isText && prevWasText)) out += "\n";
+      else if (isText && prevWasText) out += fenceBoundarySeparator(out, segment);
+      out += segment;
       prevWasText = isText;
     }
   }
@@ -487,7 +509,9 @@ export function extractAnswerDocumentText(
   let textRun: string[] = [];
   const flushTextRun = () => {
     if (textRun.length === 0) return;
-    const text = removeThinkingContent(textRun.join(""));
+    const text = removeThinkingContent(
+      textRun.reduce((acc, part) => acc + fenceBoundarySeparator(acc, part) + part, ""),
+    );
     if (text) output.push(text);
     textRun = [];
   };
