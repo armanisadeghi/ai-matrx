@@ -471,6 +471,54 @@ describe("never stuck: a transport drop mid-fence still settles every block (A9)
         .map((b) => `${b.blockId}: ${(b.content ?? "").slice(0, 30)}`),
     ).toEqual([]);
   });
+
+  it("a USER CANCEL mid-kind settles every block — the cancel path finalizes too", async () => {
+    const h = harness();
+    const controller = new AbortController();
+    const encoder = new TextEncoder();
+    const events = [
+      { event: "phase", stream_seq: 1, data: { phase: "processing" } },
+      {
+        event: "chunk",
+        stream_seq: 2,
+        data: { text: `Here you go:\n\n\`\`\`json\n${KIND_PAYLOAD_ONE_LINE.slice(0, 120)}` },
+      },
+    ].map((e) => encoder.encode(`${JSON.stringify(e)}\n`));
+    const reader = {
+      read(): Promise<{ value?: Uint8Array; done: boolean }> {
+        const value = events.shift();
+        if (value) return Promise.resolve({ value, done: false });
+        // The person presses Stop: the fetch aborts and the reader rejects.
+        controller.abort("user-cancel");
+        const abort = new Error("The operation was aborted.");
+        abort.name = "AbortError";
+        return Promise.reject(abort);
+      },
+      releaseLock() {},
+    };
+    const response = { body: { getReader: () => reader }, headers: new Headers() } as unknown as Response;
+    await expect(
+      processStream({
+        requestId: REQUEST_ID,
+        conversationId: CONVERSATION_ID,
+        response,
+        submitAt: 0,
+        conversationIdAt: null,
+        dispatch: h.dispatch as never,
+        getState: h.getState,
+        abortController: controller,
+        allowTransportResume: true,
+      }),
+    ).rejects.toThrow();
+    // Not handed to a rejoin: a cancel is final.
+    expect(hasRetainedTransportConsumer(REQUEST_ID)).toBe(false);
+    const blocks = h.blocks();
+    expect(blocks.filter((b) => b.status === "streaming").map((b) => b.blockId)).toEqual([]);
+    // The cut kind is never the raw card once settled (its broken state).
+    const kind = blocks.find((b) => hasKindKey(b.content ?? ""));
+    expect(kind).toBeDefined();
+    expect(drawsKindAsRawJson(kind as RenderBlockPayload, { isStreamActive: false })).toBe(false);
+  });
 });
 
 describe("never raw: a fence that closes on broken JSON carrying __kind (A10)", () => {

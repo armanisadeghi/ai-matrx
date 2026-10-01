@@ -22,6 +22,8 @@ import { resolveProvisionalKindRender } from "@/features/content-ir/react/partia
 import { RunLaneManager } from "../redux/lane-manager";
 import { RenderBlockFrameAssembler } from "../transport/render-block-frames";
 import type { NodeStreamEvent } from "../types";
+import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { drawsKindAsRawJson } from "@/features/content-ir/render-paths/draws-raw-kind-json";
 
 import recorded from "./fixtures/real-run-node-stream.json";
 
@@ -145,5 +147,41 @@ describe("a real workflow run's typed partial kinds reach the run page", () => {
     for (const id of request.renderBlockOrder) {
       expect(id).toMatch(/^run_[0-9a-f]{12}:blk_\d+$/);
     }
+  });
+
+  it("never draws the node's kind raw on ANY live frame, nor once it settles (kind-never-raw)", () => {
+    const store = configureStore({
+      reducer: { activeRequests: activeRequestsReducer },
+      middleware: (getDefault) => getDefault({ serializableCheck: false }),
+    });
+    const manager = new RunLaneManager(store.dispatch as never);
+    const assembler = new RenderBlockFrameAssembler();
+    const raw: string[] = [];
+    let judged = 0;
+    const judgeAll = (isStreamActive: boolean) => {
+      const requestId = manager.getLaneRequestId(RUN, KEY);
+      if (!requestId) return;
+      const blocks = store.getState().activeRequests.byRequestId[requestId]?.renderBlocks ?? {};
+      for (const block of Object.values(blocks) as RenderBlockPayload[]) {
+        judged++;
+        if (drawsKindAsRawJson(block, { isStreamActive })) {
+          raw.push(`${block.type}/${block.status}: ${(block.content ?? "").slice(0, 40)}`);
+        }
+      }
+    };
+    for (const frame of FRAMES) {
+      if (frame.kind === "render_block") {
+        const block = assembler.push(frame);
+        if (block) manager.pushRenderBlock(RUN, KEY, block);
+      } else if (frame.kind === "chunk" || frame.kind === "reasoning") {
+        manager.pushDelta(RUN, KEY, frame.kind, frame.delta, frame.block_shadowed === true);
+      }
+      manager.flushAll();
+      judgeAll(true);
+    }
+    manager.settleLane(RUN, KEY, "complete");
+    judgeAll(false);
+    expect(judged).toBeGreaterThan(100);
+    expect(raw).toEqual([]);
   });
 });
