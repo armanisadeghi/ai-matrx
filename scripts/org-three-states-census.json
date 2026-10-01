@@ -86,7 +86,6 @@
     "features/secrets/components/authenticator/AuthenticatorWorkspace.tsx",
     "features/settings/pages/IntegrationsSettingsPage.tsx",
     "features/settings/tabs/AppearanceTab.tsx",
-    "features/structured-lists/StructuredListManagerV1.tsx",
     "features/tasks/components/mobile/MobileProjectSelector.tsx",
     "features/window-panels/windows/agents/AgentCreateAppWindow.tsx",
     "features/workflow-runtime/run-failure-explanation.ts",
