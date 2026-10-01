@@ -72,12 +72,13 @@ export const NOVEL = { chars: 160, sentences: 3 };
 
 /** Props whose value renders as secondary text under something else. */
 const SECONDARY_PROPS = new Set([
-  "description", "hint", "subtitle", "subTitle", "helperText", "helper", "helpText",
+  "description", "hint", "subtitle", "subTitle", "helperText", "helper",
   "caption", "subheading", "subtext", "subText", "detail", "details", "blurb",
   "explainer", "note", "footnote", "sublabel", "subLabel", "secondaryText",
   "emptyDescription", "emptyHint", "tagline",
 ]);
-const TOOLTIP_PROPS = new Set(["title", "tooltip", "tooltipText", "aria-description", "info", "infoText"]);
+// `helpText` opens in the settings help popover (CompactHelpPopover), never inline.
+const TOOLTIP_PROPS = new Set(["title", "tooltip", "tooltipText", "aria-description", "info", "infoText", "helpText"]);
 const PLACEHOLDER_PROPS = new Set(["placeholder"]);
 
 /** Components whose `description=` is a page/section header sentence. */
