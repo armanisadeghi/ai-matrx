@@ -21,9 +21,13 @@ import { currentCostUnit } from "@/components/cost/costUnit";
 export function money(
   usd: number | null | undefined,
   unit: CostUnit = currentCostUnit(),
+  // A render passes the SUBSCRIBED rate (`useCostDisplay().rate`), so the
+  // figure re-renders when the knob lands; `currentPointsRate()` is only the
+  // outside-render read and answers null until something else re-renders.
+  rate: number | null = currentPointsRate(),
 ): string | null {
   if (usd === null || usd === undefined) return null;
-  return formatCost(usd, { rate: currentPointsRate(), unit });
+  return formatCost(usd, { rate, unit });
 }
 
 /** Whole seconds, or minutes once a trial arm has run long enough to need them. */
@@ -52,6 +56,7 @@ export interface BenchFactsInput {
 export function benchFacts(
   v: BenchFactsInput,
   unit: CostUnit = currentCostUnit(),
+  rate: number | null = currentPointsRate(),
 ): string[] {
   return [
     v.panel_votes > 0
@@ -63,7 +68,9 @@ export function benchFacts(
             : ""
         }`
       : null,
-    money(v.c_cost_usd, unit) ? `our arm cost ${money(v.c_cost_usd, unit)}` : null,
+    money(v.c_cost_usd, unit, rate)
+      ? `our arm cost ${money(v.c_cost_usd, unit, rate)}`
+      : null,
     v.c_seconds ? `${Math.round(v.c_seconds)}s` : null,
   ].filter((f): f is string => f !== null);
 }

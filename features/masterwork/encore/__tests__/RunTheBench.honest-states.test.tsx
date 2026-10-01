@@ -36,6 +36,13 @@ import type {
 
 // The dialog renders inline so its content is readable in the test host —
 // the same shim the repo's other dialog suites use.
+// The organization's points-per-dollar knob, answered (1b340562d5 made every
+// cost read the billing.points_per_usd knob; "—" until it loads). The knob
+// snapshot is transport, not the behaviour under test.
+jest.mock("@/components/cost/pointsRate.client", () => ({
+  usePointsRate: () => 20000,
+}));
+
 jest.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DialogContent: ({ children }: { children: React.ReactNode }) => (
@@ -439,12 +446,13 @@ describe("the Bench door never lies about what it can do", () => {
     const text = host.textContent ?? "";
     expect(text).toContain("this Masterwork");
     expect(text).toContain("frontier model, raw");
-    expect(text).toContain("42.0¢");
+    // Points at the knob's 20,000 per dollar: $0.42 and $1.50.
+    expect(text).toContain("8,400 points");
     expect(text).toContain("1m 36s");
-    expect(text).toContain("$1.50");
+    expect(text).toContain("30,000 points");
     expect(text).toContain("42s");
     expect(text).toContain("Judging arm A2 against the rules.");
-    expect(text).toContain("Spent so far: $1.92");
+    expect(text).toContain("Spent so far: 38,400 points"); // $1.92
   });
 
   it("a VOID trial says it proves nothing and renders no win", () => {

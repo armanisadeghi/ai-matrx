@@ -33,6 +33,14 @@ import {
   type BenchProofWire,
 } from "./benchProof";
 
+// The organization's points-per-dollar knob, answered (1b340562d5 made every
+// cost read the billing.points_per_usd knob; "—" until it loads). The knob
+// snapshot is transport, not the behaviour under test.
+jest.mock("@/components/cost/pointsRate.client", () => ({
+  usePointsRate: () => 20000,
+}));
+
+
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
@@ -151,7 +159,8 @@ describe("the Audition score is presented as a quick check, never as proof", () 
     expect(text).toContain(RECORD.headline);
     expect(text).toContain("blind panel of 3");
     expect(text).toContain("the expert's own work won it");
-    expect(text).toContain("42.0¢");
+    // $0.42 at the knob's 20,000 points per dollar.
+    expect(text).toContain("our arm cost 8,400 points");
     expect(text).toContain("TB-watson-shoes-01.md");
   });
 

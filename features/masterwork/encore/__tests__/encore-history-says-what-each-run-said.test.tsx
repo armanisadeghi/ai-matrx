@@ -108,6 +108,13 @@ const HISTORY = [
 ];
 
 // ── The network, and only the network ──────────────────────────────────────
+// The organization's points-per-dollar knob, answered (1b340562d5 made every
+// cost read the billing.points_per_usd knob; "—" until it loads). The knob
+// snapshot is transport, not the behaviour under test.
+jest.mock("@/components/cost/pointsRate.client", () => ({
+  usePointsRate: () => 20000,
+}));
+
 jest.mock("../service", () => ({
   getEncoreMasterwork: async () => ({
     id: "d8dfbd2f-169c-468e-a892-c0980e7ddd45",
@@ -196,8 +203,9 @@ describe("the Encore run page's own history", () => {
 
   it("says what each run cost and how long it took", async () => {
     await mount();
-    expect(text()).toContain("$0.54");
-    expect(text()).toContain("$0.49");
+    // $0.54 and $0.49 at the knob's 20,000 points per dollar.
+    expect(text()).toContain("10,800 points");
+    expect(text()).toContain("9,800 points");
     // A duration is elapsed work, printed for every run that has one.
     const rowsWithDuration = HISTORY.filter(
       (r) => r.started_at && r.completed_at,

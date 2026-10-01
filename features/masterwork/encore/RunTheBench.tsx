@@ -126,9 +126,9 @@ const WHAT_IT_DOES =
   "this.";
 
 function ArmRow({ arm }: { arm: BenchArmWire }) {
-  const { unit } = useCostDisplay();
+  const { unit, rate } = useCostDisplay();
   const words = ARM_WORDS[arm.arm.toLowerCase()] ?? arm.label;
-  const cost = money(arm.cost_usd, unit);
+  const cost = money(arm.cost_usd, unit, rate);
   const secs = duration(arm.seconds);
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-border py-1 last:border-b-0">
@@ -168,8 +168,8 @@ function ArmRow({ arm }: { arm: BenchArmWire }) {
 
 /** The verdict, said the way the doctrine says it — and no other way. */
 function Verdict({ verdict }: { verdict: BenchVerdictWire }) {
-  const { unit } = useCostDisplay();
-  const facts = benchFacts(verdict, unit);
+  const { unit, rate } = useCostDisplay();
+  const facts = benchFacts(verdict, unit, rate);
   // A void trial and an uncalibrated panel both mean NO CLAIM SURVIVES. They
   // are different sentences because they blame different things: a void blames
   // the trial, "not scored" blames the bench's own judges.
@@ -215,7 +215,7 @@ function Verdict({ verdict }: { verdict: BenchVerdictWire }) {
       ) : null}
       {verdict.total_cost_usd !== null ? (
         <p className="text-xs text-muted-foreground">
-          Whole trial: {money(verdict.total_cost_usd)}
+          Whole trial: {money(verdict.total_cost_usd, unit, rate)}
         </p>
       ) : null}
       {/* Where the record lives, and whether it is a row or files. The Bench
@@ -252,6 +252,7 @@ export function RunTheBench({
   const form: BenchRunFormWire | null =
     bench.status === "loading" ? null : bench.form;
   const canRun = bench.status !== "loading" && bench.canRunHere && form !== null;
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
 
   const [open, setOpen] = useState(false);
   const [taskPrompt, setTaskPrompt] = useState("");
@@ -649,7 +650,7 @@ export function RunTheBench({
                     ))}
                   </ul>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Spent so far: {money(liveCost) ?? "$0.00"}
+                    Spent so far: {money(liveCost, costUnit, costRate)}
                   </p>
                 </div>
               ) : null}
