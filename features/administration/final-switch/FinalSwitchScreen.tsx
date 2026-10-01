@@ -381,7 +381,7 @@ export function FinalSwitchScreen() {
         : board.says;
 
   return (
-    <div className="h-full w-full overflow-y-auto">
+    <div className="w-full">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 p-3 pb-16 sm:p-4">
         <div className="flex flex-wrap items-center gap-2">
           <Power className="h-4 w-4 text-primary" />
