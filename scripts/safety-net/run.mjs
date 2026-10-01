@@ -191,7 +191,7 @@ async function runCheck(c) {
   const log = join(OUT, "logs", `${c.id}.log`);
   writeFileSync(log, `# ${c.id} (${c.kind}) target=${TARGET}${plant ? ` plant=${plant.id}` : ""}\n`);
   if (c.kind === "walk") {
-    const r = await run(process.execPath, [join(REPO, c.file)], { env: { ...walkEnv, ...(c.env ?? {}), ...(plant && plant.mode === "env" ? plant.env : {}), ...(plant && plant.mode === "intercept" ? { SN_INTERCEPT: JSON.stringify(plant.rules) } : {}) }, log, timeoutMs: c.timeoutMs ?? 40 * 60 * 1000 });
+    const r = await run(process.execPath, [join(REPO, c.file)], { env: { ...walkEnv, ...(c.env ?? {}), ...(plant && plant.mode === "env" ? plant.env : {}), ...(plant && plant.mode === "intercept" ? { SN_INTERCEPT: JSON.stringify(plant.rules ?? []), SN_INJECT_CSS: plant.css ?? "" } : {}) }, log, timeoutMs: c.timeoutMs ?? 40 * 60 * 1000 });
     const name = c.walkName ?? c.file.split("/").pop().replace(/\.mjs$/, "");
     const jf = join(OUT, `${name}.json`);
     const steps = existsSync(jf) ? JSON.parse(readFileSync(jf, "utf8")).results : [];

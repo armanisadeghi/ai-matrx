@@ -146,6 +146,18 @@ export async function openWalk(name, { headless = true } = {}) {
       if (!s?.password) throw new Error(`no password for seat ${seat} in .env.local / aidream/.env`);
       const context = await browser.newContext({ viewport: { width, height }, colorScheme });
       await installIntercepts(context);
+      if (process.env.SN_INJECT_CSS) {
+        await context.addInitScript((css) => {
+          const add = () => {
+            const st = document.createElement("style");
+            st.setAttribute("data-safety-net-plant", "");
+            st.textContent = css;
+            document.documentElement.appendChild(st);
+          };
+          if (document.documentElement) add();
+          else document.addEventListener("DOMContentLoaded", add);
+        }, process.env.SN_INJECT_CSS);
+      }
       const page = await context.newPage();
       page.on("console", (m) => {
         if (m.type() === "error") errors.console.push({ seat, url: page.url(), text: m.text().slice(0, 300) });
@@ -253,6 +265,8 @@ export async function openWalk(name, { headless = true } = {}) {
  *   fake-ok — answer 200 with `body` (default "null") WITHOUT sending: a write that claims success
  *   abort   — the request fails at the network
  *   rewrite — let it through, then replace the text `from` with `to` in the answer
+ *   delay   — hold the request `ms` (default 3000) before it goes (a slow door)
+ * SN_INJECT_CSS (a plant's `css`) is added to every page this walk opens (a layout fault).
  * Every interception is logged, so a red run shows the fault actually fired.
  */
 export const INTERCEPTS = (() => {
@@ -272,6 +286,10 @@ async function installIntercepts(context) {
       interceptHits.push({ rule: rule.match, action: rule.action, url: req.url().slice(0, 160) });
       console.log(`[harness] PLANT intercept ${rule.action} ${req.method()} ${req.url().slice(0, 120)}`);
       if (rule.action === "abort") return route.abort();
+      if (rule.action === "delay") {
+        await sleep(rule.ms ?? 3000);
+        return route.continue();
+      }
       if (rule.action === "status")
         return route.fulfill({ status: rule.status ?? 500, contentType: "application/json", body: JSON.stringify({ message: "planted by safety-net", code: "SNPLANT" }) });
       if (rule.action === "fake-ok") return route.fulfill({ status: 200, contentType: "application/json", body: rule.body ?? "null" });
