@@ -460,7 +460,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   isStreamActive,
   onContentChange,
   conversationId,
-  messageId: transcriptMessageId,
+  messageId,
   taskId,
   isLastReasoningBlock,
   replaceBlockContent,
@@ -468,12 +468,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   suppressLoadingGate = false,
   outputSchema = null,
 }) => {
-  // THE BLOCK-TREE SEAM. Inside a block, `messageId` is a DATABASE identity —
-  // kind-record `produced_by` edges, task chips, canvas provenance, list
-  // proposals, html-page publishing. A client-temp answer (incognito, a
-  // reservation gap) has no row, so every block below sees "no message" until
-  // the durable id renders (lib/ids/durable-record-id.ts).
-  const messageId = durableRecordId(transcriptMessageId) ?? undefined;
+  // TWO MEANINGS, TWO FIELDS. `messageId` is the TRANSCRIPT KEY — always
+  // present (a client-temp answer included) and used for UI keys, anchors,
+  // canvas de-duplication and local state. `durableMessageId` is the DATABASE
+  // identity — null-filtered through the seam (lib/ids/durable-record-id.ts)
+  // and the only one a database read or write may use. A block that writes
+  // provenance takes `durableMessageId`; never the transcript key.
+  const durableMessageId = durableRecordId(messageId) ?? undefined;
   // Reload has only the original text when an interrupted run could not stamp
   // a COMPLETE persistence envelope. Reuse the stream's parser at this terminal
   // boundary, never on a live prefix, and keep its error status intact.
@@ -592,7 +593,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         {el}
         <KindRecordChrome
           kind={recordChromeKind}
-          messageId={messageId}
+          durableMessageId={durableMessageId}
           conversationId={conversationId}
           value={readRecordValue(block)}
           fingerprint={readEnvelope(block.metadata)?.fingerprint ?? null}
@@ -778,6 +779,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     isStreamActive,
     conversationId,
     messageId,
+    durableMessageId,
     taskId,
     requestId,
     isLastReasoningBlock,

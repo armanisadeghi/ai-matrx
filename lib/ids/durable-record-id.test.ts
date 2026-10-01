@@ -81,8 +81,8 @@ const MESSAGE_ID_TO_DB_KEY =
 const MESSAGE_ID_DB_FILTER =
   /\.(eq|in)\(\s*["'](id|message_id|source_id|entity_id)["']\s*,\s*[\w.?]*messageId\b/;
 
-const BLOCK_TREE =
-  "block tree: receives messageId only through BlockRenderer's durableRecordId cut";
+const CANVAS_KEY =
+  "canvas metadata: the transcript key de-duplicates canvas items locally; every canvas DB write goes through ensureArtifactPersisted / materializeBlocks, gated by isRealSourceId (= durableRecordId)";
 const NOT_A_DB_KEY = "names the message in agent context JSON, not a database key";
 const DB_ORIGIN = "message ids here come from database rows, never the live transcript";
 const OTHER_MESSAGE = "a different 'message' (email / SMS / Google), not a chat message";
@@ -94,18 +94,17 @@ const RULE_C_BASELINE: Record<string, string> = {
   "app/api/artifacts/route.ts": SERVER_ROUTE,
   "app/api/feedback/user-review-notify/route.ts": SERVER_ROUTE,
   "app/api/messages/[conversationId]/messages/[id]/route.ts": SERVER_ROUTE,
-  "components/mardown-display/blocks/artifact/ArtifactBlock.tsx": BLOCK_TREE,
-  "components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx": BLOCK_TREE,
-  "components/mardown-display/blocks/mermaid/MermaidBlock.tsx": BLOCK_TREE,
+  "components/mardown-display/blocks/artifact/ArtifactBlock.tsx": CANVAS_KEY,
+  "components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx": CANVAS_KEY,
+  "components/mardown-display/blocks/mermaid/MermaidBlock.tsx": CANVAS_KEY,
+  "features/canvas/redux/canvasSlice.ts": CANVAS_KEY,
+  "features/canvas/hooks/useOpenArtifactInCanvas.ts": CANVAS_KEY,
   "features/html-pages/components/HtmlInlinePreview.tsx":
-    `${BLOCK_TREE}; HTMLPageService.createPage re-checks sourceMessageId`,
-  "features/list-change-proposals/decisions.ts": BLOCK_TREE,
-  "features/canvas/hooks/useOpenArtifactInCanvas.ts": BLOCK_TREE,
-  "features/canvas/redux/canvasSlice.ts": `canvas provenance — ${BLOCK_TREE}`,
-  "features/canvas/services/canvasArtifactService.ts": `canvas provenance — ${BLOCK_TREE}`,
-  "features/canvas/artifact-types/persistence/flashcards-canonical-adapter.ts":
-    `canvas provenance — ${BLOCK_TREE}`,
-  "features/artifacts/lib/artifacts-scope.ts": `canvas provenance — ${BLOCK_TREE}`,
+    "publishes only through HTMLPageService.createPage, which applies durableRecordId to sourceMessageId",
+  "features/canvas/services/canvasArtifactService.ts":
+    "called only by ensureArtifactPersisted / materializeBlocks after isRealSourceId (= durableRecordId), or with ids read from canvas rows",
+  "features/canvas/artifact-types/persistence/flashcards-canonical-adapter.ts": DB_ORIGIN,
+  "features/artifacts/lib/artifacts-scope.ts": DB_ORIGIN,
   "features/canvas/materialization/materializeMessageArtifacts.ts":
     "materializes only server-reserved message ids (process-stream materializeTargets)",
   "features/agents/decision-review/service.ts": DB_ORIGIN,
@@ -168,6 +167,13 @@ function dbKeyOffense(text: string): boolean {
     .some((line) => MESSAGE_ID_TO_DB_KEY.test(line) || MESSAGE_ID_DB_FILTER.test(line));
 }
 
+/**
+ * Rule D — the two fields never cross: a `durableMessageId` is never fed the
+ * transcript key (`durableMessageId={messageId}`). The only producer is
+ * `durableRecordId(...)`.
+ */
+const TRANSCRIPT_KEY_AS_DURABLE = /\bdurableMessageId\s*[=:]\s*\{?\s*(messageId|transcriptMessageId)\b/;
+
 const ALL_FILES = ROOTS.flatMap((root) => sourceFiles(join(REPO, root))).map(
   (file) => ({ rel: relative(REPO, file), text: readFileSync(file, "utf8") }),
 );
@@ -206,6 +212,29 @@ describe("client-temp id census", () => {
         'const id = durableRecordId(messageId);\n      .eq("source_id", args.messageId)',
       ),
     ).toBe(false);
+  });
+
+  it("self-test: rule D catches the transcript key fed into the durable field", () => {
+    expect(TRANSCRIPT_KEY_AS_DURABLE.test("          durableMessageId={messageId}")).toBe(true);
+    expect(TRANSCRIPT_KEY_AS_DURABLE.test("    durableMessageId: messageId,")).toBe(true);
+    expect(
+      TRANSCRIPT_KEY_AS_DURABLE.test(
+        "  const durableMessageId = durableRecordId(messageId) ?? undefined;",
+      ),
+    ).toBe(false);
+  });
+
+  it("no durable-id field is fed the transcript key (rule D)", () => {
+    const offenders: string[] = [];
+    for (const { rel, text } of ALL_FILES) {
+      text.split("\n").forEach((line, i) => {
+        if (!isComment(line) && TRANSCRIPT_KEY_AS_DURABLE.test(line)) {
+          offenders.push(`${rel}:${i + 1}`);
+        }
+      });
+    }
+    // Remedy: pass durableRecordId(messageId) ?? undefined (or ctx.durableMessageId).
+    expect(offenders).toEqual([]);
   });
 
   it("no source file mints a message id outside the seam (rules A + B)", () => {

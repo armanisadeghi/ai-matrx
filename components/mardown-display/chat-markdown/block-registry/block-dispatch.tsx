@@ -169,7 +169,10 @@ export interface BlockDispatchContext {
   index: number;
   isStreamActive?: boolean;
   conversationId?: string;
+  /** TRANSCRIPT KEY — always present; UI keys, anchors, canvas dedupe, local state. Never a DB key. */
   messageId?: string;
+  /** DATABASE identity — undefined until the answer has a durable row. The only id for DB reads/writes. */
+  durableMessageId?: string;
   taskId?: string;
   requestId?: string;
   isLastReasoningBlock?: boolean;
@@ -1999,13 +2002,14 @@ const SHAPE_BLOCK_DISPATCH = {
   // through because that is where the decisions are remembered
   // (chat.message.metadata); without it the component says so instead of
   // offering controls whose result would evaporate.
-  list_change_proposal: ({ block, index, messageId }) => {
+  list_change_proposal: ({ block, index, durableMessageId }) => {
     if (block.serverData) {
       return (
         <BlockComponents.ListChangeProposalBlock
           key={index}
           serverData={block.serverData}
-          messageId={messageId}
+          // Decisions are remembered ON the message row: the DATABASE id only.
+          messageId={durableMessageId}
         />
       );
     }

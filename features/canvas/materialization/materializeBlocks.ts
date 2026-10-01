@@ -37,6 +37,7 @@
  * reconcile-on-load pass make that acceptable for v1.
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import type {
   CxContentBlock,
   CxTextContent,
@@ -44,7 +45,6 @@ import type {
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { getAdapter } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
-import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import {
   planMaterialization,
   isArtifactPending,
@@ -108,7 +108,8 @@ export interface MaterializeBlocksResult {
  * as not-yet-persisted and skipped.
  */
 export function isRealSourceId(id: string | null | undefined): boolean {
-  return isMaterializedArtifactId(id);
+  // THE durable-id seam (lib/ids/durable-record-id.ts) — one rule, not two.
+  return durableRecordId(id) !== null;
 }
 
 export async function materializeBlocks(

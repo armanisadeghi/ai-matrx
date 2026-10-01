@@ -25,6 +25,7 @@
  * data loses the record of a rejection, never a row.
  */
 
+import { durableRecordId } from "@/lib/ids/durable-record-id";
 import { mergeJsonColumn, asJsonObject } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";
@@ -81,6 +82,8 @@ function messageRow(messageId: string) {
 export async function fetchProposalDecisions(
   messageId: string,
 ): Promise<ProposalDecisions> {
+  // A client-temp answer has no row yet: nothing decided is the truth.
+  if (durableRecordId(messageId) === null) return {};
   const { data, error } = await messageRow(messageId);
   // A failed read is thrown, never returned as "nothing decided yet" — that
   // would offer to apply changes that were already applied.
@@ -103,6 +106,12 @@ export async function recordProposalDecision(
   proposalId: string,
   decision: ProposalDecision,
 ): Promise<RecordDecisionResult> {
+  if (durableRecordId(messageId) === null) {
+    return {
+      status: "not_remembered",
+      why: "This answer isn't saved yet, so the decision can't be remembered.",
+    };
+  }
   const result = await mergeJsonColumn<MessageRow>({
     fetchCurrent: () => messageRow(messageId),
     readColumn: (row) => row.metadata,

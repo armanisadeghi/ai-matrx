@@ -101,7 +101,7 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
     }));
     serviceMock.fetchRecordsProducedByMessage.mockImplementation(
       async ({ messageId }: { messageId: string }) => {
-        if (messageId === "msg-a") return { ok: true, value: [] };
+        if (messageId === "3c1e5a7b-9d2f-4e6a-8b0c-1d2e3f4a5b6c") return { ok: true, value: [] };
         // Block B's own message already has a server-written row.
         return {
           ok: true,
@@ -120,7 +120,7 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
     );
 
     mount(
-      <KindRecordChrome kind="wine_tasting" messageId="msg-a" value={{}} />,
+      <KindRecordChrome kind="wine_tasting" durableMessageId="3c1e5a7b-9d2f-4e6a-8b0c-1d2e3f4a5b6c" value={{}} />,
     );
     await flush();
     expect(container.textContent).toContain("All 1 Wine Tasting");
@@ -136,7 +136,7 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
     const rootB = createRoot(containerB);
     act(() =>
       rootB.render(
-        <KindRecordChrome kind="wine_tasting" messageId="msg-b" value={{}} />,
+        <KindRecordChrome kind="wine_tasting" durableMessageId="7f6e5d4c-3b2a-4190-8a7b-6c5d4e3f2a1b" value={{}} />,
       ),
     );
     await flush();

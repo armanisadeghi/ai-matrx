@@ -93,15 +93,19 @@ const INITIAL: LoadState = {
 
 export function KindRecordChrome({
   kind,
-  messageId,
+  durableMessageId,
   conversationId,
   value,
   fingerprint,
   className,
 }: {
   kind: string;
-  /** `chat.message.id` — the provenance anchor. Absent outside a conversation. */
-  messageId?: string;
+  /**
+   * `chat.message.id` — the provenance anchor, DATABASE id only (the seam's
+   * `durableRecordId`). Absent outside a conversation and while the answer has
+   * no durable row (incognito, reservation gap).
+   */
+  durableMessageId?: string;
   /** `chat.conversation.id` — the HOME a saved record is filed under. */
   conversationId?: string;
   /**
@@ -148,8 +152,8 @@ export function KindRecordChrome({
         // Every organization the person can reach — the selected one is only
         // the DESTINATION of a Save below, never what the count reads.
         countKindRecords({ kind }),
-        messageId
-          ? fetchRecordsProducedByMessage({ kind, messageId })
+        durableMessageId
+          ? fetchRecordsProducedByMessage({ kind, messageId: durableMessageId })
           : Promise.resolve({ ok: true as const, value: [] as KindRecord[] }),
       ]);
       if (cancelled) return;
@@ -188,7 +192,7 @@ export function KindRecordChrome({
     return () => {
       cancelled = true;
     };
-  }, [disposition, kind, messageId, reloadKey]);
+  }, [disposition, kind, durableMessageId, reloadKey]);
 
   const reload = () => setReloadKey((n) => n + 1);
 
@@ -285,7 +289,7 @@ export function KindRecordChrome({
       value,
       organizationId,
       conversationId,
-      messageId,
+      messageId: durableMessageId,
       fingerprint: fingerprint ?? undefined,
     });
     setBusy(false);
