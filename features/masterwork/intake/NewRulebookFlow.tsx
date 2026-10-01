@@ -709,7 +709,12 @@ export function NewRulebookFlow() {
               // the name. A toast cannot cover its own button: Rename opens
               // the page's inline rename (`?rename=1`). The older twin keeps
               // Rename in its row menu on the Masterworks list.
-              description: "You already have a Rulebook with this name.",
+              // It still carries the Approach's start line (cost and time),
+              // exactly as an ordinary start does — the duplicate case is the
+              // same start plus one fact. Budget: the dialog/toast slot is 140
+              // chars, two sentences; the longest live `cost_time_shape` is
+              // 103, so the duplicate sentence stays ≤ 36.
+              description: `You already have one with this name. ${approach.costTimeShape}`,
               duration: Infinity,
               action: {
                 label: "Rename",
