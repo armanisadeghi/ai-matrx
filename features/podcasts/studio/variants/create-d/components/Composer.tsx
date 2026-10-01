@@ -42,7 +42,7 @@ import {
 } from "./options";
 import { findOptionOrFirst } from "@/features/podcasts/generator/constants";
 import { ConsoleRail } from "./ConsoleRail";
-import type { MockShow } from "../_mock/shows";
+import type { MockShow } from "../mock/shows";
 
 interface ComposerProps {
   shows: MockShow[];

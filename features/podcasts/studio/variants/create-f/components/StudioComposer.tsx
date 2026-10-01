@@ -52,9 +52,9 @@ import {
   FORMAT_OPTIONS,
   HOST_OPTIONS,
   LENGTH_OPTIONS,
-} from "../_mock/options";
+} from "../mock/options";
 import { findOptionOrFirst } from "@/features/podcasts/generator/constants";
-import { MOCK_SHOWS, type MockShow } from "../_mock/shows";
+import { MOCK_SHOWS, type MockShow } from "../mock/shows";
 import { OptionTile } from "./OptionTile";
 import { EpisodeBrief } from "./EpisodeBrief";
 import { INITIAL_DRAFT, type EpisodeDraft } from "./types";

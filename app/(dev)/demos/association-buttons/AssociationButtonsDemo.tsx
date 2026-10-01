@@ -32,15 +32,15 @@ import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
 import { CLASS_PICKER_TOKENS } from "@/features/education/classes/hooks/useClassContent";
 import { GeneratorForm } from "@/features/podcasts/generator/components/GeneratorForm";
 import type { PodcastSourceKind } from "@/features/podcasts/generator/types";
-import { SourceTiles } from "@/app/(core)/podcast/studio/create-refine/_components/SourceTiles";
-import { SourcePicker } from "@/app/(core)/podcast/studio/create-a/_components/SourcePicker";
-import { SourceRail } from "@/app/(core)/podcast/studio/create-e/_components/SourceRail";
-import { ComposerForm } from "@/app/(core)/podcast/studio/create-b/_components/ComposerForm";
-import { CreateComposer } from "@/app/(core)/podcast/studio/create-c/_components/CreateComposer";
-import { Composer as CreateDComposer } from "@/app/(core)/podcast/studio/create-d/_components/Composer";
-import { MOCK_SHOWS } from "@/app/(core)/podcast/studio/create-d/_mock/shows";
-import { Composer as ReimagineComposer } from "@/app/(core)/podcast/studio/create-reimagine/_components/Composer";
-import { StudioComposer } from "@/app/(core)/podcast/studio/create-f/_components/StudioComposer";
+import { SourceTiles } from "@/features/podcasts/studio/variants/create-refine/components/SourceTiles";
+import { SourcePicker } from "@/features/podcasts/studio/variants/create-a/components/SourcePicker";
+import { SourceRail } from "@/features/podcasts/studio/variants/create-e/components/SourceRail";
+import { ComposerForm } from "@/features/podcasts/studio/variants/create-b/components/ComposerForm";
+import { CreateComposer } from "@/features/podcasts/studio/variants/create-c/components/CreateComposer";
+import { Composer as CreateDComposer } from "@/features/podcasts/studio/variants/create-d/components/Composer";
+import { MOCK_SHOWS } from "@/features/podcasts/studio/variants/create-d/mock/shows";
+import { Composer as ReimagineComposer } from "@/features/podcasts/studio/variants/create-reimagine/components/Composer";
+import { StudioComposer } from "@/features/podcasts/studio/variants/create-f/components/StudioComposer";
 
 const noop = () => {};
 const ALL_CAPABILITIES = {
@@ -285,21 +285,21 @@ export default function AssociationButtonsDemo() {
         </Variant>
         <Variant
           name="Podcast source tiles (refine)"
-          path="app/(core)/podcast/studio/create-refine/_components/SourceTiles.tsx"
+          path="features/podcasts/studio/variants/create-refine/components/SourceTiles.tsx"
           canonical={false}
         >
           <PodcastKindHost render={(v, set) => <SourceTiles value={v} onChange={set} />} />
         </Variant>
         <Variant
           name="Podcast source picker (A)"
-          path="app/(core)/podcast/studio/create-a/_components/SourcePicker.tsx"
+          path="features/podcasts/studio/variants/create-a/components/SourcePicker.tsx"
           canonical={false}
         >
           <PodcastKindHost render={(v, set) => <SourcePicker value={v} onChange={set} />} />
         </Variant>
         <Variant
           name="Podcast source rail (E)"
-          path="app/(core)/podcast/studio/create-e/_components/SourceRail.tsx"
+          path="features/podcasts/studio/variants/create-e/components/SourceRail.tsx"
           canonical={false}
         >
           <PodcastKindHost render={(v, set) => <SourceRail value={v} onChange={set} />} />
@@ -322,7 +322,7 @@ export default function AssociationButtonsDemo() {
         </Variant>
         <Variant
           name="Podcast composer (B)"
-          path="app/(core)/podcast/studio/create-b/_components/ComposerForm.tsx"
+          path="features/podcasts/studio/variants/create-b/components/ComposerForm.tsx"
           canonical={false}
           wide
         >
@@ -330,7 +330,7 @@ export default function AssociationButtonsDemo() {
         </Variant>
         <Variant
           name="Podcast composer (C)"
-          path="app/(core)/podcast/studio/create-c/_components/CreateComposer.tsx"
+          path="features/podcasts/studio/variants/create-c/components/CreateComposer.tsx"
           canonical={false}
           wide
         >
@@ -338,7 +338,7 @@ export default function AssociationButtonsDemo() {
         </Variant>
         <Variant
           name="Podcast composer (D)"
-          path="app/(core)/podcast/studio/create-d/_components/Composer.tsx"
+          path="features/podcasts/studio/variants/create-d/components/Composer.tsx"
           canonical={false}
           wide
         >
@@ -346,7 +346,7 @@ export default function AssociationButtonsDemo() {
         </Variant>
         <Variant
           name="Podcast composer (F)"
-          path="app/(core)/podcast/studio/create-f/_components/StudioComposer.tsx"
+          path="features/podcasts/studio/variants/create-f/components/StudioComposer.tsx"
           canonical={false}
           wide
         >
@@ -354,7 +354,7 @@ export default function AssociationButtonsDemo() {
         </Variant>
         <Variant
           name="Podcast composer (reimagine)"
-          path="app/(core)/podcast/studio/create-reimagine/_components/Composer.tsx"
+          path="features/podcasts/studio/variants/create-reimagine/components/Composer.tsx"
           canonical={false}
           wide
         >

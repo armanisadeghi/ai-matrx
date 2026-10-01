@@ -34,7 +34,7 @@ import type {
   PodcastLanguageCode,
   PodcastFormat,
 } from "@/features/podcasts/generator/types";
-import { MOCK_SHOWS } from "../_mock/shows";
+import { MOCK_SHOWS } from "../mock/shows";
 
 const PILL =
   "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent";

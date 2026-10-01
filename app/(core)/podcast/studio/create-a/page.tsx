@@ -1,4 +1,4 @@
-import { CreateViewA } from "./_components/CreateViewA";
+import { CreateViewA } from "@/features/podcasts/studio/variants/create-a/components/CreateViewA";
 
 
 export default function CreateEpisodePageA() {

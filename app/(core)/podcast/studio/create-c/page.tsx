@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Podcast } from "lucide-react";
-import { CreateComposer } from "./_components/CreateComposer";
+import { CreateComposer } from "@/features/podcasts/studio/variants/create-c/components/CreateComposer";
 
 
 // Bake-off variation C — redesigned create surface.

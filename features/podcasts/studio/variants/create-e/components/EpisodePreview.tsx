@@ -32,7 +32,7 @@ import type {
   PodcastFormat,
   PodcastSourceKind,
 } from "@/features/podcasts/generator/types";
-import { MOCK_SHOWS } from "../_mock/shows";
+import { MOCK_SHOWS } from "../mock/shows";
 
 interface Props {
   title: string;

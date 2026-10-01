@@ -23,8 +23,8 @@ import {
   FORMAT_OPTIONS,
   HOST_OPTIONS,
   LENGTH_OPTIONS,
-} from "../_mock/options";
-import type { MockShow } from "../_mock/shows";
+} from "../mock/options";
+import type { MockShow } from "../mock/shows";
 import type { EpisodeDraft } from "./types";
 
 const TINT: Record<MockShow["tint"], string> = {

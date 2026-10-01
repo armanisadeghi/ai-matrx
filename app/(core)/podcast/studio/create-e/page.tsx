@@ -1,4 +1,4 @@
-import { CreateConsole } from "./_components/CreateConsole";
+import { CreateConsole } from "@/features/podcasts/studio/variants/create-e/components/CreateConsole";
 
 
 // Variation E — the production console.

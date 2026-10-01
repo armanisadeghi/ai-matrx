@@ -39,7 +39,7 @@ import type {
   PodcastLanguageCode,
   PodcastFormat,
 } from "@/features/podcasts/generator/types";
-import { MOCK_SHOWS } from "../_mock/shows";
+import { MOCK_SHOWS } from "../mock/shows";
 
 interface Props {
   language: PodcastLanguageCode;

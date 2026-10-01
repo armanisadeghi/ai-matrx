@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Podcast } from "lucide-react";
-import { StudioComposer } from "./_components/StudioComposer";
+import { StudioComposer } from "@/features/podcasts/studio/variants/create-f/components/StudioComposer";
 
 
 // Variation F · create surface (design bake-off). Two-pane composer with a live

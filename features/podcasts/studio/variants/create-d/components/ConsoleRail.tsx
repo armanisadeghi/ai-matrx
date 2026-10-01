@@ -33,7 +33,7 @@ import type {
 } from "@/features/podcasts/generator/types";
 import type { LanguageOption } from "@/features/podcasts/generator/constants";
 import { FORMAT_TILES, HOST_TILES, languageLabel } from "./options";
-import type { MockShow } from "../_mock/shows";
+import type { MockShow } from "../mock/shows";
 
 interface ConsoleRailProps {
   language: PodcastLanguageCode;

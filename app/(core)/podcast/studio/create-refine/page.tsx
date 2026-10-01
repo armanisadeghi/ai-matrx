@@ -1,4 +1,4 @@
-import { CreateRefineView } from "./_components/CreateRefineView";
+import { CreateRefineView } from "@/features/podcasts/studio/variants/create-refine/components/CreateRefineView";
 
 export default function CreateRefinePage() {
   return (

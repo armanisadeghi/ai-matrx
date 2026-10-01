@@ -1,4 +1,4 @@
-import { Composer } from "./_components/Composer";
+import { Composer } from "@/features/podcasts/studio/variants/create-reimagine/components/Composer";
 
 // REIMAGINED create surface (ui-reimagine bake-off entry).
 // The "Studio Command Bar" — a NotebookLM/Suno-style single-canvas composer that

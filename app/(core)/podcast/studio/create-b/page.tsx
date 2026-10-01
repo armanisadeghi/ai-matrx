@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Podcast } from "lucide-react";
-import { ComposerForm } from "./_components/ComposerForm";
+import { ComposerForm } from "@/features/podcasts/studio/variants/create-b/components/ComposerForm";
 
 export default function CreateEpisodePageB() {
   const router = useRouter();

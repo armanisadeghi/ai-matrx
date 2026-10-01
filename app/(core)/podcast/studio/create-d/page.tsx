@@ -7,9 +7,9 @@
 // Server Component shell: textured page background + slim header, then the
 // client Composer. Mock shows are loaded statically (no backend).
 
-import { StudioHeader } from "./_components/StudioHeader";
-import { Composer } from "./_components/Composer";
-import { MOCK_SHOWS } from "./_mock/shows";
+import { StudioHeader } from "@/features/podcasts/studio/variants/create-d/components/StudioHeader";
+import { Composer } from "@/features/podcasts/studio/variants/create-d/components/Composer";
+import { MOCK_SHOWS } from "@/features/podcasts/studio/variants/create-d/mock/shows";
 
 
 export default function CreateStudioDPage() {

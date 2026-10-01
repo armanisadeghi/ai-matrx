@@ -71,9 +71,6 @@ function sidemenuStubAliases() {
 // Cross-group imports break parked builds: route-group code may only import
 // from features/ components/ lib/ etc., never another group's app/(x) path.
 // ((dev) helper imports are the tolerated exception — (dev) is never parked.)
-// The demos profile also renders a small number of REAL comparison components
-// from (core). Its Turbopack alias below resolves only those explicit imports
-// from the parked tree; it does not put any (core) route back in Next's app tree.
 //
 // Profile precedence — ENV WINS. Each Vercel project pins its own
 // MATRX_PROFILE env var (main=slim-at-cutover, manage=admin, demos=demos);
@@ -390,14 +387,6 @@ const nextConfig = {
     // pin it to its browser ES build everywhere.
     resolveAlias: {
       jspdf: "jspdf/dist/jspdf.es.min.js",
-      ...(PARK_SET.has("core") && MATRX_PROFILE === "demos"
-        ? {
-            "@/app/(core)": path.join(
-              __dirname,
-              "app/_core_build_excluded",
-            ),
-          }
-        : {}),
       ...sidemenuStubAliases(),
     },
   },
