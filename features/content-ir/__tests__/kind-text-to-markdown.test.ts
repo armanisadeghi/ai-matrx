@@ -69,6 +69,128 @@ describe("kindTextToMarkdown", () => {
   });
 });
 
+/**
+ * V4 (independent verifier, 2026-09-30): every shape below still exported raw
+ * `"__kind"` JSON. A kind is never raw in an export; a kind QUOTED as source
+ * (an inline code span, a fence in another language) stays as written.
+ */
+describe("kindTextToMarkdown — V4 shapes never leave raw kind JSON", () => {
+  const noRaw = (md: string) => {
+    expect(md).not.toContain("__kind");
+    expect(md).not.toMatch(/"flashcard_set"/);
+  };
+
+  it("a CRLF ```json fence converts", () => {
+    const md = kindTextToMarkdown(`Intro\r\n\`\`\`json\r\n${SET_JSON}\r\n\`\`\`\r\nAfter`);
+    noRaw(md);
+    expect(md).toContain("# Cell biology");
+    expect(md).toContain("Intro");
+    expect(md).toContain("After");
+    expect(md).not.toContain("```");
+  });
+
+  it("a truncated kind in an unclosed fence is a one-line 'did not finish' note", () => {
+    const md = kindTextToMarkdown('Intro\n```json\n{"__kind": "flashcard_set", "title": "Cell bi');
+    noRaw(md);
+    expect(md).toBe("Intro\n\nFlashcard set did not finish");
+  });
+
+  it("a truncated kind in a CLOSED fence (invalid JSON) is the note", () => {
+    const md = kindTextToMarkdown('Intro\n```json\n{"__kind": "flashcard_set", "title": \n```\nAfter');
+    noRaw(md);
+    expect(md).toContain("Flashcard set did not finish");
+    expect(md).toContain("After");
+  });
+
+  it("a truncated bare kind at the tail is the note; the prose before it stays", () => {
+    const md = kindTextToMarkdown('Here you go: {"__kind": "flashcard_set", "cards": [{"front": "Pow');
+    noRaw(md);
+    expect(md).toBe("Here you go:\n\nFlashcard set did not finish");
+  });
+
+  it("a whole-text truncated kind is the note", () => {
+    expect(kindTextToMarkdown('{"__kind": "flashcard_set", "title": "Ce')).toBe(
+      "Flashcard set did not finish",
+    );
+  });
+
+  it("an unnamed truncated kind says 'Result did not finish'", () => {
+    const md = kindTextToMarkdown('Intro\n\n{"__kind": "flash');
+    noRaw(md);
+    expect(md).toBe("Intro\n\nResult did not finish");
+  });
+
+  it("a kindless wrapper holding a kind: its data reads as markdown, the kind converts", () => {
+    const wrapper = JSON.stringify({ result: SET, note: "Review weekly" });
+    for (const text of [
+      wrapper,
+      `Output:\n\n\`\`\`json\n${wrapper}\n\`\`\``,
+      `Output:\n\n${wrapper}\n\nEnd`,
+    ]) {
+      const md = kindTextToMarkdown(text);
+      noRaw(md);
+      expect(md).toContain("Cell biology");
+      expect(md).toContain("Review weekly");
+      expect(md).not.toContain('"note"');
+    }
+  });
+
+  it("two kinds in one fence both convert", () => {
+    const two = `${SET_JSON}\n${JSON.stringify({ ...SET, title: "Genetics" })}`;
+    const md = kindTextToMarkdown(`Cards:\n\`\`\`json\n${two}\n\`\`\``);
+    noRaw(md);
+    expect(md).toContain("# Cell biology");
+    expect(md).toContain("# Genetics");
+    expect(md).not.toContain("```");
+  });
+
+  it("a mixed array (kinds + plain values) converts every element", () => {
+    const mixed = JSON.stringify([SET, { topic: "Osmosis", minutes: 10 }]);
+    for (const text of [mixed, `List:\n\`\`\`json\n${mixed}\n\`\`\``]) {
+      const md = kindTextToMarkdown(text);
+      noRaw(md);
+      expect(md).toContain("# Cell biology");
+      expect(md).toContain("Osmosis");
+      expect(md).not.toContain('"topic"');
+    }
+  });
+
+  it("a kind in a blockquote fence converts and stays quoted", () => {
+    const md = kindTextToMarkdown(`Quote:\n\n> \`\`\`json\n> ${SET_JSON}\n> \`\`\`\n\nAfter`);
+    noRaw(md);
+    expect(md).toContain("> # Cell biology");
+    expect(md).toContain("After");
+    expect(md).not.toContain("```");
+  });
+
+  it("a ~~~JSON fence converts", () => {
+    const md = kindTextToMarkdown(`~~~JSON\n${SET_JSON}\n~~~`);
+    noRaw(md);
+    expect(md).toContain("# Cell biology");
+    expect(md).not.toContain("~~~");
+  });
+
+  it("a bare kind mid-sentence starts its block output on a new line", () => {
+    const md = kindTextToMarkdown(`Answer: ${SET_JSON} Thanks!`);
+    noRaw(md);
+    expect(md).toMatch(/^Answer:\n\n# Cell biology/);
+    expect(md).toMatch(/\n\nThanks!$/);
+    expect(md).not.toMatch(/[^\n]# Cell biology/);
+  });
+
+  it("RULING: a kind in an inline code span is quoted source and stays as written", () => {
+    const text = `Send \`${SET_JSON}\` to the API.`;
+    expect(kindTextToMarkdown(text)).toBe(text);
+  });
+
+  it("RULING: a kind in a ```xml or ```ts fence stays as written", () => {
+    const xml = "Example:\n\n```xml\n<data>" + SET_JSON + "</data>\n```";
+    expect(kindTextToMarkdown(xml)).toBe(xml);
+    const ts = "```ts\nconst x = " + SET_JSON + ";\n```";
+    expect(kindTextToMarkdown(ts)).toBe(ts);
+  });
+});
+
 describe("kindTextPreview (compact, possibly streaming)", () => {
   it("a complete kind previews as markdown", () => {
     const p = kindTextPreview(SET_JSON);

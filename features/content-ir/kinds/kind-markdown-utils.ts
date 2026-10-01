@@ -359,3 +359,23 @@ export function genericKindMarkdown(
     ...recordBody(value, 1, renderNested, titleSourceKey(value, title)),
   ]);
 }
+
+/**
+ * Readable markdown for a value that is NOT itself a kind — a kindless JSON
+ * wrapper around kinds, or a run of plain values beside kinds in an array —
+ * so a destination (export, copy) never prints it as JSON. Same rendering as
+ * a kind's body in {@link genericKindMarkdown} (bold-label scalars, tables for
+ * uniform records, nested lists, sections), nested kinds through `nested`.
+ */
+export function plainValueMarkdown(value: unknown, nested?: NestedKindMarkdown): string {
+  const renderNested: NestedKindMarkdown =
+    nested ??
+    ((child) => genericKindMarkdown(String(child[KIND_KEY] ?? "artifact"), child));
+  if (value === null || value === undefined) return "";
+  if (isKindValue(value)) return renderNested(value);
+  if (Array.isArray(value)) {
+    return uniformTable(value) ?? listLines(value, "", renderNested).join("\n");
+  }
+  if (isRecordValue(value)) return joinBlocks(recordBody(value, 1, renderNested, null));
+  return isScalar(value) ? scalarText(value) : String(value);
+}

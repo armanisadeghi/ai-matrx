@@ -553,3 +553,127 @@ export function normalizeRecoveredContainerPiece(
   if (containerType === "code") return content;
   return content.trim();
 }
+
+/**
+ * A complete JSON value (object or array) that holds at least one kind, as
+ * one region: a recovered kind region widened to the OUTERMOST complete,
+ * parseable JSON value that contains it — a kindless wrapper
+ * (`{"result":{…kind…},"note":…}`, A7) or an array of kinds and plain values.
+ * For DESTINATION transforms (export, copy, speech) that convert the value
+ * whole; the renderer partitions the same bytes with
+ * {@link splitAroundEmbeddedKindJson}. Built on THE region finder above.
+ */
+export interface KindCarryingJsonRegion {
+  start: number;
+  end: number;
+  content: string;
+  value: unknown;
+}
+
+export function findKindCarryingJsonValues(
+  source: string,
+  options: { excludeLiteralContexts?: boolean } = {},
+): KindCarryingJsonRegion[] {
+  const kinds = findEmbeddedKindJsonRegions(source, options);
+  if (kinds.length === 0) return [];
+  const excluded = options.excludeLiteralContexts ? literalRanges(source) : [];
+  const inLiteral = (index: number) =>
+    excluded.some(([start, end]) => index >= start && index < end);
+
+  const regions: KindCarryingJsonRegion[] = [];
+  let floor = frontMatterEnd(source);
+  for (const region of kinds) {
+    if (region.start < floor) continue; // inside a wrapper already taken
+    let best = { start: region.start, end: region.end, value: JSON.parse(region.content) as unknown };
+    for (let open = floor; open < region.start; open++) {
+      const char = source[open];
+      if ((char !== "{" && char !== "[") || inLiteral(open)) continue;
+      const end = matchingJsonObjectEnd(source, open);
+      if (end === null || end < region.end) continue;
+      try {
+        best = { start: open, end, value: JSON.parse(source.slice(open, end)) };
+        break; // the earliest opener that encloses it is the outermost
+      } catch {
+        continue;
+      }
+    }
+    regions.push({ ...best, content: source.slice(best.start, best.end) });
+    floor = best.end;
+  }
+  return regions;
+}
+
+/**
+ * A kind that can never complete as written: [start, end) and the text of
+ * its region. Two shapes, by the same ownership rule as the finder above:
+ *  - a CLOSED object whose root declares `__kind` but does not parse (the
+ *    finder's malformed owner) — bounded;
+ *  - an UNCLOSED JSON object or array at the tail (a stream cut off, a
+ *    truncated store) holding a `"__kind"` key anywhere — runs to the end,
+ *    from its outermost opener (a kindless wrapper is cut with its kind).
+ * For destinations that must say "<Kind> did not finish" instead of printing
+ * the fragment. Complete values (kind or not) are skipped whole.
+ */
+export interface BrokenKindJsonRegion {
+  start: number;
+  end: number;
+  content: string;
+}
+
+const KIND_KEY_TEXT = /(?<!\\)"__kind"\s*:/;
+const JSON_VALUE_OPENING = /^[{[]\s*["{[]/;
+
+export function findBrokenKindJsonRegions(
+  source: string,
+  options: { excludeLiteralContexts?: boolean } = {},
+): BrokenKindJsonRegion[] {
+  const broken: BrokenKindJsonRegion[] = [];
+  if (!KIND_KEY_TEXT.test(source)) return broken;
+  const excluded = options.excludeLiteralContexts ? literalRanges(source) : [];
+  let excludedIndex = 0;
+
+  for (let start = frontMatterEnd(source); start < source.length; start++) {
+    while (excludedIndex < excluded.length && excluded[excludedIndex][1] <= start) {
+      excludedIndex++;
+    }
+    if (
+      excludedIndex < excluded.length &&
+      start >= excluded[excludedIndex][0] &&
+      start < excluded[excludedIndex][1]
+    ) {
+      start = excluded[excludedIndex][1] - 1;
+      continue;
+    }
+    const char = source[start];
+    if (char !== "{" && char !== "[") continue;
+
+    const end = matchingJsonObjectEnd(source, start);
+    if (end === null) {
+      if (
+        JSON_VALUE_OPENING.test(source.slice(start, start + 64)) &&
+        KIND_KEY_TEXT.test(source.slice(start))
+      ) {
+        broken.push({ start, end: source.length, content: source.slice(start) });
+        break;
+      }
+      continue;
+    }
+
+    const content = source.slice(start, end);
+    try {
+      JSON.parse(content);
+      start = end - 1; // complete: nothing broken inside it
+      continue;
+    } catch {
+      // fall through
+    }
+    if (char === "{") {
+      const ownerEnd = malformedKindOwnerEnd(source, start, end);
+      if (ownerEnd !== null) {
+        broken.push({ start, end: ownerEnd, content: source.slice(start, ownerEnd) });
+        start = ownerEnd - 1;
+      }
+    }
+  }
+  return broken;
+}

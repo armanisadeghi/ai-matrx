@@ -14,6 +14,7 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import {
   kindTextPreview,
   kindTextToMarkdown,
+  unfinishedKindLabel,
 } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
 import { cn } from "@/lib/utils";
@@ -29,10 +30,8 @@ export interface AnswerTextPreviewProps {
   streaming: boolean;
 }
 
-/** The one-line broken state of a kind that never completed (≤60 chars). */
-export function unfinishedKindLabel(kind: string | null): string {
-  return kind ? `${humanizeKind(kind)} did not finish` : "Result did not finish";
-}
+/** The one-line broken state of a kind that never completed — shared with exports. */
+export { unfinishedKindLabel };
 
 /**
  * The same preview as ONE plain string, for slots that hold only text (a
