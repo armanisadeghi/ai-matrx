@@ -1,9 +1,9 @@
 /**
  * features/shell/constants/canvas-chrome-routes.ts
  *
- * Routes that render in CANVAS CHROME: the shell stays mounted but its header,
- * sidebar, user block and dock step aside (styles/shell.css §13c) so the page
- * can draw the chat-beside-a-canvas layout
+ * Routes that render in CANVAS CHROME: the shell's header and dock step aside
+ * (the sidebar and account rail stay — styles/shell.css §13c) so the page can
+ * draw the chat-beside-a-canvas layout
  * (features/canvas/workspace/ChatCanvasWorkspace.tsx).
  *
  * Read on the SERVER by the shell layouts (so a hard load paints right) and on

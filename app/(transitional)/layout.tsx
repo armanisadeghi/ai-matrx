@@ -97,8 +97,15 @@ export default async function TransitionalLayout({
     >
       {/* These pages were built for the old frame's solid header; the shell
           header floats over the top of `.shell-main`, so the group starts its
-          content below it — once, here, for every page in the group. */}
-      <div className="min-h-full w-full pt-[var(--shell-header-h)]">{children}</div>
+          content below it — once, here, for every page in the group — and
+          `h-page` (100dvh minus `--header-height`) measures against the same
+          header, so a full-height page fits exactly. */}
+      <div
+        className="min-h-full w-full pt-[var(--shell-header-h)]"
+        style={{ "--header-height": "var(--shell-header-h)" } as React.CSSProperties}
+      >
+        {children}
+      </div>
     </AppShell>
   );
 }

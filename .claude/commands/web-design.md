@@ -93,7 +93,7 @@ Full pattern: `features/shell/components/header/variants/USAGE.md`
 Use `.scrollbar-hide` or `.scrollbar-thin` utilities.
 
 ### Layout Components
-- `ResponsiveLayout` — desktop/mobile switch at 1024px
+- `AppShell` — the one frame (sidebar + header + account rail); desktop/phone switch at 1024px
 - `AdaptiveLayout` — multi-panel with canvas
 - `FloatingSheet` — multi-position sheet
 
@@ -129,7 +129,7 @@ import { Dialog } from "@/components/ui/dialog";
 | Design tokens | `app/globals.css` |
 | Card component | `components/ui/card.tsx` |
 | Sheet component | `components/official/FloatingSheet.tsx` |
-| Responsive layout | `components/layout/new-layout/ResponsiveLayout.tsx` |
+| App frame | `features/shell/components/AppShell.tsx` |
 | Mobile hook | `hooks/use-mobile.tsx` |
 | Animation presets | `components/matrx/Entity/prewired-components/quick-reference/componentConfig.ts` |
 

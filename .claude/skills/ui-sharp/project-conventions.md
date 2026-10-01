@@ -180,7 +180,7 @@ Use `.scrollbar-hide` or `.scrollbar-thin` utilities.
 
 ### Layout Components
 
-- `ResponsiveLayout`: Switches between desktop/mobile layouts at 1024px
+- `AppShell`: the one frame (sidebar + header + account rail); desktop/phone switch at 1024px
 - `AdaptiveLayout`: Multi-panel layout with canvas support
 - `FloatingSheet`: Multi-position sheet component (right, left, top, bottom, center)
 
@@ -193,7 +193,7 @@ Use `.scrollbar-hide` or `.scrollbar-thin` utilities.
 | Design tokens & utilities | `app/globals.css` |
 | Base card component | `components/ui/card.tsx` |
 | Sheet component | `components/official/FloatingSheet.tsx` |
-| Responsive layout | `components/layout/new-layout/ResponsiveLayout.tsx` |
+| App frame | `features/shell/components/AppShell.tsx` |
 | Mobile detection hook | `hooks/use-mobile.tsx` |
 
 ---

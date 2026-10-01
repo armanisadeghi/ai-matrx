@@ -61,7 +61,7 @@ export default async function EducationLayout({
   if (!isAuthenticated) return body;
 
   // Signed in: THE chat-beside-a-canvas layout (features/canvas/workspace) —
-  // the new left nav, the chat beside it (closed until opened), and education
+  // the app's own sidebar (Chats one switch away), the chat beside it (closed until opened), and education
   // as the canvas. EducationHeader's module menu portals into the workspace
   // header; the chat sees whichever education page is on screen and follows
   // the person from page to page. Listed in SIGNED_IN_CANVAS_CHROME_ROUTES so

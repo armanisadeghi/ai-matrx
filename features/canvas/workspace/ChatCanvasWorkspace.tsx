@@ -294,9 +294,14 @@ export function ChatCanvasWorkspace({
   // THE SHELL SIDEBAR'S CHATS HOST HERE: its history rows and "New chat"
   // open in this panel (in-place-chat-host). The latest handlers ride a ref so
   // the registration changes only when the shown conversation does.
-  const hostHandlers = useRef({ openFromHistory, newChatInPanel });
+  const startAgentInPanel = (agentId: string) => {
+    chat.startWith(agentId);
+    if (compact) setMobileSheet("chat");
+    else if (!chatState.open || fullScreen) openChat();
+  };
+  const hostHandlers = useRef({ openFromHistory, newChatInPanel, startAgentInPanel });
   useEffect(() => {
-    hostHandlers.current = { openFromHistory, newChatInPanel };
+    hostHandlers.current = { openFromHistory, newChatInPanel, startAgentInPanel };
   });
   useEffect(
     () =>
@@ -304,6 +309,7 @@ export function ChatCanvasWorkspace({
         activeConversationId: conversationId,
         openConversation: (conversation) => hostHandlers.current.openFromHistory(conversation),
         startNewChat: () => hostHandlers.current.newChatInPanel(),
+        startWithAgent: (agentId) => hostHandlers.current.startAgentInPanel(agentId),
       }),
     [conversationId],
   );

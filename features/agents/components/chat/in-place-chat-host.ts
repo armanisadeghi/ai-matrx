@@ -25,8 +25,13 @@ export interface InPlaceChatHost {
   openConversation: (conversation: { conversationId: string; agentId?: string | null }) => void;
   /** Start a fresh chat in the page's chat panel. */
   startNewChat: () => void;
+  /** Start a chat with this agent in the page's chat panel (a pinned / searched agent). */
+  startWithAgent: (agentId: string) => void;
 }
 
+// A stack, so a host mounted over another (and released first) hands the menu
+// back to the one underneath instead of to nobody.
+let hosts: InPlaceChatHost[] = [];
 let current: InPlaceChatHost | null = null;
 const listeners = new Set<() => void>();
 
@@ -34,15 +39,23 @@ function emit() {
   for (const listener of listeners) listener();
 }
 
-/** Register the page's chat panel as the host. Returns the release; the last registration wins. */
+/** Register the page's chat panel as the host. Returns the release; the most recent live registration wins. */
 export function registerInPlaceChatHost(host: InPlaceChatHost): () => void {
+  hosts = [...hosts, host];
   current = host;
   emit();
   return () => {
-    if (current !== host) return;
-    current = null;
+    hosts = hosts.filter((h) => h !== host);
+    const next = hosts[hosts.length - 1] ?? null;
+    if (next === current) return;
+    current = next;
     emit();
   };
+}
+
+/** The current host, outside React (tests, event handlers). */
+export function currentInPlaceChatHost(): InPlaceChatHost | null {
+  return current;
 }
 
 function subscribe(listener: () => void) {

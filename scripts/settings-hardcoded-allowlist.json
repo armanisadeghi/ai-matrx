@@ -4457,10 +4457,6 @@
       "name": "MAX_UNDO"
     },
     {
-      "file": "matrx-frontend/components/navigation/MobileDock.tsx",
-      "name": "MAX_VISIBLE"
-    },
-    {
       "file": "matrx-frontend/components/official-candidate/json-truncator/JsonTruncator.tsx",
       "name": "DEFAULT_AUTO_THRESHOLD"
     },

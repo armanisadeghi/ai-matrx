@@ -70,6 +70,21 @@ import {
 } from "@/features/shell/constants/route-menu-style";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { useInPlaceChatHost } from "./in-place-chat-host";
+import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
+
+/** A plain left click on a `/chat/a/<agentId>` link → that agent id (and the click is consumed). */
+function hostedAgentLink(event: React.MouseEvent<HTMLElement>): string | null {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return null;
+  }
+  const target = event.target;
+  if (!(target instanceof Element)) return null;
+  const match = target.closest("a[href]")?.getAttribute("href")?.match(/^\/chat\/a\/([^/?#]+)\/?(?:[?#].*)?$/);
+  if (!match) return null;
+  event.preventDefault();
+  event.stopPropagation();
+  return decodeURIComponent(match[1]);
+}
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
 import {
   beginFreshChat,
@@ -138,15 +153,25 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
     // nav items.
     <div
       className="flex flex-1 min-h-0 flex-col gap-0.5"
-      onClickCapture={(event) =>
+      onClickCapture={(event) => {
+        // On a host page an agent link starts that agent IN the page's chat
+        // panel — never a trip to /chat carrying the panel's draft.
+        if (host) {
+          const agentId = hostedAgentLink(event);
+          if (agentId) {
+            host.startWithAgent(agentId);
+            closeShellMobileMenu();
+          }
+          return;
+        }
         interceptChatAgentLink(event, {
           dispatch,
           router,
           getState: store.getState,
           sourceAgentId: activeAgentId,
           sourceConversationId: activeConversationId,
-        })
-      }
+        });
+      }}
     >
       {/* ── CHROME ROWS ── identical DOM in both states. Icons NEVER move
             on collapse/expand. Order is fixed; positions are stable. */}
@@ -241,7 +266,11 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
               activeConversationId={activeConversationId}
               onOpenConversation={(conversation) => {
                 setChatSearchOpen(false);
-                host?.openConversation(conversation);
+                if (host) {
+                  host.openConversation(conversation);
+                  // The result list sits outside the drawer's own click area.
+                  closeShellMobileMenu();
+                }
               }}
               openInPlace={!!host}
               initialSearchOpen
@@ -256,7 +285,12 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           rail (not over it). */}
       <AgentListDropdown
         navigateTo="/chat/a/{id}"
-        onSelect={(agentId) =>
+        onSelect={(agentId) => {
+          if (host) {
+            host.startWithAgent(agentId);
+            closeShellMobileMenu();
+            return;
+          }
           stageChatAgentSwitch({
             dispatch,
             router,
@@ -264,8 +298,8 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
             targetAgentId: agentId,
             sourceAgentId: activeAgentId,
             sourceConversationId: activeConversationId,
-          })
-        }
+          });
+        }}
         contentSide="right"
         triggerSlot={
           <button

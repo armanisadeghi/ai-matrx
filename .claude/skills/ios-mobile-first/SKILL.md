@@ -77,7 +77,7 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 <div className="h-[calc(100vh-40px)]">
 ```
 
-**When header subtraction IS correct:** `/administration/*` and `(transitional)`/`(legacy)` `ResponsiveLayout` — content below the header, not behind it. Use `.h-page` or `calc(100dvh - var(--header-height))` there only.
+**When header subtraction IS correct:** `/administration/*` and `(transitional)` (whose layout sets `--header-height` to the shell header and starts content below it) — content below the header, not behind it. Use `.h-page` or `calc(100dvh - var(--header-height))` there only.
 
 Full pattern: `features/shell/components/header/variants/USAGE.md`
 
@@ -382,7 +382,7 @@ Scrollable content?
 <div className="bg-card">         // Cards
 
 // Layout components
-import { ResponsiveLayout } from "@/components/layout/new-layout/ResponsiveLayout";
+// The frame is AppShell (features/shell/components/AppShell.tsx) — every route group renders it.
 import { FloatingSheet } from "@/components/official/FloatingSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
