@@ -458,6 +458,31 @@ class CompilerCensus(unittest.TestCase):
         self.assertTrue(self.census(self.TSC))
 
 
+class KillCompilerGroup(unittest.TestCase):
+    """2026-09-30: a compiler SIGKILLed at the memory ceiling spends seconds releasing
+    ~24 GB; macOS answers every later killpg with EPERM and `ps` shows it '?Es'
+    (exiting), not 'Z'. Treating that as live turned the ceiling kill into
+    'check execution failed: [Errno 1] Operation not permitted'."""
+
+    def kill_with_members(self, stats):
+        def eperm(group, sig): raise PermissionError(1, 'Operation not permitted')
+        rows = ''.join(f'4242 {s}\n' for s in stats) + '77 R\n'
+        original = (MODULE.os.killpg, MODULE.subprocess.check_output)
+        MODULE.os.killpg = eperm
+        MODULE.subprocess.check_output = lambda *a, **k: rows
+        try:
+            MODULE.kill_compiler_group(4242)
+        finally:
+            MODULE.os.killpg, MODULE.subprocess.check_output = original
+
+    def test_exiting_and_zombie_members_are_already_dead(self):
+        self.kill_with_members(['?Es', 'Z', 'ZE'])
+
+    def test_a_live_member_still_raises(self):
+        with self.assertRaises(PermissionError):
+            self.kill_with_members(['?Es', 'R+'])
+
+
 
 if __name__ == '__main__':
     unittest.main()

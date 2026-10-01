@@ -171,7 +171,13 @@ def is_compiler_command(command):
 
 
 def kill_compiler_group(group):
-    """macOS may return EPERM for an already exited group; never hide a live one."""
+    """macOS returns EPERM for a group that is already dying; never hide a live one.
+
+    A compiler SIGKILLed with ~24 GB resident spends seconds releasing it, and
+    every killpg meanwhile is EPERM while `ps` shows it exiting ('?Es', flag E)
+    before it is a zombie ('Z'). Both are already dead (2026-09-30: every
+    memory-ceiling kill was reported as 'Operation not permitted').
+    """
     try:
         os.killpg(group, signal.SIGKILL)
     except ProcessLookupError:
@@ -179,7 +185,7 @@ def kill_compiler_group(group):
     except PermissionError:
         rows = subprocess.check_output(['ps', '-axo', 'pgid=,stat='], text=True)
         members = [line.split() for line in rows.splitlines()]
-        if any(int(parts[0]) == group and not parts[1].startswith('Z')
+        if any(int(parts[0]) == group and not parts[1].startswith('Z') and 'E' not in parts[1]
                for parts in members if len(parts) == 2):
             raise
 
