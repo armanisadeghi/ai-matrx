@@ -11,7 +11,7 @@ try {
   for (const p of (process.env.PROBE_PATHS ?? "/organizations/cedar-ridge-physical-therapy/scopes").split(",")) {
     await ctx.goto(page, p);
     await sleep(Number(process.env.PROBE_WAIT ?? 12000));
-    await dump(page, p.replace(/[^a-z0-9]+/gi, "-"));
+    await sleep(3000); await dump(page, p.replace(/[^a-z0-9]+/gi, "-"));
   }
   if (process.env.PROBE_CLICK) {
     await page.getByRole("button", { name: new RegExp(process.env.PROBE_CLICK, "i") }).first().click();

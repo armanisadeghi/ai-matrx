@@ -30,15 +30,15 @@ export default [
   sql("scopestails_templates_through_the_doors_red_green", ["S04"], { short: "templates" }),
   // S10: what an agent is handed — references, system items, the copy fence.
   sql("contextparity_references_red_green", ["S10"], { short: "handoff-references" }),
-  sql("cvn2_a_system_item_is_read_only_when_named_red_green", ["S10"], { short: "handoff-system-items" }),
-  sql("cvn3_an_old_caller_gets_the_default_system_items_red_green", ["S10"], { short: "handoff-old-caller" }),
+  sql("cvn2_a_system_item_is_read_only_when_named_red_green", ["S10"], { short: "handoff-system-items", passWhen: "ALL PASS", failWhen: "FAIL —" }),
+  sql("cvn3_an_old_caller_gets_the_default_system_items_red_green", ["S10"], { short: "handoff-old-caller", passWhen: "ALL PASS", failWhen: "FAIL —" }),
   sql("sc1p_the_context_copy_fence_red_green", ["S10"], { short: "handoff-fence" }),
   // S11: a member edits a scope in the store as she does today; a members-see-shared-only organization unchanged.
   sql("scopesaccess_a_member_edits_a_scope_as_she_does_today_red_green", ["S11"], { short: "member-edits" }),
   // S13: a person of no organization reads only the platform's tags, nothing else of Matrx System (the org wall).
   sql("scopesaccess_platform_tags_are_read_through_the_scopes_door_red_green", ["S13"], { short: "platform-tags-wall" }),
   // S14 (closest real check): a field kept out of what an agent sees stays kept out, through formulas and rollups.
-  sql("storetails3_context_green", ["S14"], { short: "restricted-field-agent" }),
+  sql("storetails3_context_green", ["S14"], { short: "restricted-field-agent", passWhen: "ALL PASS", failWhen: "P[0-9] FAIL" }),
   // S15 / S16: the class functions — a disabled join code and a cleared teacher leave the Record (no stale admit).
   sql("scopesaccess_a_removed_scope_setting_leaves_the_store_red_green", ["S15", "S16"], { short: "class-settings" }),
   // S09 / S10: both resolvers, every live scope type of every organization, as admin@admin.com, on the clone.
