@@ -20,7 +20,7 @@ end of a chain of real work — a **forcing function** — with no shortcut to i
 A green reachable without the system doing its job is fiction: worse than no test, because it ships
 false confidence. Applies to pytest, jest, `node --test`, `check:*` scripts, and `--self-test` guards.
 
-**Tests are guards, not verification.** Green never flips anything to done. Done = someone who did
+**A real test around a big change — a playbook a fresh agent walks in the live product, written first and proven to fail on a planted break — is the `safety-net` skill; this one is the bar for the automated kind.** **Tests are guards, not verification.** Green never flips anything to done. Done = someone who did
 not build it, on the live surface, with real data (`campaign-pattern`). A test keeps one named break
 caught forever. **Fixture names look real, and test people come only from the persona factory** ([test-data-looks-real](/policies/test-data-looks-real.md): `aidream/aidream/testing/persona.py`, `matrx-frontend/scripts/lib/persona.mjs`; never hand-make an account).
 
