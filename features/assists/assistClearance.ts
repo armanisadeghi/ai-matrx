@@ -97,8 +97,23 @@ function scrollersUnder(dock: DOMRect): HTMLElement[] {
   return [...found];
 }
 
+/**
+ * The dock's elements, found by one document scan and kept while they stay mounted (a 20k-node
+ * page pays ~0.5 ms per scan; the pass used to make several).
+ */
+let dockEls: HTMLElement[] = [];
+function dockElements(): HTMLElement[] {
+  if (dockEls.length === 0 || dockEls.some((el) => !el.isConnected)) {
+    dockEls = [...document.querySelectorAll<HTMLElement>(DOCK_SELECTOR)];
+  }
+  return dockEls;
+}
+
+/** Scrollers this module inset, so dropping stale insets never scans the document. */
+const clearedEls = new Set<HTMLElement>();
+
 function visibleDockRect(): DOMRect | null {
-  for (const el of document.querySelectorAll(DOCK_SELECTOR)) {
+  for (const el of dockElements()) {
     const r = el.getBoundingClientRect();
     if (r.width > 0 && r.height > 0) return r;
   }
@@ -109,6 +124,7 @@ function clear(el: HTMLElement) {
   el.style.paddingBottom = el.dataset.assistClearancePrev ?? "";
   delete el.dataset.assistClearancePrev;
   el.removeAttribute(CLEARED_ATTR);
+  clearedEls.delete(el);
 }
 
 /**
@@ -124,13 +140,15 @@ export function applyAssistClearance(opts: { resting?: boolean } = {}): void {
       if (need > 0) targets.set(scroller, need);
     }
   }
-  for (const el of document.querySelectorAll<HTMLElement>(`[${CLEARED_ATTR}]`)) {
-    if (!targets.has(el)) clear(el);
+  for (const el of [...clearedEls]) {
+    if (!el.isConnected) clearedEls.delete(el);
+    else if (!targets.has(el)) clear(el);
   }
   for (const [el, need] of targets) {
     if (!el.hasAttribute(CLEARED_ATTR)) {
       el.dataset.assistClearancePrev = el.style.paddingBottom;
       el.setAttribute(CLEARED_ATTR, "");
+      clearedEls.add(el);
     }
     // Measured against the scroller's visible bottom edge, which its own padding does not move.
     const current = Number.parseFloat(el.style.paddingBottom) || 0;
@@ -216,18 +234,27 @@ interface PassCache {
   attention: DOMRect[] | null;
 }
 
+/** The footer and attention-dock boxes, from ONE scan per pass. */
+function readAvoidance(cache: PassCache) {
+  if (cache.avoidance && cache.attention) return;
+  cache.avoidance = [];
+  cache.attention = [];
+  for (const el of document.querySelectorAll<HTMLElement>(GEOMETRY_AVOIDANCE_SELECTOR)) {
+    const r = el.getBoundingClientRect();
+    if (!sized(r)) continue;
+    cache.avoidance.push(r);
+    if (el.matches(ATTENTION_DOCK_SELECTOR)) cache.attention.push(r);
+  }
+}
+
 function geometryAvoidance(cache: PassCache): DOMRect[] {
-  cache.avoidance ??= [...document.querySelectorAll<HTMLElement>(GEOMETRY_AVOIDANCE_SELECTOR)]
-    .map((el) => el.getBoundingClientRect())
-    .filter(sized);
-  return cache.avoidance;
+  readAvoidance(cache);
+  return cache.avoidance!;
 }
 
 function attentionRects(cache: PassCache): DOMRect[] {
-  cache.attention ??= [...document.querySelectorAll<HTMLElement>(ATTENTION_DOCK_SELECTOR)]
-    .map((el) => el.getBoundingClientRect())
-    .filter(sized);
-  return cache.attention;
+  readAvoidance(cache);
+  return cache.attention!;
 }
 
 function samplePoints(r: DockRect): [number, number][] {
@@ -424,7 +451,7 @@ function fixedBoxOf(dock: HTMLElement): HTMLElement {
 
 /** The placement value the dock reads (from its fixed box). Tests and walks read it here. */
 export function dockPlacementVar(name: (typeof PLACEMENT_VARS)[number]): string {
-  const dock = [...document.querySelectorAll<HTMLElement>(DOCK_SELECTOR)][0];
+  const dock = dockElements()[0];
   return dock ? fixedBoxOf(dock).style.getPropertyValue(name) : "";
 }
 
@@ -505,7 +532,7 @@ function placeAll(
 
 /** One pass: rest the dock where it covers nothing, else in the chrome's slot, else yield. */
 export function applyAssistDockLift(): DockPlacement {
-  const docks = [...document.querySelectorAll<HTMLElement>(DOCK_SELECTOR)].filter((el) => sized(el.getBoundingClientRect()));
+  const docks = dockElements().filter((el) => sized(el.getBoundingClientRect()));
   slotHost = null;
   if (docks.length === 0) {
     setAttr(document.documentElement, SLOT_ATTR, null);
@@ -595,8 +622,11 @@ const FILL_SELECTOR =
   '[data-matrx-table-footer][aria-busy="true"], [data-matrx-table-cards-scroll][aria-busy="true"], [data-matrx-table-spreadsheet][aria-busy="true"], table[aria-busy="true"]';
 const FILL_CAP_MS = 2000;
 
+let measured = 0;
 function measure(name: string, start: number) {
   try {
+    // The buffer is bounded: a page left open all day keeps the last few hundred passes.
+    if (++measured % 500 === 0) performance.clearMeasures?.(name);
     performance.measure?.(name, { start });
   } catch {
     // A runtime without User Timing Level 3 options: the pass still runs.
@@ -623,10 +653,10 @@ export function useAssistClearance(active: boolean): void {
     };
     const pass = () => {
       frame = 0;
-      if (!document.querySelector(DOCK_SELECTOR)) {
+      if (dockElements().length === 0) {
         // Nothing to place: drop anything an earlier dock left behind, read nothing.
         setAttr(document.documentElement, SLOT_ATTR, null);
-        if (document.querySelector(`[${CLEARED_ATTR}]`)) applyAssistClearance({ resting: false });
+        if (clearedEls.size > 0) applyAssistClearance({ resting: false });
         lastBox = null;
         return;
       }
@@ -642,7 +672,7 @@ export function useAssistClearance(active: boolean): void {
       const placement = applyAssistDockLift();
       applyAssistClearance({ resting: placement === "rest" });
       watchSlot();
-      const first = document.querySelector<HTMLElement>(DOCK_SELECTOR);
+      const first = dockElements()[0];
       lastBox = first ? fixedBoxOf(first) : null;
       measure("assists-dock:pass", t0);
     };
