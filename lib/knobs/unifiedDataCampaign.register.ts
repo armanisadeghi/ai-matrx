@@ -484,13 +484,13 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         id: "where-this-table-lives",
         file: "features/unified-data/whereThisTableLives.ts",
         kind: "door_gated",
-        why: "THE OTHER STORE'S ANSWER, asked only after the older /data/<id> viewer has already refused an id. It asks custom.where_id_opens as the signed-in person, through the store's own client door, which reads the switch itself: with the campaign off that door refuses and this returns `unknown` with the door's own sentence, never `nowhere`, so a switched-off store can never be reported to a person as a deleted table. It creates nothing, writes nothing and is reachable only from a failure path.",
+        why: "THE TABLE'S OWN ORGANIZATION, read from the object. Every table lives in the record store; this asks custom.where_id_opens as the signed-in person, through the store's own client door, which reads the switch itself: with the campaign off that door refuses and this returns `unknown` with the door's own sentence, never `nowhere`.",
     },
     {
         id: "data-id-sends-you-to-the-other-store",
         file: "app/(core)/data/[id]/DataTableDetailClient.tsx",
         kind: "door_gated",
-        why: "The OLD viewer's shell. Its only campaign reach is the failure path above: when workbench.udt_datasets has no such dataset for this person it asks the record store through `whereThisTableLives`, whose doors are custom.table_kernel_id and custom.read_records — custom.read_records calls custom.assert_store_door, which reads custom/system_enabled, so with the switch off it refuses and this screen says it could not ask rather than claiming the table is gone. Everything else on this route is unchanged and touches no campaign code.",
+        why: "/data/<id> is the table page itself: it mounts the /data-v2/<id> route (records-ui TablePage), whose doors call custom.assert_store_door, which reads custom/system_enabled — with the switch off they refuse in words. The older viewer and its older-store read are deleted (lane OLD-READERS-REMOVAL).",
     },
     {
         id: "shell-nav-gates",
