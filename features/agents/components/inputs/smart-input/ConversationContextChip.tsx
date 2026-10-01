@@ -31,6 +31,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
 import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   selectContextInlineCap,
+  selectDisplayContextRows,
   selectResolvedContextRows,
 } from "@/features/agents/redux/execution-system/context-rules/request-context";
 import { saveContextRule } from "@/features/agents/redux/execution-system/context-rules/context-rules.thunks";
@@ -122,7 +123,7 @@ export function ConversationContextChip({
     (state) => state.conversations.byConversationId[conversationId]?.mandateKey ?? null,
   );
   const killSwitch = useMandateKillSwitch(mandateKey);
-  const rows = useAppSelector(selectResolvedContextRows(conversationId, killSwitch));
+  const rows = useAppSelector(selectDisplayContextRows(conversationId, killSwitch));
   const cap = useAppSelector((state) => selectContextInlineCap(state, conversationId));
   const receiptEntry = useAppSelector(
     (state) => state.instanceContext.receiptByConversationId[conversationId],

@@ -295,3 +295,14 @@ describe("the table's rows are memoized on their inputs", () => {
     expect(select(changed)[0]?.include).toBe(false);
   });
 });
+
+describe("values the server resolves itself are never predicted", () => {
+  it("a UUID under a *_id key is server-resolved: no guessed size, and the wire sends it as-is", () => {
+    const id = "6b0473b0-f6eb-40f7-8d3e-964e3681d645";
+    const { rows, context } = build(
+      makeState({ surfaceName: "matrx-user/demo", entries: [{ key: "note_id", value: id }] }),
+    );
+    expect(rows[0]).toMatchObject({ serverResolved: true, chars: null, delivery: "server" });
+    expect(context?.note_id).toBe(id);
+  });
+});

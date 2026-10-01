@@ -26,7 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
 import {
   selectContextInlineCap,
-  selectResolvedContextRows,
+  selectDisplayContextRows,
 } from "@/features/agents/redux/execution-system/context-rules/request-context";
 import {
   useMandateKillSwitch,
@@ -63,7 +63,7 @@ export function ContextRulesPanel({
     (state) => state.conversations.byConversationId[conversationId]?.mandateKey ?? null,
   );
   const killSwitch = useMandateKillSwitch(mandateKey);
-  const rows = useAppSelector(selectResolvedContextRows(conversationId, killSwitch));
+  const rows = useAppSelector(selectDisplayContextRows(conversationId, killSwitch));
   const cap = useAppSelector((state) => selectContextInlineCap(state, conversationId));
   const mismatches = useAppSelector(
     (state) => state.instanceContext.receiptByConversationId[conversationId]?.mismatches,

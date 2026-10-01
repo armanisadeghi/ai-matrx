@@ -20,6 +20,7 @@ import type { RootState } from "@/lib/redux/store";
 import {
   DEFAULT_INLINE_CAP,
   DEFAULT_SURFACE_KEY,
+  applyReceiptToRows,
   buildContextWire,
   resolveContextRow,
   type ContextRowSource,
@@ -43,6 +44,7 @@ import {
 } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import { contextEntryLabel } from "@/features/agents/components/context-policies-display/contextEntryLabel";
 import { selectSavedContextRuleRows } from "./context-rules.thunks";
+import { toContextReceipt } from "./receipt-check";
 
 export interface RequestContextOptions {
   /**
@@ -293,3 +295,30 @@ export function rememberRequestContextRows(request: object, rows: ResolvedContex
 export function contextRowsForRequest(request: object): ResolvedContextRow[] {
   return (rowsByRequest.get(request) ?? EMPTY_ROWS).map((row) => ({ ...row, value: undefined }));
 }
+
+// ── What the table DISPLAYS ─────────────────────────────────────────────────
+
+const displayMemo = new Map<
+  string,
+  { rows: ResolvedContextRow[]; receipt: unknown; out: ResolvedContextRow[] }
+>();
+
+/**
+ * The rows the chip and the full view DISPLAY: `selectResolvedContextRows`,
+ * with the values the server resolves itself (references, `*_id` lookups)
+ * filled in from the latest receipt — their size and delivery are the server's
+ * to report, never the client's to guess (`applyReceiptToRows`). Display only:
+ * the send path and the receipt check use the unfilled rows.
+ */
+export const selectDisplayContextRows =
+  (conversationId: string, mandateKillSwitch = false) =>
+  (state: RootState): ResolvedContextRow[] => {
+    const rows = selectResolvedContextRows(conversationId, mandateKillSwitch)(state);
+    const receipt = state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt;
+    if (!receipt) return rows;
+    const hit = displayMemo.get(conversationId);
+    if (hit && hit.rows === rows && hit.receipt === receipt) return hit.out;
+    const out = applyReceiptToRows(rows, toContextReceipt(receipt));
+    displayMemo.set(conversationId, { rows, receipt, out });
+    return out;
+  };
