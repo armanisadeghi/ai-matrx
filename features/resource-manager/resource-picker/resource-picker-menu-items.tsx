@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
@@ -288,7 +289,7 @@ export function getVisibleResourcePickerCategories(
 export type ResourcePickerTileItem = {
   id: string;
   label: string;
-  icon: ResourcePickerMenuItem["icon"];
+  icon: ComponentType<{ className?: string }>;
   /** Tailwind classes on the icon — module / brand tint. */
   iconClassName: string;
 };
