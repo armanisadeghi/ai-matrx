@@ -5,6 +5,7 @@
  */
 
 import "server-only";
+import { cache } from "react";
 
 import { createClient } from "@/utils/supabase/server";
 import { kindTitleKeyFromMetadata } from "./instance-title";
@@ -14,7 +15,7 @@ import {
 } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { Json } from "@/types/database.types";
 
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 export interface ShapeDetail {
   id: string;
   kind: string;
@@ -60,13 +61,16 @@ function metadataString(metadata: Json, key: string): string | null {
 }
 
 /** Null on missing / RLS-denied — the route 404s. Throws on a real DB error. */
-export async function getShapeDetail(
+export const getShapeDetail = cache(async function getShapeDetail(
   kindSlug: string,
 ): Promise<ShapeDetail | null> {
+  // Metadata and pages render alongside their layout, so the layout's sign-in
+  // gate cannot protect this read. Share the request's settled identity first;
+  // a second unpinned claims check can spend another auth budget and crash.
+  const session = await getSessionVerdict();
+  if (!session.isAuthenticated) return null;
   const supabase = await createClient();
-  const [{ data, error }, { data: auth, error: authError }] = await Promise.all(
-    [
-      supabase
+  const { data, error } = await supabase
         .schema("content_ir")
         .from("kind_definition")
         .select(
@@ -74,15 +78,9 @@ export async function getShapeDetail(
         )
         .eq("kind", kindSlug)
         .is("deleted_at", null)
-        .maybeSingle(),
-      getClaimsUser(supabase),
-    ],
-  );
+        .maybeSingle();
   if (error) {
     throw new Error(`Failed to load shape "${kindSlug}": ${error.message}`);
-  }
-  if (authError) {
-    throw new Error(`Failed to verify the Shape viewer: ${authError.message}`);
   }
   if (!data) return null;
   return {
@@ -101,6 +99,6 @@ export async function getShapeDetail(
       kindFamilyFromMetadata(data.metadata) ?? "",
     ),
     family: kindFamilyFromMetadata(data.metadata),
-    isOwnedByViewer: Boolean(auth.user && data.created_by === auth.user.id),
+    isOwnedByViewer: data.created_by === session.user.id,
   };
-}
+});
