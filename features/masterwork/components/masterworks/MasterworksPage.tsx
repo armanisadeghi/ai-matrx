@@ -647,6 +647,8 @@ export function MasterworksPage({
                           : undefined
                       }
                       onRunFinished={() => void refreshRuns()}
+                      // Past runs here lists every run she can read; the price matches.
+                      priceScope="visible"
                       onCompare={
                         isOwner
                           ? (candidate) => setAuditionCandidate(candidate)

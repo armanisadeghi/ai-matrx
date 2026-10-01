@@ -261,6 +261,26 @@ export type EncoreRun = MasterworkRun;
 const ENCORE_RUN_LIMIT = 10;
 
 /**
+ * WHOSE RUNS "MY RUNS" MEANS — the one answer the Encore history and the run
+ * box's "Last run" price share, so the price is always taken from runs the
+ * page lists (cold walk 23 leftover: row security lets an organization member
+ * read a teammate's runs, and the price was read from them while the history
+ * beside it listed only hers).
+ *
+ * DECLARED `mine` (DD-137c / §3.3): THIS Operator's own runs, never the whole
+ * ledger — said through the registry helper rather than assumed.
+ */
+export async function myRunsCreatedBy(): Promise<string | null> {
+  const userId = requireUserId();
+  const listScope = await defaultListFilter("workflow_run", {
+    userId,
+    requested: "mine",
+    shownTo: false,
+  });
+  return listScope.ownerOnly ? userId : null;
+}
+
+/**
  * THIS Operator's recent runs of one Masterwork — their own history, never
  * the whole ledger. A preview surface: bounded read is correct.
  *
@@ -271,13 +291,9 @@ const ENCORE_RUN_LIMIT = 10;
 export async function listMyEncoreRuns(
   masterworkId: string,
 ): Promise<EncoreRun[]> {
-  const userId = requireUserId();
-  // DECLARED `mine` (DD-137c / §3.3): this preview is THIS Operator's own history of one
-  // Masterwork, never the whole ledger — said through the registry helper rather than assumed.
-  const listScope = await defaultListFilter("workflow_run", { userId, requested: "mine", shownTo: false });
   const byMasterwork = await listRecentRunsForMasterworks([masterworkId], {
     perMasterwork: ENCORE_RUN_LIMIT,
-    onlyCreatedBy: listScope.ownerOnly ? userId : null,
+    onlyCreatedBy: await myRunsCreatedBy(),
   });
   return byMasterwork[masterworkId] ?? [];
 }

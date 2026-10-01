@@ -380,6 +380,7 @@ function BuildWindowInner({
                 whatItRuns={`“${result.name}”`}
                 submitLabel={result.submitLabel}
                 onRunFinished={() => undefined}
+                priceScope="mine"
               />
             </div>
 

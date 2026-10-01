@@ -362,6 +362,8 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
                   : undefined
               }
               onRunFinished={refreshRuns}
+              // "Your recent runs" below lists only hers; the price matches.
+              priceScope="mine"
             />
           </div>
 

@@ -17,7 +17,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 
 import { makeStore } from "@/lib/redux/store";
-import { lastPricedRunCost, type PricedRun } from "../../../runPrice";
+import {
+  lastPricedRunCost,
+  type PricedRun,
+  type RunPriceScope,
+} from "../../../runPrice";
 import { TryMasterworkBox } from "../TryMasterworkBox";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
@@ -52,6 +56,12 @@ jest.mock("@/utils/supabase/client", () => {
     supabase: { schema: () => ({ from: (table: string) => chain(table) }) },
   };
 });
+
+// The viewer's "my runs" answer — the one Encore's history uses.
+const VIEWER = "4060701e-706a-4c76-b3ca-0bbc69fa5a14";
+jest.mock("../../../encore/service", () => ({
+  myRunsCreatedBy: () => Promise.resolve(VIEWER),
+}));
 
 jest.mock("../../../service", () => ({
   getMasterworkDefinition: () => Promise.resolve(null),
@@ -100,7 +110,7 @@ afterEach(() => {
   container.remove();
 });
 
-async function renderBox() {
+async function renderBox(priceScope: RunPriceScope = "visible") {
   await act(async () => {
     root.render(
       <Provider store={makeStore()}>
@@ -108,13 +118,13 @@ async function renderBox() {
           masterworkId={MASTERWORK_ID}
           masterworkKind="edit"
           onRunFinished={() => undefined}
+          priceScope={priceScope}
         />
       </Provider>,
     );
   });
   await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 6; i += 1) await Promise.resolve();
   });
 }
 
@@ -178,5 +188,49 @@ describe("the price of one run", () => {
     await renderBox();
     expect(container.textContent).toContain("Run it");
     expect(container.querySelector("[data-masterwork-run-price]")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE PRICE IS TAKEN FROM THE RUNS THE PAGE LISTS (cold walk 23 leftover).
+//
+// Row security on workflow.run lets an organization member read a teammate's
+// runs (std_select: organization in my_orgs, visibility internal/personal —
+// read on the clone as test@test.com, 2026-09-30: 9 of admin's finished runs
+// of a released Masterwork, 0 of her own). Encore's "Your recent runs" lists
+// only hers, so an unscoped price read showed her a teammate's spend.
+// RED before the fix: the read applied no created_by filter at all.
+// ---------------------------------------------------------------------------
+
+describe("whose runs the price is taken from", () => {
+  it("a box beside her own run history prices only runs she started", async () => {
+    tables = { run: { data: [], error: null } };
+    await renderBox("mine");
+    expect(filters).toContain(`run.eq(["created_by","${VIEWER}"])`);
+  });
+
+  it("a box beside every visible run prices from those same runs", async () => {
+    tables = { run: { data: [], error: null } };
+    await renderBox("visible");
+    expect(filters.some((f) => f.startsWith('run.eq(["created_by"'))).toBe(false);
+  });
+
+  it("each host declares the scope its own run list uses", () => {
+    const { readFileSync } = jest.requireActual<typeof import("node:fs")>("node:fs");
+    const { resolve } = jest.requireActual<typeof import("node:path")>("node:path");
+    const read = (p: string) => readFileSync(resolve(__dirname, p), "utf8");
+    const encore = read("../../../encore/EncoreRunPage.tsx");
+    const encoreService = read("../../../encore/service.ts");
+    const lane = read("../MasterworksPage.tsx");
+    // Encore lists "mine" through the same resolver the price uses.
+    expect(encore).toMatch(/<TryMasterworkBox[\s\S]{0,600}priceScope="mine"/);
+    expect(encoreService).toMatch(
+      /listMyEncoreRuns[\s\S]{0,300}onlyCreatedBy: await myRunsCreatedBy\(\)/,
+    );
+    // The Masterworks page lists every readable run; the price matches.
+    expect(lane).toMatch(/<TryMasterworkBox[\s\S]{0,800}priceScope="visible"/);
+    expect(lane).toMatch(
+      /listRecentRunsForMasterworks\(masterworks\.map\(\(m\) => m\.id\)\)/,
+    );
   });
 });

@@ -126,7 +126,7 @@ import {
   getMasterworkDefinition,
   getMasterworkRunVerdict,
 } from "../../service";
-import { MasterworkRunPrice } from "../../runPrice";
+import { MasterworkRunPrice, type RunPriceScope } from "../../runPrice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -254,6 +254,7 @@ export function TryMasterworkBox({
   submitLabel = null,
   fieldLabels,
   onRunFinished,
+  priceScope,
   onCompare,
   onCompareTwo,
 }: {
@@ -284,6 +285,12 @@ export function TryMasterworkBox({
   fieldLabels?: string[];
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
+  /**
+   * Whose runs "Last run" is priced from — the same runs the host page lists
+   * (`RunPriceScope`). Required: a host that lists only her runs must never
+   * show a price taken from a teammate's.
+   */
+  priceScope: RunPriceScope;
   /**
    * Owner-only door beside the result: hand the Masterwork's own output to
    * the Audition, prefilled. Omit to hide it.
@@ -803,6 +810,7 @@ export function TryMasterworkBox({
           <MasterworkRunPrice
             masterworkId={masterworkId}
             refreshKey={runsFinished}
+            scope={priceScope}
           />
           {onCompare && !candidateText && !noResultReason ? (
             <span className="text-xs text-muted-foreground">

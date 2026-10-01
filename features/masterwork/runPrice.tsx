@@ -22,6 +22,21 @@
 import { useEffect, useState } from "react";
 import { CostBadge } from "@/components/cost/CostBadge";
 import { supabase } from "@/utils/supabase/client";
+import { myRunsCreatedBy } from "./encore/service";
+
+/**
+ * WHOSE RUNS THE PRICE IS TAKEN FROM — the same runs the host page lists
+ * (cold walk 23 leftover). Row security lets an organization member read a
+ * teammate's runs, so an unscoped read priced her box from someone else's run
+ * while the history beside it listed only hers.
+ *
+ * - `mine`: runs the viewer started (Encore's "Your recent runs"; any box with
+ *   no run list beside it — a price she cannot trace to a run she can see is
+ *   the defect).
+ * - `visible`: every run row security shows her — only where the page lists
+ *   exactly those (the Rulebook's Masterworks page).
+ */
+export type RunPriceScope = "mine" | "visible";
 
 /** Same window as the server's `last_run_cost_usd` (`.limit(3)`). */
 const FINISHED_RUNS_PRICED_FROM = 3;
@@ -45,14 +60,17 @@ export function lastPricedRunCost(runs: PricedRun[]): number | null {
 /** The server's `last_run_cost_usd`, read client-side. Throws on a refused read. */
 export async function readLastRunCost(
   masterworkId: string,
+  onlyCreatedBy: string | null,
 ): Promise<number | null> {
-  const { data: runs, error } = await supabase
+  let runQuery = supabase
     .schema("workflow")
     .from("run")
     .select("id")
     .eq("definition_id", masterworkId)
     .eq("status", "completed")
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  if (onlyCreatedBy) runQuery = runQuery.eq("created_by", onlyCreatedBy);
+  const { data: runs, error } = await runQuery
     .order("created_at", { ascending: false })
     .limit(FINISHED_RUNS_PRICED_FROM);
   if (error) throw error;
@@ -88,6 +106,7 @@ export async function readLastRunCost(
 export function useLastRunCost(
   masterworkId: string,
   refreshKey: number,
+  scope: RunPriceScope,
 ): number | null | undefined {
   const [read, setRead] = useState<{
     masterworkId: string;
@@ -96,7 +115,8 @@ export function useLastRunCost(
   useEffect(() => {
     let cancelled = false;
     Promise.resolve()
-      .then(() => readLastRunCost(masterworkId))
+      .then(() => (scope === "mine" ? myRunsCreatedBy() : null))
+      .then((createdBy) => readLastRunCost(masterworkId, createdBy))
       .then((cost) => {
         if (!cancelled) setRead({ masterworkId, cost });
       })
@@ -107,7 +127,7 @@ export function useLastRunCost(
     return () => {
       cancelled = true;
     };
-  }, [masterworkId, refreshKey]);
+  }, [masterworkId, refreshKey, scope]);
   // Another Masterwork's price never shows while this one's is being read.
   return read && read.masterworkId === masterworkId ? read.cost : undefined;
 }
@@ -116,11 +136,13 @@ export function useLastRunCost(
 export function MasterworkRunPrice({
   masterworkId,
   refreshKey,
+  scope,
 }: {
   masterworkId: string;
   refreshKey: number;
+  scope: RunPriceScope;
 }) {
-  const cost = useLastRunCost(masterworkId, refreshKey);
+  const cost = useLastRunCost(masterworkId, refreshKey, scope);
   if (cost === undefined) return null;
   return (
     <span
