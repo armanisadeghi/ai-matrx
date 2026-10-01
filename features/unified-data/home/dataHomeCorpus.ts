@@ -19,6 +19,7 @@ import * as doors from "@/features/unified-data/hub/doors";
 import { buildDataHomeRows, type DataHomeRow } from "./dataHomeRows";
 import { DATA_HOME_ROW_CAP, type ServerMatches } from "./dataHomeService";
 
+
 export const SERVER_SEARCH_DEBOUNCE_MS = 250;
 
 export interface DataHomeCorpus {
@@ -66,10 +67,10 @@ export function createDataHomeCorpus(
   const read = async (): Promise<DataHomeRow[]> => {
     const answered = await dataHome(dataSource, null);
     if (!answered.ok) {
-      throw new Error(`Could not read tables. Nothing is hidden by this. ${answered.error.message}`);
+      throw new Error(`Could not read tables. ${doors.doorFailureLine(answered.error)}`, { cause: answered.error });
     }
     const built = await buildDataHomeRows({ client, dataSource, answer: answered.data });
-    meta.refusals = built.refusals.map((r) => ({ listing: r.listing, message: r.error.message }));
+    meta.refusals = built.refusals.map((r) => ({ listing: r.listing, message: doors.doorFailureLine(r.error) }));
     let rows = built.rows;
     // THE STATED BOUND: past it the newest rows are kept and the page says so.
     meta.capped = rows.length > DATA_HOME_ROW_CAP;

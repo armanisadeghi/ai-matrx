@@ -32,7 +32,9 @@ let held: Held | null = null;
 async function readAll(userId: string | null): Promise<DataHomeRow[]> {
   const dataSource = supabaseDataSource(createClient());
   const answered = await doors.dataHome(dataSource, null);
-  if (!answered.ok) throw new Error(`Could not read tables. ${answered.error.message}`);
+  if (!answered.ok) {
+    throw new Error(`Could not read tables. ${doors.doorFailureLine(answered.error)}`, { cause: answered.error });
+  }
   const client = createRecordsClient({
     dataSource,
     actor: userId ? { actor: "user", user_id: userId } : { actor: "user" },

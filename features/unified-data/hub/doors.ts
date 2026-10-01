@@ -33,6 +33,19 @@ export interface DoorFailure {
 export type DoorAnswer<T> = { ok: true; data: T } | { ok: false; error: DoorFailure };
 
 /**
+ * A door's failure in a person's words where the store's own are Postgres's: the statement timeout
+ * (57014, "canceling statement due to statement timeout") is never printed (VERIFY-DATA-HOME-3 W4,
+ * DATA-HOME-3F — the same sentence reached the list's failure slot on the member seat). Every other
+ * door sentence is the store's and passes unedited.
+ */
+export function doorFailureLine(failure: DoorFailure): string {
+  if (failure.sqlstate === "57014" || /canceling statement|statement timeout/i.test(failure.message)) {
+    return "It took too long to answer.";
+  }
+  return failure.message;
+}
+
+/**
  * THE SWITCH, READ ONCE PER ORGANIZATION AND CHECKED ON EVERY CALL THAT READS
  * ONE ORGANIZATION'S STORE.
  *

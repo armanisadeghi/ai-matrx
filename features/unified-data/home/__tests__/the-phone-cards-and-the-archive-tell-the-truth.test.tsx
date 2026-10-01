@@ -187,3 +187,16 @@ describe("W4 — the archive pages and speaks for a person", () => {
     expect(r.message).not.toMatch(/canceling/);
   });
 });
+
+describe("W4's sibling — the list's own read never prints the statement timeout", () => {
+  it("doorFailureLine words 57014 for a person and passes a store sentence unedited", async () => {
+    const { doorFailureLine } = jest.requireActual("@/features/unified-data/hub/doors") as typeof import("@/features/unified-data/hub/doors");
+    expect(doorFailureLine({ message: "canceling statement due to statement timeout", sqlstate: "57014" })).toBe(
+      "It took too long to answer.",
+    );
+    expect(doorFailureLine({ message: "canceling statement due to statement timeout" })).not.toMatch(/canceling/);
+    expect(doorFailureLine({ message: "You are not a member of Harbor Dental Group." })).toBe(
+      "You are not a member of Harbor Dental Group.",
+    );
+  });
+});
