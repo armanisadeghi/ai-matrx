@@ -330,6 +330,13 @@ function InputBlock({
   const flagged = Array.isArray(differences?.flagged) ? (differences.flagged as string[]) : [];
   const expected = Array.isArray(differences?.expected) ? (differences.expected as string[]) : [];
   const unmeasured = Array.isArray(differences?.unmeasured) ? (differences.unmeasured as string[]) : [];
+  // P11 / A4: the candidate's own tool offer, named against the live offer.
+  const tools = obj(differences?.tools);
+  const toolsAdded = Array.isArray(tools?.added) ? (tools.added as string[]) : [];
+  const toolsRemoved = Array.isArray(tools?.removed) ? (tools.removed as string[]) : [];
+  const notOffered = Array.isArray(differences?.declared_tools_not_offered)
+    ? (differences.declared_tools_not_offered as string[])
+    : [];
   // P10 / A4: the pair LEADS with one line — shared inputs identical, or which
   // shared parts differed — before any per-part detail.
   const lead = sharedInputsLine(differences ? { flagged, unmeasured } : null);
@@ -354,11 +361,21 @@ function InputBlock({
         {expected.map((part) => (
           <Chip key={`e-${part}`}>{inputPartWord(part)}: the candidate's own</Chip>
         ))}
-        {unmeasured.map((part) => (
-          <Chip key={`u-${part}`} className="bg-amber-500/15 text-amber-700 dark:text-amber-400">
-            {inputPartWord(part)} not measured
+        {toolsAdded.length > 0 ? (
+          <Chip>
+            <span title={toolsAdded.join(", ")}>Tools added: {toolsAdded.length}</span>
           </Chip>
-        ))}
+        ) : null}
+        {toolsRemoved.length > 0 ? (
+          <Chip>
+            <span title={toolsRemoved.join(", ")}>Tools removed: {toolsRemoved.length}</span>
+          </Chip>
+        ) : null}
+        {notOffered.length > 0 ? (
+          <Chip className="bg-red-500/15 text-red-700 dark:text-red-400">
+            <span title={notOffered.join(", ")}>Its own tools not offered: {notOffered.length}</span>
+          </Chip>
+        ) : null}
       </div>
       {payload && hasInput ? (
         <div className="space-y-1.5">

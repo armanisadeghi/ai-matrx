@@ -81,6 +81,27 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
   only client path (`createMandateExemplar`) is admin-route-only and stamps the system organization.
 - Guard: `__tests__/a-candidate-notice-opens-a-real-record.test.tsx` (registration seen red with the
   two registry rows removed: 3 failed → restored 8/8).
+- **The heartbeat (`live.ts`, V1 D3).** Realtime drops rows while the socket says connected, so
+  every screen showing a collecting candidate re-reads on knob `mandates.candidate_poll_seconds`
+  (seeded 10 s by `migrations/mnd_candidate_live_reads_2026_09_30.sql`) and stops when nothing
+  collects: the tab badge (`record-next/useCandidateCount`), the Candidates tab, an open pair or
+  summary window (`CandidateRecordBody`), and every list cell (`components/CandidateListCell`,
+  one batched `public.mnd_candidate_cells` read for all cells on screen). Paused while the page is
+  hidden; a beat never stacks on a read in flight. The knob is read only when something collects.
+- **The list cell compares the list's answer by VALUE** — hosts hand a fresh row object every
+  render, and an identity check reset the cell to the stale list answer (seen on the clone).
+- **One cell, every list (V1 D4):** admin list, org/person member list and `/mandates` browse all
+  render `CandidateListCell`; the member and browse services add `candidate` from
+  `mnd_candidate_cells` (the admin list's own helper `mandate._admin_list_candidate`).
+- **Pair reading order (A4 P10):** the input section LEADS with one line — "Shared inputs
+  identical" or "Shared inputs differed: …" (`words.sharedInputsLine`); the candidate's own parts
+  and its tool offer (`input_differences.tools.added/removed`, FX-S) follow as chips. Live call
+  arguments recorded as canonical JSON text render as the structure (`structuredArgs`, D15). A
+  retried pair says "Attempt n" (D19). Holders name their pinned version "· vN"
+  (`CandidateHolderName`, D17).
+- Guards: `__tests__/the-candidate-screens-say-what-they-mean.test.tsx` (D3 badge, D15, D16, D18,
+  D19 — 6/6 red against the pre-fix files) and `__tests__/list-cell-heartbeat.test.tsx` (red on
+  the identity compare, green on the value compare).
 
 ---
 
@@ -95,3 +116,5 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
 ## Change log
 
 - `2026-09-30` — Created (Mandate Candidates F3): pair + summary Detail records, openers, guard.
+- `2026-09-30` — FX-F: heartbeat, one list cell on every list, shared-inputs lead line, structured
+  live args, attempt marker, version names, dialog follows the live rung.

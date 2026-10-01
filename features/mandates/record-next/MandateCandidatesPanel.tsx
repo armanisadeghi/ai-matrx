@@ -745,7 +745,16 @@ function HistoryTable({
         width: 220,
         filter: "text",
         accessorFn: (c) => c.holder_name,
-        cell: (c) => <span className="block truncate text-xs font-medium">{c.holder_name}</span>,
+        cell: (c) => (
+          <span className="block truncate text-xs">
+            <CandidateHolderName
+              type={c.holder_type}
+              id={c.holder_id}
+              versionId={c.holder_version_id ?? null}
+              name={c.holder_name}
+            />
+          </span>
+        ),
       },
       {
         id: "status",
