@@ -126,7 +126,7 @@ async function ensureLedger(client: RecordsClient): Promise<string> {
   const placed = await client.recordUpdate({
     record_id: ledger,
     patch: {
-      description: `Where this organization records each ${KIT_WORD.oneLower} it installed and exactly what that install created, so a re-run finishes it and a removal takes back only what it made. Kept by the app.`,
+      description: `What each installed ${KIT_WORD.oneLower} created`,
       kept_by_the_app: true,
       kept_for: "kits",
       agent_writable: false,
