@@ -96,7 +96,7 @@ export function ensureSurfaceFeatureLoaded(feature: string, force = false): AppT
     const p = (async () => {
       dispatch(surfaceUserStateActions.featureLoading(feature));
       try {
-        const rows = await surfaceUserStateService.loadFeature(feature);
+        const rows = await surfaceUserStateService.loadFeature(requireUserId(), feature);
         dispatch(surfaceUserStateActions.featureReceived({ feature, rows }));
       } catch (e) {
         dispatch(

@@ -37,11 +37,18 @@ function liveState(row: StateRow): Record<string, unknown> {
 const UNIQUE_VIOLATION = "23505";
 
 export const surfaceUserStateService = {
-  /** Load every row for one feature (small N) so the caller can resolve locally. */
-  async loadFeature(feature: string): Promise<SurfaceStateRows> {
+  /**
+   * Load the SIGNED-IN PERSON's rows for one feature (small N) so the caller
+   * can resolve locally. Always filtered by `user_id`: row security lets an
+   * organization's members read each other's rows, so a feature-only read
+   * loaded another member's preferences (their context rules, colliding on
+   * surface_key) — a screen that disagreed with what the server reads.
+   */
+  async loadFeature(userId: string, feature: string): Promise<SurfaceStateRows> {
     const { data, error } = await supabase
       .schema("users").from("user_surface_state")
       .select("surface_key, state")
+      .eq("user_id", userId)
       .eq("feature", feature)
       // Only live rows — exactly what the server reads (aidream
       // context_rules: deleted_at IS NULL). An archived row shown here would

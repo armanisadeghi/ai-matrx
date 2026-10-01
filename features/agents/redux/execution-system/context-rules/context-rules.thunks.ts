@@ -83,7 +83,7 @@ export function reloadContextRules(): AppThunk<Promise<void>> {
     reloadInFlight = (async () => {
       let rows: Record<string, Record<string, unknown>>;
       try {
-        rows = await surfaceUserStateService.loadFeature(CONTEXT_RULES_FEATURE);
+        rows = await surfaceUserStateService.loadFeature(requireUserId(), CONTEXT_RULES_FEATURE);
       } catch (error) {
         console.error("[context-rules] could not re-read the saved rules", error);
         return;

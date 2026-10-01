@@ -116,7 +116,10 @@ jest.mock("@/lib/toast", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), warning: jest.fn(), success: jest.fn() },
 }));
 
-import { surfaceUserStateReducer } from "@/features/surfaces/redux/userStateSlice";
+import {
+  ensureSurfaceFeatureLoaded,
+  surfaceUserStateReducer,
+} from "@/features/surfaces/redux/userStateSlice";
 import {
   registerOrganizationPicker,
   settleOrganizationSelection,
@@ -226,5 +229,49 @@ describe("a first rule with no organization selected", () => {
     expect(toastError).not.toHaveBeenCalled();
     expect(db.rows).toHaveLength(0);
     expect(rulesIn(tab)[NOTES]).toBeUndefined();
+  });
+});
+
+// Break this catches (N1): a feature-only read — row security lets members of
+// one organization read each other's rows, so a colleague's browser loaded
+// this person's context rules (and two people's rows collided on surface_key).
+describe("only the signed-in person's rows are ever loaded", () => {
+  const COLLEAGUE = "9d4e1a77-2b3c-4f8e-a1d2-6c5b4a3f2e10";
+  function seedBoth() {
+    seedRow({ editor_mode: { include: false } });
+    db.rows.push({
+      id: `row-${db.nextId++}`,
+      user_id: COLLEAGUE,
+      organization_id: WORKSPACE_ID,
+      feature: "context_rules",
+      surface_key: NOTES,
+      state: { cursor_offset: { max_inline_chars: 0 } },
+      version: 2,
+      deleted_at: null,
+    });
+    db.rows.push({
+      id: `row-${db.nextId++}`,
+      user_id: COLLEAGUE,
+      organization_id: WORKSPACE_ID,
+      feature: "context_rules",
+      surface_key: "_default",
+      state: { route_brief: { include: false } },
+      version: 1,
+      deleted_at: null,
+    });
+  }
+
+  it("the rules re-read returns the caller's rows only", async () => {
+    seedBoth();
+    const tab = openTab();
+    await run(tab, reloadContextRules());
+    expect(rulesIn(tab)).toEqual({ [NOTES]: { editor_mode: { include: false } } });
+  });
+
+  it("every feature's loader returns the caller's rows only", async () => {
+    seedBoth();
+    const tab = openTab();
+    await run(tab, ensureSurfaceFeatureLoaded("context_rules", true));
+    expect(rulesIn(tab)).toEqual({ [NOTES]: { editor_mode: { include: false } } });
   });
 });
