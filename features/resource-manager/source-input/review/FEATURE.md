@@ -47,6 +47,9 @@ common-docs `projects/unified-source-input/` (DESIGN.md § "The follow-up page";
    with a one-click "Let the AI look it up instead", and is REMOVED from the returned set — so
    the server never drops what the screen showed as going in. Unusable Sources (no access,
    missing, failed) stay in the set with their reason shown; they contribute nothing.
+   An archived Source (manifest `reason: "archived"`, said by the server only to someone who may
+   restore it) shows an "Archived" badge and a Restore button (`components/ArchivedSource.tsx` →
+   `restoreFromTrash`), then re-measures; the Source card does the same. Never a sentence.
 4. The manifest is re-read only when a version changes (parts depend on the version); parts,
    limits and delivery are planned locally.
 5. Plain words: "parts" (Segments), "version" (form), "size limit", "Include the text" / "Let

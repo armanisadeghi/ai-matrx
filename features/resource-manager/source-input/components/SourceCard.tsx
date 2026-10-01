@@ -64,6 +64,7 @@ import {
 } from "@ai-matrx/agents/sources/runtime";
 import type { SourcePart } from "@ai-matrx/agents/sources/runtime";
 import { SourcePartsPicker } from "../review/SourcePartsPicker";
+import { ARCHIVED_SOURCE_LABEL, RestoreSourceButton, isArchivedSource } from "./ArchivedSource";
 import {
   resumableInput,
   sourceCardChars,
@@ -176,7 +177,7 @@ export function SourceCard({
             {delivery === "context" ? <span>· {DELIVERY_WORDS.context.summary}</span> : null}
             {measuredState ? (
               <span className={cn(measuredState === "processing" && "text-warning", (measuredState === "failed" || measuredState === "unavailable") && "text-destructive")}>
-                · {STATE_WORDS[measuredState]}
+                · {isArchivedSource(entry) ? ARCHIVED_SOURCE_LABEL : STATE_WORDS[measuredState]}
               </span>
             ) : null}
             {card.draft.origin && card.draft.origin !== sourceKindNoun(card.draft) ? (
@@ -556,6 +557,18 @@ function ProcessingLine({
           <Checkbox checked={card.draft.waitForClean ?? false} onCheckedChange={(v) => onWaitChange(v === true)} />
           Wait for the clean version before starting
         </label>
+      </div>
+    );
+  }
+  if (isArchivedSource(entry) && card.draft.ref) {
+    // State, not a sentence: the card's line already says "Archived"; this offers the way back.
+    return (
+      <div className="flex items-center gap-2 border-t border-border px-3 py-2">
+        <RestoreSourceButton
+          resourceType={card.draft.ref.resource_type}
+          resourceId={card.draft.ref.resource_id}
+          onRestored={onSettled}
+        />
       </div>
     );
   }

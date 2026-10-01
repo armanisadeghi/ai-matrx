@@ -230,6 +230,7 @@ export function SourceReview({
                     })
                   }
                   onRemove={() => setRemoved((prev) => new Set(prev).add(index))}
+                  onRestored={() => setReloadKey((k) => k + 1)}
                 />
               );
             })}

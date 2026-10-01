@@ -40,6 +40,7 @@ import { formatChars, pagesPhrase } from "@/lib/tokens/estimate";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { createSourceRef, type SourceRef, type SourceRefOptions } from "@ai-matrx/agents/sources";
 import { SourcePartsPicker } from "./SourcePartsPicker";
+import { ARCHIVED_SOURCE_LABEL, RestoreSourceButton, isArchivedSource } from "../components/ArchivedSource";
 import {
   chosenForm,
   DELIVERY_WORDS,
@@ -85,6 +86,8 @@ interface SourceReviewRowProps {
   onChange: (next: SourceRef) => void;
   onFormChange: (representation: string) => void;
   onRemove: () => void;
+  /** An archived Source was restored: re-measure. Omitted = no Restore offered. */
+  onRestored?: () => void;
   defaultOpen?: boolean;
   /** The deliveries the host can use (`SourceInputProps.deliveries`). Omitted = both. */
   deliveries?: readonly SourceDelivery[];
@@ -103,6 +106,7 @@ export function SourceReviewRow({
   onChange,
   onFormChange,
   onRemove,
+  onRestored,
   defaultOpen = false,
   deliveries,
   describe,
@@ -112,7 +116,10 @@ export function SourceReviewRow({
   const { entry, ref } = plan;
   const kind = kindWords(entry.resource_type);
   const Icon = kind.icon;
-  const status = STATUS_WORDS[plan.status];
+  const archived = isArchivedSource(entry);
+  const status = archived
+    ? { label: ARCHIVED_SOURCE_LABEL, className: STATUS_WORDS.unusable.className }
+    : STATUS_WORDS[plan.status];
   const usable = plan.status !== "unusable";
   const segments = entry.segments ?? [];
   const pickingParts = (ref.include_segments?.length ?? 0) > 0;
@@ -175,7 +182,16 @@ export function SourceReviewRow({
         </Badge>
       </div>
 
-      {(entry.state !== "ready" || plan.status === "left_out") && (
+      {archived && onRestored ? (
+        // State, not a sentence: the badge says "Archived"; this row only offers the way back.
+        <div className="mx-3 mb-2 flex items-center gap-2">
+          <RestoreSourceButton
+            resourceType={ref.resource_type}
+            resourceId={ref.resource_id}
+            onRestored={onRestored}
+          />
+        </div>
+      ) : (entry.state !== "ready" || plan.status === "left_out") && (
         <p
           className={cn(
             "mx-3 mb-2 flex items-start gap-1.5 text-xs",
