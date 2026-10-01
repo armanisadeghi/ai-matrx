@@ -32,6 +32,7 @@ import {
   type StreamTickRecord,
 } from "@/features/content-ir/studio/stream-simulator";
 import type { RenderPathId, RenderPathVerdict } from "./paths";
+import { drawsKindAsRawJson } from "./draws-raw-kind-json";
 
 /** What a path run hands the UI: blocks to render + the honest verdict. */
 export interface RenderPathRun {
@@ -157,6 +158,8 @@ export function runStreamingPath(
       type: routed.type,
       hasServerData: routed.serverData !== undefined,
     };
+    record.drawsKindAsRawJson =
+      block.status === "streaming" && drawsKindAsRawJson(block);
     records.push(record);
     return action;
   };
@@ -256,6 +259,8 @@ export function wireForPath(
   value: Record<string, unknown>,
 ): string | null {
   if (pathId === "chat_fence") return buildWireText(value, kind, "fenced");
+  if (pathId === "chat_fence_one_line")
+    return buildWireText(value, kind, "fenced_one_line");
   if (pathId === "chat_bare") return buildWireText(value, kind, "bare");
   if (pathId === "chat_artifact") return artifactWire(kind, value);
   return null;

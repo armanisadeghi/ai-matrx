@@ -112,6 +112,13 @@ export interface StreamTickRecord {
    * the discriminator — the "shows the whole JSON, converts when done" flash. */
   rawKindTextVisible: boolean;
   /**
+   * The renderer's own answer (`drawsKindAsRawJson`, filled by routing
+   * callers): this streaming frame carries a `__kind` key yet would draw the
+   * raw JSON card. Stricter than `rawKindTextVisible`, which misses a frame
+   * that HAS an envelope whose kind is still empty.
+   */
+  drawsKindAsRawJson?: boolean;
+  /**
    * What THE KIND ROUTE did with this upsert — filled by callers that route
    * (the Stream tab and the batch checker); absent for pure accumulator runs.
    *

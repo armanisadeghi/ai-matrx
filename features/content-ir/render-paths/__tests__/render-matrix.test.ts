@@ -288,6 +288,22 @@ describe("THE RENDER MATRIX — a valid payload always reaches its component", (
         });
       }
 
+      // THE NEVER-RAW LAW, per frame (2026-09-30). The cell above only judges
+      // the SETTLED block; the one-line ```json defect settled perfectly and
+      // was raw for the entire stream. Every streaming frame is judged here
+      // by the renderer's own decision.
+      for (const pathId of COMPONENT_PATHS.filter(
+        (id) => RENDER_PATHS.find((p) => p.id === id)?.streams,
+      )) {
+        it(`never draws the kind as raw JSON mid-stream on "${pathId}"`, () => {
+          const kind = register(archetype);
+          const run = runRenderPath(pathId, kind, archetype.value);
+          if (!run) throw new Error(`${pathId} produced no run`);
+          const raw = run.records.filter((r) => r.drawsKindAsRawJson);
+          expect(raw.map((r) => `chunk ${r.chunk} (${r.type})`)).toEqual([]);
+        });
+      }
+
       it("keeps the payload intact end to end (zero loss)", () => {
         const kind = register(archetype);
         const run = runRenderPath("chat_bare", kind, archetype.value)!;

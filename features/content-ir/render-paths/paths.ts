@@ -26,6 +26,7 @@
 /** Identity of one render path. Stable — it appears in URLs and verdict rows. */
 export type RenderPathId =
   | "chat_fence"
+  | "chat_fence_one_line"
   | "chat_bare"
   | "chat_artifact"
   | "server_partial"
@@ -57,6 +58,15 @@ export const RENDER_PATHS: readonly RenderPathSpec[] = [
     where: "An agent answers in chat with a ```json block inside prose.",
     exercises:
       "Real: the wire text is chunked and fed through StreamBlockAccumulator — the same class every chat surface runs — then rendered through SafeBlockRenderer and applyIrKindRoute. Nothing is simulated.",
+    streams: true,
+  },
+  {
+    id: "chat_fence_one_line",
+    label: "Chat — fenced, one line",
+    where:
+      "An agent answers in chat with a ```json block whose JSON is all on one line. This is the shape that broke on 2026-09-30.",
+    exercises:
+      "Real: same accumulator and renderer as the fenced path, over a fence whose body never completes a line until the fence closes.",
     streams: true,
   },
   {
