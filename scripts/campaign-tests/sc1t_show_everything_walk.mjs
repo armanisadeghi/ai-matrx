@@ -2,7 +2,7 @@
  * LANE SC-1-TAILS — the headless walk of "Show everything" and the per-row organization chip, from
  * the owner's seat (admin@admin.com) and an outsider's seat (test@test.com), on the dev clone.
  *
- *   SC1T_ORIGIN=http://sc1t.localhost:3070 SC1T_IDS='{"tacoma":…,"kept":…,"table":…}' \
+ *   SC1T_ORIGIN=http://sc1t.localhost:3001 SC1T_IDS='{"tacoma":…,"kept":…,"table":…}' \
  *   SC1T_ADMIN_EMAIL=… SC1T_ADMIN_PASSWORD=… SC1T_TEST_EMAIL=… SC1T_TEST_PASSWORD=… \
  *   node scripts/campaign-tests/sc1t_show_everything_walk.mjs
  *
@@ -23,7 +23,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 
 import { setOrganization, signIn, until } from "../lib/seat-browser.mjs";
 
-const ORIGIN = process.env.SC1T_ORIGIN ?? "http://sc1t.localhost:3070";
+const ORIGIN = process.env.SC1T_ORIGIN ?? "http://sc1t.localhost:3001";
 const IDS = JSON.parse(process.env.SC1T_IDS ?? "{}");
 const OUT = process.env.SC1T_SHOTS ?? "/tmp/sc1t-shots";
 const seats = {

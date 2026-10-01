@@ -12,7 +12,7 @@ const b = await chromium.launch({ headless: true });
 // right rail. 520px is that rail.
 const ctx = await b.newContext({ viewport: { width: 520, height: 1100 } });
 const p = await ctx.newPage();
-await p.goto("http://127.0.0.1:3005/?demo=import", { waitUntil: "networkidle", timeout: 90000 });
+await p.goto("http://127.0.0.1:3001/?demo=import", { waitUntil: "networkidle", timeout: 90000 });
 await p.waitForSelector('input[type=file]', { timeout: 60000 });
 await p.setInputFiles('input[type=file]', CSV);
 await p.waitForTimeout(4000);

@@ -1,6 +1,6 @@
 // LANE S6 — THE OUTSIDER'S SEAT, HEADLESS: a client opens her supplier's portal from a magic link.
 //
-//   S6_ORIGIN=http://s6.localhost:3067 S6_SLUG=<portal slug> S6_EMAIL=test@test.com \
+//   S6_ORIGIN=http://s6.localhost:3001 S6_SLUG=<portal slug> S6_EMAIL=test@test.com \
 //   S6_SUPABASE_URL=https://<clone ref>.supabase.co S6_SERVICE_KEY=<clone secret key> \
 //   [S6_EXPECT='["text that must appear", …]'] [S6_FORBID='["text that must not", …]'] \
 //   [S6_TAG=<shot name prefix>] node scripts/campaign-tests/uichamp_s6_portal_walk.mjs
@@ -18,7 +18,7 @@
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const ORIGIN = process.env.S6_ORIGIN ?? "http://s6.localhost:3067";
+const ORIGIN = process.env.S6_ORIGIN ?? "http://s6.localhost:3001";
 const SLUG = process.env.S6_SLUG;
 const EMAIL = process.env.S6_EMAIL ?? "test@test.com";
 const SUPA = process.env.S6_SUPABASE_URL;

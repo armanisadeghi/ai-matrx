@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import { randomBytes } from "node:crypto";
 import { writeFileSync, mkdirSync } from "node:fs";
 
-const ORIGIN = "http://127.0.0.1:3051";
+const ORIGIN = "http://127.0.0.1:3001";
 const CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
 const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
 mkdirSync(OUT, { recursive: true });

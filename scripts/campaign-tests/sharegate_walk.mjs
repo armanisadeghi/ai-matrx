@@ -14,7 +14,7 @@
  *      the home-program rows are on the screen.
  *   4. The switch lives only in the organization's settings, in plain words.
  *
- *   ORIGIN=http://sharegate.localhost:3067 OUT=<dir> AI_ADMIN_USERNAME=… AI_ADMIN_PASSWORD=… \
+ *   ORIGIN=http://sharegate.localhost:3001 OUT=<dir> AI_ADMIN_USERNAME=… AI_ADMIN_PASSWORD=… \
  *   TEST_SEAT_EMAIL=test@test.com TEST_SEAT_PASSWORD=… node scripts/campaign-tests/sharegate_walk.mjs
  */
 import { chromium } from "playwright";
@@ -22,7 +22,7 @@ import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { signIn, until, sleep } from "../lib/seat-browser.mjs";
 
-const ORIGIN = process.env.ORIGIN ?? "http://sharegate.localhost:3067";
+const ORIGIN = process.env.ORIGIN ?? "http://sharegate.localhost:3001";
 const OUT = process.env.OUT;
 if (!OUT) throw new Error("OUT is required");
 mkdirSync(OUT, { recursive: true });

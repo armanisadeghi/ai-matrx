@@ -15,7 +15,7 @@ const argv = process.argv.slice(2);
 const arg = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
 const TABLE = arg("--table");
 const OUT = arg("--out", "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22");
-const ORIGIN = "http://127.0.0.1:3049";
+const ORIGIN = "http://127.0.0.1:3001";
 if (!TABLE) { console.error("--table <uuid> is required"); process.exit(2); }
 mkdirSync(OUT, { recursive: true });
 

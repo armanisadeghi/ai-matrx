@@ -6,7 +6,7 @@
 //                 days in calendar order, capped by the host prop (`?cap=`), the rest column first and
 //                 its sentence (F2, F7); the page never scrolls sideways at 390 (F8); the window menu's
 //                 All time / Today / Yesterday / Custom range (F6). 1280 and 390, light and dark.
-//                   DEMO=http://127.0.0.1:3049 PART=package node scripts/drill-wave1-fixes-walk.mjs
+//                   DEMO=http://127.0.0.1:3001 PART=package node scripts/drill-wave1-fixes-walk.mjs
 //                 (start: cd aidream/apps/shared/design-system && DESIGN_SYSTEM_DEMO_PORT=3049 pnpm demo)
 //
 //   PART=app      /administration/usage on the shared preview (read-only, admin@admin.com): the
@@ -47,7 +47,7 @@ const shot = async (page, name) => page.screenshot({ path: `${SHOTS}/${PART}-${n
 const browser = await chromium.launch({ headless: true });
 
 async function packageWalk() {
-  const DEMO = process.env.DEMO ?? "http://127.0.0.1:3049";
+  const DEMO = process.env.DEMO ?? "http://127.0.0.1:3001";
   for (const theme of ["light", "dark"]) {
     for (const width of [1280, 390]) {
       const context = await browser.newContext({ viewport: { width, height: 860 } });

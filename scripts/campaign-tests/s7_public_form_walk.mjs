@@ -13,7 +13,7 @@
  *   · stranger, device 1 — a FRESH context, no cookies, phone viewport, the referral link;
  *   · stranger, device 2 — ANOTHER fresh context, no cookies, laptop viewport, her saved link.
  *
- *   WALK_ORIGIN=http://s7prime.localhost:3067 WALK_FORM=<id> WALK_TABLE=<id> \
+ *   WALK_ORIGIN=http://s7prime.localhost:3001 WALK_FORM=<id> WALK_TABLE=<id> \
  *   WALK_EMAIL=admin@admin.com WALK_PASSWORD=… WALK_OUT=<dir> node scripts/campaign-tests/s7_public_form_walk.mjs
  */
 import { chromium } from "playwright";
@@ -22,7 +22,7 @@ import { resolve } from "node:path";
 
 import { signIn, setOrganization, until } from "../lib/seat-browser.mjs";
 
-const ORIGIN = process.env.WALK_ORIGIN ?? "http://s7prime.localhost:3067";
+const ORIGIN = process.env.WALK_ORIGIN ?? "http://s7prime.localhost:3001";
 const FORM = process.env.WALK_FORM ?? "";
 const TABLE = process.env.WALK_TABLE ?? "";
 const EMAIL = process.env.WALK_EMAIL ?? "";

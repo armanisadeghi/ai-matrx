@@ -4,7 +4,7 @@ const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-
 const b = await chromium.launch({ headless: true });
 const ctx = await b.newContext({ viewport: { width: 1100, height: 950 } });
 const p = await ctx.newPage();
-await p.goto("http://127.0.0.1:3005/?demo=dashboard", { waitUntil: "networkidle", timeout: 90000 });
+await p.goto("http://127.0.0.1:3001/?demo=dashboard", { waitUntil: "networkidle", timeout: 90000 });
 await p.waitForTimeout(2500);
 await p.getByRole("button", { name: "Send on a schedule" }).first().click();
 await p.waitForTimeout(2500);

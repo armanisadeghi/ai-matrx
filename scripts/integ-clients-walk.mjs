@@ -15,7 +15,7 @@
  * screen said; the database half of the proof (born in the store, rows in the store, older copy
  * untouched) is read by the caller against the clone. Screenshots go to OUT.
  *
- *   ORIGIN=http://integclients.localhost:3059 OUT=<dir> \
+ *   ORIGIN=http://integclients.localhost:3001 OUT=<dir> \
  *   AI_ADMIN_USERNAME=… AI_ADMIN_PASSWORD=… TEST_SEAT_EMAIL=… TEST_SEAT_PASSWORD=… \
  *   WALK_STAMP=<short label> node scripts/integ-clients-walk.mjs
  */
@@ -23,7 +23,7 @@ import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 import { signIn, setOrganization, until, sleep } from "./lib/seat-browser.mjs";
 
-const ORIGIN = process.env.ORIGIN ?? "http://integclients.localhost:3059";
+const ORIGIN = process.env.ORIGIN ?? "http://integclients.localhost:3001";
 const OUT = process.env.OUT;
 const STAMP = process.env.WALK_STAMP ?? new Date().toISOString().slice(11, 16).replace(":", "");
 const ORG = "admin's Workspace";

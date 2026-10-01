@@ -16,7 +16,7 @@ import { join, resolve } from "node:path";
 import { signIn } from "../lib/seat-browser.mjs";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
-const ORIGIN = process.argv[2] ?? "http://127.0.0.1:3057";
+const ORIGIN = process.argv[2] ?? "http://127.0.0.1:3001";
 const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
 const env = Object.fromEntries(
   readFileSync(resolve(ROOT, ".env.local"), "utf8")

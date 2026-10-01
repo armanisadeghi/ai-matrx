@@ -5,7 +5,7 @@
 // It photographs the picker, the held state, the missing-answers sentence, the
 // confirmation with its manage link, the manage page, and the cancel confirm.
 //
-//   BASE=http://127.0.0.1:3012 FORM=<booking page id> \
+//   BASE=http://127.0.0.1:3001 FORM=<booking page id> \
 //     node scripts/campaign-tests/render-booking.cjs
 //
 // IT NEEDS A SERVER AND THIS MACHINE ALLOWS EXACTLY ONE. `next dev` is refused
@@ -22,7 +22,7 @@ const { chromium } = require("playwright");
 const fs = require("fs");
 const path = require("path");
 
-const BASE = process.env.BASE || "http://127.0.0.1:3012";
+const BASE = process.env.BASE || "http://127.0.0.1:3001";
 const FORM = process.env.FORM;
 const OUT = process.env.OUT || "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-20";
 

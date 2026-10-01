@@ -6,7 +6,7 @@
 //                 source): the Pareto line (sentence, markers, the line under the cut only while
 //                 the table reads largest first), each group's Copy menu, ticks and one Copy for
 //                 AI of the ticked groups, 390 px, dark.
-//                   DEMO=http://127.0.0.1:3046 PART=package node scripts/drill-explorer-walk.mjs
+//                   DEMO=http://127.0.0.1:3001 PART=package node scripts/drill-explorer-walk.mjs
 //                 (start the demo: cd aidream/apps/shared/design-system && DESIGN_SYSTEM_DEMO_PORT=3046 pnpm demo)
 //
 //   PART=app      /administration/usage on the shared preview as admin@admin.com through the
@@ -35,7 +35,7 @@ const shot = async (page, name) => page.screenshot({ path: `${SHOTS}/${PART}-${n
 const browser = await chromium.launch({ headless: true });
 
 async function packageWalk() {
-  const DEMO = process.env.DEMO ?? "http://127.0.0.1:3046";
+  const DEMO = process.env.DEMO ?? "http://127.0.0.1:3001";
   const context = await browser.newContext({ viewport: { width: 1280, height: 860 } });
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: DEMO });
   const page = await context.newPage();
