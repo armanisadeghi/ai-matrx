@@ -14,7 +14,7 @@ let search = new URLSearchParams("");
 jest.mock("next/navigation", () => ({ useSearchParams: () => search }));
 jest.mock("@ai-matrx/associations/react", () => ({
   useEntityTitles: () => ({ titleFor: () => "Untitled", isUnresolved: () => false, loading: false }),
-  useAssociations: () => ({ edges: [], status: "ready", error: null }),
+  useAssociations: () => ({ edges: [], status: "ready", error: null, reload: async () => undefined }),
 }));
 const fetchDocumentChunks = jest.fn();
 jest.mock("@/features/rag/api/document", () => ({

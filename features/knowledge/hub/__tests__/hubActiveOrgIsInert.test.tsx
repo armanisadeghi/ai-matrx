@@ -68,7 +68,7 @@ jest.mock("@/features/organizations/hooks", () => ({
 }));
 jest.mock("@ai-matrx/associations/react", () => ({
   useEntityTitles: () => ({ titleFor: () => "Untitled", isUnresolved: () => false, loading: false }),
-  useAssociations: () => ({ edges: [], status: "ready", error: null }),
+  useAssociations: () => ({ edges: [], status: "ready", error: null, reload: async () => undefined }),
   UniversalAssociationPicker: () => null,
 }));
 const ready = { status: "ready" as const, items: [], error: null, retry: jest.fn() };

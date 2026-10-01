@@ -13,7 +13,7 @@ import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 jest.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams("q=plan") }));
 jest.mock("@ai-matrx/associations/react", () => ({
   useEntityTitles: () => ({ titleFor: () => "Untitled" }),
-  useAssociations: () => ({ edges: [], status: "ready", error: null }),
+  useAssociations: () => ({ edges: [], status: "ready", error: null, reload: async () => undefined }),
 }));
 jest.mock("@/features/knowledge/hub/components/PeekSourceSegments", () => ({ PeekSourceSegments: () => null }));
 jest.mock("@/features/knowledge/hub/embeds/HubDetailEmbed", () => ({

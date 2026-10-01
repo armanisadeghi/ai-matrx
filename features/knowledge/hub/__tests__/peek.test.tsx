@@ -52,7 +52,7 @@ jest.mock("@/features/shell/components/header/RouteHeader", () => ({
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
 jest.mock("@ai-matrx/associations/react", () => ({
   useEntityTitles: () => ({ titleFor: () => "Untitled", isUnresolved: () => false, loading: false }),
-  useAssociations: () => ({ edges: [], status: "ready", error: null }),
+  useAssociations: () => ({ edges: [], status: "ready", error: null, reload: async () => undefined }),
   UniversalAssociationPicker: () => null,
 }));
 const ready = { status: "ready" as const, items: [], error: null, retry: jest.fn() };
