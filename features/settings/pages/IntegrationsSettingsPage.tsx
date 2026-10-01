@@ -683,6 +683,7 @@ export function IntegrationsWorkspace({
   const handleTestConnection = async (entry: McpCatalogEntry) => {
     if (checkingServerId) return;
     setCheckingServerId(entry.serverId);
+    const record = { type: "mcp_server", id: entry.serverId, title: entry.name };
     try {
       // This explicit click may ask for an organization. Background catalog
       // reads remain non-interactive through the service's GET default.
@@ -690,7 +691,8 @@ export function IntegrationsWorkspace({
       const discovery = await dispatch(
         discoverServerTools(entry.serverId),
       ).unwrap();
-      toast.success(
+      recordToast.success(
+        record,
         `Found ${discovery.tools.length} ${discovery.tools.length === 1 ? "tool" : "tools"} for ${entry.name}`,
         {
           description:
@@ -699,7 +701,7 @@ export function IntegrationsWorkspace({
       );
     } catch (error) {
       if (!isOrganizationSelectionCancelled(error)) {
-        toast.error(`Could not check ${entry.name}'s tools`, {
+        recordToast.error(record, `Could not check ${entry.name}'s tools`, {
           description: toolCheckFailure(error),
         });
       }

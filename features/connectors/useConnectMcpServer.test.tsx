@@ -27,6 +27,7 @@ jest.mock("@/features/organizations/awaitWorkspace", () => ({
 }));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
+  recordToast: { success: jest.fn(), error: jest.fn() },
 }));
 import { useConnectMcpServer } from "./useConnectMcpServer";
 

@@ -8,6 +8,10 @@ hydration and sign-out races from becoming durable permission errors.
 Authenticated browser reads also use only the client-safe connection
 projection; vault reference identifiers stay excluded.
 
+Connection, installation, refresh, and disconnect actions share a synchronous
+pending guard in `useGitHubConnection`. Authorization errors and cancellation
+release the guard; the card shows a spinner while an action is pending.
+
 ## What the user sees
 
 `GitHubConnectionCard` is the ONE GitHub surface, used full on
@@ -48,6 +52,10 @@ exchange refuses into that same completion surface: GitHub always starts from
 the organization-aware connection door in AI Matrx Settings.
 
 ## Changelog
+
+- 2026-10-01 — Prevented overlapping GitHub connection actions and restored
+  retry after authorization exceptions; covered the real hook with rapid-click
+  and cancellation/error tests. No new provider grant is implied by these checks.
 
 - 2026-09-27 — Applied the same safe popup-completion error boundary to GitHub
   callback backend failures, malformed responses, and unsafe continuations;

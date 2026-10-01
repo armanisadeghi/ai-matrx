@@ -29,7 +29,7 @@ import { githubConnectUrl } from "@/features/github-integration/service";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 
 export function useConnectMcpServer() {
   const dispatch = useAppDispatch();
@@ -79,6 +79,7 @@ export function useConnectMcpServer() {
 
     pending.current = true;
     setConnectingSlug(server.slug);
+    const record = { type: "mcp_server", id: server.serverId, title: server.name };
     try {
       if (route === "none") {
         await dispatch(
@@ -87,7 +88,7 @@ export function useConnectMcpServer() {
             transport: server.transport,
           }),
         ).unwrap();
-        toast.success(`Connected to ${server.name}`);
+        recordToast.success(record, `Connected to ${server.name}`);
       } else {
         const outcome = await startMcpOAuthPopup(
           server.serverId,
@@ -95,9 +96,9 @@ export function useConnectMcpServer() {
           endpointOverride,
         );
         if (outcome.ok) {
-          toast.success(`Connected to ${server.name}`);
+          recordToast.success(record, `Connected to ${server.name}`);
         } else if (!outcome.cancelled) {
-          toast.error(`Could not connect to ${server.name}`, {
+          recordToast.error(record, `Could not connect to ${server.name}`, {
             description: outcome.error,
           });
           return;
@@ -112,7 +113,7 @@ export function useConnectMcpServer() {
         dispatch(fetchAvailability({ organizationId })); // org-filter: server-call re-checks the health of the connection just made in the organization it was connected in
       }
     } catch (cause) {
-      toast.error(`Could not connect to ${server.name}`, {
+      recordToast.error(record, `Could not connect to ${server.name}`, {
         description: cause instanceof Error ? cause.message : String(cause),
       });
     } finally {
