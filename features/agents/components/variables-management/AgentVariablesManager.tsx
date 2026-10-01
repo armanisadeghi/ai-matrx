@@ -22,6 +22,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   setAgentControlBinding,
+  setAgentMessages,
   setAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/slice";
 import {
@@ -40,6 +41,8 @@ import {
 import {
   isCustomDataBinding,
   isEmptyBinding,
+  unplacedBoundVariableNames,
+  withBoundVariablePlaced,
 } from "@/features/agents/utils/variable-binding";
 import { CustomDataBindingSummary } from "./custom-data/CustomDataBindingSummary";
 
@@ -86,6 +89,17 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
     .join(" ");
 
   const definedNamesSet = new Set(variables.map((v) => v.name));
+  // Bound to a table but placed in no message: the server still delivers it as
+  // a labelled context block; the chip offers to place it (never blocks a save).
+  const unplacedBound = new Set(unplacedBoundVariableNames(variables, messages));
+  const handlePlace = (name: string) => {
+    dispatch(
+      setAgentMessages({
+        id: agentId,
+        messages: withBoundVariablePlaced(messages ?? [], name),
+      }),
+    );
+  };
   const undeclaredNames = extractVariableReferences(allText).filter(
     (n) => !definedNamesSet.has(n) && isDeclarableVariableName(n),
   );
@@ -236,6 +250,17 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                 >
                   {variable.name}
                 </button>
+                {unplacedBound.has(variable.name) && (
+                  <button
+                    type="button"
+                    onClick={() => handlePlace(variable.name)}
+                    className="shrink-0 rounded px-1 text-[10px] font-medium text-primary ring-1 ring-primary/40 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    title={`Add {{${variable.name}}} to the system prompt`}
+                    aria-label={`Place ${variable.name} in the system prompt`}
+                  >
+                    Place
+                  </button>
+                )}
                 {isEmptyBinding(variable.binding) && (
                   <span
                     className="shrink-0 rounded px-1 text-[10px] font-medium text-warning ring-1 ring-warning/40"

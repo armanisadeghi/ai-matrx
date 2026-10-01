@@ -43,8 +43,15 @@ export function resolveVariablesForRequest(args: {
     }
   }
 
+  // A name bound to custom data is never sent, even when a value sits in
+  // userValues: reopening a conversation stamps `chat.conversation.variables`
+  // back, and the server seeds that row with the saved default ("") before the
+  // binding resolves (A01, 2026-10-01).
+  const customDataBound = new Set(
+    definitions.filter((d) => isCustomDataBinding(d.binding)).map((d) => d.name),
+  );
   for (const [name, value] of Object.entries(userValues)) {
-    if (!(name in out)) out[name] = value;
+    if (!(name in out) && !customDataBound.has(name)) out[name] = value;
   }
 
   return out;
