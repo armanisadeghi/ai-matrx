@@ -267,9 +267,8 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
           </span>
         </div>
         <p className="text-[11px] text-muted-foreground leading-tight mb-2">
-          A bundle carries many tools behind one lister the model expands on
-          demand — one tool slot instead of dozens, so it costs far less
-          context.
+          {/* A bundle carries many tools behind one lister the model expands on demand. */}
+          One tool slot covers many tools, saving context
         </p>
         {/* Internal vs MCP scope */}
         <div className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 p-0.5">

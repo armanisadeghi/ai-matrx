@@ -31,6 +31,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentOutputSchema } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentOutputSchema } from "@/features/agents/redux/agent-definition/slice";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
+import { InfoHint } from "@/components/official/InfoHint";
 import { SettingsJsonEditor } from "../json/SettingsJsonEditor";
 import {
   validateOutputSchema,
@@ -40,22 +41,13 @@ import { KindBindPicker } from "./KindBindPicker";
 import { useKindCatalog } from "./useKindCatalog";
 import { buildKindFingerprintIndex, matchKindForSchema } from "./kindBinding";
 
-// Shown only when the editor is empty — carries the "what is this" context so
-// it doesn't take permanent vertical space, plus a starter shape.
-const PLACEHOLDER = `Structured-output schema — saved to output_schema, applied when the model's Response Format is json_schema (set that on the Settings tab yourself). Editing here changes only the schema.
-
-{
-  "name": "response",
-  "strict": true,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "properties": {
-      "answer": { "type": "string" }
-    },
-    "required": ["answer"]
-  }
-}`;
+// Shown only when the editor is empty. The schema is saved to output_schema
+// and applied only when the model's Response Format is json_schema (set on the
+// Settings tab); editing here changes only the schema. Full starter shape:
+// { "name": "response", "strict": true, "schema": { "type": "object",
+//   "additionalProperties": false, "properties": { "answer": { "type": "string" } },
+//   "required": ["answer"] } }
+const PLACEHOLDER = '{ "name": "response", "strict": true, "schema": { … } }';
 
 interface OutputSchemaTabProps {
   agentId: string;
@@ -150,10 +142,10 @@ export function OutputSchemaTab({
           </span>
         ) : (
           <span className="text-[11px] text-muted-foreground">
-            Write a registered kind&apos;s canonical schema — structured output
-            the platform can render.
+            Write a registered kind&apos;s schema to render the output
           </span>
         )}
+        <InfoHint text="Applies only when Response Format on the Settings tab is json_schema." />
       </div>
 
       <SettingsJsonEditor
@@ -177,10 +169,7 @@ export function OutputSchemaTab({
           <ShieldCheck className="h-3.5 w-3.5 mr-1" />
           Validate
         </Button>
-        <span className="text-[11px] text-muted-foreground">
-          Checks the schema and reports issues — it never changes or applies
-          anything.
-        </span>
+        <InfoHint text="Reports issues; never changes or applies the schema." />
       </div>
 
       {report && (

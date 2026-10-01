@@ -29,6 +29,7 @@ import {
   Layers,
 } from "lucide-react";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { InfoHint } from "@/components/official/InfoHint";
 import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
 import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -399,6 +400,7 @@ export function AgentSettingsForm({
                 <span className="text-xs font-normal text-muted-foreground">
                   retrieval ranking
                 </span>
+                <InfoHint text="Knowledge search boost: 0 none, 10–25 lift, 50+ pin near top, negative demotes; extraction jobs can override." />
               </Label>
               <Input
                 type="number"
@@ -422,14 +424,6 @@ export function AgentSettingsForm({
                 placeholder="0"
                 className="bg-background/50 focus-visible:ring-primary/20 font-mono"
               />
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Multiplier applied to this agent's extracted content in Knowledge
-                search. <span className="font-medium">0</span> = no boost
-                (default). <span className="font-medium">10–25</span> = lift
-                over raw extracts. <span className="font-medium">50+</span> =
-                pin near top. Negative values demote. Page-extraction jobs can
-                override per-run.
-              </p>
             </div>
           </div>
 
@@ -674,15 +668,9 @@ export function AgentSettingsForm({
               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-pink-500/10 text-pink-500 border border-pink-500/20">
                 <Network className="w-4 h-4" />
               </div>
-              <div className="space-y-0.5">
-                <h3 className="font-semibold text-foreground/90 text-base tracking-tight">
-                  Hierarchy Scopes
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Bind this agent to organizational structures to restrict
-                  display or functionality context.
-                </p>
-              </div>
+              <h3 className="font-semibold text-foreground/90 text-base tracking-tight">
+                Hierarchy Scopes
+              </h3>
             </div>
 
             <div className="relative group rounded-xl bg-card/40 backdrop-blur-sm border border-border/60 p-5 shadow-sm overflow-hidden transition-all duration-300 hover:border-pink-500/30 hover:shadow-md">

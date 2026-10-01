@@ -409,7 +409,7 @@ export function DocumentsWorkspace({
         label: "Detach this document",
         icon: Unlink,
         description: clickedTab?.closable
-          ? "Closes the tab and removes the attachment — the document is kept"
+          ? "Closes the tab; the document is kept"
           : "This conversation's own document can't be detached",
         disabled: !clickedTab?.closable,
         destructive: true,

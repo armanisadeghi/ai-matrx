@@ -567,7 +567,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
             This model doesn&apos;t support tools.
             {/* read-gate-exempt: tools saved on the agent being edited in this form, not rows fetched from a read */}
             {savedToolCount > 0
-              ? ` The ${savedToolCount} tool${savedToolCount === 1 ? "" : "s"} configured below ${savedToolCount === 1 ? "will" : "will"} be dropped at run time for this model — switch to a tool-capable model to use them.`
+              ? ` The ${savedToolCount} tool${savedToolCount === 1 ? " below is" : "s below are"} dropped at run — switch to a tool-capable model.`
               : " Adding tools is disabled while it's selected."}
           </p>
         </div>
@@ -1834,10 +1834,7 @@ function CustomToolsTab({
           <p className="text-xs font-semibold text-foreground">
             Custom Tool Definitions
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            Inline tools following the MCP standard. Always delegated to the
-            client.
-          </p>
+          {/* Inline tools following the MCP standard; always delegated to the client. */}
         </div>
         {!isAdding && (
           <Button
@@ -1876,8 +1873,7 @@ function CustomToolsTab({
             {/* read-gate-exempt: editor over the loaded agent's own custom tool definitions (a form over its record), not a list read's answer */}
             <p className="text-sm">No custom tools defined.</p>
             <p className="text-xs max-w-xs text-center">
-              Custom tools let you define inline tool specifications that are
-              always delegated to the client for execution.
+              Define inline tools the client runs
             </p>
           </div>
         )}
@@ -2312,11 +2308,9 @@ function ClientToolsTab({
         <p className="text-xs font-semibold text-foreground">
           Client-Handled Tools
         </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          When the AI calls a client tool, the server delegates it back to the
-          browser for execution, then waits for the result — there's no
-          countdown, so it's fine if a tool needs you to act first.
-        </p>
+        {/* When the AI calls a client tool, the server delegates it to the
+            browser and waits for the result with no countdown, so a tool may
+            wait for the person to act first. */}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
@@ -2326,8 +2320,7 @@ function ClientToolsTab({
             {/* read-gate-exempt: editor over the loaded agent's own enabled tools (a form over its record), not a list read's answer */}
             <p className="text-sm">No tools enabled yet.</p>
             <p className="text-xs max-w-xs text-center">
-              Enable server or custom tools first, then mark which ones the
-              client should handle.
+              Enable tools first, then mark client-handled ones
             </p>
           </div>
         ) : (
@@ -2371,29 +2364,12 @@ function ClientToolsTab({
           </div>
         )}
 
-        <div className="mt-6 p-3 rounded-lg bg-muted/40 border border-border">
-          <div className="flex items-start gap-2">
-            <Info className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
-            <div className="text-[11px] text-muted-foreground space-y-1">
-              <p>
-                <strong>How client tools work:</strong> When the AI model
-                invokes a client tool, the server emits a{" "}
-                <code className="text-[10px] bg-muted px-1 py-0.5 rounded">
-                  tool_delegated
-                </code>{" "}
-                event instead of executing it. Your client code receives the
-                call, runs it, and POSTs the result back; the loop stays
-                suspended until then, with no short response deadline.
-              </p>
-              <p>
-                Custom tools are automatically delegated — they have no
-                server-side implementation. For server tools, toggling
-                "client-handled" tells the server to delegate instead of
-                executing.
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Protocol: when the model invokes a client tool, the server emits a
+            `tool_delegated` event instead of executing it. The client runs the
+            call and POSTs the result back; the loop stays suspended until then,
+            with no short response deadline. Custom tools have no server-side
+            implementation and are always delegated; for server tools, toggling
+            "client-handled" tells the server to delegate instead of executing. */}
       </div>
     </div>
   );
@@ -2728,8 +2704,7 @@ function McpToolsTab({
               MCP Server Integration
             </h3>
             <p className="text-xs leading-relaxed">
-              Connect external MCP servers to give this agent access to tools
-              from services like Notion, Stripe, Supabase, GitHub, and more.
+              Add tools from Notion, Stripe, GitHub and more
             </p>
           </div>
           <Button
@@ -3116,7 +3091,7 @@ export function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
         Bearer Token
       </p>
       <p className="text-[10px] text-muted-foreground leading-relaxed">
-        Provide an access token or personal access token (PAT) for {entry.name}.
+        Paste an access token or PAT for {entry.name}.
         {entry.docsUrl && (
           <>
             {" "}
@@ -3379,7 +3354,7 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
       <div className="rounded border border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
         <p>No local configurations available for this server.</p>
         <p className="mt-1 text-[10px]">
-          This server requires a local stdio setup. Check the{" "}
+          Needs a local stdio setup; see the{" "}
           <a
             href={entry.docsUrl ?? "#"}
             target="_blank"
@@ -3387,8 +3362,7 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
             className="text-primary hover:underline"
           >
             documentation
-          </a>{" "}
-          for manual setup instructions.
+          </a>
         </p>
       </div>
     );

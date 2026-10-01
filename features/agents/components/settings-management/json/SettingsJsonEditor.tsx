@@ -225,7 +225,7 @@ export function SettingsJsonEditor({
       onKeyDown={handleKeyDown}
       placeholder={
         placeholder ??
-        '{"temperature": 0.7, "max_output_tokens": 1024} — trailing commas and // comments OK'
+        '{"temperature": 0.7, "max_output_tokens": 1024}'
       }
       className={`font-mono text-xs leading-5 ${fillHeight ? "h-full" : "resize-y"}`}
       style={{
@@ -270,8 +270,7 @@ export function SettingsJsonEditor({
       {showFooter && (
         <div className="flex items-center gap-2 justify-end">
           <span className="text-[11px] text-muted-foreground mr-auto">
-            Trailing commas, comments, and unquoted keys all OK · ⌘+Enter to
-            apply
+            Relaxed JSON OK · ⌘+Enter to apply
           </span>
           {text !== lastInitialRef.current && (
             <Button

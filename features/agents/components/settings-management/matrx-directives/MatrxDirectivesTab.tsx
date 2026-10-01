@@ -147,13 +147,11 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Directives: create tasks/projects, write records, run custom actions.
+          Their guidance is appended to the system prompt at run time; the
+          authored prompt is never modified. */}
       <p className="text-[11px] text-muted-foreground leading-snug">
-        <span className="font-medium text-foreground">Matrx Directives</span> are
-        the things this agent can do from its output — create tasks or projects,
-        write records, run custom actions. List as many as you need. Guidance
-        for them is added to the system prompt{" "}
-        <span className="font-medium">automatically at run time</span> — your
-        authored prompt is never modified.
+        Things this agent can do from its output
       </p>
 
       {/* ── Selected actions ───────────────────────────────────────────────── */}

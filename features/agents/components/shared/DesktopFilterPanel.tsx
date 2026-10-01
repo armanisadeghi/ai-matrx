@@ -383,9 +383,6 @@ export function DesktopFilterPanel({
 
           {allCategories.length > 0 && (
             <FilterSection label="Categories" active={includedCats.length > 0}>
-              <p className="text-[11px] text-muted-foreground mb-1">
-                Select to filter. None selected = show all.
-              </p>
               <MultiSelectChips
                 items={allCategories}
                 selected={includedCats}
@@ -398,9 +395,6 @@ export function DesktopFilterPanel({
 
           {allTags.length > 0 && (
             <FilterSection label="Tags" active={includedTags.length > 0}>
-              <p className="text-[11px] text-muted-foreground mb-1">
-                Select to filter. None selected = show all.
-              </p>
               <MultiSelectChips
                 items={allTags}
                 selected={includedTags}

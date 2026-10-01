@@ -545,7 +545,7 @@ export function WorkingDocumentPanel({
                 surfaceContext={resolvedSurfaceContext}
                 placeholder={
                   isScratch
-                    ? "Your private scratchpad. Jot notes, links, or context here — the agent can read it to understand what you're thinking, but it never edits it."
+                    ? "Private notes the agent reads, never edits"
                     : undefined
                 }
               />
@@ -575,8 +575,8 @@ export function WorkingDocumentPanel({
           <FileText className="h-8 w-8 text-muted-foreground/40" />
           <p className="max-w-xs text-sm text-muted-foreground">
             {isScratch
-              ? "The scratchpad is off. Turn it on for a private space the agent can read but never edits."
-              : "The working document is off. Turn it on to collaborate with the agent on a shared, living document."}
+              ? "Scratchpad is off; turn it on for notes the agent only reads"
+              : "Working document is off; turn it on to write with the agent"}
           </p>
           <button
             type="button"

@@ -855,11 +855,7 @@ function ModelConfigViewer({
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] text-muted-foreground">
-        Parameters this model exposes. These drive which settings appear in the
-        Settings tab.
-      </p>
-
+      {/* Parameters this model exposes; they drive which settings appear in the Settings tab. */}
       {entries.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">
           No controls defined for this model.
@@ -2038,9 +2034,8 @@ export function AgentSettingsCore({
         {activeTab === "raw" && (
           <div className="flex flex-col gap-2">
             <p className="text-[10px] text-muted-foreground">
-              Read-only view of this agent&apos;s stored settings. Run inputs
-              show as{" "}
-              <code>{'{ "$var": name, "default": value }'}</code>.{" "}
+              {/* Run inputs show as { "$var": name, "default": value }. */}
+              Read-only view of stored settings.{" "}
               {allIssues.length > 0 && (
                 <span className="text-yellow-600 dark:text-yellow-400">
                   Highlighted lines have issues.
@@ -2066,9 +2061,7 @@ export function AgentSettingsCore({
         {activeTab === "raw-edit" && (
           <div className="flex flex-col h-full gap-2">
             <p className="text-[10px] text-muted-foreground flex-shrink-0">
-              Edit the full JSON payload directly, then apply your changes.
-              {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- "//" is the literal JSON5 syntax being described to the user, not a JS comment. */}
-              Trailing commas and <code>// comments</code> are fine.
+              Edit the JSON, then apply
             </p>
 
             <SettingsJsonEditor

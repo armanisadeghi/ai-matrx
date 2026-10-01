@@ -322,10 +322,8 @@ export function WorkingDocumentEditor({
           textareaRef={textareaRef}
           surfaceName={menuProps.surfaceName}
           getApplicationScope={getApplicationScope}
-          placeholder={
-            placeholder ??
-            "Empty. Ask the agent to draft this — or type here. Your edits and the agent's stay in sync each round."
-          }
+          // Person's and agent's edits stay in sync each round.
+          placeholder={placeholder ?? "Ask the agent to draft this, or type here"}
           className="h-full min-h-0"
           showVoiceButton={!readOnly}
           embedded

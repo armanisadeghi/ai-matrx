@@ -190,7 +190,7 @@ export function HistoryDetail({ history }: { history: HistoryState }) {
         : history.status === "failed"
           ? "The history read failed."
           : historySummary(history.counts)}{" "}
-      <span className="opacity-70">Context only — these are past runs, not places the agent will run again, so they are never drift-checked.</span>
+      <span className="opacity-70">Past runs; never drift-checked</span>
     </p>
   );
 }

@@ -176,7 +176,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
     const ok = await confirm({
       title: `Move ${count} usage${count === 1 ? "" : "s"} to the active version?`,
       description:
-        "Every stale pin you can manage — shortcuts, apps, derived agents — will be re-pinned to the agent's active version. Mandates and usages owned by others are not touched.",
+        "Stale pins you can manage move to the active version. Mandates and others' pins are not touched.",
       confirmLabel: `Move ${count}`,
     });
     if (!ok) return;
@@ -526,8 +526,10 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
               ? `No ${dimensionMeta(active).plural.toLowerCase()} use this agent`
               : "Nothing uses this agent yet",
             description: active && active !== "history"
-              ? "This dimension was checked and is empty. Clear the tile to see every dimension."
-              : "No mandate, shortcut, app, scheduled task, workflow, surface, SMS line, derived agent, or code path points at it.",
+              ? "Checked and empty; clear the tile to see all"
+              // Every dimension (mandate, shortcut, app, scheduled task, workflow,
+              // surface, SMS line, derived agent, code path) was checked.
+              : "Checked every dimension; none point at it",
           }}
           // This engine already lives inside a WindowPanel, so a row opens its
           // detail in a second window (the table's own), never the page-level
@@ -789,7 +791,7 @@ function RowDetail({ row }: { row: UnifiedUsageRow }) {
         ) : null}
         {verdict.changed_columns && verdict.changed_columns.length > 0 ? (
           <p className="text-xs text-muted-foreground">
-            Columns that differ between the pinned and newest versions:{" "}
+            Changed columns:{" "}
             <code className="font-mono text-[11px]">{verdict.changed_columns.join(", ")}</code>
           </p>
         ) : null}
@@ -805,7 +807,7 @@ function RowDetail({ row }: { row: UnifiedUsageRow }) {
       <div className="space-y-2 p-3 text-xs text-muted-foreground">
         <p>
           {aggregate.count} {dimensionMeta(aggregate.usageType).plural.toLowerCase()} of this agent belong to other people
-          {aggregate.organizationName ? ` in ${aggregate.organizationName}` : ""}. They are counted here so the picture is complete, and never listed or moved — those pins are theirs.
+          {aggregate.organizationName ? ` in ${aggregate.organizationName}` : ""}; counted, never listed or moved.
         </p>
         <p>
           {aggregate.breaking} breaking · {aggregate.silentBreaking} silent break · {aggregate.warning} behind · {aggregate.info} low-risk.
