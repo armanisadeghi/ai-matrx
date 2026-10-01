@@ -17,6 +17,7 @@
 //     floating Save pill commits them.
 
 import { useEffect, useSyncExternalStore } from "react";
+import { usePhoneWidth } from "../usePhoneWidth";
 import { MoreVertical, Star } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
@@ -368,6 +369,18 @@ export function EntityListTable<TRow>({
     showSharedColumns,
   });
 
+  // 🚨 THE PHONE CARDS ARE DRAWN ONLY ON A PHONE (DATA-HOME-3E, 2026-10-01). The primitive keeps
+  // its card list mounted at every width (inert and CSS-hidden above `sm`), one card per row of the
+  // PAGE, never virtualized — so a 200-row page drew 200 hidden cards, each with its own copy menu
+  // and ⋮, beside the 26 virtualized table rows, and every scroll step re-rendered all of them:
+  // 72-414 ms long tasks on /data-v2 at 1440. Above `sm` a card renders nothing; below it, the
+  // card. (Rows arrive after mount, so no server-rendered card is ever swapped.)
+  const phone = usePhoneWidth();
+  const cardOnPhone =
+    (render: NonNullable<EntityListConfig<TRow>["mobileCards"]>) =>
+    (row: TRow, index: number, controls: MatrxDataTableMobileCardControls) =>
+      phone ? render(row, index, controls) : null;
+
   const defaultMobileCards = (
     row: TRow,
     _index: number,
@@ -693,7 +706,7 @@ export function EntityListTable<TRow>({
       // the canonical stacked card from the columns the surface already
       // declared, so every list route inherits a phone layout instead of a
       // 3,000px table in a 364px box. See ../phoneCards.tsx.
-      mobileCards={config.mobileCards ?? defaultMobileCards}
+      mobileCards={cardOnPhone(config.mobileCards ?? defaultMobileCards)}
       // A surface that declared no `bulkActions` says `selection={false}` OUT LOUD: since
       // design-system 0.49.x an ABSENT key means "self-managed copy selection", which draws a
       // checkbox column (see Props). `false` is the package's own "no selection".

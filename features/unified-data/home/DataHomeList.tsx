@@ -170,6 +170,9 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       ],
       noneLabels: { owner: "—", records: "Not counted", organization: "None", access: "None" },
       searchPlaceholder: "Search tables, forms, dashboards",
+      // The rows are in hand: every keystroke repaints on that keystroke. Only the server's
+      // full-text layer waits (its own 250 ms, dataHomeCorpus.ts).
+      searchDebounceMs: 0,
       searchToggles: [{ id: "title_only", label: "Title only" }],
       searchTokens: (search) => tokensToFilters(search, corpus.meta),
       filterChips: true,

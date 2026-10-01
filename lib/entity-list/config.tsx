@@ -332,6 +332,15 @@ export interface EntityListConfig<TRow> {
   searchSpansDefaultFilters?: boolean;
 
   /**
+   * HOW LONG TYPED TEXT WAITS BEFORE THE LIST IS ASKED (default 250 ms). The wait exists for a
+   * service that goes to the server on every question. A service that answers from rows already in
+   * hand (a memory-style corpus) sets `0`: every keystroke repaints on that keystroke, the way
+   * Linear's list does (DATA-HOME-3E, 2026-10-01: the data home waited 250 ms for an in-hand ranker
+   * that answers in a few ms). Such a service debounces its own server layer, if it has one.
+   */
+  searchDebounceMs?: number;
+
+  /**
    * The search box's placeholder. Default `Search <plural>…`. Name what the
    * box actually finds when that is more than titles — ids, session ids,
    * commits — so nobody has to guess whether a pasted identifier will work.

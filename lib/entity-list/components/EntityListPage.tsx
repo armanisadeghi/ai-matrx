@@ -359,6 +359,7 @@ export function EntityListPage<TRow>({
     urlState: urlState,
     supportsArchived: config.supportsArchived !== false,
     searchSpansDefaultFilters: config.searchSpansDefaultFilters,
+    ...(config.searchDebounceMs !== undefined ? { searchDebounceMs: config.searchDebounceMs } : {}),
     view: {
       sort: effectiveSort.sort,
       direction: effectiveSort.direction,

@@ -37,7 +37,8 @@ import {
 import { makeScope, scopeKey, type ListScope } from "@/lib/list-scope/types";
 import { DEFAULT_LIST_KNOB_KEY, defaultListScopeFor } from "@/lib/list-scope";
 
-const SEARCH_DEBOUNCE_MS = 250;
+/** The default wait for typed text (EntityListConfig.searchDebounceMs). */
+export const SEARCH_DEBOUNCE_MS = 250;
 
 export interface UseEntityListArgs<TRow> {
   service: EntityListService<TRow>;
@@ -148,6 +149,12 @@ export interface UseEntityListArgs<TRow> {
    * over, behind a chip count nobody reads while staring at an empty table.
    */
   searchSpansDefaultFilters?: boolean;
+  /**
+   * How long typed text waits before the list is asked (default `SEARCH_DEBOUNCE_MS`). `0` = the
+   * keystroke itself asks — for a service that answers from rows in hand
+   * (EntityListConfig.searchDebounceMs).
+   */
+  searchDebounceMs?: number;
 }
 
 /**
@@ -218,6 +225,7 @@ export function useEntityList<TRow>({
   urlState = false,
   supportsArchived = true,
   searchSpansDefaultFilters = false,
+  searchDebounceMs = SEARCH_DEBOUNCE_MS,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
   // Where the landing-tab knob says this list lands. It arrives ASYNCHRONOUSLY
   // (the one knob snapshot, cached for the session), so it is
@@ -319,7 +327,11 @@ export function useEntityList<TRow>({
   // Seeded from the query, not from "" — a URL-backed surface opened at
   // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce
   // catches up.
-  const [debouncedSearch, setDebouncedSearch] = useState(() => query.search);
+  const [heldSearch, setDebouncedSearch] = useState(() => query.search);
+  // NO WAIT AT ALL for a list that answers from rows in hand: the typed text IS the asked text, in
+  // the same render, so the keystroke that changed the box changes the question (no timer, no
+  // second render to catch up).
+  const debouncedSearch = searchDebounceMs <= 0 ? query.search : heldSearch;
   const [rows, setRows] = useState<TRow[]>([]);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
@@ -373,20 +385,21 @@ export function useEntityList<TRow>({
   // of a different question (see THE ROWS ANSWER THIS QUESTION, below).
   const lastTypedAt = useRef(0);
   const typingRecently = () =>
-    Date.now() - lastTypedAt.current < SEARCH_DEBOUNCE_MS * 4;
+    Date.now() - lastTypedAt.current < Math.max(searchDebounceMs, SEARCH_DEBOUNCE_MS) * 4;
 
   // Debounce only TYPED text; every other query field applies immediately.
   useEffect(() => {
+    if (searchDebounceMs <= 0) return;
     if (!typingRecently()) {
       setDebouncedSearch(query.search);
       return;
     }
     const id = setTimeout(
       () => setDebouncedSearch(query.search),
-      SEARCH_DEBOUNCE_MS,
+      searchDebounceMs,
     );
     return () => clearTimeout(id);
-  }, [query.search]);
+  }, [query.search, searchDebounceMs]);
 
   const effectiveQuery: EntityListQuery = { ...query, search: debouncedSearch };
   const queryKey = JSON.stringify({
