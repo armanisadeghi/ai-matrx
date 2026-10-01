@@ -67,31 +67,19 @@ try {
   // ── R01–R03 a table drilled by a Dimension (the custom-table kind) ───────────────────────────
   await ctx.step(["R01", "R02", "R03"], "a clinic table drills by a Dimension and its groups add up", admin, async () => {
     doors.length = 0;
-    await ctx.goto(admin, `/data-v2/${TABLE}?view=grid`);
-    await sleep(8000);
-    // The table's drill toolbar: "No groups" opens the Dimension menu (B4-05: only Dimensions group).
-    const offered = await admin.evaluate(() => {
-      const b = [...document.querySelectorAll("button")].find((x) => /^(No groups|Group)/.test(x.textContent?.trim() ?? ""));
-      if (!b) return null;
-      b.click();
-      return true;
-    });
-    if (!offered) return { ok: false, detail: "no group control on the table page" };
-    await sleep(1500);
-    const picked = await admin.evaluate(() => {
-      // A choice column is a Dimension (BREAKER-4 B4-05: only Dimensions group): Status first.
-      const items = [...document.querySelectorAll('[role="menuitem"], [role="option"], [role="menuitemradio"], [role="menuitemcheckbox"]')].filter((e) => /^Group by /.test(e.textContent?.trim() ?? ""));
-      const it = items.find((e) => /Group by Status/.test(e.textContent ?? "")) ?? items.find((e) => /Insurance|diagnosis|date/i.test(e.textContent ?? "")) ?? items[0];
-      if (!it) return null;
-      const label = it.textContent.trim();
-      it.click();
-      return label;
-    });
-    if (!picked) return { ok: false, detail: "the group menu offered no Group by item" };
+    // The drill's own URL grammar (`?by=<dimension>`), so a person's remembered "look" from an earlier
+    // run cannot decide what this step sees (the 04:19 baseline opened already grouped and found no
+    // "No groups" button). Status is a choice column, so it is a Dimension (BREAKER-4 B4-05).
+    await ctx.goto(admin, `/data-v2/${TABLE}?view=grid&by=status&show=count`);
     await settle(admin);
+    await sleep(800);
     const r = await read(admin);
     const used = [...new Set(doors.map((d) => `${d.door} ${d.status}`))];
-    return { ok: r.groups > 0 && !r.error && !doors.some((d) => d.status >= 400), detail: `grouped by "${picked}": ${r.groups} groups, total ${JSON.stringify((r.total ?? "").slice(0, 40))}; doors ${used.join(", ") || "none seen"}` };
+    const asked = doors.some((d) => d.door === "drill_ask" && d.status < 400);
+    return {
+      ok: r.groups > 0 && !r.error && asked && !doors.some((d) => d.status >= 400),
+      detail: `?by=status: ${r.groups} groups, total ${JSON.stringify((r.total ?? "").slice(0, 40))}; doors ${used.join(", ") || "none seen"}`,
+    };
   });
 
   // ── R05 a member is never handed the platform's usage ───────────────────────────────────────
