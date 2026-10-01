@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Input } from "@ai-matrx/design-system";
-import { Check, Copy, Download, Moon } from "lucide-react";
+import { Check, Copy, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -151,7 +151,6 @@ function DecisionCard({
 
 export function DecisionBoard() {
   const [picks, setPicks] = useState<Picks>({});
-  const [darkPreview, setDarkPreview] = useState(false);
 
   useEffect(() => {
     setPicks(readPicks());
@@ -199,14 +198,6 @@ export function DecisionBoard() {
           {decidedCount} of {DECISIONS.length} decided
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant={darkPreview ? "default" : "outline"}
-            aria-pressed={darkPreview}
-            onClick={() => setDarkPreview((v) => !v)}
-          >
-            <Moon /> Dark preview
-          </Button>
           <Button size="sm" variant="outline" onClick={copy}>
             <Copy /> Copy decisions
           </Button>
@@ -216,12 +207,7 @@ export function DecisionBoard() {
         </div>
       </div>
 
-      <div
-        className={cn(
-          "mx-auto flex max-w-6xl flex-col gap-4 p-4",
-          darkPreview && "dark bg-background text-foreground",
-        )}
-      >
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
         {DECISIONS.map((decision) => (
           <DecisionCard
             key={decision.id}

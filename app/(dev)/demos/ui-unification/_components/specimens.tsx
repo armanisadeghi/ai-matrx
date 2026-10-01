@@ -75,9 +75,15 @@ function MeasuredRow({ children }: { children: ReactNode }) {
     const row = ref.current;
     if (!row) return;
     const measure = () => {
-      const next = Array.from(row.children).map((child) =>
-        Math.round(child.getBoundingClientRect().height),
-      );
+      // Radix Select renders a visually-hidden native <select> beside its
+      // trigger; it is not a control the person sees, so it is not measured.
+      const next = Array.from(row.children)
+        .filter(
+          (child) =>
+            child.getAttribute("aria-hidden") !== "true" &&
+            child.getBoundingClientRect().width > 2,
+        )
+        .map((child) => Math.round(child.getBoundingClientRect().height));
       setHeights((prev) =>
         prev.length === next.length && prev.every((h, i) => h === next[i])
           ? prev
