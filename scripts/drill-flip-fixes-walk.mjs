@@ -117,8 +117,9 @@ try {
   await page.keyboard.press("Escape");
   await sleep(6000);
   const after = await page.locator('[data-matrx-drill-level="0"]').count();
-  const said = ((await page.locator("[data-matrx-drill-answer]").first().textContent().catch(() => "")) ?? "").replace(/\s+/g, " ");
-  check("L1 'Requests at least 100' keeps fewer groups and the answer says the rule", after >= 1 && after < before && /at least 100/.test(said), `${before} → ${after} groups`);
+  const said = ((await page.locator("[data-drill-explorer-number-filter]").textContent().catch(() => "")) ?? "").trim();
+  const tips = await page.locator("[data-drill-explorer-carried], [data-drill-explorer-note] [title]").evaluateAll((els) => els.map((e) => e.getAttribute("title") ?? "").join(" "));
+  check("L1 'Requests at least 100' keeps fewer groups; the control and the view chip say it", after >= 1 && after < before && said === "Filter (1)", `${before} → ${after} groups · "${said}" · ${tips.slice(0, 160)}`);
   await page.screenshot({ path: `${SHOTS}/06-number-filter.png` });
 
   // N1 + N2 — run analysis as test@test.com, no organization chosen
@@ -131,7 +132,8 @@ try {
     const text = ((await p.locator("body").textContent()) ?? "").replace(/\s+/g, " ");
     check("N1 run analysis loads with no organization needed", loaded && !/An organization is needed/.test(text), loaded ? "explorer mounted" : text.slice(0, 200));
     const tz = await p.locator("[data-drill-explorer-time-zone]").getAttribute("data-drill-explorer-time-zone").catch(() => null);
-    check("N1 the calendar is said as a chip", Boolean(tz), tz);
+    // the zone chip reads describe's `calendar` (platform.drill_calendar, on production since lane DRILL-LIVE-FIXES)
+    check("N1 the calendar is said as a chip (needs platform.drill_calendar on the database the preview reads)", Boolean(tz), tz ?? "no calendar in describe");
     await p.screenshot({ path: `${SHOTS}/07-analyze-no-org.png` });
     await p.goto(`${ORIGIN}/workflows/runs/analyze?by=&w=all`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await sleep(15000);

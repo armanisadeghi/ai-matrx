@@ -229,20 +229,26 @@ export function useDrillExplorer(args: {
     setError(null);
     const timeKeys = new Set(def.dimensions.filter((d) => d.kind === "time").map((d) => d.key));
     const sortFor = (by: string[]) => doorSort(by, asked.sort ?? null, sortKey, timeKeys);
-    const ask = (by: string[], w: Record<string, unknown>) =>
-      client.drillAsk({
+    // THRESHOLDS ARE ON GROUPS (lane DRILL-FLIP-FIXES L1): the total (no grouping) is asked without them,
+    // and a grouped ask also shows every Measure a threshold reads (the door judges a number it shows)
+    const thresholdShow = (door?.having ?? []).map((h) => h.measure).filter((k) => def.measures.some((m) => m.key === k));
+    const ask = (by: string[], w: Record<string, unknown>) => {
+      const { having, ...rest } = carriedAsk(door);
+      return client.drillAsk({
         source: src,
         question: {
           by,
-          show: by.length === 0 ? totalShow : doorShow,
+          show: by.length === 0 ? totalShow : [...doorShow, ...thresholdShow.filter((k) => !doorShow.includes(k))],
           // the open view's own filters (lists, ranges) narrow every number, the trail's crumbs on top
           where: { ...(door?.where ?? {}), ...w },
           lane,
           ...windowPart,
-          ...carriedAsk(door),
+          ...rest,
+          ...(by.length > 0 && having ? { having } : {}),
           ...sortFor(by),
         },
       });
+    };
     void Promise.all([
       ...requests.map(async (request) => ({ key: request.key, by: request.by, got: await ask(request.by, where) })),
       ...(asked.where.length > 0 ? [ask([], {}).then((got) => ({ key: "__whole__", by: [] as string[], got }))] : []),

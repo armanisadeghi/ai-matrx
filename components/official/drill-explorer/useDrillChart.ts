@@ -67,16 +67,19 @@ export function useDrillChart(args: {
     const ask = async (request: MatrxDrillChartRequest): Promise<{ ok: true; rows: MatrxDrillChartRow[] } | { ok: false; message: string }> => {
       const windowPart = doorWindow({ by: [], show: [], where: [], window: request.window }, windowAlign);
       if (windowPart.window && carried?.windowKey) windowPart.window = { ...windowPart.window, key: carried.windowKey };
+      // THE VIEW'S THRESHOLDS PICK THE SPLIT'S SERIES (they are on groups — lane DRILL-FLIP-FIXES L1): asked on
+      // the `series` request only, which also shows each Measure a threshold reads; the periods keep their
+      // whole totals, so the groups a threshold leaves out are drawn in Other
+      const thresholds = request.key === "series" ? (carried?.having ?? []) : [];
       const got = await client.drillAsk({
         source,
         question: {
           by: request.by,
-          show: request.show,
+          show: [...request.show, ...thresholds.map((h) => h.measure).filter((k) => !request.show.includes(k))],
           where: { ...(carried?.where ?? {}), ...request.where },
           lane,
           ...windowPart,
-          // the view's thresholds narrow the chart too; its group limit is the chart's own (top N)
-          ...(carried?.having ? { having: carried.having } : {}),
+          ...(thresholds.length > 0 ? { having: thresholds } : {}),
           ...(request.sort ? { sort: request.sort } : {}),
           ...(request.limit !== null ? { limit: request.limit } : {}),
         },
