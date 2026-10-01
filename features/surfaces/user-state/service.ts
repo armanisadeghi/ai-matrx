@@ -22,7 +22,11 @@ export const surfaceUserStateService = {
     const { data, error } = await supabase
       .schema("users").from("user_surface_state")
       .select("surface_key, state")
-      .eq("feature", feature);
+      .eq("feature", feature)
+      // Only live rows — exactly what the server reads (aidream
+      // context_rules: deleted_at IS NULL). An archived row shown here would
+      // be a rule the screen promises and the server never applies.
+      .is("deleted_at", null);
     if (error) throw new Error(`surfaceUserState.loadFeature(${feature}): ${error.message}`);
     const rows: SurfaceStateRows = {};
     for (const r of data ?? []) {
@@ -55,6 +59,9 @@ export const surfaceUserStateService = {
           feature,
           surface_key: surfaceKey,
           state: state as never,
+          // A save is the person's current choice: it revives an archived row
+          // rather than writing into one the server ignores.
+          deleted_at: null,
         },
         { onConflict: "user_id,feature,surface_key" },
       );
