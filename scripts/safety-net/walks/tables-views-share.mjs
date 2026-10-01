@@ -18,6 +18,9 @@
 //   node scripts/safety-net/run.mjs --target clone --origin http://safety-net-t3.localhost:3001 --only tables.walk-views-share
 import { openWalk, bodyText, sleep, until, STAMP, ORIGIN } from "../lib/harness.mjs";
 
+// An intercept plant's route callback can be mid-flight when the browser closes; that rejection must not
+// kill the process before the walk's JSON is written (the runner then grades every item FAIL from a crash).
+process.on("unhandledRejection", (e) => console.log(`[tables-views-share] ignored an unhandled rejection: ${String(e?.message ?? e).slice(0, 160)}`));
 const ctx = await openWalk("tables-views-share");
 const LOCAL = !ORIGIN.includes("aimatrx.com");
 const NAME = `Front Desk Follow-ups ${STAMP}`;
