@@ -28,8 +28,7 @@ import { HandHelping } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { followWhatIsStillInFlight } from "@/features/agents/runtime-reconnect/follow-what-is-still-in-flight";
+import { rereadAndFollow } from "@/features/agents/runtime-reconnect/reread-and-follow";
 import { ActionRequestInlineAnswer } from "@/features/action-requests/components/ActionRequestInlineAnswer";
 import { usePendingActionRequest } from "@/features/action-requests/hooks/usePendingActionRequest";
 import { fetchPendingActionRequests } from "@/features/action-requests/self-service";
@@ -55,15 +54,7 @@ export function ParkedOnPersonCard({
 
   const reread = () => {
     if (!conversationId) return;
-    void dispatch(loadConversation({ conversationId }))
-      .unwrap()
-      .then(() => followWhatIsStillInFlight(dispatch, conversationId))
-      .catch((err: unknown) => {
-        console.warn(
-          "[parked-call] the ask was answered, but re-reading the conversation failed — the resumed turn shows on the next load.",
-          err,
-        );
-      });
+    void rereadAndFollow(dispatch, conversationId, "parked-call: answered");
   };
 
   // ANSWERED ELSEWHERE: a closed ask means the call has moved on. Re-read once.
@@ -73,12 +64,7 @@ export function ParkedOnPersonCard({
     const key = actionRequestId ?? "live";
     if (!closed || rereadFor.current === key || !conversationId) return;
     rereadFor.current = key;
-    void dispatch(loadConversation({ conversationId }))
-      .unwrap()
-      .then(() => followWhatIsStillInFlight(dispatch, conversationId))
-      .catch((err: unknown) => {
-        console.warn("[parked-call] re-reading the conversation after the ask closed failed.", err);
-      });
+    void rereadAndFollow(dispatch, conversationId, "parked-call: closed elsewhere");
   }, [closed, actionRequestId, conversationId, dispatch]);
 
   // BACK TO THE TAB: still waiting? One read of the pending list says.
@@ -89,12 +75,7 @@ export function ParkedOnPersonCard({
       void fetchPendingActionRequests()
         .then((pending) => {
           if (!pending.some((row) => row.request_id === openId)) {
-            void dispatch(loadConversation({ conversationId }))
-              .unwrap()
-              .then(() => followWhatIsStillInFlight(dispatch, conversationId))
-              .catch((err: unknown) => {
-                console.warn("[parked-call] re-reading the conversation on return to the tab failed.", err);
-              });
+            void rereadAndFollow(dispatch, conversationId, "parked-call: back to the tab");
           }
         })
         .catch((err: unknown) => {

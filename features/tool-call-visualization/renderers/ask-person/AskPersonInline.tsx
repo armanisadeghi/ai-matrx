@@ -25,7 +25,7 @@ import { HandHelping } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { rereadAndFollow } from "@/features/agents/runtime-reconnect/reread-and-follow";
 import { ActionRequestInlineAnswer } from "@/features/action-requests/components/ActionRequestInlineAnswer";
 import { usePendingActionRequest } from "@/features/action-requests/hooks/usePendingActionRequest";
 
@@ -52,19 +52,13 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
   const dispatch = useAppDispatch();
   // THE AGENT'S REPLY APPEARS WITHOUT A RELOAD. The signed-in answer door runs
   // the parked turn forward BEFORE it answers (aidream `_tell_the_agent`, not
-  // detached for a web answer), so by the time the confirmation lands the
-  // resumed reply is already in `chat.message`. Re-reading the conversation is
-  // the same refetch the runtime reconnect does when a server turn ends.
+  // detached for a web answer), so the rows it wrote are in `chat.message` —
+  // but that turn may have stopped again on a tool only this page can run
+  // (bench 2026-10-01: `board_read`). A bare re-read left it waiting for a
+  // reload; the one door also surfaces the pending call and follows the run.
   const rereadConversation = () => {
     if (!conversationId) return;
-    void dispatch(loadConversation({ conversationId }))
-      .unwrap()
-      .catch((err: unknown) => {
-        console.warn(
-          "[ask_person] the answer was saved, but re-reading the conversation failed — the reply shows on the next load.",
-          err,
-        );
-      });
+    void rereadAndFollow(dispatch, conversationId, "ask_person: answered");
   };
 
   const result = resultAsObject(entry);
