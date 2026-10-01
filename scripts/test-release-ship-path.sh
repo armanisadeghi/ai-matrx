@@ -30,7 +30,7 @@ git config user.name test; git config user.email test@test
 mkdir -p scripts
 cp "$SCRIPT_UNDER_TEST" scripts/release.sh
 # The primitives the script sources ride along when they sit beside it.
-for helper in release-stage.sh release-outcome.sh vercel-ignore-build.sh; do
+for helper in release-stage.sh release-outcome.sh vercel-ignore-build.sh sync-main.py; do
     [[ -f "$(dirname "$SCRIPT_UNDER_TEST")/$helper" ]] && cp "$(dirname "$SCRIPT_UNDER_TEST")/$helper" "scripts/$helper"
 done
 printf '{\n  "name": "sandbox",\n  "version": "0.1.0",\n  "private": true\n}\n' > package.json

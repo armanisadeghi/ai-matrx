@@ -188,6 +188,147 @@ class Pause(Base):
         self.assertTrue(os.path.exists(marker), res.stdout + res.stderr)
 
 
+class EveryPushPathHonoursThePause(Base):
+    """The pause is not a sweep-only switch: scripts/release.sh run DIRECTLY would merge this
+    checkout's unpushed commits (a half-done move) into origin/main and push them. Every path
+    that pushes or releases asks sync-main --pause-active (one reader). RELEASE_SH_PATH,
+    PURGE_SH_PATH and SHIP_TS_PATH point the suite at other copies (how it was proven red)."""
+
+    RELEASE = os.environ.get("RELEASE_SH_PATH") or os.path.join(HERE, "release.sh")
+    PURGE = os.environ.get("PURGE_SH_PATH") or os.path.join(HERE, "git-purge-next-dirs.sh")
+    SHIP_TS = os.environ.get("SHIP_TS_PATH") or os.path.join(HERE, "matrx", "ship.ts")
+
+    def setUp(self):
+        super().setUp()
+        r = self.r
+        os.makedirs(os.path.join(r.work, "scripts"))
+        shutil.copy(SCRIPT, os.path.join(r.work, "scripts", "sync-main.py"))
+        shutil.copy(self.RELEASE, os.path.join(r.work, "scripts", "release.sh"))
+        for helper in ("release-stage.sh", "release-outcome.sh", "vercel-ignore-build.sh"):
+            src = os.path.join(os.path.dirname(self.RELEASE), helper)
+            if os.path.exists(src):
+                shutil.copy(src, os.path.join(r.work, "scripts", helper))
+        shutil.copy(self.PURGE, os.path.join(r.work, "scripts", "git-purge-next-dirs.sh"))
+        r.write("package.json", '{\n  "name": "sandbox",\n  "version": "0.1.0",\n  "private": true\n}\n')
+        r.write(".gitignore", ".matrx/sync-paused\ntmp/\n")
+        sh(r.work, "git", "add", "-A")
+        sh(r.work, "git", "commit", "-q", "-m", "seed")
+        sh(r.work, "git", "push", "-q", "origin", "main")
+        # The half-done move: a local commit not on origin yet.
+        r.write("packages/chat/moved.ts", "export const halfway = 1;\n")
+        sh(r.work, "git", "add", "-A")
+        sh(r.work, "git", "commit", "-q", "-m", "half of the move")
+        self.bin = os.path.join(r.tmp, "bin")
+        self.aidream = os.path.join(r.tmp, "aidream")
+        os.makedirs(os.path.join(self.aidream, "db"))
+        open(os.path.join(self.aidream, "db", "apply_migrations.py"), "w").close()
+        os.makedirs(self.bin)
+        self.uv_calls = os.path.join(r.tmp, "uv-calls")
+        with open(os.path.join(self.bin, "uv"), "w") as f:
+            f.write("#!/usr/bin/env bash\necho \"$*\" >> %s\nexit 0\n" % self.uv_calls)
+        os.chmod(os.path.join(self.bin, "uv"), 0o755)
+
+    def release(self, *args, captured=False):
+        env = dict(os.environ, PATH=self.bin + os.pathsep + os.environ["PATH"],
+                   AIDREAM_DIR=self.aidream, RELEASE_AFTER_PHASE="off")
+        env.pop("RELEASE_PHASE", None)
+        if captured:
+            env["RELEASE_LOG_CAPTURED"] = "1"
+        else:
+            env.pop("RELEASE_LOG_CAPTURED", None)
+        return subprocess.run(["bash", "scripts/release.sh", *args], cwd=self.r.work,
+                              capture_output=True, text=True, env=env)
+
+    def pause(self):
+        sh(self.r.work, sys.executable, "scripts/sync-main.py", "--pause", "chat package move",
+           "--minutes", "30", "--by", "owner")
+
+    def remote_tags(self):
+        return sh(self.r.work, "git", "ls-remote", "--tags", "origin").stdout.strip()
+
+    def test_reader_is_silent_and_zero_with_no_pause(self):
+        res = sh(self.r.work, sys.executable, "scripts/sync-main.py", "--pause-active", check=False)
+        self.assertEqual((res.returncode, res.stdout, res.stderr), (0, "", ""))
+        self.assertEqual(self.r.origin_head(), self.r.head("HEAD~1"))   # it is no sweep
+
+    def test_reader_says_paused_with_exit_3(self):
+        self.pause()
+        res = sh(self.r.work, sys.executable, "scripts/sync-main.py", "--pause-active", check=False)
+        self.assertEqual(res.returncode, 3, res.stdout + res.stderr)
+        self.assertIn("SYNC PAUSED by owner until", res.stderr)
+
+    def test_direct_release_refuses_and_changes_nothing(self):
+        self.pause()
+        head, origin = self.r.head(), self.r.origin_head()
+        res = self.release()
+        out = res.stdout + res.stderr
+        self.assertEqual(res.returncode, 3, out)
+        self.assertIn("SYNC PAUSED by owner until", res.stderr)
+        self.assertIn("chat package move", res.stderr)
+        self.assertEqual(self.r.origin_head(), origin)                  # nothing pushed
+        self.assertEqual(self.r.head(), head)                           # nothing committed
+        self.assertEqual(self.remote_tags(), "")                        # no tag
+        self.assertFalse(os.path.exists(self.uv_calls))                 # no migrations ran
+        self.assertFalse(self.r.exists("tmp"))                          # not even a log
+        self.assertTrue(self.r.exists(PAUSE))
+
+    def test_release_with_no_pause_ships_as_before(self):
+        res = self.release(captured=True)
+        out = res.stdout + res.stderr
+        self.assertEqual(res.returncode, 0, out)
+        self.assertNotIn("PAUSE", out)
+        self.assertRegex(res.stdout.strip(), r"^v0\.1\.1  pushed, build started  \(\d+s\)$")
+        self.assertIn("refs/tags/v0.1.1", self.remote_tags())
+        sh(self.r.work, "git", "fetch", "-q", "origin")
+        self.assertEqual(sh(self.r.work, "git", "cat-file", "-t", "origin/main:packages/chat/moved.ts"
+                            ).stdout.strip(), "blob")
+
+    def test_expired_pause_releases_and_says_so(self):
+        self.r.write(PAUSE, "by: owner\nreason: forgotten\nuntil: 2026-01-01T01:00:00+00:00\n")
+        res = self.release(captured=True)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("SYNC PAUSE EXPIRED", res.stdout)
+        self.assertFalse(self.r.exists(PAUSE))
+        self.assertIn("refs/tags/v0.1.1", self.remote_tags())
+
+    def test_dry_run_still_previews_while_paused(self):
+        self.pause()
+        origin = self.r.origin_head()
+        res = self.release("--dry-run", captured=True)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("Dry run complete", res.stdout)
+        self.assertEqual(self.r.origin_head(), origin)
+
+    def test_purge_push_refuses_while_paused(self):
+        self.r.write(".next/x", "build\n")
+        sh(self.r.work, "git", "add", "-f", ".next/x")
+        sh(self.r.work, "git", "commit", "-q", "-m", "tracked build dir")
+        self.pause()
+        head, origin = self.r.head(), self.r.origin_head()
+        res = sh(self.r.work, "bash", "scripts/git-purge-next-dirs.sh", "--push", check=False)
+        self.assertEqual(res.returncode, 3, res.stdout + res.stderr)
+        self.assertIn("SYNC PAUSED by owner", res.stderr)
+        self.assertEqual((self.r.head(), self.r.origin_head()), (head, origin))
+        self.assertTrue(self.r.exists(".next/x"))
+
+    def test_matrx_ship_cli_refuses_while_paused(self):
+        tsx = os.path.join(os.path.dirname(HERE), "node_modules", ".bin", "tsx")
+        tsconfig = os.path.join(os.path.dirname(HERE), "tsconfig.json")
+        if not os.path.exists(tsx):
+            self.skipTest("tsx is not installed in this checkout")
+        self.r.write("notes.md", "uncommitted\n")
+        self.pause()
+        head, origin = self.r.head(), self.r.origin_head()
+        res = subprocess.run([tsx, "--tsconfig", tsconfig, self.SHIP_TS, "ship it"], cwd=self.r.work,
+                             capture_output=True, text=True,
+                             env=dict(os.environ, MATRX_SHIP_URL="http://127.0.0.1:9",
+                                      MATRX_SHIP_API_KEY="sandbox-not-a-key"))
+        self.assertEqual(res.returncode, 3, res.stdout + res.stderr)
+        self.assertIn("SYNC PAUSED by owner", res.stderr)
+        self.assertEqual((self.r.head(), self.r.origin_head()), (head, origin))
+        self.assertFalse(self.r.tracked("notes.md"))
+
+
 class OldPathRefusal(Base):
     def test_no_list_commits_old_paths_as_before(self):
         self.r.write("features/chat/new.ts", "export const n = 1;\n")

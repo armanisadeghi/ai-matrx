@@ -15,6 +15,14 @@ cd "$REPO_ROOT"
 DO_PUSH=false
 [[ "${1:-}" == "--push" ]] && DO_PUSH=true
 
+# A sync pause (python3 scripts/sync-main.py --pause) refuses every push from this
+# checkout; sync-main is the one reader of it. Checked before anything is deleted.
+if $DO_PUSH; then
+  _pause_rc=0
+  python3 "$REPO_ROOT/scripts/sync-main.py" --pause-active || _pause_rc=$?
+  [[ $_pause_rc -eq 3 ]] && { echo "git-purge-next-dirs: SYNC PAUSED — nothing was deleted, committed or pushed" >&2; exit 3; }
+fi
+
 echo "Deleting local .next* directories..."
 rm -rf .next*
 

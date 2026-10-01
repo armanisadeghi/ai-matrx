@@ -7,6 +7,11 @@ GO-time switches (both off unless their file exists; see "GO-time switches" belo
     python3 scripts/sync-main.py --pause "<reason>" [--minutes N] [--by NAME]   (default 90, max 480)
     python3 scripts/sync-main.py --resume
     python3 scripts/sync-main.py --status        pause state + old-path refusal state
+    python3 scripts/sync-main.py --pause-active  exit 3 + the SYNC PAUSED line while a pause is in
+                                                 force, else exit 0 silently. Every OTHER path that
+                                                 pushes or releases from this checkout asks this
+                                                 (scripts/release.sh, scripts/matrx/ship.ts,
+                                                 scripts/git-purge-next-dirs.sh --push)
 Replay a past sync (for re-testing how conflicts get resolved; commits locally, never pushes):
     python3 scripts/sync-main.py --replay <sync merge commit> <path> [<path> ...]
 
@@ -345,6 +350,15 @@ def pause_cmd(argv):
     if running:
         say("A sweep STARTED BEFORE the pause is still running; wait for it to finish:\n  "
             + "\n  ".join(running))
+
+
+def pause_active_cmd():
+    """--pause-active: the ONE answer to "is a valid, unexpired pause in force?" for every other
+    path that pushes or releases from this checkout. Same reader as the sweep (expiry, cap and
+    unreadable-marker rules included); paused -> the SYNC PAUSED line on stderr, PAUSED_EXIT."""
+    p = read_pause()
+    if p:
+        stop_paused(p, "Refused: nothing was committed, merged, pushed or released.")
 
 
 def resume_cmd():
@@ -1169,6 +1183,9 @@ def main():
     push = "--no-push" not in argv
     _, top, _ = git("rev-parse", "--show-toplevel")
     os.chdir(top.strip())
+    if "--pause-active" in argv:
+        pause_active_cmd()
+        return
     if "--pause" in argv:
         pause_cmd(argv)
         return

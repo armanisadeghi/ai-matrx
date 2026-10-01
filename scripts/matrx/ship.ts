@@ -846,6 +846,31 @@ async function handleLegacyInit(args: string[]): Promise<void> {
   console.log();
 }
 
+/**
+ * A sync pause (`python3 scripts/sync-main.py --pause`, AI Matrx repos) refuses every push from
+ * this checkout during a planned tree move. sync-main is the ONE reader of the pause; exit 3 =
+ * paused (its SYNC PAUSED line is already on stderr). Repos without sync-main are unaffected.
+ */
+function refuseWhileSyncPaused(): void {
+  let root: string;
+  try {
+    root = execSync("git rev-parse --show-toplevel", { encoding: "utf-8" }).trim();
+  } catch {
+    return;
+  }
+  const reader = path.join(root, "scripts", "sync-main.py");
+  if (!existsSync(reader)) return;
+  try {
+    execSync(`python3 "${reader}" --pause-active`, { stdio: "inherit", cwd: root });
+  } catch (error) {
+    if ((error as { status?: number }).status === 3) {
+      console.error("ship: SYNC PAUSED — nothing was committed or pushed");
+      process.exit(3);
+    }
+    console.error("ship: WARNING the sync-pause check could not run — shipping as if not paused");
+  }
+}
+
 async function handleShip(args: string[]): Promise<void> {
   const isMajor = args.includes("--major");
   const isMinor = args.includes("--minor");
@@ -868,6 +893,8 @@ async function handleShip(args: string[]): Promise<void> {
     console.log("⚠️  No uncommitted changes detected. Nothing to ship!");
     return void process.exit(0);
   }
+
+  refuseWhileSyncPaused();
 
   const config = loadConfig();
   const bumpType = isMajor ? "major" : isMinor ? "minor" : "patch";

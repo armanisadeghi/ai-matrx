@@ -89,6 +89,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
+# ── SYNC PAUSE: a planned tree move is in flight — release nothing ───────────
+# `python3 scripts/sync-main.py --pause` stops every sweep, and ./ship.sh skips
+# its release on the sweep's exit 3. Run DIRECTLY, this script would still merge
+# this checkout's unpushed commits (a half-done move) into origin/main and push
+# them before the go/no-go. sync-main is the ONE reader of the pause (expiry,
+# cap, unreadable-marker rules); a pause in force = its SYNC PAUSED line, exit 3,
+# before anything is written. --dry-run, --help and the after phase push nothing
+# and run as before. A reader that cannot run is announced and does not block.
+if [[ "${RELEASE_PHASE:-ship}" == "ship" ]] \
+    && [[ " $* " != *" --dry-run "* && " $* " != *" -h "* && " $* " != *" --help "* ]]; then
+    _pause_rc=0
+    python3 "$SCRIPT_DIR/sync-main.py" --pause-active || _pause_rc=$?
+    if [[ $_pause_rc -eq 3 ]]; then
+        echo "release.sh: SYNC PAUSED (reason above) — nothing was released" >&2
+        exit 3
+    elif [[ $_pause_rc -ne 0 ]]; then
+        echo "release.sh: WARNING the sync-pause check could not run (exit $_pause_rc) — releasing as if not paused" >&2
+    fi
+    unset _pause_rc
+fi
+
 # ── Log capture: every run is a dated file; the terminal still shows it live ─
 release_log_name_version() {
     local ver="${1:-}"
