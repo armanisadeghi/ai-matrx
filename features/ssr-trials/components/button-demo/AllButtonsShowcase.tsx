@@ -194,7 +194,7 @@ export default function AllButtonsShowcase() {
         <p className="text-[0.625rem] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
           All Icons — Group
         </p>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center">
           <TapTargetButtonGroup>
             <MenuTapButton variant="group" />
             <PlusTapButton variant="group" />

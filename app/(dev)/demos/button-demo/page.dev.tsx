@@ -112,7 +112,7 @@ export default function ButtonDemoPage() {
           <h3 className="text-sm font-medium text-muted-foreground">
             Variants
           </h3>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center">
             <PlusTapButton label="Create" />
             <SearchTapButton label="Search" variant="transparent" />
             <SendTapButton label="Send" variant="solid" />
@@ -129,7 +129,7 @@ export default function ButtonDemoPage() {
           <h3 className="text-sm font-medium text-muted-foreground">
             Tooltip override + link
           </h3>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center">
             <BugTapButton
               label="Feedback"
               tooltip="Submit feedback about this page"
@@ -146,7 +146,7 @@ export default function ButtonDemoPage() {
           <h3 className="text-sm font-medium text-muted-foreground">
             Disabled + danger tint
           </h3>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center">
             <SaveTapButton label="Save" disabled />
             <TrashTapButton
               label="Remove"
@@ -160,7 +160,7 @@ export default function ButtonDemoPage() {
           <h3 className="text-sm font-medium text-muted-foreground">
             Compare: stacked caption (TapTargetLabeled)
           </h3>
-          <div className="flex flex-wrap items-end gap-4">
+          <div className="flex flex-wrap items-end">
             <PlusTapButton label="Create" />
             <Labeled label="Create">
               <PlusTapButton />
@@ -189,7 +189,7 @@ export default function ButtonDemoPage() {
           provider&apos;s sub-models. All black-brand logos safely use
           currentColor.
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap">
           <Labeled label="Google">
             <GoogleTapButton colored />
           </Labeled>
@@ -270,7 +270,7 @@ export default function ButtonDemoPage() {
           The same group automatically styled to adapt to the surrounding text
           color for minimalist interfaces.
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap">
           <Labeled label="Google">
             <GoogleTapButton />
           </Labeled>
@@ -352,7 +352,7 @@ export default function ButtonDemoPage() {
           motif. Each combines the bolt with domain-specific elements for
           instant recognition.
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap">
           <Labeled label="Power">
             <PowerTapButton />
           </Labeled>
@@ -388,7 +388,7 @@ export default function ButtonDemoPage() {
           Utilizing primary solid buttons for high-priority generation triggers
           outside of a group.
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap">
           <Labeled label="Power">
             <PowerTapButton variant="solid" bgColor="bg-blue-600" />
           </Labeled>
@@ -415,7 +415,7 @@ export default function ButtonDemoPage() {
           A compact action bar for webhook-centric workflows — trigger, inspect,
           build, run, review history, add a new item, or open the nav menu.
         </p>
-        <div className="flex gap-4">
+        <div className="flex">
           <TapTargetButtonGroup>
             <WebhookTapButton variant="group" />
             <ViewTapButton variant="group" />
@@ -435,7 +435,7 @@ export default function ButtonDemoPage() {
         <p className="text-sm text-muted-foreground">
           Every general-purpose tap button at default glass variant.
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap">
           <Labeled label="Menu">
             <MenuTapButton />
           </Labeled>
@@ -580,7 +580,7 @@ export default function ButtonDemoPage() {
           Same set with variant=&quot;transparent&quot; — hover shows a muted
           bg, no glass border.
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap">
           <Labeled label="Menu">
             <MenuTapButton variant="transparent" />
           </Labeled>
