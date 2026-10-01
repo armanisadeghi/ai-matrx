@@ -464,7 +464,7 @@
   white-space: nowrap;
 }
 .messages-native .mx-msg__quoted-reply {
-  margin: 0 0 6px;
+  margin: 0;
   border-left: 3px solid currentColor;
   padding: 3px 8px;
   font-size: 11px;

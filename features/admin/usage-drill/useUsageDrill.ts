@@ -56,7 +56,9 @@ export function usageNameResolver(organizationId: string, dimension: (typeof NAM
       const { data, error } = await supabase
         .schema("platform")
         .rpc("ai_usage_names", { p_organization_id: organizationId, p_ids: { organization: [], person: [], agent: [], session: [], request: [], [dimension]: ids } });
-      if (error) return { ok: false, message: `The names behind these groups could not be read (${error.message}), so they show as ids.` };
+      // A door that fails (a timeout on many sign-in sessions) names every id "could not be read" — the
+      // cell never keeps saying "Reading the name…" after the read is over.
+      if (error) return { ok: true, names: Object.fromEntries(ids.map((id) => [id, UNNAMED[dimension]])) };
       // Every id asked comes back with words: its name, or — when the door could not name it — a
       // sentence, never the id (VERIFIER-32 F5).
       const found = stringMap(isRecord(data) ? data[dimension] : null);
