@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { seedOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { knobRefusalSentence, setKnobOverride } from "@/lib/scoped-config/service";
 import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel";
@@ -74,9 +74,27 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
   const label = pillLabel(info, mode);
   const onSelectAgent = agentControl?.onSelectAgent;
 
+  // An override is in force (the person picked another model for this chat):
+  // the pill names the model that will run AND marks it. Custom's model is
+  // its own design, never an override of something else.
+  const showOverride = info.modelOverridden && !info.isCustom && composerShows(mode, "agent.presets");
+  const overrideTitle = info.agentModelLabel ? `Agent's own model: ${info.agentModelLabel}` : "Not the agent's own model";
   const pill = (
-    <button type="button" className={composerPillClass(size, open)} aria-label={`Agent: ${label}`} title={label}>
+    <button
+      type="button"
+      className={composerPillClass(size, open)}
+      aria-label={`Agent: ${label}${showOverride ? " (model changed)" : ""}`}
+      title={showOverride ? `${label} — ${overrideTitle}` : label}
+    >
       <span className="truncate font-medium text-foreground">{label}</span>
+      {showOverride ? (
+        <span
+          className="shrink-0 rounded border border-border bg-muted px-1 text-[10px] leading-4 text-muted-foreground"
+          data-testid="composer-model-override-chip"
+        >
+          Changed
+        </span>
+      ) : null}
       <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
     </button>
   );
@@ -203,7 +221,9 @@ function ChatPresetsPanel({
     }
     if (info.isCustom) {
       // The saved default seeds NEW conversations; this one changes now too.
-      dispatch(setOverrides({ conversationId, changes: { model: modelId } }));
+      // Seeded: this is the person's DEFAULT for Custom, not a pick for this
+      // chat — it must never follow them into a named agent (W-81).
+      dispatch(seedOverrides({ conversationId, changes: { model: modelId } }));
     } else {
       chooseCustom();
     }

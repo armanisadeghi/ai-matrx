@@ -56,10 +56,7 @@ import {
   ensureAgentIdentity,
   fetchAgentExecutionFull,
 } from "@/features/agents/redux/agent-definition/thunks";
-import {
-  isBasicWorkMandate,
-  resolvePreferredChatModel,
-} from "@/features/ai-models/preferredChatModel";
+import { applyLaunchModelOverrides } from "../instance-model-overrides/launch-model-overrides";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
@@ -789,12 +786,10 @@ export const launchAgentExecution = createAsyncThunk<
       );
     }
 
-    const shortcutLlmOverrides = config?.llmOverrides;
-    if (shortcutLlmOverrides && Object.keys(shortcutLlmOverrides).length > 0) {
-      const { setOverrides } =
-        await import("../instance-model-overrides/instance-model-overrides.slice");
-      dispatch(setOverrides({ conversationId, changes: shortcutLlmOverrides }));
-    }
+    await applyLaunchModelOverrides(dispatch, {
+      conversationId,
+      llmOverrides: config?.llmOverrides,
+    });
   } else if (agentId) {
     conversationId = await dispatch(
       createManualInstance({
@@ -1043,21 +1038,13 @@ export const launchAgentExecution = createAsyncThunk<
     // `config_overrides` are applied SERVER-SIDE inside the mandate door —
     // seeding them here would send them back as the explicit layer and beat
     // the very binding they came from.
-    const llmOverrides = { ...config?.llmOverrides };
-    // THE PERSON'S OWN DEFAULT MODEL FOR BASIC WORK (Unified Settings
-    // Platform, `agents.model_prefs.chat_default_model`): on the basic-chat
-    // door, when the caller named no model, the ladder-resolved preference IS
-    // the explicit layer — it is the person's (or their organization's)
-    // choice, not the binding's. Null = platform default = no override.
-    if (isBasicWorkMandate(mandateKey) && !llmOverrides.model) {
-      const preferred = await resolvePreferredChatModel();
-      if (preferred) llmOverrides.model = preferred;
-    }
-    if (Object.keys(llmOverrides).length > 0) {
-      const { setOverrides } =
-        await import("../instance-model-overrides/instance-model-overrides.slice");
-      dispatch(setOverrides({ conversationId, changes: llmOverrides }));
-    }
+    // The person's default-chat-model preference is applied inside, on the
+    // basic-chat door only (launch-model-overrides.ts).
+    await applyLaunchModelOverrides(dispatch, {
+      conversationId,
+      mandateKey,
+      llmOverrides: config?.llmOverrides,
+    });
 
     if (displayModeOverride) {
       dispatch(

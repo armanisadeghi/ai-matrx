@@ -42,6 +42,10 @@ export interface ComposerAgentInfo {
   /** The model this conversation will run on: the override, else the agent's own. */
   effectiveModelId: string | null;
   effectiveModelLabel: string | null;
+  /** True when this conversation runs on a model other than its agent's own. */
+  modelOverridden: boolean;
+  /** The agent's own model label — what runs when no override is in force. */
+  agentModelLabel: string | null;
   /** The agent currently holding `chat.default_new_chat` — shown as "Custom". */
   customAgentId: string | null;
   isCustom: boolean;
@@ -51,6 +55,15 @@ export interface ComposerAgentInfo {
 
 function isPresetRow(row: AgentSummary): boolean {
   return !row.isArchived && row.isActive !== false && row.tags.includes(CHAT_AGENT_TAG);
+}
+
+/** The agent's own model for this conversation: its base snapshot, else the definition. */
+function useAgentOwnModelId(conversationId: string): string | null {
+  const agentId = useAppSelector(selectAgentIdFromInstance(conversationId)) ?? null;
+  const agentModelId = useAppSelector((state) => (agentId ? selectAgentModelId(state, agentId) : null));
+  const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
+  const baseModel = overrideState?.baseSettings?.model ?? null;
+  return (typeof baseModel === "string" ? baseModel : null) ?? agentModelId ?? null;
 }
 
 /** The model this conversation will run on: its override, else the agent's own. */
@@ -81,6 +94,8 @@ export function useComposerAgent(conversationId: string): ComposerAgentInfo {
   const agentName = useAppSelector((state) => (agentId ? selectAgentName(state, agentId) : undefined)) ?? null;
   const effectiveModelId = useEffectiveModelId(conversationId);
   const effectiveModelLabel = useAppSelector((state) => selectModelLabelById(state, effectiveModelId)) ?? null;
+  const agentOwnModelId = useAgentOwnModelId(conversationId);
+  const agentModelLabel = useAppSelector((state) => selectModelLabelById(state, agentOwnModelId)) ?? null;
 
   const { mandate: customMandate } = useMandate(MANDATE_KEYS.chat__default_new_chat, { optional: true });
   const customAgentId = customMandate?.agentId ?? null;
@@ -101,6 +116,8 @@ export function useComposerAgent(conversationId: string): ComposerAgentInfo {
     agentName,
     effectiveModelId,
     effectiveModelLabel,
+    modelOverridden: Boolean(effectiveModelId && agentOwnModelId && effectiveModelId !== agentOwnModelId),
+    agentModelLabel,
     customAgentId,
     isCustom: Boolean(agentId && customAgentId && agentId === customAgentId),
     preset: presets.find((p) => p.id === agentId) ?? null,

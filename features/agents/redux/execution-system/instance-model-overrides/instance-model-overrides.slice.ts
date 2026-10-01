@@ -60,6 +60,7 @@ const instanceModelOverridesSlice = createSlice({
         baseSettings,
         overrides: {},
         removals: [],
+        seededKeys: [],
       };
     },
 
@@ -88,7 +89,35 @@ const instanceModelOverridesSlice = createSlice({
         // Remove from removals list if being set
         const changedKeys = Object.keys(changes);
         entry.removals = entry.removals.filter((k) => !changedKeys.includes(k));
+        // The person set these — they are no longer launch defaults.
+        entry.seededKeys = (entry.seededKeys ?? []).filter(
+          (k) => !changedKeys.includes(k),
+        );
       }
+    },
+
+    /**
+     * A LAUNCH default for this conversation's agent (caller config, shortcut,
+     * the person's default-chat-model preference). Same merge as
+     * `setOverrides`, but the keys are recorded as seeded so an agent switch
+     * never carries them to another agent (launch-model-overrides.ts).
+     */
+    seedOverrides(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        changes: Partial<FeLlmParams>;
+      }>,
+    ) {
+      const { conversationId, changes } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+      Object.assign(entry.overrides, changes);
+      const changedKeys = Object.keys(changes);
+      entry.removals = entry.removals.filter((k) => !changedKeys.includes(k));
+      const seeded = new Set(entry.seededKeys ?? []);
+      for (const key of changedKeys) seeded.add(key);
+      entry.seededKeys = [...seeded];
     },
 
     /** Replace the editable override document, preserving its base snapshot.
@@ -111,6 +140,7 @@ const instanceModelOverridesSlice = createSlice({
       }
       entry.overrides = overrides;
       entry.removals = removals;
+      entry.seededKeys = [];
     },
 
     /**
@@ -128,6 +158,7 @@ const instanceModelOverridesSlice = createSlice({
         if (!entry.removals.includes(key)) {
           entry.removals.push(key);
         }
+        entry.seededKeys = (entry.seededKeys ?? []).filter((k) => k !== key);
       }
     },
 
@@ -144,6 +175,7 @@ const instanceModelOverridesSlice = createSlice({
       if (entry) {
         delete (entry.overrides as Record<string, unknown>)[key];
         entry.removals = entry.removals.filter((k) => k !== key);
+        entry.seededKeys = (entry.seededKeys ?? []).filter((k) => k !== key);
       }
     },
 
@@ -176,6 +208,7 @@ const instanceModelOverridesSlice = createSlice({
       if (entry) {
         entry.overrides = {};
         entry.removals = [];
+        entry.seededKeys = [];
       }
     },
 
@@ -203,6 +236,7 @@ const instanceModelOverridesSlice = createSlice({
         baseSettings: overrides.baseSettings ?? {},
         overrides: previous?.overrides ?? {},
         removals: previous?.removals ?? [],
+        seededKeys: previous?.seededKeys ?? [],
       };
     });
 
@@ -216,6 +250,7 @@ const instanceModelOverridesSlice = createSlice({
 export const {
   initInstanceOverrides,
   setOverrides,
+  seedOverrides,
   replaceOverrides,
   markRemoved,
   resetOverride,

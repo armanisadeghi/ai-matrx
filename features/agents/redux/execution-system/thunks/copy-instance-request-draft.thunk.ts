@@ -5,7 +5,8 @@
  * composer-owned request state (text, message parts, variables, resources,
  * context, run settings, and client tools). Comparison columns deliberately
  * keep target model overrides; chat handoffs opt into copying the user's
- * explicit overrides/removals while retaining the destination agent's base.
+ * explicit overrides/removals (never a launch-seeded key) while retaining the
+ * destination agent's base and its own launch defaults.
  */
 
 import type { AppThunk } from "@/lib/redux/store";
@@ -42,7 +43,10 @@ import {
   setServerOverrideAuthTokenError,
   setServerOverrideUrl,
 } from "../instance-ui-state/instance-ui-state.slice";
-import { replaceOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
+import {
+  replaceOverrides,
+  seedOverrides,
+} from "../instance-model-overrides/instance-model-overrides.slice";
 import { patchConversation } from "../conversations/conversations.slice";
 
 interface CopyInstanceRequestDraftArgs {
@@ -349,18 +353,51 @@ export function copyInstanceRequestDraft({
       const sourceOverrides =
         state.instanceModelOverrides.byConversationId[sourceConversationId];
       if (sourceOverrides) {
+        // ONLY the person's own picks cross the switch. A SEEDED key is a
+        // launch default for the SOURCE's agent (its shortcut, the caller's
+        // config, the person's default-chat-model preference on the basic-chat
+        // door) — carrying it made a named agent run on the default chat's
+        // model (W-81, PB-07 2026-10-01).
+        const seeded = new Set(sourceOverrides.seededKeys ?? []);
+        const personOverrides = Object.fromEntries(
+          Object.entries(sourceOverrides.overrides).filter(
+            ([key]) => !seeded.has(key),
+          ),
+        );
+        // The destination's own launch defaults stay — re-seeded below,
+        // under any key the person did not set.
+        const targetOverrides =
+          state.instanceModelOverrides.byConversationId[targetConversationId];
+        const targetSeeded = new Set(targetOverrides?.seededKeys ?? []);
+        const personKeys = new Set([
+          ...Object.keys(personOverrides),
+          ...sourceOverrides.removals,
+        ]);
+        const keptTargetSeeds = Object.fromEntries(
+          Object.entries(targetOverrides?.overrides ?? {}).filter(
+            ([key]) => targetSeeded.has(key) && !personKeys.has(key),
+          ),
+        );
         // replaceOverrides intentionally keeps the target's base snapshot.
         dispatch(
           replaceOverrides({
             conversationId: targetConversationId,
             changes: {
-              ...sourceOverrides.overrides,
+              ...personOverrides,
               ...Object.fromEntries(
                 sourceOverrides.removals.map((key) => [key, null]),
               ),
             },
           }),
         );
+        if (Object.keys(keptTargetSeeds).length > 0) {
+          dispatch(
+            seedOverrides({
+              conversationId: targetConversationId,
+              changes: keptTargetSeeds,
+            }),
+          );
+        }
       }
       const sandboxBinding =
         state.conversations.byConversationId[sourceConversationId]

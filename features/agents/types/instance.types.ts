@@ -450,6 +450,13 @@ export interface InstanceModelOverrideState {
   baseSettings: Partial<LLMParams>;
   overrides: Partial<LLMParams>;
   removals: string[];
+  /**
+   * Override keys a LAUNCH wrote (the caller's config, a shortcut, the
+   * person's default-chat-model preference on the basic-chat door), not the
+   * person's own picker. They belong to THIS conversation's agent only: an
+   * agent switch never carries them (W-81). Absent = none.
+   */
+  seededKeys?: string[];
 }
 
 // =============================================================================

@@ -581,9 +581,11 @@ export const createInstanceFromShortcut = createAsyncThunk<
 
   // Apply LLM overrides from the shortcut config
   if (shortcut.llmOverrides && Object.keys(shortcut.llmOverrides).length > 0) {
-    const { setOverrides } =
+    // A shortcut's settings are a launch default for ITS agent (seeded): an
+    // agent switch never carries them (launch-model-overrides.ts).
+    const { seedOverrides } =
       await import("../instance-model-overrides/instance-model-overrides.slice");
-    dispatch(setOverrides({ conversationId, changes: shortcut.llmOverrides }));
+    dispatch(seedOverrides({ conversationId, changes: shortcut.llmOverrides }));
   }
 
   // Apply shortcut.defaultUserInput (designer's extra instructions)
