@@ -115,7 +115,7 @@ if $STRICT; then
         # A feature importing a route's page module dies only in a PARKED Vercel build (manage parks
         # app/(core)); nothing local parks, so no local build sees it (2026-10-01, PicklistWindowBody).
         "Route pages imported only by routes (a parked build cannot resolve them)|pnpm check:page-imports"
-        "…and that guard can still fail|pnpm check:page-imports:self-test"
+        "The page-imports guard can still fail (planted in a temp dir)|pnpm check:page-imports:self-test"
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"

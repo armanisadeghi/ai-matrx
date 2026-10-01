@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 105,
+    "repo-only": 108,
     "live-db": 58,
     "clone-db": 3
   },
@@ -183,6 +183,20 @@
       "label": "Parked route groups (a group deleted from main)",
       "class": "repo-only",
       "cmd": "pnpm check:parked-routes:strict",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "route-pages-imported-only-by-routes-a-parked-build-cannot-re": {
+      "label": "Route pages imported only by routes (a parked build cannot resolve them)",
+      "class": "repo-only",
+      "cmd": "pnpm check:page-imports",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "the-page-imports-guard-can-still-fail-planted-in-a-temp-dir": {
+      "label": "The page-imports guard can still fail (planted in a temp dir)",
+      "class": "repo-only",
+      "cmd": "pnpm check:page-imports:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
@@ -497,7 +511,7 @@
       "label": "Doctrine check",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-doctrine.ts --strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "doc-claims-vs-live-config": {
@@ -581,7 +595,7 @@
       "label": "One door for an agent request's context",
       "class": "repo-only",
       "cmd": "pnpm check:context-single-door",
-      "reason": "no database access in 1 file(s) reached",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "one-is-this-run-over-predicate-runisover": {
@@ -1291,7 +1305,7 @@
       "label": "Access guard check",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-access-guards.ts --strict",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 5 file(s) reached",
       "evidence": []
     },
     "staff-door-private-confidential-components-included": {
@@ -1545,6 +1559,13 @@
       "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
+    "no-new-selector-that-mints-a-fresh-array-object-per-dispatch": {
+      "label": "No new selector that mints a fresh array/object per dispatch (shrink-only baseline)",
+      "class": "repo-only",
+      "cmd": "pnpm check:unstable-selectors",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "the-kind-marker-law-no-stripping": {
       "label": "The __kind marker law (no stripping)",
       "class": "repo-only",
@@ -1584,7 +1605,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 179 file(s) reached",
+      "reason": "no database access in 180 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1724,7 +1745,7 @@
       "label": "Hardcoded agent ids (raw agent UUIDs in code)",
       "class": "repo-only",
       "cmd": "pnpm check:hardcoded-agents",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "reserved-icon-used-outside-its-domain-braincircuit-intellige": {
