@@ -24,7 +24,7 @@ export default [
   // NOT REGISTERED: listsindex_the_lists_page_reads_one_store_door.sql passes on the 2026-10-01 clone but is
   // VACUOUS there (admin's Workspace keeps 0 store pick lists, so a planted "drop every store list" still passes
   // clause A: "0 store lists, counts right"). A guard that cannot be shown failing is not a guard.
-  // A pick list made in Cedar Ridge, read on /lists/v3 and its own page, bound to a table's Visit type column
+  // A pick list made in Cedar Ridge, read on /lists and its own page, bound to a table's Visit type column
   // (its chips are the list's words), a word added to the list reaches the column.
   {
     id: "lists.walk-lists",

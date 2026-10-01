@@ -119,7 +119,7 @@ try {
     return { ok: /record/.test(where), detail: `list ${listId.slice(0, 8)}…: where_lists_live ${where.slice(0, 120)}` };
   });
 
-  // ── L01: the list appears on /lists/v3 and opens as a page with its four words ──────────────────────
+  // ── L01: the list appears on /lists and opens as a page with its four words ──────────────────────
   await ctx.step(["L01"], "/lists lists it and its page shows the four words", page, async () => {
     if (!listId) return { skip: "no list was made" };
     await ctx.goto(page, "/lists");
