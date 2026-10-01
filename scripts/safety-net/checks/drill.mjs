@@ -19,5 +19,5 @@ export default [
   // The usage page's numbers = the Spend Explorer's, to the cent.
   { id: "drill.sql-usage-parity", area: "drill", kind: "sql", file: "scripts/campaign-tests/drillusage_parity_green.sql", passWhen: "\\d+ passed, 0 failed", items: ["R04"], targets: ["clone"] },
   // The leak class: a member shared one Home of a Table is never handed the other Homes' records.
-  { id: "drill.sql-leak-t10", area: "drill", kind: "sql", file: "scripts/campaign-tests/leakt10_green.sql", sessionSql: "set statement_timeout = '20min';", timeoutMs: 25 * 60 * 1000, items: ["R05"], targets: ["clone"] },
+  { id: "drill.sql-leak-t10", area: "drill", kind: "sql", file: "scripts/campaign-tests/leakt10_green.sql", inTxSql: "set local statement_timeout = '20min';", timeoutMs: 25 * 60 * 1000, items: ["R05"], targets: ["clone"] },
 ];
