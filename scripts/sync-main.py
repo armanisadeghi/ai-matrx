@@ -252,15 +252,23 @@ def read_pause():
     if not os.path.lexists(PAUSE_REL):
         return None
     info = {}
+    # A pause marker that is not a readable regular file (a directory, a dangling link, no read
+    # permission) has no trustworthy write time, so it could never expire. It is IGNORED, loudly:
+    # a pause that cannot end is worse than a sweep that runs.
     try:
+        if not os.path.isfile(PAUSE_REL):
+            raise OSError("not a regular file")
         with open(PAUSE_REL, encoding="utf-8", errors="replace") as f:
             for line in f:
                 k, sep, v = line.partition(":")
                 if sep:
                     info[k.strip().lower()] = v.strip()
-        written = datetime.datetime.fromtimestamp(os.path.getmtime(PAUSE_REL)).astimezone()
-    except OSError:
-        written = _now()
+        # A future-dated mtime would stretch the cap; never trust a write time later than now.
+        written = min(datetime.datetime.fromtimestamp(os.path.getmtime(PAUSE_REL)).astimezone(), _now())
+    except OSError as e:
+        say("SYNC PAUSE MARKER IGNORED: %s is unreadable (%s) — syncing normally. Remove it, then "
+            "pause again with: python3 scripts/sync-main.py --pause \"<reason>\"" % (PAUSE_REL, e))
+        return None
     cap = written + datetime.timedelta(minutes=PAUSE_MAX_MIN)
     note = ""
     try:

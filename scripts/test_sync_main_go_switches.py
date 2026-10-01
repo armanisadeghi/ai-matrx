@@ -144,6 +144,27 @@ class Pause(Base):
         os.utime(p, (old, old))
         self.assertEqual(self.r.sweep().returncode, 0)
 
+    def test_unreadable_pause_marker_is_ignored_loudly_never_permanent(self):
+        # A marker with no trustworthy write time (here: a directory) could never expire, so it
+        # must not pause anything — the sweep runs and says why (review finding D1, 2026-10-01).
+        os.makedirs(os.path.join(self.r.work, PAUSE))
+        self.r.write("notes.md", "work\n")
+        res = self.r.sweep()
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("SYNC PAUSE MARKER IGNORED", res.stdout + res.stderr)
+        self.assertTrue(self.r.tracked("notes.md"))
+
+    def test_future_dated_pause_cannot_stretch_the_cap(self):
+        far = (datetime.datetime.now().astimezone() + datetime.timedelta(days=30)).isoformat()
+        p = self.r.write(PAUSE, "by: owner\nreason: clock skew\nuntil: %s\n" % far)
+        future = datetime.datetime.now().timestamp() + 24 * 3600   # mtime a day ahead
+        os.utime(p, (future, future))
+        res = self.r.sweep()
+        self.assertEqual(res.returncode, 3)                      # paused now…
+        self.assertIn("min left", res.stdout + res.stderr)
+        left = int((res.stdout + res.stderr).split("(")[1].split(" min left")[0])
+        self.assertLessEqual(left, 8 * 60 + 1)                  # …but never past 8 h from now
+
     def test_pause_refuses_unbounded_or_empty(self):
         self.assertNotEqual(self.r.sweep("--pause", "x", "--minutes", "100000").returncode, 0)
         self.assertNotEqual(self.r.sweep("--pause").returncode, 0)
