@@ -451,6 +451,8 @@
     "check:parked-routes": "tsx scripts/check-parked-route-groups.ts",
     "check:parked-routes:strict": "tsx scripts/check-parked-route-groups.ts --strict",
     "check:parked-routes:fix": "tsx scripts/check-parked-route-groups.ts --fix",
+    "check:page-imports": "tsx scripts/check-page-imports.ts",
+    "check:page-imports:self-test": "tsx scripts/check-page-imports.ts --self-test",
     "check:route-metadata": "tsx scripts/check-route-metadata.ts",
     "check:route-metadata:strict": "tsx scripts/check-route-metadata.ts --strict",
     "test:admin-nav": "jest features/admin/components/AdminRouteSidebarMenu.test.tsx --no-coverage",

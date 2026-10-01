@@ -112,6 +112,10 @@ if $STRICT; then
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
         "Untracked-import breakage|bash scripts/check-untracked-imports.sh"
         "Parked route groups (a group deleted from main)|pnpm check:parked-routes:strict"
+        # A feature importing a route's page module dies only in a PARKED Vercel build (manage parks
+        # app/(core)); nothing local parks, so no local build sees it (2026-10-01, PicklistWindowBody).
+        "Route pages imported only by routes (a parked build cannot resolve them)|pnpm check:page-imports"
+        "…and that guard can still fail|pnpm check:page-imports:self-test"
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
