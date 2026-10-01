@@ -16,6 +16,7 @@ const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
   recordMessageIds,
   streamSlotStart,
   streamSlotEnd,
+  agentCallId,
   turnId,
   conversationId,
   type,
@@ -51,6 +52,7 @@ const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
           recordMessageIds={recordMessageIds}
           streamSlotStart={streamSlotStart}
           streamSlotEnd={streamSlotEnd}
+          agentCallId={agentCallId}
           turnId={turnId}
           conversationId={conversationId}
           content={content}

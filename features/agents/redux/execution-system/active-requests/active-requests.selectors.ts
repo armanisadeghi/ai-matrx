@@ -1766,6 +1766,59 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
   );
 
 /**
+ * THE CHILD'S OWN RENDER BLOCKS, as unified `render_block` slots — the
+ * sanctioned way to draw a collaboration `agent_call` child's live output
+ * through the normal engine (`MarkdownStream agentCallId`), so its kinds route
+ * exactly as they would in the parent. The range is the `sub_agent` operation
+ * bound to `callId`: `renderBlockOrder[blockAnchor .. blockEnd)` (open-ended
+ * while the child runs). `selectUnifiedSlots` keeps DROPPING these ids from
+ * the transcript (D209) — this selector is the owning card's half of that
+ * handoff, never a second transcript.
+ */
+export const selectAgentCallChildSlots = (requestId: string, callId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.activeOperations,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.completedOperations,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (active, completed, order, blocks): UnifiedSlot[] => {
+      const findOp = (
+        ops: Record<string, OperationEntry> | undefined,
+      ): OperationEntry | undefined =>
+        Object.values(ops ?? {}).find(
+          (op) =>
+            op.operation === "sub_agent" &&
+            op.toolCallId === callId &&
+            op.blockAnchor !== undefined,
+        );
+      const completedOp = findOp(completed) as
+        CompletedOperationEntry | undefined;
+      const op = completedOp ?? findOp(active);
+      if (!op || op.blockAnchor === undefined) return [];
+      const blockOrder = order ?? [];
+      const end = Math.min(
+        completedOp?.blockEnd ?? blockOrder.length,
+        blockOrder.length,
+      );
+      const slots: UnifiedSlot[] = [];
+      for (let i = op.blockAnchor; i < end; i++) {
+        const blockId = blockOrder[i];
+        slots.push({
+          kind: "render_block",
+          blockId,
+          blockType: (blocks ?? {})[blockId]?.type,
+          seq: i - op.blockAnchor,
+        });
+      }
+      return slots;
+    },
+  );
+
+/**
  * Per-node live streams of an ADOPTED workflow run, in stable node-id order.
  * The workflow twin of `selectAgentCallChildStream` — but attribution is
  * explicit (`node_id` on every `node_stream` SSE frame), so no block-range

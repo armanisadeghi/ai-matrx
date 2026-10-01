@@ -50,8 +50,22 @@ jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
 }));
 jest.mock("@/components/MarkdownStream", () => ({
   __esModule: true,
-  default: ({ content }: { content: string }) => (
-    <div data-route="markdown">{content}</div>
+  default: ({
+    content,
+    requestId,
+    agentCallId,
+  }: {
+    content?: string;
+    requestId?: string;
+    agentCallId?: string;
+  }) => (
+    <div
+      data-route="markdown"
+      data-request-id={requestId ?? ""}
+      data-agent-call-id={agentCallId ?? ""}
+    >
+      {content}
+    </div>
   ),
 }));
 jest.mock("@/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
@@ -151,6 +165,35 @@ describe("a plain agent_call", () => {
   });
 });
 
+describe("a running plain agent_call", () => {
+  it("draws the child's live blocks through the engine by request + call", () => {
+    childStream = {
+      status: "running",
+      text: "Drafting the cards",
+      label: "Tutor",
+      childConversationId: null,
+    };
+    act(() =>
+      root.render(
+        <AgentCallInline requestId="req-1" entry={entry({ status: "progress" })} />,
+      ),
+    );
+    const live = route("markdown");
+    expect(live?.getAttribute("data-agent-call-id")).toBe("c1");
+    expect(route("generic")).toBeNull();
+  });
+
+  it("shows the generic progress body before the child has written anything", () => {
+    childStream = null;
+    act(() =>
+      root.render(
+        <AgentCallInline requestId="req-1" entry={entry({ status: "progress" })} />,
+      ),
+    );
+    expect(route("generic")).not.toBeNull();
+  });
+});
+
 describe("a collaboration agent_call", () => {
   const collab = { history_mode: "snapshot", agent_id: "a1" };
 
@@ -184,7 +227,12 @@ describe("a collaboration agent_call", () => {
         />,
       ),
     );
-    expect(route("markdown")?.textContent).toBe("Reading the thread");
+    // The child's own render blocks through the engine, by request + call —
+    // never its joined text re-split as plain content.
+    const live = route("markdown");
+    expect(live?.getAttribute("data-request-id")).toBe("req-1");
+    expect(live?.getAttribute("data-agent-call-id")).toBe("c1");
+    expect(live?.textContent).toBe("");
     expect(route("plain-markdown")).toBeNull();
   });
 });

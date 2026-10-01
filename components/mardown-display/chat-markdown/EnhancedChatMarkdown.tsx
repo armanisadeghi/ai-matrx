@@ -49,6 +49,7 @@ import {
   selectAccumulatedTextWithCitationMarkers,
   selectIsReasoningStreaming,
   selectUnifiedSlotRange,
+  selectAgentCallChildSlots,
   selectAllRenderBlocks,
   selectToolLifecycleMap,
   selectLiveCitationMarkersByBlockId,
@@ -115,6 +116,13 @@ export interface ChatMarkdownDisplayProps {
   recordMessageIds?: readonly string[];
   streamSlotStart?: number;
   streamSlotEnd?: number;
+  /**
+   * Render ONE collaboration `agent_call` child's live blocks from `requestId`
+   * (the parent request it streams inside) — the call id of the owning card.
+   * Its blocks go through the normal BlockRenderer path, so kinds route as in
+   * the parent (`selectAgentCallChildSlots`; the transcript still hides them).
+   */
+  agentCallId?: string;
   /** Turn ID for DB-loaded turn rendering */
   turnId?: string;
   /** Conversation ID for DB-loaded turn rendering */
@@ -408,6 +416,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   recordMessageIds,
   streamSlotStart,
   streamSlotEnd,
+  agentCallId,
   turnId,
   conversationId,
   content,
@@ -473,9 +482,12 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const unifiedSlotsSelector = useMemo(
     () =>
       requestId
-        ? selectUnifiedSlotRange(requestId, streamSlotStart, streamSlotEnd)
+        ? agentCallId
+          ? // One collaboration child's blocks (the card's half of D209).
+            selectAgentCallChildSlots(requestId, agentCallId)
+          : selectUnifiedSlotRange(requestId, streamSlotStart, streamSlotEnd)
         : _selectEmptySlots,
-    [requestId, streamSlotStart, streamSlotEnd],
+    [requestId, agentCallId, streamSlotStart, streamSlotEnd],
   );
   const unifiedSlots = useAppSelector(unifiedSlotsSelector);
 
@@ -596,6 +608,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     !settledFromRecord &&
     (streamSlotStart !== undefined ||
     streamSlotEnd !== undefined ||
+    agentCallId !== undefined ||
     unifiedSlots.some(
       (s) =>
         s.kind === "tool" ||

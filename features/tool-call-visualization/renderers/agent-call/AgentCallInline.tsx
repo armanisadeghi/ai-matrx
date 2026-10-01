@@ -1,6 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { Aperture, ImageIcon } from "lucide-react";
+import MarkdownStream from "@/components/MarkdownStream";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentCallChildStream } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 
 import type { ToolRendererProps } from "../../types";
 import { GenericRenderer } from "../../registry/GenericRenderer";
@@ -72,6 +76,41 @@ function ImageGenerationLoading() {
   );
 }
 
+const NO_CHILD_STREAM = () => null;
+
+/**
+ * A running child agent's live output, drawn from the parent request's own
+ * render blocks for this call (`MarkdownStream agentCallId`) — the transcript
+ * hides that range (D209), so this card is where it shows. No child blocks
+ * yet → the generic progress body.
+ */
+function AgentCallLiveChild(props: ToolRendererProps) {
+  const { entry, requestId, conversationId } = props;
+  const selector = useMemo(
+    () =>
+      requestId
+        ? selectAgentCallChildStream(requestId, entry.callId)
+        : NO_CHILD_STREAM,
+    [requestId, entry.callId],
+  );
+  const child = useAppSelector(selector);
+  if (!requestId || !child || !child.text.trim()) {
+    return <GenericRenderer {...props} />;
+  }
+  return (
+    <div className="max-h-64 overflow-y-auto rounded-md border border-border bg-background/60 px-3 py-2">
+      <MarkdownStream
+        imagePolicy="ai"
+        requestId={requestId}
+        agentCallId={entry.callId}
+        conversationId={conversationId}
+        isStreamActive={child.status === "running"}
+        hideCopyButton
+      />
+    </div>
+  );
+}
+
 /**
  * Dispatches `agent_call` by declared child-agent contract.
  *
@@ -108,6 +147,10 @@ export function AgentCallInline(props: ToolRendererProps) {
     findResultMedia(entry.result)
   ) {
     return <ImageGenerationResult {...props} />;
+  }
+
+  if (isActive && !isImageGenerationAgentCall(entry)) {
+    return <AgentCallLiveChild {...props} />;
   }
 
   // The child agent's final answer is an ANSWER, not a field in a key/value

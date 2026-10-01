@@ -90,6 +90,7 @@ export const StreamAwareChatMarkdown: React.FC<
   recordMessageIds,
   streamSlotStart,
   streamSlotEnd,
+  agentCallId,
   turnId,
   conversationId,
   content,
@@ -369,6 +370,7 @@ export const StreamAwareChatMarkdown: React.FC<
                 recordMessageIds={recordMessageIds}
                 streamSlotStart={streamSlotStart}
                 streamSlotEnd={streamSlotEnd}
+                agentCallId={agentCallId}
                 turnId={turnId}
                 conversationId={conversationId}
                 content={textBlock.content}
@@ -440,6 +442,7 @@ export const StreamAwareChatMarkdown: React.FC<
       recordMessageIds={recordMessageIds}
       streamSlotStart={streamSlotStart}
       streamSlotEnd={streamSlotEnd}
+      agentCallId={agentCallId}
       turnId={turnId}
       conversationId={conversationId}
       content={processedContent}

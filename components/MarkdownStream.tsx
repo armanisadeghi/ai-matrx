@@ -20,6 +20,13 @@ export interface MarkdownStreamProps {
   /** Inclusive/exclusive source timeline range for one live transcript segment. */
   streamSlotStart?: number;
   streamSlotEnd?: number;
+  /**
+   * Render ONE collaboration `agent_call` child's live blocks from `requestId`
+   * (the parent request it streams inside) — the call id of the owning card.
+   * Its blocks go through the normal BlockRenderer path, so kinds route as in
+   * the parent (`selectAgentCallChildSlots`; the transcript still hides them).
+   */
+  agentCallId?: string;
   /** Turn ID for DB-loaded turn rendering */
   turnId?: string;
   /** Conversation ID for DB-loaded turn rendering */

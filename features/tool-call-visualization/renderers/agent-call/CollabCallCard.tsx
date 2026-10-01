@@ -14,8 +14,8 @@
  *
  * Both go through the canonical renderers, never plain markdown (Arman,
  * 2026-09-30: a kind is never drawn as raw JSON): the live text through
- * `MarkdownStream` (the child has no request of its own — it streams inside
- * the parent's — so the card hands it the child's text), the settled answer
+ * `MarkdownStream` by the parent `requestId` + this call's id (`agentCallId`):
+ * the child's own render blocks, through the normal block path, the settled answer
  * through `AnswerValueView`, which routes a structured or kind answer to its
  * kind component.
  */
@@ -121,9 +121,13 @@ export function CollabCallCard(props: ToolRendererProps) {
       {/* Live child stream — the specialist's tokens, contained + attributed */}
       {showLiveStream && (
         <div className="mx-3 mb-2 max-h-64 overflow-y-auto rounded-md border border-border bg-background/60 px-3 py-2">
+          {/* The child's OWN render blocks, through the engine — kinds route
+              exactly as in the parent (selectAgentCallChildSlots). */}
           <MarkdownStream
             imagePolicy="ai"
-            content={liveText}
+            requestId={requestId}
+            agentCallId={entry.callId}
+            conversationId={conversationId}
             isStreamActive={childStream?.status === "running"}
             hideCopyButton
           />
