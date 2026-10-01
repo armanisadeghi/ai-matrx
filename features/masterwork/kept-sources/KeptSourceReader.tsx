@@ -27,6 +27,7 @@
 // `formatTimecode` from the transcript stack, so a rule's "at 4:12" and the
 // turn it points at read the same clock.
 
+import { formatRelativeTime } from "@/utils/datetime";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ExternalLink, FileText, Quote } from "lucide-react";
@@ -209,7 +210,7 @@ export function KeptSourceReader({
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground">
-          Captured {new Date(source.captured_at).toLocaleString()} ·{" "}
+          Captured {formatRelativeTime(source.captured_at)} ·{" "}
           {source.word_count.toLocaleString()}{" "}
           {source.word_count === 1 ? "word" : "words"}
           {source.speaker_count > 0

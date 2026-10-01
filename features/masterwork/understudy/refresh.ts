@@ -268,6 +268,13 @@ export interface UnderstudyStandIn {
    * metadata edit). Not lag; an editor's card refreshes the stamp for free.
    */
   stampOutdated: boolean;
+  /**
+   * The baked counts disagree with today's rules. Every rules write already
+   * pokes a rebuild on the server, but nothing tells the page when it lands,
+   * so the card read "25 still in review" beside a panel of 41 until a reload
+   * (cold walk 24). An editor's card refreshes on this (free, idempotent).
+   */
+  countsDiffer: boolean;
 }
 
 /** The Rulebook's live rules as the stand-in counts them (approved / drafts). */
@@ -335,6 +342,7 @@ export function readUnderstudyStandIn(
       : (row?.refreshed_at ?? null),
     behind,
     stampOutdated: versionOlder && !behind,
+    countsDiffer: rulesDiffer,
   };
 }
 

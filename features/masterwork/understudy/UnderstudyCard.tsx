@@ -33,6 +33,7 @@ import {
 } from "./refresh";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { formatRelativeTime } from "@/utils/datetime";
 
 export function UnderstudyCard({
   rulebookId,
@@ -149,6 +150,21 @@ export function UnderstudyCard({
       .then(() => onCreated())
       .catch(() => undefined);
   }, [stampOutdated, canEdit, refreshPending, rulebookId, rulebookVersion, onCreated]);
+
+  // The counts it performs from follow the rules live (cold walk 24: "25 still
+  // in review" beside 41 until a reload). Once per set of counts — the rebuild
+  // answers with what it baked, so the line updates without a re-read.
+  const countsRefreshedForRef = useRef<string | null>(null);
+  const countsDiffer = standIn.countsDiffer;
+  useEffect(() => {
+    if (!countsDiffer || !canEdit || refreshPending) return;
+    const key = `${rulebookId}:${approvedCount}:${draftCount}`;
+    if (countsRefreshedForRef.current === key) return;
+    countsRefreshedForRef.current = key;
+    void refreshUnderstudyTracked(rulebookId)
+      .then(() => onCreated())
+      .catch(() => undefined);
+  }, [countsDiffer, canEdit, refreshPending, rulebookId, approvedCount, draftCount, onCreated]);
 
   useEffect(() => {
     if (healedForRef.current !== null && healedForRef.current !== rulebookId) {
@@ -307,7 +323,7 @@ export function UnderstudyCard({
           ? ` · ${bakedApproved} approved, ${standIn.unconfirmed ?? 0} still in review`
           : ""}
         {standIn.rebuiltAt
-          ? ` · rebuilt ${new Date(standIn.rebuiltAt).toLocaleString()}`
+          ? ` · rebuilt ${formatRelativeTime(standIn.rebuiltAt)}`
           : ""}
       </p>
       {/* A STAND-IN WITH NOTHING TO STAND IN FOR IS NOT A STAND-IN.

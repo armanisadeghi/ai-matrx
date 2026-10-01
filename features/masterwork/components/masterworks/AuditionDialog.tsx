@@ -21,6 +21,7 @@
 // Server half: aidream POST /masterworks/audition (durable streaming run via
 // useMasterworkRun; verdict event `masterwork_audition_verdict`). Owner-only.
 
+import { formatRelativeTime } from "@/utils/datetime";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
@@ -552,10 +553,10 @@ export function AuditionDialog({
               {reopened ? (
                 <p className="text-xs text-muted-foreground">
                   Reopened from{" "}
-                  {new Date(
+                  {formatRelativeTime(
                     history.find((h) => h.id === reopened.runId)?.startedAt ??
-                      Date.now(),
-                  ).toLocaleString()}
+                      new Date(),
+                  )}
                   . Nothing was re-run and nothing was charged.
                 </p>
               ) : null}

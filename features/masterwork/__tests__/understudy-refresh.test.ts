@@ -281,3 +281,72 @@ describe("the rebuild time belongs to the build, not to the last attempt", () =>
     expect(whilePending.rebuiltAt).toBe(landed);
   });
 });
+
+describe("the counts it performs from follow the rules live (cold walk 24)", () => {
+  // After "Turn this into rules" took the panel from 25 to 41 rules, the card
+  // still said "16 approved, 25 still in review" until a reload: the server
+  // had rebuilt the stand-in, and nothing told the page.
+  const BAKED_AT_32 = {
+    rulebook_version: 32,
+    approved: 16,
+    unconfirmed: 25,
+    refreshed_at: null,
+  };
+
+  it("flags counts that disagree with today's rules, whatever the version says", () => {
+    expect(
+      readUnderstudyStandIn(getUnderstudyRefreshState("rb-w24"), BAKED_AT_32, 32, {
+        approved: 16,
+        unconfirmed: 41,
+      }).countsDiffer,
+    ).toBe(true);
+    expect(
+      readUnderstudyStandIn(getUnderstudyRefreshState("rb-w24b"), BAKED_AT_32, 33, {
+        approved: 16,
+        unconfirmed: 25,
+      }).countsDiffer,
+    ).toBe(false);
+  });
+
+  it("an editor's card rebuilds once per set of counts and believes the rebuild", () => {
+    const { readFileSync } = jest.requireActual<typeof import("node:fs")>("node:fs");
+    const { resolve } = jest.requireActual<typeof import("node:path")>("node:path");
+    const card = readFileSync(
+      resolve(__dirname, "../understudy/UnderstudyCard.tsx"),
+      "utf8",
+    );
+    const at = card.indexOf("const countsDiffer = standIn.countsDiffer;");
+    expect(at).toBeGreaterThan(-1);
+    const effect = card.slice(at, at + 700);
+    expect(effect).toContain("if (!countsDiffer || !canEdit || refreshPending) return;");
+    expect(effect).toContain("`${rulebookId}:${approvedCount}:${draftCount}`");
+    expect(effect).toContain("refreshUnderstudyTracked(rulebookId)");
+  });
+});
+
+describe("no raw clock on a Masterwork screen (cold walk 24)", () => {
+  // "rebuilt 10/1/2026, 1:19:54 AM" — a date with seconds, in a line of prose.
+  // The app's one formatter is `@/utils/datetime` (`formatRelativeTime`).
+  it("never renders new Date(…).toLocaleString()", () => {
+    const { readFileSync, readdirSync, statSync } =
+      jest.requireActual<typeof import("node:fs")>("node:fs");
+    const { join, resolve } = jest.requireActual<typeof import("node:path")>("node:path");
+    const root = resolve(__dirname, "..");
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) {
+          if (name !== "__tests__" && name !== "node_modules") walk(path);
+        } else if (path.endsWith(".tsx")) {
+          const src = readFileSync(path, "utf8");
+          if (/new Date\((?:[^()]|\([^()]*\))*\)\s*\.toLocaleString\(\)/.test(src)) {
+            offenders.push(path.slice(root.length + 1));
+          }
+        }
+      }
+    };
+    walk(root);
+    expect(offenders).toEqual([]);
+  });
+});
