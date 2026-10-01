@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { variableValueToInputText } from "@/features/agents/utils/variable-utils";
 import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 import { ToggleInput } from "./ToggleInput";
 import { RadioGroupInput } from "./RadioGroupInput";
@@ -74,16 +75,6 @@ interface VariableInputComponentProps {
   placeholder?: string;
 }
 
-/** Coerce any incoming value to a string for the existing text-style inputs. */
-function toStringValue(value: unknown): string {
-  if (value == null) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  return "";
-}
-
 export function VariableInputComponent({
   value,
   onChange,
@@ -122,7 +113,7 @@ export function VariableInputComponent({
   // Text-style inputs (everything except the media types) have a string
   // contract. Media types receive the raw `value` so they can read MediaRef
   // fields directly.
-  const stringValue = toStringValue(effectiveValue);
+  const stringValue = variableValueToInputText(effectiveValue);
   const stringOnChange = (v: string) => onChange(v);
 
   const fallbackTextarea = (

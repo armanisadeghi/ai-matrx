@@ -1,5 +1,7 @@
 "use client";
 
+import { variableValueToInputText } from "@/features/agents/utils/variable-utils";
+
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -492,7 +494,7 @@ function GuidedVariableContent({
   if (!cc || cc.type === "textarea") {
     return (
       <GuidedTextarea
-        value={typeof value === "string" ? value : String(value ?? "")}
+        value={variableValueToInputText(value)}
         onChange={(v) => onChange(v)}
         variableName={variable.name}
       />
@@ -518,7 +520,7 @@ function GuidedVariableContent({
   }
 
   // Type-narrowed string for the legacy guided sub-renderers.
-  const strValue = typeof value === "string" ? value : String(value ?? "");
+  const strValue = variableValueToInputText(value);
   const strOnChange = (v: string) => onChange(v);
 
   switch (cc.type) {

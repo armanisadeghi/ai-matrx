@@ -37,7 +37,7 @@ import { VariableInputComponent } from "./input-components/VariableInputComponen
 import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableRunHint, variableRunLabel } from "@ai-matrx/agents";
-import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
+import { variableValueToDisplay, variableValueToInputText } from "@/features/agents/utils/variable-utils";
 import { readMediaVariableFileId } from "@/features/agents/utils/media-variable-value";
 import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
@@ -272,6 +272,7 @@ export function AgentVariablesInline({
           // Envelope-aware: picklist values render as their public label, never
           // "[object Object]" and never the secret description.
           const displayValue: string = variableValueToDisplay(rawValue);
+          const inputText = variableValueToInputText(rawValue);
           const isPicklistBound = !!readStructuredList(variable.customComponent)
             ?.listId;
           // A media variable (image/audio/video/document) whose value names a
@@ -442,9 +443,9 @@ export function AgentVariablesInline({
                 <input
                   type="text"
                   value={
-                    displayValue.includes("\n")
-                      ? displayValue.replace(/\n/g, " ↵ ")
-                      : displayValue
+                    inputText.includes("\n")
+                      ? inputText.replace(/\n/g, " ↵ ")
+                      : inputText
                   }
                   onChange={(e) =>
                     handleValueChange(
@@ -468,7 +469,7 @@ export function AgentVariablesInline({
                 <RowChoicesButton
                   options={rowChoices.options}
                   multiple={rowChoices.multiple}
-                  value={typeof rawValue === "string" ? rawValue : displayValue}
+                  value={inputText}
                   onChange={(v) => handleValueChange(variable.name, v)}
                   label={variableRunLabel(variable, formatText)}
                 />

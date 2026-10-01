@@ -112,6 +112,13 @@ export const displayLabelForKey = (
   return formatVariableDisplayName(name) || name;
 };
 
+/** Text controls serialize structured values losslessly; display labels never enter inputs. */
+export const variableValueToInputText = (value: unknown): string => {
+  if (value == null) return "";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return String(value);
+};
+
 /**
  * Renders a variable value for human display. Picklist selections show their public
  * LABEL(s) (never the secret description, which the client never has) — read from the
@@ -130,13 +137,13 @@ export const variableValueToDisplay = (value: unknown): string => {
     const parts = [...labels, ...otherText].filter(Boolean);
     if (parts.length) return parts.join(", ");
   }
-  if (Array.isArray(value)) {
+  if (Array.isArray(value) && !value.some((v) => v !== null && typeof v === "object")) {
     return value
       .map((v) => (v == null ? "" : String(v)))
       .filter(Boolean)
       .join(", ");
   }
-  return value == null ? "" : String(value);
+  return variableValueToInputText(value);
 };
 
 // Rendering a whole variables record for a human lives in

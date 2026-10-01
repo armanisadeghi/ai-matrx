@@ -17,6 +17,8 @@ same rule as `features/mandates/admin/FEATURE.md`).
    first `chat.message` row. `metadata.input_content` keeps that row's complete
    canonical `MessagePart[]` (images, files, and attached records included), so
    preview, reuse, and server-side tests replay the same turn without flattening.
+   Structured values remain objects/arrays in variable state and requests. Text
+   editors use `variableValueToInputText` (JSON), never display labels or `String(object)`.
 2. **Staleness is DERIVED, never stamped** (TRUE CURRENT law). A sample
    carries the `input_contract_hash`/`output_contract_hash` it was captured or
    approved under; freshness = compare to `agent.definition` head hashes at
@@ -150,6 +152,11 @@ nothing, because a blank line is the silent failure this guards.
   lives at `../../../../common-docs/systems/agents/agent-samples/HANDOFF.md`.
 
 ## Change Log
+
+- 2026-09-30 — Structured test values display as readable JSON and load intact
+  into every text input layout. Inline editors serialize arrays as JSON rather
+  than comma-joined display labels; reducer/request regression checks preserve
+  nested values and kind markers. Verified Captured run 3 in the local builder.
 
 - 2026-09-19 — Test cases are readable again. Cases collapse (first one open)
   with a census on the closed row; inside, each variable, attachment group and

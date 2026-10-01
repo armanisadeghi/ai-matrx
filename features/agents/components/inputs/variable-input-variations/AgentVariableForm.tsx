@@ -1,5 +1,7 @@
 "use client";
 
+import { variableValueToInputText } from "@/features/agents/utils/variable-utils";
+
 import { useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { isControlVariable } from "@ai-matrx/agents";
@@ -205,7 +207,7 @@ function VariableField({ conversationId, def, value, onChange }: VariableFieldPr
         {fieldLabel}
         <VoiceTextarea
           id={fieldId}
-          value={String(value ?? "")}
+          value={variableValueToInputText(value)}
           placeholder={`Enter ${formattedName.toLowerCase()}...`}
           onChange={(e) => onChange(e.target.value)}
           autoGrow
@@ -277,7 +279,7 @@ function VariableField({ conversationId, def, value, onChange }: VariableFieldPr
     return (
       <div>
         {fieldLabel}
-        <Select value={String(value ?? "")} onValueChange={(v) => onChange(v)}>
+        <Select value={variableValueToInputText(value)} onValueChange={(v) => onChange(v)}>
           <SelectTrigger id={fieldId} className="h-7 text-xs bg-transparent">
             <SelectValue placeholder="Choose..." />
           </SelectTrigger>
@@ -357,7 +359,7 @@ function VariableField({ conversationId, def, value, onChange }: VariableFieldPr
       {fieldLabel}
       <Input
         id={fieldId}
-        value={String(value ?? "")}
+        value={variableValueToInputText(value)}
         placeholder={`Enter ${formattedName.toLowerCase()}...`}
         onChange={(e) => onChange(e.target.value)}
         className="h-7 text-xs bg-transparent"
@@ -383,7 +385,7 @@ function RadioField({
   fieldId: string;
 }) {
   const options = cc.options ?? [];
-  const strValue = String(value ?? "");
+  const strValue = variableValueToInputText(value);
   const isOtherSelected =
     cc.allowOther &&
     (strValue === "__other__" ||
