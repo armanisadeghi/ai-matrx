@@ -8,9 +8,12 @@
  *   process   — keep, and when the organization's policy still defers
  *               processing, the person's "Process now" override on the
  *               Source's CURRENT version (a person's edit when there is one).
- *   trash     — soft delete, restorable from Trash. A file's own extract goes
- *               with its file (`fn_delete_library_document_and_source`) and
- *               comes back with it.
+ *   trash     — THE ARCHIVE (the platform's one archive, `deleted_at`),
+ *               restorable from Trash and from the Sources page's Archived
+ *               filter. A file's own extract goes with its file
+ *               (`fn_delete_library_document_and_source`) and comes back with it.
+ *   restore   — the platform's one restore door (`restoreFromTrash`), or
+ *               clearing `archived_at` on a Source only marked archived.
  *   bulk      — every target is tried; the one sentence counts what happened
  *               and names the first refusal.
  *
@@ -25,6 +28,7 @@ import { writeOne } from "@/utils/supabase/writeOne";
 import { keepSource, sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import { processSourceNow } from "@/features/sources/api/processNow";
 import { isFileCanonicalExtract } from "@/features/sources/sourceRows";
+import { restoreFromTrash } from "@/features/trash/service";
 
 /** The facts about one Source every action door needs. */
 export interface ActionableSource {
@@ -92,6 +96,28 @@ export async function trashSource(row: ActionableSource): Promise<null> {
       .select("id"),
     { action: "delete", noun: "Source" },
   );
+  return null;
+}
+
+/** Put an archived Source back (the one restore door; `archived_at` is cleared too). */
+export async function restoreSource(row: {
+  id: string;
+  name: string;
+  deleted_at?: string | null;
+  archived_at?: string | null;
+}): Promise<null> {
+  if (row.deleted_at) await restoreFromTrash("processed_document", row.id);
+  if (row.archived_at) {
+    await writeOne(
+      supabase
+        .schema("docproc")
+        .from("processed_documents")
+        .update({ archived_at: null })
+        .eq("id", row.id)
+        .select("id"),
+      { action: "restore", noun: "Source" },
+    );
+  }
   return null;
 }
 

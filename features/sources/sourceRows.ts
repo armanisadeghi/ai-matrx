@@ -36,6 +36,9 @@ export const SOURCE_LIST_COLUMNS = [
   "updated_at",
   // When the Source entered the person's world — see SOURCE_LIST_ORDER_COLUMN.
   "captured_at",
+  // The archive axis (THE ARCHIVED-ITEMS LAW): an archived Source shows Restore.
+  "deleted_at",
+  "archived_at",
 ].join(",");
 
 /**
@@ -95,6 +98,14 @@ export interface SourceListRow {
   updated_at: string;
   /** When the Source entered the person's world — see SOURCE_LIST_ORDER_COLUMN. */
   captured_at?: string | null;
+  /** Archived through the one archive (restorable from Trash or the Archived filter). */
+  deleted_at?: string | null;
+  archived_at?: string | null;
+}
+
+/** An archived Source: moved out through the one archive, or marked archived. */
+export function isSourceArchived(row: Pick<SourceListRow, "deleted_at" | "archived_at">): boolean {
+  return !!(row.deleted_at || row.archived_at);
 }
 
 /**

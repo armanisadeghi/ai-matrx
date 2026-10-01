@@ -18,7 +18,11 @@ import {
   Inbox,
   Link2,
   ClipboardCopy,
+  Archive,
 } from "lucide-react";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import type {
@@ -40,6 +44,39 @@ export function useTranscriptRowActions(
   list: EntityListController<TranscriptListRow>,
 ): EntityRowActionsResult<TranscriptListRow> {
   const router = useRouter();
+
+  // THE ONE ARCHIVE for a transcript (restorable: the toast's Undo and Trash).
+  const archiveTranscript = async (row: TranscriptListRow) => {
+    const name = row.title?.trim() ? `"${row.title.trim()}"` : "this transcript";
+    const ok = await confirm({
+      title: `Archive ${name}?`,
+      description: archiveConfirmSentence(name),
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await archiveRecord("transcript", row.id, "transcript");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `${name} was not archived.`);
+      return;
+    }
+    list.removeRow(row.id);
+    toast.success(`Archived ${name}.`, {
+      action: {
+        label: "Undo",
+        onClick: () =>
+          void restoreFromTrash("transcript", row.id).then(
+            () => {
+              list.refresh();
+              toast.success(`Put back ${name}.`);
+            },
+            (err: unknown) =>
+              toast.error(err instanceof Error ? err.message : "It could not be put back."),
+          ),
+      },
+    });
+  };
 
   // No manual memoization — the React Compiler owns it (CLAUDE.md).
   const menuFor = (row: TranscriptListRow) => (): ItemMenuConfig => {
@@ -116,6 +153,22 @@ export function useTranscriptRowActions(
               },
             ],
           },
+          ...(row.kind === "transcript"
+            ? [
+                {
+                  id: "manage",
+                  items: [
+                    {
+                      id: "archive",
+                      label: "Archive",
+                      icon: Archive,
+                      tone: "destructive" as const,
+                      onSelect: () => void archiveTranscript(row),
+                    },
+                  ],
+                },
+              ]
+            : []),
         ],
       };
   };
@@ -123,8 +176,5 @@ export function useTranscriptRowActions(
   const onOpenRow = (row: TranscriptListRow) =>
     router.push(primaryRowHref(row));
 
-  // The list controller is unused today (no mutating actions yet — delete /
-  // move land with the row-actions expansion tracked in the handoff).
-  void list;
   return { actions: { menuFor, onOpenRow } };
 }

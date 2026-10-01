@@ -34,6 +34,7 @@ import {
   type RefObject,
 } from "react";
 import {
+  Archive,
   Bookmark,
   Boxes,
   ListTree,
@@ -49,6 +50,9 @@ import {
   Wand2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { restoreSource, trashSource } from "@/features/sources/sourceActions";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -476,6 +480,44 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
   const isPdf = view?.kind === "pdf";
   const kept = !!keptRead.keptAt;
 
+  // THE ONE ARCHIVE for this Source (restorable: the toast's Undo, Trash, and the Sources
+  // page's Archived filter). The screen goes back to the library, the list it left.
+  const archiveThis = async () => {
+    if (!doc) return;
+    const ok = await confirm({
+      title: `Archive "${doc.name}"?`,
+      description: archiveConfirmSentence(`"${doc.name}"`),
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await trashSource({
+        id: doc.id,
+        name: doc.name,
+        source_kind: doc.source_kind,
+        derivation_kind: doc.derivation_kind,
+        organization_id: doc.organization_id,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `"${doc.name}" was not archived.`);
+      return;
+    }
+    const archivedDoc = { id: doc.id, name: doc.name, deleted_at: new Date().toISOString() };
+    toast.success(`Archived "${doc.name}".`, {
+      action: {
+        label: "Undo",
+        onClick: () =>
+          void restoreSource(archivedDoc).then(
+            () => toast.success(`Put back "${archivedDoc.name}".`),
+            (err: unknown) =>
+              toast.error(err instanceof Error ? err.message : "It could not be put back."),
+          ),
+      },
+    });
+    router.push("/knowledge/library");
+  };
+
   const actions = doc
     ? [
         kept
@@ -542,6 +584,7 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
               },
             ]
           : []),
+        { label: "Archive", icon: Archive, onPress: () => void archiveThis() },
       ]
     : [];
 

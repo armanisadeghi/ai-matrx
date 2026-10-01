@@ -15,8 +15,10 @@
  * saved or not) is one obvious toggle away. Captures sit here until someone
  * saves or files them — nothing is ever auto-deleted.
  *
- * Bulk: Save · Attach (the Save panel's picker) · Process now · Delete (the
- * row's soft delete; restorable from Trash). Add: upload · paste a URL ·
+ * Bulk: Save · Attach (the Save panel's picker) · Process now · Archive (the
+ * platform's one archive; restorable from Trash and from this page's Archived
+ * filter, where the bulk bar and each row's menu offer Restore). Every row also
+ * has its own menu (Open · Archive / Restore). Add: upload · paste a URL ·
  * paste text · import a transcript. A row opens the document viewer.
  */
 
@@ -24,7 +26,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
+  Archive,
+  ArchiveRestore,
   ClipboardType,
+  ExternalLink,
+  MoreHorizontal,
   FileAudio,
   Globe,
   Layers,
@@ -41,7 +47,17 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { Input, Textarea } from "@ai-matrx/design-system";
+import {
+  ArchiveFilter,
+  Input,
+  Textarea,
+  toArchiveFilter,
+  type ArchiveFilterValue,
+} from "@ai-matrx/design-system";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
+import type { ItemMenuConfig } from "@/components/official/item/types";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { restoreSource, trashSource } from "@/features/sources/sourceActions";
 import { formatRelativeTime, formatCount } from "@ai-matrx/kit/format";
 import { useEntityTitles } from "@ai-matrx/associations/react";
 import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
@@ -75,6 +91,7 @@ import {
 } from "@/components/ui/hover-card";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -87,8 +104,6 @@ import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { DEFAULT_LIST_SCOPE, makeScope, type ListScope } from "@/lib/list-scope/types";
 import { fetchMyTeamReach, teamReachOrFilter } from "@/lib/list-scope/teamReach";
 import { supabase } from "@/utils/supabase/client";
-import { ragDb } from "@/utils/supabase/ragDb";
-import { writeOne } from "@/utils/supabase/writeOne";
 import { fileHandler } from "@/features/files/handler/handler";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -129,6 +144,7 @@ import {
   captureClientLabel,
   captureWords,
   isFileCanonicalExtract,
+  isSourceArchived,
   isSourceSaved,
   sourceKindGroup,
   sourceListedAt,
@@ -392,6 +408,19 @@ export function SourcesPage() {
   const [saveTarget, setSaveTarget] = useState<SaveTarget | null>(null);
   const [deleteRows, setDeleteRows] = useState<SourceListRow[] | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // THE ARCHIVED-ITEMS LAW: `?archived=`, default Active only.
+  const [archived, setArchived] = useState<ArchiveFilterValue>(() =>
+    toArchiveFilter(searchParams?.get("archived"), "active"),
+  );
+  const changeArchived = (next: ArchiveFilterValue) => {
+    setSelectedIds([]);
+    setArchived(next);
+    const params = new URLSearchParams(window.location.search);
+    if (next === "active") params.delete("archived");
+    else params.set("archived", next);
+    const qs = params.toString();
+    replaceAddressWithoutNavigating(`${window.location.pathname}${qs ? `?${qs}` : ""}`);
+  };
   const [bulkBusy, setBulkBusy] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -416,11 +445,7 @@ export function SourcesPage() {
     if (id) next.set("org_filter", id);
     else next.delete("org_filter");
     const qs = next.toString();
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
+    replaceAddressWithoutNavigating(`${window.location.pathname}${qs ? `?${qs}` : ""}`);
   };
   const [lane, setLane] = useState<SourcesLane>(() => {
     const word = searchParams?.get("scope");
@@ -434,11 +459,7 @@ export function SourcesPage() {
     if (next.kind === DEFAULT_LIST_SCOPE.kind) params.delete("scope");
     else params.set("scope", next.kind);
     const qs = params.toString();
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
+    replaceAddressWithoutNavigating(`${window.location.pathname}${qs ? `?${qs}` : ""}`);
   };
   // MY TEAM: the people I share a live team with, read once (`my_teammates`).
   const [teamReach, setTeamReach] = useState<
@@ -496,13 +517,14 @@ export function SourcesPage() {
   } = useSources(scope, userId, refreshKey, {
     saved: savedFilter === "saved",
     search: serverSearch,
+    archived,
   });
   // The lane tabs' numbers: one head count per lane under the org filter and the view.
   const [laneCounts, setLaneCounts] = useState<{
     byKind: EntityScopeCounts["byKind"];
     settled: boolean;
   }>({ byKind: {}, settled: false });
-  const laneCountsKey = `${orgFilter ?? "all"}|${savedFilter}|${userId}|${refreshKey}|${teamReach.phase}|${teamFilter ?? ""}`;
+  const laneCountsKey = `${orgFilter ?? "all"}|${savedFilter}|${archived}|${userId}|${refreshKey}|${teamReach.phase}|${teamFilter ?? ""}`;
   useEffect(() => {
     if (!userId || teamReach.phase === "loading") return undefined;
     let cancelled = false;
@@ -510,7 +532,7 @@ export function SourcesPage() {
     const lanes = teamReach.phase === "failed" ? SOURCES_LANES.filter((l) => l !== "team") : SOURCES_LANES;
     void readSourceLaneCounts(
       lanes,
-      { organizationId: orgFilter, saved: savedFilter === "saved", teamFilter },
+      { organizationId: orgFilter, saved: savedFilter === "saved", teamFilter, archived },
       userId,
     ).then((counts) => {
       if (cancelled) return;
@@ -749,34 +771,45 @@ export function SourcesPage() {
     if (!deleteRows) return;
     setDeleting(true);
     const targets = deleteRows;
-    await runBulk("Moved to the trash:", targets, async (row) => {
-      if (isFileCanonicalExtract(row)) {
-        // A file's own extract goes with its file (and comes back with it).
-        const { error: rpcError } = await ragDb(supabase).rpc(
-          "fn_delete_library_document_and_source",
-          { p_id: row.id },
-        );
-        if (rpcError)
-          throw new Error(
-            `"${row.name}" and its file could not be moved to the trash. You may not be allowed to delete them.`,
-          );
-        return null;
-      }
-      await writeOne(
-        supabase
-          .schema("docproc")
-          .from("processed_documents")
-          .update({ deleted_at: new Date().toISOString() })
-          .eq("id", row.id)
-          .is("deleted_at", null)
-          .select("id"),
-        { action: "delete", noun: "Source" },
-      );
-      return null;
-    });
+    // THE ONE ARCHIVE (`trashSource`): a file's own extract goes with its file.
+    await runBulk("Archived", targets, trashSource);
     setDeleting(false);
     setDeleteRows(null);
   };
+
+  /** Put archived Sources back through the one restore door. */
+  const restoreRows = (targets: SourceListRow[]) =>
+    runBulk("Restored", targets, restoreSource);
+
+  /** Each row's own menu — the same actions as the bulk bar, one row at a time. */
+  const rowMenu = (r: SourceListRow) => (): ItemMenuConfig => ({
+    header: { title: r.name },
+    sections: [
+      {
+        id: "open",
+        items: [{ id: "open", label: "Open", icon: ExternalLink, kind: "link", href: sourceHref(r.id) }],
+      },
+      {
+        id: "manage",
+        items: [
+          isSourceArchived(r)
+            ? {
+                id: "restore",
+                label: "Restore",
+                icon: ArchiveRestore,
+                onSelect: () => void restoreRows([r]),
+              }
+            : {
+                id: "archive",
+                label: "Archive",
+                icon: Archive,
+                tone: "destructive",
+                onSelect: () => setDeleteRows([r]),
+              },
+        ],
+      },
+    ],
+  });
 
   // ── Columns ──────────────────────────────────────────────────────────────
 
@@ -923,6 +956,26 @@ export function SourcesPage() {
       },
       filter: "select",
       width: 150,
+    },
+    {
+      id: "actions",
+      header: "",
+      accessorFn: () => "",
+      sortable: false,
+      filter: false,
+      width: 44,
+      cell: (r) => (
+        <ItemMenu config={rowMenu(r)}>
+          <button
+            type="button"
+            aria-label={`Actions for ${r.name}`}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </ItemMenu>
+      ),
     },
   ];
 
@@ -1102,11 +1155,18 @@ export function SourcesPage() {
             countsLoading={!laneCounts.settled}
             onChange={changeLane}
           />
-          <EntityOrgFilter
-            orgId={orgFilter}
-            onChange={changeOrgFilter}
-            counts={laneTabCounts}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ArchiveFilter
+              value={archived}
+              onValueChange={changeArchived}
+              size="sm"
+            />
+            <EntityOrgFilter
+              orgId={orgFilter}
+              onChange={changeOrgFilter}
+              counts={laneTabCounts}
+            />
+          </div>
         </div>
 
         {lane === "team" && teamReach.phase === "failed" ? (
@@ -1192,15 +1252,28 @@ export function SourcesPage() {
                 >
                   <Sparkles className="h-3 w-3" /> Process now
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10"
-                  disabled={bulkBusy}
-                  onClick={() => setDeleteRows(sel)}
-                >
-                  <Trash2 className="h-3 w-3" /> Delete
-                </Button>
+                {sel.some(isSourceArchived) ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs"
+                    disabled={bulkBusy}
+                    onClick={() => void restoreRows(sel.filter(isSourceArchived))}
+                  >
+                    <ArchiveRestore className="h-3 w-3" /> Restore
+                  </Button>
+                ) : null}
+                {sel.some((r) => !isSourceArchived(r)) ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10"
+                    disabled={bulkBusy}
+                    onClick={() => setDeleteRows(sel.filter((r) => !isSourceArchived(r)))}
+                  >
+                    <Archive className="h-3 w-3" /> Archive
+                  </Button>
+                ) : null}
                 {bulkBusy ? (
                   <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                 ) : null}
@@ -1458,7 +1531,7 @@ export function SourcesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete */}
+      {/* Archive (the one archive; Restore from Trash or the Archived filter) */}
       <AlertDialog
         open={!!deleteRows}
         onOpenChange={(o) => !o && !deleting && setDeleteRows(null)}
@@ -1466,17 +1539,18 @@ export function SourcesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Move{" "}
+              Archive{" "}
               {deleteRows?.length === 1
                 ? `"${deleteRows[0].name}"`
-                : `${deleteRows?.length ?? 0} Sources`}{" "}
-              to the trash?
+                : `${deleteRows?.length ?? 0} Sources`}
+              ?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Moves the selected Sources and their searchable pieces to the
-              trash. Restorable from the trash.
+              {archiveConfirmSentence(
+                deleteRows?.length === 1 ? `"${deleteRows[0].name}"` : "these Sources",
+              )}
               {deleteRows?.some(isFileCanonicalExtract)
-                ? " An uploaded file's Source goes to the trash together with its file."
+                ? " An uploaded file's Source is archived together with its file."
                 : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1496,7 +1570,7 @@ export function SourcesPage() {
               {deleting ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
               ) : null}
-              Move to trash
+              Archive
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

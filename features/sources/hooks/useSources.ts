@@ -18,6 +18,7 @@
  * also under the caller's RLS. Organization names are read directly too.
  */
 
+import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -155,6 +156,25 @@ export interface SourcesListOptions {
   saved: boolean;
   /** Name-or-address search, applied by the server. */
   search: string;
+  /**
+   * THE ARCHIVED-ITEMS LAW's axis. A Source is archived through the platform's one archive
+   * (`deleted_at`, restorable — `trashSource` / `restoreFromTrash`). Default `active`.
+   */
+  archived?: ArchiveFilterValue;
+}
+
+/**
+ * The archive axis on a Source read: `active` hides archived Sources (the default), `archived`
+ * lists only them, `all` both. An archived Source is one moved out through the one archive
+ * (`deleted_at`) or marked `archived_at`.
+ */
+export function applySourcesArchiveAxis<Q extends {
+  is: (column: string, value: null) => Q;
+  or: (filter: string) => Q;
+}>(q: Q, archived: ArchiveFilterValue = "active"): Q {
+  if (archived === "all") return q;
+  if (archived === "archived") return q.or("deleted_at.not.is.null,archived_at.not.is.null");
+  return q.is("deleted_at", null).is("archived_at", null);
 }
 
 /** Preserve failures from earlier pages until those same organization ids succeed. */
@@ -179,6 +199,7 @@ export async function readSourcesCounts(
   scope: SourcesScope,
   userId: string,
   search = "",
+  archived: ArchiveFilterValue = "active",
 ): Promise<{ savedTotal: number | null; allTotal: number | null }> {
   if (sourcesScopeIsEmpty(scope)) return { savedTotal: 0, allTotal: 0 };
   const counts = await Promise.allSettled(
@@ -187,8 +208,8 @@ export async function readSourcesCounts(
         .schema("docproc")
         .from("processed_documents")
         .select("id", { count: "exact", head: true })
-        .is("deleted_at", null)
         .or(sourcesListFilter({ saved, search }));
+      q = applySourcesArchiveAxis(q, archived);
       q = applySourcesScope(q, scope, userId);
       const { count, error } = await q;
       return error ? null : count;
@@ -208,7 +229,12 @@ export async function readSourcesCounts(
  */
 export async function readSourceLaneCounts(
   lanes: readonly SourcesLane[],
-  narrowing: { organizationId: string | null; saved: boolean; teamFilter: string | null },
+  narrowing: {
+    organizationId: string | null;
+    saved: boolean;
+    teamFilter: string | null;
+    archived?: ArchiveFilterValue;
+  },
   userId: string,
 ): Promise<Partial<Record<SourcesLane, number | null>>> {
   const out: Partial<Record<SourcesLane, number | null>> = {};
@@ -228,8 +254,8 @@ export async function readSourceLaneCounts(
           .schema("docproc")
           .from("processed_documents")
           .select("id", { count: "exact", head: true })
-          .is("deleted_at", null)
           .or(sourcesListFilter({ saved: narrowing.saved, search: "" }));
+        q = applySourcesArchiveAxis(q, narrowing.archived);
         q = applySourcesScope(q, scope, userId);
         const { count, error } = await q;
         out[kind] = error ? null : count;
@@ -312,7 +338,8 @@ export function useSources(
   const scopeKey = scope
     ? `${scope.kind}:${scope.organizationId ?? "all"}:${scope.teamFilter ?? ""}`
     : "none";
-  const listKey = `${scopeKey}|${userId}|${refreshKey}|${options.saved}|${options.search.trim()}`;
+  const archived = options.archived ?? "active";
+  const listKey = `${scopeKey}|${userId}|${refreshKey}|${options.saved}|${options.search.trim()}|${archived}`;
   const generation = useRef(0);
   const fetched = useRef(0);
 
@@ -326,8 +353,8 @@ export function useSources(
         .schema("docproc")
         .from("processed_documents")
         .select(SOURCE_LIST_COLUMNS, { count: "exact" })
-        .is("deleted_at", null)
         .or(sourcesListFilter({ saved: options.saved, search: options.search }));
+      q = applySourcesArchiveAxis(q, archived);
       q = applySourcesScope(q, scope, userId);
       const { data, error, count } = await q
         .order(SOURCE_LIST_ORDER_COLUMN, { ascending: false })
@@ -336,7 +363,7 @@ export function useSources(
       if (error) throw new Error(error.message);
       return { rows: (data ?? []) as unknown as SourceListRow[], count: count ?? null };
     },
-    [scope, userId, options.saved, options.search],
+    [scope, userId, options.saved, options.search, archived],
   );
 
   /** Stage facts and organization names for newly listed rows only. */
@@ -438,7 +465,7 @@ export function useSources(
         hasMore: page.count !== null && fetched.current < page.count,
       }));
       void readExtras(gen, rows);
-      const counts = await readSourcesCounts(scope, userId, options.search);
+      const counts = await readSourcesCounts(scope, userId, options.search, archived);
       if (gen !== generation.current) return;
       setState((st) => ({ ...st, ...counts }));
     })();
