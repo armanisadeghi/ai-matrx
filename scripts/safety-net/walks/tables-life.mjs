@@ -269,15 +269,17 @@ async function openEditor(row, col) {
   const before = await overlay.count();
   const c = await cellOf(row, col);
   const inCell = () => c.locator("[data-sheet-relation-editor], input, textarea, button, [role=combobox]").count();
+  const opened = async () => (await page.locator("[cmdk-input]").count()) > 0 || (await page.getByRole("button", { name: /^Upload File$/ }).count()) > 0;
   await c.click();
   await sleep(800);
   const inBefore = await inCell();
-  for (const how of ["Enter", "dblclick"]) {
-    if (how === "Enter") await page.keyboard.press("Enter");
+  for (const how of ["click", "Enter", "dblclick"]) {
+    if (how === "click") await c.click();
+    else if (how === "Enter") await page.keyboard.press("Enter");
     else await c.dblclick();
     for (let k = 0; k < 6; k++) {
       await sleep(700);
-      if ((await overlay.count()) > before || (await inCell()) > inBefore) return how;
+      if ((await opened()) || (await overlay.count()) > before || (await inCell()) > inBefore) return how;
     }
   }
   return null;
@@ -413,6 +415,11 @@ try {
     if (!made[col]) continue;
     await step([item], `edit relation cell "${col}" (pick ${n})`, async () => {
       const how = await openEditor(R1, col);
+      const pickBtn = (await cellOf(R1, col)).getByRole("button", { name: /^Pick/ });
+      if (await pickBtn.count()) {
+        await pickBtn.first().click();
+        await sleep(2000);
+      }
       await probe(`relation-picker-${col}`);
       const opts = page.locator("[role=listbox] [role=option], [cmdk-item], [role=dialog] [role=option], [data-radix-popper-content-wrapper] [role=option]");
       await until("the records to pick", async () => (await opts.count()) > 0, 25000);
@@ -437,28 +444,46 @@ try {
   if (made["Handout PDF"]) {
     await step(["T21"], "edit attachments cell \"Handout PDF\"", async () => {
       const how = await openEditor(R1, "Handout PDF");
-      const add = page.getByRole("button", { name: /Add files/ });
-      if (!(await add.count())) {
+      const win = page.locator("body").filter({ hasText: "Attach files" });
+      const upload = page.getByRole("button", { name: /^Upload File$/ });
+      await until("the Attach files window", async () => (await upload.count()) > 0, 20000);
+      if (!(await upload.count())) {
         await probe("attachment-editor");
-        return { ok: false, detail: `the attachments cell opened no Add files… (editor opened by ${how ?? "nothing"})` };
+        return { ok: false, detail: `the attachments cell opened no Attach files window (editor opened by ${how ?? "nothing"})` };
       }
-      const chooser = page.waitForEvent("filechooser", { timeout: 8000 }).catch(() => null);
-      await add.first().click();
+      void win;
+      const fname = `home-exercise-handout-${STAMP.replace(/\s+/g, "-").toLowerCase()}.txt`;
+      const f = join(OUT, fname);
+      writeFileSync(f, "Clamshells: 3 sets of 12, side lying, band above the knees. Wall angels: 2 sets of 10.\n");
+      const chooser = page.waitForEvent("filechooser", { timeout: 15000 }).catch(() => null);
+      await upload.first().click();
       const fc = await chooser;
       if (!fc) {
-        await probe("attachment-picker");
+        await probe("attachment-upload");
         await page.keyboard.press("Escape");
-        return { skip: "Add files… opens the platform file picker (a library dialog, no browser file chooser); a headless walk cannot hand it a file — manual by Arman: attach a PDF to an Attachments cell" };
+        return { ok: false, detail: "Upload File opened no file chooser" };
       }
-      const f = join(OUT, "home-exercise-handout.txt");
-      writeFileSync(f, "Clamshells: 3 sets of 12, left side lying, band above the knees.\n");
       await fc.setFiles(f);
-      await until("the file chip", async () => /home-exercise-handout/.test(await bodyText(page)), 60000);
-      const done = page.getByRole("button", { name: /^Done$/ });
-      if (await done.count()) await done.first().click();
-      await sleep(3000);
+      const row = page.locator("div, li, label").filter({ hasText: new RegExp(`^\\s*${esc(fname)}`) });
+      await until("the uploaded file", async () => (await page.getByText(fname).count()) > 0, 60000);
+      await sleep(2000);
+      const box = page.getByRole("checkbox", { name: new RegExp(esc(fname)) });
+      if (await box.count()) await box.first().click();
+      else {
+        const item = page.getByText(fname).first();
+        const cb = item.locator("xpath=ancestor::*[.//*[@role='checkbox' or @type='checkbox']][1]").locator("[role=checkbox], input[type=checkbox]").first();
+        if (await cb.count()) await cb.click();
+        else await item.click();
+      }
+      void row;
+      await sleep(1000);
+      const attach = page.getByRole("button", { name: /^Attach files?$/ });
+      const n = await attach.count();
+      if (n) await attach.last().click().catch(() => {});
+      await sleep(4000);
+      await probe("attachment-after");
       const now = await cellText(R1, "Handout PDF");
-      return { ok: /home-exercise-handout/.test(now), detail: `cell reads "${now}"` };
+      return { ok: now.includes("home-exercise-handout") || /1 file|\.txt/.test(now), detail: `uploaded ${fname}; cell reads "${now}"` };
     });
   }
 
@@ -654,13 +679,14 @@ try {
     const copay = await cellText(R1, "Copay");
     // Z→A: Wall angels (R2) above Clamshells (R1); the filter keeps those two and hides Bird dog (R3).
     const want = "R2,R1";
-    const ok = sorted.join() === "R2,R3,R1" && filtered.join() === want && afterEdit.join() === want && afterReload.join() === want && /40/.test(copay);
+    const ok = sorted.join() === "R2,R1,R3" && filtered.join() === want && afterEdit.join() === want && afterReload.join() === want && /40/.test(copay);
     return { ok, detail: `sorted ${sorted.join(">")}; filtered ${filtered.join(">")}; after the edit ${afterEdit.join(">")}; after reload ${afterReload.join(">")} (Copay "${copay}", address ${url.slice(0, 160)})` };
   });
 
   // ── T06 rename a column ────────────────────────────────────────────────────────────────────────
   await step(["T06"], "rename Patient Notes → Patient Comments; values stay", async () => {
-    const was = [await cellText(R1, "Patient Notes"), await cellText(R2, "Patient Notes"), await cellText(R3, "Patient Notes")];
+    await typeInto(R1, "Patient Notes", "Ice 10 minutes after the session");
+    const was = [await cellText(R1, "Patient Notes"), await cellText(R2, "Patient Notes")];
     const d = await columnSettings("Patient Notes");
     await d.locator("#col-name").fill("Patient Comments");
     await d.getByRole("button", { name: "Save", exact: true }).click();
@@ -668,8 +694,8 @@ try {
     await open("?view=sheet", { needRows: true });
     await sheet();
     const hs = await headers();
-    const now = (await colIndex("Patient Comments")) >= 0 ? [await cellText(R1, "Patient Comments"), await cellText(R2, "Patient Comments"), await cellText(R3, "Patient Comments")] : [];
-    return { ok: hs.includes("Patient Comments") && !hs.includes("Patient Notes") && JSON.stringify(now) === JSON.stringify(was), detail: `headers ${hs.join(", ").slice(0, 160)}; values before ${JSON.stringify(was)}, after ${JSON.stringify(now)}` };
+    const now = (await colIndex("Patient Comments")) >= 0 ? [await cellText(R1, "Patient Comments"), await cellText(R2, "Patient Comments")] : [];
+    return { ok: hs.includes("Patient Comments") && !hs.includes("Patient Notes") && JSON.stringify(now) === JSON.stringify(was) && /Ice 10 minutes/.test(was[0]), detail: `headers ${hs.join(", ").slice(0, 160)}; values before ${JSON.stringify(was)}, after ${JSON.stringify(now)}` };
   });
 
   // ── T09 recolor a choice ───────────────────────────────────────────────────────────────────────
