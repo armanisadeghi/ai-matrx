@@ -3,8 +3,9 @@
  * page by page, and the whole tree still means what it always meant.
  *
  * What must hold, each case a behaviour some reader of the tree depends on:
- *   - the skeleton draws organizations and types but never says the tree is "ready" (ScopeNotFound,
- *     ReadGate and every picker wait on `treeStatus` for EVERY scope);
+ *   - the skeleton sits BESIDE the whole tree: a reader of the whole tree sees nothing until every
+ *     scope is in, exactly as before (it never meets a type with no scopes that has some); the
+ *     paged reader sees the types at once;
  *   - a type's count is unknown (null) until the store counted it — never a false 0;
  *   - a page lands in its type, the next page appends, the last page makes the type complete;
  *   - the whole tree replaces the skeleton and answers every type complete with its exact count;
@@ -12,7 +13,11 @@
  *   - a cache written from the skeleton is never adopted as the tree on the next boot.
  */
 import reducer, { scopesActions, scopesTreePolicy, type ScopesState } from "@/features/scopes/redux/scopesSlice";
-import { makeSelectTypeScopesState } from "@/features/scopes/redux/selectors/tree";
+import {
+  makeSelectTypeScopesState,
+  selectOrganizationsList,
+  selectPagedOrganizationsList,
+} from "@/features/scopes/redux/selectors/tree";
 import { buildRehydrateAction } from "@/lib/sync/engine/rehydrate";
 import type { OrgNode, ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
@@ -48,11 +53,12 @@ function skeleton() {
   return s;
 }
 
-it("the skeleton draws the organization and its types, and the tree is not 'ready'", () => {
+it("the skeleton draws the types for the paged reader and nothing for a reader of the whole tree", () => {
   const s = skeleton();
   expect(s.skeletonStatus).toBe("ready");
   expect(s.treeStatus).toBe("idle");
-  expect(s.organizations[ORG].scope_types.map((t) => t.label_plural)).toEqual(["Matters", "Clients"]);
+  expect(selectOrganizationsList(asRoot(s))).toEqual([]);
+  expect(selectPagedOrganizationsList(asRoot(s))[0].scope_types.map((t) => t.label_plural)).toEqual(["Matters", "Clients"]);
   expect(typeState(asRoot(s), MATTERS)).toEqual({ status: "idle", total: null, hasMore: false, error: null });
 });
 
@@ -70,7 +76,8 @@ it("pages land in their type: the first partial with more to ask, the last compl
   s = reducer(s, scopesActions.typeScopesPageFulfilled({ organizationId: ORG, scopeTypeId: MATTERS, offset: 0, scopes: [reyes], total: 2, nextOffset: 1 }));
   expect(typeState(asRoot(s), MATTERS)).toEqual({ status: "partial", total: 2, hasMore: true, error: null });
   s = reducer(s, scopesActions.typeScopesPageFulfilled({ organizationId: ORG, scopeTypeId: MATTERS, offset: 1, scopes: [doe, reyes], total: 2, nextOffset: null }));
-  expect(s.organizations[ORG].scope_types[0].scopes.map((x) => x.name)).toEqual(["Reyes v. Pinnacle", "Doe v. CSV"]);
+  expect(s.skeletonOrganizations[ORG].scope_types[0].scopes.map((x) => x.name)).toEqual(["Reyes v. Pinnacle", "Doe v. CSV"]);
+  expect(selectOrganizationsList(asRoot(s))).toEqual([]);
   expect(typeState(asRoot(s), MATTERS)).toEqual({ status: "complete", total: 2, hasMore: false, error: null });
   expect(s.treeStatus).toBe("idle");
 });
@@ -88,6 +95,7 @@ it("the whole tree replaces the skeleton: every type complete with its exact cou
   expect(s.treeStatus).toBe("ready");
   expect(typeState(asRoot(s), MATTERS)).toEqual({ status: "complete", total: 2, hasMore: false, error: null });
   expect(typeState(asRoot(s), CLIENTS).total).toBe(1);
+  expect(selectPagedOrganizationsList(asRoot(s))).toBe(selectOrganizationsList(asRoot(s)));
 });
 
 it("a skeleton that arrives after the whole tree changes nothing", () => {
@@ -101,22 +109,14 @@ it("a type page that already loaded survives a skeleton refresh", () => {
   let s = skeleton();
   s = reducer(s, scopesActions.typeScopesPageFulfilled({ organizationId: ORG, scopeTypeId: MATTERS, offset: 0, scopes: [reyes, doe], total: 2, nextOffset: null }));
   s = reducer(s, scopesActions.skeletonFetchFulfilled(tree([type(MATTERS, "Matter"), type(CLIENTS, "Client")])));
-  expect(s.organizations[ORG].scope_types[0].scopes).toHaveLength(2);
+  expect(s.skeletonOrganizations[ORG].scope_types[0].scopes).toHaveLength(2);
 });
 
-it("a cache written from the skeleton is never adopted as the tree on the next boot", () => {
+it("the saved tree is only ever the whole tree: the skeleton never reaches the cache", () => {
   const saved = scopesTreePolicy.config.serialize!(skeleton()) as Partial<ScopesState>;
-  expect(saved.treeComplete).toBe(false);
-  const next = reducer(undefined, buildRehydrateAction("scopesTree", saved, {} as never));
-  expect(next.treeStatus).toBe("idle");
-  expect(next.organizationIds).toEqual([]);
-});
-
-it("a cache written from the whole tree boots warm, as before", () => {
-  const whole = reducer(undefined, scopesActions.treeFetchFulfilled(tree([type(MATTERS, "Matter", [reyes])])));
-  const saved = scopesTreePolicy.config.serialize!(whole) as Partial<ScopesState>;
-  expect(saved.treeComplete).toBe(true);
-  const next = reducer(undefined, buildRehydrateAction("scopesTree", saved, {} as never));
+  expect(saved.organizationIds ?? []).toEqual([]);
+  const whole = reducer(skeleton(), scopesActions.treeFetchFulfilled(tree([type(MATTERS, "Matter", [reyes])])));
+  const next = reducer(undefined, buildRehydrateAction("scopesTree", scopesTreePolicy.config.serialize!(whole), {} as never));
   expect(next.treeStatus).toBe("ready");
   expect(next.organizations[ORG].scope_types[0].scopes).toHaveLength(1);
 });

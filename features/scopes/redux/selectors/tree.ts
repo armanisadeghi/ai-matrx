@@ -359,6 +359,20 @@ export const selectAllEntityScopeAssignmentsFlat = createSelector(
 
 // ─── The paged tree (lane SCOPES-TREE-PAGED) ──────────────────────
 
+/**
+ * THE PAGED READER'S ORGANIZATIONS: the whole tree once it is in, the skeleton (types with the
+ * scopes loaded so far) until then. Only a reader converted to the paged reads uses this; every other
+ * reader keeps `selectOrganizationsList`, which is the whole tree or nothing, as before.
+ */
+export const selectPagedOrganizationsList = createSelector(
+  selectScopesSlice,
+  selectOrganizationsList,
+  (s, whole): OrgNode[] =>
+    s.treeStatus === "ready" || s.skeletonOrganizationIds.length === 0
+      ? whole
+      : s.skeletonOrganizationIds.map((id) => s.skeletonOrganizations[id]).filter(Boolean),
+);
+
 /** The first paint: organizations, projects and scope types are in (their scopes may not be). */
 export const selectSkeletonStatus = createSelector(selectScopesSlice, (s) => s.skeletonStatus);
 

@@ -22,6 +22,7 @@ import {
 } from "@/features/scopes/redux/thunks/ensureScopeSkeleton";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
+  selectPagedOrganizationsList,
   selectSkeletonError,
   selectSkeletonStatus,
   selectTypeCounts,
@@ -83,7 +84,8 @@ export type DenseData = ContextTreeData;
 export function useContextTreeData(): ContextTreeData {
   const dispatch = useAppDispatch();
   const tree = useScopeTree();
-  const { organizations } = tree;
+  // The whole tree once in; the skeleton (types first, a type's scopes as it opens) until then.
+  const organizations = useAppSelector(selectPagedOrganizationsList);
   // First paint reads the skeleton (types, no scopes); "ready" means the types are in.
   const skeletonStatus = useAppSelector(selectSkeletonStatus);
   const skeletonError = useAppSelector(selectSkeletonError);

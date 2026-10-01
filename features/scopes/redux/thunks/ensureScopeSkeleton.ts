@@ -2,13 +2,13 @@
 //
 // THE FIRST PAINT OF THE SCOPE TREE (lane SCOPES-TREE-PAGED).
 //
-//   ensureScopeSkeleton()        organizations + projects + scope types (no scopes), then the counts
+//   ensureScopeSkeleton()        organizations + projects + scope types (no scopes)
 //   ensureTypeScopes(typeId)     one type's first page of scopes (more with loadMoreTypeScopes)
 //   searchScopes(query)          a server-side search over every scope of her organizations
 //
 // Read switch OFF (`scopesReadKnob.ts`): the old read is one fast answer, so the skeleton IS the
 // whole tree — `ensureScopeSkeleton` simply runs `ensureScopeTree` and every type is complete. Read
-// switch ON: the skeleton is the store's `custom.context_tree_types`, the counts a second call, and
+// switch ON: the skeleton is the store's `custom.context_tree_types` (no counts), and
 // the WHOLE tree still loads for the readers that need it — whenever one calls `ensureScopeTree`, and
 // otherwise at idle after boot (`DeferredSingletonCore`), so no reader of the whole tree ever loses a
 // scope it had before. Same no-refetch policy as ensureScopeTree: each call dedups and caches.
@@ -20,7 +20,6 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { scopesReadFromStore } from "@/features/scopes/service/scopesReadKnob";
 import {
   TYPE_SCOPES_PAGE,
-  readScopeTypes,
   readTypeScopesPage,
   searchScopesInStore,
 } from "@/features/scopes/service/storeScopeReads";
@@ -53,14 +52,10 @@ export function ensureScopeSkeleton(opts: { refresh?: boolean } = {}): AppThunk<
           return;
         }
         dispatch(scopesActions.skeletonFetchFulfilled(res.data));
-        // The counts ask the one ladder of every Table, so they follow the first paint.
-        const orgIds = res.data.organizations.map((o) => o.id);
-        const counts = await readScopeTypes(orgIds, true);
-        if (!isScopesRpcErr(counts) && counts.data.counts) {
-          dispatch(scopesActions.typeCountsFulfilled(counts.data.counts));
-        } else if (isScopesRpcErr(counts)) {
-          console.warn(`[scopes] type counts failed: ${counts.error.message} — counts stay unknown until the whole tree loads`);
-        }
+        // No separate counts call: a count asks the one ladder of every Table — the same work as the
+        // whole tree, which loads right behind the first paint (DeferredSingletonCore) and fills every
+        // count. A count is an honest dash until then. `readScopeTypes(orgs, true)` stays for a screen
+        // that needs counts without the whole tree.
       } finally {
         skeletonInFlight = null;
       }
@@ -72,8 +67,8 @@ export function ensureScopeSkeleton(opts: { refresh?: boolean } = {}): AppThunk<
 
 function findType(state: RootState, scopeTypeId: string) {
   const s = state.scopesTree;
-  for (const id of Object.keys(s.organizations)) {
-    const t = s.organizations[id]?.scope_types.find((x) => x.id === scopeTypeId);
+  for (const id of s.skeletonOrganizationIds) {
+    const t = s.skeletonOrganizations[id]?.scope_types.find((x) => x.id === scopeTypeId);
     if (t) return t;
   }
   return null;
@@ -144,7 +139,8 @@ export function searchScopes(query: string, limit = 100): AppThunk<Promise<void>
     dispatch(scopesActions.scopeSearchPending({ key }));
     const promise = (async () => {
       try {
-        const orgIds = getState().scopesTree.organizationIds;
+        const st = getState().scopesTree;
+        const orgIds = st.treeStatus === "ready" ? st.organizationIds : st.skeletonOrganizationIds;
         const res = await searchScopesInStore(orgIds, query, limit);
         if (isScopesRpcErr(res)) {
           dispatch(scopesActions.scopeSearchRejected({ key, error: res.error.message }));
