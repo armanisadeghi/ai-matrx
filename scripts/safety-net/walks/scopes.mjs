@@ -59,7 +59,7 @@ async function seat(name) {
   await sleep(4000);
   return page;
 }
-const state = { typeId: null, scopeId: null, typeHref: null, scopeHref: null, noteId: null, taskId: null };
+const state = { typeId: null, scopeId: null, typeHref: null, scopeHref: null, noteId: null, taskId: null, taskUrl: null };
 const text = (page) => bodyText(page, 60000);
 const seen = async (page, needle, ms = 90000) => (await until(String(needle), async () => (await text(page)).includes(needle), ms)).v === true;
 /** The shared preview parks an idle tab ("This preview was paused"): press Resume, as a person does. */
@@ -211,6 +211,33 @@ try {
     return { ok: renamed, detail: `card says "${PLURAL2}" after reload ${renamed}${dbNote}` };
   });
 
+  // ── 5. S06: a task created with the scope tag, the way the new-task page offers it ───────────
+  const TASK = `Book the ACL re-check visit ${STAMP}`;
+  await ctx.step(["S06"], "create a task tagged with the scope", admin, async () => {
+    await go(admin, "/tasks/new");
+    const title = admin.getByPlaceholder("What do you want to do?").first();
+    await title.waitFor({ timeout: 180000 });
+    await title.fill(TASK);
+    const chip = admin.locator("button", { hasText: SCOPE }).first();
+    const listed = await until("scope chip", async () => (await chip.count()) > 0, 90000);
+    if (!listed.v) return { ok: false, detail: `the new task's Scopes list never offers "${SCOPE}": ${(await text(admin)).replace(/\s+/g, " ").slice(0, 200)}` };
+    await chip.click();
+    await sleep(800);
+    await admin.getByRole("button", { name: /^Create task$/ }).first().click();
+    const saved = await until("task saved", async () => /[?&]task=/.test(admin.url()) || /New tab/.test(await text(admin)), 90000);
+    await sleep(3000);
+    state.taskUrl = admin.url();
+    let dbNote = "";
+    if (CLONE_DSN && state.scopeId) {
+      const row = db(`select t.id, (select count(*) from platform.associations a where a.target_type = 'scope' and a.target_id = ${q(state.scopeId)} and a.source_id = t.id and a.deleted_at is null) from workspace.tasks t where t.title = ${q(TASK)} order by t.created_at desc limit 1`);
+      const [id, tags] = (row ?? "").split("|");
+      state.taskId = id || null;
+      dbNote = ` · clone: task ${id ? "saved" : "NOT saved"}, tagged with the scope ${tags === "1" ? "yes" : "NO"}`;
+      if (!id || tags !== "1") return { ok: false, detail: `saved on the page ${Boolean(saved.v)}${dbNote}` };
+    }
+    return { ok: Boolean(saved.v), detail: `"${TASK}" created with the "${SCOPE}" tag (${state.taskUrl})${dbNote}` };
+  });
+
   // ── 6. S09 / S10: manage's context inspector, picked the way a person picks (Miller columns) ──
   await ctx.step(["S09", "S10"], "context inspector says byte-identical", admin, async () => {
     const label = (await text(admin)).includes(PLURAL2) ? PLURAL2 : PLURAL;
@@ -281,6 +308,23 @@ try {
       let dbNote = "";
       if (CLONE_DSN && state.scopeId) dbNote = ` · clone: old archived / store archived ${db(`select coalesce((select (deleted_at is not null)::text from context.scopes where id = ${q(state.scopeId)}), '∅') || ' / ' || coalesce((select (deleted_at is not null)::text from custom.record where id = ${q(state.scopeId)}), '∅')`)}`;
       return { ok: gone, detail: `"${SCOPE}" gone from the scopes page ${gone}${dbNote}` };
+    });
+  });
+  // ── cleanup, very first: the task archived through its own Delete control ─────────────────
+  ctx.cleanup(async () => {
+    if (!state.taskUrl) return;
+    const admin = await seat("admin");
+    await ctx.step(["S06"], "archive the tagged task", admin, async () => {
+      await go(admin, state.taskUrl);
+      const del = admin.locator('[title="Delete task"]:visible').first();
+      await del.waitFor({ timeout: 120000 });
+      await del.click();
+      const dlg = admin.locator('[role="alertdialog"]').last();
+      if (await dlg.isVisible({ timeout: 8000 }).catch(() => false)) await dlg.getByRole("button", { name: /Delete|Move to Trash|Archive/ }).last().click();
+      await sleep(4000);
+      let dbNote = "";
+      if (CLONE_DSN && state.taskId) dbNote = ` · clone: task archived ${db(`select (deleted_at is not null)::text from workspace.tasks where id = ${q(state.taskId)}`)}`;
+      return { ok: !CLONE_DSN || /true/.test(dbNote), detail: `Delete task pressed on ${state.taskUrl}${dbNote}` };
     });
   });
   await ctx.finish();
