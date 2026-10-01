@@ -75,15 +75,18 @@ export function ClampedNumberInput({
   onChange,
   onDraftChange,
 }: ClampedNumberInputProps) {
-  const [draft, setDraft] = useState(String(value));
+  const [draft, setDraftState] = useState(String(value));
+  // Reported in the same event as the keystroke, so a label repeating the count is never one
+  // render behind the field.
+  const setDraft = (raw: string) => {
+    setDraftState(raw);
+    onDraftChange?.(shownDraft(raw, min, max, decimal));
+  };
 
   useEffect(() => {
-    onDraftChange?.(shownDraft(draft, min, max, decimal));
-  }, [draft, min, max, decimal, onDraftChange]);
-
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
+    setDraftState(String(value));
+    onDraftChange?.(shownDraft(String(value), min, max, decimal));
+  }, [value, min, max, decimal, onDraftChange]);
 
   const commit = (raw: string) => {
     const next = clampDraft(raw, min, max, decimal);
