@@ -454,6 +454,12 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-10-01 — A scheduled resume retry is not an error. `resumeInstance`
+  rejects with `originalErrorName: "ResumeRetryScheduled"` when it has already
+  queued its own bounded retry (stream still closing, 409 resume_conflict);
+  `reduxErrorCaptureMiddleware` files nothing for it. The retries-exhausted
+  rejection carries no marker and stays red (`ai-execution-rejection-is-red`).
+  Guard: `resume-scheduled-retry-is-not-an-error.test.ts`.
 - 2026-10-01 — Captures survive a reload of the tab (PB-01 S14: the inspector
   came back empty, every error from the run lost). `errorCaptureStore` keeps
   the newest 100 rows in this tab's sessionStorage (raw over 4k chars becomes a
