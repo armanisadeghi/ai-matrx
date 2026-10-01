@@ -175,11 +175,12 @@ begin
          '[{"op": "count"}, {"op": "sum", "key": "invoice_total"}, {"op": "sum", "key": "job_cost"}]'::jsonb,
          null, '{"status": "Invoiced"}'::jsonb);
   if (v_mm ->> 'sum_invoice_total')::numeric is distinct from 15770 or v_rows is distinct from 5
-     or (v_mm -> 'sum_job_cost' -> 'withheld') is null or (v_mm -> 'sum_job_cost' ->> 'says') is null
-     or jsonb_typeof(v_mm -> 'sum_job_cost') <> 'object' then
-    raise exception 'AGR-2b: the mixed question answered % over % rows (want invoiced 15,770 over 5, Job cost withheld with a sentence)', v_mm, v_rows;
+     or (v_mm -> 'sum_job_cost') is distinct from 'null'::jsonb
+     or (v_mm -> '_withheld' -> 'sum_job_cost' -> 'withheld') is null
+     or (v_mm -> '_withheld' -> 'sum_job_cost' ->> 'says') is null then
+    raise exception 'AGR-2b: the mixed question answered % over % rows (want invoiced 15,770 over 5, Job cost null + withheld with a sentence)', v_mm, v_rows;
   end if;
-  raise notice 'AGR-2b PASS — her invoiced total and count answer; only the Job cost measure is withheld: %', v_mm -> 'sum_job_cost' ->> 'says';
+  raise notice 'AGR-2b PASS — her invoiced total and count answer; only the Job cost measure is withheld: %', v_mm -> '_withheld' -> 'sum_job_cost' ->> 'says';
 
   -- ══ A3. the list door refuses narrowing by it too ══
   begin
@@ -216,6 +217,15 @@ begin
     raise exception 'AGR-5: the Job cost block answered Marisol or was refused without its name: %', v_b -> 1;
   end if;
   raise notice 'AGR-5 PASS — her canvas: revenue drawn, the cost block says "%"', v_b -> 1 ->> 'refused';
+  -- ══ A6. the drill door (platform.drill_ask) says it in the contract's own words: null + `says` ══
+  perform set_config('request.jwt.claims', c_dana_j, true);
+  select a.measures, a.says into v_mm, v_msg
+    from platform.drill_ask(v_org, jsonb_build_object('kind', 'table', 'id', v_jobs),
+                            '{"by":["status"],"show":["count","sum_job_cost"]}'::jsonb) a limit 1;
+  if v_msg is null or v_msg not like '%Job cost%withheld%' or (v_mm -> 'sum_job_cost') is distinct from 'null'::jsonb then
+    raise exception 'AGR-6: drill_ask answered % with says % (want sum_job_cost null and a says naming Job cost)', v_mm, v_msg;
+  end if;
+  raise notice 'AGR-6 PASS — drill_ask: Job cost is null and says "%"', v_msg;
   raise notice 'FILTERGROUPS AGG-FIELD-READ GREEN — every part passed.';
 end $t$;
 rollback;

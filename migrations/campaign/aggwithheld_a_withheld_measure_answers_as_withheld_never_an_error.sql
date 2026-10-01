@@ -1,7 +1,8 @@
 -- target: production
 -- additive: yes
---   It REPLACES two bodies (custom.agg_fields_readable_assert gains a DETAIL naming the column it
---   refused; custom.record_aggregate catches that refusal and answers it as a withheld state) and
+--   It REPLACES three bodies (custom.agg_fields_readable_assert gains a DETAIL naming the column it
+--   refused; custom.record_aggregate catches that refusal and answers it as a withheld state;
+--   custom.dashboard_run keeps a withheld block's `refused` sentence) and
 --   ADDS one SECURITY INVOKER helper (custom.agg_withheld_marker, no client EXECUTE). Nothing is
 --   dropped, revoked or granted. The inverse is
 --   `migrations/inverse/aggwithheld_a_withheld_measure_answers_as_withheld_never_an_error_down.sql`.
@@ -10,6 +11,7 @@
 -- guard: custom/system_enabled
 -- based-on: custom.agg_fields_readable_assert(uuid, uuid, text[], text) de0959039821fbbfd4f5fd9e1d125e127c703ef6eee8a5293606df6fd2b22576
 -- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 4302620a0e02f8654b54f3acd6dc3ed2a02d4b27a41ba0f5a70c7dff6d027ae0
+-- based-on: custom.dashboard_run(uuid, uuid, jsonb, jsonb, text) 78bdf5b2d69aacebea2647f3011a716f627bc5579c7e3f96dc3df9e48cc71c26
 --
 -- LANE AGG-WITHHELD (safety-net platform walk P04). test@test.com (a member) opens the Patients
 -- table; a chart or summary asks custom.record_aggregate to count or add up the Insurance column,
@@ -18,12 +20,16 @@
 -- not read is WITHHELD AS A STATE (the one custom.withheld_marker already gives a cell of
 -- custom.read_records_page), with the people-facing sentence, status 200.
 --
---   * A MEASURE over a withheld column: that measure's value is the marker
---     {"withheld": {reason, needs, or}, "field_key", "label", "says"}; every other measure and the
---     row counts answer as before (the counts never read the withheld column).
+--   * A MEASURE over a withheld column: that measure's value is NULL (the "no value" every number
+--     reader already handles) and the row's measures carry `_withheld: {<measure name>: marker}`,
+--     the marker being {"withheld": {reason, needs, or}, "field_key", "label", "says"}; every other
+--     measure and the row counts answer as before (the counts never read the withheld column).
 --   * A GROUP, a date bucket, a window or a FILTER over a withheld column: the question cannot be
---     answered at all without leaking the column, so the door answers ONE row (groups {}, row_count
---     null) whose every measure is the marker. Never a number computed from the withheld column.
+--     answered at all without leaking the column, so the door answers ONE row (groups {},
+--     row_count null) whose every measure is null with the same `_withheld` markers. Never a number
+--     computed from the withheld column.
+--   * custom.dashboard_run (which called this door and turned its refusal into the block's own
+--     `refused` sentence) reads the `_withheld` markers and keeps doing exactly that.
 --
 -- Every other caller of custom.agg_sql (dashboard_run's blocks, the grid summary bar, digests) still
 -- gets the 42501 refusal exactly as before: only this door turns it into a state. The server lane
@@ -138,6 +144,8 @@ declare
   v_orig   jsonb;
   v_keep   jsonb := '[]'::jsonb;
   v_wh     jsonb := '{}'::jsonb;
+  v_wm     jsonb := '{}'::jsonb;
+  v_add    jsonb := '{}'::jsonb;
   v_m      jsonb;
   v_name   text;
   v_det    text;
@@ -174,13 +182,15 @@ begin
           raise;
         end if;
         v_name := coalesce(nullif(v_m ->> 'as', ''), lower(coalesce(v_m ->> 'op', 'count')) || '_' || (v_m ->> 'key'));
-        v_wh := v_wh || jsonb_build_object(v_name, custom.agg_withheld_marker(p_organization_id, p_table_id, v_m ->> 'key', p_required));
+        v_wh := v_wh || jsonb_build_object(v_name, null);
+        v_wm := v_wm || jsonb_build_object(v_name, custom.agg_withheld_marker(p_organization_id, p_table_id, v_m ->> 'key', p_required));
         continue;
       end;
     end if;
     v_keep := v_keep || jsonb_build_array(v_m);
   end loop;
   p_measures := v_keep;
+  v_add := v_wh || case when v_wm = '{}'::jsonb then '{}'::jsonb else jsonb_build_object('_withheld', v_wm) end;
 
   begin
   -- CHOICE-VALUE. One map per call: the filter is normalised to what is STORED before the
@@ -195,7 +205,7 @@ begin
     for v_row in execute custom.agg_sql(p_organization_id, p_table_id, p_group_by, p_measures,
                                         p_bucket, v_filter, p_limit, p_required) loop
       groups          := custom.choice_render_groups(v_map, v_row.groups);
-      measures        := v_row.measures || v_wh;
+      measures        := v_row.measures || v_add;
       row_count       := v_row.row_count;
       prior_groups    := null;
       prior_measures  := null;
@@ -248,10 +258,10 @@ begin
 
   return query
     select c.e -> 'groups',
-           coalesce(c.e -> 'measures', custom.agg_zero(p.e -> 'measures')) || v_wh,
+           coalesce(c.e -> 'measures', custom.agg_zero(p.e -> 'measures')) || v_add,
            coalesce((c.e ->> 'row_count')::bigint, 0),
            p.e -> 'groups',
-           coalesce(p.e -> 'measures', custom.agg_zero(c.e -> 'measures')) || v_wh,
+           coalesce(p.e -> 'measures', custom.agg_zero(c.e -> 'measures')) || v_add,
            coalesce((p.e ->> 'row_count')::bigint, 0),
            custom.agg_delta(coalesce(c.e -> 'measures', custom.agg_zero(p.e -> 'measures')),
                             coalesce(p.e -> 'measures', custom.agg_zero(c.e -> 'measures'))),
@@ -276,17 +286,21 @@ begin
       raise;
     end if;
     v_all := '{}'::jsonb;
+    v_wm  := '{}'::jsonb;
     for v_m in select e from jsonb_array_elements(v_orig) e loop
       v_name := case when jsonb_typeof(v_m) = 'string' then v_m #>> '{}'
                      when lower(coalesce(v_m ->> 'op', 'count')) = 'count' then coalesce(nullif(v_m ->> 'as', ''), 'count')
                      else coalesce(nullif(v_m ->> 'as', ''), lower(coalesce(v_m ->> 'op', 'count')) || '_' || (v_m ->> 'key')) end;
-      v_all := v_all || jsonb_build_object(v_name,
+      v_all := v_all || jsonb_build_object(v_name, null);
+      v_wm  := v_wm  || jsonb_build_object(v_name,
                  custom.agg_withheld_marker(p_organization_id, p_table_id, substr(v_det, 10), p_required));
     end loop;
     if v_all = '{}'::jsonb then
-      v_all := jsonb_build_object('count',
+      v_all := jsonb_build_object('count', null);
+      v_wm  := jsonb_build_object('count',
                  custom.agg_withheld_marker(p_organization_id, p_table_id, substr(v_det, 10), p_required));
     end if;
+    v_all := v_all || jsonb_build_object('_withheld', v_wm);
     groups := '{}'::jsonb; measures := v_all; row_count := null;
     prior_groups := null; prior_measures := null; prior_row_count := null; delta := null; compare := null;
     return next;
@@ -294,3 +308,273 @@ begin
   end;
 end;
 $function$;
+
+CREATE OR REPLACE FUNCTION custom.dashboard_run(p_organization_id uuid, p_dashboard_id uuid, p_filter jsonb DEFAULT '{}'::jsonb, p_compare jsonb DEFAULT NULL::jsonb, p_grain text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_doc     jsonb;
+  v_name    text;
+  v_subject uuid;
+  v_out     jsonb := '[]'::jsonb;
+  v_rows    jsonb;
+  v_block   jsonb;
+  v_merged  jsonb;
+  v_started timestamptz;
+  v_grain   text;
+  v_cmp     jsonb;
+  v_windows jsonb;
+  v_note    text;
+  v_extra   jsonb;
+  v_tgt     jsonb;
+  v_mk      text;
+  v_op      text;
+  v_cur     numeric;
+  v_pri     numeric;
+  v_additive boolean;
+  v_tval    numeric;
+  v_tnote   text;
+  b         jsonb;
+  k         text;
+begin
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.dashboard_run');
+
+  select d.data into v_doc
+    from custom.record d
+   where d.organization_id = p_organization_id
+     and d.id = p_dashboard_id
+     and d.table_id = custom.presentation_kernel_id()
+     and d.data_class = custom.dashboard_class()
+     and d.deleted_at is null;
+  if v_doc is null then
+    raise exception 'There is no such dashboard in this organization.' using errcode = '02000',
+            hint = 'A dashboard id from another organization reads as absent — organizations are hard walls (REC-29).',
+            detail = jsonb_build_object('dashboard_id', p_dashboard_id)::text;
+  end if;
+
+  v_name    := v_doc ->> 'name';
+  v_subject := nullif(v_doc ->> 'subject_table_id', '')::uuid;
+
+  -- READING A DASHBOARD IS KNOWING ITS TABLE, and nothing more, because a dashboard holds no
+  -- record: every number below is produced by custom.record_aggregate under THIS caller's own
+  -- principal, and this caller could ask that door the same question about the same Table
+  -- directly. Asking about the dashboard RECORD instead protected nothing and, under
+  -- custom/member_default_visibility = shared_only, refused an organization's own members
+  -- their own organization's dashboard (measured 2026-09-20).
+  perform custom.assert_may_know_table(p_organization_id, v_subject, 'custom.dashboard_run');
+
+  -- S3: THE CANVAS'S DATE GRAIN AND COMPARISON, judged once for the whole run — a picker that
+  -- sends a grain the store does not cut is the caller's mistake, not eight blocks' mistakes.
+  v_grain := lower(nullif(btrim(coalesce(p_grain, '')), ''));
+  if v_grain is not null and not (v_grain = any (custom.agg_buckets())) then
+    raise exception '"%" is not a date grain', v_grain
+      using errcode = '22023',
+            hint = format('A dashboard can be cut by %s.', array_to_string(custom.agg_buckets(), ', '));
+  end if;
+  if p_compare is not null and jsonb_typeof(p_compare) <> 'null' then
+    perform custom.agg_compare_windows(p_organization_id,
+      case when jsonb_typeof(p_compare) = 'object' and not (p_compare ? 'key')
+           then p_compare || '{"key": "created_at"}'::jsonb else p_compare end, null);
+  end if;
+
+  for b in select e from jsonb_array_elements(coalesce(v_doc -> 'blocks', '[]'::jsonb)) e loop
+    -- RE-JUDGED ON THE WAY OUT, NOT TRUSTED BECAUSE IT WAS JUDGED ON THE WAY IN. A Field
+    -- can be deleted or renamed after a block was saved, and a block naming a Table THIS
+    -- caller may not know is refused here by the same wall — so a canvas that reaches
+    -- somebody else's Table loses that ONE block and answers the rest.
+    begin
+      v_block := custom.dashboard_block_normalize(p_organization_id, v_subject, b);
+    exception when others then
+      v_out := v_out || jsonb_build_object(
+        'title', coalesce(b ->> 'title', 'Block'),
+        'kind', coalesce(b ->> 'kind', 'number'),
+        'refused', sqlerrm,
+        'sqlstate', sqlstate);
+      continue;
+    end;
+
+    -- ONE FILTER BAR ACROSS EVERY PANEL (SCR-16, Linear Insights). The canvas's filter is
+    -- merged over each block's own, and the block's own wins on a key they share.
+    v_merged := coalesce(v_block -> 'filter', '{}'::jsonb);
+    if p_filter is not null and jsonb_typeof(p_filter) = 'object' then
+      for k in select kk from jsonb_object_keys(p_filter) kk loop
+        if not (v_merged ? k) then
+          v_merged := v_merged || jsonb_build_object(k, p_filter -> k);
+        end if;
+      end loop;
+    end if;
+
+    -- S3: the canvas's grain re-cuts every bucketed block; the block's own comparison wins over
+    -- the canvas's, as its own filter does.
+    if v_grain is not null and jsonb_typeof(v_block -> 'bucket') = 'object' then
+      v_block := jsonb_set(v_block, '{bucket,by}', to_jsonb(v_grain));
+    end if;
+    v_cmp := null; v_windows := null; v_note := null;
+    if v_block ->> 'kind' <> 'stuck' then
+      v_cmp := coalesce(v_block -> 'compare',
+                        case when p_compare is not null and jsonb_typeof(p_compare) = 'object' then p_compare end);
+      if v_cmp is not null and nullif(v_cmp ->> 'key', '') is null
+         and jsonb_typeof(v_block -> 'bucket') is distinct from 'object' then
+        v_note := 'This block has no date to compare along, so it shows this period alone. Give it a bucket, or give its comparison a date field.';
+        v_cmp := null;
+      end if;
+    end if;
+
+    v_started := clock_timestamp();
+    begin
+      if v_cmp is not null then
+        v_windows := custom.agg_compare_windows(p_organization_id, v_cmp,
+                       case when jsonb_typeof(v_block -> 'bucket') = 'object' then v_block -> 'bucket' end);
+      end if;
+      if v_block ->> 'kind' = 'stuck' then
+        select coalesce(jsonb_agg(to_jsonb(s)), '[]'::jsonb) into v_rows
+          from custom.dashboard_stuck(p_organization_id,
+                                      (v_block ->> 'table_id')::uuid,
+                                      v_block ->> 'state_key',
+                                      (v_block ->> 'days')::integer,
+                                      v_merged,
+                                      (v_block ->> 'limit')::integer,
+                                      'viewer') s;
+      else
+        select coalesce(jsonb_agg(
+                 jsonb_build_object('groups', a.groups, 'measures', a.measures, 'row_count', a.row_count)
+                 || case when v_cmp is null then '{}'::jsonb else jsonb_build_object(
+                      'prior_groups', a.prior_groups, 'prior_measures', a.prior_measures,
+                      'prior_row_count', a.prior_row_count, 'delta', a.delta,
+                      'position', a.compare -> 'position') end), '[]'::jsonb)
+          into v_rows
+          from custom.record_aggregate(p_organization_id,
+                                       (v_block ->> 'table_id')::uuid,
+                                       coalesce(v_block -> 'group_by', '[]'::jsonb),
+                                       coalesce(v_block -> 'measures', '[]'::jsonb),
+                                       v_block -> 'bucket',
+                                       v_merged,
+                                       (v_block ->> 'limit')::integer,
+                                       'viewer',
+                                       v_cmp) a;
+      end if;
+      -- AGG-WITHHELD: the aggregate door answers a column this reader may not read as a withheld
+      -- STATE (null + `_withheld`), not an error; this block keeps saying so in its own words, as
+      -- it did when that was a refusal — the other blocks still draw.
+      if v_block ->> 'kind' <> 'stuck' and exists (
+           select 1 from jsonb_array_elements(v_rows) r where r -> 'measures' ? '_withheld') then
+        v_out := v_out || (v_block || jsonb_build_object(
+          'refused', (select w.value ->> 'says'
+                        from jsonb_array_elements(v_rows) r
+                        cross join lateral jsonb_each(r -> 'measures' -> '_withheld') w
+                       where r -> 'measures' ? '_withheld' limit 1),
+          'sqlstate', '42501'));
+        continue;
+      end if;
+    exception when others then
+      -- NOTHING FAILS SILENTLY: one block that refuses is one block that says why, and the
+      -- other seven still answer. A canvas that went blank because one Field was renamed
+      -- would be the screen telling a lie about the whole organization.
+      v_out := v_out || (v_block || jsonb_build_object('refused', sqlerrm, 'sqlstate', sqlstate));
+      continue;
+    end;
+
+    -- ── S3: the totals and the target, worked out HERE from the rows the store just answered,
+    -- so the tile, the chart and the ring can never disagree with each other ─────────────
+    v_extra := '{}'::jsonb;
+    if v_block ->> 'kind' <> 'stuck' then
+      v_tgt := v_block -> 'target';
+      v_mk := coalesce(v_tgt ->> 'measure',
+                       case when (v_block -> 'measures' -> 0 ->> 'op') = 'count' or (v_block -> 'measures' -> 0 ->> 'op') is null
+                            then 'count' else (v_block -> 'measures' -> 0 ->> 'op') || '_' || (v_block -> 'measures' -> 0 ->> 'key') end);
+      v_op := split_part(v_mk, '_', 1);
+      -- A total across groups is a sum only for a measure that adds up; an average of averages
+      -- is not the average, so a one-row answer is the only total such a measure has.
+      v_additive := v_op in ('count', 'sum', 'filled', 'empty');
+      if v_additive or jsonb_array_length(v_rows) = 1 then
+        select sum(case when jsonb_typeof(r -> 'measures' -> v_mk) = 'number' then (r -> 'measures' ->> v_mk)::numeric end),
+               sum(case when jsonb_typeof(r -> 'prior_measures' -> v_mk) = 'number' then (r -> 'prior_measures' ->> v_mk)::numeric end)
+          into v_cur, v_pri
+          from jsonb_array_elements(v_rows) r;
+        v_cur := coalesce(v_cur, case when v_additive then 0 end);
+        if v_cmp is not null then
+          v_pri := coalesce(v_pri, case when v_additive then 0 end);
+        else
+          v_pri := null;
+        end if;
+        v_extra := v_extra || jsonb_build_object('totals', jsonb_build_object(
+          'measure', v_mk, 'current', v_cur, 'prior', v_pri,
+          'change', v_cur - v_pri,
+          'change_pct', case when v_pri is null or v_cur is null or v_pri = 0 then null
+                             else round((v_cur - v_pri) / abs(v_pri) * 100, 1) end));
+      else
+        v_cur := null;
+      end if;
+      if v_tgt is not null then
+        -- S3: A TARGET READ FROM A GOAL COLUMN is that column added up over exactly the records
+        -- this block's own number read — the same merged filter, the same current window, the
+        -- same reader through the same door — so the goal and the number cannot disagree about
+        -- which jobs they are about. A column this reader may not read refuses the TARGET by
+        -- name and the block still draws its number.
+        v_tval := null; v_tnote := null;
+        if v_tgt ? 'field' then
+          begin
+            perform custom.dashboard_target_field_assert(p_organization_id, (v_block ->> 'table_id')::uuid, v_tgt ->> 'field');
+            select case when jsonb_typeof(a.measures -> ((v_tgt ->> 'op') || '_' || (v_tgt ->> 'field'))) = 'number'
+                        then (a.measures ->> ((v_tgt ->> 'op') || '_' || (v_tgt ->> 'field')))::numeric end
+              into v_tval
+              from custom.record_aggregate(p_organization_id,
+                                           (v_block ->> 'table_id')::uuid,
+                                           '[]'::jsonb,
+                                           jsonb_build_array(jsonb_build_object('op', v_tgt ->> 'op', 'key', v_tgt ->> 'field')),
+                                           null,
+                                           v_merged,
+                                           1,
+                                           'viewer',
+                                           case when v_cmp is null then null
+                                                else v_cmp || jsonb_build_object('key',
+                                                       coalesce(nullif(v_cmp ->> 'key', ''), v_block -> 'bucket' ->> 'key')) end) a
+             limit 1;
+            if v_tval is null and v_tgt ->> 'op' = 'sum' then v_tval := 0; end if;
+          exception when others then
+            v_tval := null;
+            v_tnote := sqlerrm;
+          end;
+        else
+          v_tval := (v_tgt ->> 'value')::numeric;
+        end if;
+        v_extra := v_extra || jsonb_build_object('target', v_tgt || jsonb_build_object(
+          'value', v_tval,
+          'current', v_cur,
+          'progress', case when v_cur is null or v_tval is null or v_tval = 0 then null
+                           else round(v_cur / v_tval, 4) end,
+          'pace', case
+            when v_tval is null then null
+            when jsonb_typeof(v_block -> 'bucket') is distinct from 'object' then null
+            when v_tgt ->> 'per' = 'bucket' then v_tval
+            when coalesce((v_windows ->> 'bucket_count')::integer, 0) > 0
+              then round(v_tval / (v_windows ->> 'bucket_count')::integer, 2)
+            else null end)
+          || case when v_tnote is null then '{}'::jsonb else jsonb_build_object('refused', v_tnote) end);
+      end if;
+    end if;
+
+    v_out := v_out || (v_block || v_extra || jsonb_build_object(
+      'rows', v_rows,
+      'filter', v_merged,
+      'compare', v_windows,
+      'ms', round(extract(epoch from (clock_timestamp() - v_started)) * 1000.0, 1))
+      || case when v_note is null then '{}'::jsonb else jsonb_build_object('compare_refused', v_note) end);
+  end loop;
+
+  return jsonb_build_object(
+    'dashboard_id', p_dashboard_id,
+    'name', v_name,
+    'subject_table_id', v_subject,
+    'presentation', coalesce(v_doc -> 'presentation', '{}'::jsonb),
+    'filter', coalesce(p_filter, '{}'::jsonb),
+    'grain', v_grain,
+    'compare', case when jsonb_typeof(p_compare) = 'object' then p_compare end,
+    'calendar', custom.agg_calendar(p_organization_id),
+    'blocks', v_out);
+end;
+$function$
+;

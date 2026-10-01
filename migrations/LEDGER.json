@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T10:45:23.096Z",
+  "generated_at": "2026-10-01T11:26:46.334Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -31,6 +31,24 @@
       "filename": "accesspersonal_the_tables_i_can_open_door_can_be_reached.sql",
       "checksum": "2f44387f39cd625f2dcc11a5e0dbff112bd34bc9de8fc4266ad0051d6db185ff",
       "applied_at": "2026-09-24 05:49:49.494882+00"
+    },
+    "migrations/campaign/aggwithheld_a_withheld_measure_answers_as_withheld_never_an_error.sql": {
+      "source": "matrx-frontend",
+      "filename": "aggwithheld_a_withheld_measure_answers_as_withheld_never_an_error.sql",
+      "checksum": "79c86624a3e164956d0ededf9dd36a04c82072f6218e0ebc3a31d542ba050512",
+      "applied_at": "2026-10-01 11:26:33.6762+00"
+    },
+    "migrations/campaign/aggwithheld_drill_ask_says_what_a_custom_table_withholds.sql": {
+      "source": "matrx-frontend",
+      "filename": "aggwithheld_drill_ask_says_what_a_custom_table_withholds.sql",
+      "checksum": "10d87999ec314f8b07dce7bf00025f94f58780ed29bee8af9475c3e5597492ea",
+      "applied_at": "2026-10-01 11:26:44.985681+00"
+    },
+    "migrations/campaign/allorgspaging_a_work_list_and_work_inbox_read_each_organization_within_its_page.sql": {
+      "source": "matrx-frontend",
+      "filename": "allorgspaging_a_work_list_and_work_inbox_read_each_organization_within_its_page.sql",
+      "checksum": "49cf8514f521992e1e092c5d78dc039831daafffc403ee2d4258f46ac41793c0",
+      "applied_at": "2026-10-01 11:15:01.33996+00"
     },
     "migrations/campaign/anonguard_a_supabase_owned_schema_keeps_its_default_privileges.sql": {
       "source": "matrx-frontend",
@@ -5215,6 +5233,12 @@
       "filename": "sharelane_the_lane_door_names_the_organization.sql",
       "checksum": "88d58b28b8a6289cc28a7ccd3453c9626ab6dda69859bec78a15a593593059a5",
       "applied_at": "2026-09-25 19:08:09.907694+00"
+    },
+    "migrations/campaign/sharemine_only_me_hides_and_says_so.sql": {
+      "source": "matrx-frontend",
+      "filename": "sharemine_only_me_hides_and_says_so.sql",
+      "checksum": "6543b19dd0ef030c9474bd38842d4cfe1cde72737c0acfe4ad423d1147f51082",
+      "applied_at": "2026-10-01 11:21:56.363401+00"
     },
     "migrations/campaign/shareout_a_table_can_be_shared_outside_the_organization.sql": {
       "source": "matrx-frontend",
