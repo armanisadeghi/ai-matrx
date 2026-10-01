@@ -396,12 +396,14 @@ function EntityPhoneLine<TRow>({
       data-row-id={rowId}
       data-entity-phone-card
       data-entity-phone-card-density="line"
-      className="matrx-touch-targets shrink-0 rounded-lg border border-border bg-card px-2 py-0.5"
+      // `relative`: the title's door is stretched over the whole card (below), so the card — not a
+      // 20px line of text — is the tap target, as on Linear's mobile list.
+      className="matrx-touch-targets relative shrink-0 rounded-lg border border-border bg-card px-2 py-0.5"
     >
       <div className="flex min-w-0 items-center gap-1">
         {controls.selectable ? (
           <label
-            className="matrx-tap-area mr-0.5 flex shrink-0 items-center"
+            className="matrx-tap-area relative z-10 mr-0.5 flex shrink-0 items-center"
             data-entity-phone-card-select
             onClick={(event) => event.stopPropagation()}
           >
@@ -415,22 +417,30 @@ function EntityPhoneLine<TRow>({
           </label>
         ) : null}
         {layout.favorite ? (
-          <div className="-ml-1 shrink-0">{controls.renderCell(layout.favorite.id)}</div>
+          <div className="relative z-10 -ml-1 shrink-0">{controls.renderCell(layout.favorite.id)}</div>
         ) : null}
         <div className="min-w-0 flex-1 py-1">
-          {/* The title anchor is the card's door; one line, cut at the card's width. */}
-          <div className="min-w-0 text-sm font-medium leading-5 text-foreground [&_a]:block [&_a]:truncate">
+          {/* The title anchor is the card's door: one line, cut at the card's width, stretched over the card. */}
+          <div className="min-w-0 text-sm font-medium leading-5 text-foreground [&_a]:block [&_a]:truncate [&_a]:after:absolute [&_a]:after:inset-0">
             {layout.title ? controls.renderCell(layout.title.id) : rowName}
           </div>
           {facts.length > 0 ? (
             <div
-              className="flex min-w-0 items-baseline gap-1 whitespace-nowrap text-xs leading-4 text-muted-foreground"
+              // FACTS, NOT CONTROLS: a value cell may draw a link or a peek button (an organization's
+              // EntityRef), which the touch floor grows to 44px — a 16px line became 44. On this line
+              // they are text; a tap falls through to the card's door.
+              className="pointer-events-none flex h-4 min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-xs leading-4 text-muted-foreground [&_*]:!min-h-0 [&_*]:!min-w-0"
               data-entity-phone-card-line
             >
               {facts.map(({ spec, quiet }, index) => (
                 <span
                   key={spec.id}
-                  className={cn("flex min-w-0 items-baseline gap-1", quiet ? "shrink-0" : "truncate")}
+                  className={cn(
+                    "flex items-center gap-1",
+                    // The first fact (a kind, a status) is short and decides what the row is: it
+                    // keeps its word; the middle ones give way; the quiet "when" keeps its width.
+                    quiet || index === 0 ? "max-w-[45%] shrink-0" : "min-w-0 shrink",
+                  )}
                 >
                   {index > 0 ? <span aria-hidden>·</span> : null}
                   <span className="min-w-0 truncate">{controls.renderCell(spec.id)}</span>
@@ -439,7 +449,7 @@ function EntityPhoneLine<TRow>({
             </div>
           ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">{controls.actions}</div>
+        <div className="relative z-10 flex shrink-0 items-center gap-0.5">{controls.actions}</div>
       </div>
     </article>
   );

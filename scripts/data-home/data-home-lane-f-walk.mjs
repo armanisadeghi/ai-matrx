@@ -55,6 +55,21 @@ const goto = async () => {
   await until("rows", async () => (await page.locator(ROW).count()) > 0, 180000);
   await sleep(2500);
 };
+// The page scrolls inside the shell, not the window: bring every scroller to its end until the
+// archive (mounted when near) is there.
+const reachArchive = async () => {
+  for (let i = 0; i < 20; i += 1) {
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll("*")) {
+        if (el.scrollHeight > el.clientHeight + 4 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) el.scrollTop = el.scrollHeight;
+      }
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    if ((await page.locator("[data-testid=archived-disclosure-toggle]").count()) > 0) break;
+    await sleep(750);
+  }
+  await page.locator("[data-data-home-archive]").first().scrollIntoViewIfNeeded().catch(() => {});
+};
 const setView = async (label) => {
   const toggle = page.getByRole("button", { name: label, exact: true }).first();
   if (await toggle.count()) await toggle.click();
@@ -78,6 +93,13 @@ try {
     const wide = await page.evaluate(() => document.documentElement.scrollWidth);
     check("phone: no sideways scroll", wide <= 390, { scrollWidth: wide });
     await shot("390-home");
+    // The whole card is the door: a tap on the second line (not the name) opens the table.
+    const line = page.locator("[data-entity-phone-card-line]").first();
+    const box = await line.boundingBox();
+    if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    const opened = await until("opened", async () => /\/data-v2\/[^?]/.test(new URL(page.url()).pathname), 60000)
+      .then((r) => Boolean(r.v));
+    check("phone: a tap on the card's second line opens the row", opened, { url: new URL(page.url()).pathname });
   }
 
   if (ONLY.includes("cards")) {
@@ -119,8 +141,7 @@ try {
   if (ONLY.includes("archive")) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await goto();
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.locator("[data-data-home-archive]").scrollIntoViewIfNeeded({ timeout: 60000 }).catch(() => {});
+    await reachArchive();
     await until("archive mounted", async () => (await page.locator("[data-testid=archived-disclosure-toggle]").count()) > 0, 60000);
     const t0 = Date.now();
     await page.locator("[data-testid=archived-disclosure-toggle]").first().click();
@@ -146,7 +167,7 @@ try {
     }
     // A second open (the one that timed out in Verify 2).
     await goto();
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await reachArchive();
     await until("archive mounted", async () => (await page.locator("[data-testid=archived-disclosure-toggle]").count()) > 0, 60000);
     await page.locator("[data-testid=archived-disclosure-toggle]").first().click();
     await until("archive answered", async () => (await page.locator("[data-archived-table], [data-archive-read-trouble]").count()) > 0, 60000).catch(() => {});
@@ -154,6 +175,8 @@ try {
     const text2 = (await page.locator("[data-data-home-archive]").textContent()) ?? "";
     check("archive: second open answers, no Postgres words", again > 0 && !/canceling statement|statement timeout/i.test(text2), { again });
   }
+} catch (error) {
+  check("walk ran to the end", false, String(error).slice(0, 300));
 } finally {
   check("no console errors", consoleErrors.length === 0, consoleErrors.slice(0, 3));
   await browser.close();
