@@ -393,7 +393,7 @@ const nextConfig = {
       ...(PARK_SET.has("core") && MATRX_PROFILE === "demos"
         ? {
             "@/app/(core)": path.join(
-              root,
+              __dirname,
               "app/_core_build_excluded",
             ),
           }
