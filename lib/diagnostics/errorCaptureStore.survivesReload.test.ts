@@ -34,7 +34,7 @@ describe("Error Inspector entries survive a reload", () => {
   it("a capture on one page is in the inspector on the next", () => {
     const first = loadPage();
     first.captureError({
-      source: "supabase",
+      source: "supabase-postgrest",
       operation: "select",
       relation: "chat.tool_call",
       code: "42501",
@@ -54,10 +54,10 @@ describe("Error Inspector entries survive a reload", () => {
 
   it("a recurrence after the reload collapses into the restored row and counts on", () => {
     const first = loadPage();
-    first.captureError({ source: "supabase", message: "boom" });
+    first.captureError({ source: "supabase-postgrest", message: "boom" });
     leavePage();
     const second = loadPage();
-    second.captureError({ source: "supabase", message: "boom" });
+    second.captureError({ source: "supabase-postgrest", message: "boom" });
     const [row] = second.getSnapshot();
     expect(row.count).toBe(2);
     // A new occurrence on THIS page is fresh evidence, not a replay.
@@ -68,7 +68,7 @@ describe("Error Inspector entries survive a reload", () => {
     const first = loadPage();
     for (let i = 0; i < 250; i++) {
       first.captureError({
-        source: "supabase",
+        source: "supabase-postgrest",
         message: `error ${i}`,
         raw: { blob: "x".repeat(20_000) },
       });
@@ -87,7 +87,7 @@ describe("Error Inspector entries survive a reload", () => {
 
   it("clearing the inspector clears what the next page restores", () => {
     const first = loadPage();
-    first.captureError({ source: "supabase", message: "gone" });
+    first.captureError({ source: "supabase-postgrest", message: "gone" });
     first.clearCapturedErrors();
     leavePage();
     expect(loadPage().getSnapshot()).toHaveLength(0);
@@ -104,7 +104,7 @@ describe("Error Inspector entries survive a reload", () => {
       });
     try {
       expect(() => {
-        page.captureError({ source: "supabase", message: "still captured" });
+        page.captureError({ source: "supabase-postgrest", message: "still captured" });
         leavePage();
       }).not.toThrow();
       expect(page.getSnapshot()[0].message).toBe("still captured");
