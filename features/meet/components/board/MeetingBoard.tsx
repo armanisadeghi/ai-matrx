@@ -71,7 +71,7 @@ import {
 } from "@/lib/organization/organization-gate";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { type Rect, screenToWorld } from "@/features/spatial/engine/camera";
-import { useEditingTile } from "@/features/spatial/engine/react";
+import { useIsEditing } from "@/features/spatial/engine/react";
 import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "@/features/spatial/engine/throw";
 import { useBoard, type BoardFrame } from "@/features/spatial/board/useBoard";
@@ -829,7 +829,7 @@ function ReplayTile({ spec, onMove, onResize, onThrow }: TileProps) {
 const DONE = { kind: "static", value: { status: "complete", progress: null } } as const;
 
 function StaticTile({ spec, meetingId, onMove, onResize, onThrow, onContent }: TileProps) {
-  const interacting = useEditingTile() === spec.id;
+  const interacting = useIsEditing(spec.id);
   const c = spec.content;
   return (
     <SpatialTile

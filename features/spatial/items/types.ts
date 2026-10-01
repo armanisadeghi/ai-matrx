@@ -119,6 +119,16 @@ export interface BoardItemType {
   href?: (source: NodeSource) => string | null;
   /** A word for agents' `board_read` ("chat", "note", "file"…). Defaults to `key`. */
   kindLabel?: string;
+  /**
+   * Mounted for as long as the tile is on the board, OUTSIDE the part that
+   * sleeps (a frozen or discarded tile's body runs nothing): what must outlive
+   * the body — a chat holds its live run (LIVE-RUN-RETENTION.md) and keeps
+   * the tile awake while it is replying.
+   */
+  Keep?: ComponentType<{ tileId: string; source: NodeSource }>;
+  /** The body reads `tier` (pauses media, paces streams). Others get a constant,
+   * so a zoom across a tier boundary never re-renders their content. */
+  usesTier?: boolean;
 }
 
 /** Every way to start a new item of this type, in menu order (none → []). */

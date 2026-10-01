@@ -6,7 +6,7 @@
  */
 
 import { createContext, useContext, useSyncExternalStore } from "react";
-import type { SpatialStore } from "./spatial-store";
+import type { SpatialStore, TileLife } from "./spatial-store";
 import type { DetailTier, PaceTier } from "./lod";
 
 export const SpatialStoreContext = createContext<SpatialStore | null>(null);
@@ -73,4 +73,56 @@ export function useLayoutGuides(): boolean {
 export function useEditingTile(): string | null {
   const store = useSpatialStore();
   return useSyncExternalStore(store.subscribeEditing, store.getEditing, store.getEditing);
+}
+
+// ── per-tile booleans: a click re-renders the two tiles whose answer changed,
+// never every tile on the board (an id-returning hook wakes them all). ──────
+
+export function useIsSelected(id: string): boolean {
+  const store = useSpatialStore();
+  const get = () => store.getSelected() === id;
+  return useSyncExternalStore(store.subscribeSelection, get, get);
+}
+
+export function useIsFocused(id: string): boolean {
+  const store = useSpatialStore();
+  const get = () => store.getFocused() === id;
+  return useSyncExternalStore(store.subscribeFocus, get, get);
+}
+
+export function useIsEditing(id: string): boolean {
+  const store = useSpatialStore();
+  const get = () => store.getEditing() === id;
+  return useSyncExternalStore(store.subscribeEditing, get, get);
+}
+
+/**
+ * THE live tile — the one whose feature surface registers for agents. One at
+ * a time: full screen wins, then the tile being worked in, then the selected
+ * one (selecting another tile while one is full screen never makes two live).
+ */
+export function useIsLiveTile(id: string): boolean {
+  const store = useSpatialStore();
+  const get = () => (store.getFocused() ?? store.getEditing() ?? store.getSelected()) === id;
+  const subscribe = (l: () => void) => {
+    const a = store.subscribeSelection(l);
+    const b = store.subscribeEditing(l);
+    const c = store.subscribeFocus(l);
+    return () => {
+      a();
+      b();
+      c();
+    };
+  };
+  return useSyncExternalStore(subscribe, get, get);
+}
+
+/** The tile's content lifecycle (`TileLife`). */
+export function useTileLife(id: string): TileLife {
+  const store = useSpatialStore();
+  return useSyncExternalStore(
+    (l) => store.subscribeLife(id, l),
+    () => store.getLife(id),
+    () => "live" as TileLife,
+  );
 }

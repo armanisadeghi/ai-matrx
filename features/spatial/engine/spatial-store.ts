@@ -40,6 +40,27 @@ export interface Insets {
  * so a tile is already painted by the time a pan brings it in. */
 const CULL_MARGIN_SCREEN_PX = 240;
 
+/**
+ * A tile's content lifecycle — what keeps 10–15 full pages on one board cheap.
+ * Paint culling alone (`content-visibility`) still left every hidden tile's
+ * editors, chats, channels and timers running forever.
+ *   live       — rendered and running: in view at a reading/glance zoom, or
+ *                selected, worked in, full screen, or held awake (an agent
+ *                reaching it, a chat mid-reply).
+ *   frozen     — kept (React state, DOM, an iframe's page) but paused: React
+ *                `<Activity mode="hidden">` tears down its effects and store
+ *                subscriptions. Chrome's tab freezing.
+ *   discarded  — unmounted; it remounts from its saved source when needed.
+ *                Only beyond the warm budget, least recently live first.
+ *                Chrome's tab discarding.
+ */
+export type TileLife = "live" | "frozen" | "discarded";
+
+/** How long a tile stays live after it stops being needed (a pan past it, a zoom out and back). */
+export const FREEZE_AFTER_MS = 8000;
+/** Frozen tiles kept warm; beyond this the least recently live are discarded. */
+export const WARM_TILE_BUDGET = 12;
+
 export class SpatialStore {
   private camera: Camera;
   private size: Size = { w: 1, h: 1 };
@@ -68,6 +89,12 @@ export class SpatialStore {
   private flight: number | null = null;
   private interacting = false;
   private interactingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private life = new Map<string, TileLife>();
+  private lifeListeners = new Map<string, Set<Listener>>();
+  private lastNeededAt = new Map<string, number>();
+  private holds = new Map<string, number>();
+  private lifeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(initial: Camera) {
     this.camera = initial;
@@ -175,10 +202,16 @@ export class SpatialStore {
 
   registerItem(id: string, rect: Rect): () => void {
     this.items.set(id, rect);
+    if (!this.life.has(id)) {
+      this.life.set(id, "live");
+      this.lastNeededAt.set(id, performance.now());
+    }
     this.scheduleCoarse();
     return () => {
       this.items.delete(id);
       this.visible.delete(id);
+      this.life.delete(id);
+      this.lastNeededAt.delete(id);
       if (this.focused === id) {
         this.focused = null;
         this.focusReturn = null;
@@ -220,6 +253,7 @@ export class SpatialStore {
     // Selecting something else (or nothing) ends interaction with a tile.
     if (this.editing !== null && this.editing !== id) this.setEditing(null);
     for (const l of this.selectionListeners) l();
+    this.recomputeLife();
   }
 
   // ── interacting: the ONE tile whose content receives input natively ─────
@@ -239,6 +273,7 @@ export class SpatialStore {
       for (const l of this.selectionListeners) l();
     }
     for (const l of this.editingListeners) l();
+    this.recomputeLife();
   }
 
   subscribeEditing = (l: Listener): (() => void) => {
@@ -250,6 +285,87 @@ export class SpatialStore {
     this.selectionListeners.add(l);
     return () => this.selectionListeners.delete(l);
   };
+
+  // ── tile lifecycle (see `TileLife`) ──────────────────────────────────────
+
+  getLife = (id: string): TileLife => this.life.get(id) ?? "live";
+
+  subscribeLife(id: string, l: Listener): () => void {
+    let set = this.lifeListeners.get(id);
+    if (!set) {
+      set = new Set();
+      this.lifeListeners.set(id, set);
+    }
+    set.add(l);
+    return () => {
+      set.delete(l);
+      if (set.size === 0 && this.lifeListeners.get(id) === set) this.lifeListeners.delete(id);
+    };
+  }
+
+  /** Keep a tile live until the returned release is called (an agent reaching
+   * it, a chat mid-reply). Holds nest. */
+  holdAwake(id: string): () => void {
+    this.holds.set(id, (this.holds.get(id) ?? 0) + 1);
+    this.recomputeLife();
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      const n = (this.holds.get(id) ?? 1) - 1;
+      if (n <= 0) this.holds.delete(id);
+      else this.holds.set(id, n);
+      this.recomputeLife();
+    };
+  }
+
+  /** Is the tile needed right now (as opposed to merely remembered)? */
+  private needed(id: string): boolean {
+    if (this.focused === id || this.selected === id || this.editing === id) return true;
+    if ((this.holds.get(id) ?? 0) > 0) return true;
+    return this.visible.has(id) && this.tier !== "overview";
+  }
+
+  /** Exposed for tests; normally driven by every coarse change and a timer. */
+  recomputeLife(now = performance.now()): void {
+    if (this.lifeTimer) {
+      clearTimeout(this.lifeTimer);
+      this.lifeTimer = null;
+    }
+    let nextDue = Infinity;
+    const next = new Map<string, TileLife>();
+    const resting: string[] = [];
+    for (const id of this.items.keys()) {
+      if (this.needed(id)) {
+        this.lastNeededAt.set(id, now);
+        next.set(id, "live");
+        continue;
+      }
+      const since = this.lastNeededAt.get(id) ?? now;
+      const due = since + FREEZE_AFTER_MS;
+      if (now < due) {
+        // Was needed a moment ago: stay as it is until the grace period ends.
+        next.set(id, this.life.get(id) === "live" ? "live" : (this.life.get(id) ?? "live"));
+        nextDue = Math.min(nextDue, due);
+        continue;
+      }
+      if (this.life.get(id) === "discarded") next.set(id, "discarded");
+      else resting.push(id);
+    }
+    // Warm budget: keep the most recently needed frozen tiles, discard the rest.
+    resting.sort((a, b) => (this.lastNeededAt.get(b) ?? 0) - (this.lastNeededAt.get(a) ?? 0));
+    const warm = [...next.values()].filter((v) => v === "frozen").length;
+    resting.forEach((id, i) => next.set(id, warm + i < WARM_TILE_BUDGET ? "frozen" : "discarded"));
+    for (const [id, state] of next) {
+      if (this.life.get(id) === state) continue;
+      this.life.set(id, state);
+      const ls = this.lifeListeners.get(id);
+      if (ls) for (const l of [...ls]) l();
+    }
+    if (nextDue !== Infinity) {
+      this.lifeTimer = setTimeout(() => this.recomputeLife(), Math.max(0, nextDue - performance.now()) + 20);
+    }
+  }
 
   // ── focus mode: one tile fills the board area; Esc returns ───────────────
 
@@ -289,6 +405,7 @@ export class SpatialStore {
     this.focused = id;
     this.select(id);
     for (const l of this.focusListeners) l();
+    this.recomputeLife();
   }
 
   unfocus(): void {
@@ -296,6 +413,7 @@ export class SpatialStore {
     const id = this.focused;
     this.focused = null;
     for (const l of this.focusListeners) l();
+    this.recomputeLife();
     // Return to where the person was — with the tile they looked at in view.
     const back = this.focusReturn;
     this.focusReturn = null;
@@ -355,5 +473,6 @@ export class SpatialStore {
       const ls = this.visibleListeners.get(id);
       if (ls) for (const l of ls) l();
     }
+    this.recomputeLife();
   }
 }

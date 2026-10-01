@@ -23,7 +23,7 @@
  * off-screen, an image swaps to a thumbnail…).
  */
 
-import { type ReactNode, useContext, useEffect, useRef, useState } from "react";
+import { Activity, type ReactNode, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,11 +40,12 @@ import {
 import type { PaceTier } from "../engine/lod";
 import {
   FocusHostContext,
-  useEditingTile,
-  useFocusedTile,
+  useIsEditing,
+  useIsFocused,
+  useIsSelected,
   usePaceTier,
-  useSelectedTile,
   useSpatialStore,
+  useTileLife,
 } from "../engine/react";
 import {
   DEFAULT_THROW_ACTIONS,
@@ -148,11 +149,14 @@ export function SpatialTile({
 }: SpatialTileProps) {
   const store = useSpatialStore();
   const paceTier = usePaceTier(id);
-  const selected = useSelectedTile() === id;
-  const focused = useFocusedTile() === id;
+  const selected = useIsSelected(id);
+  const focused = useIsFocused(id);
   // Content receives input natively only while interacting (or focused).
-  const interacting = useEditingTile() === id || focused;
+  const interacting = useIsEditing(id) || focused;
   const focusHost = useContext(FocusHostContext);
+  // Live, frozen (kept, paused) or discarded — `TileLife` in engine/spatial-store.ts.
+  const life = useTileLife(id);
+
   // A focused tile is read at full size whatever the board's zoom.
   const tier: PaceTier = focused ? "read" : paceTier;
   const headerRef = useRef<HTMLDivElement>(null);
@@ -278,10 +282,31 @@ export function SpatialTile({
       tile.removeEventListener("pointerdown", down, true);
       gesture?.();
     };
-  // Focus moves the card through a portal, replacing the header element on
-  // both legs of the round trip. Rebind when either portal state changes so
-  // the returned on-board header can still start a drag.
+  // The card keeps its elements through full screen (it is moved, not
+  // re-rendered); rebinding on a focus change only ends a stale press.
   }, [store, id, canMove, focused, focusHost]);
+
+  // Full screen MOVES the card's element into the focus layer and back; React
+  // keeps it where it always is in the tree. Rendering it in two places (inline,
+  // then a portal) remounted everything in it — editors rebuilt, iframes
+  // reloaded, a chat lost its place — on every enter and exit. The card is the
+  // tile's first child, and its siblings (throw hint, handles) are inserted
+  // after it, so React never needs the card's position while it is away.
+  useLayoutEffect(() => {
+    const tile = tileRef.current;
+    const card = cardRef.current;
+    if (!tile || !card) return;
+    const parent = focused && focusHost ? focusHost : tile;
+    if (card.parentElement !== parent) moveInto(parent, card, parent === tile ? tile.firstChild : null);
+  }, [focused, focusHost]);
+  // Unmounted while full screen: take the card out of the focus layer too.
+  useLayoutEffect(
+    () => () => {
+      const card = cardRef.current;
+      if (card && card.parentElement !== tileRef.current) card.remove();
+    },
+    [],
+  );
 
   // Entering focus: the card grows out of the tile's on-board rect (FLIP).
   useEffect(() => {
@@ -366,7 +391,12 @@ export function SpatialTile({
           // finger on a tile body scrolls the content natively instead.
           style={{ contentVisibility: overview ? "hidden" : "visible", touchAction: "pan-x pan-y" }}
         >
-          {children(tier)}
+          {life === "discarded" ? null : (
+            // A frozen tile keeps its state and DOM but runs nothing: effects,
+            // store subscriptions, channels and timers are torn down until it
+            // is needed again (React's Activity, Chrome's tab freezing).
+            <Activity mode={life === "frozen" && !focused ? "hidden" : "visible"}>{children(tier)}</Activity>
+          )}
         </div>
         {overview && <OverviewCard title={title} from={statusFrom} icon={Icon} />}
       </div>
@@ -418,7 +448,7 @@ export function SpatialTile({
         contentVisibility: culled && !focused ? "hidden" : "visible",
       }}
     >
-      {focused && focusHost ? createPortal(card, focusHost) : card}
+      {card}
       {hint !== "none" && <ThrowHint action={hint} />}
       {/* At far zoom a tile is a few px on screen and the handles would cover
           it, so a drag would resize instead of move: there, only the
@@ -624,4 +654,19 @@ function OverviewCard({
       </div>
     </div>
   );
+}
+
+/** Move `node` into `parent` before `before`, keeping an iframe's page and an
+ * editor's state where the browser can (`moveBefore`, Chrome 133+). */
+function moveInto(parent: Element, node: Element, before: Node | null): void {
+  const atomic = (parent as Element & { moveBefore?: (node: Node, child: Node | null) => void }).moveBefore;
+  if (typeof atomic === "function" && node.isConnected && parent.isConnected) {
+    try {
+      atomic.call(parent, node, before);
+      return;
+    } catch {
+      // Falls back to an ordinary insert (the node reattaches).
+    }
+  }
+  parent.insertBefore(node, before);
 }

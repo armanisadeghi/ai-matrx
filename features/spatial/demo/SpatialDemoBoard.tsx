@@ -57,7 +57,7 @@ import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { buildWireText } from "@/features/content-ir/studio/stream-simulator";
 import type { Rect } from "../engine/camera";
-import { useEditingTile } from "../engine/react";
+import { useIsEditing } from "../engine/react";
 import type { SpatialStore } from "../engine/spatial-store";
 import { DEFAULT_THROW_ACTIONS, type ThrowDirection } from "../engine/throw";
 import { useBoard } from "../board/useBoard";
@@ -903,7 +903,7 @@ function BoardTile({
   onContent: (content: TileContent, title?: string) => void;
 }) {
   const c = spec.content;
-  const interacting = useEditingTile() === spec.id;
+  const interacting = useIsEditing(spec.id);
   const statusFrom: StatusFrom =
     c.type === "stream"
       ? { kind: "self", source: c.stream }

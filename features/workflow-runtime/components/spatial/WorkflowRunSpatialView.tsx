@@ -82,7 +82,7 @@ import { NoteItemBody } from "@/features/spatial/items/NoteItemBody";
 import { entityId, noteSeedEdit } from "@/features/spatial/items/work-sources";
 import type { NodeSource } from "@/features/spatial/board/document";
 import { SurfaceActivity } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { useEditingTile } from "@/features/spatial/engine/react";
+import { useIsEditing } from "@/features/spatial/engine/react";
 import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
 import type {
   AddTileInput,
@@ -563,7 +563,7 @@ function AddedTile({
   onThrow: (id: string, direction: ThrowDirection) => void;
   onContent: (id: string, content: RunTileContent, title?: string) => void;
 }) {
-  const interacting = useEditingTile() === spec.id;
+  const interacting = useIsEditing(spec.id);
   const c = spec.content;
   return (
     <SpatialTile

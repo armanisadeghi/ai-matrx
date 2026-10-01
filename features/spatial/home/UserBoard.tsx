@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { type Camera, type Rect, screenToWorld } from "../engine/camera";
-import { useEditingTile, useFocusedTile, useSelectedTile } from "../engine/react";
+import { useIsEditing, useIsLiveTile } from "../engine/react";
 import { SurfaceActivity, createSurfaceCapture } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SpatialStore } from "../engine/spatial-store";
 import type { ThrowAction, ThrowDirection } from "../engine/throw";
@@ -517,12 +517,10 @@ function BoardItemTile({
   onThrow: (id: string, direction: ThrowDirection) => void;
 }) {
   const tile = useBoardTile(board, id);
-  const interacting = useEditingTile() === id;
-  // The LIVE tile — selected, worked in or focused — is the only one whose
-  // feature surface registers; every other copy stays dormant.
-  const selected = useSelectedTile() === id;
-  const focused = useFocusedTile() === id;
-  const live = interacting || selected || focused;
+  const interacting = useIsEditing(id);
+  // THE live tile (full screen, else worked in, else selected) is the only one
+  // whose feature surface registers; every other copy stays dormant.
+  const live = useIsLiveTile(id);
   // The tile's own copy of its surface, registered live or dormant, so an
   // agent can read and act on it without the person switching to it.
   const [capture] = useState(createSurfaceCapture);
@@ -534,45 +532,49 @@ function BoardItemTile({
   const href = type?.href?.(source) ?? null;
   const onSource = (next: NodeSource, nextTitle?: string) =>
     board.updateTile(id, nextTitle ? { source: next, title: nextTitle } : { source: next }, { history: false });
+  const Keep = type?.Keep;
   return (
-    <SpatialTile
-      id={id}
-      rect={tile.rect}
-      title={title}
-      subtitle={type?.label ?? "Unavailable"}
-      icon={type?.icon}
-      onMove={board.moveTile}
-      onResize={board.resizeTile}
-      onThrow={onThrow}
-      throwActions={BOARD_THROWS}
-      actions={
-        href ? (
-          <a
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            title="Open in its own page"
-            aria-label={`Open ${title} in its own page`}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        ) : undefined
-      }
-    >
-      {(tier) => (
-        <TileContent
-          tileId={id}
-          source={source}
-          title={title}
-          tier={tier}
-          interacting={interacting}
-          live={live}
-          capture={capture}
-          onSource={onSource}
-        />
-      )}
-    </SpatialTile>
+    <>
+      {Keep && <Keep tileId={id} source={source} />}
+      <SpatialTile
+        id={id}
+        rect={tile.rect}
+        title={title}
+        subtitle={type?.label ?? "Unavailable"}
+        icon={type?.icon}
+        onMove={board.moveTile}
+        onResize={board.resizeTile}
+        onThrow={onThrow}
+        throwActions={BOARD_THROWS}
+        actions={
+          href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              title="Open in its own page"
+              aria-label={`Open ${title} in its own page`}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          ) : undefined
+        }
+      >
+        {(tier) => (
+          <TileContent
+            tileId={id}
+            source={source}
+            title={title}
+            tier={itemTypeFor(source)?.usesTier ? tier : "read"}
+            interacting={interacting}
+            live={live}
+            capture={capture}
+            onSource={onSource}
+          />
+        )}
+      </SpatialTile>
+    </>
   );
 }
 

@@ -43,6 +43,7 @@ import { FilesResourcePicker } from "@/features/resource-manager/resource-picker
 import { InlineUploadArea } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import { NoteItemBody } from "./NoteItemBody";
 import type { NodeSource } from "../board/document";
+import { useSpatialStore } from "../engine/react";
 import type { BoardItemType, ItemBodyProps, PickerProps, PlacedItem } from "./types";
 import {
   chatAgentId,
@@ -309,6 +310,25 @@ function FilePicker({ onPick, onCancel }: PickerProps) {
 
 // ── Registry ─────────────────────────────────────────────────────────────────
 
+/**
+ * What a chat tile keeps while its body sleeps: the conversation's live run
+ * (a frozen body released its own hold, and a launcher reap would blank the
+ * reply — LIVE-RUN-RETENTION.md), and the tile awake while the agent is
+ * working (running, streaming, or waiting on a tool this page runs).
+ */
+function ChatKeep({ tileId, source }: { tileId: string; source: NodeSource }) {
+  const conversationId = entityId(source);
+  useRetainLatestRequestForViewer(conversationId, "spatial-board-chat-keep");
+  const working = useAppSelector((s) => {
+    if (!conversationId) return false;
+    const status = s.conversations?.byConversationId[conversationId]?.status;
+    return status === "running" || status === "streaming" || status === "paused";
+  });
+  const board = useSpatialStore();
+  useEffect(() => (working ? board.holdAwake(tileId) : undefined), [working, board, tileId]);
+  return null;
+}
+
 export const WORK_ITEMS: BoardItemType[] = [
   {
     key: "chat",
@@ -319,6 +339,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 760 },
     matches: (s) => isEntity(s, "chat"),
     Body: ChatBody,
+    Keep: ChatKeep,
     // Two ways to start: the default chat (the `chat.default_new_chat` job,
     // exactly /chat/new) or a chat with an agent the person picks.
     startNew: [

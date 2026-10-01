@@ -12,7 +12,7 @@ import { useState } from "react";
 import { Frame, PenLine, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { rectsIntersect, type Rect } from "../engine/camera";
-import { useSelectedTile, useSpatialStore } from "../engine/react";
+import { useIsSelected, useSpatialStore } from "../engine/react";
 
 export interface LayerItem {
   id: string;
@@ -97,7 +97,7 @@ function LayerRow({
   onRename?: (id: string, title: string) => void;
 }) {
   const store = useSpatialStore();
-  const selected = useSelectedTile() === item.id;
+  const selected = useIsSelected(item.id);
   const [editing, setEditing] = useState(false);
   const Icon = item.icon;
 

@@ -32,6 +32,7 @@ function dragHeader(header: HTMLElement) {
 }
 
 describe("SpatialTile focus round trip", () => {
+  // Full screen used to remount the card (a portal); now it is moved.
   let container: HTMLDivElement;
   let root: Root;
 
@@ -51,7 +52,7 @@ describe("SpatialTile focus round trip", () => {
     container.remove();
   });
 
-  it("keeps header dragging after the focus portal returns to the board", () => {
+  it("full screen moves the card and back without rebuilding it, and the header still drags", () => {
     const store = new SpatialStore({ x: 0, y: 0, z: 1 });
     const onMove = jest.fn();
 
@@ -61,12 +62,17 @@ describe("SpatialTile focus round trip", () => {
     act(() => dragHeader(must(firstHeader)));
     expect(onMove).toHaveBeenCalledTimes(1);
 
+    const firstCard = container.querySelector<HTMLElement>("[data-spatial-card]");
     act(() => store.focus("tile"));
+    // Full screen MOVES the card into the focus layer — the same elements, so
+    // nothing inside (an editor, an iframe, a chat) is rebuilt.
+    expect(container.querySelector("[data-focus-host] > [data-spatial-card]")).toBe(firstCard);
     act(() => store.unfocus());
 
     const returnedHeader = container.querySelector<HTMLElement>("[data-spatial-card] > div");
     expect(returnedHeader).not.toBeNull();
-    expect(returnedHeader).not.toBe(firstHeader);
+    expect(returnedHeader).toBe(firstHeader);
+    expect(container.querySelector("[data-spatial-tile] > [data-spatial-card]")).toBe(firstCard);
     act(() => dragHeader(must(returnedHeader)));
     expect(onMove).toHaveBeenCalledTimes(2);
   });

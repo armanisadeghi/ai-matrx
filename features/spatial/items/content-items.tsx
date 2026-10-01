@@ -106,6 +106,7 @@ function LabelBody({ source, onSource }: ItemBodyProps) {
 export const CONTENT_ITEMS: BoardItemType[] = [
   {
     key: "web-page",
+    usesTier: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Web page",
     icon: Globe,
@@ -137,6 +138,7 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "write-up",
+    usesTier: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Write-up",
     icon: FileText,
