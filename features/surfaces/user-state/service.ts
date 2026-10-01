@@ -2,8 +2,11 @@
 //
 // Data access for `user_surface_state` — generic per-user, per-surface UI
 // state (the "Level 3" preferences store that replaces cookies for surface-
-// scoped state). RLS is owner-only, so direct table access is safe; the
-// browser client already carries the user's session.
+// scoped state). Row security is ORGANIZATION-level (the access ladder's
+// default: std_select lets the person's organizations read the row), NOT
+// owner-only — so every read here filters `user_id` to the signed-in person.
+// The server reads the same table by user_id; a read without that filter
+// showed one member another member's context rules (2026-10-01).
 
 "use client";
 
