@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-30T16:17:29.981Z",
+  "generated_at": "2026-10-01T09:08:11.260Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -704,6 +704,12 @@
       "checksum": "6ed444e0178fdaec0baeec1f58f5e6d0189d16c38df7ba6e61cb00f240dcb1ee",
       "applied_at": "2026-09-29 23:59:30.932445+00"
     },
+    "migrations/campaign/databasics2_a_strict_choice_survives_text_and_back.sql": {
+      "source": "matrx-frontend",
+      "filename": "databasics2_a_strict_choice_survives_text_and_back.sql",
+      "checksum": "cb00571dbcb308de96674c3555f2c70eef9884cf18cd4ceab24e719b3796991f",
+      "applied_at": "2026-10-01 09:08:08.734222+00"
+    },
     "migrations/campaign/databasics2_a_value_set_aside_comes_back.sql": {
       "source": "matrx-frontend",
       "filename": "databasics2_a_value_set_aside_comes_back.sql",
@@ -853,6 +859,12 @@
       "filename": "datahome2_j_checklists_answer_under_all_organizations.sql",
       "checksum": "57ec335c892c07ecd3865708bbe3ba059c72241123052d16fe21c66110fb4614",
       "applied_at": "2026-09-30 16:17:28.77294+00"
+    },
+    "migrations/campaign/datahome3_lane_a_the_data_home_shell_is_a_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "datahome3_lane_a_the_data_home_shell_is_a_knob.sql",
+      "checksum": "2db89c54db2ae882573773e8807c506e585948220874d961dc56a3a59f631523",
+      "applied_at": "2026-10-01 08:57:38.490254+00"
     },
     "migrations/campaign/datav2face2_a_copied_table_opens_as_the_sheet_it_was.sql": {
       "source": "campaign",
