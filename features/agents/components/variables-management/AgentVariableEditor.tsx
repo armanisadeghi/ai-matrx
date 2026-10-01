@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Loader2, WandSparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import {
   sanitizeVariableName,
   shouldShowSanitizationPreview,
@@ -35,11 +36,7 @@ import type {
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
-import {
-  useAppSelector,
-  useAppDispatch,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
@@ -161,12 +158,10 @@ export function AgentVariableEditor({
     );
   };
 
-  // EVERY WRITE READS THE STORE, NOT THIS RENDER. Typing a new name and then
-  // clicking a control fires the name field's blur (which renames) and then the
-  // click in ONE event sequence, before React re-renders — so the click's
-  // closure still held the old name and the old list, matched nothing, and
-  // re-dispatched the pre-rename list: the switch stayed off and the rename was
-  // undone. `currentName` follows a rename made in the same sequence.
+  // EVERY WRITE READS THE STORE, NOT THIS RENDER: a write made in the same
+  // event sequence as a rename (blur, then a control's handler, before React
+  // re-renders) must target the new name and the renamed list, or it matches
+  // nothing and re-dispatches the pre-rename list. `currentName` follows it.
   const updateVariable = (patch: Partial<VariableDefinition>) => {
     const latest =
       selectAgentVariableDefinitions(store.getState(), agentId) ?? [];
@@ -367,29 +362,26 @@ export function AgentVariableEditor({
           className={isDuplicate ? "border-destructive" : ""}
           style={{ fontSize: "16px" }}
         />
-        {showSanitizationPreview && !readonly && (
-          <div className="px-3 py-2 text-xs bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <span className="text-blue-600 dark:text-blue-400">
-              Will be saved as:{" "}
-            </span>
-            <span className="font-mono text-blue-800 dark:text-blue-300">
-              {sanitizedDraft}
-            </span>
-          </div>
-        )}
-        {isDuplicate && (
-          <p className="text-xs text-destructive">
-            A variable with this name already exists.
+        {/* ONE fixed-height status line. These states appear and vanish as the
+            name field blurs; when they changed the layout, the blur (which
+            renames) moved every control below by a line between mousedown and
+            mouseup, so the click on "Fill automatically" landed on nothing. */}
+        {!readonly && (
+          <p
+            className={cn(
+              "h-4 truncate text-xs leading-4",
+              isDuplicate ? "text-destructive" : "text-muted-foreground",
+            )}
+          >
+            {isDuplicate
+              ? "This name is taken"
+              : showSanitizationPreview && sanitizedDraft
+                ? `Saved as ${sanitizedDraft}`
+                : sanitizedDraft && sanitizedDraft !== variableName
+                  ? "Renames when you click away"
+                  : ""}
           </p>
         )}
-        {!isDuplicate &&
-          sanitizedDraft &&
-          sanitizedDraft !== variableName &&
-          !readonly && (
-            <p className="text-xs text-muted-foreground">
-              Rename will apply when you click away.
-            </p>
-          )}
       </div>
 
       {/* ── Help Text ────────────────────────────────────────────────────── */}
@@ -437,14 +429,16 @@ export function AgentVariableEditor({
         // The person running it sees the value locked, so no input type is configured here.
         <p className="border-t border-border pt-3 text-xs text-foreground">
           {/* read-gate-exempt: static label for data-bound variables, not an empty view */}
-          <span className="font-medium">Filled from your data</span> on every run
+          <span className="font-medium">Filled from your data</span> on every
+          run
         </p>
       ) : isBound ? (
         // Input type comes from the bound context item; at run time the value is
         // auto-filled from the active scope and hidden, the default applying only
         // when no scope value exists.
         <p className="border-t border-border pt-3 text-xs text-foreground">
-          <span className="font-medium">Filled from the active scope</span> · input type inherited
+          <span className="font-medium">Filled from the active scope</span> ·
+          input type inherited
         </p>
       ) : (
         <CustomComponentConfigurator
@@ -489,7 +483,9 @@ export function AgentVariableEditor({
       {/* ── Default Value ─────────────────────────────────────────────── */}
       <div className="min-w-0 space-y-1.5 border-t border-border pt-3">
         <Label className="text-sm font-medium">Default Value</Label>
-        <p className="text-xs text-muted-foreground">Pre-fills it at run time; blank for none</p>
+        <p className="text-xs text-muted-foreground">
+          Pre-fills it at run time; blank for none
+        </p>
         {readonly ? (
           <p className="text-sm text-foreground whitespace-pre-wrap break-words">
             {variableValueToDisplay(variable.defaultValue) || (
