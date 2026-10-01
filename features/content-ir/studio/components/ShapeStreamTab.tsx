@@ -45,6 +45,7 @@ import {
   type StreamVerdicts,
   type WireMode,
 } from "@/features/content-ir/studio/stream-simulator";
+import { drawsKindAsRawJson } from "@/features/content-ir/render-paths/draws-raw-kind-json";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShapeStreamTabProps {
@@ -154,7 +155,12 @@ export default function ShapeStreamTab({
     const accumulator = new StreamBlockAccumulator(requestId, (payload) => {
       const block = payload.block;
       byId.set(block.blockId, block);
-      recordsRef.current.push(recordFromUpsert(chunkNo, block));
+      const record = recordFromUpsert(chunkNo, block);
+      // The renderer's own answer — the verdict must never be blinder than
+      // the screen (the one-line ```json defect passed the old flag).
+      record.drawsKindAsRawJson =
+        block.status === "streaming" && drawsKindAsRawJson(block);
+      recordsRef.current.push(record);
       return payload;
     });
     const publish = () => {

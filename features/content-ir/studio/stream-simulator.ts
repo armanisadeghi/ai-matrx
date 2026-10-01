@@ -292,7 +292,7 @@ export function deriveStreamVerdicts(
   const lastValueChars = new Map<string, number>();
 
   for (const r of records) {
-    if (r.rawKindTextVisible) rawTextFlash = true;
+    if (r.rawKindTextVisible || r.drawsKindAsRawJson) rawTextFlash = true;
     if (!r.envelope) continue;
     if (r.envelope.status === "streaming") {
       if (detectedAtChunk === null) detectedAtChunk = r.chunk;
