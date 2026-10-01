@@ -1,4 +1,5 @@
--- draft: claude-deep-settings-retire  OWNER-APPLIED DATA MIGRATION — rehearsed on the clone only; production apply is the owner's call
+-- Owner-session apply 2026-10-01 (rehearsed on the clone: 0 -> 92 override rows,
+-- blobs unchanged). Keeps every person's current behaviour, `bare` included.
 -- Moves each person's stored sandbox defaults (users.user_preferences
 -- preferences->'sandbox') into user-rung overrides of the
 -- infrastructure.sandbox.defaults knobs (seeded by

@@ -569,12 +569,10 @@ export interface ConnectorsPreferences {
 
 export interface OrganizationPreferences {
   /**
-   * The user's DEFAULT active organization. When set, the active-org bootstrap
-   * auto-selects it at startup (across devices) so the user is never left
-   * without an org and never re-prompted. `null` = no default chosen yet → the
-   * header reminder nudges the user to pick one. The single durable source of
-   * truth for "which org am I in by default" — see activeOrgBootstrap +
-   * features/organizations/hooks/useDefaultOrganization.
+   * RETIRED (2026-10-01): the picker's old single star. Nothing selects an
+   * organization from it (the resolver stopped reading it 2026-09-19); it is
+   * read once by features/organizations/hooks/useOrganizationFavorites to carry
+   * that star into the canonical favorites store, then never again.
    */
   defaultOrganizationId: string | null;
 
