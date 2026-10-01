@@ -378,10 +378,22 @@ export interface DurableAttachment {
   label: string;
 }
 
-const DURABLE_ATTACHMENT_PREFIXES = ["attached_document_", "resource_file_"];
+/**
+ * One kind of durable attachment and the key prefixes the server files it
+ * under. `items` null = not read yet: rows of that kind are left as they are.
+ */
+export interface DurableAttachmentGroup {
+  prefixes: readonly string[];
+  items: readonly DurableAttachment[] | null;
+}
+
+/** Documents (processed documents, files) — platform.associations edges. */
+export const DOCUMENT_ATTACHMENT_PREFIXES = ["attached_document_", "resource_file_"] as const;
+/** Connector resources (repos, Google files, synced records) — `attachmentContextKey`. */
+export const RESOURCE_ATTACHMENT_PREFIXES = ["attached_resource_"] as const;
 
 /**
- * The context key the server seeds an attached resource under (aidream
+ * The context key the server seeds an attached document under (aidream
  * context_sources `_attached_document_key` / `_seed_file`); null for a token
  * the server does not seed as a document.
  */
@@ -392,26 +404,28 @@ export function durableAttachmentKey(token: string, resourceId: string): string 
 }
 
 /**
- * Reconcile the display rows' server-added documents with what is attached
- * NOW: a document detached since the last receipt is dropped, and one attached
- * since then is added (its size unknown until the next receipt). `attached`
- * null = not read yet: the rows are returned unchanged.
+ * Reconcile the display rows' server-added attachments with what is attached
+ * NOW, kind by kind: one detached since the last receipt is dropped, and one
+ * attached since then is added (its size unknown until the next receipt). A
+ * kind not read yet leaves its rows unchanged.
  */
 export function reconcileDurableAttachments(
   state: RootState,
   conversationId: string,
   rows: ResolvedContextRow[],
-  attached: readonly DurableAttachment[] | null,
+  groups: readonly DurableAttachmentGroup[],
 ): ResolvedContextRow[] {
-  if (!attached) return rows;
-  const current = new Set(attached.map((a) => a.key));
-  const isDurable = (key: string) => DURABLE_ATTACHMENT_PREFIXES.some((p) => key.startsWith(p));
-  const kept = rows.filter((row) => !(row.fromReceipt && isDurable(row.key)) || current.has(row.key));
+  const read = groups.filter((g): g is DurableAttachmentGroup & { items: readonly DurableAttachment[] } => g.items !== null);
+  if (read.length === 0) return rows;
+  const current = new Set(read.flatMap((g) => g.items.map((a) => a.key)));
+  const governed = (key: string) => read.some((g) => g.prefixes.some((p) => key.startsWith(p)));
+  const kept = rows.filter((row) => !(row.fromReceipt && governed(row.key)) || current.has(row.key));
   const shown = new Set(kept.map((row) => row.key));
   const saved = selectSavedContextRuleRows(state);
   const cap = selectContextInlineCap(state, conversationId);
   const primarySurface = resolveClientSurface(state, conversationId) ?? null;
-  const added = attached
+  const added = read
+    .flatMap((g) => g.items)
     .filter((a) => !shown.has(a.key))
     .map((a): ResolvedContextRow => {
       const row = resolveContextRow(

@@ -11,10 +11,13 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
+import { attachmentContextKey } from "@ai-matrx/agents/context";
 import {
   ambientIncluded,
   buildRequestContext,
   buildResumeRequestContext,
+  DOCUMENT_ATTACHMENT_PREFIXES,
+  RESOURCE_ATTACHMENT_PREFIXES,
   durableAttachmentKey,
   reconcileDurableAttachments,
   selectDisplayContextRows,
@@ -679,8 +682,13 @@ describe("server-added documents follow what is attached NOW", () => {
       fromReceipt("resource_file_c7cf", "harbor-street-menu-board.png"),
     ];
     const out = reconcileDurableAttachments(base(), "c1", rows, [
-      { key: "resource_file_a73a", label: "harbor-street-cost-sheet-q4.pdf" },
-      { key: durableAttachmentKey("processed_document", "5e1d")!, label: "Lease renewal terms" },
+      {
+        prefixes: DOCUMENT_ATTACHMENT_PREFIXES,
+        items: [
+          { key: "resource_file_a73a", label: "harbor-street-cost-sheet-q4.pdf" },
+          { key: durableAttachmentKey("processed_document", "5e1d")!, label: "Lease renewal terms" },
+        ],
+      },
     ]);
     expect(out.map((r) => [r.key, r.label, r.chars, r.delivery])).toEqual([
       ["resource_file_a73a", "harbor-street-cost-sheet-q4.pdf", 18_400, "on_request"],
@@ -690,6 +698,48 @@ describe("server-added documents follow what is attached NOW", () => {
 
   it("leaves the rows alone until the attachments have been read", () => {
     const rows = [fromReceipt("resource_file_c7cf", "harbor-street-menu-board.png")];
-    expect(reconcileDurableAttachments(base(), "c1", rows, null)).toBe(rows);
+    expect(
+      reconcileDurableAttachments(base(), "c1", rows, [{ prefixes: DOCUMENT_ATTACHMENT_PREFIXES, items: null }]),
+    ).toBe(rows);
+  });
+});
+
+// Break this catches: connector attachments (a repo, a Google file, a synced
+// record) keyed attached_resource_* stayed as the last receipt had them — a
+// detached repo kept showing, a newly attached Drive file did not.
+describe("connector attachments follow what is attached NOW", () => {
+  const receiptRow = (key: string, label: string) => ({
+    key,
+    label,
+    surfaceKey: "_default",
+    origin: "attached" as const,
+    value: undefined,
+    chars: 42_000,
+    userRule: null,
+    include: true,
+    max_inline_chars: 200,
+    delivery: "on_request" as const,
+    decided_by: { include: "default" as const, max_inline_chars: "default" as const },
+    clamped: false,
+    serverResolved: true,
+    fromReceipt: true,
+  });
+
+  it("drops a detached repo, adds a newly attached Drive file, and leaves documents alone", () => {
+    const repo = attachmentContextKey("github", "harbor-dental/intake-forms");
+    const drive = attachmentContextKey("google_drive", "1AbC-quarterlyPlan");
+    expect(repo).toBe("attached_resource_github_3aharbor-dental_2fintake-forms");
+    const rows = [
+      receiptRow(repo, "harbor-dental/intake-forms"),
+      receiptRow("resource_file_a73a", "harbor-street-cost-sheet-q4.pdf"),
+    ];
+    const out = reconcileDurableAttachments(makeState({ entries: [] }), "c1", rows, [
+      { prefixes: DOCUMENT_ATTACHMENT_PREFIXES, items: null },
+      { prefixes: RESOURCE_ATTACHMENT_PREFIXES, items: [{ key: drive, label: "Quarterly plan" }] },
+    ]);
+    expect(out.map((r) => [r.key, r.label, r.delivery])).toEqual([
+      ["resource_file_a73a", "harbor-street-cost-sheet-q4.pdf", "on_request"],
+      [drive, "Quarterly plan", "server"],
+    ]);
   });
 });
