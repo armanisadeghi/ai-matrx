@@ -338,7 +338,7 @@ export function SurfaceAdminDetailPage({
     const agents = usage?.agents.length ?? 0;
     const ok = await confirm({
       title: `Move ${surface.name} to Trash?`,
-      description: `Agents stop seeing this surface${tools + agents > 0 ? ` (it has ${tools} tool ref${tools === 1 ? "" : "s"} and ${agents} agent ref${agents === 1 ? "" : "s"})` : ""}. Its config and tool defaults move to Trash with it. You can restore it from Trash with everything intact.`,
+      description: `Agents stop seeing this surface${tools + agents > 0 ? ` (it has ${tools} tool ref${tools === 1 ? "" : "s"} and ${agents} agent ref${agents === 1 ? "" : "s"})` : ""}; its config and tool defaults go to Trash with it, restorable intact.`,
       confirmLabel: "Move to Trash",
       variant: "destructive",
     });
@@ -603,10 +603,9 @@ export function SurfaceAdminDetailPage({
           />
 
           <section className="space-y-2">
-            <SectionHeading
-              title="Surface values"
-              hint="Code-first — declared in the manifest, mirrored to ui_surface_value by Sync Manifests. View + drift only."
-            />
+            {/* Values are code-first: declared in the manifest, mirrored to
+                ui_surface_value by Sync Manifests. View + drift only. */}
+            <SectionHeading title="Surface values" />
             <SurfaceValuesTable
               manifest={manifest}
               dbValues={dbValues}
@@ -662,16 +661,11 @@ export function SurfaceAdminDetailPage({
 // Shared bits
 // ───────────────────────────────────────────────────────────────────────────
 
-function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+function SectionHeading({ title }: { title: string }) {
   return (
-    <div>
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h2>
-      {hint && (
-        <p className="text-[11px] text-muted-foreground/80 mt-0.5">{hint}</p>
-      )}
-    </div>
+    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      {title}
+    </h2>
   );
 }
 
@@ -685,10 +679,7 @@ function ManifestInternalsSection({
   if (!resolvedManifest) {
     return (
       <section className="space-y-2">
-        <SectionHeading
-          title="Manifest internals"
-          hint="Code-owned declarations and their resolved inheritance/baseline result."
-        />
+        <SectionHeading title="Manifest internals" />
         <EmptyHint>No code manifest is registered for this surface.</EmptyHint>
       </section>
     );
@@ -702,10 +693,9 @@ function ManifestInternalsSection({
 
   return (
     <section className="space-y-2">
-      <SectionHeading
-        title="Manifest internals"
-        hint="Admin-only, code-owned contract metadata. Edit DB-owned fields elsewhere in this panel; change these declarations in code and sync manifests."
-      />
+      {/* Code-owned contract metadata: edit these declarations in code and
+          run Sync Manifests; DB-owned fields are edited elsewhere here. */}
+      <SectionHeading title="Manifest internals" />
       <div className="grid gap-3 rounded-md border border-border bg-card p-3 md:grid-cols-2">
         <div className="space-y-2 text-xs">
           <div className="flex items-center justify-between gap-3">
@@ -821,8 +811,7 @@ function IdentitySection({
             disabled={busy}
           />
           <p className="text-[11px] text-muted-foreground">
-            Route this surface lives at — drives the header&apos;s &quot;Open
-            live page&quot; link and route → surface resolution.
+            Page route; powers the Open live page link.
           </p>
         </div>
         <div className="flex justify-end">
@@ -1052,8 +1041,7 @@ function ClassificationSection({
             </PopoverContent>
           </Popover>
           <p className="text-[11px] text-muted-foreground">
-            Inheritance chain for tool defaults. Self and descendants are
-            excluded (cycle guard).
+            Parent surface; itself and descendants excluded.
           </p>
         </div>
         <div className="space-y-1.5">
@@ -1121,10 +1109,7 @@ function HierarchySection({
 
   return (
     <section className="space-y-4">
-      <SectionHeading
-        title="Hierarchy"
-        hint="UI surface inheritance chain (parent → child) for tool defaults and config."
-      />
+      <SectionHeading title="Hierarchy" />
 
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
@@ -1406,10 +1391,8 @@ function ToolDefaultsSection({
 
   return (
     <section className="space-y-2">
-      <SectionHeading
-        title="Tool defaults"
-        hint="tool.surface_defaults — which tools/bundles are force-included or banned on this surface, plus per-tool argument defaults and injection. The row is created on first edit."
-      />
+      {/* Backed by the tool.surface_defaults row, created on first edit. */}
+      <SectionHeading title="Tool defaults" />
       <div className="space-y-4 rounded-md border border-border bg-card p-3">
         {!defaults && (
           <div className="rounded-md border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground">
@@ -1453,7 +1436,7 @@ function ToolDefaultsSection({
 
         <JsonRecordEditor
           label="Arg defaults"
-          hint="Per-tool literal argument defaults: { <tool_name>: { <arg>: <value> } }."
+          hint="Literal args: { tool: { arg: value } }"
           record={(defaults?.arg_defaults ?? {}) as Record<string, unknown>}
           busy={busy}
           onSave={(rec) =>
@@ -1462,7 +1445,7 @@ function ToolDefaultsSection({
         />
         <JsonRecordEditor
           label="Arg injection"
-          hint="Per-tool runtime-injected arguments: { <tool_name>: { <arg>: <source> } }."
+          hint="Injected args: { tool: { arg: source } }"
           record={(defaults?.arg_injection ?? {}) as Record<string, unknown>}
           busy={busy}
           onSave={(rec) =>
@@ -2013,10 +1996,10 @@ function RolesSection({
 
   return (
     <section className="space-y-2">
-      <SectionHeading
-        title="Agent roles"
-        hint="ui_surface_agent_role — agent positions this surface plugs in. The platform default is the manifest's default_agent_id; the global-scope pref row is the platform runtime override (super admin only)."
-      />
+      {/* ui_surface_agent_role rows. Platform default = the manifest's
+          default_agent_id; the global-scope pref row is the platform runtime
+          override (super admin only). */}
+      <SectionHeading title="Agent roles" />
       {loading && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading roles…
@@ -2078,7 +2061,7 @@ function RolesSection({
                     <Badge
                       variant="outline"
                       className="text-[10px] text-amber-600 dark:text-amber-400"
-                      title="The manifest leaves auto-run to a choice, but no agent fills this role yet — there is no binding to record the answer on. Set a platform default or an override first."
+                      title="No agent fills this role, so the choice can't be saved; set a default first."
                     >
                       auto-run: your choice — no agent in this role
                     </Badge>
@@ -2091,7 +2074,7 @@ function RolesSection({
                       title={
                         eligibility.eligible
                           ? autoRunOn
-                            ? "Runs the moment it is triggered here. The launcher still refuses if the mapping leaves a required variable unresolved on the live page — a stored yes is intent, never a bypass."
+                            ? "Runs when triggered, unless a required variable is unresolved here."
                             : "Waits for the person to press Run on this surface."
                           : `Waits for Run — this binding's mapping asks for ${eligibility.blockers.join(", ")}`
                       }
@@ -2217,12 +2200,15 @@ function RoleOverridePicker({
  * The `menu` namespace is offered on EVERY surface, declared or not — the
  * exclusion valve is a property of being a place, not of a manifest opting
  * in. Shape: `{ "excludedItemIds": ["<shortcut/mandate id>", ...] }`.
+ * Menu availability is otherwise derived — an item is offered here iff every
+ * surface value it consumes has a read path on this page. Org and user tiers
+ * may exclude more; no tier can re-admit.
  */
 const UNIVERSAL_MENU_NAMESPACE = {
   namespace: "menu",
   label: "Context menu (exclusion valve)",
   description:
-    'Item ids this surface REFUSES even though they qualify. Menu availability is otherwise derived — an item is offered here iff every surface value it consumes has a read path on this page. Shape: {"excludedItemIds":["<id>"]}. Org and user tiers may exclude MORE; no tier can re-admit.',
+    'Item ids this surface refuses: {"excludedItemIds":["<id>"]}',
 } as const;
 
 function ConfigNamespacesSection({
@@ -2266,10 +2252,7 @@ function ConfigNamespacesSection({
 
   return (
     <section className="space-y-2">
-      <SectionHeading
-        title="Config namespaces"
-        hint="Code declares the namespace and validation contract. Admins can edit the platform-global row here; org, scope, and user overrides remain visible as counts."
-      />
+      <SectionHeading title="Config namespaces" />
       {allNamespaces.length === 0 ? (
         <EmptyHint>
           No config namespaces declared and no ui_surface_config rows exist.
@@ -2424,10 +2407,7 @@ function UsageSection({
 }) {
   return (
     <section className="space-y-2">
-      <SectionHeading
-        title="Usage"
-        hint="What points at this surface — force-included tools, agent bindings, and per-tool UI customizations."
-      />
+      <SectionHeading title="Usage" />
       {loading && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading usage…
