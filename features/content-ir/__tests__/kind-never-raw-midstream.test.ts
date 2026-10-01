@@ -29,6 +29,7 @@ import {
 } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { applyIrKindRoute } from "../react/kind-route";
 import { hasKindKey } from "../surfaces/json-kind-signal";
+import { componentRegistry } from "../registry/component-registry";
 import {
   TextDecoder as NodeTextDecoder,
   TextEncoder as NodeTextEncoder,
@@ -515,5 +516,34 @@ describe("never raw: a fence that closes on broken JSON carrying __kind (A10)", 
         metadata: reloaded!.metadata,
       } as RenderBlockPayload),
     ).toBe(false);
+  });
+});
+
+describe("never raw: a settled region whose kind the cold registry cannot answer yet (A11)", () => {
+  const CASES: Array<[string, string]> = [
+    ["unregistered kind, complete", '{"__kind":"zz_unregistered_kind","rows":[1,2]}'],
+    ["unregistered kind, truncated", '{"__kind":"zz_unregistered_kind","rows":[1,2'],
+  ];
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it.each(CASES)("%s: the kind loader holds while the registry is cold, never the raw card", (_label, body) => {
+    // The cold window: the tier has not settled (the route holds its verdict).
+    jest.spyOn(componentRegistry, "hasSettled").mockReturnValue(false);
+    const stream = `Here you go:\n\n\`\`\`json\n${body}\n\`\`\`\n\nAfter.`;
+    const kindBlock = finalBlocks(stream, `req-cold-${_label}`).find((b) => hasKindKey(b.content ?? ""));
+    expect(kindBlock?.status).toBe("complete");
+    expect(rendersRawJson(kindBlock as RenderBlockPayload)).toBe(false);
+  });
+
+  it("settling tells the waiting block (the package repaint) and the route then answers — still never raw", async () => {
+    let repaints = 0;
+    const unsubscribe = componentRegistry.subscribeKind("zz_unregistered_kind", () => repaints++);
+    componentRegistry.replaceDbRows([]); // the tier settles with nothing for this kind
+    unsubscribe();
+    expect(repaints).toBeGreaterThan(0);
+    const stream = "```json\n" + CASES[0]![1] + "\n```\n";
+    const kindBlock = finalBlocks(stream, "req-cold-settled").find((b) => hasKindKey(b.content ?? ""));
+    expect(rendersRawJson(kindBlock as RenderBlockPayload)).toBe(false);
   });
 });

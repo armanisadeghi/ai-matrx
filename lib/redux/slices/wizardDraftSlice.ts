@@ -19,6 +19,9 @@
 //   - Drafts older than DRAFT_TTL_MS are pruned at rehydrate; an abandoned
 //     draft cannot haunt the wizard forever.
 //   - Values must be JSON-serializable (they cross IDB + BroadcastChannel).
+//   - Nothing reaches storage before the persisted read has settled
+//     (`holdUntilHydrated`): a patch made earlier lives in memory, is merged
+//     with the loaded drafts on REHYDRATE, and the merged map is saved once.
 //
 // First consumer: the Research init wizard
 // (features/research/components/init/ResearchInitForm.tsx).
@@ -126,6 +129,13 @@ export const wizardDraftPolicy = definePolicy<WizardDraftState>({
     actions: ["wizardDraft/patchWizardDraft", "wizardDraft/clearWizardDraft"],
   },
   storageKey: "matrx:wizardDrafts",
+  // The persisted body is the WHOLE map of every wizard's draft on this
+  // device, so a write before the read came back stored a map of only what
+  // this page had written — a page opened with `?source=` wiped the stopped-run
+  // record and every other saved answer (2026-09-30). Held until the read
+  // settles, then saved once, merged. Guard:
+  // lib/wizard-draft/__tests__/draft-write-before-read-never-wipes.test.ts
+  holdUntilHydrated: true,
   partialize: ["drafts"],
   serialize: (state) => ({ drafts: pruneExpired(state.drafts, Date.now()) }),
   deserialize: (raw) => {

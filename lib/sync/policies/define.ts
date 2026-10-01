@@ -146,6 +146,14 @@ export function definePolicy<TState>(config: PolicyConfig<TState>): Policy<TStat
         }
     }
 
+    if (config.holdUntilHydrated !== undefined) {
+        if (typeof config.holdUntilHydrated !== "boolean")
+            fail(`"${sliceName}": holdUntilHydrated must be a boolean`);
+        if (caps.writeStrategy !== "debounced") {
+            fail(`"${sliceName}": holdUntilHydrated is only legal on a debounced (warm-cache) preset`);
+        }
+    }
+
     // Rule: remote only valid on presets that allow it (warm-cache + live-data).
     if (config.remote !== undefined && !caps.allowsRemote) {
         fail(`"${sliceName}": preset "${preset}" does not allow remote.fetch / remote.write`);

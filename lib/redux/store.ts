@@ -222,11 +222,36 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
   // Populated by `createSyncMiddleware` inside its closure; read by the
   // `StoreSyncContext.engineApi()` getter below.
   const engineApiRef: { current: SyncEngineApi | null } = { current: null };
+  // --- Hydration-settled signal (see StoreSyncContext.hydrationSettled) ---
+  // Declared before the middleware: `holdUntilHydrated` slices are never
+  // written until it is true (a write before the read wipes the saved map).
+  let bootStarted = false;
+  let bootFinished = false;
+  let resyncsInFlight = 0;
+  const settledListeners = new Set<() => void>();
+  const notifySettled = () => {
+    for (const listener of settledListeners) {
+      try {
+        listener();
+      } catch (err) {
+        console.error("[sync] hydrationSettled listener threw", err);
+      }
+    }
+  };
+  const hydrationSettled = () => bootFinished && resyncsInFlight === 0;
+  const onHydrationSettledChange = (listener: () => void) => {
+    settledListeners.add(listener);
+    return () => {
+      settledListeners.delete(listener);
+    };
+  };
   const syncMiddleware = createSyncMiddleware({
     policies: syncPolicies,
     channel: syncChannel,
     getIdentity: () => currentIdentity,
     apiRef: engineApiRef,
+    hydrationSettled,
+    onHydrationSettledChange,
   });
 
   const store = configureStore({
@@ -264,20 +289,6 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
   let bootPromise: Promise<void> | null = null;
   let identityWatchAttached = false;
 
-  // --- Hydration-settled signal (see StoreSyncContext.hydrationSettled) ---
-  let bootStarted = false;
-  let bootFinished = false;
-  let resyncsInFlight = 0;
-  const settledListeners = new Set<() => void>();
-  const notifySettled = () => {
-    for (const listener of settledListeners) {
-      try {
-        listener();
-      } catch (err) {
-        console.error("[sync] hydrationSettled listener threw", err);
-      }
-    }
-  };
   const syncContext: StoreSyncContext = {
     channel: syncChannel,
     identity: initialIdentity,
@@ -356,14 +367,9 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
       }
       return bootPromise;
     },
-    hydrationSettled: () => bootFinished && resyncsInFlight === 0,
+    hydrationSettled,
     bootStarted: () => bootStarted,
-    onHydrationSettledChange: (listener: () => void) => {
-      settledListeners.add(listener);
-      return () => {
-        settledListeners.delete(listener);
-      };
-    },
+    onHydrationSettledChange,
   };
   const storeWithSync = Object.assign(store, { _sync: syncContext });
 

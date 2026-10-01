@@ -131,6 +131,13 @@ export interface SyncEngineApi {
    * callers can sequence around it.
    */
   flushAutoSave(sliceName: string, recordId?: string): Promise<void>;
+  /**
+   * Write a warm-cache slice's pending change to storage NOW (skip the
+   * debounce) and resolve once it is stored — for a marker that must be on
+   * disk before the next step (a tab-bound run's "saving" stamp). A slice
+   * held by `persistWhen` / `holdUntilHydrated` is still refused.
+   */
+  flushPersisted(sliceName: string): Promise<void>;
 }
 
 export interface SyncMiddlewareContext {
@@ -147,6 +154,15 @@ export interface SyncMiddlewareContext {
    * construction. Optional — tests that don't need the API can omit it.
    */
   apiRef?: { current: SyncEngineApi | null };
+  /**
+   * The store's "persisted state has been read for the current identity"
+   * signal (`store._sync.hydrationSettled` + its change subscription). A
+   * `holdUntilHydrated` slice is never written while it is false, and is
+   * saved once — its live, merged state — when it turns true. Absent (a
+   * hand-built test store): always settled.
+   */
+  hydrationSettled?: () => boolean;
+  onHydrationSettledChange?: (listener: () => void) => () => void;
 }
 
 /**
@@ -207,6 +223,10 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
         if (!autoSaveScheduler) return;
         await autoSaveScheduler.flush(slice, recordId);
       },
+      flushPersisted: async (slice) => {
+        if (!remoteWriteScheduler) return;
+        await remoteWriteScheduler.flushSlice(slice);
+      },
     };
   }
   for (const p of ctx.policies) {
@@ -221,6 +241,31 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
   // Track identity across actions so a swap clears in-flight writes (and
   // we never re-key a write-in-progress to the new identity).
   let lastSeenIdentity = ctx.getIdentity().key;
+
+  // `holdUntilHydrated`: when the read settles, save every held slice's LIVE
+  // state once — the loaded record with this page's earlier edits merged in by
+  // the slice's REHYDRATE reducer. Subscribed with the scheduler (a store that
+  // never writes a warm-cache slice never holds one).
+  let releaseAttached = false;
+  function releaseHoldsOnSettle(api: MiddlewareAPI): void {
+    if (releaseAttached || !ctx.onHydrationSettledChange || !ctx.hydrationSettled) return;
+    releaseAttached = true;
+    const settled = ctx.hydrationSettled;
+    ctx.onHydrationSettledChange(() => {
+      if (!settled() || !remoteWriteScheduler) return;
+      for (const sliceName of remoteWriteScheduler.takeHydrationHolds()) {
+        const policy = ctx.policies.find((p) => p.config.sliceName === sliceName);
+        const sliceState = selectSliceState(api.getState(), sliceName);
+        if (!policy || sliceState === undefined) continue;
+        logger.info("persist.released", {
+          sliceName,
+          meta: { detail: "saved state read — saving the merged state once" },
+        });
+        lastPersistedRef.set(sliceName, sliceState);
+        remoteWriteScheduler.schedule(sliceName, serializeBody(policy, sliceState));
+      }
+    });
+  }
 
   const middleware: Middleware =
     (api: MiddlewareAPI) =>
@@ -366,7 +411,11 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
             ...(ctx.defaultDebounceMs !== undefined
               ? { defaultDebounceMs: ctx.defaultDebounceMs }
               : {}),
+            ...(ctx.hydrationSettled
+              ? { hydrationSettled: ctx.hydrationSettled }
+              : {}),
           });
+          releaseHoldsOnSettle(api);
         }
         return remoteWriteScheduler;
       }

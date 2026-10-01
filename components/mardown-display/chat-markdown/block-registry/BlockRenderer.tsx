@@ -33,6 +33,7 @@ import {
   ProvisionalKindFrame,
 } from "@/features/content-ir/react/ProvisionalKindBoundary";
 import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
+import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import {
   IR_ENVELOPE_KEY,
   IR_VERSION,
@@ -163,7 +164,15 @@ export function pendingStructuredEnvelope(block: {
     // root — the kernel parses one object — or a grammar slip mid-payload):
     // it names no kind, so the first-key rule decides exactly as it does for
     // a region no parser opened (A6). A settled block falls through.
-    return envelope.root.kind ? null : unparsedKindPendingEnvelope(block);
+    if (envelope.root.kind) {
+      // Identified, SETTLED, and still "code" after the route: the route is
+      // holding its verdict because the component registry has not settled
+      // (THE COLD-VERDICT RULE). Show the kind's loader, never the raw card;
+      // the settle repaints this kind (@ai-matrx/content-ir-react ≥ 0.13.0)
+      // and the route answers — its component or the generic floor (A11).
+      return componentRegistry.hasSettled() ? null : envelope;
+    }
+    return unparsedKindPendingEnvelope(block);
   }
   if (envelope.root.kind) {
     // Identified but UNROUTED. This function sees the block AFTER the kind

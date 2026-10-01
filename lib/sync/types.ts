@@ -243,6 +243,20 @@ export interface PolicyConfig<TState = unknown> {
      * loaded record. Only legal on warm-cache.
      */
     persistAfterLoad?: (state: TState) => boolean;
+    /**
+     * NOTHING IS WRITTEN BEFORE THE READ (2026-09-30). True = the debounced
+     * scheduler refuses every write of this slice until the engine's persisted
+     * hydration has settled for the CURRENT identity (`store._sync.
+     * hydrationSettled`), then saves the slice's live state once — which by
+     * then holds the loaded record merged with the edits made before it.
+     * For a slice whose persisted body is a map of independent entries
+     * (`wizardDraft`): an edit made before the read used to persist a map of
+     * ONE entry over the saved map, wiping every other entry on the device —
+     * a page opened with `?source=` erased the stopped-run record and every
+     * other wizard's saved answers. Unlike `persistWhen`, needs no load flag
+     * in the slice: a miss (nothing saved) settles too. Warm-cache only.
+     */
+    holdUntilHydrated?: boolean;
 
     /**
      * Phase 5 — per-record auto-save capability. Layered on top of `warm-cache`

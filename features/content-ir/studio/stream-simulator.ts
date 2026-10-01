@@ -36,10 +36,11 @@ import {
 } from "@ai-matrx/content-ir-react";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 
-export type WireMode = "fenced" | "bare";
+export type WireMode = "fenced" | "fenced_one_line" | "bare";
 
 export const WIRE_MODE_LABEL: Record<WireMode, string> = {
   fenced: "Chat fence (```json in prose)",
+  fenced_one_line: "Chat fence, one line (```json minified)",
   bare: "Structured output (bare minified JSON)",
 };
 
@@ -57,6 +58,9 @@ export function withKindFirst(
  *
  *  - `fenced`: prose + a pretty-printed ```json fence + prose — the classic
  *    chat emission (`kind_<slug>` skill teaching).
+ *  - `fenced_one_line`: the same fence with the payload minified onto ONE
+ *    line — the 2026-09-30 defect (a fence body was parser-fed only per
+ *    completed line, so `__kind` stayed unseen until the fence closed).
  *  - `bare`: ONE minified line, no newline anywhere — the provider
  *    structured-output shape (`response_format_for_kind`), the exact form
  *    that historically flashed raw JSON until the live-open fix.
@@ -70,7 +74,10 @@ export function buildWireText(
   if (mode === "bare") {
     return JSON.stringify(payload);
   }
-  const pretty = JSON.stringify(payload, null, 2);
+  const pretty =
+    mode === "fenced_one_line"
+      ? JSON.stringify(payload)
+      : JSON.stringify(payload, null, 2);
   return `Here is your ${kind}:\n\n\`\`\`json\n${pretty}\n\`\`\`\n\nLet me know if you want changes.\n`;
 }
 

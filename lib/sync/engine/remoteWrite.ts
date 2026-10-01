@@ -106,6 +106,8 @@ export interface RemoteWriteScheduler {
     schedule(sliceName: string, body: unknown): void;
     /** Flush every pending write immediately (pagehide). */
     flushAll(): Promise<void>;
+    /** Flush one slice's pending write now; resolves once it is stored (or refused). */
+    flushSlice(sliceName: string): Promise<void>;
     /** Cancel in-flight + pending on identity swap — the new identity starts clean. */
     onIdentitySwap(): void;
     /**
@@ -117,6 +119,12 @@ export interface RemoteWriteScheduler {
     setBase(sliceName: string, body: unknown): void;
     /** True while a write for the slice is scheduled or in flight. */
     hasPending(sliceName: string): boolean;
+    /**
+     * The `holdUntilHydrated` slices whose writes were refused because
+     * hydration had not settled — returned once and forgotten, so the caller
+     * saves each slice's live (now merged) state exactly once.
+     */
+    takeHydrationHolds(): string[];
     /** Tear down listeners. */
     dispose(): void;
 }
@@ -131,6 +139,12 @@ export interface CreateRemoteWriteSchedulerOptions {
     defaultDebounceMs?: number;
     /** Test-only: how a persistent write failure is told to the person. Default: a toast. */
     failureNotice?: RemoteWriteFailureNotice;
+    /**
+     * Has the engine finished reading persisted state for the current
+     * identity? Gates `holdUntilHydrated` slices. Absent = always settled
+     * (a hand-built store with no boot has nothing to wait for).
+     */
+    hydrationSettled?: () => boolean;
 }
 
 const DEFAULT_DEBOUNCE_MS = 150;
@@ -166,6 +180,12 @@ export function createRemoteWriteScheduler(
             .map((p) => [p.config.sliceName, p] as const),
     );
     const pending = new Map<string, PendingWrite>();
+    /** `holdUntilHydrated` slices with a write refused before hydration settled. */
+    const heldForHydration = new Set<string>();
+    const awaitingHydration = (policy: Policy<any>): boolean =>
+        policy.config.holdUntilHydrated === true &&
+        typeof opts.hydrationSettled === "function" &&
+        !opts.hydrationSettled();
     /** The body the server holds, per slice — see `WriteContext.base`. */
     const baseBySlice = new Map<string, unknown>();
 
@@ -173,6 +193,19 @@ export function createRemoteWriteScheduler(
         const record = pending.get(sliceName);
         const policy = bySlice.get(sliceName);
         if (!record || !policy) return;
+
+        // THE HYDRATION GATE (`policy.holdUntilHydrated`). A body built before
+        // the persisted read came back holds only what THIS page wrote, so
+        // storing it would replace everything saved on the device with it.
+        // DROP it and remember the slice: once hydration settles the caller
+        // saves the slice's live state, which then holds both.
+        if (awaitingHydration(policy)) {
+            if (record.timerHandle) clearTimeout(record.timerHandle);
+            record.inFlightController?.abort();
+            pending.delete(sliceName);
+            holdForHydration(sliceName);
+            return;
+        }
 
         // THE PERSIST GATE. Every warm-cache write — debounce, pagehide flush,
         // programmatic flush — lands here, so this is the one place a slice
@@ -360,9 +393,31 @@ export function createRemoteWriteScheduler(
         }, debounceMs);
     }
 
+    function holdForHydration(sliceName: string): void {
+        if (!heldForHydration.has(sliceName)) {
+            logger.warn("persist.held", {
+                sliceName,
+                meta: {
+                    detail: "saved state not read yet — nothing written until it is, so this page cannot wipe it",
+                },
+            });
+        }
+        heldForHydration.add(sliceName);
+    }
+
     function schedule(sliceName: string, body: unknown): void {
         const policy = bySlice.get(sliceName);
         if (!policy) return;
+        // A body built before the read came back is never queued: it would
+        // still be stale if hydration settled before its debounce ran out.
+        if (awaitingHydration(policy)) {
+            const stale = pending.get(sliceName);
+            if (stale?.timerHandle) clearTimeout(stale.timerHandle);
+            stale?.inFlightController?.abort();
+            pending.delete(sliceName);
+            holdForHydration(sliceName);
+            return;
+        }
         const existing = pending.get(sliceName);
         const next: PendingWrite = existing ?? {
             body,
@@ -392,6 +447,10 @@ export function createRemoteWriteScheduler(
 
     function onIdentitySwap(): void {
         for (const [name, record] of pending) {
+            // An unsaved edit of a hold-until-hydrated slice is not lost with
+            // the swap: it is saved, merged, once the new identity's read lands.
+            const policy = bySlice.get(name);
+            if (policy?.config.holdUntilHydrated === true) heldForHydration.add(name);
             record.inFlightController?.abort();
             if (record.timerHandle) clearTimeout(record.timerHandle);
             pending.delete(name);
@@ -417,6 +476,7 @@ export function createRemoteWriteScheduler(
     const scheduler: RemoteWriteScheduler = {
         schedule,
         flushAll,
+        flushSlice: (sliceName) => flushOne(sliceName),
         onIdentitySwap() {
             onIdentitySwap();
             baseBySlice.clear();
@@ -429,6 +489,11 @@ export function createRemoteWriteScheduler(
             // nothing a server answer could overwrite.
             return pending.has(sliceName) && !!bySlice.get(sliceName)?.config.remote?.write;
         },
+        takeHydrationHolds() {
+            const names = Array.from(heldForHydration);
+            heldForHydration.clear();
+            return names;
+        },
         dispose() {
             for (const record of pending.values()) {
                 record.inFlightController?.abort();
@@ -436,6 +501,7 @@ export function createRemoteWriteScheduler(
             }
             pending.clear();
             baseBySlice.clear();
+            heldForHydration.clear();
             liveSchedulers.delete(scheduler);
             detachPageHide?.();
         },
