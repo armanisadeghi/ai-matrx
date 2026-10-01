@@ -28,10 +28,15 @@ export const SAVED_SOURCE_TOKEN = "processed_document";
 
 export type SavedSourceGroup = Exclude<SourceKindGroup, "other">;
 
-function sourcesScope(scope: KindScope): { kind: "mine" | "orgs"; organizationId: string | null } {
+/**
+ * The Sources lane a kind scope reads. `all` is everything the person can see — her own Sources
+ * included — so it is the Sources "all" lane, never "orgs" (which is other people's only). An
+ * organization is the page's organization FILTER on that same lane: everything in it, hers too.
+ */
+export function savedSourcesLane(scope: KindScope): { kind: "all" | "mine"; organizationId: string | null } {
   if (scope.kind === "mine") return { kind: "mine", organizationId: scope.organizationId ?? null };
-  if (scope.kind === "organization") return { kind: "orgs", organizationId: scope.organizationId };
-  return { kind: "orgs", organizationId: null };
+  if (scope.kind === "organization") return { kind: "all", organizationId: scope.organizationId };
+  return { kind: "all", organizationId: null };
 }
 
 function groupQuery(group: SavedSourceGroup, scope: KindScope, userId: string, search: string, head: boolean) {
@@ -43,21 +48,34 @@ function groupQuery(group: SavedSourceGroup, scope: KindScope, userId: string, s
     .is("archived_at", null)
     .in("source_kind", [...SOURCE_KIND_GROUP_KINDS[group]])
     .or(sourcesListFilter({ saved: true, search }));
-  return applySourcesScope(q, sourcesScope(scope), userId);
+  return applySourcesScope(q, savedSourcesLane(scope), userId);
 }
+
+/** How many times a transiently failed count is tried again, and the first wait before it. */
+const COUNT_RETRIES = 2;
+const COUNT_RETRY_DELAY_MS = 600;
 
 /** How many saved Sources of this group the scope holds; null = could not count (show a dash). */
 export async function countSavedSources(
   group: SavedSourceGroup,
   scope: KindScope,
   userId: string,
+  retryDelayMs = COUNT_RETRY_DELAY_MS,
 ): Promise<number | null> {
-  const { count, error } = await groupQuery(group, scope, userId, "", true);
-  if (error) {
-    console.error(`[savedWebPages] could not count saved ${group} Sources:`, error);
-    return null;
+  // An exact count of a row-secured table is evaluated against the person's whole access set; it
+  // runs beside every other kind's count when the picker opens, and that burst can reach the
+  // signed-in role's statement timeout. A transient failure is tried again once the burst is over.
+  for (let attempt = 0; ; attempt++) {
+    const { count, error, status } = await groupQuery(group, scope, userId, "", true);
+    if (!error) return count ?? null;
+    // A HEAD reply has no body, so the error's message is empty — the status says what happened.
+    const transient = status === 0 || status === 408 || status >= 500 || error.code === "57014";
+    if (!transient || attempt >= COUNT_RETRIES) {
+      console.error(`[savedWebPages] could not count saved ${group} Sources (HTTP ${status}):`, error);
+      return null;
+    }
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs * (attempt + 1)));
   }
-  return count ?? null;
 }
 
 /** One page of saved Sources of this group, newest first, searched by name or address. */
