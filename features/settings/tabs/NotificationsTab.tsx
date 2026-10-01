@@ -386,7 +386,7 @@ export default function NotificationsTab() {
             // overflow-clip (not hidden) keeps the rounded frame without making a
             // scroll container, so the column header can stick.
             <div className="matrx-touch-targets overflow-clip rounded-lg border border-border bg-card">
-              <div className="sticky top-[var(--shell-header-h)] z-10 hidden grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem] items-center border-b border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid">
+              <div className="sticky top-[var(--shell-header-h)] z-10 hidden grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] items-center border-b border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid">
                 <span>Notice</span>
                 {channelColumns.map((c) => (
                   <span key={c.key} className="text-center">{c.short}</span>
@@ -419,7 +419,7 @@ export default function NotificationsTab() {
                             key={event.eventKey}
                             // Phone: the notice on top, its channels in a row under it
                             // (labelled). Wider: one grid row under the column header.
-                            className="border-b border-border/50 px-3 py-2 last:border-b-0 sm:grid sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_2.75rem] sm:items-center sm:py-1.5"
+                            className="border-b border-border/50 px-3 py-2 last:border-b-0 sm:grid sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] sm:items-center sm:py-1.5"
                           >
                             <div className="min-w-0 py-1">
                               <div className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
@@ -472,7 +472,10 @@ export default function NotificationsTab() {
                                 </label>
                               );
                             })}
-                            <div className="ml-auto flex justify-center sm:ml-0">
+                            {/* A spacer pushes the reset right on a phone: the
+                                slot holding a tap button adds no margin. */}
+                            <span aria-hidden className="flex-1 sm:hidden" />
+                            <div className="flex justify-center">
                               {scopeId && hasOwnRow ? (
                                 <ResetTapButton
                                   variant="transparent"
