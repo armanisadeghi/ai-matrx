@@ -21,6 +21,10 @@
 
 import { useEffect, useState } from "react";
 import { CostBadge } from "@/components/cost/CostBadge";
+import { InfoHint } from "@/components/official/InfoHint";
+import { callApi } from "@/lib/api/call-api";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import type { paths } from "@/types/python-generated/api-types";
 import { supabase } from "@/utils/supabase/client";
 import { myRunsCreatedBy } from "./encore/service";
 
@@ -132,7 +136,74 @@ export function useLastRunCost(
   return read && read.masterworkId === masterworkId ? read.cost : undefined;
 }
 
-/** "Last run · 27,800 points" beside Run it; "Last run · —" before any priced run. */
+/**
+ * THE PRICE BEFORE THE FIRST RUN (cold walk 24, defect F). Until a Masterwork
+ * has run, `useLastRunCost` is null and the first run — the one a first-time
+ * Expert makes — was unpriced. aidream
+ * `services/masterworks/bench/service.py::estimated_first_run_cost_usd` prices
+ * it from the newest finished runs of like Masterworks (same kind, same number
+ * of AI steps when enough share it). A SERVER read on purpose: those runs are
+ * other people's, which row security never shows her; only the median leaves.
+ *
+ * Becomes `satisfies keyof paths` once `pnpm sync-types` picks the route up
+ * (the BENCH_PROOF_PATH precedent).
+ */
+export const RUN_ESTIMATE_PATH =
+  "/masterworks/{masterwork_id}/run-estimate" as keyof paths;
+
+interface RunEstimateWire {
+  estimated_cost_usd: number | null;
+  priced_runs: number;
+  basis: string | null;
+}
+
+/**
+ * `undefined` while reading (or not asked), `null` when the server has no
+ * estimate or the read failed — the box then says "—", never a dead space —
+ * else USD.
+ */
+export function useFirstRunEstimate(
+  masterworkId: string,
+  enabled: boolean,
+): number | null | undefined {
+  const dispatch = useAppDispatch();
+  const [read, setRead] = useState<{
+    masterworkId: string;
+    cost: number | null;
+  } | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    Promise.resolve(
+      dispatch(
+        callApi({
+          path: RUN_ESTIMATE_PATH,
+          method: "GET",
+          pathParams: { masterwork_id: masterworkId } as never,
+        }),
+      ),
+    )
+      .then((result) => {
+        const wire = (result as { data?: RunEstimateWire }).data;
+        const cost = wire?.estimated_cost_usd;
+        return typeof cost === "number" && cost > 0 ? cost : null;
+      })
+      .catch(() => null)
+      .then((cost) => {
+        if (!cancelled) setRead({ masterworkId, cost });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, masterworkId, enabled]);
+  if (!enabled) return undefined;
+  return read && read.masterworkId === masterworkId ? read.cost : undefined;
+}
+
+/**
+ * "Last run · 27,800 points" beside Run it; before the first priced run,
+ * "Estimate · 12,000 points" from like Masterworks, else "Last run · —".
+ */
 export function MasterworkRunPrice({
   masterworkId,
   refreshKey,
@@ -143,7 +214,21 @@ export function MasterworkRunPrice({
   scope: RunPriceScope;
 }) {
   const cost = useLastRunCost(masterworkId, refreshKey, scope);
+  const estimate = useFirstRunEstimate(masterworkId, cost === null);
   if (cost === undefined) return null;
+  if (cost === null && estimate === undefined) return null;
+  if (cost === null && typeof estimate === "number") {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+        data-masterwork-run-price="estimate"
+      >
+        Estimate
+        <CostBadge usd={estimate} />
+        <InfoHint text="Typical cost of recent runs of Masterworks like this one." />
+      </span>
+    );
+  }
   return (
     <span
       className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"

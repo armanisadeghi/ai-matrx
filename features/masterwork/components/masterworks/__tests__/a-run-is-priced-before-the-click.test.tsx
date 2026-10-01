@@ -72,8 +72,17 @@ jest.mock("../../../unfolding/sealedCases", () => ({
   rulebookIdForMasterwork: () => Promise.resolve(null),
   listSealedCases: () => Promise.resolve([]),
 }));
+// The first-run estimate is the one server read the price makes; every other
+// callApi in the box stays an inert action.
+let estimateWire: unknown = null;
+const apiCalls: { path: string; pathParams?: unknown }[] = [];
 jest.mock("@/lib/api/call-api", () => ({
-  callApi: () => ({ type: "test/call-api" }),
+  callApi: (args: { path: string; pathParams?: unknown }) => {
+    apiCalls.push(args);
+    return String(args.path).endsWith("/run-estimate")
+      ? () => Promise.resolve({ data: estimateWire })
+      : { type: "test/call-api" };
+  },
 }));
 jest.mock("@/components/official/ProTextarea", () => ({
   ProTextarea: () => <textarea aria-label="Masterwork input" />,
@@ -102,6 +111,8 @@ beforeEach(() => {
   root = createRoot(container);
   tables = {};
   filters.length = 0;
+  estimateWire = null;
+  apiCalls.length = 0;
   sessionStorage.clear();
 });
 
@@ -181,6 +192,37 @@ describe("the price of one run", () => {
     const price = container.querySelector('[data-masterwork-run-price="unknown"]');
     expect(price).not.toBeNull();
     expect(price?.textContent).toContain("—");
+  });
+
+  // Cold walk 24, defect F: a new Masterwork read "Last run —", so the first
+  // run — the one a first-time Expert makes — was unpriced.
+  it("prices the FIRST run from like Masterworks, labelled an estimate", async () => {
+    tables = { run: { data: [], error: null } };
+    estimateWire = { estimated_cost_usd: 0.6, priced_runs: 9, basis: "shape" };
+    await renderBox();
+    expect(apiCalls).toContainEqual(
+      expect.objectContaining({
+        path: "/masterworks/{masterwork_id}/run-estimate",
+        pathParams: { masterwork_id: MASTERWORK_ID },
+      }),
+    );
+    const price = container.querySelector('[data-masterwork-run-price="estimate"]');
+    expect(price).not.toBeNull();
+    expect(price?.textContent).toContain("Estimate");
+    // 0.60 × 20,000 points per dollar.
+    expect(price?.textContent).toContain("12,000 points");
+    expect(container.textContent).not.toContain("Last run");
+  });
+
+  it("never asks for an estimate once a run has been priced", async () => {
+    tables = {
+      run: { data: [{ id: "run-1" }], error: null },
+      node_outcome: { data: [{ run_id: "run-1", cost: "1.39" }], error: null },
+    };
+    estimateWire = { estimated_cost_usd: 0.6, priced_runs: 9, basis: "shape" };
+    await renderBox();
+    expect(apiCalls.some((c) => c.path.endsWith("/run-estimate"))).toBe(false);
+    expect(container.querySelector('[data-masterwork-run-price="known"]')).not.toBeNull();
   });
 
   it("never blanks the box when the read fails", async () => {
