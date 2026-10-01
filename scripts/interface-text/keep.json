@@ -1,0 +1,12 @@
+{
+  "_about": "Interface text Arman approved or wrote. The detector never flags a string listed here, and no sweep may change it. Add an entry only on Arman's word (his review-page verdict 'keep' or 'restore', or his own text found by check-owner-words). Matching is on the normalized text; `file` narrows it to one file when present.",
+  "keep": [
+    {
+      "text": "CRT and TV are consumer signals; enterprise is where the money is. The word free massively reduces value…",
+      "file": "features/admin/shared-knowledge/packs/ProposePackDialog.tsx",
+      "reason": "Arman's own expert ruling, used as the example placeholder; round 1 shortened it and was reverted",
+      "by": "check-owner-words",
+      "on": "2026-09-30"
+    }
+  ]
+}

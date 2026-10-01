@@ -87,7 +87,11 @@ const HEADER_COMPONENT = /(Page|Route|Section|Panel|Shell|Screen|Card)?Header$|^
 const PROMO_COMPONENTS = /^(ModuleLanding|ModuleSignInGate|MarketingHero|LandingHero)$/;
 
 /** Promotional surfaces and documentation surfaces (their text IS the content) — prose is allowed there. */
-const PROMO = [/^app\/\(public\)\//, /\/official-components\//, /\/documentation\/feature-docs\//, /\/module-landing\//];
+const PROMO = [
+  /^app\/\(public\)\//, /\/module-landing\//, /\/landing\//, // promotional
+  /\/official-components\//, /\/documentation\/feature-docs\//, // documentation: the text is the content
+  /^app\/\(core\)\/[^/]+\/admin\/page\.tsx$/, // per-feature admin maps (features/admin/FEATURE.md): an inventory written for maintainers
+];
 /** Developer demo pages — scanned only with --include-dev. */
 const DEV = [/^app\/\(dev\)\//, /\/demos?\//, /\.dev\.tsx$/, /\/lab\//, /\/test-bench\//, /\/bakeoff\//];
 const SKIP = [
@@ -240,6 +244,19 @@ const leaksIn = (t) => LEAKS.filter(([re]) => re.test(t)).map(([, why]) => why);
 // Scan one file
 // ---------------------------------------------------------------------------
 
+/** Arman-approved strings (keep.json): never flagged, never changed by a sweep. */
+const KEEP = (() => {
+  try {
+    const raw = JSON.parse(readFileSync(resolve(HERE, "keep.json"), "utf8")).keep ?? [];
+    return raw.map((k) => ({ ...k, norm: normKeep(k.text) }));
+  } catch { return []; }
+})();
+function normKeep(t) { return collapse(String(t)).toLowerCase().replace(/[…"“”'’.,;:!?()\-—–]/g, " ").replace(/\s+/g, " ").trim(); }
+function isKept(file, text) {
+  const n = normKeep(text);
+  return KEEP.some((k) => (!k.file || k.file === file) && n.length > 0 && (n === k.norm || n.startsWith(k.norm) || k.norm.startsWith(n)));
+}
+
 export function scanSource(file, source) {
   const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   collectConsts(sf);
@@ -248,6 +265,7 @@ export function scanSource(file, source) {
   let where = "";
   const push = (rule, node, text, detail) => {
     const t = collapse(text);
+    if (isKept(file, t)) return;
     const n = (t.match(SENTENCE_END) ?? []).length;
     const novel = rule === "implementation-leak" || rule === "page-description" || t.length > NOVEL.chars || n >= NOVEL.sentences;
     findings.push({ file, line: lineOf(node), rule, severity: novel ? 1 : 2, where, chars: t.length, text: t.slice(0, 240), detail });
@@ -507,5 +525,8 @@ function selfTest() {
   console.log(`self-test passed — all ${want.length} rules fire on the 2026-09-30 kg-cost shape; the fixed shape is clean.`);
 }
 
-if (FLAGS.has("--self-test")) selfTest();
-else run();
+// Run only when executed, so other scripts can import scanSource without a full scan.
+if (process.argv[1] && process.argv[1].endsWith("check-interface-text.mjs")) {
+  if (FLAGS.has("--self-test")) selfTest();
+  else run();
+}
