@@ -19,6 +19,7 @@ import { useState } from "react";
 import { AlertTriangle, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -319,9 +320,16 @@ export function PlanAiRunsView({
                           </Section>
                         </>
                       ) : null}
-                      <Section title="Result">
-                        {JSON.stringify(detail.data.result, null, 2)}
-                      </Section>
+                      <div>
+                        <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                          Result
+                        </div>
+                        {/* The answer through the one settled-answer door — a
+                            kind as its component, never as its JSON. */}
+                        <div className="max-h-96 overflow-auto rounded bg-muted/50 p-2">
+                          <AnswerValueView value={detail.data.result} />
+                        </div>
+                      </div>
                       <Section title="What the model was asked">
                         {JSON.stringify(detail.data.request, null, 2)}
                       </Section>

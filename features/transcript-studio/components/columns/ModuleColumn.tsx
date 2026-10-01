@@ -5,6 +5,7 @@ import { ListChecks, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
 import {
@@ -286,7 +287,14 @@ function ModuleSegmentRender({
         onDelete={onDelete}
       >
         <div className="pr-12">
-          <MarkdownStream imagePolicy="ai" content={content} hideCopyButton />
+          {/* A structured payload is drawn as itself (a kind as its kind
+              component), never stringified into markdown; only the explicit
+              edit mode above works on its JSON text. */}
+          {typeof segment.payload === "string" ? (
+            <MarkdownStream imagePolicy="ai" content={content} hideCopyButton />
+          ) : (
+            <AnswerValueView value={segment.payload} />
+          )}
         </div>
       </EditableTextSegmentRow>
     </SegmentWrapper>

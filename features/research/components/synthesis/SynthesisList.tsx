@@ -29,6 +29,7 @@ import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilter
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import MarkdownStream from "@/components/markdown";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
@@ -68,7 +69,11 @@ const hasText = (s: string | null | undefined): s is string =>
 const isTerminalStatus = (status: string): boolean =>
   status === "success" || status === "complete" || status === "failed";
 
-/** Render structured JSON output as a fenced code block — bounded + crash-safe. */
+/**
+ * Structured output as fenced JSON TEXT — for the agent context only (a
+ * right-click agent reads the synthesis as text). Never for display: the
+ * screen draws `result_structured` through `AnswerValueView`.
+ */
 const structuredToMarkdown = (data: unknown): string => {
   try {
     const s = JSON.stringify(data, null, 2);
@@ -253,9 +258,7 @@ function SynthesisCard({
                 contextData={synthesisContextData}
               >
                 <div>
-                  <MarkdownStream imagePolicy="ai"
-                    content={structuredToMarkdown(synthesis.result_structured)}
-                  />
+                  <AnswerValueView value={synthesis.result_structured} />
                 </div>
               </NonEditableContextMenu>
             </div>

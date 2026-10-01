@@ -9,6 +9,7 @@ import { useResearchTags, useResearchSynthesis } from '../../hooks/useResearchSt
 import { useResearchStream } from '../../hooks/useResearchStream';
 import { useStreamDebug } from '../../context/ResearchContext';
 import MarkdownStream from '@/components/MarkdownStream';
+import { AnswerValueView } from '@/components/official/structured-value/AnswerValueView';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import { RichDocumentActions } from '@/features/rich-document/RichDocumentActions';
 import { StoppedEarlyNote } from '../shared/StoppedEarlyNote';
@@ -23,17 +24,6 @@ interface ConsolidationViewProps {
 
 /** A string with real (non-whitespace) content. */
 const hasText = (s: string | null | undefined): s is string => !!s && s.trim().length > 0;
-
-/** Render structured JSON output as a fenced code block — bounded + crash-safe. */
-const structuredToMarkdown = (data: unknown): string => {
-    try {
-        const s = JSON.stringify(data, null, 2);
-        const clipped = s.length > 20000 ? `${s.slice(0, 20000)}\n… (truncated)` : s;
-        return `\`\`\`json\n${clipped}\n\`\`\``;
-    } catch {
-        return '_Structured output could not be displayed._';
-    }
-};
 
 /**
  * Renders a tag's consolidation — the synthesis the backend persists to
@@ -186,7 +176,9 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                             {consolidation.status === 'failed' && (
                                 <StoppedEarlyNote reason={consolidation.error || 'Consolidation stopped early.'} />
                             )}
-                            <MarkdownStream imagePolicy="ai" content={structuredToMarkdown(consolidation.result_structured)} />
+                            {/* The structured value through the one settled-answer door — a kind
+                                as its component, data as a document; never a truncated JSON fence. */}
+                            <AnswerValueView value={consolidation.result_structured} />
                         </div>
                     ) : consolidation && consolidation.error ? (
                         <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">

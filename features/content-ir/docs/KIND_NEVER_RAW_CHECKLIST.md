@@ -133,9 +133,9 @@ Every stream item below adds its case there.
       promoted blocks; a kind goes to `standard/StandardKindRegion` behind one React.lazy edge — loader while
       undecided, broken state + "View source" when unreadable. Covers the static/share path too, which hands
       engine blocks to `StandardBlock`. The kind body is client-only, so share-page HTML carries the loader.)
-- [ ] U2. Research synthesis truncates JSON at 20,000 chars.
-- [ ] U3. Content-plan step rail and AI runs view.
-- [ ] U4. Transcript studio module column.
+- [x] U2. Research synthesis truncates JSON at 20,000 chars. (→ `AnswerValueView`; consolidation too)
+- [x] U3. Content-plan step rail and AI runs view. (kindless artifact + run result → `AnswerValueView`; the request/error sections stay raw on purpose)
+- [x] U4. Transcript studio module column. (object payload → `AnswerValueView`; the explicit edit box keeps JSON text)
 - [ ] U5. Data-table cells and their cell editor.
 
 ## Out of scope (deliberate raw views — keep)

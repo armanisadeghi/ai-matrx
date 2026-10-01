@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/dialog";
 import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { cn } from "@/lib/utils";
 
 import { PIPELINE_STEPS, RUNNABLE_STEP_ACTIONS } from "../types";
@@ -270,10 +271,10 @@ function ArtifactDialog({
               kind ? (
                 <KindInstanceRender kind={kind} value={artifact.content} />
               ) : (
-                <div className="rounded-md border border-border bg-muted/40 p-2">
-                  <pre className="max-h-[55dvh] overflow-auto whitespace-pre-wrap break-words font-mono text-[11px]">
-                    {JSON.stringify(artifact.content, null, 2)}
-                  </pre>
+                // Kindless content through the one settled-answer door —
+                // text as markdown, data as a document; never a JSON dump.
+                <div className="max-h-[55dvh] overflow-auto">
+                  <AnswerValueView value={artifact.content} />
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground">
@@ -382,10 +383,8 @@ export function StepArtifactView({
       {kind ? (
         <KindInstanceRender kind={kind} value={current.content} />
       ) : (
-        <div className="rounded-md border border-border bg-muted/40 p-2">
-          <pre className="max-h-[55dvh] overflow-auto whitespace-pre-wrap break-words font-mono text-[11px]">
-            {JSON.stringify(current.content, null, 2)}
-          </pre>
+        <div className="max-h-[55dvh] overflow-auto">
+          <AnswerValueView value={current.content} />
         </div>
       )}
       <p className="text-[11px] text-muted-foreground">
