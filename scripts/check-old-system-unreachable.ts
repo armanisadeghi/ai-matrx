@@ -97,11 +97,14 @@ export const OLD_READ_DOORS = [
 /** Older-only doors step two's file c retires beside the press's write list. */
 export const EXTRA_WRITE_DOORS = ["create_user_list", "udt_row_words_many"] as const;
 
-/** Old modules (import specifiers) that retire with the older half of the Data tables screen. */
-export const OLD_MODULES = [
-  "@/components/user-generated-table-data",
-  "@/utils/user-table-utls",
-] as const;
+/**
+ * Old modules (import specifiers) that retired with the older half of the Data tables screen. The
+ * `utils/user-table-utls` helpers were folded into `features/data-tables` (lane OLD-READERS-REMOVAL);
+ * a re-created import is RED. `components/user-generated-table-data` is NOT here: what is left of it
+ * is the Sheet layout over the record store (`UserTableViewer` through `features/data-tables/service.ts`),
+ * and the table and door scans above prove it reaches nothing older.
+ */
+export const OLD_MODULES = ["@/utils/user-table-utls"] as const;
 
 /**
  * Older RELATIONS of other campaigns (coordinator ruling 2026-09-27): `content_ir.kind_instance` is
