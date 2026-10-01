@@ -1,4 +1,4 @@
-// scripts/lib/fixture-org.mjs
+// scripts/lib/use-case-org.mjs
 //
 // THE ONE WAY A NODE SCRIPT GETS ITS FIXTURE ORGANIZATION: BY SLUG, REUSED, NEVER MINTED PER RUN.
 //
@@ -19,7 +19,7 @@
 //   * the slug exists but this seat cannot see it -> a different owner holds it
 //
 // Usage:
-//   import { fixtureOrg } from "../lib/fixture-org.mjs";
+//   import { fixtureOrg } from "../lib/use-case-org.mjs";
 //   const { org, fresh } = await fixtureOrg(client, { name: "Ironline Fitness", description, settings });
 
 /**

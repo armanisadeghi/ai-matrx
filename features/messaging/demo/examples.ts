@@ -96,7 +96,7 @@ export const MESSAGE_EXAMPLES: MessageExample[] = [
   example(
     "Links",
     "Markdown",
-    "Here is the [message showcase](/messages-showcase) and an automatic link: https://example.com",
+    "Here is the [message showcase](/messages-showcase) and an automatic link: https://aimatrx.com",
   ),
   example(
     "Long unbroken text",

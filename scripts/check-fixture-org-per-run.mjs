@@ -14,7 +14,7 @@
 //        A suite that only needs the organization for its assertions wraps it in
 //        `begin; … rollback;`; a script that must keep one uses scripts/campaign-tests/_fixture_org.sql.
 //   Node an `org_create` RPC called anywhere under scripts/ except the one helper,
-//        scripts/lib/fixture-org.mjs (`fixtureOrg()` — found by slug, created once).
+//        scripts/lib/use-case-org.mjs (`fixtureOrg()` — found by slug, created once).
 //
 // Fixed-id suites that delete their own row before and after (`:ORG`, a literal uuid, a literal
 // slug) are not this class and pass. `--self-test` plants each violation and proves it is caught.
@@ -27,8 +27,8 @@ const SCAN = join(ROOT, "scripts");
 
 /** Exempt files, each with the reason it is not the class. A stale entry fails too. */
 const ALLOWED = {
-  "scripts/lib/fixture-org.mjs": "the one helper — finds by slug, creates once",
-  "scripts/lib/fixture-org.test.mjs": "the helper's forcing test (in-memory store)",
+  "scripts/lib/use-case-org.mjs": "the one helper — finds by slug, creates once",
+  "scripts/lib/use-case-org.test.mjs": "the helper's forcing test (in-memory store)",
   "scripts/check-fixture-org-per-run.mjs": "this guard's own self-test fixtures",
   "scripts/access-matrix/check-org-ownership.ts":
     "mints prefixed disposable users AND organizations and its teardown verifies zero prefixed rows survive",
@@ -73,7 +73,7 @@ export function sqlFindings(text) {
 export function jsFindings(text) {
   const out = [];
   text.split("\n").forEach((l, i) => {
-    if (/rpc\(\s*["'`]org_create["'`]/.test(l)) out.push({ line: i + 1, what: "calls org_create directly — use fixtureOrg() from scripts/lib/fixture-org.mjs" });
+    if (/rpc\(\s*["'`]org_create["'`]/.test(l)) out.push({ line: i + 1, what: "calls org_create directly — use fixtureOrg() from scripts/lib/use-case-org.mjs" });
   });
   return out;
 }
@@ -132,7 +132,7 @@ for (const rel of Object.keys(ALLOWED)) {
 if (findings.length) {
   console.log(`FIXTURE ORG PER RUN: ${findings.length} finding(s)\n`);
   for (const f of findings) console.log(`  ${f}`);
-  console.log("\nRemedy: a suite that only asserts builds inside begin; … rollback;. A script that must keep an organization gets it BY SLUG: fixtureOrg() (scripts/lib/fixture-org.mjs) or \\i scripts/campaign-tests/_fixture_org.sql.");
+  console.log("\nRemedy: a suite that only asserts builds inside begin; … rollback;. A script that must keep an organization gets it BY SLUG: fixtureOrg() (scripts/lib/use-case-org.mjs) or \\i scripts/campaign-tests/_fixture_org.sql.");
   process.exit(1);
 }
 console.log("FIXTURE ORG PER RUN: 0 findings — no script under scripts/ mints a fixture organization per run.");

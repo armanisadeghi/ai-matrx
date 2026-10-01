@@ -88,7 +88,7 @@ begin
      where tg.tgrelid = c.store::regclass and not tg.tgisinternal and tg.tgenabled <> 'D'
        and (tg.tgtype & 2) = 2 and (tg.tgtype & 16) = 16 and (tg.tgtype & 1) = 1
      order by tg.tgname collate "C" desc limit 1;
-    if v_last is distinct from 'zzzzz_no_change_keeps_its_version' or v_args is distinct from c.args then
+    if v_last is distinct from 'zzzzz_no_change_keeps_its_version' or v_args is distinct from c.args then  -- the trigger's name
       raise exception '4: the last enabled before-row UPDATE trigger on % is % with args (%) — expected zzzzz_no_change_keeps_its_version (%)',
         c.store, v_last, v_args, c.args;
     end if;

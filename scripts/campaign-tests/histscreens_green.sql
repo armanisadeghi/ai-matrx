@@ -647,7 +647,7 @@ begin
   select count(*) into v_n from custom.record
    where organization_id = v_org and deleted_at is null and data_class = 'record';
   perform set_config('role', 'authenticated', true);
-  raise notice 'TEARDOWN — % live business records left in the throwaway organization (the whole transaction is rolled back).', v_n;
+  raise notice 'TEARDOWN — % live business records left in the rolled-back organization (the whole transaction is rolled back).', v_n;
 
   raise notice '=== ALL PARTS PASSED ===';
 end;

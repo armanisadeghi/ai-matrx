@@ -13,7 +13,7 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: () => builder }) },
 }));
 jest.mock("@/utils/supabase/claimsUser", () => ({
-  getClaimsUser: async () => ({ data: { user: { id: "user-1" } } }),
+  getClaimsUser: async () => ({ data: { user: { id: "c4a1e2d7-5b3f-4e88-9a6c-0d2f7b81e395" } } }),
 }));
 jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
 

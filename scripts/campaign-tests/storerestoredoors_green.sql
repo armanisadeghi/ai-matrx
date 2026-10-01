@@ -101,7 +101,7 @@ begin
   if v_f_note is null then raise exception 'SETUP: the spore test note column was not made'; end if;
 
   v_r1 := custom.record_write(v_org, v_tbl, jsonb_build_object('unit', 'Autoclave 2 (Operatory B)',
-            'technician', 'Dana Whitfield', 'spore_test_note', 'Weekly spore test passed, strip lot 44821'));
+            'technician', 'Marcus Tillery', 'spore_test_note', 'Weekly spore test passed, strip lot 44821'));
   v_r2 := custom.record_write(v_org, v_tbl, jsonb_build_object('unit', 'Statim 5000 (Hygiene room)',
             'technician', 'Luis Ortega', 'spore_test_note', 'Door gasket replaced; retest scheduled Monday'));
 
@@ -114,7 +114,7 @@ begin
   else raise notice 'F1 ok: %', v_title; end if;
 
   -- ── F2 the values stayed, and hold after another column is written ─────────────────────────
-  perform custom.record_update(v_org, v_r1, jsonb_build_object('technician', 'Dana Whitfield, RDA'));
+  perform custom.record_update(v_org, v_r1, jsonb_build_object('technician', 'Marcus Tillery, RDA'));
   reset role;
   select count(*) into v_n from custom.record r
    where r.organization_id = v_org and r.id in (v_r1, v_r2) and r.data ? 'spore_test_note';

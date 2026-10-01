@@ -8,7 +8,7 @@ import { config as loadEnv } from "dotenv";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { fixtureOrg } from "../../lib/fixture-org.mjs";
+import { fixtureOrg } from "../../lib/use-case-org.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.resolve(__dirname, "../../../.env.local"), quiet: true });

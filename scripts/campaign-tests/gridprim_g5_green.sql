@@ -84,10 +84,10 @@ begin
   -- ══ PART 3 — AN EXAMPLE IS A REAL BUSINESS. ══════════════════════════════════════════════
   perform set_config('request.jwt.claims', c_admin_j, true);
   begin
-    perform custom.table_from_example(v_org, v_home, jsonb_build_object('business', 'Acme Veterinary',
+    perform custom.table_from_example(v_org, v_home, jsonb_build_object('business', 'Acme Veterinary',  -- matrx-real-data:allow Part 3 asserts the door REFUSES a cartoon company and lorem ipsum; the junk is the input under test
       'tables', jsonb_build_array(jsonb_build_object('token', 'patient', 'name', 'Patients', 'titleField', 'name',
         'fields', jsonb_build_array(jsonb_build_object('key', 'name', 'label', 'Name', 'parityType', 'text')), 'rows', '[]'::jsonb))));
-    raise exception '3a: an example called Acme was built';
+    raise exception '3a: an example called Acme was built';  -- matrx-real-data:allow Part 3 asserts the door REFUSES a cartoon company and lorem ipsum; the junk is the input under test
   exception when check_violation then
     get stacked diagnostics v_caught = message_text;
   end;
@@ -95,11 +95,11 @@ begin
     perform custom.table_from_example(v_org, v_home, jsonb_build_object('business', 'Cascade Mobile Grooming',
       'tables', jsonb_build_array(jsonb_build_object('token', 'booking', 'name', 'Bookings', 'titleField', 'pet',
         'fields', jsonb_build_array(jsonb_build_object('key', 'pet', 'label', 'Pet', 'parityType', 'text')),
-        'rows', jsonb_build_array(jsonb_build_object('key', 'b1', 'values', jsonb_build_object('pet', 'Lorem ipsum dolor')))))));
-    raise exception '3b: an example row of lorem ipsum was built';
+        'rows', jsonb_build_array(jsonb_build_object('key', 'b1', 'values', jsonb_build_object('pet', 'Lorem ipsum dolor')))))));  -- matrx-real-data:allow Part 3 asserts the door REFUSES a cartoon company and lorem ipsum; the junk is the input under test
+    raise exception '3b: an example row of lorem ipsum was built';  -- matrx-real-data:allow Part 3 asserts the door REFUSES a cartoon company and lorem ipsum; the junk is the input under test
   exception when check_violation then null;
   end;
-  raise notice '3 PASS — "Acme Veterinary" and a row of lorem ipsum are refused by name: "%".', v_caught;
+  raise notice '3 PASS — "Acme Veterinary" and a row of lorem ipsum are refused by name: "%".', v_caught;  -- matrx-real-data:allow Part 3 asserts the door REFUSES a cartoon company and lorem ipsum; the junk is the input under test
   raise notice 'GRIDPRIM G5 GREEN — every part passed.';
 end
 $t$;

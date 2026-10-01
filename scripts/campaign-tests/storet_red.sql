@@ -239,7 +239,7 @@ begin
   -- same reason BLOCK 2's is: it used to arrive with the frozen `_field_document_for` snapshot
   -- inside `storet_the_field_door_carries_out_the_change_down.sql`, and that snapshot now
   -- reverts LIMITS-FIX's one-word rule and four other lanes' arms (see the note at the top of
-  -- this file). A copy of the LIVE door is made under a throwaway name, and the door itself is
+  -- this file). A copy of the LIVE door is made under a different name, and the door itself is
   -- replaced by three lines that call the copy and throw the caller's two words away — which
   -- is precisely what T7 found it doing. Derived every run, so it can never go stale, and
   -- everything else about the door stays exactly as it is today.
@@ -249,7 +249,7 @@ begin
     v_src  := pg_get_functiondef('custom._field_document_for(uuid,uuid,jsonb)'::regprocedure);
     v_copy := replace(v_src, 'FUNCTION custom._field_document_for(', 'FUNCTION custom._field_document_for_live_copy(');
     if v_copy = v_src then
-      raise exception 'storet_red: custom._field_document_for could not be copied under a throwaway name, so T7''s defect cannot be derived from the live door. Re-read it and re-write this block.';
+      raise exception 'storet_red: custom._field_document_for could not be copied under a different name, so T7''s defect cannot be derived from the live door. Re-read it and re-write this block.';
     end if;
     execute v_copy;
     execute $fdf$

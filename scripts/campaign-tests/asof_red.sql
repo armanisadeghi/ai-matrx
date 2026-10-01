@@ -18,7 +18,7 @@
 -- — internals with no client grant — from the role that OWNS `custom.record`, where
 -- `custom.assert_client_may_reach` returns on its first line. So it measured the store's
 -- internals and CREATED NOTHING, which also meant it could never ask an access question at all.
--- It now builds ONE disposable organization through the doors, takes the seat `authenticated`
+-- It now builds ONE rolled-back organization through the doors, takes the seat `authenticated`
 -- and PROVES it (PART 0), and asks every clause through the door a signed-in person reaches:
 --
 --   RED 1  the one-record question      → `custom.query_can_see`, timed from the seat over an
@@ -590,7 +590,7 @@ do $t$
 declare v_body text;
 begin
   if exists (select 1 from iam.organizations where slug like 'compass-route-relocation-desk-%') then
-    raise exception 'ROLLBACK DID NOT TAKE — this suite''s throwaway organization is still there.';
+    raise exception 'ROLLBACK DID NOT TAKE — this suite''s rolled-back organization is still there.';
   end if;
   v_body := pg_get_functiondef('custom.visibility_parity()'::regprocedure);
   if v_body ~ 'd\.depth > 8' then
@@ -607,7 +607,7 @@ begin
                     and pg_get_function_result(p.oid) ~ 'held_from') then
     raise exception 'ROLLBACK DID NOT TAKE — the audit door has lost its interval columns.';
   end if;
-  raise notice 'ROLLBACK VERIFIED — every restored body is gone, the STORE-ASOF bodies are live, and the throwaway organization left nothing behind.';
+  raise notice 'ROLLBACK VERIFIED — every restored body is gone, the STORE-ASOF bodies are live, and the rolled-back organization left nothing behind.';
 end $t$;
 
 \if :asof_small_server

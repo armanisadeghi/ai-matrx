@@ -30,7 +30,7 @@ declare
   c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   c_mail    constant text := 'test@test.com';
-  v_org     uuid := current_setting('matrx.fixture_org')::uuid;
+  v_org     uuid := current_setting('matrx.use_case_org')::uuid;
   v_home    uuid; v_cust uuid; v_jobs uuid; v_invs uuid; v_crews uuid;
   v_her     uuid; v_him uuid; v_portal uuid; v_out jsonb;
 begin

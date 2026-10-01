@@ -4,7 +4,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 import { writeFileSync, readFileSync } from "node:fs";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { fixtureOrg } from "../lib/fixture-org.mjs";
+import { fixtureOrg } from "../lib/use-case-org.mjs";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local"), override: true });
 

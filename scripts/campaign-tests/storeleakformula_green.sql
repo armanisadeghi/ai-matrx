@@ -58,7 +58,7 @@ begin
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
   values (v_org, 'Birchwood Avenue Renovation ' || substr(v_org::text, 1, 8),
-          'birchwood-slf-' || substr(v_org::text, 1, 8), 'BAR', c_admin);
+          'birchwood-slf-' || substr(v_org::text, 1, 8), 'BWR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');

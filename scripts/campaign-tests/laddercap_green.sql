@@ -30,7 +30,7 @@
 -- EVERY ASSERTED CLAUSE RUNS AS `authenticated` CARRYING HER CLAIMS, through `custom.my_level`
 -- and `custom.share_grant` — the doors a browser reaches. The fixture writes step OUT and say so.
 --
--- THE IDENTITIES. `admin@admin.com` owns the throwaway organization; `test@test.com` (Dana) is a
+-- THE IDENTITIES. `admin@admin.com` owns the rolled-back organization; `test@test.com` (Dana) is a
 -- plain MEMBER of it. Nobody's own records are touched. It signs nobody in and reads no credential.
 
 \set ON_ERROR_STOP on
@@ -343,7 +343,7 @@ begin
 end $t$;
 commit;
 
--- ═══════════════════════════ TEARDOWN — the throwaway organization leaves nothing behind.
+-- ═══════════════════════════ TEARDOWN — the rolled-back organization leaves nothing behind.
 begin;
 set local statement_timeout = '60s';
 select set_config('app.actor_system', 'laddercap_green_suite', true);
@@ -369,7 +369,7 @@ declare v_n int;
 begin
   select count(*) into v_n from custom.levels_raised_by_a_less_specific_rung();
   if v_n <> 0 then raise exception 'TEARDOWN FAILED — census is % after teardown', v_n; end if;
-  raise notice 'TEARDOWN PASSED — census zero, the throwaway organization is gone.';
+  raise notice 'TEARDOWN PASSED — census zero, the rolled-back organization is gone.';
   raise notice 'LADDER-CAP GREEN: ALL PARTS PASSED.';
 end $t$;
 commit;

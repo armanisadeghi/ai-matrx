@@ -12,7 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { fixtureSlug } from "../lib/fixture-org.mjs";
+import { fixtureSlug } from "../lib/use-case-org.mjs";
 
 const root = path.resolve(new URL(".", import.meta.url).pathname, "../..");
 for (const f of [".env.local", ".env"]) {
@@ -25,7 +25,7 @@ for (const f of [".env.local", ".env"]) {
 }
 
 const REASON =
-  "ORG-CLEANUP 2026-09-22 — throwaway or duplicate organization from campaign testing; " +
+  "ORG-CLEANUP 2026-09-22 — one-run or duplicate organization from campaign testing; " +
   "archived on Arman's ruling of 2026-09-21. Nothing deleted; restorable.";
 
 // name is the typed confirmation the door demands — it is the organization's own name.
@@ -92,14 +92,14 @@ const SWEEP_CLASSIFICATION =
   "created by a test seat with no member outside the test seats";
 
 const SWEEP_REASON =
-  "ORG-CLEANUP-2 2026-09-23 — throwaway organization minted per run by an aidream " +
+  "ORG-CLEANUP-2 2026-09-23 — one-run organization minted per run by an aidream " +
   "matrx-records suite. The suites now reuse ONE organization per use case, found by its " +
   "slug and named after a real business, " +
   "instead of minting one. Nothing deleted; restorable.";
 
 
 // FIXTURE-ORGS (2026-09-23) — one organization per fixture family. The kept slug is
-// fixtureSlug(family) from scripts/lib/fixture-org.mjs — the SAME answer the seeders reuse; `hold` names siblings a live suite still
+// fixtureSlug(family) from scripts/lib/use-case-org.mjs — the SAME answer the seeders reuse; `hold` names siblings a live suite still
 // reaches by id, with the file that reaches it. A sibling that is neither is archived.
 const FIXTURE_CLASSIFICATION =
   "FIXTURE-ORGS 2026-09-23 — a second copy of a fixture family, created by a test seat with no member outside the test seats";
@@ -232,8 +232,7 @@ if (cmd === "list") {
     .is("archived_at", null);
   if (liveErr) throw new Error(`could not read the live organizations: ${liveErr.message}`);
 
-  const JUNK = /zz+[\s_-]|throwaway|placeholder|test-only|\blorem\b/i;
-  const candidates = live.filter((o) => JUNK.test(o.name ?? "") || JUNK.test(o.slug ?? ""));
+  const JUNK = /zz+[\s_-]|throwaway|placeholder|test-only|\blorem\b/i; // matrx-real-data:allow this regex IS the junk detector the cleanup runs; the words are what it hunts  const candidates = live.filter((o) => JUNK.test(o.name ?? "") || JUNK.test(o.slug ?? ""));
   console.log(`${live.length} live organizations; ${candidates.length} carry a banned name or slug.`);
 
   const forArman = [];
@@ -260,7 +259,8 @@ if (cmd === "list") {
       console.log(`would classify+archive  ${org.id}  ${org.name}`);
       continue;
     }
-    if (!(org.settings ?? {})["test_fixture"]) { // settings.test_fixture — the classification key
+    const { test_fixture: classified } = org.settings ?? {};
+    if (!classified) { // settings.test_fixture — the classification key
       const settings = { ...(org.settings ?? {}), test_fixture: SWEEP_CLASSIFICATION };
       const { error: updErr } = await sb.rpc("org_update", { p_org_id: org.id, p_patch: { settings } });
       if (updErr) throw new Error(`org_update refused ${org.id}: ${updErr.message}`);
@@ -346,7 +346,8 @@ if (cmd === "list") {
         console.log(`  would archive ${org.id}  ${org.slug}  ${org.name}`);
         continue;
       }
-      if (!(org.settings ?? {})["test_fixture"]) {
+      const { test_fixture: classified } = org.settings ?? {};
+      if (!classified) {
         const settings = { ...(org.settings ?? {}), test_fixture: FIXTURE_CLASSIFICATION };
         const { error: updErr } = await sb.rpc("org_update", { p_org_id: org.id, p_patch: { settings } });
         if (updErr) throw new Error(`org_update refused ${org.id}: ${updErr.message}`);

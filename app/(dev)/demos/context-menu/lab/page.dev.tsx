@@ -351,7 +351,7 @@ function IdentityBanner({
               {/* ALWAYS the uuid cell — only the TOKEN varies. Token-less still
                   gives short id + full value on hover + one-click copy, and
                   adds no route. Dropping to a plain span to avoid a wrong door
-                  would throw away the copy affordance too. */}
+                  would discard the copy affordance too. */}
               <MatrxUuidCell
                 value={scopeRef.scopeId}
                 token={scopeTokenForRef ?? undefined}

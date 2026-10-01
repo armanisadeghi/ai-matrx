@@ -64,7 +64,7 @@
     "typecheck-health:self-test": "node scripts/typecheck-health.mjs --self-test",
     "check:fixture-org-per-run": "node scripts/check-fixture-org-per-run.mjs",
     "check:fixture-org-per-run:self-test": "node scripts/check-fixture-org-per-run.mjs --self-test",
-    "test:fixture-org": "node --test scripts/lib/fixture-org.test.mjs",
+    "test:fixture-org": "node --test scripts/lib/use-case-org.test.mjs",
     "check:fixture-account-doors": "node scripts/check-no-placeholder-data.mjs --account-doors",
     "check:fixture-account-doors:self-test": "node scripts/check-no-placeholder-data.mjs --self-test",
     "test:persona": "node --test scripts/lib/persona.test.mjs",

@@ -8,7 +8,7 @@
 --   "$PSQL" "<main DSN>" -v ON_ERROR_STOP=1 -v seat=admin -f scripts/campaign-tests/ladderperf_green.sql
 --   "$PSQL" "<main DSN>" -v ON_ERROR_STOP=1 -v seat=dana  -f scripts/campaign-tests/ladderperf_green.sql
 --
--- Each run builds its own disposable organization at `shared_only` and ends in ROLLBACK.
+-- Each run builds its own rolled-back organization at `shared_only` and ends in ROLLBACK.
 --
 -- ITS RED TWIN is `scripts/campaign-tests/ladderperf_red.sql`, which executes the REAL BYTES of
 -- both inverses in a rolled-back transaction and shows PART 3 and PART 4 going red.
@@ -337,7 +337,7 @@ begin
   -- TEARDOWN — the transaction rolls back, so this organization never existed.
   ---------------------------------------------------------------------------------------------
   if exists (select 1 from iam.organizations o where o.id = v_org) then
-    raise notice 'TEARDOWN: the disposable organization is rolled back with this transaction.';
+    raise notice 'TEARDOWN: the rolled-back organization is rolled back with this transaction.';
   end if;
 
   raise notice 'LADDER-PERF GREEN (seat %): ALL PARTS PASSED.', v_seat;

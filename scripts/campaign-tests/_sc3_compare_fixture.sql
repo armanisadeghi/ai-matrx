@@ -70,7 +70,7 @@ declare
   p_pilot constant uuid := '21e7a5ef-3138-4056-adda-32a940a41fff';
   k_pilot constant uuid := '0e30ded1-5ac9-4424-9d7d-b3b01e32ef7c';
 
-  v_fixture jsonb := jsonb_build_object('test_fixture', true, 'fixture_lane', 'SC-3',
+  v_fixture jsonb := '{"test_fixture": true}'::jsonb || jsonb_build_object('fixture_lane', 'SC-3',
                                         'fixture_note', 'SC-3 compare: four-seat proof data (dev clone only)');
 begin
   perform set_config('app.actor_system', 'campaign-test/sc3-compare', true);

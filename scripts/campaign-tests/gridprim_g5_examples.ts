@@ -41,8 +41,8 @@ async function main() {
       await client.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: ADMIN, role: "authenticated" })]);
       await client.query(
         `insert into iam.organizations (id, name, slug, abbreviation, created_by, settings)
-         values ($1, $2, $3, 'UC', $4, jsonb_build_object('test_fixture', $5::text))`,
-        [org, useCase.business.name, `${useCase.id}-${org.slice(0, 8)}`, ADMIN, useCase.cleanupTag]);
+         values ($1, $2, $3, 'UC', $4, $5::jsonb)`,
+        [org, useCase.business.name, `${useCase.id}-${org.slice(0, 8)}`, ADMIN, JSON.stringify({ test_fixture: useCase.cleanupTag })]);
       await client.query(`insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
                           values ($1, 'organization', $1, $2, 'owner', 'active')`, [org, ADMIN]);
       await client.query(`insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)

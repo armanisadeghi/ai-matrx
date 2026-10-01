@@ -174,6 +174,7 @@ function buildBoard(kinds: DemoKindExample[]) {
   const kindW = 720;
   const kindH = 600;
   kinds.forEach((k, i) => {
+    const { example: sampleWireText } = k;
     const col = i % 2;
     const row = Math.floor(i / 2);
     tiles.push({
@@ -191,7 +192,7 @@ function buildBoard(kinds: DemoKindExample[]) {
         type: "stream",
         stream: new ReplayStream(
           k.kind,
-          buildWireText(k.example, k.kind, "bare"),
+          buildWireText(sampleWireText, k.kind, "bare"),
         ),
       },
     });

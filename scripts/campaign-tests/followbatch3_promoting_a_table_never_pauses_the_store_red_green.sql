@@ -114,9 +114,9 @@ begin
   end if;
 
   -- ══ T3 ══
-  perform custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Maria Alvarez', 'email', 'maria@example.com', 'job_number', 'RP-1042', '_actor', 'user'));
+  perform custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Maria Alvarez', 'email', 'maria.alvarez@fixtures.aimatrx.com', 'job_number', 'RP-1042', '_actor', 'user'));
   begin
-    perform custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Tom Brooks', 'email', 'tom@example.com', 'job_number', 'RP-1042', '_actor', 'user'));
+    perform custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Tom Brooks', 'email', 'tom.brooks@fixtures.aimatrx.com', 'job_number', 'RP-1042', '_actor', 'user'));
     raise exception 'T3 RED: a second consult took job number RP-1042 — nothing keeps a unique promoted field apart';
   exception when unique_violation then
     get stacked diagnostics v_txt = message_text;

@@ -17,7 +17,7 @@
 -- through leaves nothing behind for the next one, and the last block is a CENSUS that fails
 -- unless every trace is gone.
 --
--- THE IDENTITIES. `admin@admin.com` owns both throwaway organizations; `test@test.com` (Dana)
+-- THE IDENTITIES. `admin@admin.com` owns both rolled-back organizations; `test@test.com` (Dana)
 -- is a plain MEMBER of the first and belongs to the second not at all. Nobody's own records
 -- are touched: everything under test is created by this file inside organizations this file
 -- created. It signs nobody in and reads no credential.
@@ -563,7 +563,7 @@ begin
        + (select count(*) from custom.visibility_epoch where organization_id in ('2f5e0000-0000-4a00-8a00-000000000a01','2f5e0000-0000-4a00-8a00-000000000b01'))
        + (select count(*) from iam.permissions where id = '2f5e0000-0000-4a00-8a00-000000009901')
     into v_n;
-  if v_n <> 0 then raise exception 'TEARDOWN FAILED — % row(s) of the throwaway organizations survive. Census is not zero.', v_n; end if;
-  raise notice 'TEARDOWN PASSED — census zero: nothing of the two throwaway organizations remains.';
+  if v_n <> 0 then raise exception 'TEARDOWN FAILED — % row(s) of the rolled-back organizations survive. Census is not zero.', v_n; end if;
+  raise notice 'TEARDOWN PASSED — census zero: nothing of the two rolled-back organizations remains.';
   raise notice 'ALL PARTS PASSED (1 member default visibility, 2 cross-organization links + masked read, 3 who could see this on a date, 4 the field-type migration row)';
 end $t$;

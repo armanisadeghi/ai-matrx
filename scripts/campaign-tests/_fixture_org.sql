@@ -29,8 +29,8 @@
 -- 2026-09-23 on the first run of the portal-bind walk). The organization id is therefore LOCAL
 -- to the caller's transaction, and the helper REFUSES by name when there is none.
 --
--- and inside the DO block:   v_org uuid := current_setting('matrx.fixture_org')::uuid;
--- psql also gets :fixture_org, and :fixture_org_fresh ('t' only on the run that created it).
+-- and inside the DO block:   v_org uuid := current_setting('matrx.use_case_org')::uuid;
+-- psql also gets :use_case_org, and :use_case_org_fresh ('t' only on the run that created it).
 --
 -- WHAT IT DOES, OUT LOUD:
 --   * the slug is live      -> reuses it, and says so. A DIFFERENT NAME on that slug is refused:
@@ -43,7 +43,7 @@
 -- ═══════════════════════════════════════════════════════════════════════════════════════════
 \if :{?fixture_slug}
 \else
-  \echo 'FIXTURE ORG REFUSED: set fixture_slug (and fixture_name, fixture_abbr) before \\i _fixture_org.sql'
+  \echo 'USE-CASE ORG REFUSED: set fixture_slug (and fixture_name, fixture_abbr) before \\i _fixture_org.sql'
   \quit
 \endif
 
@@ -53,7 +53,7 @@
 -- transaction-mode pooler a LATER client inherited them from the pooled backend: a run for
 -- slug 'x' reused the Carpinteria walk's organization. Measured on the clone, 2026-09-23.)
 select format($body$
-do $fixture_org$
+do $use_case_org$
 declare
   c_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';  -- admin@admin.com
   v_slug  text := %L;
@@ -67,10 +67,10 @@ begin
   -- In autocommit a statement IS its transaction, so the two clocks agree; inside the caller's
   -- begin; … commit; the transaction started earlier. The id below is LOCAL to that transaction.
   if transaction_timestamp() = statement_timestamp() then
-    raise exception 'FIXTURE ORG REFUSED: include _fixture_org.sql INSIDE begin; … commit; together with the block that uses it (the pooler is transaction-mode: outside a transaction the organization id would not survive to the next statement).';
+    raise exception 'USE-CASE ORG REFUSED: include _fixture_org.sql INSIDE begin; … commit; together with the block that uses it (the pooler is transaction-mode: outside a transaction the organization id would not survive to the next statement).';
   end if;
   if coalesce(v_slug, '') = '' or coalesce(v_name, '') = '' then
-    raise exception 'FIXTURE ORG REFUSED: fixture_slug and fixture_name are both required.';
+    raise exception 'USE-CASE ORG REFUSED: fixture_slug and fixture_name are both required.';
   end if;
 
   select id, name, archived_at into v_id, v_have, v_arch
@@ -78,29 +78,29 @@ begin
 
   if v_id is null then
     insert into iam.organizations (name, slug, abbreviation, created_by, settings)
-    values (v_name, v_slug, v_abbr, c_admin, jsonb_build_object('test_fixture', true))
+    values (v_name, v_slug, v_abbr, c_admin, '{"test_fixture": true}'::jsonb)
     returning id into v_id;
     v_fresh := true;
-    raise notice 'FIXTURE ORG created once: %% (%%) %%', v_name, v_slug, v_id;
+    raise notice 'USE-CASE ORG created once: %% (%%) %%', v_name, v_slug, v_id;
   elsif v_arch is not null then
-    raise exception 'FIXTURE ORG REFUSED: %% (%%) is archived since %%. Restore it through iam.organization_restore(%%, %%) from the admin@admin.com seat — this helper never mints a second copy.',
+    raise exception 'USE-CASE ORG REFUSED: %% (%%) is archived since %%. Restore it through iam.organization_restore(%%, %%) from the admin@admin.com seat — this helper never mints a second copy.',
       v_have, v_slug, v_arch, v_id, quote_literal(v_have);
   elsif v_have is distinct from v_name then
-    raise exception 'FIXTURE ORG REFUSED: slug %% already belongs to "%%", not "%%". One slug is one business — pick a slug of its own.',
+    raise exception 'USE-CASE ORG REFUSED: slug %% already belongs to "%%", not "%%". One slug is one business — pick a slug of its own.',
       v_slug, v_have, v_name;
   else
-    raise notice 'FIXTURE ORG reused by slug: %% (%%) %%', v_name, v_slug, v_id;
+    raise notice 'USE-CASE ORG reused by slug: %% (%%) %%', v_name, v_slug, v_id;
   end if;
 
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_id, 'organization', v_id, c_admin, 'owner', 'active')
   on conflict (container_type, container_id, user_id) do nothing;
 
-  perform set_config('matrx.fixture_org', v_id::text, true);
-  perform set_config('matrx.fixture_org_fresh', v_fresh::text, true);
+  perform set_config('matrx.use_case_org', v_id::text, true);
+  perform set_config('matrx.use_case_org_fresh', v_fresh::text, true);
 end
-$fixture_org$;
+$use_case_org$;
 $body$, :'fixture_slug', :'fixture_name', :'fixture_abbr') \gexec
 
-select current_setting('matrx.fixture_org') as fixture_org,
-       current_setting('matrx.fixture_org_fresh') as fixture_org_fresh \gset
+select current_setting('matrx.use_case_org') as use_case_org,
+       current_setting('matrx.use_case_org_fresh') as use_case_org_fresh \gset

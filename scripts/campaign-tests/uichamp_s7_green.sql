@@ -134,9 +134,9 @@ begin
   -- Four addresses a stranger must never be sent to. Each is refused BY NAME, 22023.
   foreach v_txt in array array[
       'http://book.ridgeline-pt.test/first-visit',          -- not secure
-      'https://ridgeline-pt.test.phish.example/login',      -- the practice's name as a subdomain of someone else
+      'https://ridgeline-pt.test.lookalike-logins.invalid/login',      -- the practice's name as a subdomain of someone else
       'https://evil-ridgeline-pt.test/',                    -- a suffix, not a subdomain
-      'https://ridgeline-pt.test@phish.example/'] loop      -- a user name in front of someone else's host
+      'https://ridgeline-pt.test@lookalike-logins.invalid/'] loop      -- a user name in front of someone else's host
     begin
       perform custom.form_declare(v_org, v_table, 'New patient intake', v_q,
           jsonb_build_object('thank_you', jsonb_build_object('title', 'x', 'redirect_url', v_txt)), null, null, null, v_form);

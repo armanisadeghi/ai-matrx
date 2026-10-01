@@ -99,7 +99,7 @@ begin
   insert into communication.notification_preference (user_id, event_key, channel, enabled, organization_id)
   values (c_admin, 'custom.comment.mention', 'in_app', false, v_org);
   if custom.comment_mention_deliver(v_org, v_kitchen, v_rooms, gen_random_uuid(), c_admin,
-       'Dana Whitfield', 'Kitchen', 'Can you look at the cabinet quote?') is not null then
+       'Marcus Tillery', 'Kitchen', 'Can you look at the cabinet quote?') is not null then
     raise exception 'N5: a mention was written after she switched mentions off in the app';
   end if;
   raise notice 'N5 PASS — mentions off in the app: not written';

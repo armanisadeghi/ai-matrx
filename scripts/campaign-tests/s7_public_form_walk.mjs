@@ -34,8 +34,8 @@ if (!FORM || !TABLE) throw new Error("WALK_FORM and WALK_TABLE are required — 
 
 const REFERRAL_URL = `${ORIGIN}/f/${FORM}?referring_clinic=${encodeURIComponent("Harbor Sports Medicine")}`;
 const NEXT_STEP = "Next, book your first visit online — it takes a minute, and your therapist will have read this before you arrive.";
-const BOOKING = "https://example.com/?ridgeline=first-visit";
-const FOREIGN = "https://ridgeline-pt.phish.example.net/login";
+const BOOKING = "https://www.aimatrx.com/?ridgeline=first-visit";
+const FOREIGN = "https://ridgeline-pt.lookalike-logins.invalid/login";
 
 const out = { ranAt: new Date().toISOString(), origin: ORIGIN, form: FORM, table: TABLE, clauses: [] };
 const clause = (name, ok, detail = {}) => {
@@ -97,7 +97,7 @@ async function owner(browser) {
   await page.getByRole("button", { name: /^Save$/ }).first().click();
   const refused = await until("refusal", async () => {
     const t = await text(page);
-    return /own sites/i.test(t) && t.includes("phish.example.net") ? t : null;
+    return /own sites/i.test(t) && t.includes("lookalike-logins.invalid") ? t : null;
   }, 60000);
   clause("a foreign address is refused on Save, in the store's words, naming the sites it may use", Boolean(refused.v), {
     said: refused.v ? (refused.v.match(/[^\n]*own sites[^\n]*/i)?.[0] ?? "").slice(0, 220) : null,
@@ -190,7 +190,7 @@ async function stranger(browser) {
   const thanks = await until("thank-you", async () => (await text(p2)).includes(NEXT_STEP) ? true : null, 60000);
   clause("the thank-you screen says the next step in the practice's own words", thanks.v === true);
   await shot(p2, "s7-stranger-05-thank-you-next-step");
-  const landed = await until("redirect", async () => (p2.url().startsWith("https://example.com/") ? p2.url() : null), 30000);
+  const landed = await until("redirect", async () => (p2.url().startsWith("https://www.aimatrx.com/") ? p2.url() : null), 30000);
   clause("then it goes on to the practice's own booking page", Boolean(landed.v), { url: landed.v });
   await shot(p2, "s7-stranger-06-landed-on-booking-page");
   await laptop.close();

@@ -18,7 +18,7 @@
 -- well, so a run that died half way leaves nothing for the next one, and the last block is a
 -- CENSUS that fails unless every trace is gone.
 --
--- THE IDENTITIES. `admin@admin.com` owns both throwaway organizations; `test@test.com` (Dana)
+-- THE IDENTITIES. `admin@admin.com` owns both rolled-back organizations; `test@test.com` (Dana)
 -- is a plain MEMBER of the first. Nobody's own records are touched.
 --
 -- 🚨 THE SEAT (lane SEAT-SUITES, 2026-09-19). Every clause in this suite used to run as the
@@ -75,7 +75,7 @@ begin;
 -- SEAT-SUITES 2026-09-19: these two operator transactions carry MINUTES of headroom, not
 -- seconds. They take the same rows several other campaign lanes are touching on this live
 -- database (one was mid-`drop trigger … on custom.record` when this was measured), so a
--- 20-second lock wait leaves a run's throwaway organizations behind and the NEXT run reads
+-- 20-second lock wait leaves a run's rolled-back organizations behind and the NEXT run reads
 -- them as real. Nothing here is asserted on time; the assertions are all above.
 set local statement_timeout = '60s';
 set local lock_timeout = '10s';
@@ -111,7 +111,7 @@ values (:ORG_A, 'organization', :ORG_A, :ADMIN, 'owner',  'active'),
 -- organization born after 2026-09-21 01:30:44+00 with no override of its own now reads the
 -- store as ON, deliberately, because 515 of 588 organizations resolved to the platform default
 -- of false and every organization the real-data crews made was dead on arrival. A suite that
--- makes two throwaway organizations therefore makes two organizations whose store is ON, and
+-- makes two rolled-back organizations therefore makes two organizations whose store is ON, and
 -- PART 1's claim — "with the store OFF, nothing moved" — became untestable by accident rather
 -- than false. So the OFF state is now a written row and not an absence: the clauses below are
 -- unchanged and still assert exactly what they always asserted.
@@ -770,7 +770,7 @@ begin;
 -- SEAT-SUITES 2026-09-19: these two operator transactions carry MINUTES of headroom, not
 -- seconds. They take the same rows several other campaign lanes are touching on this live
 -- database (one was mid-`drop trigger … on custom.record` when this was measured), so a
--- 20-second lock wait leaves a run's throwaway organizations behind and the NEXT run reads
+-- 20-second lock wait leaves a run's rolled-back organizations behind and the NEXT run reads
 -- them as real. Nothing here is asserted on time; the assertions are all above.
 set local statement_timeout = '60s';
 set local lock_timeout = '10s';
@@ -822,7 +822,7 @@ begin
        + (select count(*) from history.row_versions where organization_id in (v_a, v_b))
     into v_n;
   if v_n <> 0 then
-    raise exception 'TEARDOWN FAILED — % row(s) of this suite''s throwaway organizations are still here.', v_n; end if;
+    raise exception 'TEARDOWN FAILED — % row(s) of this suite''s rolled-back organizations are still here.', v_n; end if;
   raise notice 'TEARDOWN PASSED — census zero';
   raise notice 'ALL PARTS PASSED';
 end $t$;

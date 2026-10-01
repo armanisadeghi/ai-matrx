@@ -202,7 +202,7 @@ begin
     raise exception 'ROLLBACK NOT VERIFIED — custom.share_access did not come back with its reasons.';
   end if;
   select count(*) into v_n from iam.organizations where id = '5bd50000-0000-4a00-8a00-000000000a01';
-  if v_n <> 0 then raise exception 'ROLLBACK NOT VERIFIED — the throwaway organization survived.'; end if;
+  if v_n <> 0 then raise exception 'ROLLBACK NOT VERIFIED — the rolled-back organization survived.'; end if;
   if not exists (select 1 from pg_trigger t
                   where t.tgrelid = 'iam.permissions'::regclass
                     and t.tgname = 'zzz_history_grant_capture' and t.tgenabled <> 'D') then  -- matrx-real-data:allow zzz_history_grant_capture is the real live trigger name from migrations/campaign/w3_hist_grant_capture.sql, not fixture data

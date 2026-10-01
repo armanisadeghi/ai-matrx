@@ -39,16 +39,16 @@ set local statement_timeout = '180s';
 -- A visitor's public form reaches the copy fence through a SECURITY DEFINER door, as the copy
 -- fence's register row says. This rolled-back probe is that door: it runs as its owner while the
 -- request's role stays `anon`, exactly as a real form door does.
-create function public.zz_suitehealth3_form_door(p uuid) returns text
+create function public.suitehealth3_form_door(p uuid) returns text
   language sql security definer set search_path = pg_catalog
   as $$ select custom._older_table_copy_refusal(p) $$;
 insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes,
   reason, anonymous_callers, anonymous_purpose, signed_in_callers, declared_by)
-values ('public', 'zz_suitehealth3_form_door', 'p uuid', '{2950}',
+values ('public', 'suitehealth3_form_door', 'p uuid', '{2950}',
   'SUITE-HEALTH-3 rolled-back probe: a definer door a visitor reaches, the way a public form reaches the copy fence.',
   true, 'Rolled-back probe only: stands in for a public form door that runs the copy fence as its writer.', false,
   'scripts/campaign-tests/suitehealth3_green.sql (rolled back)');
-grant execute on function public.zz_suitehealth3_form_door(uuid) to anon;
+grant execute on function public.suitehealth3_form_door(uuid) to anon;
 
 do $t$
 declare
@@ -143,7 +143,7 @@ begin
   perform set_config('role', 'postgres', true);
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
   perform set_config('role', 'anon', true);
-  v_a := public.zz_suitehealth3_form_door(v_log);
+  v_a := public.suitehealth3_form_door(v_log);
   perform set_config('role', 'postgres', true);
   if v_a is null or v_a not like '%copy of this table;%' then
     raise exception '3d: a visitor whose form reached the copy fence was told: % (the register row promises "never its name", and the write must still be refused)', v_a;

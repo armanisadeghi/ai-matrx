@@ -171,7 +171,7 @@ begin
   v_bound := exists (select 1 from pg_trigger where tgrelid = 'workflow.definition'::regclass
                       and tgname = 'zzzzz_no_change_keeps_its_version');
   if not v_bound then
-    raise exception '7: workflow.definition carries no zzzzz_no_change_keeps_its_version (hrloopcleanup_c not applied)';
+    raise exception '7: workflow.definition carries no trigger zzzzz_no_change_keeps_its_version (hrloopcleanup_c not applied)';
   end if;
   select d.id, d.version into v_def, v_ver from workflow.definition d
    where d.deleted_at is null order by d.updated_at desc limit 1;

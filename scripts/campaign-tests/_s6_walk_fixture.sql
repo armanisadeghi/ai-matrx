@@ -53,7 +53,7 @@ declare
   v_slug     text;
 begin
   if not exists (select 1 from iam.organizations where id = c_org and name = 'Rincon Plumbing Co — Ventura Branch') then
-    raise exception 'the Rincon Plumbing Co — Ventura Branch test organization is not on this clone';
+    raise exception 'the Rincon Plumbing Co — Ventura Branch practice is not on this clone';
   end if;
   -- THE OUTSIDER'S SEAT IS AN OUTSIDER. test@test.com is a member of the main Rincon Plumbing Co
   -- organization, so a portal there would be read through the member lane; the Ventura branch is

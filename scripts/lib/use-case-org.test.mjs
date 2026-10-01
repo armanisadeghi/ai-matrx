@@ -1,4 +1,4 @@
-// scripts/lib/fixture-org.test.mjs — node --test scripts/lib/fixture-org.test.mjs
+// scripts/lib/use-case-org.test.mjs — node --test scripts/lib/use-case-org.test.mjs
 //
 // FIXTURE-ORGS (2026-09-23). The forcing function for the one Node fixture-organization helper:
 // against a store that holds organizations by slug the way iam.organizations does (slug UNIQUE,
@@ -7,7 +7,7 @@
 // run — against the same store and shows it minting two identical organizations.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fixtureOrg, fixtureSlug, slugOf } from "./fixture-org.mjs";
+import { fixtureOrg, fixtureSlug, slugOf } from "./use-case-org.mjs";
 
 /** A supabase-js-shaped client over an in-memory iam.organizations. */
 function fakeStore(rows = []) {

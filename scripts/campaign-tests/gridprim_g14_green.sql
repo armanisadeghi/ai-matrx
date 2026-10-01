@@ -121,7 +121,7 @@ begin
 
   -- No account yet: an invitation, exactly the invite door's.
   perform set_config('request.jwt.claims', c_admin_j, true);
-  v_res := custom.table_share_outside_grant(v_org, v_appts, 'lena.okafor.books@example.com', 'viewer');
+  v_res := custom.table_share_outside_grant(v_org, v_appts, 'lena.okafor.books@fixtures.aimatrx.com', 'viewer');
   if not coalesce((v_res ->> 'invited')::boolean, false) or coalesce((v_res ->> 'granted')::boolean, true)
      or v_res ->> 'person' is distinct from 'no_account' or v_res ->> 'invitation_id' is null then
     raise exception 'G14i: an address with no account was not invited: %', v_res;

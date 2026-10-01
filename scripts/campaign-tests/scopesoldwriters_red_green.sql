@@ -116,7 +116,7 @@ create function pg_temp.l11_plant_suggestions() returns void language sql as $$
           'note', 'l11-probe-note-1', '2f4c0d35-a510-4e38-b2b7-fbea0ff6afe0', 'Pet', 'L11 probe Biscuit',
           '{"species":"Dog","breed":"Border Collie","l11_no_such_field":"ignored"}', 'pending'),
          ('11111111-1111-4111-8111-000000000002', '87a6e699-3622-4869-8843-d0867456c0dd', '884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f',
-          'note', 'l11-probe-note-2', null, 'L11 probe Vendor', 'L11 probe Acme Fasteners', '{}', 'pending');
+          'note', 'l11-probe-note-2', null, 'L11 probe Vendor', 'L11 probe Birchwood Fasteners', '{}', 'pending');
   insert into rag.context_item_suggestions (id, user_id, organization_id, scope_type_id, suggested_key, display_name, rationale, status)
   values ('11111111-1111-4111-8111-000000000003', '87a6e699-3622-4869-8843-d0867456c0dd', '884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f',
           '2f4c0d35-a510-4e38-b2b7-fbea0ff6afe0', 'l11probe_insurer', 'Pet insurer', 'Named in three vet invoices', 'pending');

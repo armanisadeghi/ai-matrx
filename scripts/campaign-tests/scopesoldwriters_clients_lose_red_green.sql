@@ -88,7 +88,7 @@ select (custom.context_item_write(:'i_id', :'t_id', '{"display_name":"Account re
 select (custom.context_item_write(:'i_id', :'t_id', '{"max_items":2}') -> 'row' ->> 'max_items') = '2' as i_rowupd \gset
 select (custom.context_scope_write(:'W', null, :'t_id', '{"name":"L11 probe Harbor Freight"}') -> 'row' ->> 'id') as s_id \gset
 select (custom.context_scope_write(:'W', :'s_id', :'t_id', '{"description":"Tools and hardware"}') -> 'row' ->> 'description') = 'Tools and hardware' as s_upd \gset
-select (custom.context_value_write(json_build_object('context_item_id', :'i_id', 'scope_id', :'s_id', 'value_text', 'Dana Whitfield')::jsonb) ->> 'ok')::boolean as v_ok \gset
+select (custom.context_value_write(json_build_object('context_item_id', :'i_id', 'scope_id', :'s_id', 'value_text', 'Marcus Tillery')::jsonb) ->> 'ok')::boolean as v_ok \gset
 select (custom.context_tags_set('note', (select n.id from workbench.notes n where n.organization_id = :'W' and n.deleted_at is null and n.created_by = :'ADMIN' limit 1), array[:'s_id']::uuid[]) ->> 'ok')::boolean as tag_ok \gset
 select (custom.context_scope_archive(:'s_id') ->> 'ok')::boolean as s_arch \gset
 select (custom.context_scope_restore(:'s_id') ->> 'ok')::boolean as s_rest \gset

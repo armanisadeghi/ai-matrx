@@ -689,7 +689,7 @@ rollback;
 do $t$
 begin
   if exists (select 1 from iam.organizations where id = '1ef10000-0000-4a00-8a00-000000000c01') then
-    raise exception 'ROLLBACK FAILED — the red twin''s throwaway organization is still there.';
+    raise exception 'ROLLBACK FAILED — the red twin''s rolled-back organization is still there.';
   end if;
   if not exists (select 1 from pg_proc p
                   where p.oid = 'iam.member_lane_confers(uuid,uuid,text,uuid,uuid)'::regprocedure) then

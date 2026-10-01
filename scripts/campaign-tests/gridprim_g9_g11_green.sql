@@ -95,9 +95,9 @@ begin
     'table_name', 'Vaccine reminders',
     'columns', jsonb_build_array('Patient', 'Vaccine', 'Due'),
     'rows', jsonb_build_array(
-      jsonb_build_object('ref', 'row-2', 'values', jsonb_build_object('Patient', 'Biscuit (Hollis)', 'Vaccine', 'Rabies 3-yr', 'Due', '2026-10-04')),
-      jsonb_build_object('ref', 'row-3', 'values', jsonb_build_object('Patient', 'Juniper (Okafor)', 'Vaccine', 'FVRCP', 'Due', '2026-10-11')),
-      jsonb_build_object('ref', 'row-4', 'values', jsonb_build_object('Patient', 'Rocco (Abernathy)', 'Vaccine', 'Bordetella', 'Due', '2026-09-30'))));
+      jsonb_build_object('ref', 'recall-4412', 'values', jsonb_build_object('Patient', 'Biscuit (Hollis)', 'Vaccine', 'Rabies 3-yr', 'Due', '2026-10-04')),
+      jsonb_build_object('ref', 'recall-4413', 'values', jsonb_build_object('Patient', 'Juniper (Okafor)', 'Vaccine', 'FVRCP', 'Due', '2026-10-11')),
+      jsonb_build_object('ref', 'recall-4414', 'values', jsonb_build_object('Patient', 'Rocco (Abernathy)', 'Vaccine', 'Bordetella', 'Due', '2026-09-30'))));
   v_res := custom.table_sync(v_org, v_home, v_spec);
   v_tbl := (v_res ->> 'table_id')::uuid;
   if not (v_res ->> 'created')::boolean or (v_res ->> 'rows_inserted')::integer <> 3 then
@@ -106,15 +106,15 @@ begin
   -- The person adds a column of her own in Matrx.
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('key', 'called_owner', 'label', 'Called owner', 'type', 'checkbox'));
   perform set_config('role', 'postgres', true);
-  v_keep := (select r.id from custom.record r where r.organization_id = v_org and r.table_id = v_tbl and r.metadata ->> 'source_id' = 'row-2');
-  v_older := (select r.id from custom.record r where r.organization_id = v_org and r.table_id = v_tbl and r.metadata ->> 'source_id' = 'row-3');
+  v_keep := (select r.id from custom.record r where r.organization_id = v_org and r.table_id = v_tbl and r.metadata ->> 'source_id' = 'recall-4412');
+  v_older := (select r.id from custom.record r where r.organization_id = v_org and r.table_id = v_tbl and r.metadata ->> 'source_id' = 'recall-4413');
   perform set_config('role', 'authenticated', true);
   perform custom.record_update(v_org, v_keep, jsonb_build_object('called_owner', true));
   -- The sheet changes: Juniper's due date moves, Rocco's row is gone, Olive is new.
   v_spec := jsonb_set(v_spec, '{rows}', jsonb_build_array(
-      jsonb_build_object('ref', 'row-2', 'values', jsonb_build_object('Patient', 'Biscuit (Hollis)', 'Vaccine', 'Rabies 3-yr', 'Due', '2026-10-04')),
-      jsonb_build_object('ref', 'row-3', 'values', jsonb_build_object('Patient', 'Juniper (Okafor)', 'Vaccine', 'FVRCP', 'Due', '2026-10-18')),
-      jsonb_build_object('ref', 'row-5', 'values', jsonb_build_object('Patient', 'Olive (Nakamura)', 'Vaccine', 'FeLV', 'Due', '2026-10-02'))));
+      jsonb_build_object('ref', 'recall-4412', 'values', jsonb_build_object('Patient', 'Biscuit (Hollis)', 'Vaccine', 'Rabies 3-yr', 'Due', '2026-10-04')),
+      jsonb_build_object('ref', 'recall-4413', 'values', jsonb_build_object('Patient', 'Juniper (Okafor)', 'Vaccine', 'FVRCP', 'Due', '2026-10-18')),
+      jsonb_build_object('ref', 'recall-4415', 'values', jsonb_build_object('Patient', 'Olive (Nakamura)', 'Vaccine', 'FeLV', 'Due', '2026-10-02'))));
   v_res2 := custom.table_sync(v_org, v_home, v_spec);
   if (v_res2 ->> 'table_id')::uuid is distinct from v_tbl or (v_res2 ->> 'created')::boolean
      or (v_res2 ->> 'rows_inserted')::integer <> 1 or (v_res2 ->> 'rows_updated')::integer <> 2
@@ -127,7 +127,7 @@ begin
   end if;
   perform set_config('role', 'postgres', true);
   select count(*) into v_n from custom.record r where r.organization_id = v_org and r.table_id = v_tbl
-     and r.metadata ->> 'source_id' = 'row-4' and r.deleted_at is not null;
+     and r.metadata ->> 'source_id' = 'recall-4414' and r.deleted_at is not null;
   perform set_config('role', 'authenticated', true);
   if v_n <> 1 then raise exception 'G10d: Rocco''s dropped row was not archived (found % archived)', v_n; end if;
   raise notice 'G10 PASS — one "Vaccine reminders" table: 3 rows, then +Olive, Juniper moved to 10-18, Rocco archived (not destroyed); "Called owner" survives the refresh.';

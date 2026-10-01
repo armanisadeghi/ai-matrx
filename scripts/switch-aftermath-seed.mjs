@@ -37,7 +37,7 @@ const TABLES = [
       ["reminder_sent", "Reminder sent", "boolean"],
     ],
     rows: [
-      { patient: "Dana Whitfield", hygienist: "Marisol", last_cleaning: "2026-03-12", recall_due: "2026-09-12", reminder_sent: true },
+      { patient: "Marcus Tillery", hygienist: "Marisol", last_cleaning: "2026-03-12", recall_due: "2026-09-12", reminder_sent: true },
       { patient: "Theo Brannigan", hygienist: "Marisol", last_cleaning: "2026-04-02", recall_due: "2026-10-02", reminder_sent: false },
       { patient: "Priya Castellanos", hygienist: "Jonah", last_cleaning: "2026-04-18", recall_due: "2026-10-18", reminder_sent: false },
       { patient: "Walt Okafor", hygienist: "Jonah", last_cleaning: "2026-05-07", recall_due: "2026-11-07", reminder_sent: false },

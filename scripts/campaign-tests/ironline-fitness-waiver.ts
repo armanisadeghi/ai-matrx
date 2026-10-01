@@ -29,7 +29,7 @@ import { writeFileSync } from "node:fs";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import { fixtureOrg } from "../lib/fixture-org.mjs";
+import { fixtureOrg } from "../lib/use-case-org.mjs";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local"), override: true });
 

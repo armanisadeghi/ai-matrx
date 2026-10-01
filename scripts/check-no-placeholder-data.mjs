@@ -172,6 +172,9 @@ const SKIP_DIRECTORY = new Set([
   "__pycache__",
 ]);
 
+/** A named build output (`dist-demo`, `dist-storybook`): generated bundle text, never authored data, and usually git-ignored. */
+const BUILD_OUTPUT_DIRECTORY = /^dist-[\w.-]+$/;
+
 const TEXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|sql|json|md|yaml|yml|csv)$/;
 
 /** Not test data at all, with the reason each one is out of scope. */
@@ -226,7 +229,7 @@ function walk(directory, found = [], root = REPO) {
   for (const entry of entries) {
     const full = join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (SKIP_DIRECTORY.has(entry.name)) continue;
+      if (SKIP_DIRECTORY.has(entry.name) || BUILD_OUTPUT_DIRECTORY.test(entry.name)) continue;
       // Root-level scratch trees (git-ignored): other agents' copies of this repo, never our source.
       if (directory === root && (entry.name === "work" || entry.name === "tmp")) continue;
       walk(full, found, root);

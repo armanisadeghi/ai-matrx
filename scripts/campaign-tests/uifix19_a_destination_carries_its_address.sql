@@ -37,13 +37,13 @@ begin
   -- A second organization with the SAME NAME as one she already owns, as a person can make.
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  select v_twin, o.name, 'uifix19-twin-' || substr(v_twin::text, 1, 8), 'BAR', c_admin
+  select v_twin, o.name, 'uifix19-twin-' || substr(v_twin::text, 1, 8), 'BWR', c_admin
     from iam.organizations o where o.id = v_org;
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_twin, 'organization', v_twin, c_admin, 'owner', 'active');
   -- …and a third, so the fixture's own name is shared by two destinations.
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  select gen_random_uuid(), o.name, 'uifix19-twin-b-' || substr(v_twin::text, 1, 8), 'BAR', c_admin
+  select gen_random_uuid(), o.name, 'uifix19-twin-b-' || substr(v_twin::text, 1, 8), 'BWR', c_admin
     from iam.organizations o where o.id = v_org
   returning id into v_twin;
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)

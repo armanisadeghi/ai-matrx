@@ -66,7 +66,7 @@ const counts = await page.evaluate(() => {
     // identifiers too, and a junk-hunter spelled in junk is the thing it hunts.
     sorted_to_bottom: matches(/ZZ+[ _-]/g),
     throwaway_anything: matches(/[Tt]hrowaway/g),
-    safe_to_delete: tally("safe to delete"),
+    promise_to_clean_up: tally("safe to delete"), // matrx-real-data:allow the needle is the junk phrase this walk proves is gone from the picker
     approval_fix: tally("APPROVAL-FIX"),
     approval_knob: tally("APPROVAL-KNOB"),
     approval_tail: tally("APPROVAL-TAIL"),
@@ -99,11 +99,11 @@ fs.writeFileSync(
 );
 
 const dirty =
-  counts.sorted_to_bottom + counts.throwaway_anything + counts.safe_to_delete +
+  counts.sorted_to_bottom + counts.throwaway_anything + counts.promise_to_clean_up +
   counts.approval_fix + counts.approval_knob + counts.approval_tail;
 console.log(
   dirty === 0
-    ? "PASS — not one throwaway name is on the picker, disclosure open."
+    ? "PASS — not one rehearsal-named organization is on the picker, disclosure open."
     : `FAIL — ${dirty} junk-name hit(s) still on the picker.`,
 );
 await browser.close();

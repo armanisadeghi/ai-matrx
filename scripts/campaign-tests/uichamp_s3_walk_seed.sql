@@ -27,7 +27,7 @@ do $seed$
 declare
   c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   c_dana    constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_org  uuid := current_setting('matrx.fixture_org')::uuid;
+  v_org  uuid := current_setting('matrx.use_case_org')::uuid;
   v_home uuid;
   v_jobs uuid;
   v_id   uuid;

@@ -4,7 +4,7 @@
 -- clone, owned by admin@admin.com = Dr. Ana Whitfield, practice manager). A referral intake: a
 -- referring clinic's link fills in the clinic, the imaging question is asked only when a clinic
 -- is named, and the thank-you screen says the next step. Every name is synthesized. The
--- organization's redirect list names example.com (IANA's reserved domain, which really answers
+-- organization's redirect list names www.aimatrx.com (our own site, which really answers
 -- over https), so the walk can prove the redirect lands without sending a stranger anywhere real.
 -- The nightly clone refresh restores production over all of it.
 --
@@ -39,13 +39,13 @@ declare
   v_form    uuid;
 begin
   if not exists (select 1 from iam.organizations where id = c_org and name = 'Ridgeline Physical Therapy') then
-    raise exception 'the Ridgeline Physical Therapy test organization is not on this clone';
+    raise exception 'the Ridgeline Physical Therapy practice is not on this clone';
   end if;
   -- The practice's own booking vendor, as its owner would list it in the forms settings.
   delete from platform.knob_override
    where feature = 'custom' and key = 'form_redirect_domains' and organization_id = c_org;
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note, updated_by)
-  values ('custom', 'form_redirect_domains', 'organization', c_org, c_org, '["example.com"]'::jsonb,
+  values ('custom', 'form_redirect_domains', 'organization', c_org, c_org, '["www.aimatrx.com"]'::jsonb,
           '_s7_walk_fixture.sql: the practice''s booking page for the S7-PRIME walk', c_admin);
 
   perform set_config('app.actor_system', 'campaign-test/_s7_walk_fixture.sql', true);

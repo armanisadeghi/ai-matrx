@@ -246,6 +246,6 @@ begin
        where p.pronamespace = 'custom'::regnamespace and p.proname = 'work_state_id') <> 1 then
     raise exception 'ROLLBACK DID NOT RESTORE: custom.work_state_id is not there';
   end if;
-  raise notice 'ROLLBACK VERIFIED — every body this twin replaced is this lane''s again, and the throwaway organization is gone.';
+  raise notice 'ROLLBACK VERIFIED — every body this twin replaced is this lane''s again, and the rolled-back organization is gone.';
 end
 $t$;

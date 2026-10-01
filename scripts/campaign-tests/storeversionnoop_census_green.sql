@@ -50,7 +50,7 @@ begin
        and (tg.tgtype & 2) = 2 and (tg.tgtype & 16) = 16      -- BEFORE, UPDATE
        and (tg.tgtype & 1) = 1                                -- ROW
      order by tg.tgname collate "C" desc limit 1;
-    if v_last is distinct from 'zzzzz_no_change_keeps_its_version' then
+    if v_last is distinct from 'zzzzz_no_change_keeps_its_version' then  -- the trigger's name
       raise exception '3: the last enabled before-row UPDATE trigger on % is %, not zzzzz_no_change_keeps_its_version — a no-op write will move the version again', t, v_last;
     end if;
   end loop;

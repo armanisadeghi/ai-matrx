@@ -15,7 +15,7 @@
 // fees on a client site).
 import { signedInClient, SUPABASE_URL } from "./_client.mjs";
 import fs from "node:fs";
-import { fixtureOrg } from "../../lib/fixture-org.mjs";
+import { fixtureOrg } from "../../lib/use-case-org.mjs";
 
 const LOG = [];
 function log(step, ok, detail) {
