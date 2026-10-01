@@ -79,14 +79,15 @@ try {
     if (!offered) return { ok: false, detail: "no group control on the table page" };
     await sleep(1500);
     const picked = await admin.evaluate(() => {
-      const items = [...document.querySelectorAll('[role="menuitem"], [role="option"], [role="menuitemradio"]')].filter((e) => /Added|Last changed|year|month|day/i.test(e.textContent ?? ""));
-      const it = items.find((e) => /month/i.test(e.textContent ?? "")) ?? items[0];
+      // A choice column is a Dimension (BREAKER-4 B4-05: only Dimensions group): Status first.
+      const items = [...document.querySelectorAll('[role="menuitem"], [role="option"], [role="menuitemradio"], [role="menuitemcheckbox"]')].filter((e) => /^Group by /.test(e.textContent?.trim() ?? ""));
+      const it = items.find((e) => /Group by Status/.test(e.textContent ?? "")) ?? items.find((e) => /Insurance|diagnosis|date/i.test(e.textContent ?? "")) ?? items[0];
       if (!it) return null;
       const label = it.textContent.trim();
       it.click();
       return label;
     });
-    if (!picked) return { ok: false, detail: "the group menu offered no date Dimension (Added / Last changed)" };
+    if (!picked) return { ok: false, detail: "the group menu offered no Group by item" };
     await settle(admin);
     const r = await read(admin);
     const used = [...new Set(doors.map((d) => `${d.door} ${d.status}`))];
