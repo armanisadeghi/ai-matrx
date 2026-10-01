@@ -4,6 +4,7 @@ import { useEffect, useState, type RefObject } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RenderedFindBar } from "./RenderedFindBar";
+import { surfaceOwnsKey } from "@/utils/keyboard-scope";
 
 /** Places the shared rendered-content finder in a reader's existing header. */
 export function ContentFindControl({
@@ -30,6 +31,9 @@ export function ContentFindControl({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f" && !event.shiftKey && !event.altKey) {
+        // ⌘F is this content's only when pressed in it — a board or panel
+        // mounts many readers, and each must not open its find bar at once.
+        if (!surfaceOwnsKey(event, rootRef.current)) return;
         event.preventDefault();
         setOpen(true);
         onOpenChange?.(true);
@@ -38,7 +42,7 @@ export function ContentFindControl({
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [onOpenChange]);
+  }, [onOpenChange, rootRef]);
 
   if (inline && open) return <div className="min-w-0 w-full sm:w-[360px]">
     <RenderedFindBar rootRef={rootRef} label={label} focusRequest={focusRequest} onClose={closeFind} compact />

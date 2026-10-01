@@ -173,7 +173,10 @@ export function AgentTextarea({
   );
 
   // Undo/redo — intercepts Cmd+Z / Ctrl+Z
-  useInstanceInputUndoRedo({ conversationId });
+  useInstanceInputUndoRedo({
+    conversationId,
+    scope: () => textareaRef.current,
+  });
 
   // After a submit the input is emptied, so expanded mode no longer makes
   // sense — glide it back down smoothly. Triggered when the submission enters

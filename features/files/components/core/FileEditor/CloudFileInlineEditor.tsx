@@ -11,8 +11,12 @@
  *   - Edits track `isDirty`. Save re-uploads under the same name + parent,
  *     producing a new version row server-side (same flow as
  *     `CloudFileEditor`). Cmd/Ctrl+S triggers save without leaving Monaco.
- *   - Best-effort flush on unmount (only when dirty + no in-flight error)
- *     so switching tabs doesn't drop in-progress edits.
+ *   - Flush on unmount, on switching to another file, and on `pagehide`
+ *     (only when dirty + no in-flight error) so closing a tile, switching
+ *     tabs or leaving the page never drops the last typed text. The flush
+ *     reads the LATEST text through a ref — an effect closure keyed on
+ *     `fileId` holds the text of the render that created it (null, before
+ *     the bytes loaded), which silently skipped every unmount save.
  */
 
 "use client";
@@ -78,6 +82,46 @@ const LANGUAGE_BY_EXT: Record<string, string> = {
   // highlighting and brace matching for direct vector edits.
   svg: "xml",
 };
+
+type FileRecord = NonNullable<ReturnType<typeof selectFileById>>;
+
+/** What an unmount / pagehide flush needs: the latest committed editor state. */
+interface PendingEdit {
+  file: FileRecord | null | undefined;
+  text: string | null;
+  original: string | null;
+  saveError: string | null;
+}
+
+/**
+ * Saves `pending` as the file's next version when it holds unsaved text.
+ * Returns the flushed state (original = text) so a second flush — pagehide
+ * then unmount — never saves the same text twice.
+ */
+function flushPendingEdit(
+  pending: PendingEdit,
+  dispatch: ReturnType<typeof useAppDispatch>,
+): PendingEdit {
+  const { file, text, original, saveError } = pending;
+  if (text === null || original === null || text === original || !file || saveError) {
+    return pending;
+  }
+  void dispatch(
+    saveFileNewVersion({
+      fileId: file.id,
+      content: text,
+      changeSummary: "Edited in place (auto-flush on unmount)",
+    }),
+  )
+    .unwrap()
+    .catch((err: unknown) => {
+      // The editor is gone, so no inline error can show — say it.
+      toast.error(`Couldn't save your last edits to ${file.fileName}`, {
+        description: extractErrorMessage(err),
+      });
+    });
+  return { ...pending, original: text };
+}
 
 function languageFor(fileName: string): string {
   const dot = fileName.lastIndexOf(".");
@@ -176,33 +220,28 @@ export function CloudFileInlineEditor({
     }
   }, [dispatch, file, text]);
 
-  // Best-effort flush on unmount when there's a pending edit.
+  // Flush the LATEST text on unmount, on a switch to another file, and on
+  // pagehide. The ref is written after every commit; a cleanup runs before
+  // the next commit's effects, so it still holds the outgoing file's text.
+  const pendingRef = useRef<PendingEdit>({
+    file: null,
+    text: null,
+    original: null,
+    saveError: null,
+  });
   useEffect(() => {
-    return () => {
-      if (
-        text !== null &&
-        original !== null &&
-        text !== original &&
-        file &&
-        !saveError
-      ) {
-        void dispatch(
-          saveFileNewVersion({
-            fileId: file.id,
-            content: text,
-            changeSummary: "Edited in place (auto-flush on unmount)",
-          }),
-        )
-          .unwrap()
-          .catch((err: unknown) => {
-            // The editor is gone, so no inline error can show — say it.
-            toast.error(`Couldn't save your last edits to ${file.fileName}`, {
-              description: extractErrorMessage(err),
-            });
-          });
-      }
+    pendingRef.current = { file, text, original, saveError };
+  });
+  useEffect(() => {
+    const flush = () => {
+      pendingRef.current = flushPendingEdit(pendingRef.current, dispatch);
     };
-  }, [fileId]);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [fileId, dispatch]);
 
   const handleDiscard = useCallback(() => {
     if (original !== null) setText(original);

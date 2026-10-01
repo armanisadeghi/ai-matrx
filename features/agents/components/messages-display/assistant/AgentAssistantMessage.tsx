@@ -88,6 +88,7 @@ import {
 } from "./AssistantMessageFooter";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectHasActivePendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
 import {
   countPersonVisibleParts,
   isAnswerlessTurn,
@@ -156,6 +157,20 @@ interface AgentAssistantMessageProps {
    * correct for every single-message surface.
    */
   isTurnAnswer?: boolean;
+}
+
+function retryErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err && "message" in err) {
+    return String((err as { message?: string }).message);
+  }
+  return "Retry failed";
+}
+
+function providerControlErrorMessage(err: unknown): string {
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  return "Provider control failed";
 }
 
 export function AgentAssistantMessage({
@@ -362,45 +377,41 @@ export function AgentAssistantMessage({
     [dispatch, conversationId, messageId, requestId],
   );
 
-  const handleRetry = useCallback(async () => {
+  // Promise chains, not try/catch/finally: the React Compiler cannot lower a
+  // `finally` (or a conditional inside a try) and would skip this WHOLE
+  // component — no memoisation on a component mounted once per message.
+  const handleRetry = useCallback(() => {
     setRetrying(true);
-    try {
-      await dispatch(retryConversationTurn({ conversationId })).unwrap();
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "object" && err && "message" in err
-            ? String((err as { message?: string }).message)
-            : "Retry failed";
-      toast.error(message);
-    } finally {
-      setRetrying(false);
-    }
+    return dispatch(retryConversationTurn({ conversationId }))
+      .unwrap()
+      .then(
+        () => setRetrying(false),
+        (err: unknown) => {
+          setRetrying(false);
+          toast.error(retryErrorMessage(err));
+        },
+      );
   }, [dispatch, conversationId]);
 
   const handleProviderRetryControl = useCallback(
-    async (action: ProviderRetryControlAction) => {
-      if (!requestId) return;
+    (action: ProviderRetryControlAction) => {
+      if (!requestId) return Promise.resolve();
       setProviderRetryBusyAction(action);
-      try {
-        await dispatch(
-          sendProviderRetryControl({ requestId, action }),
-        ).unwrap();
-        toast.success(
-          action === "retry_now" ? "Retry requested" : "Cancel requested",
+      // Promise chain, not try/finally (see handleRetry).
+      return dispatch(sendProviderRetryControl({ requestId, action }))
+        .unwrap()
+        .then(
+          () => {
+            setProviderRetryBusyAction(null);
+            toast.success(
+              action === "retry_now" ? "Retry requested" : "Cancel requested",
+            );
+          },
+          (err: unknown) => {
+            setProviderRetryBusyAction(null);
+            toast.error(providerControlErrorMessage(err));
+          },
         );
-      } catch (err) {
-        const message =
-          typeof err === "string"
-            ? err
-            : err instanceof Error
-              ? err.message
-              : "Provider control failed";
-        toast.error(message);
-      } finally {
-        setProviderRetryBusyAction(null);
-      }
     },
     [dispatch, requestId],
   );
@@ -475,10 +486,8 @@ export function AgentAssistantMessage({
   const operationInFlight = useAppSelector(
     (state) => state.conversations?.byConversationId?.[conversationId]?.serverOperation != null,
   );
-  const pendingCallOnPage = useAppSelector((state) =>
-    (state.pendingAsks?.byConversationId?.[conversationId] ?? []).some(
-      (ask) => ask.status === "pending",
-    ),
+  const pendingCallOnPage = useAppSelector(
+    selectHasActivePendingAsk(conversationId),
   );
   const answerless = isAnswerlessTurn({
     isTurnAnswer,

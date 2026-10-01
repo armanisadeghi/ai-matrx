@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useCallback } from "react";
+import { keyEventInside } from "@/utils/keyboard-scope";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   undoInputEdit,
@@ -31,6 +32,13 @@ import {
 
 interface UseInstanceInputUndoRedoOptions {
   conversationId: string | null;
+  /**
+   * The composer this mount owns — the shortcut answers only keys pressed
+   * inside it. Every mounted chat (board tiles, panels) mounts a composer; an
+   * unscoped listener undid every composer at once, and ate ⌘Z typed in a
+   * note or any other field on the page.
+   */
+  scope: () => Element | null;
   enabled?: boolean;
 }
 
@@ -46,6 +54,7 @@ interface UseInstanceInputUndoRedoReturn {
 
 export function useInstanceInputUndoRedo({
   conversationId,
+  scope,
   enabled = true,
 }: UseInstanceInputUndoRedoOptions): UseInstanceInputUndoRedoReturn {
   const dispatch = useAppDispatch();
@@ -109,6 +118,7 @@ export function useInstanceInputUndoRedo({
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMacLike() ? e.metaKey : e.ctrlKey;
       if (!mod) return;
+      if (!keyEventInside(e, scope())) return;
 
       if (e.key === "z" || e.key === "Z") {
         if (e.shiftKey) {
@@ -130,7 +140,7 @@ export function useInstanceInputUndoRedo({
 
     document.addEventListener("keydown", handleKeyDown, true);
     return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [enabled, conversationId, undo, redo]);
+  }, [enabled, conversationId, undo, redo, scope]);
 
   return {
     canUndo,

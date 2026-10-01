@@ -198,13 +198,43 @@ export const selectPendingAsksForConversation =
   (state: RootState): PendingAsk[] =>
     state.pendingAsks?.byConversationId[conversationId] ?? EMPTY_ASKS;
 
+/**
+ * The pending subset, derived ONCE per source array. Keyed on the stored
+ * array itself (Immer hands back the same reference until the conversation's
+ * asks change), so every caller — on every store notification — gets the
+ * same result reference and a subscribed component never re-renders for an
+ * unrelated dispatch. A fresh `.filter` here re-rendered every consumer on
+ * every streamed token.
+ */
+const activeAsksBySource = new WeakMap<PendingAsk[], PendingAsk[]>();
+
+function activeAsksOf(all: PendingAsk[]): PendingAsk[] {
+  const cached = activeAsksBySource.get(all);
+  if (cached) return cached;
+  const active = all.filter((x) => x.status === "pending");
+  const result =
+    active.length === 0
+      ? EMPTY_ASKS
+      : active.length === all.length
+        ? all
+        : active;
+  activeAsksBySource.set(all, result);
+  return result;
+}
+
 export const selectActivePendingAsksForConversation =
   (conversationId: string) =>
   (state: RootState): PendingAsk[] => {
     const all = state.pendingAsks?.byConversationId[conversationId];
     if (!all || all.length === 0) return EMPTY_ASKS;
-    return all.filter((x) => x.status === "pending");
+    return activeAsksOf(all);
   };
+
+/** Whether the conversation has any open ask. Primitive; O(1) after the first read per source array. */
+export const selectHasActivePendingAsk =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    selectActivePendingAsksForConversation(conversationId)(state).length > 0;
 
 /**
  * A rendered unit for the asks zone: either a single ask or a batched group

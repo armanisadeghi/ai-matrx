@@ -15,7 +15,8 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { keyScopeRoot, surfaceOwnsKey } from "@/utils/keyboard-scope";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -123,9 +124,13 @@ export function PreviewPane({
   // Esc closes the preview — matches Dropbox / Drive muscle memory and is the
   // last-line escape hatch if the user can't see the close button for any
   // reason (covered by an error UI, off-screen, etc.).
+  // Only for keys pressed in this files surface (utils/keyboard-scope) — a
+  // board or a panel can mount several previews, and Esc must close one.
+  const previewRootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      if (!surfaceOwnsKey(e, keyScopeRoot(previewRootRef.current))) return;
       // Don't steal Esc from open inputs / context menus / dialogs.
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
@@ -163,6 +168,7 @@ export function PreviewPane({
 
   return (
     <div
+      ref={previewRootRef}
       className={cn(
         "relative flex h-full min-h-0 flex-col overflow-hidden bg-card",
         className,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
+import { keyEventInside } from "@/utils/keyboard-scope";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   undoAgentEdit,
@@ -103,6 +104,12 @@ export function getRedoShortcutHint(): string {
 
 interface UseAgentUndoRedoOptions {
   agentId: string | null;
+  /**
+   * The editing surface this mount owns — the shortcut answers only keys
+   * pressed inside it. The builder mounts this hook once per message; an
+   * unscoped listener undid the agent once PER MESSAGE on a single ⌘Z.
+   */
+  scope: () => Element | null;
   enabled?: boolean;
 }
 
@@ -118,6 +125,7 @@ interface UseAgentUndoRedoReturn {
 
 export function useAgentUndoRedo({
   agentId,
+  scope,
   enabled = true,
 }: UseAgentUndoRedoOptions): UseAgentUndoRedoReturn {
   const dispatch = useAppDispatch();
@@ -139,7 +147,8 @@ export function useAgentUndoRedo({
 
   // Keyboard shortcuts — works on Mac (⌘Z / ⇧⌘Z) and Win/Linux (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y)
   //
-  // We intercept undo/redo EVERYWHERE, including inside textareas. The
+  // We intercept undo/redo inside this mount's `scope` (its textarea) —
+  // never page-wide (utils/keyboard-scope.ts). The
   // textarea content is driven by Redux state, so browser-native undo
   // would desync (it tracks DOM changes, not Redux). By calling
   // preventDefault() we suppress the browser's undo and dispatch our own.
@@ -149,6 +158,7 @@ export function useAgentUndoRedo({
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMacLike() ? e.metaKey : e.ctrlKey;
       if (!mod) return;
+      if (!keyEventInside(e, scope())) return;
 
       if (e.key === "z" || e.key === "Z") {
         if (e.shiftKey) {
@@ -170,7 +180,7 @@ export function useAgentUndoRedo({
 
     document.addEventListener("keydown", handleKeyDown, true);
     return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [enabled, agentId, canUndo, canRedo, dispatch]);
+  }, [enabled, agentId, canUndo, canRedo, dispatch, scope]);
 
   return {
     canUndo,

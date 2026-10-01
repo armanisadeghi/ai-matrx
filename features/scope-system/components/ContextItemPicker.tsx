@@ -89,6 +89,9 @@ import {
 } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { unwrapScopesRpc } from "@/features/scopes/types";
 
+/** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
+const EMPTY_LIST: never[] = [];
+
 export type ContextItemSource = "system" | "scope";
 
 export interface ContextItemSelection {
@@ -182,13 +185,13 @@ export function ContextItemPicker({
     orgId ? selectScopeTypesLoadedForOrg(s, orgId) : false,
   );
   const scopeTypes = useAppSelector((s) =>
-    orgId ? selectScopeTypesByOrg(s, orgId) : [],
+    orgId ? selectScopeTypesByOrg(s, orgId) : EMPTY_LIST,
   );
   const itemsLoaded = useAppSelector((s) =>
     itemsKey ? selectItemsLoadedForType(s, itemsKey) : false,
   );
   const items = useAppSelector((s) =>
-    itemsKey ? selectItemsByType(s, itemsKey) : [],
+    itemsKey ? selectItemsByType(s, itemsKey) : EMPTY_LIST,
   );
   const itemsError = useAppSelector((s) =>
     itemsKey ? selectItemsErrorForType(s, itemsKey) : null,

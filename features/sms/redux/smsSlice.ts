@@ -159,8 +159,9 @@ export const selectSmsConversations = (state: WithSms) =>
   state.sms.conversations;
 export const selectSmsCurrentConversationId = (state: WithSms) =>
   state.sms.currentConversationId;
+const EMPTY_SMS_MESSAGES: never[] = [];
 export const selectSmsMessages = (state: WithSms, conversationId: string) =>
-  state.sms.messages[conversationId] || [];
+  state.sms.messages[conversationId] || EMPTY_SMS_MESSAGES;
 export const selectSmsPreferences = (state: WithSms) => state.sms.preferences;
 export const selectSmsPhoneNumbers = (state: WithSms) =>
   state.sms.phoneNumbers;

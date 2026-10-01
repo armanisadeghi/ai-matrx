@@ -9,7 +9,14 @@
  *
  * Every handler returns a small JSON result (never throws — errors come back
  * as `{ ok: false, error }` with a remedy), and every change goes through the
- * board's one path, so it is on the ⌘Z stack like a person's change.
+ * board's one path, so it is on the ⌘Z stack like a person's change — tagged
+ * as the agent's (`runAs("agent")`), so `board_undo` takes back only the
+ * agent's own changes, never the person's.
+ *
+ * The person's view and selection are theirs while they work: when a tile is
+ * being worked in (interacting) or is full screen, no tool moves the camera,
+ * selects, or ends their typing. Tools still read and act on any item — a
+ * sleeping tile is held awake (`holdAwake`) for the call instead of selected.
  *
  * The handlers depend on a NARROW `BoardToolTarget`, not the whole `useBoard`
  * model: `Board<T>` satisfies it structurally, and a host that keeps its own
@@ -22,7 +29,14 @@ import {
   useSurfaceClientTools,
   type SurfaceToolCall,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { BoardConnection, BoardFrame, BoardTileBase, BoardView } from "../board/useBoard";
+import type {
+  ActorUndoResult,
+  BoardActor,
+  BoardConnection,
+  BoardFrame,
+  BoardTileBase,
+  BoardView,
+} from "../board/useBoard";
 import { screenToWorld, visibleWorldRect, rectsIntersect, type Rect } from "../engine/camera";
 import { align, arrange, distribute, enclosingFrame, type AlignEdge, type ArrangeLayout, type DistributeAxis } from "../engine/arrange";
 import type { SpatialStore } from "../engine/spatial-store";
@@ -90,8 +104,11 @@ export interface BoardToolTarget<T extends BoardTileBase> {
   updateTile?: (id: string, patch: Partial<T>) => void;
   addFrame?: (frame: BoardFrame) => void;
   connect?: (connection: BoardConnection) => void;
-  undo?: () => void;
-  canUndo?: boolean;
+  /** Run changes as an actor, so the agent's are told apart from the person's. */
+  runAs?: <R>(actor: BoardActor, fn: () => R) => R;
+  /** Take back only the agent's own latest change (absent = board_undo refused). */
+  undoActor?: (actor: BoardActor) => ActorUndoResult;
+  canUndoActor?: (actor: BoardActor) => boolean;
   /** Refuse an arrangement of these tiles (they would break the host's layout rules). */
   checkArrange?: (ids: string[]) => Failure | null;
   refusals?: BoardToolRefusals;
@@ -126,6 +143,9 @@ const DEFAULT_SIZE: Record<BoardTileKindInput, { w: number; h: number }> = {
 };
 
 const fail = (error: string): Failure => ({ ok: false, error });
+
+/** How long a tile an agent reached stays awake after the call, so its result can be read. */
+const AGENT_HOLD_MS = 2000;
 const isFailure = (v: unknown): v is Failure =>
   typeof v === "object" && v !== null && (v as Failure).ok === false;
 
@@ -154,6 +174,11 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   const find = (id: unknown) => allTiles().find((t) => t.id === id);
   const missing = (id: unknown) =>
     fail(`No tile with id "${String(id)}" is on this board. Call board_read for the current ids.`);
+  /** Every board change a tool makes is the agent's. */
+  const asAgent = <R,>(fn: () => R): R => (board.runAs ? board.runAs("agent", fn) : fn());
+  /** The tile the person is working in (interacting or full screen), if any:
+   * while there is one, the view and the selection are theirs. */
+  const personBusyIn = (): string | null => store?.getEditing() ?? store?.getFocused() ?? null;
 
   const viewCentre = (): { x: number; y: number } => {
     if (!store) return { x: 0, y: 0 };
@@ -230,7 +255,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     if (str(a.near_tile_id) && !beside) return missing(a.near_tile_id);
     let rect: Rect;
     if (x !== undefined && y !== undefined) {
-      rect = addTile({ ...made, rect: { x, y, w: size.w, h: size.h } });
+      rect = asAgent(() => addTile({ ...made, rect: { x, y, w: size.w, h: size.h } }));
     } else {
       const near = beside
         ? { x: beside.rect.x + beside.rect.w + 48 + size.w / 2, y: beside.rect.y + size.h / 2 }
@@ -245,10 +270,13 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
               beside.rect.y + beside.rect.h <= f.rect.y + f.rect.h,
           )?.id
         : undefined;
-      rect = addTile({ ...made, rect: { x: 0, y: 0, w: size.w, h: size.h } }, near, { within });
+      rect = asAgent(() => addTile({ ...made, rect: { x: 0, y: 0, w: size.w, h: size.h } }, near, { within }));
     }
-    // Show it without moving the person's view (never yank the camera).
-    requestAnimationFrame(() => store?.select(id));
+    // Show it without moving the person's view (never yank the camera) — and
+    // never take the selection from a tile they are working in.
+    requestAnimationFrame(() => {
+      if (!personBusyIn()) store?.select(id);
+    });
     return { ok: true, id, rect };
   };
 
@@ -278,7 +306,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     // An empty patch after a content edit: the host wrote it into its record.
     if (Object.keys(patch).length > 0) {
       if (!updateTile) return refused("update", "This board's tiles cannot be changed from here.");
-      updateTile(tile.id, patch);
+      asAgent(() => updateTile(tile.id, patch));
     }
     return { ok: true, id: tile.id, rect: patch.rect ?? tile.rect };
   };
@@ -287,7 +315,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const a = record(input);
     const tile = find(a.id);
     if (!tile) return missing(a.id);
-    const putBack = board.removeTile(tile.id);
+    const putBack = asAgent(() => board.removeTile(tile.id));
     toast(`The assistant removed "${tile.title}" from the board`, { action: { label: "Undo", onClick: putBack } });
     return { ok: true, id: tile.id, note: "The person can undo this." };
   };
@@ -305,7 +333,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
       valid.push({ id, x, y });
     }
     if (valid.length === 0) return fail("Pass at least one move.");
-    const refusedMove = board.moveMany(valid);
+    const refusedMove = asAgent(() => board.moveMany(valid));
     if (isFailure(refusedMove)) return refusedMove;
     return { ok: true, moved: valid };
   };
@@ -341,7 +369,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         at: x !== undefined && y !== undefined ? { x, y } : undefined,
       });
     } else return fail("layout must be grid, tidy, row, column, align or distribute.");
-    const refusedMove = board.moveMany(placed.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y })));
+    const refusedMove = asAgent(() => board.moveMany(placed.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y }))));
     if (isFailure(refusedMove)) return refusedMove;
     return { ok: true, tiles: placed };
   };
@@ -359,12 +387,12 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     let items = tiles.map((t) => ({ id: t.id, rect: t.rect }));
     if (a.tidy === true) {
       items = arrange(items, "tidy");
-      const refusedMove = board.moveMany(items.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y })));
+      const refusedMove = asAgent(() => board.moveMany(items.map((p) => ({ id: p.id, x: p.rect.x, y: p.rect.y }))));
       if (isFailure(refusedMove)) return refusedMove;
     }
     const frameId = `frame:${crypto.randomUUID().slice(0, 8)}`;
     const rect = enclosingFrame(items);
-    addFrame({ id: frameId, rect, title });
+    asAgent(() => addFrame({ id: frameId, rect, title }));
     return { ok: true, frame_id: frameId, rect };
   };
 
@@ -374,7 +402,8 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     if (!find(a.from_id)) return missing(a.from_id);
     if (!find(a.to_id)) return missing(a.to_id);
     const id = `link:${crypto.randomUUID().slice(0, 8)}`;
-    board.connect({ id, from: String(a.from_id), to: String(a.to_id) });
+    const connect = board.connect;
+    asAgent(() => connect({ id, from: String(a.from_id), to: String(a.to_id) }));
     return { ok: true, id };
   };
 
@@ -383,6 +412,13 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const tile = find(a.id);
     if (!tile) return missing(a.id);
     if (!store) return fail("The board is not ready yet.");
+    const busy = personBusyIn();
+    if (busy) {
+      const title = find(busy)?.title ?? "a tile";
+      return fail(
+        `The person is working in "${title}", so the view and selection stay theirs. board_open_item and board_item_act still read and act on "${tile.title}" without moving anything; try board_focus again once they finish.`,
+      );
+    }
     // Selecting makes the tile LIVE: its feature's own surface (values,
     // write targets, tools) registers, and reaches the agent next turn.
     const show = () => {
@@ -394,7 +430,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const hidden = [...now.parked, ...(now.removed ?? [])].some((t) => t.id === tile.id);
     if (hidden) {
       // Back on the board first; the camera can only reach it once it has rendered.
-      board.unparkTile(tile.id);
+      asAgent(() => board.unparkTile(tile.id));
       requestAnimationFrame(() => requestAnimationFrame(show));
     } else show();
     return { ok: true, id: tile.id };
@@ -405,9 +441,12 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
   /**
-   * The tile's surface capture, after making it the person's live tile (and
-   * bringing it back onto the board if it was parked or removed — only a
-   * rendered tile mounts its surface).
+   * The tile's surface capture, held awake for the call (a sleeping tile's body
+   * and capture are unmounted until needed) and brought back onto the board if
+   * it was parked or removed (only a rendered tile mounts its surface). With
+   * `show`, it also becomes the person's live tile — unless they are working
+   * in a tile, whose selection and typing are never taken from them. The
+   * caller hands `release` to `releaseLater` once the action is done.
    */
   const reachItem = async (id: unknown, show: boolean) => {
     const tile = find(id);
@@ -421,66 +460,93 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     if (!host.itemSurfaces) return fail("This board cannot open its items for you yet.");
     const now = board.read();
     const hidden = [...now.parked, ...(now.removed ?? [])].some((t) => t.id === tile.id);
-    if (hidden) board.unparkTile(tile.id);
-    if (show && store) {
+    if (hidden) asAgent(() => board.unparkTile(tile.id));
+    const release = store?.holdAwake(tile.id) ?? (() => {});
+    let shown = false;
+    if (show && store && !personBusyIn()) {
       if (hidden) await settle();
-      store.select(tile.id);
-      store.fitItem(tile.id);
+      if (!personBusyIn()) {
+        store.select(tile.id);
+        store.fitItem(tile.id);
+        shown = true;
+      }
     }
     const capture = await host.itemSurfaces.wait(tile.id, ITEM_MOUNT_TIMEOUT_MS);
     if (!capture) {
+      release();
       return fail(`"${tile.title}" did not mount its ${surface} surface. Nothing was read or changed; try again in a moment.`);
     }
-    return { tile, surface, capture };
+    return { tile, surface, capture, shown, release };
   };
+
+  /** Let a reached tile sleep again a moment after the call, once its result is read. */
+  const releaseLater = (release: () => void) => setTimeout(release, AGENT_HOLD_MS);
 
   const openItem = async (input: unknown) => {
     const reached = await reachItem(record(input).id, true);
     if (isFailure(reached)) return reached;
-    await settle();
-    const opened = await openItemSurface(reached.capture);
-    if (!opened.ok) return opened;
-    return {
-      id: reached.tile.id,
-      title: reached.tile.title,
-      kind: host.describe(reached.tile).kind,
-      live: true,
-      ...opened,
-      next: "Act on it with board_item_act: {id, target, value} for a write target, or {id, tool, input} for a tool.",
-    };
+    try {
+      await settle();
+      const opened = await openItemSurface(reached.capture);
+      if (!opened.ok) return opened;
+      return {
+        id: reached.tile.id,
+        title: reached.tile.title,
+        kind: host.describe(reached.tile).kind,
+        live: reached.shown,
+        ...(reached.shown ? {} : { not_selected: "The person is working in another tile, so it was opened without selecting it." }),
+        ...opened,
+        next: "Act on it with board_item_act: {id, target, value} for a write target, or {id, tool, input} for a tool.",
+      };
+    } finally {
+      releaseLater(reached.release);
+    }
   };
 
   const itemAct = async (input: unknown, call?: SurfaceToolCall) => {
     const a = record(input);
     const reached = await reachItem(a.id, false);
     if (isFailure(reached)) return reached;
-    const result = await actOnItem(
-      reached.capture,
-      {
-        target: str(a.target),
-        value: a.value,
-        tool: str(a.tool),
-        input: a.input,
-      },
-      call,
-    );
-    return { id: reached.tile.id, title: reached.tile.title, ...result };
+    try {
+      const result = await actOnItem(
+        reached.capture,
+        {
+          target: str(a.target),
+          value: a.value,
+          tool: str(a.tool),
+          input: a.input,
+        },
+        call,
+      );
+      return { id: reached.tile.id, title: reached.tile.title, ...result };
+    } finally {
+      releaseLater(reached.release);
+    }
   };
 
   const park = (input: unknown) => {
     const a = record(input);
     const tile = find(a.id);
     if (!tile) return missing(a.id);
-    if (a.parked === false) board.unparkTile(tile.id);
-    else board.parkTile(tile.id);
+    if (a.parked === false) asAgent(() => board.unparkTile(tile.id));
+    else asAgent(() => board.parkTile(tile.id));
     return { ok: true, id: tile.id, parked: a.parked !== false };
   };
 
+  /** Takes back the agent's OWN latest change — never the person's. */
   const undo = () => {
-    if (!board.undo) return refused("undo", "This board keeps no undo history.");
-    if (!board.canUndo) return fail("There is nothing to undo on this board.");
-    board.undo();
-    return { ok: true };
+    if (!board.undoActor) return refused("undo", "This board keeps no undo history.");
+    if (!board.canUndoActor?.("agent")) {
+      return fail("Nothing you changed on this board is left to undo. Changes the person made are theirs to undo.");
+    }
+    const { kept } = board.undoActor("agent");
+    if (kept.length === 0) return { ok: true };
+    const names = kept.map((id) => find(id)?.title ?? id).join(", ");
+    return {
+      ok: true,
+      kept,
+      note: `The person has changed ${names} since, so those were left as they are.`,
+    };
   };
 
   useSurfaceClientTools(surfaceName, {

@@ -15,6 +15,7 @@ import React, {
   useId,
 } from "react";
 import dynamic from "next/dynamic";
+import { surfaceOwnsKey } from "@/utils/keyboard-scope";
 import { initialTabsFromUrl } from "@/features/notes/initialTabsFromUrl";
 import { X } from "lucide-react";
 import { NOTE_VIEW_MODES } from "./NoteViewControls";
@@ -464,8 +465,12 @@ export function NotesView({
   }, [dispatch, isRefreshing, openTabs]);
 
   // ── Keyboard shortcuts ───────────────────────────────────────────
+  // Answered only for keys pressed in THIS notes view (utils/keyboard-scope):
+  // a board or a panel mounts several, and each must not act at once.
+  const shortcutRootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (!surfaceOwnsKey(e, shortcutRootRef.current)) return;
       const mod = e.ctrlKey || e.metaKey;
 
       // Ctrl+S — save active note
@@ -767,6 +772,7 @@ export function NotesView({
         <MobileNotesView singleNoteId={singleNote ?? routeNoteId} />
       ) : (
         <div
+          ref={shortcutRootRef}
           className={
             hidePageHeader
               ? `flex h-full w-full min-h-0 flex-col ${className ?? ""}`

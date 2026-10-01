@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FileCode } from "lucide-react";
+import { keyEventInside, surfaceOwnsKey } from "@/utils/keyboard-scope";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { codeFilesActions } from "@/features/code-files/redux/slice";
@@ -395,10 +396,14 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
   // Fallback save shortcut for when focus is in the editor area but not
   // inside Monaco itself (e.g. on the tab strip). Mirrors Cmd/Ctrl+S.
+  // Both shortcuts answer only keys pressed in THIS editor area
+  // (utils/keyboard-scope) — a board or a panel can mount several.
+  const areaRootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (mod && !e.shiftKey && !e.altKey && (e.key === "s" || e.key === "S")) {
+        if (!surfaceOwnsKey(e, areaRootRef.current)) return;
         // Only intercept when there's actually something to save.
         if (!activeTab) return;
         // Preview tabs (binary / cloud-file) have no editable buffer —
@@ -424,6 +429,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (mod && !e.shiftKey && !e.altKey && (e.key === "z" || e.key === "Z")) {
+        if (!keyEventInside(e, areaRootRef.current)) return;
         if (!activeTab) return;
         if (isPreviewTab(activeTab.kind) || isReadOnlyEditorTab(activeTab))
           return;
@@ -461,7 +467,10 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   }, [activeTab, dispatch]);
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col", EDITOR_BG, className)}>
+    <div
+      ref={areaRootRef}
+      className={cn("flex h-full min-h-0 flex-col", EDITOR_BG, className)}
+    >
       <div
         className={cn(
           "flex h-9 shrink-0 items-stretch border-b border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900",

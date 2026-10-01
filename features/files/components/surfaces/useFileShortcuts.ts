@@ -17,6 +17,9 @@
  * The handlers MUST be conservative: this hook lives at PageShell level,
  * so any false positive interrupts user typing in the search box, file
  * preview text, dialogs, etc. We refuse to fire when:
+ *   • The key was pressed outside this files surface (`scope`) — a board or
+ *     a panel can mount several; an unfocused key inside a board tile or a
+ *     window panel is the host's (utils/keyboard-scope.ts)
  *   • An input/textarea/contentEditable is focused
  *   • A dialog/alertdialog is open (Radix sets `aria-hidden` on
  *     background; we check `document.querySelector('[role="dialog"]')`)
@@ -31,6 +34,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { surfaceOwnsKey } from "@/utils/keyboard-scope";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectActiveFileId,
@@ -76,7 +80,12 @@ interface PendingDelete {
  * AlertDialog wired to this state so destructive shortcuts don't run
  * silently.
  */
-export function useFileShortcuts(): {
+export function useFileShortcuts({
+  scope,
+}: {
+  /** The files surface's root — keys pressed outside it are not ours. */
+  scope: () => Element | null;
+}): {
   pendingDelete: PendingDelete | null;
   clearPendingDelete: () => void;
   confirmDelete: () => Promise<void>;
@@ -101,6 +110,8 @@ export function useFileShortcuts(): {
     const onKeyDown = (e: KeyboardEvent) => {
       // IME composition — never intercept.
       if (e.isComposing) return;
+      // Another surface's key — never intercept.
+      if (!surfaceOwnsKey(e, scope())) return;
 
       // Input focus — never intercept (typing in search, dialogs, etc).
       const target = (e.target as HTMLElement | null) ?? null;
@@ -433,6 +444,7 @@ export function useFileShortcuts(): {
     filesById,
     foldersById,
     selection.selectedIds,
+    scope,
   ]);
 
   const clearPendingDelete = () => setPendingDelete(null);

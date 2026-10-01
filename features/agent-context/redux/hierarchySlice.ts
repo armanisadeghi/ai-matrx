@@ -271,13 +271,26 @@ export const selectFlatProjects = createSelector(
   (orgs) => (orgs ? flattenProjects(orgs) : EMPTY_PROJECTS),
 );
 
-/** Projects for a given org. */
-export const selectProjectsForOrg =
-  (orgId: string | null) =>
-  (s: StateWithHierarchy): FlatProject[] => {
-    if (!orgId) return EMPTY_PROJECTS;
-    return selectFlatProjects(s).filter((p) => p.org_id === orgId);
-  };
+const projectsForOrgSelectors = new Map<
+  string,
+  (s: StateWithHierarchy) => FlatProject[]
+>();
+
+/** Projects for a given org. Memoized per orgId (one cached selector each),
+ * so a subscriber gets the same array until the project tree changes. */
+export const selectProjectsForOrg = (
+  orgId: string | null,
+): ((s: StateWithHierarchy) => FlatProject[]) => {
+  if (!orgId) return () => EMPTY_PROJECTS;
+  const cached = projectsForOrgSelectors.get(orgId);
+  if (cached) return cached;
+  const selector = createSelector([selectFlatProjects], (projects) => {
+    const forOrg = projects.filter((p) => p.org_id === orgId);
+    return forOrg.length === 0 ? EMPTY_PROJECTS : forOrg;
+  });
+  projectsForOrgSelectors.set(orgId, selector);
+  return selector;
+};
 
 // ─── Scope selectors derived from full context ─────────────────────────────
 

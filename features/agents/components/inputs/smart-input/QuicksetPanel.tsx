@@ -58,6 +58,9 @@ import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definitio
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { useTouchOnlyDevice } from "@/components/official/composer/useTouchOnlyDevice";
 
+/** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
+const EMPTY_LIST: never[] = [];
+
 interface QuicksetPanelProps {
   conversationId: string;
   isCreator: boolean;
@@ -191,13 +194,13 @@ export function QuicksetPanel({
     DEFAULT_BUILDER_ADVANCED_SETTINGS;
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const agentToolIds = useAppSelector((state) =>
-    agentId ? selectAgentTools(state, agentId) : [],
+    agentId ? selectAgentTools(state, agentId) : EMPTY_LIST,
   );
   const customTools = useAppSelector((state) =>
-    agentId ? selectAgentCustomTools(state, agentId) : [],
+    agentId ? selectAgentCustomTools(state, agentId) : EMPTY_LIST,
   );
   const mcpServers = useAppSelector((state) =>
-    agentId ? selectAgentMcpServers(state, agentId) : [],
+    agentId ? selectAgentMcpServers(state, agentId) : EMPTY_LIST,
   );
   const toolCatalog = useAppSelector(selectAllTools);
   const toolsStatus = useAppSelector(selectToolsStatus);

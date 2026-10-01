@@ -1,0 +1,25 @@
+{
+ "_": "pnpm check:unstable-selectors — inline useAppSelector/useSelector callbacks that return a fresh array/object per call, per file. ONLY SHRINKS: fix one (createSelector / stable EMPTY), then `pnpm check:unstable-selectors --shrink`. Never add or raise an entry by hand.",
+ "note": "Initial census 2026-10-01: 32 unstable inline selectors in 26 files.",
+ "total": 21,
+ "files": {
+  "app/(dev)/demos/api-tests/agent/AgentCanonicalDbPanel.tsx": 3,
+  "components/cost/pointsRate.ts": 1,
+  "features/agent-comparison/components/ResponseFeedbackBar.tsx": 1,
+  "features/agent-comparison/components/SharedContextWindow.tsx": 1,
+  "features/agent-connections/redux/skl/selectors.ts": 1,
+  "features/agents/redux/execution-system/utils/surface-writes-note.ts": 1,
+  "features/agents/redux/execution-system/utils/wire-transcript.ts": 1,
+  "features/audio/service/listeningConfig.ts": 1,
+  "features/education/tutor/components/TutorHome.tsx": 1,
+  "features/google-workspace/attach/googleFileContext.ts": 1,
+  "features/kg-suggestions/components/HeavyHitterAcceptDialog.tsx": 1,
+  "features/marketing/data/service.ts": 1,
+  "features/marketing/seo/keyword-research/data/site-performance.ts": 1,
+  "features/settings/tabs/SystemTab.tsx": 1,
+  "features/surfaces/components/bind/SurfaceAgentBindPanel.tsx": 1,
+  "features/war-room/components/shared/WarRoomRoomThreadPicker.tsx": 1,
+  "features/war-room/components/thread/ThreadEmbeddedTaskView.tsx": 1,
+  "features/window-panels/lite-window/LiteWindowExamples.tsx": 2
+ }
+}

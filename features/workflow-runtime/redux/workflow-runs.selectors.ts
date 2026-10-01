@@ -175,27 +175,70 @@ export const selectRunEmissions = (runId: string) =>
 
 const EMPTY_PHASES: Record<string, NodeAggregatePhase> = {};
 
+function samePhaseMap(
+  a: Record<string, NodeAggregatePhase>,
+  b: Record<string, NodeAggregatePhase>,
+): boolean {
+  if (a === b) return true;
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+  for (const key of aKeys) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+}
+
+const nodeAggregatePhasesByRunId = new Map<
+  string,
+  (state: StateWithWorkflowRuns) => Record<string, NodeAggregatePhase>
+>();
+
 /** Aggregate phase for EVERY node of a run in one map — what surfaces that
  * need the whole picture (trigger resolution, progress rails) read instead of
- * mounting one selector per node. */
-export const selectNodeAggregatePhases = (runId: string) =>
-  createSelector(
-    [selectByRunId],
-    (byRunId): Record<string, NodeAggregatePhase> => {
-      const run = byRunId[runId];
-      if (!run || run.nodeOrder.length === 0) return EMPTY_PHASES;
+ * mounting one selector per node.
+ *
+ * PER RUN, and value-stable: it reads only THIS run's node fields (never the
+ * whole `byRunId` map), and returns the previous map while no phase changed.
+ * Reading `byRunId` made every run tile re-render on ANY run's event, and a
+ * fresh map per event re-rendered it on its own run's chatter (activity,
+ * cost, emissions) too. One cached selector per runId, so an inline
+ * `useAppSelector(selectNodeAggregatePhases(runId))` keeps its memo even in a
+ * component the React Compiler skips. */
+export const selectNodeAggregatePhases = (runId: string) => {
+  const cached = nodeAggregatePhasesByRunId.get(runId);
+  if (cached) return cached;
+  const selector = createSelector(
+    [
+      (state: StateWithWorkflowRuns) =>
+        state.workflowRuns.byRunId[runId]?.nodeOrder,
+      (state: StateWithWorkflowRuns) =>
+        state.workflowRuns.byRunId[runId]?.nodeAggregates,
+      (state: StateWithWorkflowRuns) =>
+        state.workflowRuns.byRunId[runId]?.nodes,
+    ],
+    (nodeOrder, nodeAggregates, nodes): Record<string, NodeAggregatePhase> => {
+      if (!nodeOrder || nodeOrder.length === 0 || !nodeAggregates || !nodes) {
+        return EMPTY_PHASES;
+      }
       const phases: Record<string, NodeAggregatePhase> = {};
-      for (const nodeId of run.nodeOrder) {
-        const aggregate = run.nodeAggregates[nodeId];
+      for (const nodeId of nodeOrder) {
+        const aggregate = nodeAggregates[nodeId];
         if (!aggregate) continue;
         const invocations = aggregate.invocationKeys
-          .map((key) => run.nodes[key])
+          .map((key) => nodes[key])
           .filter((item): item is NodeInvocationState => item !== undefined);
         phases[nodeId] = aggregatePhase(invocations, aggregate.expectedCount);
       }
       return phases;
     },
+    { memoizeOptions: { resultEqualityCheck: samePhaseMap } },
   );
+  // Bounded: a long session sees many runs; dropping the cache only costs a
+  // fresh selector (one recompute) for a run read again later.
+  if (nodeAggregatePhasesByRunId.size >= 256) nodeAggregatePhasesByRunId.clear();
+  nodeAggregatePhasesByRunId.set(runId, selector);
+  return selector;
+};
 
 /** The child run a workflow/orchestra node linked (subgraph_run_linked), or
  * null while the node hasn't run yet. */

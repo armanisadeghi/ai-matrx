@@ -21,10 +21,17 @@
  *
  * History: every change is one step, except moves and resizes, which coalesce —
  * a drag or resize of one item is one step however many frames it took (Figma).
+ *
+ * Actors: a change made inside `runAs("agent", fn)` is the ASSISTANT's. ⌘Z
+ * (`undo`) still walks the one shared stack — the person can take back
+ * anything. `undoActor("agent")` takes back only the assistant's own latest
+ * change, reverting just the records it touched that nobody changed since —
+ * so an agent's undo can never undo the person's own move (Figma / Google
+ * Docs: each collaborator's undo is their own).
  */
 
 import type { Rect } from "../engine/camera";
-import { findFreeSpot } from "../engine/placement";
+import { findFreeSpot, placeInFlow, type PlacementFlow } from "../engine/placement";
 
 export interface BoardTileBase {
   id: string;
@@ -108,7 +115,25 @@ interface History<T> {
 
 type Listener = () => void;
 
+/** Who made a change. */
+export type BoardActor = "person" | "agent";
+
+/** One change an actor made: the board before and after it. */
+interface ActorStep<T> {
+  before: Snapshot<T>;
+  after: Snapshot<T>;
+}
+
+/** What `undoActor` did. */
+export interface ActorUndoResult {
+  /** False when that actor has no change left to take back. */
+  undone: boolean;
+  /** Items the actor changed that someone else has changed since — left as they are. */
+  kept: string[];
+}
+
 const HISTORY_LIMIT = 100;
+const ACTOR_STEPS_LIMIT = 50;
 const MOVE_COALESCE_MS = 600;
 
 function seedHistory<T extends BoardTileBase>(start: T[] | BoardSeed<T>): History<T> {
@@ -147,6 +172,8 @@ export class BoardStore<T extends BoardTileBase> {
   private tileListeners = new Map<string, Set<Listener>>();
   private viewCache: { now: Snapshot<T>; view: BoardView<T> } | null = null;
   private layoutCache: BoardLayout<T> | null = null;
+  private actor: BoardActor = "person";
+  private agentSteps: ActorStep<T>[] = [];
 
   constructor(start: T[] | BoardSeed<T>) {
     this.h = seedHistory(start);
@@ -254,6 +281,9 @@ export class BoardStore<T extends BoardTileBase> {
     const prev = this.h;
     if (next === prev) return;
     this.h = next;
+    if (this.actor === "agent" && prev.now !== next.now) {
+      this.agentSteps = [...this.agentSteps, { before: prev.now, after: next.now }].slice(-ACTOR_STEPS_LIMIT);
+    }
     const a = prev.now;
     const b = next.now;
     // Wake each tile whose record changed — a reference check per subscriber,
@@ -333,14 +363,26 @@ export class BoardStore<T extends BoardTileBase> {
 
   /** Add a tile. With `near`, it lands in the nearest free space to that world
    * point, clear of tiles AND frames (a group is not free space) — except the
-   * frame named by `within`, where it may land among that group's tiles. */
-  addTile = (tile: T, near?: { x: number; y: number }, opts: { within?: string } = {}): Rect => {
+   * frame named by `within`, where it may land among that group's tiles. With
+   * `flow`, it takes the first free spot of that block in reading order (a run
+   * of adds fills the view like text; `near` then only says where a run's
+   * first tile is centred when that spot is free). */
+  addTile = (
+    tile: T,
+    near?: { x: number; y: number },
+    opts: { within?: string; flow?: PlacementFlow } = {},
+  ): Rect => {
     const cur = this.read();
     const obstacles = [
       ...cur.tiles.map((t) => t.rect),
       ...cur.frames.filter((f) => f.id !== opts.within).map((f) => f.rect),
     ];
-    const rect = near ? findFreeSpot(obstacles, { w: tile.rect.w, h: tile.rect.h }, near) : tile.rect;
+    const size = { w: tile.rect.w, h: tile.rect.h };
+    const rect = opts.flow
+      ? placeInFlow(obstacles, size, opts.flow, near)
+      : near
+        ? findFreeSpot(obstacles, size, near)
+        : tile.rect;
     const placed = { ...tile, rect };
     this.change((s) => ({
       ...s,
@@ -456,6 +498,115 @@ export class BoardStore<T extends BoardTileBase> {
     if (st.future.length === 0) return;
     this.commit({ now: st.future[0], past: [...st.past, st.now], future: st.future.slice(1), moving: null });
   };
+
+  // ── actors ───────────────────────────────────────────────────────────────
+
+  /** Run `fn` with every change it makes tagged as `actor`'s. */
+  runAs = <R>(actor: BoardActor, fn: () => R): R => {
+    const prev = this.actor;
+    this.actor = actor;
+    try {
+      return fn();
+    } finally {
+      this.actor = prev;
+    }
+  };
+
+  /** Whether `actor` has a change of its own it could take back. */
+  canUndoActor = (actor: BoardActor): boolean => actor === "agent" && this.agentSteps.length > 0;
+
+  /**
+   * Take back `actor`'s own latest change (only "agent" is tracked; the
+   * person's undo is `undo`). Every record that change touched goes back to
+   * what it was before — unless someone has changed that record since, which
+   * is kept and named. The revert is ONE step on the shared stack, so ⌘Z can
+   * take it back too.
+   */
+  undoActor = (actor: BoardActor): ActorUndoResult => {
+    if (actor !== "agent") return { undone: false, kept: [] };
+    const step = this.agentSteps[this.agentSteps.length - 1];
+    if (!step) return { undone: false, kept: [] };
+    this.agentSteps = this.agentSteps.slice(0, -1);
+    const kept: string[] = [];
+    // The revert itself is nobody's new change to take back.
+    this.runAs("person", () => this.change((now) => revertStep(step, now, kept)));
+    return { undone: true, kept };
+  };
+}
+
+/**
+ * `now` with `step` taken back: each record the step changed returns to its
+ * `before` value when `now` still holds the step's `after` value; a record
+ * someone changed since is left alone and named in `kept`.
+ */
+function revertStep<T extends BoardTileBase>(step: ActorStep<T>, now: Snapshot<T>, kept: string[]): Snapshot<T> {
+  const { before, after } = step;
+  let next = now;
+  // Tile records.
+  if (before.byId !== after.byId) {
+    const ids = new Set([...Object.keys(before.byId), ...Object.keys(after.byId)]);
+    let byId = next.byId;
+    let order = next.order;
+    for (const id of ids) {
+      const was = before.byId[id];
+      const became = after.byId[id];
+      if (was === became) continue;
+      if (now.byId[id] !== became) {
+        kept.push(id);
+        continue;
+      }
+      byId = { ...byId };
+      if (was) byId[id] = was;
+      else delete byId[id];
+      if (!was) order = order.filter((x) => x !== id);
+      else if (!order.includes(id)) order = insertAt(order, id, before.order.indexOf(id));
+    }
+    if (byId !== next.byId || order !== next.order) next = { ...next, byId, order };
+  }
+  // The shelf: what the step parked comes back, what it unparked goes back.
+  if (before.parked !== after.parked) {
+    const parkedBefore = new Set(before.parked);
+    const parkedAfter = new Set(after.parked);
+    let parked = next.parked;
+    for (const id of after.parked) if (!parkedBefore.has(id)) parked = parked.filter((x) => x !== id);
+    for (const id of before.parked) if (!parkedAfter.has(id) && !parked.includes(id)) parked = [...parked, id];
+    if (parked !== next.parked) next = { ...next, parked };
+  }
+  next = revertList(next, "frames", before.frames, after.frames, kept);
+  next = revertList(next, "shapes", before.shapes, after.shapes, kept);
+  next = revertList(next, "connections", before.connections, after.connections, kept);
+  return next;
+}
+
+function revertList<T, K extends "frames" | "shapes" | "connections">(
+  now: Snapshot<T>,
+  key: K,
+  before: Snapshot<T>[K],
+  after: Snapshot<T>[K],
+  kept: string[],
+): Snapshot<T> {
+  if (before === after) return now;
+  type Item = Snapshot<T>[K][number];
+  const was = new Map<string, Item>(before.map((x: Item) => [x.id, x]));
+  const became = new Map<string, Item>(after.map((x: Item) => [x.id, x]));
+  let list: Item[] = [...now[key]];
+  let changed = false;
+  for (const id of new Set([...was.keys(), ...became.keys()])) {
+    const a = was.get(id);
+    const b = became.get(id);
+    if (a === b) continue;
+    const at = list.findIndex((x) => x.id === id);
+    const current = at >= 0 ? list[at] : undefined;
+    if (current !== b) {
+      kept.push(id);
+      continue;
+    }
+    changed = true;
+    if (a && at >= 0) list[at] = a;
+    else if (a) list = [...list, a];
+    else list = list.filter((x) => x.id !== id);
+  }
+  return changed ? { ...now, [key]: list } : now;
 }
 
 /** The cached layout still names exactly the snapshot's tile ids and shelf

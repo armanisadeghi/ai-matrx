@@ -115,6 +115,11 @@ import {
 } from "../observational-memory/observational-memory.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import {
+  autoBatched,
+  scheduleStreamFlush,
+  unscheduleStreamFlush,
+} from "./stream-flush-scheduler";
+import {
   applyAgentWorkingDocDelta,
   flushPendingDocumentEdgesThunk,
   reflectAgentMaterializedThunk,
@@ -598,7 +603,19 @@ export async function processStream({
 
   let textBuffer = "";
   let reasoningBuffer = "";
-  let rafHandle: ReturnType<typeof setTimeout> | null = null;
+  // The latest wire cursor not yet written to the store. Folded into the next
+  // flush instead of one `recordTransportSeq` dispatch per wire event — the
+  // processor dedupes against its own lexical `lastTransportSeq`, and the
+  // store copy is only read when a NEW processor starts, after every exit
+  // path has flushed (see `dispatchBatch` callers).
+  let pendingTransportCursor: {
+    streamSeq: number;
+    streamId: string | null;
+  } | null = null;
+  // Hot-path actions are tagged so the store notifies subscribers once per
+  // frame for the whole shared flush tick (stream-flush-scheduler.ts).
+  const batchedDispatch = (action: unknown) =>
+    dispatch(autoBatched(action) as Parameters<typeof dispatch>[0]);
 
   /**
    * Canonical JSON extraction — the SINGLE data-capture path.
@@ -642,7 +659,7 @@ export async function processStream({
     const jsonState = isFinal ? jsonTracker.finalize() : jsonTracker.getState();
     if (isFinal || jsonState.revision !== lastJsonRevision) {
       lastJsonRevision = jsonState.revision;
-      dispatch(
+      batchedDispatch(
         updateExtractedJson({
           requestId,
           results: jsonState.results.map(toSnapshot),
@@ -654,25 +671,34 @@ export async function processStream({
   };
 
   const dispatchBatch = () => {
-    if (rafHandle !== null) {
-      // rafHandle is always scheduled via setTimeout (see below), so it must be
-      // cleared with clearTimeout — cancelAnimationFrame would silently no-op.
-      clearTimeout(rafHandle);
-      rafHandle = null;
+    unscheduleStreamFlush(dispatchBatch);
+
+    if (pendingTransportCursor !== null) {
+      const cursor = pendingTransportCursor;
+      pendingTransportCursor = null;
+      batchedDispatch(
+        recordTransportSeq({
+          requestId,
+          streamSeq: cursor.streamSeq,
+          streamId: cursor.streamId,
+        }),
+      );
     }
 
     let flushedAnswerText = false;
     if (textBuffer.length > 0) {
       const flushed = textBuffer;
-      dispatch(appendChunk({ requestId, content: flushed }));
-      blockAccumulator.ingest(flushed, dispatch);
+      batchedDispatch(appendChunk({ requestId, content: flushed }));
+      blockAccumulator.ingest(flushed, batchedDispatch);
       textBuffer = "";
       flushedAnswerText = true;
     }
     // appendChunk now only increments chunkCount and sets firstChunkAt.
     // The actual text content is written exclusively via blockAccumulator → upsertRenderBlock.
     if (reasoningBuffer.length > 0) {
-      dispatch(appendReasoningChunk({ requestId, content: reasoningBuffer }));
+      batchedDispatch(
+        appendReasoningChunk({ requestId, content: reasoningBuffer }),
+      );
       reasoningBuffer = "";
     }
     // Re-extract only when new answer text landed in render blocks this batch —
@@ -682,13 +708,10 @@ export async function processStream({
     }
   };
 
+  // ONE shared ~30 fps clock for every live stream in the tab (see
+  // stream-flush-scheduler.ts): N concurrent streams flush on the same tick.
   const scheduleBatchEvent = () => {
-    if (rafHandle === null) {
-      // Throttling down to ~30fps (30ms delay) rather than rAF's 60fps (16ms)
-      // because feeding 12,000 character strings to react-markdown 60x a second
-      // will mathematically freeze the browser main thread.
-      rafHandle = setTimeout(dispatchBatch, 30);
-    }
+    scheduleStreamFlush(dispatchBatch);
   };
 
   // Captured stream-phase failure (heartbeat timeout, abort, network drop,
@@ -796,13 +819,11 @@ export async function processStream({
           continue;
         }
         lastTransportSeq = transportCursor.streamSeq;
-        dispatch(
-          recordTransportSeq({
-            requestId,
-            streamSeq: transportCursor.streamSeq,
-            streamId: transportCursor.streamId,
-          }),
-        );
+        pendingTransportCursor = {
+          streamSeq: transportCursor.streamSeq,
+          streamId: transportCursor.streamId,
+        };
+        scheduleBatchEvent();
       }
       totalEvents++;
       const now = performance.now();

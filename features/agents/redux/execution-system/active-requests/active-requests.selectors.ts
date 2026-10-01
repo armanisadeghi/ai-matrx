@@ -602,22 +602,49 @@ export const selectRenderBlockCount =
  *
  * Primitive (a number) — safe for `useAppSelector` without memoisation.
  */
-export const selectAnswerBlockCount =
-  (requestId: string) =>
-  (state: RootState): number => {
-    const request = state.activeRequests.byRequestId[requestId];
-    if (!request) return 0;
-    let count = 0;
-    for (const blockId of request.renderBlockOrder) {
-      const block = request.renderBlocks[blockId];
-      if (!block || NON_ANSWER_BLOCK_TYPES.has(block.type)) continue;
-      const hasText =
-        typeof block.content === "string" && block.content.trim() !== "";
-      const hasData = block.data != null;
-      if (hasText || hasData) count += 1;
-    }
-    return count;
-  };
+const answerBlockCountByRequestId = new Map<
+  string,
+  (state: RootState) => number
+>();
+
+/**
+ * Memoized on this request's block order + block map, one cached selector per
+ * requestId: every mounted message runs it on EVERY store notification (other
+ * streams, other board pages), so the block walk must only happen when this
+ * request's blocks actually changed.
+ */
+export const selectAnswerBlockCount = (
+  requestId: string,
+): ((state: RootState) => number) => {
+  const cached = answerBlockCountByRequestId.get(requestId);
+  if (cached) return cached;
+  const selector = createSelector(
+    [
+      (state: RootState) =>
+        state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+      (state: RootState) =>
+        state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    ],
+    (order, blocks): number => {
+      if (!order || !blocks) return 0;
+      let count = 0;
+      for (const blockId of order) {
+        const block = blocks[blockId];
+        if (!block || NON_ANSWER_BLOCK_TYPES.has(block.type)) continue;
+        const hasText =
+          typeof block.content === "string" && block.content.trim() !== "";
+        const hasData = block.data != null;
+        if (hasText || hasData) count += 1;
+      }
+      return count;
+    },
+  );
+  if (answerBlockCountByRequestId.size >= 512) {
+    answerBlockCountByRequestId.clear();
+  }
+  answerBlockCountByRequestId.set(requestId, selector);
+  return selector;
+};
 
 /**
  * The LAST render block's content-ir envelope (`metadata.__ir`) whose root
@@ -2086,30 +2113,50 @@ export const selectInfoEvents =
  * when a tool call — client-delegated or a server tool such as `ask_person` —
  * suspends the turn), or a tool call's own output is a parked ask. Primitive.
  */
-export const selectRequestAwaitingPerson =
-  (requestId: string) =>
-  (state: RootState): boolean => {
-    const request = state.activeRequests.byRequestId[requestId];
-    if (!request) return false;
-    if (
-      request.infoEvents.some(
-        (info) => info?.code === "suspended_awaiting_client",
-      )
-    ) {
-      return true;
-    }
-    for (const entry of Object.values(request.toolLifecycle ?? {})) {
-      const result = entry?.result;
+const awaitingPersonByRequestId = new Map<
+  string,
+  (state: RootState) => boolean
+>();
+
+/** Memoized on the request's info events + tool lifecycle, one cached
+ * selector per requestId (it runs on every store notification in every
+ * mounted message — the scan must only happen when those inputs change). */
+export const selectRequestAwaitingPerson = (
+  requestId: string,
+): ((state: RootState) => boolean) => {
+  const cached = awaitingPersonByRequestId.get(requestId);
+  if (cached) return cached;
+  const selector = createSelector(
+    [
+      (state: RootState) =>
+        state.activeRequests.byRequestId[requestId]?.infoEvents,
+      (state: RootState) =>
+        state.activeRequests.byRequestId[requestId]?.toolLifecycle,
+    ],
+    (infoEvents, toolLifecycle): boolean => {
       if (
-        result &&
-        typeof result === "object" &&
-        (result as Record<string, unknown>).__kind === "action_request.parked"
+        infoEvents?.some((info) => info?.code === "suspended_awaiting_client")
       ) {
         return true;
       }
-    }
-    return false;
-  };
+      for (const entry of Object.values(toolLifecycle ?? {})) {
+        const result = entry?.result;
+        if (
+          result &&
+          typeof result === "object" &&
+          (result as Record<string, unknown>).__kind ===
+            "action_request.parked"
+        ) {
+          return true;
+        }
+      }
+      return false;
+    },
+  );
+  if (awaitingPersonByRequestId.size >= 512) awaitingPersonByRequestId.clear();
+  awaitingPersonByRequestId.set(requestId, selector);
+  return selector;
+};
 
 /**
  * The call ids this request's turn is SUSPENDED on (`info`

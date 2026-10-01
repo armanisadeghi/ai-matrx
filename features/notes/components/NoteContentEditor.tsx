@@ -451,6 +451,7 @@ export function NoteContentEditor({
   // it must mount it — otherwise note undo silently regresses.
   const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useNoteUndoRedo({
     noteId,
+    scope: () => editorRootRef.current,
   });
 
   // ── Context menu handlers ─────────────────────────────────────────

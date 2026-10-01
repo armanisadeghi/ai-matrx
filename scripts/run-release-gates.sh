@@ -660,6 +660,8 @@ if $STRICT; then
         # REACT COMPILER SILENT SKIPS (lane RENDER-2, 2026-09-27) — same row as the non-strict lane.
         # A SIGNAL: a component the compiler skips has NO memoisation under the "no manual memo" rule.
         "No new component the React Compiler silently skips (shrink-only baseline)|pnpm check:compiler-skips"
+        # UNSTABLE SELECTORS (perf campaign, 2026-10-01) — same row as the non-strict lane. A SIGNAL.
+        "No new selector that mints a fresh array/object per dispatch (shrink-only baseline)|pnpm check:unstable-selectors"
         # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
         # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
         # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
@@ -888,6 +890,13 @@ else
         # functions (2026-09-27); a file above its entry is a finding. A SIGNAL, never a blocker.
         # `pnpm check:compiler-skips:self-test` proves it can still fail.
         "No new component the React Compiler silently skips (shrink-only baseline)|pnpm check:compiler-skips"
+        # UNSTABLE SELECTORS (perf campaign, 2026-10-01). `useAppSelector(fn)` re-runs `fn` on every
+        # store notification and re-renders when the result is not `===`; an inline `.filter`/`.map`/
+        # `Object.values`/`?? []` or a hand-written `select…` doing the same re-renders its component
+        # on EVERY dispatch (with several chats streaming on /board, every mounted page ~30×/s).
+        # Offline TypeScript-AST parse, ~2 s. Shrink-only baseline; a SIGNAL, never a blocker.
+        # `pnpm check:unstable-selectors:self-test` proves it can still fail on a planted sample.
+        "No new selector that mints a fresh array/object per dispatch (shrink-only baseline)|pnpm check:unstable-selectors"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
         # HIDDEN PRIMARY ACTIONS (2026-09-27). A page's primary action (Run, Generate, Clean, Review,
         # Create, Submit, Start, Process, Analyze, Publish, Send) is never reachable only through a

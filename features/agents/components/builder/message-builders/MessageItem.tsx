@@ -160,9 +160,10 @@ export function MessageItem({
   // neither. The hook triggers the one fetch and is a no-op afterwards.
   const selectedModel = useModelFull(modelId);
 
-  const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useAgentUndoRedo(
-    { agentId },
-  );
+  const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useAgentUndoRedo({
+    agentId,
+    scope: () => textareaRef.current,
+  });
   const messageFlags = useMessageFlags(agentId, messageIndex);
 
   const handleViewHistory = useCallback(() => {

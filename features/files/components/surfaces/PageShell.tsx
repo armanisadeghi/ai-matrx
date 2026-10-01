@@ -27,6 +27,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { KEY_SCOPE_ATTR } from "@/utils/keyboard-scope";
 import { useRouter } from "next/navigation";
 import {
   useGroupRef,
@@ -368,7 +369,8 @@ function PageShellDesktop({
   // focus-scoped: skips when an input/textarea/contentEditable is focused
   // or any dialog is open. Returns the pending-delete state so we can
   // gate destructive shortcuts behind a confirm.
-  const shortcuts = useFileShortcuts();
+  const shortcutRootRef = useRef<HTMLDivElement | null>(null);
+  const shortcuts = useFileShortcuts({ scope: () => shortcutRootRef.current });
 
   // Drag-and-drop wired at the shell level so a file dragged from the
   // FileTable / FileGrid can be dropped onto a folder ANYWHERE — table
@@ -848,6 +850,8 @@ function PageShellDesktop({
           onDragCancel={handleDragCancel}
         >
           <div
+            ref={shortcutRootRef}
+            {...{ [KEY_SCOPE_ATTR]: "" }}
             className={cn(
               "flex h-full overflow-hidden bg-background",
               className,

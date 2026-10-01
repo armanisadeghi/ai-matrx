@@ -43,6 +43,9 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
+/** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */
+const EMPTY_LIST: never[] = [];
+
 type Variant = "glass" | "transparent" | "solid" | "group";
 
 export interface TaskTapButtonProps {
@@ -107,7 +110,9 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
   );
 
   const linked = useAppSelector((s) =>
-    entityType && entityId ? selectTasksForEntity(entityType, entityId)(s) : [],
+    entityType && entityId
+      ? selectTasksForEntity(entityType, entityId)(s)
+      : EMPTY_LIST,
   );
   const linkedError = useAppSelector((s) =>
     entityType && entityId

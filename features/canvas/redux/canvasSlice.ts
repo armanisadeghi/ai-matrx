@@ -627,8 +627,9 @@ export const selectCanvasIsOpen = (state: WithCanvas) =>
   state.canvas?.isOpen ?? false;
 export const selectCanvasHomeOpen = (state: WithCanvas) =>
   state.canvas?.homeOpen ?? false;
+const EMPTY_CANVAS_ITEMS: never[] = [];
 export const selectCanvasItems = (state: WithCanvas) =>
-  state.canvas?.items ?? [];
+  state.canvas?.items ?? EMPTY_CANVAS_ITEMS;
 export const selectCurrentItemId = (state: WithCanvas) =>
   state.canvas?.currentItemId ?? null;
 /**

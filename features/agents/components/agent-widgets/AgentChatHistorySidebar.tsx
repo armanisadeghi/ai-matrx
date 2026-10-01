@@ -15,6 +15,14 @@ import { renameConversation } from "@/features/agents/redux/conversation-list/co
 import type { AppDispatch } from "@/lib/redux/store";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+/** Stable idle result — a fresh literal per call re-rendered the sidebar on every dispatch. */
+const IDLE_CONVERSATIONS = {
+  status: "idle" as const,
+  conversations: [] as ConversationListItem[],
+  archived: [] as ConversationListItem[],
+  error: null,
+};
+
 interface AgentChatHistorySidebarProps {
   conversationId: string;
 }
@@ -32,12 +40,7 @@ export function AgentChatHistorySidebar({
   const { status, conversations, archived, error } = useAppSelector((state) =>
     selectConversations
       ? selectConversations(state)
-      : {
-          status: "idle" as const,
-          conversations: [] as ConversationListItem[],
-          archived: [] as ConversationListItem[],
-          error: null,
-        },
+      : IDLE_CONVERSATIONS,
   );
   const [showArchived, setShowArchived] = useState(false);
 

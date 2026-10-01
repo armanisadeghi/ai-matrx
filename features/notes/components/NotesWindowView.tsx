@@ -11,7 +11,8 @@
 // Takes ONLY instanceId; every value comes from Redux selectors. ZERO PROP
 // DRILLING.
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
+import { surfaceOwnsKey } from "@/utils/keyboard-scope";
 import { X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -70,8 +71,12 @@ export function NotesWindowView({
   );
 
   // ── Keyboard shortcuts (save / close tab / cycle tab) ──────────────
+  // Answered only for keys pressed in THIS view (utils/keyboard-scope): a
+  // board or a panel mounts several, and each must not act at once.
+  const shortcutRootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (!surfaceOwnsKey(e, shortcutRootRef.current)) return;
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key === "s") {
         e.preventDefault();
@@ -104,7 +109,10 @@ export function NotesWindowView({
 
   return (
     <NotesInstanceProvider value={instanceId}>
-      <div className={cn("flex h-full min-h-0 w-full flex-col", className)}>
+      <div
+        ref={shortcutRootRef}
+        className={cn("flex h-full min-h-0 w-full flex-col", className)}
+      >
         {/* Editor column (tab bar + presence + editor / split / empty) */}
         <div className="flex h-full min-h-0 flex-col">
           {showTabs && <NoteTabBar instanceId={instanceId} syncUrl={syncUrl} />}

@@ -352,8 +352,10 @@ export const selectMcpDiscoveries = (state: WithMcp) =>
 export const selectMcpServerDiscovery = (state: WithMcp, serverId: string) =>
   selectMcpState(state).discoveries[serverId] ?? null;
 
+const EMPTY_MCP_TOOLS: never[] = [];
+
 export const selectMcpServerTools = (state: WithMcp, serverId: string) =>
-  selectMcpState(state).discoveries[serverId]?.tools ?? [];
+  selectMcpState(state).discoveries[serverId]?.tools ?? EMPTY_MCP_TOOLS;
 
 export const selectMcpServerDiscoveryStatus = (
   state: WithMcp,

@@ -113,9 +113,11 @@ export function SystemMessage({
     selectAgentVariableDefinitions(state, agentId),
   );
 
-  const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useAgentUndoRedo(
-    { agentId },
-  );
+  const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useAgentUndoRedo({
+    agentId,
+    // -1 is the system message's slot (systemMessageIndex, declared below).
+    scope: () => textareaRefs.current[-1] ?? null,
+  });
 
   const handleViewHistory = useCallback(() => {
     dispatch(

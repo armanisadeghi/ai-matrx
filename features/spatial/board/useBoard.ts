@@ -22,6 +22,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import type { Rect } from "../engine/camera";
+import type { PlacementFlow } from "../engine/placement";
 import {
   BoardStore,
   type BoardConnection,
@@ -31,10 +32,14 @@ import {
   type BoardShape,
   type BoardTileBase,
   type BoardView,
+  type ActorUndoResult,
+  type BoardActor,
 } from "./board-store";
 
 export { BoardStore } from "./board-store";
 export type {
+  ActorUndoResult,
+  BoardActor,
   BoardConnection,
   BoardFrame,
   BoardLayout,
@@ -66,7 +71,7 @@ export interface Board<T extends BoardTileBase> {
   /** Add a tile. With `near`, it lands in the nearest free space to that world
    * point, clear of tiles AND frames (a group is not free space) — except the
    * frame named by `within`, where it may land among that group's tiles. */
-  addTile: (tile: T, near?: { x: number; y: number }, opts?: { within?: string }) => Rect;
+  addTile: (tile: T, near?: { x: number; y: number }, opts?: { within?: string; flow?: PlacementFlow }) => Rect;
   addTiles: (tiles: T[]) => void;
   /** Change a tile's own fields. One undoable step, unless `history: false`
    * (typing, or a note gaining its record id — undoing those would lose work
@@ -86,6 +91,11 @@ export interface Board<T extends BoardTileBase> {
   /** The board as of the LAST change, even before React re-renders — what a
    * sequence of commands in one tick (an agent's tool calls) must read. */
   read: () => BoardView<T>;
+  /** Run changes as an actor (an agent's tool call runs as "agent"). */
+  runAs: <R>(actor: BoardActor, fn: () => R) => R;
+  /** Take back only `actor`'s own latest change (never the person's). */
+  undoActor: (actor: BoardActor) => ActorUndoResult;
+  canUndoActor: (actor: BoardActor) => boolean;
 }
 
 /** The board, created once from `initial`. Stable for the component's life. */
@@ -150,5 +160,8 @@ export function useBoard<T extends BoardTileBase>(
     addShape: store.addShape,
     removeShape: store.removeShape,
     read: store.read,
+    runAs: store.runAs,
+    undoActor: store.undoActor,
+    canUndoActor: store.canUndoActor,
   };
 }

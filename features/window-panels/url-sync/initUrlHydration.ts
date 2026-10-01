@@ -12,6 +12,7 @@ import { readAgentPanelSurfaceArg } from "@/features/window-panels/windows/agent
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { OVERLAY_CATALOGUE } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import { PANEL_KEY_ALIASES } from "./panelKeyAliases";
 import {
@@ -36,13 +37,33 @@ import { openReviewWalk } from "@/features/review-walk/openReviewWalk";
 /**
  * URL sync uses the instance slot for both singleton window identities and
  * resource identities. Only the latter may be forwarded into feature data.
+ *
+ * A singleton window publishes its OWN overlay id in that slot
+ * (`?panels=quick_data:quickDataWindow`), so every overlay id in the catalogue
+ * is a window identity, never a resource — until 2026-10-01 the quick-data
+ * hydrator forwarded "quickDataWindow" as a table id and the reload asked
+ * `custom.where_tables_live` for it (22P02 invalid uuid). Exported for the
+ * guard in `__tests__/aWindowIdentityIsNeverAResourceId.test.ts`.
  */
-function getRestorableResourceId(
-  id: string,
+export function getRestorableResourceId(
+  id: string | null | undefined,
   ...singletonIds: string[]
 ): string | null {
   if (!id || id === "default" || singletonIds.includes(id)) return null;
+  if (Object.prototype.hasOwnProperty.call(OVERLAY_CATALOGUE, id)) return null;
   return id;
+}
+
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A resource id that a uuid door will accept, or null — never a window token. */
+export function getRestorableUuid(
+  id: string | null | undefined,
+  ...singletonIds: string[]
+): string | null {
+  const resource = getRestorableResourceId(id, ...singletonIds);
+  return resource && UUID_SHAPE.test(resource) ? resource : null;
 }
 
 /**
@@ -283,7 +304,10 @@ export function initUrlHydration() {
       openOverlay({
         overlayId: "credentialVaultWindow",
         instanceId: "default",
-        data: { selectedItemId: id ?? null, scope: "mine" },
+        data: {
+          selectedItemId: getRestorableResourceId(id, "credentialVaultWindow"),
+          scope: "mine",
+        },
       }),
     );
   });
@@ -353,10 +377,11 @@ export function initUrlHydration() {
   // `?panels=quick_data:<tableId>` deep-links to a specific table. The bare
   // key opens without a selected table; no cloud window-session fallback exists.
   registerPanelHydrator("quick_data", (dispatch, id) => {
+    const tableId = getRestorableUuid(id, "quickDataWindow");
     dispatch(
       openOverlay({
         overlayId: "quickDataWindow",
-        data: id ? { selectedTable: id } : null,
+        data: tableId ? { selectedTable: tableId } : null,
       }),
     );
   });
@@ -455,7 +480,8 @@ export function initUrlHydration() {
 
   // File Preview Window — `?panels=file_preview:<fileId>:p-<page>` deep-links
   // to a file and, for PDFs, an optional 1-based page.
-  registerPanelHydrator("file_preview", (dispatch, id, args) => {
+  registerPanelHydrator("file_preview", (dispatch, rawId, args) => {
+    const id = getRestorableResourceId(rawId, "filePreviewWindow");
     const parsedPage = Number.parseInt(args.p ?? "", 10);
     const pageNumber = Number.isFinite(parsedPage)
       ? Math.max(1, parsedPage)
@@ -476,7 +502,8 @@ export function initUrlHydration() {
 
   // Crop Studio Window — `?panels=crop_studio` opens the studio.
   // Optional `?panels=crop_studio:<folderId>` pre-selects a destination folder.
-  registerPanelHydrator("crop_studio", (dispatch, id) => {
+  registerPanelHydrator("crop_studio", (dispatch, rawId) => {
+    const id = getRestorableResourceId(rawId, "cropStudioWindow");
     dispatch(
       openOverlay({
         overlayId: "cropStudioWindow",
@@ -487,7 +514,8 @@ export function initUrlHydration() {
 
   // Messages Window — `?panels=messages` opens the messaging window.
   // Optional `?panels=messages:<conversationId>` deep-links to a conversation.
-  registerPanelHydrator("messages", (dispatch, id) => {
+  registerPanelHydrator("messages", (dispatch, rawId) => {
+    const id = getRestorableResourceId(rawId, "messagesWindow");
     dispatch(
       openOverlay({
         overlayId: "messagesWindow",
