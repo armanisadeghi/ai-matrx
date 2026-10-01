@@ -145,6 +145,14 @@ begin
   if platform.write_is_a_persons_own() then
     return null;
   end if;
+  -- THE FINAL SWITCH IS NEVER REFUSED BY ITS OWN FENCE (PRESS-FENCE). platform.final_switch_press
+  -- and platform.final_switch_undo set app.final_switch_step = 'on' (transaction-local) around every
+  -- write they make and clear it before they return, so only their own run passes here, whatever
+  -- channel called them (the server presses as the platform). Every other agent, automation or
+  -- integration write to the copy is still refused below.
+  if coalesce(current_setting('app.final_switch_step', true), '') = 'on' then
+    return null;
+  end if;
   -- THE NAME ONLY TO WHO MAY OPEN THE COPY (SUITE-HEALTH-3). The same may-open ladder every
   -- door asks, about the copy by its id. A caller it refuses is still refused the write; the
   -- sentence just names nothing. A copy that is not in the record store is not named either.
@@ -1568,6 +1576,12 @@ begin
   return jsonb_build_object('ok', true, 'press_id', v_press, 'state', p_to, 'did', v_did, 'says', v_done);
 end;
 $function$;
+
+-- The copy fence's question is a client door again (its body decides access again, above).
+update platform.client_callable_door
+   set signed_in_callers = true, non_client_lane = null
+ where schema_name = 'custom' and function_name = '_older_table_copy_refusal';
+grant execute on function custom._older_table_copy_refusal(uuid) to authenticated;
 
 create or replace view workbench.pick_list_live with (security_invoker = true) as
 SELECT l.id,

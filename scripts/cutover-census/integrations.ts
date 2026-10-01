@@ -36,8 +36,10 @@ export type Proof =
   | { kind: "no_importer"; repo: Repo; module: string; says: string }
   /** A release tag of `repo` contains `commit`. */
   | { kind: "released"; repo: Repo; commit: string; says: string }
-  /** A live read: one row `(ok boolean, detail text)`. */
-  | { kind: "db"; sql: string; says: string };
+  /** A live read: one row `(ok boolean, detail text)`. `finalAtStepTwo`: once step two has retired the undo
+   *  and moved the older tables to the graveyard (lane SWITCH-STEP-TWO), there is nothing older left to
+   *  measure, so the proof reads met without running its SQL (which names the older tables). */
+  | { kind: "db"; sql: string; says: string; finalAtStepTwo?: true };
 
 export interface Integration {
   id: string;
@@ -645,6 +647,7 @@ export const INTEGRATIONS: Integration[] = [
                                  and q.granted_to_user_id is not distinct from p.granted_to_user_id
                                  and q.granted_to_organization_id is not distinct from p.granted_to_organization_id)`,
       says: "every share of a copied table is carried",
+      finalAtStepTwo: true,
     }],
   },
   {
@@ -663,6 +666,7 @@ export const INTEGRATIONS: Integration[] = [
                and not exists (select 1 from platform.saved_view w where w.surface_key = 'custom/records' and w.subject_id = d.id and w.deleted_at is null
                                  and w.definition -> 'moved_from' ->> 'view_id' = v.id::text)`,
       says: "every saved view of a copied table is carried",
+      finalAtStepTwo: true,
     }],
   },
   { id: "D11", repo: "database", plan: "R", disposition: "flip_time", what: "platform.client_callable_door rows naming older doors", why: "removed at the read-only step / archive", plain: "", owner: "the read-only step" },
@@ -723,6 +727,7 @@ export const INTEGRATIONS: Integration[] = [
         // the press step.
         sql: "select (to_regprocedure('custom.where_tables_live(uuid[])') is not null and to_regprocedure('platform.table_lives_in(uuid)') is not null and to_regprocedure('custom.table_copy_evaluation_state(uuid)') is not null and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_older_table_copy_refusal%' and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_copy_evaluation_note%' and pg_get_functiondef('custom._older_table_copy_refusal(uuid)'::regprocedure) like '%write_is_a_persons_own%' and pg_get_functiondef('platform._cutover_seam_apply(text,uuid,text,uuid,uuid)'::regprocedure) like '%_cutover_copy_resync%') as ok, 'the store answers where a table lives from the switch; the copy fence refuses an agent''s, automation''s or integration''s write to a test copy and notes a person''s; the press re-syncs the copy from the older table before it flips' as detail",
         says: "the store's door, the copy fence's person rule and note, and the press's re-sync are live",
+        finalAtStepTwo: true,
       },
     ],
   },

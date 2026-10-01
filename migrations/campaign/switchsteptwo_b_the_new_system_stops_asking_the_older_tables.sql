@@ -13,7 +13,7 @@
 -- based-on: platform.list_lives_in(uuid) 80076bda7d779a85d680dfca36c470aa81378625e47b103d2e6a44581fa1802d
 -- based-on: platform._older_table_moved_by_switch(uuid) e58399884b4d9fb2aeabcc6e8a033c5b2a6ebe68db06170d44dc6209d530d1a0
 -- based-on: platform._older_list_moved_by_switch(uuid) a672a8e307a3c896eaa6c11dc1ff2acbc7d917c7e9a0fa46a915612cfb9e1f5f
--- based-on: custom._older_table_copy_refusal(uuid) 88fd4c57f7a3a1634533522fa957740c30471c38edead45a9a7e9d7ca7a39f0d
+-- based-on: custom._older_table_copy_refusal(uuid) b78e3b0793aafd017c49d599848ca45fa7851780ad3919a84264c14a2fd49304
 -- based-on: custom._older_table_copy_verdict(uuid) 6b01624ff2167558400d8f2a597ab0018ecc78c602307caa6bd86b9bfaaf9ef6
 -- based-on: custom.table_copy_evaluation_state(uuid) f9270f7df168f3a289d2ba7be0c9999527399bb9f1e68e22257f1385c05225ea
 -- based-on: custom.where_lists_live(uuid[]) 7e9e32ebb1bdbfe64133f524ea44855e68ec18caa687e92451981bc965e59d0f
@@ -1464,6 +1464,15 @@ begin
   return jsonb_build_object('ok', true, 'press_id', v_press, 'state', p_to, 'did', v_did, 'says', v_done);
 end;
 $function$;
+
+-- custom._older_table_copy_refusal(uuid) was a declared client door (the copy fence asks it as the writer). It now
+-- answers null and reads nothing, so it no longer decides access, and no code in any repo calls it: its door row
+-- closes first, then the client grant goes (close the row, then revoke). check:store-doors-decide census 1 found it.
+update platform.client_callable_door
+   set signed_in_callers = false, anonymous_callers = false, anonymous_purpose = null,
+       non_client_lane = 'SWITCH-STEP-TWO: the copy fence''s own question, asked inside the database; after step two it refuses nothing, and no client asks it.'
+ where schema_name = 'custom' and function_name = '_older_table_copy_refusal';
+revoke execute on function custom._older_table_copy_refusal(uuid) from public, anon, authenticated;
 
 create or replace view workbench.pick_list_live with (security_invoker = true) as
  SELECT t.id,

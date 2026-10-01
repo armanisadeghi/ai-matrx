@@ -177,9 +177,32 @@ interface ProofResult {
   detail: string;
 }
 
+/** STEP TWO (lane SWITCH-STEP-TWO): the undo is retired and the older data tables are in the graveyard. */
+let stepTwoDone: boolean | null = null;
+async function stepTwoIsDone(db: pg.Client): Promise<boolean> {
+  if (stepTwoDone !== null) return stepTwoDone;
+  try {
+    const moved = await db.query(
+      "select to_regclass('workbench.udt_datasets') is null and to_regclass('graveyard.udt_datasets') is not null as moved, to_regprocedure('platform._final_switch_undo_retired()') is not null as has_door",
+    );
+    let retired = false;
+    if (moved.rows[0]?.has_door) {
+      const r = await db.query("select (platform._final_switch_undo_retired()).id is not null as retired");
+      retired = r.rows[0]?.retired === true;
+    }
+    stepTwoDone = moved.rows[0]?.moved === true && retired;
+  } catch {
+    stepTwoDone = false;
+  }
+  return stepTwoDone;
+}
+
 async function runProof(p: Proof, trees: Map<Repo, RepoTree>, db: pg.Client | null): Promise<ProofResult> {
   if (p.kind === "db") {
     if (!db) return { says: p.says, ok: false, detail: "not measured: no database connection" };
+    if (p.finalAtStepTwo && (await stepTwoIsDone(db))) {
+      return { says: p.says, ok: true, detail: "the older tables are in the graveyard (step two); nothing older is left to carry or fence" };
+    }
     try {
       const r = await db.query(p.sql);
       const row = r.rows[0] ?? {};
