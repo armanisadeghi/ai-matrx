@@ -19,4 +19,13 @@ export default [
     items: ["T34"],
     targets: ["clone"],
   },
+  {
+    // The record history door: who changed this, when, and "put it back" — the SQL half of T58.
+    id: "sql.history-screens",
+    area: "tables",
+    kind: "sql",
+    file: "scripts/campaign-tests/histscreens_green.sql",
+    items: ["T58"],
+    targets: ["clone"],
+  },
 ];
