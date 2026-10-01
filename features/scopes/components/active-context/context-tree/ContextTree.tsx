@@ -800,7 +800,10 @@ export function ContextTree({
         )}
       </div>
 
-      <div className="flex h-9 shrink-0 items-center gap-2 border-t border-border bg-muted/30 px-2 md:h-6 md:px-1.5">
+      {/* min-h, never h: inside a `matrx-touch-targets` host (the phone's
+          Chat options sheet) the clear button floors at 44px, and a fixed
+          36px footer let it spill over the list (PB-08, 2026-10-01). */}
+      <div className="flex min-h-9 shrink-0 items-center gap-2 border-t border-border bg-muted/30 px-2 md:min-h-6 md:px-1.5">
         {!isEmptySelection(selection) && onClear && (
           <button
             type="button"

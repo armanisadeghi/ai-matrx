@@ -120,10 +120,12 @@ export function ImageUrlResourcePicker({
     }
   };
 
+  // Enter belongs to this field — same rule as "Add a link" (PB-04 run 2).
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !isValidating) {
-      handleValidate();
-    }
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isValidating) handleValidate();
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {

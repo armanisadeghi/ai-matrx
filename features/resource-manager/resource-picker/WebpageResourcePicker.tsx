@@ -304,10 +304,15 @@ export function WebpageResourcePickerCore({
     setCharLimit(0);
   };
 
+  // Enter belongs to THIS field: it previews the link and nothing else. Its
+  // default is a form's implicit submit and its bubble reaches every Enter
+  // handler above the picker (PB-04 run 2: Enter here reloaded the page and
+  // wiped the attached chips while the arrow button worked).
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !isLoading) {
-      handleScrape();
-    }
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isLoading) handleScrape();
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {

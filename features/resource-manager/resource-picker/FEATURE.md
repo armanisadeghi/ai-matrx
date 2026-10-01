@@ -42,6 +42,7 @@ Of ~16 sub-pickers:
 
 ## Change Log
 
+- 2026-10-01 — **Enter in a link field previews and is consumed** (PB-04 run 2): `WebpageResourcePickerCore` and `ImageUrlResourcePicker` prevent Enter's default and stop its bubble, so no form submit or ancestor Enter handler fires. Guard: `__tests__/webpage-picker-enter-previews.test.tsx` (red without it).
 - 2026-10-01 — **One close rule** (chat FEATURE.md § Invariants): row-click views (notes, tasks, tables, workbooks, documents, chats, Google, Context values Assign) complete and call `onClose`; the Files checkbox list stays open and, given a `conversationId`, opens with that conversation's attached files ticked (`ConversationFilesPicker` → `useAttachedFileIds`). Context values clears its staged picks after Assign.
 - 2026-09-30 — `WebpageResourcePickerCore` gains `onReadUrl(url)`: a host that reads the page through its own door gets the checked link and the picker neither scrapes nor previews (the Source input, verify-5 #3/#7). `onReadStart`/`onReadEnd` (its only user was the Source input) removed.
 - 2026-09-30 — `InlineUploadArea` gains `clearHandedOver`: once `onSelect` has taken a batch, its uploaded rows leave the area (failed rows keep their retry). The Source input uses it — its cards are the truth, and a removed Source no longer lingers as an upload row (verify-4 V4-F #3).
