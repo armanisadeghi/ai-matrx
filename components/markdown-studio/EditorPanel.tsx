@@ -182,7 +182,9 @@ export function EditorPanel({
             editor.replaceSelection(text);
             return true;
           }}
-          onTextReplace={(text) => editorRef.current?.replaceSelection(text)}
+          // Full-content contract: the menu and agents hand over the WHOLE value;
+          // the source editor follows `value`.
+          onTextReplace={onChange}
           onTextInsertBefore={(text) => editorRef.current?.insertText(text, "before")}
           onTextInsertAfter={(text) => editorRef.current?.insertText(text, "after")}
         >

@@ -97,6 +97,12 @@ export interface RichEditorController {
   replaceSelection: (text: string) => void;
   /** Insert a new block before / after the selection. */
   insertText: (text: string, where: "before" | "after") => void;
+  /**
+   * Replace the WHOLE text (the context menu's full-content `onTextReplace`
+   * contract: Cut / Paste / an AI result's Replace / an agent's
+   * widget_text_replace all hand over the entire new value).
+   */
+  setText: (text: string) => void;
   /** The text now, with any pending keystrokes delivered through onChange first. */
   flush: () => string;
   /** Open the editor's own find (and replace) bar — it skips protected content. */
@@ -319,6 +325,13 @@ export default function RichEditorImpl({
     return text;
   };
 
+  // Whole-text replace: the view editors are seeded from `current`, so the new
+  // text opens by remounting the showing view (same as a host reset).
+  const setText = (text: string) => {
+    updateCurrent(text);
+    setMountKey((key) => key + 1);
+  };
+
   const switchView = (next: RichEditorView) => {
     if (next === view) return;
     try {
@@ -491,6 +504,7 @@ export default function RichEditorImpl({
       selectedText: () => handle.current?.selectedText() ?? "",
       replaceSelection: (text) => handle.current?.replaceSelection(text),
       insertText: (text, where) => handle.current?.insertText(text, where),
+      setText,
       flush,
       openFind: (withReplace = false) => setFindMode(withReplace ? "replace" : "find"),
       jumpToOffset: (offset) => {
@@ -592,7 +606,7 @@ export default function RichEditorImpl({
           handle.current.replaceSelection(text);
           return true;
         }}
-        onTextReplace={(text) => handle.current?.replaceSelection(text)}
+        onTextReplace={setText}
         onTextInsertBefore={(text) => handle.current?.insertText(text, "before")}
         onTextInsertAfter={(text) => handle.current?.insertText(text, "after")}
         onSave={onSave ? save : undefined}

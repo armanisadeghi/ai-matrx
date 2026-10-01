@@ -813,7 +813,7 @@ export function NoteEditor({
               rich.replaceSelection(text);
               return true;
             }}
-            onTextReplace={(newText) => richEditorRef.current?.replaceSelection(newText)}
+            onTextReplace={(newValue) => richEditorRef.current?.setText(newValue)}
             onTextInsertBefore={(text) => richEditorRef.current?.insertText(text, "before")}
             onTextInsertAfter={(text) => richEditorRef.current?.insertText(text, "after")}
             onContentInserted={() => {}}
