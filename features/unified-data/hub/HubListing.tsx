@@ -21,6 +21,7 @@ import Link from "next/link";
 import { ChevronDown, ExternalLink, TriangleAlert } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@ai-matrx/design-system";
+import { refusalForAPerson } from "@ai-matrx/records-ui";
 
 
 import type { HubCapability, HubItem } from "./capabilities";
@@ -265,13 +266,10 @@ export function HubListing({
                 <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
                 <span>
                   {capability.title} could not be read, so nothing is listed — this is not an empty
-                  list. {state.error.message}
+                  list. {refusalForAPerson({ code: "internal", message: state.error.message }).sentence}
                 </span>
                 <ErrorAlchemyMenu error={state.error.message} />
               </p>
-              {state.error.hint ? (
-                <p className="mt-1 pl-5 text-xs text-muted-foreground">{state.error.hint} <ErrorAlchemyMenu error={state.error.hint} /></p>
-              ) : null}
             </div>
           ) : state.items.length === 0 ? (
             <p className="px-3 py-3 text-xs text-muted-foreground">
