@@ -445,9 +445,12 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "note_content",
     label: "Note content",
     description:
-      "REPLACES the entire body of the open note with the value — markdown text, exactly as it should read. Use for rewrites, cleanups, and restructures; read the current body from `current_note` first so nothing the user wants kept is dropped. To add to the note instead of replacing it, use `append_to_note`. Staged into the live editor (undoable, autosaved like the user's own typing).",
+      'Changes the open note\'s body. For a small change (a word, a line, a paragraph) send ONLY the edit: {"command": "str_replace", "old_str": "<exact text now in the note, unique>", "new_str": "<replacement>"} — never the whole note again. If old_str is missing or appears more than once, nothing changes and you are told; widen it and resend. Send the whole body as a plain markdown string only for a genuine rewrite, after reading `content` so nothing the user wants kept is dropped. To add at the end use `append_to_note`. Staged into the live editor (undoable, autosaved like the user\'s own typing).',
     valueType: "string",
     updatesValue: "current_note",
+    // An anchored edit is resolved against `comparisonValue` (`content`, the
+    // live editor text) — `current_note` is a reference, not text.
+    patchable: true,
     // `current_note` is the server resource reference (an object); the exact
     // live editor text it replaces is `content`. Required: no diff, no write.
     approvalComparison: "text-replacement",
@@ -574,7 +577,7 @@ export const notesEditorManifest: SurfaceManifest = {
 You are on the Notes editor: the user's markdown workspace of many small-to-medium notes, organized into folders and opened as tabs. One note is active in the editor at a time; a second may sit in a split pane.
 Start from note_bundle: one XML element holding the open note (metadata, body up to 7,000 characters, scopes), the other open tabs, and the folders — enough for most jobs without a lookup. Read the values in tiers: the Selection & cursor group is the live runtime cut (what is highlighted, where the cursor is); the Active note group identifies the persisted note and its metadata — its full content resolves through the current_note resource reference (with an unsaved-buffer overlay when dirty); the Workspace group describes the surrounding tabs, folders, and scope assignments; Editor state tells you what the UI can currently do (mode, panes, find bar).
 When shared_access.shared_with_me is true the note belongs to someone else — respect its permission_level before proposing writes. When is_new_note is true the note has no server row yet; actions needing a stable id should save first or refuse.
-You can also WRITE to this surface. On the open note: note_content (replace the body) or append_to_note, note_title, note_tags, note_folder (an existing folder), note_scopes (its scope set). Across notes: create_notes (new notes, or copies with copy_of), update_notes (title/body/tags by id), delete_notes (archives to Trash — restorable). These edit the user's own writing, so each one is confirmed with the user before it lands — read the matching value first (a replace or a tag set overwrites what is there), change only what was asked for, and leave the rest of the note alone.
+You can also WRITE to this surface. On the open note: note_content (a small edit as str_replace; the whole body only for a rewrite) or append_to_note, note_title, note_tags, note_folder (an existing folder), note_scopes (its scope set). Across notes: create_notes (new notes, or copies with copy_of), update_notes (title/body/tags by id), delete_notes (archives to Trash — restorable). These edit the user's own writing, so each one is confirmed with the user before it lands — read the matching value first (a replace or a tag set overwrites what is there), change only what was asked for, and leave the rest of the note alone.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

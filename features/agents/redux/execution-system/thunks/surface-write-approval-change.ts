@@ -89,6 +89,27 @@ export function buildSurfaceWriteApprovalChange(
     fields: [],
   };
 
+  // AN ANCHORED EDIT IS REVIEWED AS THE EDIT. The seam cut the lines it
+  // touched from the live text; diffing the whole 5,000-character note to
+  // show one changed word buried the change (2026-10-01). The full result
+  // still lands — the card shows only what differs.
+  if (proposal.patch) {
+    const adds = proposal.patch.command === "append" || proposal.patch.command === "prepend";
+    return {
+      ...change,
+      fields: [
+        adds
+          ? { label: "Text to add", after: proposal.patch.after, block: true }
+          : {
+              label: target.label,
+              before: proposal.patch.before,
+              after: proposal.patch.after,
+              block: true,
+            },
+      ],
+    };
+  }
+
   // A string is prose — the diff field renders it better than a document view.
   if (typeof value === "string") {
     return {

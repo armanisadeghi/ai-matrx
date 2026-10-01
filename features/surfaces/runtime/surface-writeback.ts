@@ -531,6 +531,13 @@ export interface SurfaceWriteApprovalProposal {
   /** Live text captured from the target’s declared read twin, never model supplied. */
   currentValue?: string | null;
   actorLabel?: string;
+  /**
+   * Present when the agent sent an ANCHORED EDIT: the whole lines it touched,
+   * before and after, cut from the live text by the seam (never model
+   * supplied). The card diffs this instead of the whole value, so a one-word
+   * edit is reviewed as one line.
+   */
+  patch?: { command: string; before: string; after: string };
 }
 
 export type SurfaceWriteApprovalDecision =
@@ -647,6 +654,7 @@ async function agentWriteAllowed(
   requestApproval: ApplySurfaceWriteOptions["requestApproval"],
   runtime: SurfaceRuntimeValue,
   registry: SurfaceRegistry = getGlobalSurfaceRegistry(),
+  patch?: SurfaceWriteApprovalProposal["patch"],
 ): Promise<SurfaceWriteResult | true> {
   const policy = resolveApplyPolicy(target, surfaceName);
   if (policy === "auto") return true;
@@ -721,6 +729,7 @@ async function agentWriteAllowed(
     value,
     actorLabel,
     ...(currentValue !== undefined ? { currentValue } : {}),
+    ...(patch ? { patch } : {}),
   });
   if (decision.kind === "approved") {
     if (comparing) {
@@ -904,7 +913,10 @@ async function resolveTargetPatch(
   target: SurfaceWriteTarget,
   runtime: SurfaceRuntimeValue,
   patch: SurfaceWritePatch,
-): Promise<{ ok: true; value: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; value: string; excerpt: { before: string; after: string } | null }
+  | { ok: false; error: string }
+> {
   if (!target.patchable) {
     return {
       ok: false,
@@ -913,7 +925,11 @@ async function resolveTargetPatch(
         `value for this target instead.`,
     };
   }
-  const sourceName = target.updatesValue;
+  // THE TEXT, not the read twin: when `updatesValue` names a reference (the
+  // notes editor's `current_note` is a resource_ref object) the live text is
+  // `comparisonValue` (`content`) — the same source the approval diff reads.
+  // Anchoring into the reference refused every note patch (2026-10-01).
+  const sourceName = target.comparisonValue ?? target.updatesValue;
   if (!sourceName) {
     // Manifest defect, not a caller mistake. Say so in those words so the
     // report names the repo and not the person typing.
@@ -945,7 +961,7 @@ async function resolveTargetPatch(
       error: `"${target.label}": ${outcome.reason}`,
     };
   }
-  return { ok: true, value: outcome.next };
+  return { ok: true, value: outcome.next, excerpt: outcome.excerpt };
 }
 
 export async function applySurfaceWrite(
@@ -1006,6 +1022,7 @@ export async function applySurfaceWrite(
     // silently applied as "no change" — an edit that quietly did nothing is
     // the one outcome a caller cannot detect).
     let value: unknown = rawValue;
+    let patchExcerpt: SurfaceWriteApprovalProposal["patch"];
     if (isSurfaceWritePatch(rawValue)) {
       const resolved = await resolveTargetPatch(target, runtime, rawValue);
       if (!resolved.ok) {
@@ -1016,6 +1033,9 @@ export async function applySurfaceWrite(
         });
       }
       value = resolved.value;
+      if (resolved.excerpt) {
+        patchExcerpt = { command: rawValue.command, ...resolved.excerpt };
+      }
     }
 
     // THE DECLARED TYPE binds next: a JSON-encoded string for an object/array
@@ -1072,6 +1092,7 @@ export async function applySurfaceWrite(
         opts?.requestApproval,
         runtime,
         registry,
+        patchExcerpt,
       );
       if (verdict !== true) return verdict;
     }

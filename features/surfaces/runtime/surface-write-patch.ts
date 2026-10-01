@@ -103,8 +103,41 @@ export type SurfaceWritePatchOutcome =
       matchedRange: { start: number; end: number } | null;
       /** One line for the toast and the audit trail. */
       summary: string;
+      /**
+       * What the edit changed, cut to the WHOLE LINES it touched — the
+       * approval card diffs this, so a one-word edit on a 5,000-character
+       * note is reviewed as one line, not as the whole note. `null` for an
+       * `overwrite`, which genuinely replaces everything (the card then diffs
+       * the full before/after).
+       */
+      excerpt: { before: string; after: string } | null;
     }
   | { ok: false; reason: string };
+
+/**
+ * The whole lines of `base` covering `[start, end)` and the same lines of
+ * `next`, where `[start, start + delta)` was rewritten. Expanding to line
+ * boundaries gives the reviewer the sentence the word sits in.
+ */
+function lineExcerpt(
+  base: string,
+  next: string,
+  start: number,
+  oldEnd: number,
+  newEnd: number,
+): { before: string; after: string } {
+  const lineStart = base.lastIndexOf("\n", start - 1) + 1;
+  const oldLineEndRaw = base.indexOf("\n", Math.max(oldEnd, start));
+  const oldLineEnd = oldLineEndRaw === -1 ? base.length : oldLineEndRaw;
+  // The suffix after the edit is identical in both texts, so the new line end
+  // sits the same distance from the end of `next`.
+  const tail = base.length - oldLineEnd;
+  const newLineEnd = Math.max(newEnd, next.length - tail);
+  return {
+    before: base.slice(lineStart, oldLineEnd),
+    after: next.slice(lineStart, newLineEnd),
+  };
+}
 
 /**
  * Does this value LOOK like a patch envelope rather than a replacement value?
@@ -219,6 +252,13 @@ export function resolveSurfaceWritePatch(
           match.matchType === "exact"
             ? "replaced one exact match"
             : `replaced one ${match.matchType} match`,
+        excerpt: lineExcerpt(
+          base,
+          next,
+          match.startIndex,
+          match.endIndex,
+          match.startIndex + newStr.length,
+        ),
       };
     }
 
@@ -236,6 +276,7 @@ export function resolveSurfaceWritePatch(
         next,
         matchedRange: { start: base.length + join.length, end: next.length },
         summary: "appended to the end",
+        excerpt: { before: "", after: newStr },
       };
     }
 
@@ -250,6 +291,7 @@ export function resolveSurfaceWritePatch(
         next,
         matchedRange: { start: 0, end: newStr.length },
         summary: "prepended to the start",
+        excerpt: { before: "", after: newStr },
       };
     }
 
@@ -262,6 +304,7 @@ export function resolveSurfaceWritePatch(
         next: newStr,
         matchedRange: { start: 0, end: newStr.length },
         summary: "replaced the whole value",
+        excerpt: null,
       };
     }
   }
@@ -276,14 +319,14 @@ export function resolveSurfaceWritePatch(
  */
 export function surfacePatchContractLine(): string {
   return (
-    "A target marked [patchable] ALSO accepts an anchored edit instead of the " +
-    "whole value, which is how you change part of a long text without " +
-    "re-sending all of it: " +
+    "A target marked [patchable] takes an anchored edit as its value. For any " +
+    "change smaller than a rewrite — a word, a line, a paragraph — SEND THE " +
+    "EDIT, never the whole text again: " +
     '{"command": "str_replace", "old_str": "<the exact text to find, unique>", "new_str": "<what replaces it>"}. ' +
     `Commands: ${SURFACE_PATCH_COMMANDS.join(", ")} ` +
     "(append/prepend also take an optional separator). old_str must match " +
     "exactly once — if it misses or is ambiguous the write is refused and " +
-    "nothing changes, so widen the anchor and send it again. Sending a plain " +
-    "string still replaces the whole value."
+    "nothing changes, so widen the anchor and send it again. Send the whole " +
+    "text as a plain string only for a genuine rewrite of most of it."
   );
 }
