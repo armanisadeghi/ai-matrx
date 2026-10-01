@@ -12,7 +12,9 @@
 //   5. Step 1 covers the context copy (coordinator 2026-09-27): the organizations only the context copy
 //      clears are named as Step 1's, and the page says whether THIS server's context copy carries a
 //      large organization (aidream 991ff424b5) — in red when it does not;
-//   6. an unmet check's title says what is not true yet, never its met-form name as a claim (FINAL-SWITCH-2).
+//   6. an unmet check's title says what is not true yet, never its met-form name as a claim (FINAL-SWITCH-2);
+//   7. step two (SWITCH-STEP-TWO): pressed, the undo can be retired by name; once retired the Undo and the
+//      Retire button are gone (never a dead button) and the page says when it was retired.
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -116,6 +118,8 @@ function board(kind: "blocked" | "after_copy" | "switched" | "context"): FinalSw
         : "Ready once the older tables are copied again for 1 organization; the press does that first.",
     mayPress: !blocked,
     mayUndo: kind === "switched",
+    mayRetireUndo: kind === "switched",
+    undoRetired: null,
     undo: kind === "switched" ? { plan: [], needs_confirm: false } : null,
     orphans:
       kind === "switched"
@@ -269,4 +273,26 @@ test("an unmet check never reads as a claim: its title says what is not true yet
   expect(text).toContain('Not yet: every "when a row changes" automation names its table.');
   expect(text).toContain("Copy again: not yet: no row was edited in an older table after it was copied (4)");
   expect(text).not.toContain("Copy again: No row was edited");
+});
+
+test("step two: pressed, Retire the undo is offered beside the Undo (lane SWITCH-STEP-TWO)", async () => {
+  readFinalSwitch.mockResolvedValue(board("switched"));
+  await mount();
+  expect(byTestId("final-switch-undo")).not.toBeNull();
+  expect(byTestId("final-switch-retire-undo")!.textContent).toBe("Retire the undo");
+  expect(byTestId("final-switch-undo-retired")).toBeNull();
+});
+
+test("step two: once the undo is retired there is no Undo and no Retire, and the page says when (lane SWITCH-STEP-TWO)", async () => {
+  readFinalSwitch.mockResolvedValue({
+    ...board("switched"),
+    mayUndo: false,
+    mayRetireUndo: false,
+    undoRetired: { at: "2026-10-01T18:00:00Z", by: "admin@admin.com", says: "The undo was retired on Oct 1, 2026 by admin@admin.com; the switch is final." },
+  });
+  await mount();
+  expect(byTestId("final-switch-undo")).toBeNull();
+  expect(byTestId("final-switch-retire-undo")).toBeNull();
+  expect(byTestId("final-switch-undo-retired")!.textContent).toContain("Undo retired");
+  expect(byTestId("final-switch-press")).toBeNull();
 });

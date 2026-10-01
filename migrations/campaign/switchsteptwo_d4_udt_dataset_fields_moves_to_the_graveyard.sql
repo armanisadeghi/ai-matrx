@@ -3,17 +3,20 @@
 -- graveyard: archived in place, every row kept, restorable by its inverse. Old gone, never dropped.
 -- PRECONDITION (refused otherwise): the final switch is pressed and its undo is retired
 -- (switchsteptwo_a, the page's "Retire the undo"), and switchsteptwo_b/c are applied (nothing live still reads this table).
--- What it does, in one transaction: entity type `udt_dataset_fields` set inactive (the DDL sync refuses an active type in the
--- graveyard); leaves the realtime publication; its 7 outbound
--- foreign keys into live schemas dropped (the graveyard boundary guard refuses a retired table that constrains live
--- rows); SET SCHEMA graveyard; client grants revoked from the graveyard copy.
--- LOCKS (measured on clone-20261001, SWITCH-STEP-TWO): ACCESS EXCLUSIVE on workbench.udt_dataset_fields and, for the FK drops, ACCESS EXCLUSIVE on auth.users, iam.organizations, iam.users until commit.
+-- Its outbound foreign keys into live schemas were dropped just before, by switchsteptwo_d40 (its own short transaction,
+-- so sign-in and organization reads wait only for that one statement). What it does, in one transaction: entity type `udt_dataset_fields` set inactive (the DDL sync refuses an active type in the
+-- graveyard); leaves the realtime publication; SET SCHEMA graveyard; client grants revoked from the graveyard copy.
+-- LOCKS (measured on clone-20261001, SWITCH-STEP-TWO): ACCESS EXCLUSIVE on workbench.udt_dataset_fields only, a table nothing reads any more.
 -- db:apply's ceiling: lock_timeout 3 s per attempt, 10 jittered retries (scripts/lib/migration-lock-policy.ts).
 -- lane: SWITCH-STEP-TWO
 -- INVERSE: migrations/inverse/switchsteptwo_d4_udt_dataset_fields_moves_to_the_graveyard_down.sql
 
 do $pre$
 begin
+  if exists (select 1 from pg_constraint k where k.conrelid = to_regclass('workbench.udt_dataset_fields') and k.contype = 'f'
+               and k.confrelid::regclass::text !~ '^(workbench\.udt_(datasets|dataset_fields|dataset_rows|dataset_row_versions|structured_lists|structured_list_items)|graveyard\.)') then
+    raise exception 'refused: workbench.udt_dataset_fields still holds foreign keys into live tables; apply switchsteptwo_d40 first';
+  end if;
   if to_regclass('workbench.udt_dataset_fields') is null and to_regclass('graveyard.udt_dataset_fields') is not null then
     raise exception 'nothing to do: workbench.udt_dataset_fields is already in the graveyard';
   end if;
@@ -25,14 +28,6 @@ $pre$;
 
 update platform.entity_types set is_active = false, type = 'deprecated', custom_fields_enabled = false where token = 'udt_dataset_fields' and is_active;
 alter publication supabase_realtime drop table workbench.udt_dataset_fields;
-alter table workbench.udt_dataset_fields
-  drop constraint table_fields_user_id_fkey,
-  drop constraint table_fields_user_id_fkey_p,
-  drop constraint udt_dataset_fields_created_by_fkey,
-  drop constraint udt_dataset_fields_created_by_fkey_p,
-  drop constraint udt_dataset_fields_organization_id_fkey,
-  drop constraint udt_dataset_fields_updated_by_fkey,
-  drop constraint udt_dataset_fields_updated_by_fkey_p;
 alter table workbench.udt_dataset_fields set schema graveyard;
 revoke all on table graveyard.udt_dataset_fields from anon, authenticated;
 update platform.deprecated_relations set archived_as = 'graveyard.udt_dataset_fields' where old_ref = 'workbench.udt_dataset_fields' and archived_as is null;

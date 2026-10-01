@@ -37,6 +37,7 @@ import {
   readFinalSwitchCapabilities,
   type FinalSwitchCapabilities,
   readFinalSwitch,
+  retireFinalSwitchUndo,
   undoFinalSwitch,
   type FinalSwitchBoard,
   type FinalSwitchOrganization,
@@ -157,7 +158,8 @@ function OrganizationRow({ org }: { org: FinalSwitchOrganization }) {
           <ul className="flex flex-col gap-1 text-destructive">
             {org.cannot_clear.map((d) => (
               <li key={`${d.switch}-${d.key}`}>
-                <span className="font-medium">{checkTitle(d.says, false)}</span> {d.detail}
+                <span className="font-medium">{checkTitle(d.says, false)}</span>{" "}
+                {d.detail}
               </li>
             ))}
           </ul>
@@ -186,7 +188,9 @@ export function FinalSwitchScreen() {
   const [board, setBoard] = React.useState<FinalSwitchBoard | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [confirm, setConfirm] = React.useState<"press" | "undo" | null>(null);
+  const [confirm, setConfirm] = React.useState<
+    "press" | "undo" | "retire" | null
+  >(null);
   const [leaveBehind, setLeaveBehind] = React.useState(false);
   const [running, setRunning] = React.useState(false);
   const [progress, setProgress] = React.useState<FinalSwitchProgress[]>([]);
@@ -312,10 +316,21 @@ export function FinalSwitchScreen() {
     nothing: board?.totals.nothing_to_switch ?? orgs.length - toSwitch.length,
   };
 
-  const run = async (which: "press" | "undo") => {
+  const run = async (which: "press" | "undo" | "retire") => {
     setRunning(true);
     setProgress([]);
     setAnswer(null);
+    if (which === "retire") {
+      // STEP TWO's first step: the undo retires by name before the older tables move to the archive.
+      const out = await retireFinalSwitchUndo();
+      setAnswer(out);
+      if (out.ok) toast.success(out.says);
+      else toast.error(out.says);
+      setRunning(false);
+      setConfirm(null);
+      await load();
+      return;
+    }
     const onProgress = (p: FinalSwitchProgress) =>
       setProgress((prev) => [...prev.slice(-199), p]);
     const out =
@@ -608,20 +623,42 @@ export function FinalSwitchScreen() {
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setConfirm("undo")}
-                    disabled={running}
-                    data-testid="final-switch-undo"
-                  >
-                    {running ? (
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Undo2 className="mr-1 h-3.5 w-3.5" />
-                    )}
-                    Undo the final switch
-                  </Button>
+                  {board.undoRetired ? (
+                    <span
+                      className="rounded border border-border px-2 py-0.5 text-xs font-medium"
+                      data-testid="final-switch-undo-retired"
+                    >
+                      Undo retired {when(board.undoRetired.at)}
+                    </span>
+                  ) : (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirm("undo")}
+                        disabled={running}
+                        data-testid="final-switch-undo"
+                      >
+                        {running ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Undo2 className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Undo the final switch
+                      </Button>
+                      {board.mayRetireUndo && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setConfirm("retire")}
+                          disabled={running}
+                          data-testid="final-switch-retire-undo"
+                        >
+                          Retire the undo
+                        </Button>
+                      )}
+                    </>
+                  )}
                   {board.lastRun?.says && (
                     <span className="text-xs text-muted-foreground">
                       {board.lastRun.says}
@@ -711,7 +748,10 @@ export function FinalSwitchScreen() {
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
                     )}
                     <span>
-                      <span className="font-medium">{checkTitle(c.says, c.met)}</span> {c.detail}
+                      <span className="font-medium">
+                        {checkTitle(c.says, c.met)}
+                      </span>{" "}
+                      {c.detail}
                       {!c.met && c.fix && (
                         <span className="text-muted-foreground">
                           {" "}
@@ -742,9 +782,7 @@ export function FinalSwitchScreen() {
                       <th className="px-2 py-1.5 font-medium">Organization</th>
                       <th className="px-2 py-1.5 font-medium">Data tables</th>
                       <th className="px-2 py-1.5 font-medium">Pick lists</th>
-                      <th className="px-2 py-1.5 font-medium">
-                        Step 1 clears
-                      </th>
+                      <th className="px-2 py-1.5 font-medium">Step 1 clears</th>
                       <th className="px-2 py-1.5 font-medium">
                         Step 1 cannot clear
                       </th>
@@ -777,8 +815,7 @@ export function FinalSwitchScreen() {
             <time dateTime={REHEARSAL.date} suppressHydrationWarning>
               {when(REHEARSAL.date)}
             </time>{" "}
-            · clone{" "}
-            {REHEARSAL.clone_ref}
+            · clone {REHEARSAL.clone_ref}
           </p>
           <p className="text-sm">{REHEARSAL.summary}</p>
           <ul className="flex flex-col gap-0.5 text-xs">
@@ -832,14 +869,18 @@ export function FinalSwitchScreen() {
           title={
             confirm === "press"
               ? "Switch every organization to the new system?"
-              : "Undo the final switch for every organization?"
+              : confirm === "retire"
+                ? "Retire the undo for good?"
+                : "Undo the final switch for every organization?"
           }
           // Press also: automations follow tables, agents read new copy, Data/scope pages switch, old write doors close; tables re-copied first.
           // Undo also: each Switch back runs in reverse order; the Data page and scope screens go back.
           description={
             confirm === "press"
               ? `Switches ${counts.toSwitch} organizations at once; older tables and pick lists are archived, never deleted. One undo on this page reverses it.`
-              : "Every organization returns to its older tables in reverse order, carrying what was written since the press; the older write doors reopen."
+              : confirm === "retire"
+                ? "The older tables then move to the archive and this switch can no longer be undone."
+                : "Every organization returns to its older tables in reverse order, carrying what was written since the press; the older write doors reopen."
           }
           content={
             confirm === "undo" && board?.undo ? (
@@ -886,13 +927,17 @@ export function FinalSwitchScreen() {
             ) : undefined
           }
           confirmLabel={
-            confirm === "press" ? "Switch everything" : "Undo everything"
+            confirm === "press"
+              ? "Switch everything"
+              : confirm === "retire"
+                ? "Retire the undo"
+                : "Undo everything"
           }
           confirmDisabled={
             confirm === "undo" && undoNeedsConfirm && !leaveBehind
           }
           busy={running}
-          onConfirm={() => void run(confirm === "press" ? "press" : "undo")}
+          onConfirm={() => void run(confirm ?? "undo")}
         />
       </div>
     </div>

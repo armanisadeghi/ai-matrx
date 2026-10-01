@@ -1,6 +1,5 @@
 -- INVERSE of migrations/campaign/switchsteptwo_d3_udt_dataset_template_fields_moves_to_the_graveyard.sql (lane SWITCH-STEP-TWO): graveyard.udt_dataset_template_fields back to workbench exactly as it was —
--- schema, client grants, its 0 outbound foreign keys (added NOT VALID, then validated: SHARE ROW EXCLUSIVE on both
--- sides while adding, SHARE UPDATE EXCLUSIVE while validating), its entity type.
+-- schema, client grants, its entity type.
 -- Rows were never touched, so nothing is restored row by row.
 -- lane: SWITCH-STEP-TWO
 

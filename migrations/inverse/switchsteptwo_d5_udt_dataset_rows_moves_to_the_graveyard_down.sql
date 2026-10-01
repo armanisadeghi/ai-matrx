@@ -1,8 +1,6 @@
 -- INVERSE of migrations/campaign/switchsteptwo_d5_udt_dataset_rows_moves_to_the_graveyard.sql (lane SWITCH-STEP-TWO): graveyard.udt_dataset_rows back to workbench exactly as it was —
--- schema, client grants, its 7 outbound foreign keys (added NOT VALID, then validated: SHARE ROW EXCLUSIVE on both
--- sides while adding, SHARE UPDATE EXCLUSIVE while validating), the realtime publication, its entity type.
--- The 3 foreign keys into auth.users are NOT re-added: the sign-in table guard refuses a new FK into
--- auth.users; each has its iam.users twin (same ids, *_fkey_p), which this file restores.
+-- schema, client grants, the realtime publication, its entity type.
+-- Its foreign keys into live tables come back with the d<n>0 inverse, run after this one.
 -- Rows were never touched, so nothing is restored row by row.
 -- lane: SWITCH-STEP-TWO
 
@@ -15,15 +13,6 @@ select 'unregistered_relation', 'workbench.udt_dataset_rows',
  where not exists (select 1 from platform.provision_spec_grandfather g where g.lane = 'unregistered_relation' and g.object_ref = 'workbench.udt_dataset_rows');
 alter table graveyard.udt_dataset_rows set schema workbench;
 grant select, insert, update, delete on table workbench.udt_dataset_rows to authenticated;
-alter table workbench.udt_dataset_rows
-  add constraint table_data_user_id_fkey_p FOREIGN KEY (user_id) REFERENCES iam.users(id) ON UPDATE CASCADE ON DELETE CASCADE not valid,
-  add constraint udt_dataset_rows_created_by_fkey_p FOREIGN KEY (created_by) REFERENCES iam.users(id) ON DELETE SET NULL not valid,
-  add constraint udt_dataset_rows_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES iam.organizations(id) not valid,
-  add constraint udt_dataset_rows_updated_by_fkey_p FOREIGN KEY (updated_by) REFERENCES iam.users(id) ON DELETE SET NULL not valid;
-alter table workbench.udt_dataset_rows validate constraint table_data_user_id_fkey_p;
-alter table workbench.udt_dataset_rows validate constraint udt_dataset_rows_created_by_fkey_p;
-alter table workbench.udt_dataset_rows validate constraint udt_dataset_rows_organization_id_fkey;
-alter table workbench.udt_dataset_rows validate constraint udt_dataset_rows_updated_by_fkey_p;
 alter publication supabase_realtime add table workbench.udt_dataset_rows;
 update platform.entity_types set is_active = true, type = 'detail', custom_fields_enabled = true where token = 'udt_dataset_rows' and not is_active;
 update platform.deprecated_relations set archived_as = null where old_ref = 'workbench.udt_dataset_rows' and archived_as = 'graveyard.udt_dataset_rows';

@@ -70,7 +70,12 @@ export type FinalSwitchOrganization = {
    * What Step 1's CONTEXT COPY clears for this organization (fourth file, coordinator 2026-09-27):
    * agent context not all copied, scope words not on their copy, edits waiting, parity to measure again.
    */
-  context_clears?: { switch: string; key: string; says: string; detail: string | null }[];
+  context_clears?: {
+    switch: string;
+    key: string;
+    says: string;
+    detail: string | null;
+  }[];
   needs_context_copy?: boolean;
   ready: boolean;
   plan: {
@@ -155,6 +160,10 @@ export type FinalSwitchBoard = {
   says: string;
   mayPress: boolean;
   mayUndo: boolean;
+  /** Step two's first step: the undo can be retired (pressed, not yet retired). */
+  mayRetireUndo: boolean;
+  /** When the undo was retired (step two): the board is final and the Undo is gone. */
+  undoRetired: { at: string; by: string | null; says: string } | null;
   undo: { plan: FinalSwitchUndoPlanRow[]; needs_confirm: boolean } | null;
   /** Older pick lists with no organization, and where each goes (the press resolves them). */
   orphans: FinalSwitchOrphanList[];
@@ -183,6 +192,8 @@ type RawBoard =
       says: string;
       may_press?: boolean;
       may_undo?: boolean;
+      may_retire_undo?: boolean;
+      undo_retired?: FinalSwitchBoard["undoRetired"];
       undo: FinalSwitchBoard["undo"];
       orphans?: FinalSwitchOrphanList[];
       copy_again?: FinalSwitchCopyAgainState | null;
@@ -226,7 +237,9 @@ export async function readFinalSwitch(): Promise<FinalSwitchBoard> {
     readyAfterCopyAgain: raw.ready_after_copy_again,
     says: raw.says,
     mayPress: Boolean(raw.may_press),
-    mayUndo: Boolean(raw.may_undo),
+    mayUndo: Boolean(raw.may_undo) && !raw.undo_retired,
+    mayRetireUndo: Boolean(raw.may_retire_undo) && !raw.undo_retired,
+    undoRetired: raw.undo_retired ?? null,
     undo: raw.undo ?? null,
     orphans: raw.orphans ?? [],
     copyAgain: raw.copy_again ?? null,
@@ -254,7 +267,9 @@ export function checkTitle(
   if (met) return inline ? name : `${name}.`;
   // Lower-case the first letter only when it starts an ordinary word ("Every" → "every"), never an
   // acronym or a name that is capitalized in its second letter too ("AI Matrx", "URL").
-  const lowered = /^[A-Z][a-z]/.test(name) ? name[0].toLowerCase() + name.slice(1) : name;
+  const lowered = /^[A-Z][a-z]/.test(name)
+    ? name[0].toLowerCase() + name.slice(1)
+    : name;
   return inline ? `not yet: ${lowered}` : `Not yet: ${lowered}.`;
 }
 
@@ -496,6 +511,26 @@ export async function pressFinalSwitch(
     state.refusal,
     "The final switch did not start.",
   );
+}
+
+/**
+ * STEP TWO's first step (lane SWITCH-STEP-TWO): retire the undo. One row in the press record; after it the
+ * undo refuses by name and the older tables can move to the archive. The same person rules as the press.
+ */
+export async function retireFinalSwitchUndo(): Promise<{
+  ok: boolean;
+  says: string;
+}> {
+  const { data, error } = await platformRpc().rpc("final_switch_retire_undo", {
+    p_note: null,
+  });
+  if (error)
+    return { ok: false, says: `The undo was not retired: ${error.message}` };
+  const raw = data as { ok?: boolean; says?: string } | null;
+  return {
+    ok: Boolean(raw?.ok),
+    says: raw?.says ?? "The undo was not retired.",
+  };
 }
 
 /** The one undo: every organization back, in the same order backwards. */

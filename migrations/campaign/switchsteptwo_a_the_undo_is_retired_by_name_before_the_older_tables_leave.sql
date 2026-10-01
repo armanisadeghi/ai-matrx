@@ -59,7 +59,7 @@ create or replace function platform._final_switch_undo_retired_says(p_row platfo
  stable
  set search_path to 'pg_catalog'
 as $function$
-  select format('The undo was retired on %s%s. The older tables moved to the archive, so the switch is final.',
+  select format('The undo was retired on %s%s; the switch is final.',
                 to_char(p_row.pressed_at at time zone 'UTC', 'Mon FMDD, YYYY'),
                 coalesce(' by ' || (select coalesce(nullif(btrim(u.raw_user_meta_data ->> 'full_name'), ''), u.email::text)
                                       from auth.users u where u.id = p_row.pressed_by), ''));
@@ -100,7 +100,7 @@ begin
   end if;
   insert into platform.cutover_seam_press (id, seam_key, organization_id, direction, outcome, says, pressed_by, did, note)
   values (v_id, 'final_switch_undo', platform._final_switch_platform_org(), 'new', 'done',
-          'The undo is retired. The older tables move to the archive next; the switch is final.', auth.uid(),
+          'The undo is retired; the older tables move to the archive next.', auth.uid(),
           jsonb_build_object('final_switch_run', v_last.id), p_note);
   v_retired := platform._final_switch_undo_retired();
   return jsonb_build_object('ok', true, 'id', v_id, 'final_switch_run', v_last.id,
