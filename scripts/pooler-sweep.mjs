@@ -30,8 +30,12 @@ const QUIET_AFTER = Number(opt("quiet-after", "80")); // stop once this many vis
 if (!["production", "clone"].includes(TARGET)) { console.error("usage: pooler-sweep --target production|clone [--report] [--plant]"); process.exit(2); }
 if (PLANT && TARGET !== "clone") { console.error("refused: --plant runs on the clone only"); process.exit(2); }
 
-// Session-sourced settings that are not a leak: connection identity, and the ORM's own jit=off.
-const BENIGN = ["application_name", "client_encoding", "DateStyle", "TimeZone", "IntervalStyle", "extra_float_digits", "jit"];
+// Session-sourced settings that are not a leak: connection identity, the ORM's own jit=off, and the
+// transaction_* views — a `SET transaction_read_only` outside a transaction leaves source=session
+// residue but every later transaction still takes its mode from default_transaction_* (proven on the
+// clone 2026-10-01: residue 'on' planted, next transactions wrote). default_transaction_* is checked.
+const BENIGN = ["application_name", "client_encoding", "DateStyle", "TimeZone", "IntervalStyle", "extra_float_digits", "jit",
+  "transaction_read_only", "transaction_isolation", "transaction_deferrable"];
 const PROBE = `select pg_backend_pid() as pid, current_user = session_user as own_role,
   coalesce((select json_agg(json_build_object('name', name, 'setting', setting) order by name)
               from pg_settings where source = 'session' and name <> all($1::text[])), '[]'::json) as leaked`;
@@ -51,6 +55,7 @@ if (PLANT) {
 
 const seen = new Map(); // pid -> { leaked, reset, own_role }
 let visits = 0, sinceNew = 0, errors = 0;
+const failures = [];
 
 async function worker() {
   const c = pgClient(pg, TX_DSN);
@@ -69,17 +74,23 @@ async function worker() {
         if (fresh || (dirty && !prior?.reset)) {
           let reset = prior?.reset ?? false;
           if (dirty && !REPORT_ONLY) {
-            for (const g of row.leaked) await c.query(`reset ${quote(g.name)}`);
-            if (!row.own_role) await c.query("reset role");
+            const names = new Set(row.leaked.map((g) => g.name));
+            if (!row.own_role) names.add("role");
             reset = true;
+            for (const n of names) {
+              await c.query("savepoint sweep");
+              try { await c.query(`reset ${quote(n)}`); await c.query("release savepoint sweep"); }
+              catch (e) { await c.query("rollback to savepoint sweep"); reset = false; failures.push(`${row.pid}: reset ${n} failed — ${e.message}`); }
+            }
           }
           seen.set(row.pid, { leaked: prior?.leaked?.length ? prior.leaked : row.leaked, own_role: prior ? prior.own_role && row.own_role : row.own_role, reset });
         }
         await c.query("commit");
       } catch (e) {
         errors += 1;
+        failures.push(`visit failed — ${e.message}`);
         await c.query("rollback").catch(() => undefined);
-        if (errors > 20) throw e;
+        if (errors > 20) break;
       }
     }
   } finally { await c.end().catch(() => undefined); }
@@ -102,5 +113,6 @@ for (const [pid, v] of leakedBackends) {
   console.log(`  LEAK backend ${pid}: ${v.leaked.map((g) => `${g.name}=${g.setting}`).join(", ")}${v.own_role ? "" : " role≠session_user"} — ${v.reset ? "RESET" : "not reset (--report)"}`);
 }
 for (const o of open) console.log(`  OPEN TRANSACTION backend ${o.pid} (${o.usename}) ${o.state} for ${o.open_for?.minutes ?? 0}m${o.open_for?.seconds ?? 0}s — last: ${o.last_query}`);
-if (!leakedBackends.length && !open.length) console.log("  clean");
-process.exit(leakedBackends.length || open.length ? 1 : 0);
+for (const f of [...new Set(failures)]) console.log(`  ERROR ${f}`);
+if (!leakedBackends.length && !open.length && !failures.length) console.log("  clean");
+process.exit(leakedBackends.length || open.length || failures.length ? 1 : 0);
