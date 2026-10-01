@@ -68,8 +68,8 @@ function TrustCitationChip({
   onOpenSource?: (citation: SourceCitation) => void;
 }) {
   const ref = sourceRefFromCitation(c);
-  const { place, open } = useCitationPlace(ref);
-  const locator = ref ? (place?.label ?? null) : plainLocator(c.locator);
+  const { place, open } = useCitationPlace(ref, c);
+  const locator = ref ? (place?.label ?? null) : (place?.label ?? plainLocator(c.locator));
   const onOpen = onOpenSource
     ? () => onOpenSource(c)
     : open

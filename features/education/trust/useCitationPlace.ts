@@ -14,12 +14,17 @@
 
 import { useCallback } from "react";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import { useCitedChunk } from "@/features/rag/components/source-inspector/useCitedChunk";
+import {
+  useCitedChunk,
+  useRecordCitedFacts,
+} from "@/features/rag/components/source-inspector/useCitedChunk";
 import {
   citedPages,
   citedPlace,
+  parsePartId,
   type CitedPlace,
 } from "@/features/rag/components/source-inspector/citedAnchor";
+import type { SourceCitation } from "./types";
 import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
 import { inspectorArgsForSourceRef, type CardSourceRef } from "./sourceRef";
 
@@ -46,16 +51,33 @@ export interface CitationPlaceState {
   open: (() => void) | null;
 }
 
-export function useCitationPlace(ref: CardSourceRef | null | undefined): CitationPlaceState {
+/**
+ * The record a citation names when it carries no document/file id — a packed
+ * part `<record id>:<n>` of a record picked as a Source (a transcript).
+ */
+export function recordIdOfCitation(c: SourceCitation | null | undefined): string | null {
+  if (!c || c.fileId || c.documentId) return null;
+  if (c.url && /^https?:\/\//i.test(c.url)) return null;
+  return parsePartId(c.sourceId)?.documentId ?? null;
+}
+
+export function useCitationPlace(
+  ref: CardSourceRef | null | undefined,
+  /** The citation itself — lets a record-backed citation (no ids) find its place. */
+  citation?: SourceCitation | null,
+): CitationPlaceState {
   const openInspector = useOpenCitation();
   const openable = Boolean(ref && (ref.fileId || ref.documentId));
   const cited = useCitedChunk(openable ? (ref?.chunkId ?? null) : null, ref?.documentId ?? null);
-  const place = !openable
-    ? null
-    : cited.loading
+  const recordId = openable ? null : recordIdOfCitation(citation);
+  const record = useRecordCitedFacts(recordId, citation?.excerpt ?? null);
+  const facts = openable ? cited.facts : record.facts;
+  const loading = openable ? cited.loading : record.loading;
+  const place =
+    (!openable && !recordId) || loading || (recordId && !facts)
       ? null
-      : citedPlace(citedPages(null, ref?.page ?? null, cited.facts), cited.facts);
-  const playerHref = playerHrefForPlace(ref?.documentId ?? cited.facts?.documentId ?? null, place);
+      : citedPlace(citedPages(null, ref?.page ?? null, facts), facts);
+  const playerHref = playerHrefForPlace(ref?.documentId ?? facts?.documentId ?? null, place);
   const args = inspectorArgsForSourceRef(ref);
   const open = useCallback(() => {
     if (playerHref) {
@@ -64,5 +86,5 @@ export function useCitationPlace(ref: CardSourceRef | null | undefined): Citatio
     }
     if (args) openInspector(args);
   }, [playerHref, args, openInspector]);
-  return { place, open: args ? open : null };
+  return { place, open: playerHref || args ? open : null };
 }

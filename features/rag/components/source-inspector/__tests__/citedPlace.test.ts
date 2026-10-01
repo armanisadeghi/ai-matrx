@@ -1,4 +1,4 @@
-import { citedChunkFacts, citedPages, citedPlace, citedPortion } from "../citedAnchor";
+import { citedChunkFacts, citedPages, citedPlace, citedPortion, portionForExcerpt } from "../citedAnchor";
 
 // Real rows (clone, 2026-09-30). The Wikipedia "Enzyme" Source is a scraped
 // page: its portions are SECTIONS whose page_number is only an ordinal — the
@@ -60,5 +60,27 @@ describe("one place name for every kind of Source a citation points at", () => {
   it("pasted text (a packed part, nothing known) has no place to name", () => {
     const facts = { pageNumbers: null, part: true, t0Ms: null, t1Ms: null };
     expect(citedPlace(citedPages(null, null, facts), facts)).toMatchObject({ kind: "none", label: null });
+  });
+});
+
+describe("a transcript picked as a RECORD (no document id): the quote finds its moment", () => {
+  // Real portions of "Glass-ceramics are amazing!" (clone, 2026-10-01) and the
+  // agent's real quote, which drifts after its first three words.
+  const rows = [
+    { page_number: 22, portion_kind: "segment", locator: { t0_ms: 49_360, t1_ms: 53_680 }, cleaned_text: "expansion coefficient and these are the" },
+    { page_number: 23, portion_kind: "segment", locator: { t0_ms: 51_640, t1_ms: 55_719 }, cleaned_text: "secret behind the materials amazing" },
+    { page_number: 24, portion_kind: "segment", locator: { t0_ms: 53_680, t1_ms: 57_719 }, cleaned_text: "thermal properties if you want to know" },
+  ];
+
+  it("lands on the segment where the quote begins and plays from there", () => {
+    const row = portionForExcerpt(rows, "amazing thermal properties of glass-ceramics");
+    expect(row?.page_number).toBe(23);
+    const facts = { pageNumbers: [23], part: true, t0Ms: null, t1Ms: null, portion: citedPortion(row!) };
+    expect(citedPlace([23], facts)).toMatchObject({ kind: "time", label: "0:51–0:55", seekMs: 51_640 });
+  });
+
+  it("a quote that is not in the transcript is no place — never a guess", () => {
+    expect(portionForExcerpt(rows, "photosynthesis happens in the chloroplast")).toBeNull();
+    expect(portionForExcerpt(rows, "the")).toBeNull();
   });
 });

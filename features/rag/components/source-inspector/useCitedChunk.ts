@@ -15,6 +15,7 @@ import {
   citedChunkFacts,
   citedPortion,
   pageForPartOrdinal,
+  portionForExcerpt,
   parsePartId,
   type CitedChunkFacts,
   type CitedPortion,
@@ -117,5 +118,69 @@ export function useCitedChunk(
   }, [chunkId, documentId]);
   if (!chunkId) return { facts: null, loading: false, error: null };
   if (state.forId !== chunkId || state.forDoc !== documentId) return { facts: null, loading: true, error: null };
+  return { facts: state.facts, loading: state.loading, error: state.error };
+}
+
+/**
+ * A citation that names a RECORD's packed part (`<record id>:<n>` — a
+ * transcript picked as a record carries no document id): find the record's
+ * processed document and the portion the quoted passage sits in, so the
+ * citation can name and open its real place (a video's time). A failed read
+ * is returned; a quote that is not found is no place, never a guess.
+ */
+export async function readRecordCitedFacts(
+  recordId: string,
+  excerpt: string | null,
+): Promise<{ facts: CitedChunkFacts | null; error: string | null }> {
+  const { data: docs, error: docError } = await docprocDb(supabase)
+    .from("processed_documents")
+    .select("id")
+    .eq("source_id", recordId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (docError) return { facts: null, error: docError.message };
+  const documentId = (docs?.[0]?.id as string | undefined) ?? null;
+  if (!documentId) return { facts: null, error: null };
+  const { data, error } = await docprocDb(supabase)
+    .from("processed_document_pages")
+    .select("page_number, portion_kind, locator, cleaned_text, raw_text")
+    .eq("processed_document_id", documentId)
+    .order("page_number", { ascending: true });
+  if (error) return { facts: null, error: error.message };
+  const row = portionForExcerpt(data ?? [], excerpt);
+  return {
+    facts: {
+      pageNumbers: row?.page_number != null ? [row.page_number] : null,
+      part: true,
+      t0Ms: null,
+      t1Ms: null,
+      documentId,
+      portion: row ? citedPortion(row) : null,
+    },
+    error: null,
+  };
+}
+
+/** `readRecordCitedFacts` as state (null id → nothing to read). */
+export function useRecordCitedFacts(recordId: string | null, excerpt: string | null): CitedChunkState {
+  const [state, setState] = useState<{ forId: string | null } & CitedChunkState>({
+    forId: null,
+    facts: null,
+    loading: false,
+    error: null,
+  });
+  useEffect(() => {
+    if (!recordId) return undefined;
+    let cancelled = false;
+    void (async () => {
+      const { facts, error } = await readRecordCitedFacts(recordId, excerpt);
+      if (!cancelled) setState({ forId: recordId, facts, loading: false, error });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [recordId, excerpt]);
+  if (!recordId) return { facts: null, loading: false, error: null };
+  if (state.forId !== recordId) return { facts: null, loading: true, error: null };
   return { facts: state.facts, loading: state.loading, error: state.error };
 }

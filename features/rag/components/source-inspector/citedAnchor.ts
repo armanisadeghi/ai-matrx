@@ -191,3 +191,41 @@ export function citedPlace(
   const label = pagesLabel(pages);
   return { kind: label ? "page" : "none", label, seekMs: null, pageNumber };
 }
+
+function normalizeForMatch(text: string): string {
+  return text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+/**
+ * The portion a quoted passage sits in, for a citation that names only a
+ * packed "Part n" of a record's text (a transcript picked as a record: the
+ * part number counts paragraphs, not segments). The portions' texts are read
+ * in order as one stream and the excerpt's opening words are found in it —
+ * the longest opening run (10 words down to 3, at least 16 letters) that
+ * occurs, since an agent's quote drifts after its first words. The portion
+ * holding that offset is the place. Null when no opening run is there: no
+ * guess.
+ */
+export function portionForExcerpt<
+  R extends { cleaned_text?: string | null; raw_text?: string | null },
+>(rows: readonly R[], excerpt: string | null | undefined): R | null {
+  const words = normalizeForMatch(excerpt ?? "").split(" ").filter(Boolean);
+  let stream = "";
+  const starts: number[] = [];
+  for (const row of rows) {
+    starts.push(stream.length);
+    stream += ` ${normalizeForMatch(row.cleaned_text || row.raw_text || "")}`;
+  }
+  stream += " ";
+  let at = -1;
+  for (let n = Math.min(10, words.length); n >= 3 && at < 0; n--) {
+    const needle = words.slice(0, n).join(" ");
+    if (needle.length < 16) break;
+    const hit = stream.indexOf(` ${needle} `);
+    if (hit >= 0) at = hit + 1;
+  }
+  if (at < 0) return null;
+  let index = 0;
+  for (let i = 0; i < starts.length; i++) if (starts[i]! <= at) index = i;
+  return rows[index] ?? null;
+}
