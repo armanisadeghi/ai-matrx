@@ -24,7 +24,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, CircleCheck, CircleDot, Loader2, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { errorRowsHref, fetchMandateReferenceBoard, formatRepoList, formatSeconds, costCell, type MandatePatrolRun, type MandatePatrolSection, type MandateReferenceBoard, type MandateReferenceBoardRepo } from "./references";
+import { errorRowsHref, fetchMandateReferenceBoard, formatRepoList, formatSeconds, costCell, type MandatePatrolRun, type MandatePatrolSection, type MandateReferenceBoard, type MandateReferenceBoardRepo, type MandateReferenceFinding } from "./references";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -75,12 +75,98 @@ function ScanLine({
  * and the repo header already carries the full count. */
 const FINDINGS_PREVIEW = 10;
 
+/**
+ * What a flagged row IS (server `board_findings`, verification 2026-09-30 H1):
+ * a defect on main (`open`, the only one counted), a defect only in the
+ * released revision that main already fixed (`awaiting_release`), or a scanner
+ * fact that is not a defect (`by_design` — a key passed through from its
+ * caller). The status is the server's; this only names it.
+ */
+const FINDING_STATUS: Record<
+  MandateReferenceFinding["status"],
+  { badge: string | null; hint: string | null }
+> = {
+  open: { badge: null, hint: null },
+  awaiting_release: {
+    badge: "Fixed on main",
+    hint: "Main no longer has this; the released revision still does.",
+  },
+  by_design: {
+    badge: "By design",
+    hint: "The caller chooses this key, so it is not a finding.",
+  },
+};
+
+function FindingRow({ finding }: { finding: MandateReferenceFinding }) {
+  // A server older than this screen sends no status: every row it sends is open.
+  const status = FINDING_STATUS[finding.status] ?? FINDING_STATUS.open;
+  const isOpen = status === FINDING_STATUS.open;
+  const Icon = isOpen
+    ? AlertTriangle
+    : finding.status === "awaiting_release"
+      ? CircleCheck
+      : CircleDot;
+  return (
+    <div className="px-3 py-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Icon
+          className={
+            isOpen
+              ? "size-4 shrink-0 text-destructive"
+              : "size-4 shrink-0 text-muted-foreground"
+          }
+          aria-hidden="true"
+        />
+        <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+          {finding.location}
+        </span>
+        {status.badge ? (
+          <span className="flex shrink-0 items-center gap-1">
+            <Badge variant="outline">{status.badge}</Badge>
+            {status.hint ? <InfoHint text={status.hint} /> : null}
+          </span>
+        ) : null}
+        {finding.revision ? (
+          <code
+            className="shrink-0 text-xs text-muted-foreground"
+            title={finding.revision}
+          >
+            {finding.revision_kind} {finding.revision.slice(0, 12)}
+          </code>
+        ) : null}
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {finding.mandate_key}
+        </span>
+        <CopyButton
+          content={finding.location}
+          label="Copy finding location"
+          size="sm"
+        />
+      </div>
+      {isOpen && finding.sentence ? (
+        <p className="mt-1 text-xs text-destructive">
+          {finding.sentence}
+          {finding.remedy ? ` ${finding.remedy}` : ""}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
   const [showAllFindings, setShowAllFindings] = useState(false);
   const findingCodes = Object.entries(repo.finding_counts);
+  // Open first; the rest are listed (D21), never counted as open.
+  const allFindings = [
+    ...repo.open_findings,
+    ...(repo.awaiting_release ?? []),
+    ...(repo.by_design ?? []),
+  ];
   const visibleFindings = showAllFindings
-    ? repo.open_findings
-    : repo.open_findings.slice(0, FINDINGS_PREVIEW);
+    ? allFindings
+    : allFindings.slice(0, FINDINGS_PREVIEW);
+  const awaitingCount = repo.awaiting_release_count ?? 0;
+  const byDesignCount = repo.by_design_count ?? 0;
   return (
     <div className="rounded-md border border-border">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-3 py-2">
@@ -96,6 +182,16 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
         {repo.open_finding_count > 0 ? (
           <span className="text-xs text-destructive">
             {repo.open_finding_count} open
+          </span>
+        ) : null}
+        {awaitingCount > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            {awaitingCount} fixed on main
+          </span>
+        ) : null}
+        {byDesignCount > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            {byDesignCount} by design
           </span>
         ) : null}
         {repo.conversion_count > 0 ? (
@@ -122,40 +218,22 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
           </div>
         ) : null}
       </div>
-      {repo.open_findings.length > 0 ? (
+      {allFindings.length > 0 ? (
         <div className="divide-y divide-border border-t border-border text-sm">
           {visibleFindings.map((finding, index) => (
-            <div key={`${finding.location}:${index}`} className="px-3 py-2">
-              <div className="flex items-center gap-3">
-                <AlertTriangle
-                  className="size-4 shrink-0 text-destructive"
-                  aria-hidden="true"
-                />
-                <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-                  {finding.location}
-                </span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {finding.mandate_key}
-                </span>
-                <CopyButton
-                  content={finding.location}
-                  label="Copy finding location"
-                  size="sm"
-                />
-              </div>
-              <p className="mt-1 text-xs text-destructive">
-                {finding.sentence} {finding.remedy}
-              </p>
-            </div>
+            <FindingRow
+              key={`${finding.status}:${finding.location}:${index}`}
+              finding={finding}
+            />
           ))}
-          {repo.open_findings.length > visibleFindings.length ? (
+          {allFindings.length > visibleFindings.length ? (
             <div className="px-3 py-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAllFindings(true)}
               >
-                Show all {repo.open_findings.length} findings
+                Show all {allFindings.length} rows
               </Button>
             </div>
           ) : null}
@@ -581,6 +659,18 @@ export function MandateReferenceBoardView() {
                 <strong>Every active repository has a complete scan.</strong>{" "}
                 {board.open_finding_count} open finding
                 {board.open_finding_count === 1 ? "" : "s"}.
+                {(board.awaiting_release_count ?? 0) > 0 ? (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    {board.awaiting_release_count} fixed on main.
+                  </span>
+                ) : null}
+                {(board.by_design_count ?? 0) > 0 ? (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    {board.by_design_count} by design.
+                  </span>
+                ) : null}
               </>
             )}
           </div>

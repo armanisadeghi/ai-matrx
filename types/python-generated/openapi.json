@@ -106800,6 +106800,31 @@
             ],
             "title": "Persist",
             "description": "auto | never | client."
+          },
+          "max_inline_chars": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Inline Chars",
+            "description": "The agent layer's inline limit for this key (0 = never inline); resolved with the page's and the person's by the context gate."
+          },
+          "summary_agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Agent Id",
+            "description": "Agent that writes this slot's summary on request."
           }
         },
         "additionalProperties": true,
@@ -121491,12 +121516,43 @@
             "type": "string",
             "title": "Presence"
           },
-          "sentence": {
+          "status": {
             "type": "string",
+            "enum": [
+              "awaiting_release",
+              "by_design",
+              "open"
+            ],
+            "title": "Status"
+          },
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          },
+          "revision_kind": {
+            "type": "string",
+            "title": "Revision Kind"
+          },
+          "sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Sentence"
           },
           "remedy": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Remedy"
           }
         },
@@ -121509,11 +121565,14 @@
           "location",
           "flag",
           "presence",
+          "status",
+          "revision",
+          "revision_kind",
           "sentence",
           "remedy"
         ],
         "title": "BoardFinding",
-        "description": "A flagged reference row — a real location plus what to do about it."
+        "description": "A flagged reference row — a real location, the revision it was measured\nat, what it is, and (for a defect) what to do about it."
       },
       "BoardRepo": {
         "properties": {
@@ -121585,6 +121644,32 @@
             },
             "type": "array",
             "title": "Open Findings"
+          },
+          "awaiting_release_count": {
+            "type": "integer",
+            "title": "Awaiting Release Count",
+            "default": 0
+          },
+          "awaiting_release": {
+            "items": {
+              "$ref": "#/components/schemas/BoardFinding"
+            },
+            "type": "array",
+            "title": "Awaiting Release",
+            "default": []
+          },
+          "by_design_count": {
+            "type": "integer",
+            "title": "By Design Count",
+            "default": 0
+          },
+          "by_design": {
+            "items": {
+              "$ref": "#/components/schemas/BoardFinding"
+            },
+            "type": "array",
+            "title": "By Design",
+            "default": []
           }
         },
         "additionalProperties": false,
@@ -150264,6 +150349,38 @@
               }
             ]
           },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ContextEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/JsonValue"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "surface": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surface"
+          },
           "question": {
             "type": "string",
             "maxLength": 4000,
@@ -150743,6 +150860,38 @@
         ],
         "title": "ContextCompareSide"
       },
+      "ContextDecidedBy": {
+        "properties": {
+          "include": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "default",
+              "page",
+              "you"
+            ],
+            "title": "Include"
+          },
+          "max_inline_chars": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "default",
+              "page",
+              "you"
+            ],
+            "title": "Max Inline Chars"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "include",
+          "max_inline_chars"
+        ],
+        "title": "ContextDecidedBy",
+        "description": "Which layer decided each knob of one context value."
+      },
       "ContextDelivered": {
         "properties": {
           "today": {
@@ -150887,6 +151036,126 @@
         ],
         "title": "ContextDeliveredSide",
         "description": "One side's context EXACTLY as the model is fed it — the run path's assembler's bytes."
+      },
+      "ContextEnvelope": {
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "mutable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mutable"
+          },
+          "persist": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "client",
+                  "never"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persist"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "max_inline_chars": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Inline Chars"
+          },
+          "default_max_inline_chars": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Max Inline Chars"
+          },
+          "summary_agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Agent Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ContextEnvelope",
+        "description": "The rich per-value form a client may send in ``context`` instead of a bare value.\n\n``max_inline_chars`` here is the PAGE layer's limit (it wins over the surface's DB\ncolumn); ``default_max_inline_chars`` is a server per-key default."
       },
       "ContextFollowLag": {
         "properties": {
@@ -151348,6 +151617,38 @@
                 "type": "null"
               }
             ]
+          },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ContextEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/JsonValue"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "surface": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surface"
           }
         },
         "additionalProperties": false,
@@ -151494,6 +151795,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ContextDelivered"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextReceipt"
               },
               {
                 "type": "null"
@@ -151681,6 +151992,164 @@
         "title": "ContextProvenance",
         "description": "Where a shown block came from — printed on the inspector's tabs."
       },
+      "ContextReceipt": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version",
+            "default": 1
+          },
+          "surface": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surface"
+          },
+          "cap": {
+            "type": "integer",
+            "title": "Cap"
+          },
+          "model_reads_context": {
+            "type": "boolean",
+            "title": "Model Reads Context",
+            "default": true
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ContextReceiptRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "rules_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rules Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "cap"
+        ],
+        "title": "ContextReceipt",
+        "description": "What the server did with every context value this turn (RULES.md §5)."
+      },
+      "ContextReceiptRow": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "surface_key": {
+            "type": "string",
+            "title": "Surface Key"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "client",
+              "rule",
+              "server",
+              "surroundings"
+            ],
+            "title": "Origin"
+          },
+          "chars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chars"
+          },
+          "include": {
+            "type": "boolean",
+            "title": "Include"
+          },
+          "max_inline_chars": {
+            "type": "integer",
+            "title": "Max Inline Chars"
+          },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "inline",
+              "off",
+              "on_request"
+            ],
+            "title": "Delivery"
+          },
+          "decided_by": {
+            "$ref": "#/components/schemas/ContextDecidedBy"
+          },
+          "user_rule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextRule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clamped": {
+            "type": "boolean",
+            "title": "Clamped",
+            "default": false
+          },
+          "client_sent_excluded": {
+            "type": "boolean",
+            "title": "Client Sent Excluded",
+            "default": false
+          },
+          "blocked_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "model"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked By"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "surface_key",
+          "origin",
+          "include",
+          "max_inline_chars",
+          "delivery",
+          "decided_by"
+        ],
+        "title": "ContextReceiptRow",
+        "description": "One context value this turn: whether it reached the model, and how."
+      },
       "ContextRenderRequest": {
         "properties": {
           "target": {
@@ -151717,6 +152186,37 @@
           "metadata"
         ],
         "title": "ContextRenderResponse"
+      },
+      "ContextRule": {
+        "properties": {
+          "include": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include"
+          },
+          "max_inline_chars": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Inline Chars"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ContextRule",
+        "description": "A person's saved rule for one context value (``users.user_surface_state``,\n``feature='context_rules'``). Each field is optional: a rule that sets one knob leaves the\nother to the lower layers. In a receipt, it is what the server READ (valid fields only)."
       },
       "ContextSelection": {
         "properties": {
@@ -185271,8 +185771,7 @@
           }
         },
         "type": "object",
-        "title": "ForkAndRunRequest",
-        "description": "Fork an existing conversation, then run a new turn on the fork.\n\nAll fields from ``ConversationContinueRequest`` apply (user_input,\ntools, client, config_overrides, etc.) — they drive the new turn\nexactly as if the caller had hit ``POST /conversations/{new_id}``.\n\nSelectors (provide at most one — default copies every live message):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy up to and including this message. Set\n  ``exclusive=True`` to fork *before* it (the natural shape for\n  \"edit this message\" — message N is dropped, the new turn replaces it).\n\n``fork_title`` overrides the auto-generated ``\"Fork: <source>\"``\ntitle on the new conversation."
+        "title": "ForkAndRunRequest"
       },
       "ForkConversationResponse": {
         "properties": {
@@ -217007,6 +217506,16 @@
             "type": "integer",
             "title": "Open Finding Count"
           },
+          "awaiting_release_count": {
+            "type": "integer",
+            "title": "Awaiting Release Count",
+            "default": 0
+          },
+          "by_design_count": {
+            "type": "integer",
+            "title": "By Design Count",
+            "default": 0
+          },
           "unverified_repos": {
             "items": {
               "type": "string"
@@ -217273,6 +217782,11 @@
               }
             ],
             "title": "Scan Status"
+          },
+          "by_design": {
+            "type": "boolean",
+            "title": "By Design",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -275682,7 +276196,6 @@
         "type": "object",
         "required": [
           "user_id",
-          "organization_id",
           "is_admin",
           "admin_bypass_acl"
         ],

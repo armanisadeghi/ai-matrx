@@ -45981,6 +45981,16 @@ export interface components {
              * @description auto | never | client.
              */
             persist?: string | null;
+            /**
+             * Max Inline Chars
+             * @description The agent layer's inline limit for this key (0 = never inline); resolved with the page's and the person's by the context gate.
+             */
+            max_inline_chars?: number | null;
+            /**
+             * Summary Agent Id
+             * @description Agent that writes this slot's summary on request.
+             */
+            summary_agent_id?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -52750,7 +52760,8 @@ export interface components {
         };
         /**
          * BoardFinding
-         * @description A flagged reference row — a real location plus what to do about it.
+         * @description A flagged reference row — a real location, the revision it was measured
+         *     at, what it is, and (for a defect) what to do about it.
          */
         BoardFinding: {
             /** Mandate Key */
@@ -52765,10 +52776,19 @@ export interface components {
             flag: string;
             /** Presence */
             presence: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "awaiting_release" | "by_design" | "open";
+            /** Revision */
+            revision: string;
+            /** Revision Kind */
+            revision_kind: string;
             /** Sentence */
-            sentence: string;
+            sentence: string | null;
             /** Remedy */
-            remedy: string;
+            remedy: string | null;
         };
         /** BoardRepo */
         BoardRepo: {
@@ -52795,6 +52815,26 @@ export interface components {
             conversion_count: number;
             /** Open Findings */
             open_findings: components["schemas"]["BoardFinding"][];
+            /**
+             * Awaiting Release Count
+             * @default 0
+             */
+            awaiting_release_count?: number;
+            /**
+             * Awaiting Release
+             * @default []
+             */
+            awaiting_release?: components["schemas"]["BoardFinding"][];
+            /**
+             * By Design Count
+             * @default 0
+             */
+            by_design_count?: number;
+            /**
+             * By Design
+             * @default []
+             */
+            by_design?: components["schemas"]["BoardFinding"][];
         };
         /** BoardScanSummary */
         BoardScanSummary: {
@@ -64592,6 +64632,12 @@ export interface components {
              */
             path?: "both" | "new" | "old";
             selection?: components["schemas"]["ContextSelection"] | null;
+            /** Context */
+            context?: {
+                [key: string]: components["schemas"]["ContextEnvelope"] | components["schemas"]["JsonValue"];
+            } | null;
+            /** Surface */
+            surface?: string | null;
             /** Question */
             question: string;
         };
@@ -64758,6 +64804,22 @@ export interface components {
             resolve_ms?: number | null;
         };
         /**
+         * ContextDecidedBy
+         * @description Which layer decided each knob of one context value.
+         */
+        ContextDecidedBy: {
+            /**
+             * Include
+             * @enum {string}
+             */
+            include: "agent" | "default" | "page" | "you";
+            /**
+             * Max Inline Chars
+             * @enum {string}
+             */
+            max_inline_chars: "agent" | "default" | "page" | "you";
+        };
+        /**
          * ContextDelivered
          * @description What the model gets today beside what it would get from the record store (lane INSPECTOR-DIFF).
          */
@@ -64801,6 +64863,36 @@ export interface components {
             /** Block Byte Length */
             block_byte_length?: number | null;
             provenance?: components["schemas"]["ContextProvenance"] | null;
+        };
+        /**
+         * ContextEnvelope
+         * @description The rich per-value form a client may send in ``context`` instead of a bare value.
+         *
+         *     ``max_inline_chars`` here is the PAGE layer's limit (it wins over the surface's DB
+         *     column); ``default_max_inline_chars`` is a server per-key default.
+         */
+        ContextEnvelope: {
+            content?: components["schemas"]["JsonValue"];
+            /** Type */
+            type?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Mutable */
+            mutable?: boolean | null;
+            /** Persist */
+            persist?: ("auto" | "client" | "never") | null;
+            /** Source */
+            source?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Max Inline Chars */
+            max_inline_chars?: number | null;
+            /** Default Max Inline Chars */
+            default_max_inline_chars?: number | null;
+            /** Summary Agent Id */
+            summary_agent_id?: string | null;
         };
         /** ContextFollowLag */
         ContextFollowLag: {
@@ -65017,6 +65109,12 @@ export interface components {
              */
             path?: "both" | "new" | "old";
             selection?: components["schemas"]["ContextSelection"] | null;
+            /** Context */
+            context?: {
+                [key: string]: components["schemas"]["ContextEnvelope"] | components["schemas"]["JsonValue"];
+            } | null;
+            /** Surface */
+            surface?: string | null;
         };
         /** ContextPreviewResponse */
         ContextPreviewResponse: {
@@ -65058,6 +65156,7 @@ export interface components {
             compare?: components["schemas"]["ContextCompare"] | null;
             provenance?: components["schemas"]["ContextProvenance"] | null;
             delivered?: components["schemas"]["ContextDelivered"] | null;
+            receipt?: components["schemas"]["ContextReceipt"] | null;
         };
         /**
          * ContextPreviewSelection
@@ -65133,6 +65232,73 @@ export interface components {
             /** Says */
             says: string;
         };
+        /**
+         * ContextReceipt
+         * @description What the server did with every context value this turn (RULES.md §5).
+         */
+        ContextReceipt: {
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version?: 1;
+            /** Surface */
+            surface?: string | null;
+            /** Cap */
+            cap: number;
+            /**
+             * Model Reads Context
+             * @default true
+             */
+            model_reads_context?: boolean;
+            /** Rows */
+            rows?: components["schemas"]["ContextReceiptRow"][];
+            /** Rules Error */
+            rules_error?: string | null;
+        };
+        /**
+         * ContextReceiptRow
+         * @description One context value this turn: whether it reached the model, and how.
+         */
+        ContextReceiptRow: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Surface Key */
+            surface_key: string;
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "client" | "rule" | "server" | "surroundings";
+            /** Chars */
+            chars?: number | null;
+            /** Include */
+            include: boolean;
+            /** Max Inline Chars */
+            max_inline_chars: number;
+            /**
+             * Delivery
+             * @enum {string}
+             */
+            delivery: "inline" | "off" | "on_request";
+            decided_by: components["schemas"]["ContextDecidedBy"];
+            user_rule?: components["schemas"]["ContextRule"] | null;
+            /**
+             * Clamped
+             * @default false
+             */
+            clamped?: boolean;
+            /**
+             * Client Sent Excluded
+             * @default false
+             */
+            client_sent_excluded?: boolean;
+            /** Blocked By */
+            blocked_by?: "model" | null;
+        };
         /** ContextRenderRequest */
         ContextRenderRequest: {
             target: components["schemas"]["ContextTarget"];
@@ -65146,6 +65312,18 @@ export interface components {
             metadata: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * ContextRule
+         * @description A person's saved rule for one context value (``users.user_surface_state``,
+         *     ``feature='context_rules'``). Each field is optional: a rule that sets one knob leaves the
+         *     other to the lower layers. In a receipt, it is what the server READ (valid fields only).
+         */
+        ContextRule: {
+            /** Include */
+            include?: boolean | null;
+            /** Max Inline Chars */
+            max_inline_chars?: number | null;
         };
         /**
          * ContextSelection
@@ -78942,23 +79120,7 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
-        /**
-         * ForkAndRunRequest
-         * @description Fork an existing conversation, then run a new turn on the fork.
-         *
-         *     All fields from ``ConversationContinueRequest`` apply (user_input,
-         *     tools, client, config_overrides, etc.) — they drive the new turn
-         *     exactly as if the caller had hit ``POST /conversations/{new_id}``.
-         *
-         *     Selectors (provide at most one — default copies every live message):
-         *     - ``up_to_position`` — copy messages with ``position <= N``.
-         *     - ``from_message_id`` — copy up to and including this message. Set
-         *       ``exclusive=True`` to fork *before* it (the natural shape for
-         *       "edit this message" — message N is dropped, the new turn replaces it).
-         *
-         *     ``fork_title`` overrides the auto-generated ``"Fork: <source>"``
-         *     title on the new conversation.
-         */
+        /** ForkAndRunRequest */
         ForkAndRunRequest: {
             /**
              * Organization Id
@@ -93229,6 +93391,16 @@ export interface components {
             };
             /** Open Finding Count */
             open_finding_count: number;
+            /**
+             * Awaiting Release Count
+             * @default 0
+             */
+            awaiting_release_count?: number;
+            /**
+             * By Design Count
+             * @default 0
+             */
+            by_design_count?: number;
             /** Unverified Repos */
             unverified_repos: string[];
             patrol?: components["schemas"]["MandatePatrolSection"] | null;
@@ -93309,6 +93481,11 @@ export interface components {
             remedy: string | null;
             /** Scan Status */
             scan_status: string | null;
+            /**
+             * By Design
+             * @default false
+             */
+            by_design?: boolean;
         };
         /**
          * MandateResolutionResponse
@@ -119349,7 +119526,7 @@ export interface components {
             /** User Id */
             user_id: string;
             /** Organization Id */
-            organization_id: string | null;
+            organization_id?: string | null;
             /** Is Admin */
             is_admin: boolean;
             /** Admin Bypass Acl */
