@@ -34,7 +34,10 @@ import {
   selectDisplayContextRows,
   selectResolvedContextRows,
 } from "@/features/agents/redux/execution-system/context-rules/request-context";
-import { saveContextRule } from "@/features/agents/redux/execution-system/context-rules/context-rules.thunks";
+import {
+  reloadContextRules,
+  saveContextRule,
+} from "@/features/agents/redux/execution-system/context-rules/context-rules.thunks";
 import { resolveMandateKillSwitch } from "@/features/agents/redux/execution-system/context-rules/mandate-kill-switch";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
@@ -117,6 +120,10 @@ export function ConversationContextChip({
   // first send never waits on them.
   useEffect(() => {
     void dispatch(ensureSurfaceFeatureLoaded(CONTEXT_RULES_FEATURE));
+    // Another tab or device may have changed a rule: coming back re-reads them.
+    const onFocus = () => void dispatch(reloadContextRules());
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [dispatch]);
 
   const mandateKey = useAppSelector(
