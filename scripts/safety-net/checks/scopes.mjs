@@ -41,7 +41,24 @@ export default [
   sql("storetails3_context_green", ["S14"], { short: "restricted-field-agent", passWhen: "ALL PASS", failWhen: "P[0-9] FAIL" }),
   // S15 / S16: the class functions — a disabled join code and a cleared teacher leave the Record (no stale admit).
   sql("scopesaccess_a_removed_scope_setting_leaves_the_store_red_green", ["S15", "S16"], { short: "class-settings" }),
+  // S09 / S10 on the fixture organization: every live Cedar Ridge PT scope (Patients, Departments, Team
+  // Members) handed to an agent by both resolvers, as admin@admin.com — 13 s, the cheap deciding check.
+  {
+    id: "scopes.cmd-context-parity-cedar-ridge",
+    area: "scopes",
+    kind: "cmd",
+    cmd: "zsh",
+    args: ["-c", 'eval "$(uv run python scripts/clone/server_env.py --shell)" && uv run python scripts/context_parity.py --scope f3cf712a-d07b-41cd-b6bc-5dd3fb662ae4 --scope 98613fc8-224c-4787-a0c2-b7eccd2cc729 --scope e74e3002-97f2-4ada-8717-43ef476bc8e8 --scope c46a54ba-8cc7-4b67-9387-876ea192f4d2 --scope 9243f75e-07e1-4ea8-bd6b-8c907562a841 --as admin@admin.com --organization 0a54df90-eab8-4d07-ab29-81a45fb41e04 --expect clone'],
+    cwd: "../aidream",
+    dbEnv: "clone",
+    passWhen: "RESULT: PARITY — zero defects$",
+    items: ["S09", "S10"],
+    targets: ["clone"],
+    timeoutMs: 10 * 60 * 1000,
+  },
   // S09 / S10: both resolvers, every live scope type of every organization, as admin@admin.com, on the clone.
+  // RED on clone bsrxywzdgakicuvyigwv (2026-10-01 02:00): Alex Hart's Workspace → Classes "Biology 101 — Live
+  // Test" is live in context.scopes and ARCHIVED in the store — a real divergence (Copy again should carry it).
   // The database is the five SUPABASE_MATRIX_* values; server_env.py --shell sets them to the proven clone.
   {
     id: "scopes.cmd-context-parity",
