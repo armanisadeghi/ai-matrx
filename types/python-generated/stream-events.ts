@@ -519,6 +519,42 @@ export interface ContextPersistedData {
   materialized?: boolean;
 }
 
+export interface ContextDecidedBy {
+  include: "default" | "page" | "agent" | "you";
+  max_inline_chars: "default" | "page" | "agent" | "you";
+}
+
+export interface ContextReceiptRow {
+  key: string;
+  label: string;
+  surface_key: string;
+  origin: "client" | "server" | "surroundings" | "rule";
+  chars?: number | null;
+  include: boolean;
+  max_inline_chars: number;
+  delivery: "inline" | "on_request" | "off";
+  decided_by: ContextDecidedBy;
+  user_rule?: ContextRule | null;
+  clamped?: boolean;
+  client_sent_excluded?: boolean;
+  blocked_by?: "model" | null;
+}
+
+export interface ContextRule {
+  include?: boolean | null;
+  max_inline_chars?: number | null;
+}
+
+export interface ContextReceiptData {
+  type?: "context_receipt";
+  version?: 1;
+  surface?: string | null;
+  cap: number;
+  model_reads_context?: boolean;
+  rows?: ContextReceiptRow[];
+  rules_error?: string | null;
+}
+
 export interface ConversationIdData {
   type?: "conversation_id";
   conversation_id: string;
@@ -2344,6 +2380,7 @@ export type TypedDataPayload =
   | ContextDeltaData
   | ContextPersistFailedData
   | ContextPersistedData
+  | ContextReceiptData
   | ConversationIdData
   | ConversationLabeledData
   | CutoverCopyAgainProgressData

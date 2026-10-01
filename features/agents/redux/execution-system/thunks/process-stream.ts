@@ -198,6 +198,7 @@ import {
   isMediaBlockData,
 } from "@/features/files/blocks/adapters/from-media-block";
 import type {
+  ContextReceiptData,
   ImageOutputData,
   PartialImageData,
 } from "@/types/python-generated/stream-events";
@@ -239,6 +240,7 @@ import { makePartialKindStalenessGate } from "@ai-matrx/content-ir/wire";
 import { prepareInboundRenderBlock } from "../utils/inbound-render-block";
 import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
+import { setContextReceipt } from "../instance-context/instance-context.slice";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
@@ -1610,6 +1612,21 @@ export async function processStream({
               }),
             );
           }
+        } else if (dataType === "context_receipt") {
+          // THE SERVER'S ACCOUNT of every context value this turn: sent or
+          // off, inline or on request, and which layer decided (RULES.md §5 in
+          // common-docs context-delivery). State, never content — it feeds the
+          // composer's context table and the expected-vs-actual check. Until
+          // 2026-09-30 it fell to `unknown_data_event` and printed an Unknown
+          // Data Event card under every reply.
+          dispatch(
+            setContextReceipt({
+              conversationId,
+              requestId,
+              receipt: d as ContextReceiptData,
+              receivedAt: Date.now(),
+            }),
+          );
         } else if (dataType === DECISION_ANSWERS_BLOCK_TYPE) {
           // A DECISION ARRIVES LIVE, exactly like an image or a TTS render.
           // The server emits the same `decision_answers` payload it persists

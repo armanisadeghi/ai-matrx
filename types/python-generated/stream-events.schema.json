@@ -5584,6 +5584,242 @@
     "title": "ContextPersistFailedData",
     "type": "object"
   },
+  "ContextReceiptData": {
+    "$defs": {
+      "ContextDecidedBy": {
+        "additionalProperties": false,
+        "description": "Which layer decided each knob of one context value.",
+        "properties": {
+          "include": {
+            "enum": [
+              "default",
+              "page",
+              "agent",
+              "you"
+            ],
+            "title": "Include",
+            "type": "string"
+          },
+          "max_inline_chars": {
+            "enum": [
+              "default",
+              "page",
+              "agent",
+              "you"
+            ],
+            "title": "Max Inline Chars",
+            "type": "string"
+          }
+        },
+        "required": [
+          "include",
+          "max_inline_chars"
+        ],
+        "title": "ContextDecidedBy",
+        "type": "object"
+      },
+      "ContextReceiptRow": {
+        "additionalProperties": false,
+        "description": "One context value this turn: whether it reached the model, and how.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "surface_key": {
+            "title": "Surface Key",
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "client",
+              "server",
+              "surroundings",
+              "rule"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "chars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Chars"
+          },
+          "include": {
+            "title": "Include",
+            "type": "boolean"
+          },
+          "max_inline_chars": {
+            "title": "Max Inline Chars",
+            "type": "integer"
+          },
+          "delivery": {
+            "enum": [
+              "inline",
+              "on_request",
+              "off"
+            ],
+            "title": "Delivery",
+            "type": "string"
+          },
+          "decided_by": {
+            "$ref": "#/$defs/ContextDecidedBy"
+          },
+          "user_rule": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ContextRule"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "clamped": {
+            "default": false,
+            "title": "Clamped",
+            "type": "boolean"
+          },
+          "client_sent_excluded": {
+            "default": false,
+            "title": "Client Sent Excluded",
+            "type": "boolean"
+          },
+          "blocked_by": {
+            "anyOf": [
+              {
+                "const": "model",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Blocked By"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "surface_key",
+          "origin",
+          "include",
+          "max_inline_chars",
+          "delivery",
+          "decided_by"
+        ],
+        "title": "ContextReceiptRow",
+        "type": "object"
+      },
+      "ContextRule": {
+        "additionalProperties": false,
+        "description": "A person's saved rule for one context value (``users.user_surface_state``,\n``feature='context_rules'``). Each field is optional: a rule that sets one knob leaves the\nother to the lower layers. In a receipt, it is what the server READ (valid fields only).",
+        "properties": {
+          "include": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Include"
+          },
+          "max_inline_chars": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Inline Chars"
+          }
+        },
+        "title": "ContextRule",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "The per-turn context receipt, streamed before any model output.\n\nDerived from the final context objects, never computed separately; the same\nreceipt is persisted at ``chat.message.model_context.delivery.receipt``.",
+    "properties": {
+      "type": {
+        "const": "context_receipt",
+        "default": "context_receipt",
+        "title": "Type",
+        "type": "string"
+      },
+      "version": {
+        "const": 1,
+        "default": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "surface": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Surface"
+      },
+      "cap": {
+        "title": "Cap",
+        "type": "integer"
+      },
+      "model_reads_context": {
+        "default": true,
+        "title": "Model Reads Context",
+        "type": "boolean"
+      },
+      "rows": {
+        "items": {
+          "$ref": "#/$defs/ContextReceiptRow"
+        },
+        "title": "Rows",
+        "type": "array"
+      },
+      "rules_error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rules Error"
+      }
+    },
+    "required": [
+      "cap"
+    ],
+    "title": "ContextReceiptData",
+    "type": "object"
+  },
   "MemoryContextInjectedData": {
     "additionalProperties": false,
     "description": "Prior observations were prepended to the system prompt for this turn.\n\nEmitted once per memory-enabled turn, BEFORE the LLM call, if any\nobservations exist yet. ``observation_chars`` is the raw character\nlength of the injected block — useful for sizing UI badges.",

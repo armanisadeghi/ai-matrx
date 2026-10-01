@@ -13,6 +13,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import isEqual from "lodash/isEqual";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+import type { ContextReceiptData } from "@/types/python-generated/stream-events";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 
@@ -24,11 +25,25 @@ export interface InstanceContextState {
   byConversationId: Record<string, Record<string, InstanceContextEntry>>;
   /** Context keys owned by the last live surface mapping pass. */
   surfaceKeysByConversationId: Record<string, string[]>;
+  /**
+   * The server's account of what it ACTUALLY did with each context value on the
+   * latest turn (the `context_receipt` data event — common-docs
+   * systems/scopes-context/context-delivery/RULES.md §5). The screen shows this,
+   * never the client's belief.
+   */
+  receiptByConversationId: Record<string, ContextReceiptEntry>;
+}
+
+export interface ContextReceiptEntry {
+  requestId: string;
+  receipt: ContextReceiptData;
+  receivedAt: number;
 }
 
 const initialState: InstanceContextState = {
   byConversationId: {},
   surfaceKeysByConversationId: {},
+  receiptByConversationId: {},
 };
 
 // =============================================================================
@@ -321,6 +336,15 @@ const instanceContextSlice = createSlice({
     removeInstanceContext(state, action: PayloadAction<string>) {
       delete state.byConversationId[action.payload];
       delete state.surfaceKeysByConversationId[action.payload];
+      delete state.receiptByConversationId[action.payload];
+    },
+
+    setContextReceipt(
+      state,
+      action: PayloadAction<{ conversationId: string } & ContextReceiptEntry>,
+    ) {
+      const { conversationId, ...entry } = action.payload;
+      state.receiptByConversationId[conversationId] = entry;
     },
   },
 
@@ -332,6 +356,7 @@ const instanceContextSlice = createSlice({
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
       delete state.surfaceKeysByConversationId[action.payload];
+      delete state.receiptByConversationId[action.payload];
     });
   },
 });
@@ -345,6 +370,7 @@ export const {
   consumePerTurnContext,
   clearInstanceContext,
   removeInstanceContext,
+  setContextReceipt,
 } = instanceContextSlice.actions;
 
 export default instanceContextSlice.reducer;
