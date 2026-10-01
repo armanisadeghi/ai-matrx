@@ -6,7 +6,8 @@ Options:                       --no-push   do everything locally, push nothing (
 GO-time switches (both off unless their file exists; see "GO-time switches" below):
     python3 scripts/sync-main.py --pause "<reason>" [--minutes N] [--by NAME]   (default 90, max 480)
     python3 scripts/sync-main.py --resume
-    python3 scripts/sync-main.py --status        pause state + old-path refusal state
+    python3 scripts/sync-main.py --status        pause state + old-path refusal + commit hold state
+    python3 scripts/sync-main.py --hold-status   the commit hold and every held path
     python3 scripts/sync-main.py --pause-active  exit 3 + the SYNC PAUSED line while a pause is in
                                                  force, else exit 0 silently. Every OTHER path that
                                                  pushes or releases from this checkout asks this
@@ -314,7 +315,7 @@ def other_sweeps():
     out = []
     for line in r.stdout.splitlines():
         pid, _, cmd = line.strip().partition(" ")
-        if pid != str(os.getpid()) and not re.search(r"--(pause|resume|status)\b", cmd):
+        if pid != str(os.getpid()) and not re.search(r"--(pause|resume|status|hold-status)\b", cmd):
             out.append(line.strip())
     return out
 
@@ -419,6 +420,8 @@ def status_cmd():
     p = read_pause()
     say(pause_line(p) if p else "sync: not paused (no %s)" % PAUSE_REL)
     say(moved_status())
+    h = read_hold()
+    say(hold_line(h) if h else "commit hold: off (no live %s)" % HOLD_REL)
 
 
 def refuse_old_paths(stamp):
@@ -476,6 +479,157 @@ def refuse_old_paths(stamp):
             % (path, new, held))
         refused.append((path, held, "recreated moved path %s; belongs at %s" % (path, new)))
     return refused
+
+
+# COMMIT HOLD  .matrx/held-paths.txt (gitignored; written by the move owner, e.g. from the move
+#        manifest): an `until: <ISO time>` line, an optional `reason: <text>` line (default "the
+#        chat package move"), then one path per line, a directory ending in `/`. While it is live,
+#        every sweep, BEFORE staging, copies each CHANGED, NEW or DELETED file under a held path to
+#        _conflicts/<stamp>-held-for-move/<path>.held (bytes intact, read back and compared), and
+#        only then puts the working tree back to HEAD for that path (a new file is removed), so the
+#        edit is never committed at a path that is about to move and never lost. Everything else
+#        is committed normally. The sweep commits with --no-verify, so a git hook could not do this.
+#        Expiry: at `until:`, never later than HOLD_MAX_MIN after the file was written; a file with
+#        no readable `until:` (or not a readable file) is IGNORED, loudly. An expired file is
+#        renamed to .matrx/held-paths.txt.expired (kept, announced).
+HOLD_REL = ".matrx/held-paths.txt"
+HOLD_MAX_MIN = 240
+HOLD_DEFAULT_REASON = "the chat package move"
+HELD_FOR_MOVE_DIR = "held-for-move"
+
+
+def read_hold():
+    """None when no hold is in force. Otherwise {until, reason, entries, note}."""
+    if not os.path.lexists(HOLD_REL):
+        return None
+    info, entries = {}, []
+    try:
+        if not os.path.isfile(HOLD_REL):
+            raise OSError("not a regular file")
+        with open(HOLD_REL, encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                m = re.match(r"(until|reason|by|since)\s*:\s*(.*)$", line, re.I)
+                if m:
+                    info[m.group(1).lower()] = m.group(2).strip()
+                else:
+                    entries.append(line)
+        written = min(datetime.datetime.fromtimestamp(os.path.getmtime(HOLD_REL)).astimezone(), _now())
+    except OSError as e:
+        say("COMMIT HOLD IGNORED: %s is unreadable (%s) — nothing is held; syncing normally." % (HOLD_REL, e))
+        return None
+    try:
+        until = datetime.datetime.fromisoformat(info.get("until", "")).astimezone()
+    except ValueError:
+        say("COMMIT HOLD IGNORED: %s has no readable `until: <ISO time>` line — nothing is held; "
+            "syncing normally. Add the line to hold (max %d min)." % (HOLD_REL, HOLD_MAX_MIN))
+        return None
+    note = ""
+    cap = written + datetime.timedelta(minutes=HOLD_MAX_MIN)
+    if until > cap:
+        until, note = cap, "capped at %d min after the file was written" % HOLD_MAX_MIN
+    if _now() >= until:
+        try:
+            os.replace(HOLD_REL, HOLD_REL + ".expired")
+        except OSError:
+            pass
+        say("COMMIT HOLD EXPIRED at %s (%s) — %s renamed to %s.expired; nothing is held; syncing normally."
+            % (_iso(until), info.get("reason") or HOLD_DEFAULT_REASON, HOLD_REL, HOLD_REL))
+        return None
+    entries.sort(key=lambda e: -len(e))
+    return {"until": until, "reason": info.get("reason") or HOLD_DEFAULT_REASON,
+            "entries": entries, "note": note}
+
+
+def held_entry(path, entries):
+    for e in entries:
+        if (e.endswith("/") and path.startswith(e)) or path == e:
+            return e
+    return None
+
+
+def hold_line(h):
+    left = max(1, int((h["until"] - _now()).total_seconds() // 60) + 1)
+    return "COMMIT HOLD for %s until %s (%d min left)%s: %d held path(s) in %s" % (
+        h["reason"], _iso(h["until"]), left, " [%s]" % h["note"] if h["note"] else "",
+        len(h["entries"]), HOLD_REL)
+
+
+def hold_status_cmd():
+    h = read_hold()
+    if not h:
+        say("commit hold: off (no live %s)" % HOLD_REL)
+        return
+    say(hold_line(h))
+    for e in h["entries"]:
+        say("  " + e)
+
+
+def hold_changed_paths(stamp):
+    """Set aside every changed/new/deleted file under a held path before the sweep stages.
+    Returns held tuples (path, held_path, summary) in update_log's shape."""
+    h = read_hold()
+    if not h or not h["entries"]:
+        return []
+    _, out, _ = git("status", "--porcelain", "-z", "--untracked-files=all", "--no-renames")
+    recs = [r for r in out.split("\0") if len(r) > 3]
+    held_items = []
+    for rec in recs:
+        code, path = rec[:2], rec[3:]
+        if path.startswith(HOLD_ROOT + "/") or path.startswith(HOLD_REL):
+            continue
+        if not held_entry(path, h["entries"]):
+            continue
+        in_head = bool(blob_at("HEAD", path))
+        held = os.path.join(HOLD_ROOT, "%s-%s" % (stamp, HELD_FOR_MOVE_DIR), path + ".held")
+        if os.path.islink(path):
+            data, binary, what = ("(a symlink to %s)\n" % os.readlink(path)).encode(), False, "changed"
+        elif os.path.isfile(path):
+            with open(path, "rb") as f:
+                data = f.read()
+            binary, what = is_binary(data), ("changed" if in_head else "new")
+        else:
+            data, binary, what = b"(this file was DELETED locally; re-apply the deletion after GO)\n", False, "deleted"
+        header = ("%s\n\n"
+                  "HELD FOR THE MOVE, written by scripts/sync-main.py\n"
+                  "File:        %s (%s locally, git status '%s')\n"
+                  "Why:         held for %s; re-apply after GO. Its path is listed in %s, so the\n"
+                  "             sweep did not commit this edit there; the working tree was put back to HEAD.\n"
+                  "Done with it: the edit is re-applied at the file's new home, this .held file is deleted,\n"
+                  "and its line in %s is deleted.\n"
+                  "---------------- THE HELD FILE BELOW ----------------\n"
+                  % (HELD_MARK, path, what, code, h["reason"], HOLD_REL, LOG_REL)).encode()
+        os.makedirs(os.path.dirname(held), exist_ok=True)
+        if binary:
+            want = {held: data, held + "-note.txt": header.replace(
+                b"THE HELD FILE BELOW", b"THE HELD FILE IS NEXT TO THIS NOTE")}
+        else:
+            want = {held: header + data}
+        for p, b in want.items():
+            with open(p, "wb") as f:
+                f.write(b)
+                f.flush()
+                os.fsync(f.fileno())
+            with open(p, "rb") as f:
+                if f.read() != b:
+                    die("could not safely write %s; %s was left untouched and nothing was committed."
+                        % (p, path))
+        # Only now, with the copy verified on disk, put the working tree back.
+        if in_head:
+            git("checkout", "-q", "HEAD", "--", path)
+        else:
+            git("rm", "-q", "--cached", "--ignore-unmatch", "--", path)
+            if os.path.lexists(path):
+                os.remove(path)
+            try:
+                os.removedirs(os.path.dirname(path))
+            except OSError:
+                pass
+        say("HELD: %s held for %s; re-apply after GO -> %s" % (path, h["reason"], held))
+        held_items.append((path, held, "%s held for %s; re-apply after GO" % (path, h["reason"])))
+    return held_items
 
 
 # ── step 1 ──────────────────────────────────────────────────────────────────────────────────
@@ -1195,11 +1349,17 @@ def main():
     if "--status" in argv:
         status_cmd()
         return
+    if "--hold-status" in argv:
+        hold_status_cmd()
+        return
     paused = read_pause()
     if paused:
         stop_paused(paused)
     if load_moved() is not None:
         say(moved_status())
+    hold_now = read_hold()
+    if hold_now:
+        say(hold_line(hold_now))
     # Show where we started, so the terminal holds the before-state if anything goes wrong.
     say("==================== git status (before sync) ====================")
     subprocess.run(["git", "status"])
@@ -1223,12 +1383,17 @@ def main():
     fixed, docs, held = [], [], []
     packages = None
     refused = []
+    held_for_move = []
     for attempt in range(1, MAX_ATTEMPTS + 1):
         if attempt > 1:
             paused = read_pause()
             if paused:
                 stop_paused(paused, "Paused mid-run: earlier attempts' commits are local only, nothing more was done.")
         prune()
+        hh = hold_changed_paths(stamp)
+        if hh:
+            update_log(stamp, [], hh)
+            held_for_move += hh
         r = refuse_old_paths(stamp)
         if r:
             update_log(stamp, [], r)
@@ -1275,6 +1440,11 @@ def main():
     report(fixed, docs, held,
            "synced: %d local files committed, %d commits pulled from GitHub%s" % (
                total_local, pulled, "" if push else " (--no-push: nothing pushed)"))
+    for path, held_path, _ in held_for_move:
+        say("  HELD for the move: %s  ->  %s" % (path, held_path))
+    if held_for_move:
+        say("%d file(s) under held paths were NOT committed (re-apply after GO); listed in %s."
+            % (len(held_for_move), LOG_REL))
     for path, held_path, _ in refused:
         say("  OLD PATH REFUSED: %s  ->  %s" % (path, held_path))
     if refused:

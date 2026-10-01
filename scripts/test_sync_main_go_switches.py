@@ -385,5 +385,136 @@ class OldPathRefusal(Base):
         self.assertIn(data[0] + "-note.txt", files)
 
 
+HOLD = ".matrx/held-paths.txt"
+
+
+class CommitHold(Base):
+    """Before the move, a peer's edit under a path about to move is set aside, never committed."""
+
+    def setUp(self):
+        super().setUp()
+        self.r.write(".gitignore", ".matrx/sync-paused\n.matrx/held-paths.txt*\n")
+        self.r.write("features/chat/gone.ts", "export const gone = 1;\n")
+        self.r.write("features/chat/staged.ts", "export const staged = 1;\n")
+        sh(self.r.work, "git", "add", "-A")
+        sh(self.r.work, "git", "commit", "-q", "-m", "more")
+        sh(self.r.work, "git", "push", "-q", "origin", "main")
+
+    def hold(self, until=None, extra=""):
+        until = until or (datetime.datetime.now().astimezone() + datetime.timedelta(hours=2)).isoformat()
+        return self.r.write(HOLD, "until: %s\n%sfeatures/chat/\nlib/one.ts\n" % (until, extra))
+
+    def show(self, rel):
+        return sh(self.r.work, "git", "show", "HEAD:" + rel, check=False).stdout
+
+    def edits(self):
+        self.r.write("features/chat/kept.ts", "export const kept = 'peer edit';\n")      # changed
+        self.r.write("features/chat/new/Fresh.tsx", "export const fresh = 1;\n")         # new
+        os.remove(os.path.join(self.r.work, "features/chat/gone.ts"))                    # deleted
+        self.r.write("features/chat/staged.ts", "export const staged = 'staged edit';\n")
+        sh(self.r.work, "git", "add", "features/chat/staged.ts")                         # staged
+        self.r.write("lib/one.ts", "export const one = 1;\n")                            # exact entry
+        self.r.write("lib/other.ts", "export const other = 1;\n")                        # not held
+
+    def test_no_hold_file_commits_as_before(self):
+        self.edits()
+        res = self.r.sweep()
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("peer edit", self.show("features/chat/kept.ts"))
+        self.assertTrue(self.r.tracked("features/chat/new/Fresh.tsx"))
+        self.assertNotIn("HOLD", res.stdout + res.stderr)
+
+    def test_held_paths_are_set_aside_restored_and_never_committed(self):
+        self.hold()
+        self.edits()
+        res = self.r.sweep()
+        out = res.stdout + res.stderr
+        self.assertEqual(res.returncode, 0, out)
+        # nothing under a held path reached a commit
+        self.assertEqual(self.show("features/chat/kept.ts"), "export const kept = 1;\n")
+        self.assertEqual(self.show("features/chat/staged.ts"), "export const staged = 1;\n")
+        self.assertEqual(self.show("features/chat/gone.ts"), "export const gone = 1;\n")
+        self.assertFalse(self.r.tracked("features/chat/new/Fresh.tsx"))
+        self.assertFalse(self.r.tracked("lib/one.ts"))
+        # the working tree is back at HEAD for those paths
+        self.assertEqual(self.r.read("features/chat/kept.ts"), b"export const kept = 1;\n")
+        self.assertEqual(self.r.read("features/chat/gone.ts"), b"export const gone = 1;\n")
+        self.assertFalse(self.r.exists("features/chat/new/Fresh.tsx"))
+        self.assertFalse(self.r.exists("lib/one.ts"))
+        # everything else committed and pushed
+        self.assertTrue(self.r.tracked("lib/other.ts"))
+        self.assertEqual(self.r.origin_head(), self.r.head())
+        # every held edit is kept, bytes intact, logged and listed
+        files = sh(self.r.work, "git", "ls-files", "_conflicts").stdout.split()
+        log = self.r.read("_conflicts/README.md").decode()
+        for rel, body in (("features/chat/kept.ts", b"export const kept = 'peer edit';\n"),
+                          ("features/chat/new/Fresh.tsx", b"export const fresh = 1;\n"),
+                          ("features/chat/staged.ts", b"export const staged = 'staged edit';\n"),
+                          ("lib/one.ts", b"export const one = 1;\n"),
+                          ("features/chat/gone.ts", b"DELETED")):
+            held = [f for f in files if f.endswith(rel + ".held") and "-held-for-move/" in f]
+            self.assertEqual(len(held), 1, rel)
+            data = self.r.read(held[0])
+            self.assertTrue(data.endswith(body) if body != b"DELETED" else b"DELETED locally" in data, rel)
+            self.assertIn("HELD: %s held for the chat package move; re-apply after GO" % rel, out)
+            self.assertIn(held[0], log)
+        self.assertFalse(self.r.tracked(HOLD))
+        st = sh(self.r.work, "git", "status", "--porcelain").stdout
+        self.assertEqual(st.strip(), "", st)
+
+    def test_binary_under_hold_is_kept_byte_for_byte(self):
+        self.hold()
+        blob = b"\x00\x01\xffbinary\x00"
+        with open(os.path.join(self.r.work, "features/chat/icon.bin"), "wb") as f:
+            f.write(blob)
+        self.assertEqual(self.r.sweep().returncode, 0)
+        files = sh(self.r.work, "git", "ls-files", "_conflicts").stdout.split()
+        held = [f for f in files if f.endswith("features/chat/icon.bin.held")]
+        self.assertEqual(len(held), 1)
+        self.assertEqual(self.r.read(held[0]), blob)
+        self.assertIn(held[0] + "-note.txt", files)
+        self.assertFalse(self.r.tracked("features/chat/icon.bin"))
+
+    def test_expired_hold_is_renamed_and_ignored_loudly(self):
+        self.hold(until="2026-01-01T00:00:00+00:00")
+        self.edits()
+        res = self.r.sweep()
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("COMMIT HOLD EXPIRED", res.stdout)
+        self.assertFalse(self.r.exists(HOLD))
+        self.assertTrue(self.r.exists(HOLD + ".expired"))
+        self.assertIn("peer edit", self.show("features/chat/kept.ts"))
+
+    def test_hold_without_until_is_ignored_loudly(self):
+        self.r.write(HOLD, "features/chat/\n")
+        self.edits()
+        res = self.r.sweep()
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("COMMIT HOLD IGNORED", res.stdout)
+        self.assertIn("peer edit", self.show("features/chat/kept.ts"))
+
+    def test_hold_can_never_outlive_four_hours(self):
+        p = self.hold(until=(datetime.datetime.now().astimezone() + datetime.timedelta(days=9)).isoformat())
+        old = datetime.datetime.now().timestamp() - 5 * 3600
+        os.utime(p, (old, old))
+        self.edits()
+        res = self.r.sweep()
+        self.assertIn("COMMIT HOLD EXPIRED", res.stdout)
+        self.assertIn("peer edit", self.show("features/chat/kept.ts"))
+
+    def test_hold_status_prints_the_held_set(self):
+        self.hold(extra="reason: the chat package move\n")
+        res = self.r.sweep("--hold-status")
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("COMMIT HOLD for the chat package move", res.stdout)
+        self.assertIn("  features/chat/", res.stdout)
+        self.assertIn("  lib/one.ts", res.stdout)
+
+    def test_real_checkout_never_commits_the_hold_file(self):
+        root = os.path.dirname(HERE)
+        for rel in (HOLD, HOLD + ".expired"):
+            r = sh(root, "git", "check-ignore", "-q", rel, check=False)
+            self.assertEqual(r.returncode, 0, rel + " must be gitignored in " + root)
+
 if __name__ == "__main__":
     unittest.main()

@@ -197,3 +197,5 @@ work/
 
 # scripts/sync-main.py --pause: per-checkout, never committed (expires on its own)
 .matrx/sync-paused
+# scripts/sync-main.py commit hold (+ its .expired copy): per-checkout, never committed
+.matrx/held-paths.txt*
