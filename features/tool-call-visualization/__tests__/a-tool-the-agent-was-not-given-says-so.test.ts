@@ -16,8 +16,8 @@ function refused(toolName: string, errorType: string | null): ToolLifecycleEntry
     displayName: toolName,
     status: "error",
     arguments: {},
-    startedAt: 0,
-    completedAt: 0,
+    startedAt: "2026-10-01T14:24:04Z",
+    completedAt: "2026-10-01T14:24:04Z",
     latestMessage: null,
     latestData: null,
     result: null,
@@ -26,7 +26,7 @@ function refused(toolName: string, errorType: string | null): ToolLifecycleEntry
     errorMessage: `Tool '${toolName}' was not provided to the model for this request and cannot be executed.`,
     isDelegated: false,
     events: [],
-  } as ToolLifecycleEntry;
+  };
 }
 
 describe("a refused tool call is labelled as refused, never as failed", () => {
