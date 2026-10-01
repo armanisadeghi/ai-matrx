@@ -187,6 +187,8 @@ function candidateLabel(draft: CandidateDraft): string {
       return "Latest version";
     case "agent":
       return "Different agent";
+    case "workflow":
+      return "Different workflow";
     case "version":
       return draft.versionNumber != null
         ? `v${draft.versionNumber}`
