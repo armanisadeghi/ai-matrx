@@ -124,7 +124,9 @@ describe("ToolTestSamplesViewer", () => {
       answeredBy: "client",
       cap: 1000,
     });
-    expect(tableProps.copy).toBe(false);
+    // No opt-out: the table carries MatrxDataTable's built-in Alchemy menu
+    // (components/agent-copy/README.md § Tables; opt-outs removed 2026-09-30).
+    expect(tableProps.copy).toBeUndefined();
     expect(tableProps.detail?.enabled).toBe(false);
     expect(tableProps.window?.enabled).toBe(false);
   });
