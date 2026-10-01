@@ -141,7 +141,7 @@ describe("MCP connection intent", () => {
     );
     expect(mockPopup).not.toHaveBeenCalled();
     const endpoint =
-      "https://mcp.supabase.com/mcp?project_ref=test-project&read_only=true";
+      "https://mcp.supabase.com/mcp?project_ref=abcdefghijklmnopqrst&read_only=true&features=docs%2Cdatabase%2Cdebugging";
     mockPopup.mockResolvedValue({
       ok: false,
       cancelled: true,

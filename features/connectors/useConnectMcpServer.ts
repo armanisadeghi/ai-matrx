@@ -55,18 +55,25 @@ export function useConnectMcpServer() {
       return;
     }
     if (route === "github") {
-      // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
-      // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
-      // boot is already fetching and, settled with nothing, carries its own
-      // sentence and remedy.
-      const workspace = await awaitEffectiveOrganizationId();
-      if (workspace.status !== "ready") {
-        toast.error(workspace.reason);
-        return;
+      pending.current = true;
+      setConnectingSlug(server.slug);
+      try {
+        // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+        // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
+        // boot is already fetching and, settled with nothing, carries its own
+        // sentence and remedy.
+        const workspace = await awaitEffectiveOrganizationId();
+        if (workspace.status !== "ready") {
+          toast.error(workspace.reason);
+          return;
+        }
+        window.location.assign(
+          githubConnectUrl(window.location.pathname, workspace.organizationId),
+        );
+      } finally {
+        pending.current = false;
+        setConnectingSlug(null);
       }
-      window.location.assign(
-        githubConnectUrl(window.location.pathname, workspace.organizationId),
-      );
       return;
     }
 
