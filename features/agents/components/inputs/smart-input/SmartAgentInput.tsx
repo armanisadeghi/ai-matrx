@@ -17,7 +17,7 @@
  */
 
 import React, { useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setVariablesPanelStyle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
@@ -107,13 +107,22 @@ export function SmartAgentInput({
   // A host's style is the instance's style: written to the slice so every
   // reader (the empty state's "Fill in the fields below", the form gate
   // `selectIsVariableFormShown`) sees what the composer actually draws.
+  // Compared against the slice, not fired once: the instance's creation lands
+  // after this mount and writes its own default ("inline") over an earlier
+  // write — seen live on the Masterwork interview — so any drift is re-applied.
+  const sliceStyle = useAppSelector((state) =>
+    conversationId
+      ? state.instanceUIState.byConversationId[conversationId]
+          ?.variablesPanelStyle
+      : undefined,
+  );
   useEffect(() => {
-    if (conversationId && variablesPanelStyle) {
+    if (conversationId && variablesPanelStyle && sliceStyle !== variablesPanelStyle) {
       dispatch(
         setVariablesPanelStyle({ conversationId, style: variablesPanelStyle }),
       );
     }
-  }, [dispatch, conversationId, variablesPanelStyle]);
+  }, [dispatch, conversationId, variablesPanelStyle, sliceStyle]);
   // A "Show Form Inputs" toggle over a style that never draws a form is a
   // dead control (cold walk 23, defect C review).
   const variableIconShown = showVariableIcon && variablesPanelStyle !== "hidden";
