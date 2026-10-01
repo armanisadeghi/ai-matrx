@@ -212,6 +212,15 @@ const rows = [];
 let plantApplied = false;
 try {
   if (plant && plant.mode === "committed") {
+    // A plant that REPLACES something (a function body, a row) captures its own restore first:
+    // `captureRestore` is SQL whose output IS the restore SQL (e.g. pg_get_functiondef(...)), taken
+    // immediately before the apply so the restore puts back exactly what was there.
+    if (plant.captureRestore) {
+      const cap = psqlSync(plant.captureRestore);
+      if (cap.code !== 0 || !cap.out.trim()) throw new Error(`plant captureRestore failed: ${cap.out.slice(-600)}`);
+      plant.restore = `${cap.out.trim()}\n;\n${plant.restore ?? ""}`;
+      writeFileSync(join(OUT, "logs", "plant-restore.sql"), plant.restore);
+    }
     const a = psqlSync(plant.apply);
     writeFileSync(join(OUT, "logs", "plant-apply.log"), a.out);
     if (a.code !== 0) throw new Error(`plant apply failed: ${a.out.slice(-600)}`);
