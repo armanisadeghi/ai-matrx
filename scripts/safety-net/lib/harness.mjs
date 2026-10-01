@@ -1,0 +1,226 @@
+// scripts/safety-net/lib/harness.mjs — LANE SAFETY-NET (2026-10-01)
+//
+// THE ONE HARNESS EVERY SAFETY-NET WALK USES. A walk is a chain of STEPS; each step names the
+// coverage items (common-docs/projects/data-doctrine-adoption/v5/SAFETY-NET-COVERAGE.md, ids like
+// T05, S09, C04) it proves, takes a screenshot, and records PASS / FAIL / SKIP with a plain detail.
+//
+// Run a walk only through the runner (`node scripts/safety-net/run.mjs --target live|clone`), which
+// sets SN_TARGET, SN_ORIGIN, SN_OUT and the seats. Running a walk file directly works too:
+//   SN_TARGET=clone SN_ORIGIN=http://safety-net.localhost:3001 node scripts/safety-net/walks/<walk>.mjs
+//
+// RULES BAKED IN (the lane brief, 2026-10-01):
+// - Seats are admin@admin.com and test@test.com only; credentials come from .env.local / aidream/.env
+//   and are never printed.
+// - Fixtures are disposable, realistic, made through the product in Cedar Ridge Physical Therapy
+//   (or admin's Workspace), carry the run stamp in their name, and are ARCHIVED at the end
+//   (`ctx.cleanup(fn)` runs in reverse order, even when a step failed).
+// - Never Arman's account, organization 3e790542-… or table c1aabdc0-…: `ctx.goto` refuses any URL
+//   that names them.
+// - A step that cannot run is SKIP with the reason — never a pass.
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
+
+import { setOrganization as seatSetOrganization, signIn, sleep, until } from "../../lib/seat-browser.mjs";
+
+export { sleep, until };
+
+/**
+ * PICK THE ORGANIZATION THE WAY A PERSON DOES (2026-10-01). Since 2026-09-30 the app chrome's ONE
+ * organization control is the account rail's switcher (`[data-shell-org-switcher="rail"]`,
+ * features/shell/components/account-rail/ShellOrgSwitcher.tsx); the sidebar group the shared
+ * seat-browser opened is gone. Open the rail's popover first, then let seat-browser search, reveal
+ * the test organizations and click the row. Returns true when the switcher then names `name`.
+ */
+export async function setOrganization(page, name) {
+  const opened = await page
+    .evaluate(() => {
+      const b = document.querySelector('[data-shell-org-switcher="rail"]') ?? document.querySelector('[data-shell-org-switcher="drawer"]');
+      if (!(b instanceof HTMLElement)) return false;
+      b.click();
+      return true;
+    })
+    .catch(() => false);
+  if (opened) await sleep(1200);
+  await seatSetOrganization(page, name);
+  await sleep(1500);
+  return page
+    .evaluate((n) => {
+      const b = document.querySelector('[data-shell-org-switcher="rail"]') ?? document.querySelector('[data-shell-org-switcher="drawer"]');
+      return (b?.getAttribute("aria-label") ?? b?.textContent ?? "").includes(n);
+    }, name)
+    .catch(() => false);
+}
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+export const REPO = resolve(HERE, "../../..");
+export const TARGET = process.env.SN_TARGET ?? "clone";
+export const ORIGIN =
+  process.env.SN_ORIGIN ?? (TARGET === "live" ? "https://www.aimatrx.com" : "http://safety-net.localhost:3001");
+export const MANAGE_ORIGIN =
+  process.env.SN_MANAGE_ORIGIN ?? (TARGET === "live" ? "https://manage.aimatrx.com" : ORIGIN);
+export const OUT = process.env.SN_OUT ?? join(REPO, "..", "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc");
+/** A short stamp that marks every fixture this run makes, e.g. "Oct 1 0214". */
+export const STAMP =
+  process.env.SN_STAMP ??
+  new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Los_Angeles" }).replace(/[,:]/g, "").replace(/\s+/g, " ");
+export const FIXTURE_ORG = process.env.SN_FIXTURE_ORG ?? "Cedar Ridge Physical Therapy";
+export const FIXTURE_ORG_ID = "0a54df90-eab8-4d07-ab29-81a45fb41e04";
+
+const FORBIDDEN = ["3e790542-fdaf-40b2-8bf3-658bf94fe67f", "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7"];
+
+function readEnvFile(path) {
+  if (!existsSync(path)) return {};
+  const out = {};
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (m) out[m[1]] = m[2].replace(/^"|"$/g, "");
+  }
+  return out;
+}
+const ENV = { ...readEnvFile(join(REPO, "../aidream/.env")), ...readEnvFile(join(REPO, ".env.local")), ...process.env };
+
+export const SEATS = {
+  admin: { email: ENV.AI_ADMIN_USERNAME ?? "admin@admin.com", password: ENV.AI_ADMIN_PASSWORD },
+  member: { email: ENV.AI_MEMBER_USERNAME ?? "test@test.com", password: ENV.AI_MEMBER_PASSWORD },
+};
+for (const [k, s] of Object.entries(SEATS)) {
+  if (!["admin@admin.com", "test@test.com"].includes(s.email)) throw new Error(`seat ${k} resolves to an account this lane may not use`);
+}
+
+/**
+ * Open a walk. Returns ctx with: page(seat) → a signed-in page for that seat; step(); shot();
+ * cleanup(); goto(); finish(). Console errors and 5xx/4xx responses are recorded per seat.
+ */
+export async function openWalk(name, { headless = true } = {}) {
+  const shotsDir = join(OUT, "shots");
+  mkdirSync(shotsDir, { recursive: true });
+  const browser = await chromium.launch({ headless });
+  const results = [];
+  const cleanups = [];
+  const pages = {};
+  const errors = { console: [], http: [] };
+  let n = 0;
+
+  async function resumeDevWalk(page) {
+    if (ORIGIN.includes("aimatrx.com")) return;
+    await page.goto(`${ORIGIN}/login`, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
+    await page
+      .evaluate(async () => {
+        const body = new FormData();
+        body.set("returnTo", "/login");
+        return (await fetch("/__dev-walk", { method: "POST", body, redirect: "manual" })).status;
+      })
+      .catch(() => null);
+    if (page.url().includes("__dev-walk")) await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await sleep(3000);
+  }
+
+  const ctx = {
+    name,
+    target: TARGET,
+    origin: ORIGIN,
+    manageOrigin: MANAGE_ORIGIN,
+    stamp: STAMP,
+    out: OUT,
+    errors,
+    results,
+    /** A signed-in page for `admin` or `member`, working in `org` (default the fixture org). */
+    async page(seat = "admin", { org = FIXTURE_ORG, width = 1600, height = 1000, colorScheme = "light", fresh = false } = {}) {
+      const key = `${seat}|${width}|${colorScheme}`;
+      if (pages[key] && !fresh) return pages[key];
+      const s = SEATS[seat];
+      if (!s?.password) throw new Error(`no password for seat ${seat} in .env.local / aidream/.env`);
+      const context = await browser.newContext({ viewport: { width, height }, colorScheme });
+      const page = await context.newPage();
+      page.on("console", (m) => {
+        if (m.type() === "error") errors.console.push({ seat, url: page.url(), text: m.text().slice(0, 300) });
+      });
+      page.on("response", (r) => {
+        const st = r.status();
+        if (st >= 400 && !/\/_next\/|favicon|\.map$|__nextjs/.test(r.url())) errors.http.push({ seat, status: st, url: r.url().slice(0, 200), page: page.url() });
+      });
+      await resumeDevWalk(page);
+      const who = await signIn(page, ORIGIN, s.email, s.password, seat);
+      if (who !== s.email) throw new Error(`signed in as ${who}, expected ${s.email}`);
+      page.__seat = seat;
+      if (org) {
+        await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 180000 });
+        await sleep(2500);
+        const ok = await setOrganization(page, org).catch((e) => {
+          console.log(`[harness] could not pick ${org}: ${String(e).slice(0, 160)}`);
+          return false;
+        });
+        page.__org = ok ? org : null;
+        if (!ok) console.log(`[harness] ${seat}: the switcher does not name ${org} after picking`);
+      }
+      pages[key] = page;
+      return page;
+    },
+    /** Navigate, refusing Arman's own organization or table by id. */
+    async goto(page, pathOrUrl, opts = {}) {
+      const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${ORIGIN}${pathOrUrl}`;
+      if (FORBIDDEN.some((f) => url.includes(f))) throw new Error(`refused: ${url} names Arman's own organization or table`);
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 180000, ...opts });
+      return page;
+    },
+    async shot(page, label) {
+      n += 1;
+      const file = `${name}-${String(n).padStart(2, "0")}-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
+      await page.screenshot({ path: join(shotsDir, file), fullPage: false }).catch(() => null);
+      return `shots/${file}`;
+    },
+    /**
+     * One step. `items` = coverage ids. `fn` returns { ok: boolean, detail: string, skip?: string }.
+     * A throw is a FAIL with the message. A screenshot of `page` is taken after the step.
+     */
+    async step(items, label, page, fn) {
+      const t0 = Date.now();
+      let r;
+      try {
+        r = await fn();
+      } catch (e) {
+        r = { ok: false, detail: `threw: ${String(e?.message ?? e).slice(0, 400)}` };
+      }
+      const shot = page ? await ctx.shot(page, label) : null;
+      const status = r?.skip ? "SKIP" : r?.ok ? "PASS" : "FAIL";
+      const row = { walk: name, items: [].concat(items), step: label, status, detail: r?.skip ?? r?.detail ?? "", ms: Date.now() - t0, shot };
+      results.push(row);
+      console.log(`${status} [${row.items.join(",")}] ${label} — ${row.detail}`);
+      return r;
+    },
+    cleanup(fn) {
+      cleanups.push(fn);
+    },
+    async finish() {
+      for (const fn of cleanups.reverse()) {
+        try {
+          await fn();
+        } catch (e) {
+          console.log(`[harness] cleanup failed: ${String(e).slice(0, 200)}`);
+          results.push({ walk: name, items: [], step: "cleanup", status: "FAIL", detail: `cleanup failed: ${String(e).slice(0, 200)}`, ms: 0, shot: null });
+        }
+      }
+      await browser.close().catch(() => {});
+      const file = join(OUT, `${name}.json`);
+      writeFileSync(file, JSON.stringify({ walk: name, target: TARGET, origin: ORIGIN, stamp: STAMP, results, errors }, null, 2));
+      const failed = results.filter((r) => r.status === "FAIL").length;
+      console.log(`[harness] ${name}: ${results.filter((r) => r.status === "PASS").length} pass, ${failed} fail, ${results.filter((r) => r.status === "SKIP").length} skip → ${file}`);
+      process.exitCode = failed ? 1 : 0;
+      return failed;
+    },
+  };
+  return ctx;
+}
+
+/** Wait until `fn` (run in the page) returns truthy; returns the value or null. */
+export async function pageUntil(page, fn, arg, timeoutMs = 30000) {
+  const r = await until("page condition", () => page.evaluate(fn, arg), timeoutMs);
+  return r.v;
+}
+
+/** The visible text of the page body, trimmed to `max` characters. */
+export async function bodyText(page, max = 20000) {
+  return (await page.evaluate(() => document.body.innerText).catch(() => "")).slice(0, max);
+}
