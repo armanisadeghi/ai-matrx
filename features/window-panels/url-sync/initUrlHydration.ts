@@ -221,7 +221,7 @@ export function initUrlHydration() {
   // Topical map — `?panels=topical_map:<mapId>:s-<screen>` reopens one map's
   // window on that screen; the bare key (or `:picker`) opens the map picker.
   registerPanelHydrator("topical_map", (dispatch, id, args) => {
-    const mapId = id && id !== "picker" && id !== "default" ? id : "";
+    const mapId = getRestorableResourceId(id, "picker") ?? "";
     const screen = args.s;
     dispatch(
       openOverlay({

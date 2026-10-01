@@ -33,12 +33,18 @@ interface Row {
   why?: unknown;
 }
 
-/** Where each of `tableIds` lives, by id. An id missing from the map is an id the door did not answer. */
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Where each of `tableIds` lives, by id. An id missing from the map is an id the door did not answer.
+ * A non-uuid never reaches the door (`p_table_ids uuid[]` answers 22P02 for the whole batch): it is
+ * left unanswered, so `tableLivesIn` reports it as a table the store did not place.
+ */
 export async function tablesLiveIn(
   client: SupabaseClient,
   tableIds: readonly string[],
 ): Promise<{ ok: true; homes: Map<string, { livesIn: TableLivesIn; why: string }> } | { ok: false; why: string }> {
-  const ids = [...new Set(tableIds.filter(Boolean))];
+  const ids = [...new Set(tableIds.filter((id) => typeof id === "string" && UUID_SHAPE.test(id)))];
   const homes = new Map<string, { livesIn: TableLivesIn; why: string }>();
   if (ids.length === 0) return { ok: true, homes };
   const { data, error } = await client
