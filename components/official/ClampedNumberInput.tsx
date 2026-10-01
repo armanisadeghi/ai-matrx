@@ -32,8 +32,9 @@ export function clampDraft(raw: string, min: number, max?: number | null): numbe
 }
 
 /**
- * Controlled integer input that lets the field go empty while typing.
- * Clamp / restore happens on blur or Enter — never mid-keystroke.
+ * Controlled integer input that lets the field go empty while typing. An
+ * in-range number commits as it is typed; clamp / restore of anything else
+ * happens on blur or Enter — never mid-keystroke.
  */
 export function ClampedNumberInput({
   id,
@@ -72,7 +73,14 @@ export function ClampedNumberInput({
       aria-label={ariaLabel}
       className={cn("h-8", className)}
       value={draft}
-      onChange={(event) => setDraft(event.target.value)}
+      onChange={(event) => {
+        const raw = event.target.value;
+        setDraft(raw);
+        // An in-range value is the value now (a "Make 10 cards" button must
+        // not lag the field until blur); anything else waits for blur.
+        const next = clampDraft(raw, min, max);
+        if (next !== null && String(next) === raw.replace(/^0+(?=\d)/, "") && next !== value) onChange(next);
+      }}
       onBlur={(event) => commit(event.target.value)}
       onKeyDown={(event) => {
         if (event.key === "Enter") {

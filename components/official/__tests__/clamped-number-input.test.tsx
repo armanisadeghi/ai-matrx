@@ -81,12 +81,28 @@ describe("ClampedNumberInput", () => {
     const { afterClear, afterTyping } = clearThenType4(input);
     expect(afterClear).toBe("");
     expect(afterTyping).toBe("4");
+    // In range: committed as typed, so a "Make 4 cards" button never lags.
+    expect(changes).toEqual([4]);
     act(() => {
       input.focus();
       input.blur();
     });
     expect(input.value).toBe("4");
     expect(changes).toEqual([4]);
+  });
+
+  it("waits for blur to clamp a value out of range", () => {
+    const changes: number[] = [];
+    act(() => root.render(<ClampedNumberInput min={3} max={50} value={10} onChange={(n) => changes.push(n)} />));
+    const input = host.querySelector("input")!;
+    setNativeValue(input, "1");
+    expect(changes).toEqual([]);
+    expect(input.value).toBe("1");
+    act(() => {
+      input.focus();
+      input.blur();
+    });
+    expect(changes).toEqual([3]);
   });
 
   it("clamps to the range and restores the last value when the draft is not a number", () => {
