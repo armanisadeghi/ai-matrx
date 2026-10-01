@@ -258,7 +258,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                   </span>
                 </p>
                 <p className="px-3 pb-1.5 text-[10px] text-muted-foreground/80 leading-tight">
-                  Found in messages but not defined. Click to create.
+                  In messages, not defined yet
                 </p>
                 {undeclaredNames.map((name) => {
                   const sanitized = sanitizeVariableName(name);

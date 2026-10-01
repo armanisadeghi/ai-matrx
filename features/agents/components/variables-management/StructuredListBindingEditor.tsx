@@ -116,8 +116,7 @@ export function StructuredListBindingEditor({
             Bind to a picklist
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Users pick a label; the item&rsquo;s hidden description is injected on
-            the server.
+            People pick a label; the agent gets its full text
           </p>
         </div>
         <Switch
@@ -209,10 +208,7 @@ export function StructuredListBindingEditor({
                 Allow &ldquo;Other&rdquo; option
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Adds an &ldquo;Other&rdquo; choice so the user can type a free-text
-                value when nothing in the list fits. The typed text is sent as
-                plain text (no description lookup) so they&rsquo;re never forced to
-                pick something that isn&rsquo;t right.
+                Lets people type their own answer
               </p>
             </div>
             <Switch

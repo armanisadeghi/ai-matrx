@@ -162,9 +162,7 @@ export default function AgentVariableEditorWindow({
           />
         ) : (
           <p className="text-sm text-muted-foreground">
-            The variable &ldquo;{variableName}&rdquo; no longer exists on this
-            agent — it was removed or renamed elsewhere. Close this window and
-            pick a variable from the Variables row.
+            &ldquo;{variableName}&rdquo; is gone — removed or renamed
           </p>
         )}
       </div>

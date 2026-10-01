@@ -204,7 +204,7 @@ export function CustomComponentConfigurator({
               Allow random assignment
             </Label>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Lets callers ask the server to choose one option securely at run time.
+              Picks one option at random when asked
             </p>
           </div>
           <Switch

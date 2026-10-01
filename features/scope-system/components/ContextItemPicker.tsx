@@ -436,11 +436,8 @@ export function ContextItemPicker({
               ariaLabel="Scope type"
             />
             {scopeTypeUnresolvable && (
-              <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                The scope type this variable was bound to is no longer visible
-                here — it may have been deleted, or it belongs to an
-                organization you are no longer in. Pick a scope type to rebind
-                it; the binding is unchanged until you do.
+              <p className="text-[11px] text-warning">
+                The bound one is gone or not shared — pick another
               </p>
             )}
           </div>
