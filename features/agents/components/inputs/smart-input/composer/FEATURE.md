@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-29`
+**Last updated:** `2026-09-30`
 
 > Build map (design control → the existing piece it facelifts):
 > `/Users/armanisadeghi/code/common-docs/projects/ai-matrx-composer/MAP.md`.
@@ -54,11 +54,11 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
   the agent picker (`AgentListDropdown` with the pill as its trigger) — one click, no half-way panel. A fixed
   agent (no `onSelectAgent`) is a plain label.
 - `ComposerPlusMenu` — the 300px cascading + menu, IDENTICAL in every mode: attach rows, Search your knowledge
-  (the classic ⌘K list), Tools, Skills, Connectors, Environment, Preview context, templates, Memory, Enter sends,
+  (the classic ⌘K list), Tools, Skills, Connections, Environment, Preview context, templates, Memory, Enter sends,
   Working doc, Scratchpad, Auto-clear, **Model and overrides** (model picker + the per-run overrides — the model
   is secondary to the agent, so it lives here in every mode), and **All options** (always present — opens the Chat Options window until
   every setting has a home in the new UI).
-- `ComposerConnectorsPanel` — the + menu's Connectors: search, "Active in this chat" / "Connected · off in this
+- `ComposerConnectorsPanel` — the + menu's Connections: search, "Active in this chat" / "Connections · off in this
   chat" rows (per-chat switch = `addedMcpServers`; Reconnect; `Choose ›` = the ONE attach picker; an agent's own
   connector is on and fixed), "Browse all connectors" = the live integrations window (connect anything new).
 - `ComposerEnvironmentPanel` — the Cloud chip's menu and the + menu's Environment: ONE flat list, one click chooses
@@ -163,6 +163,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 ---
 
 ## Change Log
+
+- **2026-09-30** — Tools owns only the registry/configured tool list; connections and attached repositories/files use the shared Connections panel in the cascading menu, classic attach menu, run-controls window, and mobile sheet. Latest-run MCP failures/counts remain visible there. Tabbed sheet headers stay fixed while their lists scroll.
 
 - **2026-09-29** — Review fixes: "auto" effort guarded at the API selector (never sent, whichever panel wrote it); overrides survive a same-id re-create; the touch Enter rule covers every multi-line input (variable inputs, mention composer, AI chat modal, prompt input) while single-line `ProInput` keeps Go-to-submit; Quick Chat's duplicate header agent picker and "Page context" button removed — the pill and the page chip are the one control each (`useConversationFollowsPage(id, startsOn)`: Quick Chat starts off, showing the eye-off chip naming the page).
 - **2026-09-29** — Batch 1 of the page-by-page rollout: Quick Chat, the Chat window, the AI Results tab, the agent

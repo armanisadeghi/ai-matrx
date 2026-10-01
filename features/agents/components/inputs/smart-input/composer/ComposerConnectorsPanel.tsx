@@ -91,7 +91,9 @@ export function ComposerConnectorsPanel({
     );
 
   const row = (s: McpServerState, on: boolean) => {
-    const presentation = mcpChipPresentation(s.truth.state, s.truth.reason, on, runAttachments[s.entry.slug]);
+    const runAttachment = runAttachments[s.entry.slug];
+    const presentation = mcpChipPresentation(s.truth.state, s.truth.reason, on || (runAttachment !== undefined && runAttachment.state !== "connected"), runAttachment);
+    const toolCount = runAttachment ? presentation.toolCount : s.toolCount;
     const broken = presentation.kind === "broken";
     const agentOwned = agentSlugs.has(s.entry.slug);
     const chooser = s.attachable.length > 0 ? attachActionLabel(s.attachable) : null;
@@ -132,8 +134,8 @@ export function ComposerConnectorsPanel({
             <Paperclip className="h-3 w-3" aria-hidden="true" />
             {chosen > 0 ? `${chosen} chosen ›` : "Choose ›"}
           </button>
-        ) : on && (presentation.toolCount ?? s.toolCount) != null ? (
-          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{presentation.toolCount ?? s.toolCount} tools</span>
+        ) : on && toolCount != null ? (
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{toolCount} tools</span>
         ) : null}
         <Switch
           checked={on}

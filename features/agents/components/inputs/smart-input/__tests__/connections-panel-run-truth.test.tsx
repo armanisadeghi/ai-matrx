@@ -2,6 +2,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 const mockDispatch = jest.fn();
+let mockAddedMcpServers: string[] = [];
+let mockInfoEvents: { code: string; metadata: { attachments: { slug: string; state: string; tool_count: number }[] } }[] = [];
 let mockWarnings: { code: string; metadata: { slug: string; reason: string } }[] = [];
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
@@ -26,10 +28,10 @@ jest.mock("@/features/agents/redux/execution-system/conversations/conversations.
   selectAgentIdFromInstance: () => () => "agent",
 }));
 jest.mock("@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors", () => ({
-  selectBuilderAdvancedSettings: () => () => ({ addedMcpServers: mockWarnings.length ? ["github"] : [] }),
+  selectBuilderAdvancedSettings: () => () => ({ addedMcpServers: mockAddedMcpServers }),
 }));
 jest.mock("@/features/agents/redux/execution-system/active-requests/active-requests.selectors", () => ({
-  selectPrimaryRequest: () => () => ({ warnings: mockWarnings, infoEvents: [] }),
+  selectPrimaryRequest: () => () => ({ warnings: mockWarnings, infoEvents: mockInfoEvents }),
 }));
 jest.mock("@/features/connectors/useConnectMcpServer", () => ({
   useConnectMcpServer: () => ({ connect: jest.fn(), connectingSlug: null }),
@@ -49,6 +51,8 @@ describe("Connections preserve per-chat access and run truth", () => {
   let root: Root;
   beforeEach(() => {
     mockWarnings = [];
+    mockAddedMcpServers = [];
+    mockInfoEvents = [];
     mockDispatch.mockClear();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -68,6 +72,7 @@ describe("Connections preserve per-chat access and run truth", () => {
   });
 
   it("shows an actual failed run over a healthy catalog and keeps its reason", () => {
+    mockAddedMcpServers = ["github"];
     mockWarnings = [{ code: "mcp_server_unavailable", metadata: { slug: "github", reason: "Provider timed out" } }];
     render();
     expect(container.textContent).toContain("failed this run");
@@ -75,4 +80,20 @@ describe("Connections preserve per-chat access and run truth", () => {
     expect(container.textContent).toContain("Reconnect");
     expect(container.textContent).not.toContain("12 tools");
   });
+  it("keeps a failed auto-injected connection visible even after it was switched off", () => {
+    mockWarnings = [{ code: "mcp_server_unavailable", metadata: { slug: "github", reason: "Provider timed out" } }];
+    render();
+    expect(container.textContent).toContain("failed this run");
+    expect(container.querySelector('[aria-label="GitHub in this chat"]')?.getAttribute("aria-checked")).toBe("false");
+  });
+
+  it.each([3, 0])("uses run evidence instead of the catalog count (%s)", (count) => {
+    mockAddedMcpServers = ["github"];
+    mockInfoEvents = [{ code: "mcp_attachments", metadata: { attachments: [{ slug: "github", state: "connected", tool_count: count }] } }];
+    render();
+    expect(container.textContent).not.toContain("12 tools");
+    if (count > 0) expect(container.textContent).toContain("3 tools");
+    else expect(container.textContent).not.toContain("0 tools");
+  });
+
 });
