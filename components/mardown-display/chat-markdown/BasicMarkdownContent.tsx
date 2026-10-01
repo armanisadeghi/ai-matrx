@@ -41,6 +41,7 @@ import {
   renderProseTable,
 } from "@/components/rich-content/prose/prose-block-elements";
 import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";
 
 interface BasicMarkdownContentProps {
   content: string;
@@ -56,9 +57,33 @@ interface BasicMarkdownContentProps {
    * by themselves (components/rich-content/prose/remote-image-policy.tsx).
    */
   imagePolicy?: ImagePolicyDeclaration;
+  /**
+   * A deliberate source view (documentation, authoring) — text carrying a
+   * `__kind` key is drawn as written instead of as its kind. Default false.
+   */
+  showSource?: boolean;
 }
 
-export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
+/**
+ * Text carrying a `__kind` key is handed to the canonical pipeline
+ * (`KindTextGate`) — this leaf never draws a kind as a JSON code card.
+ */
+export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = (
+  props,
+) => (
+  <KindTextGate
+    component="BasicMarkdownContent"
+    content={props.content}
+    isStreamActive={props.isStreamActive}
+    imagePolicy={props.imagePolicy}
+    showSource={props.showSource}
+    showCopyButton={props.showCopyButton ?? true}
+  >
+    <BasicMarkdownContentBody {...props} />
+  </KindTextGate>
+);
+
+const BasicMarkdownContentBody: React.FC<BasicMarkdownContentProps> = ({
   content,
   isStreamActive,
   onEditRequest,

@@ -80,9 +80,11 @@ describe("ResultValue nested Markdown", () => {
   });
 
   it("keeps artifact-shaped fenced code inert inside a Markdown list value", async () => {
+    // A kind fence is never drawn raw (Arman, 2026-09-30): the markdown leaf
+    // hands it to the canonical pipeline — and nothing in it executes.
     const payload = '{"__kind":"artifact","content":"**literal**"}';
     await act(async () => root.render(<ResultValue value={["```json\n" + payload + "\n```"]} density="full" />));
-    expect(container.querySelector("pre code")?.textContent).toContain(payload);
+    expect(container.textContent).not.toContain('"__kind"');
     expect(container.querySelector("strong")).toBeNull();
     expect(container.querySelector("iframe,script")).toBeNull();
   });

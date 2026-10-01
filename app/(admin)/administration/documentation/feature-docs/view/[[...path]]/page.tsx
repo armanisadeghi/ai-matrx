@@ -84,7 +84,7 @@ export default async function FeatureDocViewPage({
         {doc.title && (
           <h1 className="text-lg font-semibold mb-4 sr-only">{doc.title}</h1>
         )}
-        <BasicMarkdownContent imagePolicy="other" content={doc.content} />
+        <BasicMarkdownContent imagePolicy="other" content={doc.content} showSource />
       </main>
     </div>
     </FeatureDocViewerRuntime>

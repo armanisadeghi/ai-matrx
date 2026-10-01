@@ -36,6 +36,7 @@ import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { detectTextDirection } from "@/components/rich-content/prose/prose-prepare";
 import { RemoteImageGate, remoteImageHost, withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
+import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";
 
 /**
  * Durable markdown <img> — the media-durability fix for the default renderer.
@@ -338,13 +339,37 @@ export interface ConfigurableMarkdownContentProps {
    * by themselves (components/rich-content/prose/remote-image-policy.tsx).
    */
   imagePolicy?: ImagePolicyDeclaration;
+  /**
+   * A deliberate source view — text carrying a `__kind` key is drawn as
+   * written instead of as its kind. Default false.
+   */
+  showSource?: boolean;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
+/**
+ * Text carrying a `__kind` key is handed to the canonical pipeline
+ * (`KindTextGate`) — this leaf never draws a kind as a JSON code card.
+ */
 export const ConfigurableMarkdownContent: React.FC<
+  ConfigurableMarkdownContentProps
+> = (props) => (
+  <KindTextGate
+    component="ConfigurableMarkdownContent"
+    content={props.content}
+    isStreamActive={props.isStreamActive}
+    imagePolicy={props.imagePolicy}
+    showSource={props.showSource}
+    showCopyButton={props.showCopyButton ?? true}
+  >
+    <ConfigurableMarkdownContentBody {...props} />
+  </KindTextGate>
+);
+
+const ConfigurableMarkdownContentBody: React.FC<
   ConfigurableMarkdownContentProps
 > = ({
   content,

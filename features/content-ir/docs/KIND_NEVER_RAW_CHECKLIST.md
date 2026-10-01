@@ -72,7 +72,8 @@ Every stream item below adds its case there.
 - [ ] T1. Generic tool renderer (`ResultValue`) never routes kinds → grid / raw JSON tree.
 - [ ] T2. Reloaded tool call with only `output_preview` → unparseable raw text.
 - [ ] T3. Sub-agent call results; collaboration cards on plain markdown.
-- [ ] T4. Search / research / scrape / random-wheel / SQL renderers on plain markdown.
+- [x] T4. Search / research / scrape / random-wheel / SQL renderers on plain markdown.
+      Closed at the leaf: `BasicMarkdownContent` hands `__kind` text to `MarkdownStream` (`KindTextGate`).
 - [ ] T5. Shared public conversation tool steps.
 
 ## E. Workflows
@@ -96,7 +97,8 @@ Every stream item below adds its case there.
 - [ ] S9. Assist cards.
 - [ ] S10. Scheduled-run results.
 - [ ] S11. Vision interview live turn card.
-- [ ] S12. Old AI chat dialogs (flashcards, strategy brief) on `MarkdownRenderer`.
+- [x] S12. Old AI chat dialogs (flashcards, strategy brief) on `MarkdownRenderer`.
+      Closed at the leaf: `MarkdownRenderer` hands `__kind` text to `MarkdownStream` (`KindTextGate`).
 - [ ] S13. Voice agent transcript.
 
 ## G. Window panels

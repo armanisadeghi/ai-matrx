@@ -8,13 +8,31 @@ import {
   reportDelimiterViolations,
 } from '@ai-matrx/kit/delimiter-guard';
 import { captureError } from '@/lib/diagnostics/errorCaptureStore';
+import { KindTextGate } from '@/components/mardown-display/chat-markdown/KindTextGate';
 
 export interface MarkdownWithPluginsProps {
   content: string;
   components: Components;
+  /** A deliberate source view — `__kind` text is drawn as written. Default false. */
+  showSource?: boolean;
 }
 
-const MarkdownWithPlugins = ({ content, components }: MarkdownWithPluginsProps) => {
+/**
+ * Text carrying a `__kind` key is handed to the canonical pipeline
+ * (`KindTextGate`) — this leaf never draws a kind as a JSON code card.
+ */
+const MarkdownWithPlugins = (props: MarkdownWithPluginsProps) => (
+  <KindTextGate
+    component="MarkdownWithPlugins"
+    content={props.content}
+    imagePolicy="inherit"
+    showSource={props.showSource}
+  >
+    <MarkdownWithPluginsBody content={props.content} components={props.components} />
+  </KindTextGate>
+);
+
+const MarkdownWithPluginsBody = ({ content, components }: MarkdownWithPluginsProps) => {
   // A stray `$$` or unclosed `[` swallows prose into one node — guard it
   // before the pipeline sees it (lib/markdown/delimiter-guard.ts).
   const { text: guarded, violations } = guardMarkdownDelimiters(content);

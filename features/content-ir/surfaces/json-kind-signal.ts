@@ -90,3 +90,46 @@ function skipWs(source: string, from: number): number {
   while (i < source.length && /\s/.test(source[i])) i++;
   return i;
 }
+
+/**
+ * The VALUE form of the same question, for renderers handed parsed data
+ * instead of text (the value grid, the JSON viewers): does this value carry a
+ * kind anywhere — an object with a string `__kind`, at any depth, or a string
+ * whose text is JSON with a `__kind` key? A raw renderer that answers yes
+ * renders the value through the one value door (`AnswerValueView`) instead.
+ */
+export function valueCarriesKind(value: unknown): boolean {
+  return carriesKind(value, 0, new Set());
+}
+
+/** Past this depth a value is not searched further (cycles and pathological nesting). */
+const VALUE_SEARCH_DEPTH = 64;
+
+function carriesKind(value: unknown, depth: number, seen: Set<object>): boolean {
+  if (typeof value === "string") return isKindJsonText(value);
+  if (value === null || typeof value !== "object") return false;
+  if (depth > VALUE_SEARCH_DEPTH || seen.has(value)) return false;
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.some((item) => carriesKind(item, depth + 1, seen));
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.__kind === "string" && record.__kind.trim()) return true;
+  for (const item of Object.values(record)) {
+    if (carriesKind(item, depth + 1, seen)) return true;
+  }
+  return false;
+}
+
+/** Text that IS a JSON object/array carrying a `__kind` key (not prose mentioning one). */
+export function isKindJsonText(text: string): boolean {
+  const first = text.trimStart()[0];
+  return (first === "{" || first === "[") && hasKindKey(text);
+}
+
+/** The kind slug a value claims for itself at its root, or null. */
+export function rootKindSlug(value: unknown): string | null {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  const kind = (value as Record<string, unknown>).__kind;
+  return typeof kind === "string" && kind.trim() ? kind : null;
+}

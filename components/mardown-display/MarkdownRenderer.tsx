@@ -6,6 +6,7 @@ import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { parseMarkdownTable } from "@/components/mardown-display/markdown-classification/processors/bock-processors/parse-markdown-table";
 import MarkdownTable from "./tables/TableWithSeparatedControls";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
+import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";
 
 import type { ComponentPropsWithoutRef } from "react";
 import type { Components, ExtraProps } from "react-markdown";
@@ -16,9 +17,27 @@ interface MarkdownRendererProps {
   fontSize?: number;
   role?: "user" | "assistant";
   className?: string;
+  /** A deliberate source view — `__kind` text is drawn as written. Default false. */
+  showSource?: boolean;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
+/**
+ * Text carrying a `__kind` key is handed to the canonical pipeline
+ * (`KindTextGate`) — this leaf never draws a kind as a JSON code card.
+ */
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = (props) => (
+  <KindTextGate
+    component="MarkdownRenderer"
+    content={props.content}
+    imagePolicy="inherit"
+    showSource={props.showSource}
+    showCopyButton
+  >
+    <MarkdownRendererBody {...props} />
+  </KindTextGate>
+);
+
+const MarkdownRendererBody: React.FC<MarkdownRendererProps> = ({
   content,
   type = "markdown",
   fontSize = 16,
