@@ -489,7 +489,7 @@ export function ComposerEnvironmentPanel({
       />
       {sandboxBlocked ? (
         <p className="px-2.5 py-1.5 text-xs text-muted-foreground">
-          This chat runs in the cloud only — a sandbox or your computer cannot be attached here.
+          Cloud-only chat; a sandbox or computer can't attach
         </p>
       ) : compute.loading && rows.length === 0 ? (
         <p className="px-2.5 py-1.5 text-xs text-muted-foreground">Looking for your computers and sandboxes…</p>

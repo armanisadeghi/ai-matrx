@@ -317,9 +317,9 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
               </p>
             ) : agentToolCount === 0 ? (
               <p className="py-1 text-[11px] text-muted-foreground">
-                This agent has no tools of its own.
+                No tools of its own
                 {!autoToolsDisabled &&
-                  " Surface tools may still be added at run."}
+                  "; surface tools may be added at run"}
               </p>
             ) : (
               <div className="flex flex-col gap-0.5">
@@ -406,8 +406,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             </span>
           </div>
           <p className="mb-1.5 text-[11px] leading-tight text-muted-foreground">
-            Add a connected MCP server to this conversation without changing
-            the agent&apos;s saved definition.
+            Add an MCP server to this chat; the agent stays unchanged
           </p>
           {/* A stand-in announces itself: when the health check cannot be
               reached these states come from saved connection rows alone, and

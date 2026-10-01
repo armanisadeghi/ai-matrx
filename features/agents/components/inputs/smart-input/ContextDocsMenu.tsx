@@ -250,7 +250,7 @@ export function ContextDocsMenuBody({
         kind="working"
         icon={FileText}
         title="Working document"
-        description="A shared, living document you build with the agent. It can read and edit it each round."
+        description="Shared document you and the agent edit together"
         onOpen={onClose}
       />
       <ScratchRow conversationId={conversationId} onOpen={onClose} />

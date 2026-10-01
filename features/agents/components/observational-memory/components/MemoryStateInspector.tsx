@@ -117,7 +117,7 @@ export function MemoryStateInspector({
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border shrink-0">
         <Database className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">
-          Memory State · cx_observational_memory
+          Observational memory
         </span>
         <button
           type="button"
@@ -142,7 +142,7 @@ export function MemoryStateInspector({
         {state.status === "loading" && (
           <div className="flex items-center justify-center py-8 text-muted-foreground text-xs">
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Querying cx_observational_memory…
+            Loading memory…
           </div>
         )}
 

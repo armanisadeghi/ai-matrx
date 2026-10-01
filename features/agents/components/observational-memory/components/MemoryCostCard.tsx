@@ -96,7 +96,7 @@ export function MemoryCostCard({
             Memory Cost (infrastructure)
           </div>
           <div className="text-xs text-muted-foreground truncate">
-            Admin-only. Not included in conversation total_cost.
+            Not in the conversation's total cost
           </div>
         </div>
         <button

@@ -54,16 +54,14 @@ export function AssistantNoAnswer({
         )}
       </div>
       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/80">
-        Nothing came back this time, so there is nothing to read. Nothing you
-        wrote was lost. Running it again usually settles it.
+        Nothing came back; your message is safe — run it again
       </p>
       {isAdmin && (
         <p
           className="mt-1 text-[11px] leading-relaxed text-muted-foreground/60"
           data-assistant-no-answer-admin-detail
         >
-          Admin: if it keeps coming back empty, the agent&rsquo;s instructions
-          or the model it uses are the thing to change.
+          Admin: still empty? Check the agent&rsquo;s instructions or model
         </p>
       )}
     </div>

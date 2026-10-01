@@ -81,8 +81,7 @@ function DataBoundChip({
             <span className="font-medium text-foreground">
               {formatText(name)}
             </span>{" "}
-            is filled from your data every time the agent runs, so it is locked
-            here.
+            is filled from your data each run, so it is locked.
           </p>
           <CustomDataBindingPreview binding={binding} variableName={name} />
         </div>

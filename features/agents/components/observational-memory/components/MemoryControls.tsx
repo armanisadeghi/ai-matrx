@@ -115,7 +115,7 @@ export function MemoryControls({
           </Label>
           {!isCompact && (
             <div className="text-[10px] text-muted-foreground/70 mt-0.5">
-              Observer + Reflector run in background. Cost separate from turn.
+              Runs in the background; billed apart from the turn
             </div>
           )}
         </div>

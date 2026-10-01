@@ -138,9 +138,7 @@ export function ResourceFamilyPolicyEditor({
           Also there if the AI needs it
         </Label>
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-          Everything already made from this file. The AI looks these up only
-          when it needs them, and nothing new is made. Untick anything it
-          should leave alone.
+          Already made from this file; untick what the AI should skip
         </p>
       </div>
 

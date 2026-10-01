@@ -76,8 +76,7 @@ export function VersionHistoryTimeline({
             available
           </div>
           <p className="text-xs text-muted-foreground max-w-[320px]">
-            Load the full history to see what changed at each version — which
-            fields were modified, added, or removed.
+            Load history to see what changed in each version
           </p>
         </div>
 

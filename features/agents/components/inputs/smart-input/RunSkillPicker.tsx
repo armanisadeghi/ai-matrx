@@ -210,8 +210,7 @@ export function RunSkillPicker({
               </p>
             ) : agentSkillCount === 0 ? (
               <p className="py-1 text-[11px] text-muted-foreground">
-                This agent has no preconfigured skills. Others remain searchable
-                via skill tools at run time.
+                No preset skills; others are searchable at run time
               </p>
             ) : (
               <div className="flex flex-col gap-0.5">

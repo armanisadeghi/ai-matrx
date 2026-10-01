@@ -165,17 +165,13 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                       Messages sent while the agent works
                     </p>
                     <p className="text-muted-foreground">
-                      They wait here in order, are saved across reloads, and
-                      send automatically after the current run finishes.
+                      Queued in order, kept across reloads; sent after this run
                     </p>
                     <p className="text-muted-foreground">
-                      Use the lightning bolt to deliver one at the agent&apos;s
-                      next natural pause. Edit or withdraw it any time before
-                      delivery.
+                      Lightning bolt: deliver at next pause; edit until then
                     </p>
                     <p className="text-muted-foreground">
-                      Shortcut: Command/Ctrl + Enter delivers at the next pause;
-                      Command/Ctrl + Shift + Enter stops and redirects the run.
+                      Cmd/Ctrl+Enter: next pause; add Shift to stop and redirect
                     </p>
                   </TooltipContent>
                 </Tooltip>
