@@ -174,6 +174,8 @@ export class BoardStore<T extends BoardTileBase> {
   private layoutCache: BoardLayout<T> | null = null;
   private actor: BoardActor = "person";
   private agentSteps: ActorStep<T>[] = [];
+  /** Agent steps the person's ⌘Z took back — ⇧⌘Z puts them back on the agent's list. */
+  private undoneAgentSteps: ActorStep<T>[] = [];
 
   constructor(start: T[] | BoardSeed<T>) {
     this.h = seedHistory(start);
@@ -485,6 +487,13 @@ export class BoardStore<T extends BoardTileBase> {
   undo = (): void => {
     const st = this.h;
     if (st.past.length === 0) return;
+    // The person's ⌘Z took back the agent's latest change: it is no longer the
+    // agent's to undo (board_undo would report a false "changed since").
+    const top = this.agentSteps[this.agentSteps.length - 1];
+    if (top && top.after === st.now) {
+      this.agentSteps = this.agentSteps.slice(0, -1);
+      this.undoneAgentSteps = [...this.undoneAgentSteps, top];
+    }
     this.commit({
       now: st.past[st.past.length - 1],
       past: st.past.slice(0, -1),
@@ -496,6 +505,11 @@ export class BoardStore<T extends BoardTileBase> {
   redo = (): void => {
     const st = this.h;
     if (st.future.length === 0) return;
+    const back = this.undoneAgentSteps[this.undoneAgentSteps.length - 1];
+    if (back && back.before === st.now && back.after === st.future[0]) {
+      this.undoneAgentSteps = this.undoneAgentSteps.slice(0, -1);
+      this.agentSteps = [...this.agentSteps, back];
+    }
     this.commit({ now: st.future[0], past: [...st.past, st.now], future: st.future.slice(1), moving: null });
   };
 
@@ -563,13 +577,13 @@ function revertStep<T extends BoardTileBase>(step: ActorStep<T>, now: Snapshot<T
     }
     if (byId !== next.byId || order !== next.order) next = { ...next, byId, order };
   }
-  // The shelf: what the step parked comes back, what it unparked goes back.
+  // The shelf: what the step parked comes back. What it UNPARKED stays on the
+  // board — an agent brings a tile back to open it, and the person may be
+  // working in it now; parking it again would unmount it under them.
   if (before.parked !== after.parked) {
     const parkedBefore = new Set(before.parked);
-    const parkedAfter = new Set(after.parked);
     let parked = next.parked;
     for (const id of after.parked) if (!parkedBefore.has(id)) parked = parked.filter((x) => x !== id);
-    for (const id of before.parked) if (!parkedAfter.has(id) && !parked.includes(id)) parked = [...parked, id];
     if (parked !== next.parked) next = { ...next, parked };
   }
   next = revertList(next, "frames", before.frames, after.frames, kept);

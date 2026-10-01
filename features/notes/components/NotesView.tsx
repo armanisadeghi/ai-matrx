@@ -769,7 +769,11 @@ export function NotesView({
         // must land straight in the editor, matching desktop — the mobile
         // view manages its own list/editor state independent of the tab
         // redux the desktop split uses, so it needs the route id explicitly.
-        <MobileNotesView singleNoteId={singleNote ?? routeNoteId} />
+        // The shortcut root wraps the phone tree too, or the view's own keys
+        // (⌘K, ⌘N, find) would never count as pressed inside it.
+        <div ref={shortcutRootRef} className="contents">
+          <MobileNotesView singleNoteId={singleNote ?? routeNoteId} />
+        </div>
       ) : (
         <div
           ref={shortcutRootRef}

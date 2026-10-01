@@ -125,6 +125,27 @@ describe("createAutosaver", () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
+  it("leaving the page with a save in flight sends the newest edit at once, urgently, beside it", async () => {
+    const writes: { v: string; urgent: boolean }[] = [];
+    let release: () => void = () => {};
+    const saver = createAutosaver<string>({
+      delayMs: 800,
+      write: (v, { urgent }) => {
+        writes.push({ v, urgent });
+        return urgent ? Promise.resolve() : new Promise<void>((r) => (release = r));
+      },
+    });
+    saver.schedule("first move");
+    jest.advanceTimersByTime(800); // "first move" is in flight and never answers (the page is closing)
+    saver.schedule("last move");
+    await saver.flush({ urgent: true, leaving: true });
+    expect(writes).toEqual([
+      { v: "first move", urgent: false },
+      { v: "last move", urgent: true },
+    ]);
+    release();
+  });
+
   function setup(write: (v: string) => Promise<void> = async () => {}) {
     const writes: string[] = [];
     const errors: unknown[] = [];

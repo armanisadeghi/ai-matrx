@@ -51,7 +51,7 @@ describe("tile lifecycle — the store", () => {
     expect(s.getLife("t3")).toBe("frozen");
   });
 
-  it("beyond the warm budget the least recently needed tiles are discarded", () => {
+  it("beyond the warm budget the least recently needed tiles are marked discardable", () => {
     const s = viewStore();
     const n = WARM_TILE_BUDGET + 3;
     for (let i = 0; i < n; i++) s.registerItem(`t${i}`, rect(i + 5)); // all out of view
@@ -90,7 +90,7 @@ describe("tile lifecycle — a frozen tile keeps its state and stops its effects
       root.render(
         <SpatialStoreContext.Provider value={s}>
           <FocusHostContext.Provider value={null}>
-            <SpatialTile id="far" rect={rect(10)} title="Vendor contract review" onResize={null}>
+            <SpatialTile id="far" rect={rect(10)} title="Vendor contract review" onResize={null} sleeps>
               {() => <Body />}
             </SpatialTile>
           </FocusHostContext.Provider>
@@ -113,5 +113,59 @@ describe("tile lifecycle — a frozen tile keeps its state and stops its effects
     expect(el.querySelector("button[data-count]")!.getAttribute("data-count")).toBe("1"); // state kept
     act(() => root.unmount());
     el.remove();
+  });
+});
+
+describe("tile lifecycle — only content proven to wake correctly sleeps", () => {
+  it("a tile without `sleeps` keeps running when the store says frozen", () => {
+    const s = viewStore();
+    const log: string[] = [];
+    function Body() {
+      useEffect(() => {
+        log.push("subscribe");
+        return () => void log.push("unsubscribe");
+      }, []);
+      return <div>Editor</div>;
+    }
+    const el = document.createElement("div");
+    const root = createRoot(el);
+    act(() =>
+      root.render(
+        <SpatialStoreContext.Provider value={s}>
+          <FocusHostContext.Provider value={null}>
+            <SpatialTile id="far" rect={rect(10)} title="Q4 pricing notes" onResize={null}>
+              {() => <Body />}
+            </SpatialTile>
+          </FocusHostContext.Provider>
+        </SpatialStoreContext.Provider>,
+      ),
+    );
+    act(() => {
+      s.recomputeCoarse();
+      s.recomputeLife(performance.now() + FREEZE_AFTER_MS + 50);
+    });
+    expect(s.getLife("far")).toBe("frozen");
+    expect(log).toEqual(["subscribe"]); // never torn down
+    act(() => root.unmount());
+  });
+
+  it("the grace period starts when a tile stops being needed, not at its last evaluation", () => {
+    let clock = 1000;
+    const now = jest.spyOn(performance, "now").mockImplementation(() => clock);
+    try {
+      const s = viewStore();
+      s.registerItem("a", rect(0));
+      s.registerItem("b", rect(10));
+      s.select("b");
+      // Long after, with nothing re-evaluating, the person selects another tile.
+      clock += FREEZE_AFTER_MS * 5;
+      s.select("a");
+      expect(s.getLife("b")).toBe("live"); // just stopped being needed: grace, not an instant freeze
+      clock += FREEZE_AFTER_MS + 50;
+      s.recomputeLife();
+      expect(s.getLife("b")).toBe("frozen");
+    } finally {
+      now.mockRestore();
+    }
   });
 });

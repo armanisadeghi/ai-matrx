@@ -123,6 +123,8 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "image",
+    // No effects: waking is a plain re-render.
+    sleeps: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Image",
     icon: ImageIcon,
@@ -150,6 +152,8 @@ export const CONTENT_ITEMS: BoardItemType[] = [
   },
   {
     key: "label",
+    // No effects: waking is a plain re-render.
+    sleeps: true,
     surface: { none: "Board-only content: the board's own tools (board_update_tile) edit it." },
     label: "Label",
     icon: Type,

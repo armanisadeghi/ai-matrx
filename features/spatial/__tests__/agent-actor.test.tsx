@@ -19,6 +19,24 @@ type Tile = { id: string; title: string; rect: { x: number; y: number; w: number
 const tile = (id: string, x: number): Tile => ({ id, title: id, rect: { x, y: 0, w: 100, h: 100 } });
 
 describe("board store — actors", () => {
+  it("an agent's undo never re-parks a tile it brought back (the person may be working in it)", () => {
+    const board = new BoardStore<Tile>({ tiles: [tile("a", 0), tile("p", 200)], parked: ["p"] });
+    board.runAs("agent", () => board.unparkTile("p"));
+    board.undoActor("agent");
+    expect(board.getLayout().parkedIds).toEqual([]);
+  });
+
+  it("the person's ⌘Z of the agent's change takes it off the agent's list, and ⇧⌘Z puts it back", () => {
+    const board = new BoardStore<Tile>([tile("a", 0), tile("b", 200)]);
+    board.runAs("agent", () => board.moveMany([{ id: "b", x: 900, y: 0 }]));
+    board.undo();
+    expect(board.canUndoActor("agent")).toBe(false);
+    board.redo();
+    expect(board.canUndoActor("agent")).toBe(true);
+    expect(board.undoActor("agent")).toEqual({ undone: true, kept: [] });
+    expect(board.getTile("b")?.rect.x).toBe(200);
+  });
+
   it("undoActor('agent') reverts only the agent's change; the person's later move stays", () => {
     const board = new BoardStore<Tile>([tile("a", 0), tile("b", 200), tile("c", 400)]);
     board.moveTile("a", 10, 10); // the person

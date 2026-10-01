@@ -31,7 +31,7 @@ export interface Autosaver<T> {
   schedule: (value: T) => void;
   /** Send the pending value now. Resolves when nothing is pending or in flight.
    * `urgent`: the page may be about to go away. */
-  flush: (opts?: { urgent?: boolean }) => Promise<void>;
+  flush: (opts?: { urgent?: boolean; leaving?: boolean }) => Promise<void>;
   /** A value is waiting for the timer. */
   hasPending: () => boolean;
   /** Drop the pending value without writing it (the board was reloaded). */
@@ -46,6 +46,8 @@ export function createAutosaver<T>(options: AutosaverOptions<T>): Autosaver<T> {
   let pending: { value: T } | null = null;
   let timer: unknown = null;
   let inFlight: Promise<void> | null = null;
+  /** The value the write in flight carries (re-sent if the page is leaving). */
+  let inFlightValue: T | null = null;
 
   const stopTimer = () => {
     if (timer !== null) {
@@ -59,6 +61,7 @@ export function createAutosaver<T>(options: AutosaverOptions<T>): Autosaver<T> {
     if (!pending) return Promise.resolve();
     const { value } = pending;
     pending = null;
+    inFlightValue = value;
     options.onSavingChange?.(true);
     inFlight = options
       .write(value, { urgent })
@@ -68,6 +71,7 @@ export function createAutosaver<T>(options: AutosaverOptions<T>): Autosaver<T> {
       )
       .finally(() => {
         inFlight = null;
+        inFlightValue = null;
         options.onSavingChange?.(false);
         // Something arrived while we were writing and its timer already fired
         // (or it was flushed): send it now.
@@ -76,8 +80,23 @@ export function createAutosaver<T>(options: AutosaverOptions<T>): Autosaver<T> {
     return inFlight;
   };
 
-  const flush = async (opts: { urgent?: boolean } = {}): Promise<void> => {
+  const flush = async (opts: { urgent?: boolean; leaving?: boolean } = {}): Promise<void> => {
     stopTimer();
+    // The page is going away: the browser cancels an ordinary request still in
+    // flight, so waiting for it loses the newest edit. Send the newest value
+    // NOW as an urgent (keepalive) write beside it. If the page survives (the
+    // back-forward cache), the ordinary write decides, and this one, refused
+    // as stale, is only noted.
+    if (opts.leaving && inFlight) {
+      const latest = pending ? pending.value : inFlightValue;
+      pending = null;
+      if (latest !== null) {
+        void options.write(latest, { urgent: true }).catch((error: unknown) => {
+          console.warn("[autosave] the save sent while the page was closing was not taken:", error);
+        });
+      }
+      return;
+    }
     // Wait out a write in flight, then send what is pending, until idle.
     while (inFlight || pending) {
       if (inFlight) await inFlight;

@@ -102,6 +102,12 @@ export interface SpatialTileProps {
   onThrow?: (id: string, direction: ThrowDirection) => void;
   /** What each direction does — drives the hint shown before release. */
   throwActions?: Record<ThrowDirection, ThrowAction>;
+  /** The body may be FROZEN while not needed (`TileLife`). Only for content
+   * proven to wake correctly: waking re-runs every effect. */
+  sleeps?: boolean;
+  /** The body may also be UNMOUNTED beyond the warm budget (it remounts from
+   * its saved source). Only for content with nothing unsaved to lose. */
+  discardable?: boolean;
   children: (tier: PaceTier) => ReactNode;
 }
 
@@ -145,6 +151,8 @@ export function SpatialTile({
   onResize,
   onThrow,
   throwActions = DEFAULT_THROW_ACTIONS,
+  sleeps = false,
+  discardable = false,
   children,
 }: SpatialTileProps) {
   const store = useSpatialStore();
@@ -299,6 +307,29 @@ export function SpatialTile({
     const parent = focused && focusHost ? focusHost : tile;
     if (card.parentElement !== parent) moveInto(parent, card, parent === tile ? tile.firstChild : null);
   }, [focused, focusHost]);
+  // Keyboard focus inside the tile (a field the person clicked into without the
+  // tile becoming "interacting") keeps it awake: it never sleeps under a caret.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    let release: (() => void) | null = null;
+    const onIn = () => {
+      if (!release) release = store.holdAwake(id);
+    };
+    const onOut = (e: FocusEvent) => {
+      if (e.relatedTarget instanceof Node && card.contains(e.relatedTarget)) return;
+      release?.();
+      release = null;
+    };
+    card.addEventListener("focusin", onIn);
+    card.addEventListener("focusout", onOut);
+    return () => {
+      card.removeEventListener("focusin", onIn);
+      card.removeEventListener("focusout", onOut);
+      release?.();
+    };
+  }, [store, id]);
+
   // Unmounted while full screen: take the card out of the focus layer too.
   useLayoutEffect(
     () => () => {
@@ -391,11 +422,11 @@ export function SpatialTile({
           // finger on a tile body scrolls the content natively instead.
           style={{ contentVisibility: overview ? "hidden" : "visible", touchAction: "pan-x pan-y" }}
         >
-          {life === "discarded" ? null : (
+          {life === "discarded" && discardable && !focused ? null : (
             // A frozen tile keeps its state and DOM but runs nothing: effects,
             // store subscriptions, channels and timers are torn down until it
             // is needed again (React's Activity, Chrome's tab freezing).
-            <Activity mode={life === "frozen" && !focused ? "hidden" : "visible"}>{children(tier)}</Activity>
+            <Activity mode={sleeps && life !== "live" && !focused ? "hidden" : "visible"}>{children(tier)}</Activity>
           )}
         </div>
         {overview && <OverviewCard title={title} from={statusFrom} icon={Icon} />}

@@ -42,7 +42,10 @@ export function HtmlTileBody({
   // True once the page has been out of view long enough to unload. Derived
   // with `tier` below, so returning to view reloads without an effect write.
   const [expired, setExpired] = useState(false);
-  const loaded = tier !== "offscreen" || !expired;
+  // Out of view, or a few px at overview zoom: the page runs for nothing (its
+  // own animations restyled the whole board ~16×/s at idle), so it unloads.
+  const away = tier === "offscreen" || tier === "overview";
+  const loaded = !away || !expired;
 
   useEffect(() => {
     const box = boxRef.current;
@@ -53,13 +56,13 @@ export function HtmlTileBody({
   }, []);
 
   useEffect(() => {
-    if (tier !== "offscreen") return;
+    if (!away) return;
     const t = setTimeout(() => setExpired(true), UNLOAD_AFTER_MS);
     return () => {
       clearTimeout(t);
       setExpired(false);
     };
-  }, [tier]);
+  }, [away]);
 
   return (
     <div ref={boxRef} className="relative h-full overflow-hidden bg-background">

@@ -250,14 +250,19 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     const sendNow = () => {
       void instance.flush({ urgent: true });
     };
+    // Truly leaving: a write still in flight would be cancelled, so the newest
+    // value goes out beside it (autosave `leaving`).
+    const leaveNow = () => {
+      void instance.flush({ urgent: true, leaving: true });
+    };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") sendNow();
     };
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", sendNow);
+    window.addEventListener("pagehide", leaveNow);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("pagehide", sendNow);
+      window.removeEventListener("pagehide", leaveNow);
       if (saver.current === instance) saver.current = null;
       // Unmount (or switching boards): whatever is pending still goes out.
       void instance.flush();

@@ -204,10 +204,13 @@ export function UserBoard({
       if (key) onBoard.set(key, t.id);
     }
     const already: string[] = [];
+    const seen = new Set<string>();
     const items = wanted.filter((item) => {
       const key = recordKeyOf(item.source);
+      if (key && seen.has(key)) return false; // the same record twice in one add
       const existing = key ? onBoard.get(key) : undefined;
       if (existing) already.push(existing);
+      if (key) seen.add(key);
       return !existing;
     });
     if (already.length > 0) {
@@ -602,6 +605,7 @@ function BoardItemTile({
         onResize={board.resizeTile}
         onThrow={onThrow}
         throwActions={BOARD_THROWS}
+        sleeps={type?.sleeps ?? false}
         actions={
           href ? (
             <a

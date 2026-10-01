@@ -53,6 +53,10 @@ const CULL_MARGIN_SCREEN_PX = 240;
  *   discarded  — unmounted; it remounts from its saved source when needed.
  *                Only beyond the warm budget, least recently live first.
  *                Chrome's tab discarding.
+ * The store only SAYS what a tile could be; a tile's content acts on it only
+ * when its type is proven to wake correctly (`SpatialTile` `sleeps`,
+ * `discardable`): waking re-runs every effect, and content whose mount effect
+ * resets its own state (an editor reloading its file) would lose work.
  */
 export type TileLife = "live" | "frozen" | "discarded";
 
@@ -93,6 +97,8 @@ export class SpatialStore {
   private life = new Map<string, TileLife>();
   private lifeListeners = new Map<string, Set<Listener>>();
   private lastNeededAt = new Map<string, number>();
+  /** Tiles needed at the last evaluation — the grace period starts when one stops being needed. */
+  private wasNeeded = new Set<string>();
   private holds = new Map<string, number>();
   private lifeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -212,6 +218,7 @@ export class SpatialStore {
       this.visible.delete(id);
       this.life.delete(id);
       this.lastNeededAt.delete(id);
+      this.wasNeeded.delete(id);
       if (this.focused === id) {
         this.focused = null;
         this.focusReturn = null;
@@ -338,9 +345,11 @@ export class SpatialStore {
     for (const id of this.items.keys()) {
       if (this.needed(id)) {
         this.lastNeededAt.set(id, now);
+        this.wasNeeded.add(id);
         next.set(id, "live");
         continue;
       }
+      if (this.wasNeeded.delete(id)) this.lastNeededAt.set(id, now); // stopped being needed just now
       const since = this.lastNeededAt.get(id) ?? now;
       const due = since + FREEZE_AFTER_MS;
       if (now < due) {

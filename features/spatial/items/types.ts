@@ -129,6 +129,12 @@ export interface BoardItemType {
   /** The body reads `tier` (pauses media, paces streams). Others get a constant,
    * so a zoom across a tier boundary never re-renders their content. */
   usesTier?: boolean;
+  /**
+   * The body is proven to wake correctly after a freeze (every effect re-runs;
+   * nothing resets or reloads its own state), so an unneeded tile may sleep.
+   * Opt in per type, after checking it in the browser.
+   */
+  sleeps?: boolean;
 }
 
 /** Every way to start a new item of this type, in menu order (none → []). */
