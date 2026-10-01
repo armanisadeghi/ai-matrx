@@ -79,7 +79,7 @@ All visual consumers migrated. Remaining `useAppSelector(…theme.mode…)` usag
 | File | Reason |
 |------|--------|
 | `styles/themes/ThemeSwitcher.tsx` | Toggle UI |
-| `features/shell/components/header/header-right-menu/ThemeToggleMenuItem.tsx` | Toggle UI |
+| `features/shell/components/account-rail/ShellSettingsMenu.tsx` | Toggle UI (the account rail's Settings slot) |
 | `components/matrx/PublicHeaderThemeToggle.tsx` | Toggle UI |
 | `components/layout/new-layout/MobileUnifiedMenu.tsx` | Toggle UI |
 | `features/public-chat/components/ChatMobileHeader.tsx` | Toggle UI |

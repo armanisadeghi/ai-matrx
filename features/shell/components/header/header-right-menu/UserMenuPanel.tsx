@@ -28,10 +28,9 @@ interface UserMenuPanelProps {
 }
 
 /**
- * Authenticated-only user menu: identity, quick access, admin, sign out. The `Header` branches on `isAuthenticated`
- * and routes unauthenticated visitors to `GuestUserMenuPanel`, so this
- * component no longer carries a guest fallback — every reachable code path
- * has a real user.
+ * Authenticated-only user menu: identity, quick access, admin, sign out.
+ * `ShellUserBlock` mounts it only for a signed-in person (a guest gets the
+ * Sign in row), so there is no guest fallback here.
  */
 export default function UserMenuPanel({
   userData,

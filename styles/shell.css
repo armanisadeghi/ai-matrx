@@ -2736,6 +2736,17 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   text-overflow: ellipsis;
 }
 
+/* The Settings slot wears the nav's active pill on the pages it owns. */
+.shell-root[data-pathname^="/user-settings"] [data-shell-settings-menu="rail"],
+.shell-root[data-pathname="/trash"] [data-shell-settings-menu="rail"] {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+}
+.shell-root[data-pathname^="/user-settings"] [data-shell-settings-menu="rail"] :is(.shell-nav-icon, .shell-nav-label),
+.shell-root[data-pathname="/trash"] [data-shell-settings-menu="rail"] :is(.shell-nav-icon, .shell-nav-label) {
+  color: var(--shell-pill-text);
+}
+
 .shell-root[data-pathname^="/administration/launchpad"] .shell-account-rail .shell-nav-label {
   opacity: 0;
   pointer-events: none;

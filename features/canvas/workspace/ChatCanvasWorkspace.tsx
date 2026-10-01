@@ -481,11 +481,6 @@ export function ChatCanvasWorkspace({
             ) : null}
           </div>
 
-          {/* On a phone the header control set (and the hosted page's own actions and
-              section nav) fold into ONE ⋮ — the shell's overflow, which takes
-              over the page-actions host while this header replaces the shell
-              header — so the page title gets the row (page-pass, 2026-09-27). */}
-          <HeaderControlSet isAuthenticated={isAuthenticated} />
           {record?.commentToken ? (
             <EntityCommentPopover
               token={record.commentToken}
@@ -525,6 +520,12 @@ export function ChatCanvasWorkspace({
               <X className="h-4 w-4" />
             </button>
           ) : null}
+          {/* THE HEADER CONTROL SET sits at the right edge, the page's own
+              controls to its left — the same order as the shell header. On a
+              phone it (and the hosted page's own actions and section nav)
+              folds into ONE ⋮ so the page title gets the row (page-pass,
+              2026-09-27). */}
+          <HeaderControlSet isAuthenticated={isAuthenticated} />
         </header>
 
         <div className="flex min-h-0 flex-1">

@@ -20,12 +20,21 @@
  *
  * Every organization state shows HERE:
  *   - none chosen (boot answered with none) → a primary ring and "Choose organization";
+ *   - the memberships could not be read → a red dot and a label that says so
+ *     (the picker's own notice explains and retries);
  *   - the page's object lives in another of the person's organizations → a
  *     primary dot, and the picker opens with a one-click switch to it
- *     (the offer the header chip used to make — `pageObjectOrganization.ts`).
+ *     (the offer the header chip used to make — `pageObjectOrganization.ts`);
+ *     an object in an organization she is not in is named, quietly.
+ *
+ * 🚨 THE ADMIN SEAT NEVER ACTS AS ITSELF (common-docs/policies/admin-seat-
+ * never-acts-as-itself.md): on /administration/* the control still names the
+ * active organization (it is where new things are saved) but never ASKS for
+ * one — admin pages act at each record's owner level.
  */
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { ArrowRightLeft, Building2 } from "lucide-react";
 import { SelectChevron } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -41,13 +50,17 @@ type Variant = "rail" | "drawer" | "inline";
 export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
-  const { activeOrgId, activeOrgName, organizations, promptForOrg } = useActiveOrganizationPicker();
+  const { activeOrgId, activeOrgName, organizations, promptForOrg, loadFailed } =
+    useActiveOrganizationPicker();
   const objectOrganization = usePageObjectOrganization();
+  const pathname = usePathname() ?? "";
+  const adminSeat = pathname === "/administration" || pathname.startsWith("/administration/");
 
   const active = organizations.find((org) => org.id === activeOrgId) ?? null;
   const name = active?.name ?? activeOrgName ?? null;
-  // An object page names its own organization: nothing there waits on a choice.
-  const asking = promptForOrg && !activeOrgId && objectOrganization === null;
+  // An object page names its own organization, and the admin seat never acts
+  // as itself: nothing there waits on a choice.
+  const asking = promptForOrg && !activeOrgId && objectOrganization === null && !adminSeat;
 
   const offer =
     objectOrganization &&
@@ -57,13 +70,24 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
     objectOrganization.organizationId !== activeOrgId
       ? { id: objectOrganization.organizationId, name: objectOrganization.name }
       : null;
+  // An object in an organization she is not a member of (or membership unknown): named, quietly.
+  const viewingIn =
+    !offer &&
+    objectOrganization &&
+    !objectOrganization.shownByPage &&
+    objectOrganization.name &&
+    objectOrganization.organizationId !== activeOrgId
+      ? objectOrganization.name
+      : null;
 
   const label = name ?? (asking ? "Choose organization" : "Organization");
-  const description = offer
-    ? `Organization: ${name ?? "none"}. This page lives in ${offer.name}`
-    : name
-      ? `Organization: ${name}. Change organization`
-      : "Choose an organization";
+  const description = loadFailed
+    ? `Organization: ${name ?? "none"}. Your organizations could not be loaded`
+    : offer
+      ? `Organization: ${name ?? "none"}. This page lives in ${offer.name}`
+      : name
+        ? `Organization: ${name}. Change organization`
+        : "Choose an organization";
 
   const mark = (
     <span className="relative flex shrink-0 items-center justify-center">
@@ -86,17 +110,29 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
           <Building2 className="h-3.5 w-3.5" strokeWidth={2} />
         </span>
       )}
-      {offer ? (
+      {loadFailed || offer ? (
         <span
-          className="pointer-events-none absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background"
-          data-org-offer-dot
+          className={cn(
+            "pointer-events-none absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full ring-2 ring-background",
+            loadFailed ? "bg-destructive" : "bg-primary",
+          )}
+          data-org-offer-dot={offer ? "" : undefined}
+          data-org-load-failed={loadFailed ? "" : undefined}
           aria-hidden="true"
         />
       ) : null}
     </span>
   );
 
-  const header = offer ? (
+  const header = viewingIn ? (
+    <p
+      className="mb-1 flex items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground"
+      data-page-object-organization-viewing=""
+    >
+      <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <span className="min-w-0 truncate">This page is in {viewingIn}</span>
+    </p>
+  ) : offer ? (
     <button
       type="button"
       onClick={() => {

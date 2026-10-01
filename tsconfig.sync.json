@@ -15,7 +15,7 @@
     "app/DeferredSingletons.tsx",
     "app/(a)/sync-demo/theme/page.tsx",
     "app/(a)/sync-demo/theme/_client.tsx",
-    "features/shell/components/header/header-right-menu/ThemeToggleMenuItem.tsx",
+    "features/shell/components/account-rail/ShellSettingsMenu.tsx",
     "components/ui/menu-system/GlobalMenuItems.ts"
   ],
   "exclude": ["lib/sync/__tests__/**"]

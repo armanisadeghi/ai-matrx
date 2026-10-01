@@ -359,11 +359,16 @@ export function HeaderPhoneOverflow({
                 }}
                 trailing={<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}
               />
-              {canvas.isAvailable && !pageReplacesCanvas ? (
+              {/* Same reservation as the desktop slot: present until a surface
+                  REPORTS the canvas unavailable, never missing while the
+                  deferred front door is still mounting. */}
+              {(canvas.isAvailable || !canvas.availabilityKnown) && !pageReplacesCanvas ? (
                 <Row
                   icon={<Layers className="h-5 w-5" />}
                   label={
-                    canvasState === "open"
+                    canvas.homeOnly
+                      ? "Close canvas"
+                      : canvasState === "open"
                       ? `Put away canvas — ${canvas.headlineTitle}`
                       : canvasState === "closed"
                         ? `Open canvas — ${canvas.headlineTitle}`

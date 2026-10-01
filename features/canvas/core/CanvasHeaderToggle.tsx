@@ -60,7 +60,10 @@ export function useCanvasHeaderToggle() {
   }, [dispatch]);
 
   return {
+    /** Something is on screen — the item canvas OR its home. */
     isOpen: isOpen || homeOpen,
+    /** Only the home is on screen (an offered item does not replace it). */
+    homeOnly: homeOpen && !isOpen,
     isAvailable,
     availabilityKnown,
     itemCount: items.length,
@@ -119,6 +122,7 @@ export function CanvasShellHeaderToggle({
 } = {}) {
   const {
     isOpen,
+    homeOnly,
     isAvailable,
     availabilityKnown,
     itemCount,
@@ -138,7 +142,7 @@ export function CanvasShellHeaderToggle({
 
   const state = itemCount === 0 ? "empty" : isOpen ? "open" : "closed";
   const ariaLabel =
-    state === "empty"
+    state === "empty" || homeOnly
       ? isOpen
         ? "Close canvas"
         : "Open canvas"
@@ -146,8 +150,10 @@ export function CanvasShellHeaderToggle({
         ? `Put away canvas — ${headlineTitle}`
         : `Open canvas — ${headlineTitle}`;
   const tooltip =
-    state === "empty"
-      ? CANVAS_EMPTY_TOOLTIP
+    homeOnly
+      ? "Close canvas"
+      : state === "empty"
+        ? CANVAS_EMPTY_TOOLTIP
       : state === "open"
         ? `Put away canvas — ${headlineTitle} (⌘\\)`
         : `Open canvas — ${headlineTitle} (⌘\\)`;

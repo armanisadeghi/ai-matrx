@@ -74,7 +74,7 @@ export function MenuGroup({
           Truncating text (`truncate` sets `white-space: nowrap`) contributes
           its FULL width to min-content, so every list this group will ever hold
           is exposed the same way. Measured gate:
-          `features/shell/layout-gate/user-menu-org-disclosure.spec.ts`.
+          `features/shell/layout-gate/user-menu-reachability.spec.ts`.
 
           🚨 `invisible peer-checked:visible` IS THE SECOND LOAD-BEARING PIECE,
           and it is not styling. `overflow-hidden` only CLIPS the collapsed

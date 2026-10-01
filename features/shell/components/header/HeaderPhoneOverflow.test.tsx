@@ -31,7 +31,7 @@ const read = (file: string) => readFileSync(path.join(REPO, file), "utf8");
 
 const openBar = jest.fn();
 const openAuthGate = jest.fn();
-let canvasState = { isOpen: false, isAvailable: true, itemCount: 0, headlineTitle: "Canvas" };
+let canvasState = { isOpen: false, homeOnly: false, isAvailable: true, availabilityKnown: true, itemCount: 0, headlineTitle: "Canvas" };
 const reopen = jest.fn();
 const putAway = jest.fn();
 
@@ -105,7 +105,7 @@ afterEach(() => {
   act(() => root?.unmount());
   document.body.innerHTML = "";
   jest.clearAllMocks();
-  canvasState = { isOpen: false, isAvailable: true, itemCount: 0, headlineTitle: "Canvas" };
+  canvasState = { isOpen: false, homeOnly: false, isAvailable: true, availabilityKnown: true, itemCount: 0, headlineTitle: "Canvas" };
 });
 
 describe("the header right set on a phone — source", () => {
@@ -160,6 +160,13 @@ describe("HeaderPhoneOverflow — the same four, the same states", () => {
     mount(true);
     openSheet();
     expect(row("Canvas")).toBeUndefined();
+  });
+
+  it("keeps the canvas row while availability is still unknown (the desktop slot's reservation)", () => {
+    canvasState = { ...canvasState, isAvailable: false, availabilityKnown: false };
+    mount(true);
+    openSheet();
+    expect(row("Canvas")).toBeDefined();
   });
 
   it("a canvas with items opens from the sheet", () => {

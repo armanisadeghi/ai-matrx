@@ -37,7 +37,6 @@ features/shell/
 │   │   │   ├── MenuGroup.tsx
 │   │   │   ├── OverlayMenuItem.tsx
 │   │   │   ├── SignOutMenuItem.tsx
-│   │   │   ├── ThemeToggleMenuItem.tsx
 │   │   │   ├── UserMenuPanel.tsx
 │   │   │   ├── UserMenuTrigger.tsx
 │   │   │   ├── UserProfileHeader.tsx
