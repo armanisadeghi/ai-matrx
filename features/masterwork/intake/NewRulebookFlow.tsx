@@ -86,6 +86,7 @@ import {
 import { useApproachRegistry } from "../browse/useApproachRegistry";
 import { ApproachCard, ACCENT } from "../browse/ApproachCard";
 import { relevantApproachKeys } from "./approachRelevance";
+import { duplicateStartNotice } from "./duplicateStartNotice";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
@@ -710,11 +711,9 @@ export function NewRulebookFlow() {
               // the page's inline rename (`?rename=1`). The older twin keeps
               // Rename in its row menu on the Masterworks list.
               // It still carries the Approach's start line (cost and time),
-              // exactly as an ordinary start does — the duplicate case is the
-              // same start plus one fact. Budget: the dialog/toast slot is 140
-              // chars, two sentences; the longest live `cost_time_shape` is
-              // 103, so the duplicate sentence stays ≤ 36.
-              description: `You already have one with this name. ${approach.costTimeShape}`,
+              // exactly as an ordinary start does, held to the 140-char slot
+              // whatever the registry row says (duplicateStartNotice.ts).
+              description: duplicateStartNotice(approach.costTimeShape),
               duration: Infinity,
               action: {
                 label: "Rename",

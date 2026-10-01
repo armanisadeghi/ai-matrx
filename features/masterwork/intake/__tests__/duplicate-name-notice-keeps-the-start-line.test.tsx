@@ -259,3 +259,47 @@ it("a duplicate-name start shows the same start line, plus Rename, within the sl
   // Toast/dialog description slot: ≤ 140 chars, at most two sentences.
   expect(notice.description.length).toBeLessThanOrEqual(140);
 });
+
+it("a registry start line longer than today's still yields a notice inside the slot", async () => {
+  nameAlreadyInUse = true;
+  const longer = `${LONGEST_START_LINE} Then go.`;
+  const saved = APPROACHES[0].costTimeShape;
+  APPROACHES[0].costTimeShape = longer;
+  try {
+    const notice = await startAndReadNotice();
+    expect(notice.description.length).toBeLessThanOrEqual(140);
+    expect(notice.description).toContain(longer);
+    expect(notice.action?.label).toBe("Rename");
+  } finally {
+    APPROACHES[0].costTimeShape = saved;
+  }
+});
+
+// Review follow-up: the full notice is exactly 140 with today's longest row, so
+// a longer registry row must degrade, never overflow. RED before: the notice
+// was a bare template and a 130-character start line made it 167.
+describe("the notice stays inside its slot whatever the registry says", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { duplicateStartNotice, NOTICE_SLOT_CHARS } = require("../duplicateStartNotice") as typeof import("../duplicateStartNotice");
+
+  it("today's longest line keeps the full sentence", () => {
+    expect(duplicateStartNotice(LONGEST_START_LINE)).toBe(
+      `You already have one with this name. ${LONGEST_START_LINE}`,
+    );
+  });
+
+  it("a longer line keeps the whole start line behind the short sentence", () => {
+    const longer = `${LONGEST_START_LINE} Then go.`;
+    const notice = duplicateStartNotice(longer);
+    expect(notice.length).toBeLessThanOrEqual(NOTICE_SLOT_CHARS);
+    expect(notice).toBe(`Same name as one you have. ${longer}`);
+  });
+
+  it("an overlong line is cut at a word, never past the slot", () => {
+    const overlong = `${LONGEST_START_LINE} ${LONGEST_START_LINE}`;
+    const notice = duplicateStartNotice(overlong);
+    expect(notice.length).toBeLessThanOrEqual(NOTICE_SLOT_CHARS);
+    expect(notice.startsWith("Same name as one you have. About a minute")).toBe(true);
+    expect(notice.endsWith("…")).toBe(true);
+  });
+});
