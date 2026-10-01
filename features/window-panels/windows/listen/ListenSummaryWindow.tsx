@@ -485,7 +485,7 @@ function ListenVoiceSettings() {
         />
         <SettingsSlider
           label="Speech speed"
-          description="1.0 = original pace. Our default is 1.2."
+          description="1.0 is original pace; default 1.2"
           value={dragSpeed ?? (speed || TTS_DEFAULT_SPEED)}
           onValueChange={setDragSpeed}
           onValueCommit={(v) => {
