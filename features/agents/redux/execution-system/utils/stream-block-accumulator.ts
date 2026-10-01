@@ -603,14 +603,20 @@ export class StreamBlockAccumulator {
 
     // Bare-JSON regions get the trailing fragment's NEW chars immediately —
     // minified single-line JSON (structured outputs) parses live instead of
-    // waiting for a newline that may never come. Fence regions stay
-    // line-fed (a fragment could be a partial closing fence). An attr-XML
+    // waiting for a newline that may never come. A JSON FENCE body rides the
+    // same path (2026-09-30: a one-line `{"__kind":"flashcard_set",…}` inside
+    // ```json never completed a line, so `__kind` was unseen for the whole
+    // stream and the reader watched the raw JSON card) — except a fragment
+    // that opens with a backtick or tilde, which may be the closing fence and
+    // is fed only once its line completes and is classified. An attr-XML
     // body region rides the same path, minus the closing-tag line: once the
     // body line completed, the only fragment left is `</artifact>`, and
     // feeding that would corrupt the region (a body line never opens `<`).
     if (
       this.irSession &&
       (this.subState.kind === "bare_json" ||
+        (this.subState.kind === "code_fence" &&
+          !/^[`~]/.test(this.pendingLineFragment.trimStart())) ||
         (this.irRegionIsXmlBody &&
           this.subState.kind === "xml_tag" &&
           !this.pendingLineFragment.trimStart().startsWith("<"))) &&
@@ -1335,7 +1341,7 @@ export class StreamBlockAccumulator {
           // full accumulated content. This handles cases where early detection
           // failed (e.g. model split `{` and `"diagram":` across lines).
           // If detection finds a known type, upgrade; otherwise keep "code".
-          if (this.subState.language === "json") {
+          if (normalizeCodeLanguage(this.subState.language) === "json") {
             const confirmed = detectJsonBlockType(this.currentBlockContent);
             this.currentBlockType = confirmed ?? "code";
           }
@@ -1352,7 +1358,7 @@ export class StreamBlockAccumulator {
           // currentBlockType mid-stream safely overwrites the same Redux entry
           // with the new type and status:"streaming" → loading skeleton shows.
           if (
-            this.subState.language === "json" &&
+            normalizeCodeLanguage(this.subState.language) === "json" &&
             !this.subState.earlyTypeResolved
           ) {
             const soFar = this.currentBlockContent

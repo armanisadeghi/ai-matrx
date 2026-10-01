@@ -19,6 +19,10 @@ import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading
 import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import {
+  firstKindSlug,
+  jsonKindSignal,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
 import {
   resolveAnnouncedKindLoading,
@@ -29,6 +33,7 @@ import {
   ProvisionalKindFrame,
 } from "@/features/content-ir/react/ProvisionalKindBoundary";
 import {
+  IR_VERSION,
   readPartialKindEvent,
   reconstructRegionValue,
   type CanonicalBlockIR,
@@ -114,17 +119,6 @@ const ARTIFACT_LOADING_COMPONENTS: Partial<
  * Returns the envelope when pending so the caller can select + feed the
  * loading component; null otherwise.
  */
-/**
- * How much of a KINDLESS region may stream before we stop waiting for a
- * `__kind` that clearly is not coming. The discriminator is taught as the
- * FIRST key, so on any well-formed kind payload it resolves within the first
- * chunk or two; a region that has already streamed this many characters
- * without one is genuinely kindless JSON, and the reader deserves to WATCH it
- * arrive rather than stare at a skeleton until the end (Arman, live Study
- * Pack run, 2026-08-25: a kindless node "made me sit there and watch a
- * spinner for a very long time" and then dumped JSON at once).
- */
-const KINDLESS_PATIENCE_CHARS = 300;
 
 /**
  * The block's instance value for the record chrome, in the SAME descending
@@ -157,10 +151,12 @@ export function pendingStructuredEnvelope(block: {
   type: string;
   content?: string | null;
   metadata?: Record<string, unknown>;
+  isStreamingBlock?: boolean;
 }): CanonicalBlockIR | null {
   if (block.type !== "code") return null;
   const envelope = readEnvelope(block.metadata);
-  if (!envelope || envelope.root.status !== "streaming") return null;
+  if (!envelope) return unparsedKindPendingEnvelope(block);
+  if (envelope.root.status !== "streaming") return null;
   if (envelope.root.kind) {
     // Identified but UNROUTED. This function sees the block AFTER the kind
     // route ran, so a still-"code" type means the route had nothing to say
@@ -173,12 +169,44 @@ export function pendingStructuredEnvelope(block: {
     // still falls through to the code block (the honest final answer).
     return envelope;
   }
-  // No kind yet: give the discriminator a beat to arrive, then concede this
-  // region is plain JSON and let the code block below stream it LIVE. The
-  // loader must be a promise of a component, never a lid over content.
-  return (block.content ?? "").length < KINDLESS_PATIENCE_CHARS
-    ? envelope
-    : null;
+  // No kind yet: THE FIRST-KEY RULE (Arman, 2026-09-30). Until the first key
+  // has arrived it COULD be a kind → loader. A `__kind` key anywhere → it IS
+  // one (the parser names it in a beat) → loader. A complete first key that is
+  // not `__kind`, with no `__kind` seen → plain JSON, streamed LIVE below (a
+  // loader is a promise of a component, never a lid over content).
+  return jsonKindSignal(block.content) === "not_kind" ? null : envelope;
+}
+
+/**
+ * A streaming code block NO parser opened for (a fence with no language, or
+ * ```jsonc / ```json5, or any arrival path that stamps no envelope) still
+ * obeys the first-key rule: JSON text that COULD be a kind shows a kind
+ * loader, never raw. The envelope is render-local — a loader's input only,
+ * seeded nowhere; the host's region-close recovery decides what it really is.
+ */
+function unparsedKindPendingEnvelope(block: {
+  content?: string | null;
+  isStreamingBlock?: boolean;
+}): CanonicalBlockIR | null {
+  if (!block.isStreamingBlock) return null;
+  const text = block.content ?? "";
+  if (!/^\s*[[{]/.test(text)) return null;
+  if (jsonKindSignal(text) === "not_kind") return null;
+  return {
+    v: IR_VERSION,
+    engine: "fe-kind-parser",
+    fingerprint: "first-key-signal",
+    root: {
+      role: "structured",
+      kind: firstKindSlug(text) ?? "",
+      kindState: "pending_kind",
+      discriminator: { format: "json", key: "__kind" },
+      status: "streaming",
+      path: [],
+      value: {},
+      residue: null,
+    },
+  };
 }
 
 /**

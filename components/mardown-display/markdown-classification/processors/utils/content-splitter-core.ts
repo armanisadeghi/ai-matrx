@@ -2076,7 +2076,7 @@ export const splitContentIntoBlocksWith = (
           language: codeCheck.language,
           ...(fenceMetadata ? { metadata: fenceMetadata } : {}),
         });
-      } else if (codeCheck.language === "json") {
+      } else if (codeCheck.language?.toLowerCase() === "json") {
         // Check for special JSON block types
         const jsonType = detectJsonBlockType(extraction.content);
 
