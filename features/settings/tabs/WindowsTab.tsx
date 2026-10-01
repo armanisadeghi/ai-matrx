@@ -72,7 +72,7 @@ export default function WindowsTab() {
       <SettingsSection title="Actions">
         <SettingsButton
           label={windowsHidden ? "Show all windows" : "Hide all windows"}
-          description="Visually hide every window without unmounting — useful for demos."
+          description="Hide every window without closing it."
           actionLabel={windowsHidden ? "Show" : "Hide"}
           actionIcon={windowsHidden ? Eye : EyeOff}
           kind="outline"

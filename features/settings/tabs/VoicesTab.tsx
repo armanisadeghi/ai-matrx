@@ -15,6 +15,7 @@
 //   2. Voices for what you BUILD (they speak to other people) — each chosen
 //      where the thing is built; the library below lets you hear all of them.
 //   3. Fixed voices elsewhere — listed so nothing is hidden.
+//        phone line notices  → Amazon Polly Joanna (not changeable yet)
 //
 // Every place that speaks links back here through a SettingDoor to its row
 // (VOICE_SETTING_DOORS below).
@@ -77,7 +78,7 @@ export default function VoicesTab() {
     <>
       <SettingsSubHeader
         title="Voices"
-        description="Every voice AI Matrx speaks with. AI Matrx uses a few different speech engines, and each has its own voices — so you choose one voice per kind of listening."
+        description="Every voice AI Matrx speaks with, one per kind of listening"
         icon={AudioLines}
       />
 
@@ -113,7 +114,7 @@ export default function VoicesTab() {
       >
         <SettingsSlider
           label="Read-aloud speed"
-          description="1.0 is the voice's natural pace. Our default is 1.2."
+          description="1.0 is natural pace; our default is 1.2."
           value={dragSpeed ?? (speed || TTS_DEFAULT_SPEED)}
           onValueChange={setDragSpeed}
           onValueCommit={(v) => {
@@ -136,7 +137,7 @@ export default function VoicesTab() {
         <PreferencesLoadGate what="your read-aloud emotion">
           <SettingsSelect
             label="Read-aloud emotion"
-            description="The tone your read-aloud voice speaks in — the chat speaker, the Listen panel and spoken replies. Live conversation uses a different engine and is not affected."
+            description="Read-aloud tone; live conversation is not affected."
             value={emotion}
             onValueChange={setEmotion}
             options={VOICE_EMOTION_OPTIONS}
@@ -147,11 +148,9 @@ export default function VoicesTab() {
 
       <SettingsSection
         title="Gemini live conversation"
-        description="The Gemini voice page (Voice → Gemini)."
       >
         <SettingsRow
           label="Gemini live voice"
-          description="Google's default Gemini voice speaks here. AI Matrx does not choose or change it yet, so there is one voice and no choice."
           anchorId="voice-gemini-live"
           labelFor={null}
           last
@@ -162,29 +161,32 @@ export default function VoicesTab() {
 
       <SettingsSection
         title="Voices for what you build"
-        description="These voices speak to other people — your podcast listeners, the people who use your agents. You choose them where you build the thing, not here."
       >
         <SettingsLink
           label="Podcast hosts"
-          description="Each episode casts its hosts from the voice library below — Google voices for one or two hosts, ElevenLabs voices for three or more."
+          description="Hosts are cast from the voice library below."
+          helpText="Google voices for 1–2 hosts, ElevenLabs for 3 or more."
           href="/podcast"
           actionLabel="Podcast studio"
         />
         <SettingsLink
           label="Speakers in an agent's speech script"
-          description="Each speaker gets a voice from the library below, picked in the agent builder's speech script editor."
+          description="Each speaker's voice is picked in the speech script editor."
+          helpText="Voices come from the library below."
           href="/agents"
           actionLabel="Agents"
         />
         <SettingsLink
           label="Live voice agents you build"
-          description="Your voice agent speaks in one of the five live voices (Ara, Eve, Leo, Rex, Sal), set in the voice playground and saved on the agent."
+          description="One of five live voices, set in the voice playground."
+          helpText="Ara, Eve, Leo, Rex or Sal, saved on the agent."
           href="/chat/voice/playground"
           actionLabel="Voice playground"
         />
         <SettingsRow
           label="Text-to-speech steps in workflows"
-          description="Each step names its own voice from the library. A step with no voice speaks in its model's default voice."
+          description="Each step picks its own voice."
+          helpText="A step with no voice speaks in its model's default voice."
           anchorId="voice-builder-workflow-steps"
           labelFor={null}
           last
@@ -197,11 +199,10 @@ export default function VoicesTab() {
 
       <SettingsSection
         title="Other places AI Matrx speaks"
-        description="Voices that are fixed today, listed so nothing is hidden."
       >
         <SettingsRow
           label="Phone line notices"
-          description="People who call an AI Matrx phone line hear the consent and disclosure notices in Amazon Polly's Joanna voice. It cannot be changed yet."
+          description="Consent and disclosure notices callers hear; fixed for now."
           anchorId="voice-phone-notices"
           labelFor={null}
         >
@@ -209,7 +210,7 @@ export default function VoicesTab() {
         </SettingsRow>
         <SettingsRow
           label="Chats you share publicly"
-          description="Someone who opens a chat you shared, without signing in, hears their own browser's built-in voice."
+          description="Signed-out viewers of a chat you shared"
           anchorId="voice-public-chat"
           labelFor={null}
         >
@@ -217,7 +218,7 @@ export default function VoicesTab() {
         </SettingsRow>
         <SettingsRow
           label="Chrome extension"
-          description="The extension reads replies aloud with the same engine as read-aloud here, and follows your read-aloud voice."
+          description="Reads replies aloud with the read-aloud engine."
           anchorId="voice-chrome-extension"
           labelFor={null}
         >
@@ -225,7 +226,7 @@ export default function VoicesTab() {
         </SettingsRow>
         <SettingsRow
           label="Desktop app (Matrx Local)"
-          description="The desktop app speaks offline with its own voices, which the web voices cannot run on. Choose them in the desktop app's Text-to-Speech settings."
+          description="Offline voices, chosen in its Text-to-Speech settings."
           anchorId="voice-desktop-app"
           labelFor={null}
           last

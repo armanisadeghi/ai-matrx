@@ -69,7 +69,6 @@ export function VoiceLibrary() {
     <SettingAnchor id="voice-library">
       <SettingsSection
         title="Voice library"
-        description="Every voice you can give to something you build. Press play to hear one."
       >
         {loading && (
           <p className="flex items-center gap-2 py-3 text-sm text-muted-foreground">

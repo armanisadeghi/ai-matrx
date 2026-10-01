@@ -106,7 +106,7 @@ export function ConfigurationExport(props: {
           rows: diffConfigurations(then, now),
           note:
             since && new Date(at) < new Date(since)
-              ? `Platform changes are recorded from ${new Date(since).toLocaleDateString()}; values before that are shown as they are now.`
+              ? `History starts ${new Date(since).toLocaleDateString()}; earlier values show as they are now.`
               : null,
         });
       }

@@ -478,7 +478,7 @@ export function KnobRungOverrides({
       title={`Exceptions by ${heading}${count ? ` · ${count}` : ""}`}
       description={
         stateOnly
-          ? `${stateOnly.reason} Until it has one, no ${heading} can be given their own value either.`
+          ? `${stateOnly.reason} No ${heading} can differ yet.`
           : state?.status === "ready"
             ? [
                 rows.length === 0
@@ -654,7 +654,7 @@ function ExceptionsBody({
     return (
       <p className="px-4 py-2 text-xs text-muted-foreground">
         {stateOnlyReason
-          ? `${stateOnlyReason} Nothing reads this setting yet, so there is nothing for ${withArticle(singular)} to differ from.`
+          ? "Nothing overrides the value above."
           : canAdd
             ? `Nothing overrides the value above. Add one for a specific ${singular} when it needs to differ.`
             : authoritySentence

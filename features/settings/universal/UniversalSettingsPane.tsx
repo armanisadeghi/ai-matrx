@@ -308,7 +308,7 @@ export default function UniversalSettingsPane() {
             state={organizationState}
             what="Your own settings"
             title="Pick an organization to see your settings"
-            description="Your own settings are kept per organization, so this page needs to know which one you mean. Choose one at the top of the page and these controls appear."
+            description="Settings are kept per organization. Choose one at the top."
             compact
           />
         ) : (
@@ -339,7 +339,6 @@ function DomainChildNavigation({
   return (
     <SettingsSection
       title="Categories"
-      description="Choose a product area to view its configurable controls and coverage."
     >
       {section.domain.features.map((feature, index) => (
         <SettingsNavigationRow
