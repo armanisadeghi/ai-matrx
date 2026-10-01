@@ -36,6 +36,7 @@ import type {
   ConvertRequest,
   ConvertResult,
 } from "../types";
+import { sectionRunTitle } from "../coverage";
 
 async function run(
   request: ConvertRequest,
@@ -65,7 +66,7 @@ async function run(
       // which part of the document it is covering.
       title:
         plan.segments.length > 1
-          ? `${baseTitle} - section ${segment.index} of ${segment.total}: ${segment.label}`
+          ? sectionRunTitle(baseTitle, segment)
           : baseTitle,
       count: String(segment.items),
       difficulty: options?.difficulty ?? "Mixed",

@@ -46,6 +46,7 @@ import { foldDepthIntoRequest } from "./enhanceCard";
 import { fcService } from "./fcService";
 import { FC_MANDATES } from "./mandates";
 import type { NewCardInput } from "./types";
+import { sectionRunTitle } from "@/features/education/convert/coverage";
 
 /**
  * How flashcards can use a Source: its TEXT, handed over up front. The
@@ -353,7 +354,7 @@ export async function generateCardsFromSources({
         document_id: documentIdOf(owner),
         title:
           plan.segments.length > 1
-            ? `${title} - section ${segment.index} of ${segment.total}: ${segment.label}`
+            ? sectionRunTitle(title, segment)
             : title,
         count: String(segment.items),
         difficulty,

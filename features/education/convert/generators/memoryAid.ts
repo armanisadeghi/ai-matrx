@@ -30,6 +30,7 @@ import type {
   ConvertRequest,
   ConvertResult,
 } from "../types";
+import { sectionRunTitle } from "../coverage";
 
 /**
  * One section's aids, flattened into a single stream so the shared segmented
@@ -65,7 +66,7 @@ async function run(
       source_content: segment.text,
       title:
         plan.segments.length > 1
-          ? `${baseTitle} - section ${segment.index} of ${segment.total}: ${segment.label}`
+          ? sectionRunTitle(baseTitle, segment)
           : baseTitle,
       focus: options?.focus ?? "",
     }),

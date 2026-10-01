@@ -29,7 +29,8 @@ import { Input, SegmentedControl, Textarea } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { knobInt } from "@/lib/knobs/featureKnobs";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { patchWizardDraft, selectWizardDraft } from "@/lib/redux/slices/wizardDraftSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import {
@@ -55,11 +56,13 @@ import {
   type SourceKindDef,
 } from "../sourceKinds";
 import { useSourceDraftAddresses } from "../sourceAddress";
-import { useSourceSet } from "../useSourceSet";
+import { sourceSurfaceKey, useSourceSet } from "../useSourceSet";
+import { reviewSetKey, shouldAutoOpenReview } from "../reviewAutoOpen";
 import { useSourceIntake } from "../useSourceIntake";
 import { useSourceRecovery } from "../useSourceRecovery";
 import {
   fileCardHeldForOrganization,
+  SAME_SOURCE_AGAIN,
   sourceKey,
   type SourceTileId,
 } from "@ai-matrx/agents/sources/runtime";
@@ -109,6 +112,22 @@ export function SourceInput({
       if (!card.draft.sourceKind) set.updateDraft(card.id, { sourceKind: kind });
     }
   }, [set]);
+  // The same Source added twice keeps one card. That is an event, not a state
+  // of the card: say it once and clear it — the package's sentence used to
+  // stay on the card for good (verify-6 #5, 2026-10-01).
+  const announcedAgain = useRef(new Set<string>());
+  useEffect(() => {
+    for (const card of set.sources) {
+      if (!card.draft.notes?.includes(SAME_SOURCE_AGAIN)) {
+        announcedAgain.current.delete(card.id);
+        continue;
+      }
+      set.updateDraft(card.id, { notes: card.draft.notes.filter((n) => n !== SAME_SOURCE_AGAIN) });
+      if (announcedAgain.current.has(card.id)) continue;
+      announcedAgain.current.add(card.id);
+      toast.info(`Already added: ${card.draft.label}`);
+    }
+  }, [set]);
   // Every card that points at a Source with no address (a web page picked from Use existing, a
   // host's own picker) reads it from the Source row — the same line a page added by its link has.
   useSourceDraftAddresses(set.sources, set.updateDraft);
@@ -116,7 +135,13 @@ export function SourceInput({
   const intake = useSourceIntake(set, { attachTo });
   const [threshold, setThreshold] = useState<number | null>(null);
   const [thresholdError, setThresholdError] = useState<string | null>(null);
-  const autoOpened = useRef(false);
+  // The set the review last opened for by itself, kept with this input's saved
+  // draft so a reload or a remount never reopens it (verify-6 #4).
+  const dispatch = useAppDispatch();
+  const draftKey = sourceSurfaceKey(surfaceKey);
+  const savedDraft = useAppSelector(selectWizardDraft(draftKey));
+  const reviewOpenedFor =
+    typeof savedDraft?.data?.reviewAutoOpenedFor === "string" ? savedDraft.data.reviewAutoOpenedFor : null;
 
   // Never lose input + file uploads' Sources — UI-free, in the hook.
   // org-filter: write-target Sources are filed in the organization the person works in
@@ -217,18 +242,27 @@ export function SourceInput({
     }
   };
 
-  // Opens by itself once each time the total crosses the knob.
-  const reviewLarge = useEffectEvent(() => void openReview("large"));
-  useEffect(() => {
-    if (threshold === null) return;
-    if (set.totalChars <= threshold) {
-      autoOpened.current = false;
+  // Opens by itself once per set of Sources above the knob — not on every
+  // mount (a reload and "Try again" remount this input with the same set).
+  const reviewSet = reviewSetKey(
+    set.sources.flatMap((s) => (s.status === "ready" && s.draft.ref ? [sourceKey(s.draft.ref)] : [])),
+  );
+  const reviewLarge = useEffectEvent(() => {
+    if (
+      !shouldAutoOpenReview({
+        totalChars: set.totalChars,
+        threshold,
+        setKey: reviewSet,
+        openedFor: reviewOpenedFor,
+      })
+    )
       return;
-    }
-    if (autoOpened.current) return;
-    autoOpened.current = true;
+    dispatch(patchWizardDraft({ wizardId: draftKey, patch: { reviewAutoOpenedFor: reviewSet } }));
+    void openReview("large");
+  });
+  useEffect(() => {
     reviewLarge();
-  }, [set.totalChars, threshold]);
+  }, [set.totalChars, threshold, reviewSet]);
 
   const refuseOverMax = (): boolean => {
     // Read the store, not this render: two quick clicks must not both pass.

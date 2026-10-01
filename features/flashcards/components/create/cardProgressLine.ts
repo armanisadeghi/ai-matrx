@@ -2,7 +2,7 @@
 //
 // THE one progress line for a card run that fans out over sections (Create
 // deck and "Add more cards"). Plain words, one line (copy law R9, V4-F
-// 2026-09-30): "Making 5 cards — 3 ready". Never a section index, never a
+// 2026-09-30): "Making 5 cards — 3 ready · 2/4 parts". Never a section index, never a
 // section label ("Last done: Part (7/10)" was machinery), and never a count
 // past what the person asked for (THE COUNT LAW — `progressItemCount`).
 //
@@ -25,5 +25,8 @@ export function cardProgressLine(
   const failed = progress.failed ?? 0;
   if (retrying > 0) return `${line} · retrying ${retrying} ${retrying === 1 ? "part" : "parts"}`;
   if (failed > 0) return `${line} · ${failed} ${failed === 1 ? "part" : "parts"} missed`;
-  return line;
+  // Parts finished, so the line moves while cards are still being written —
+  // a run whose cards all land at the end otherwise sat on "0 ready" (verify-6
+  // #8, 2026-10-01). A count, never a section index or label.
+  return `${line} · ${Math.min(progress.done, progress.total)}/${progress.total} parts`;
 }

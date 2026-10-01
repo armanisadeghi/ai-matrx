@@ -26,6 +26,7 @@ import type {
   ConvertRequest,
   ConvertResult,
 } from "../types";
+import { sectionRunTitle } from "../coverage";
 
 /**
  * The persisted summary envelope (rides study_media.ir_envelope).
@@ -80,7 +81,7 @@ async function run(
       source_content: segment.text,
       title:
         plan.segments.length > 1
-          ? `${baseTitle || "Study material"} - section ${segment.index} of ${segment.total}: ${segment.label}`
+          ? sectionRunTitle(baseTitle || "Study material", segment)
           : baseTitle,
       focus: options?.focus ?? "",
     }),

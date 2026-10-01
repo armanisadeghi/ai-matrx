@@ -39,6 +39,7 @@ import type {
   ConvertRequest,
   ConvertResult,
 } from "@/features/education/convert/types";
+import { sectionRunTitle } from "@/features/education/convert/coverage";
 
 
 interface KeyTerm {
@@ -106,7 +107,7 @@ async function run(
       source_content: segment.text,
       title:
         plan.segments.length > 1
-          ? `${baseTitle || "Study material"} - section ${segment.index} of ${segment.total}: ${segment.label}`
+          ? sectionRunTitle(baseTitle || "Study material", segment)
           : baseTitle,
       focus: options?.focus ?? "",
     }),

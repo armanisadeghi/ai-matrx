@@ -497,3 +497,31 @@ export function describeGaps(missed: SourceSegment[]): string | null {
   const more = missed.length > 3 ? ` and ${missed.length - 3} more` : "";
   return `${missed.length} section${missed.length === 1 ? "" : "s"} could not be covered (${names}${more}). Use "Add more" to fill the gap.`;
 }
+
+const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+
+/**
+ * A section's label as it may appear in a name a person reads. A resolver
+ * chunk header ("Chunk 9e46adde-… (page 25)") reads "Page 25", and no id is
+ * ever left in it — six decks on 2026-09-28 were named "… section 5 of 6:
+ * Chunk 9e46adde-0a23-4fbf-8f4d-9a9c096e9a37 (page 25) (1/2)" (verify-6 #6).
+ */
+export function sectionLabelForName(label: string): string {
+  return label
+    .replace(/(?:###\s*)?Chunk\s+\S+\s+\(page (\d+)\)/gi, "Page $1")
+    .replace(/(?:###\s*)?Chunk\s+[0-9a-f-]{8,}/gi, "")
+    .replace(UUID_RE, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s:–-]+|[\s:–-]+$/g, "")
+    .trim();
+}
+
+/** THE title of one section's run: every generator names its sections here. */
+export function sectionRunTitle(
+  base: string,
+  segment: Pick<SourceSegment, "index" | "total" | "label">,
+): string {
+  const label = sectionLabelForName(segment.label);
+  return `${base} - section ${segment.index} of ${segment.total}${label ? `: ${label}` : ""}`;
+}

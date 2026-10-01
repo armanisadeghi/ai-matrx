@@ -31,6 +31,7 @@ import type {
   ConvertRequest,
   ConvertResult,
 } from "../types";
+import { sectionRunTitle } from "../coverage";
 
 interface DiagramNode extends Record<string, unknown> {
   id?: unknown;
@@ -153,7 +154,7 @@ async function run(
       source_content: segment.text,
       title:
         plan.segments.length > 1
-          ? `${baseTitle} - section ${segment.index} of ${segment.total}: ${segment.label}`
+          ? sectionRunTitle(baseTitle, segment)
           : baseTitle,
       focus: options?.focus ?? "",
     }),

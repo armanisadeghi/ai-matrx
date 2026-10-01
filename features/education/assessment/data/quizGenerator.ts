@@ -45,6 +45,7 @@ import type {
   Depth,
   NewAssessmentItemInput,
 } from "./types";
+import { sectionRunTitle } from "@/features/education/convert/coverage";
 
 /** Per-kind defaults: practice tests are longer, deeper, and timed. */
 const KIND_DEFAULTS: Record<
@@ -91,7 +92,7 @@ function makeRun(kind: "quiz" | "practice_test") {
         // multi-section run needs no new agent variable.
         source_label:
           plan.segments.length > 1
-            ? `${baseLabel} - section ${segment.index} of ${segment.total}: ${segment.label}`
+            ? sectionRunTitle(baseLabel, segment)
             : baseLabel,
         count: String(segment.items),
         difficulty: options?.difficulty ?? "Medium",

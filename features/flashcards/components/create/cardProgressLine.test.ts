@@ -6,17 +6,22 @@ import { cardProgressLine } from "./cardProgressLine";
 
 describe("cardProgressLine", () => {
   it("caps the ready count at the request", () => {
-    expect(cardProgressLine({ done: 3, total: 4, label: "Part 3", items: 9 }, 5)).toBe("Making 5 cards — 5 ready");
+    expect(cardProgressLine({ done: 3, total: 4, label: "Part 3", items: 9 }, 5)).toBe("Making 5 cards — 5 ready · 3/4 parts");
     expect(cardProgressLine({ done: 1, total: 4, label: "Part 1", items: 2 }, 5, "new cards")).toBe(
-      "Making 5 new cards — 2 ready",
+      "Making 5 new cards — 2 ready · 1/4 parts",
     );
   });
   it("is absent for a single-pass run", () => {
     expect(cardProgressLine({ done: 0, total: 1, label: "", items: 0 }, 5)).toBeNull();
     expect(cardProgressLine(null, 5)).toBeNull();
   });
+  it("moves as parts finish even while no card has landed (verify-6 #8: '0 ready' then a jump to 4)", () => {
+    const lines = [0, 1, 2, 3].map((done) => cardProgressLine({ done, total: 4, label: "", items: 0 }, 4));
+    expect(new Set(lines).size).toBe(4);
+    expect(lines[3]).toBe("Making 4 cards — 0 ready · 3/4 parts");
+  });
   it("shows a slow part being retried and a missed part as state, never a frozen line", () => {
-    expect(cardProgressLine({ done: 0, total: 4, label: "", items: 0 }, 4)).toBe("Making 4 cards — 0 ready");
+    expect(cardProgressLine({ done: 0, total: 4, label: "", items: 0 }, 4)).toBe("Making 4 cards — 0 ready · 0/4 parts");
     expect(cardProgressLine({ done: 2, total: 4, label: "", items: 2, retrying: 1 }, 4)).toBe(
       "Making 4 cards — 2 ready · retrying 1 part",
     );

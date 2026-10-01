@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { InfoHint } from "@/components/official/InfoHint";
 import { useStagesStatus } from "@/features/rag/hooks/useStagesStatus";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { factsPollDelayMs } from "@/features/sources/sourceRows";
@@ -76,6 +77,9 @@ import {
 import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
 import type { UseSourceSetResult } from "../useSourceSet";
 import { formatCount } from "@ai-matrx/kit/format";
+
+/** A note longer than one line of the card shows its whole sentence behind a hint. */
+const NOTE_LINE_CHARS = 60;
 
 export function formatChars(chars: number): string {
   return `${formatCount(chars, { style: "compact" })} characters`;
@@ -280,9 +284,15 @@ export function SourceCard({
       ) : null}
 
       {card.draft.notes?.length ? (
+        // One line per note: a server or package sentence can run to a
+        // paragraph (verify-6 #27 printed three lines of a refusal). The full
+        // sentence sits behind the hint.
         <ul className="space-y-0.5 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           {card.draft.notes.map((n) => (
-            <li key={n}>{n}</li>
+            <li key={n} className="flex min-w-0 items-center gap-1">
+              <span className="min-w-0 flex-1 truncate">{n}</span>
+              {n.length > NOTE_LINE_CHARS ? <InfoHint text={n} label="Full note" /> : null}
+            </li>
           ))}
         </ul>
       ) : null}
