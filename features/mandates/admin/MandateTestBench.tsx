@@ -1272,7 +1272,7 @@ export function MandateTestBench({
                   entries={[
                     ...Object.entries(exemplar.variables ?? {}).map(
                       ([name, value]) => ({
-                        key: name,
+                        key: `variable:${name}`,
                         label: displayLabelForKey(name),
                         value:
                             value !== null &&
@@ -1291,7 +1291,7 @@ export function MandateTestBench({
                       }),
                     ),
                     {
-                      key: "__user_message",
+                      key: "user-message",
                       label: "User message",
                       value: (
                         <span className="whitespace-pre-wrap break-words">
