@@ -147,3 +147,21 @@ describe("battleMarkdownForPeople — a kind answer never reaches a person as JS
     expect(battleMarkdownForPeople(snapshot())).toBe(battleMarkdown(snapshot()));
   });
 });
+
+describe("battleRows — CSV/sheet cells read a kind answer as markdown", () => {
+  it("the answer cell holds the kind's markdown, never its JSON; kindless unchanged", () => {
+    const snap = snapshot();
+    snap.columns[0] = {
+      ...snap.columns[0],
+      answer: JSON.stringify({
+        __kind: "flashcard_set",
+        title: "Return policy cards",
+        cards: [{ __kind: "flashcard", front: "Window?", back: "30 days" }],
+      }),
+    };
+    const rows = battleRows(snap);
+    expect(String(rows[0].answer)).not.toContain("__kind");
+    expect(String(rows[0].answer)).toContain("30 days");
+    expect(rows[1].answer).toBe(snapshot().columns[1].answer);
+  });
+});

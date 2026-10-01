@@ -547,7 +547,8 @@ export function battleRows(snap: BattleSnapshot): Array<Record<string, unknown>>
       row.ttft_ms = c.metrics.ttft_ms;
     }
     if (c.variant) row.variant = JSON.stringify(c.variant);
-    row.answer = c.answer;
+    // A person reads this cell: a kind answer is its markdown (kind-never-raw R1).
+    row.answer = kindTextToMarkdown(c.answer);
     return row;
   });
 }

@@ -83,8 +83,9 @@ Every stream item below adds its case there.
       `response` through `MarkdownStream`; the public renderer's copy now converts (`kindTextToMarkdown`);
       `AgentAppSurfaceRuntime` feeds the workspace SCOPE (machine, kept). Run scope (`useAgentRunSurfaceScope`,
       `agent-run-history-scope`) and the model-battle scope are agent context (kept). Comparison
-      `battleMarkdown` → people get `battleMarkdownForPeople` (copy + .md export); the agent payload keeps the
-      data. Agent-app "Open in canvas": see S5.
+      `battleMarkdown` → people get `battleMarkdownForPeople` (copy + .md export) and the CSV/sheet answer cell is the kind's
+      markdown (full answer, like every kindless cell beside it — a title alone would say less); the agent payload
+      keeps the data. Agent-app "Open in canvas": see S5.
 - [ ] R2. `selectAnswerDocumentText` / `selectLatestAnswerDocumentText` stringify kinds on purpose.
       PARTIAL — kept (stored/passed text). Its display reader, the cleanup pad, previews through `MarkdownStream`;
       transcript studio reattach is a data path.
