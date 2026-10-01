@@ -17,7 +17,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { openWalk, bodyText, setOrganization, sleep, until, STAMP, TARGET, REPO, FIXTURE_ORG_ID } from "../lib/harness.mjs";
+import { cloneRead, openWalk, bodyText, setOrganization, sleep, until, STAMP, TARGET, REPO, FIXTURE_ORG_ID } from "../lib/harness.mjs";
 
 const ORG_SLUG = "cedar-ridge-physical-therapy";
 const SINGULAR = `Treatment Program ${STAMP}`;
@@ -37,10 +37,10 @@ const CLONE_DSN = (() => {
   const m = existsSync(f) ? readFileSync(f, "utf8").match(/^CLONE_DATABASE_URL=(.*)$/m) : null;
   return m ? m[1].replace(/^"|"$/g, "") : null;
 })();
+// W31: the clone read goes through the harness's one safe wrapper (session pooler, rollback always runs).
 function db(sql) {
   if (!CLONE_DSN || !PSQL) return null;
-  const r = spawnSync(PSQL, [CLONE_DSN, "-At", "-F", "|", "-c", `begin read only; ${sql}; commit;`], { encoding: "utf8" });
-  return (r.stdout ?? "").split("\n").filter((l) => l && l !== "BEGIN" && l !== "COMMIT").join("\n").trim();
+  return cloneRead(sql) ?? "";
 }
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
 

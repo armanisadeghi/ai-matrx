@@ -307,6 +307,25 @@ async function installIntercepts(context) {
   }
 }
 
+/**
+ * ONE READ-ONLY QUERY ON THE CLONE, the safe way (W31): the clone's SESSION pooler (5432, a disconnect
+ * ends the backend), `begin read only … rollback` with ON_ERROR_STOP=0 so the rollback always runs, and
+ * an idle-in-transaction timeout as a backstop. Returns the result lines (command tags removed), or
+ * null when the clone is not configured / the query errored. Never use it on live; walks read live
+ * through the product only.
+ */
+export function cloneRead(sql) {
+  const f = join(REPO, ".env.local");
+  const m = existsSync(f) ? readFileSync(f, "utf8").match(/^CLONE_DATABASE_URL=(.*)$/m) : null;
+  const psql = ["/opt/homebrew/opt/libpq/bin/psql", "/opt/homebrew/opt/postgresql@17/bin/psql"].find(existsSync);
+  if (!m || !psql) return null;
+  const dsn = m[1].replace(/^"|"$/g, "").replace(/:6543\//, ":5432/");
+  const body = `begin read only;\nset local statement_timeout = '60s';\nset local idle_in_transaction_session_timeout = '90s';\n${sql};\nrollback;\n`;
+  const r = spawnSync(psql, [dsn, "-X", "-At", "-F", "|", "-v", "ON_ERROR_STOP=0", "-f", "-"], { input: body, encoding: "utf8", timeout: 90000, env: { ...process.env, PGAPPNAME: "safety-net-clone-read" } });
+  if (/\bERROR:/.test(r.stderr ?? "")) return null;
+  return (r.stdout ?? "").split("\n").filter((l) => l && !["BEGIN", "SET", "ROLLBACK", "COMMIT"].includes(l)).join("\n").trim();
+}
+
 /** Wait until `fn` (run in the page) returns truthy; returns the value or null. */
 export async function pageUntil(page, fn, arg, timeoutMs = 30000) {
   const r = await until("page condition", () => page.evaluate(fn, arg), timeoutMs);
