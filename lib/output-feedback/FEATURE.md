@@ -126,3 +126,8 @@ const { verdict, setVerdict, captureCorrection } = useOutputFeedback({
   `platform.output_feedback` + its two RPCs, backfilled the 4 legacy reactions,
   dropped `cx_message_set_reaction` and `metadata.user_reaction`, wired all
   three surfaces, and added corrected-output capture on assistant-message edit.
+- **2026-10-01** — Subjects without a durable row (client-temp chat answers,
+  e.g. every incognito turn) are never queried or written: the batch loader and
+  `saveOutputFeedback` ask `durableRecordId` (`lib/ids/durable-record-id.ts`)
+  first, and the rich-document subject mapper answers null so the thumbs are
+  absent until the real id renders. One such id used to 22P02 the whole batch.
