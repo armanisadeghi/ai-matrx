@@ -13,11 +13,30 @@ import { ragDb } from "@/utils/supabase/ragDb";
 import { docprocDb } from "@/utils/supabase/docprocDb";
 import {
   citedChunkFacts,
+  citedPortion,
   pageForPartOrdinal,
   parsePartId,
   type CitedChunkFacts,
+  type CitedPortion,
 } from "./citedAnchor";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+
+/** The portion row a page number names inside a document (null when absent). */
+async function readPortion(
+  documentId: string | null,
+  pageNumber: number | null,
+): Promise<CitedPortion | null> {
+  if (!documentId || pageNumber == null) return null;
+  const { data } = await docprocDb(supabase)
+    .from("processed_document_pages")
+    .select("page_number, portion_kind, locator")
+    .eq("processed_document_id", documentId)
+    .eq("page_number", pageNumber)
+    .maybeSingle();
+  // A missing portion row only costs the place its name (the label falls back
+  // to the page numbers) — the passage still opens.
+  return data ? citedPortion(data) : null;
+}
 
 /** Read where one cited id sits: an indexed chunk's own row, or a part's page. */
 async function readCitedFacts(
@@ -27,28 +46,43 @@ async function readCitedFacts(
   if (isUuidShape(id)) {
     const { data, error } = await ragDb(supabase)
       .from("kg_chunks")
-      .select("page_numbers, metadata")
+      .select("page_numbers, metadata, processed_document_id")
       .eq("id", id)
       .maybeSingle();
     if (error) return { facts: null, error: error.message };
-    return data
-      ? { facts: citedChunkFacts(data), error: null }
-      : { facts: null, error: "The cited passage was not found." };
+    if (!data) return { facts: null, error: "The cited passage was not found." };
+    const facts = citedChunkFacts(data);
+    const doc = (data.processed_document_id as string | null) ?? documentId;
+    const first = facts.pageNumbers?.length ? Math.min(...facts.pageNumbers) : null;
+    return { facts: { ...facts, documentId: doc, portion: await readPortion(doc, first) }, error: null };
   }
   const part = parsePartId(id);
   // Not a chunk and not a page part (a packed "Part n" of a record's text):
   // the excerpt is all there is to show — not an error.
   if (!part) return { facts: { pageNumbers: null, part: true, t0Ms: null, t1Ms: null }, error: null };
+  const doc = documentId ?? part.documentId;
   const { data, error } = await docprocDb(supabase)
     .from("processed_document_pages")
-    .select("page_number, raw_char_count, cleaned_char_count")
+    .select("page_number, raw_char_count, cleaned_char_count, portion_kind, locator")
     // The part's prefix is the document id, or — for a stored file — the FILE
     // id (`synthetic_prefix=file_id` server-side); the viewer knows the document.
-    .eq("processed_document_id", documentId ?? part.documentId)
+    .eq("processed_document_id", doc)
     .order("page_number", { ascending: true });
   if (error) return { facts: null, error: error.message };
-  const page = pageForPartOrdinal(data ?? [], part.ordinal);
-  return { facts: { pageNumbers: page ? [page] : null, part: true, t0Ms: null, t1Ms: null }, error: null };
+  const rows = data ?? [];
+  const page = pageForPartOrdinal(rows, part.ordinal);
+  const row = page != null ? rows.find((r) => r.page_number === page) : undefined;
+  return {
+    facts: {
+      pageNumbers: page ? [page] : null,
+      part: true,
+      t0Ms: null,
+      t1Ms: null,
+      documentId: doc,
+      portion: row ? citedPortion(row) : null,
+    },
+    error: null,
+  };
 }
 
 export interface CitedChunkState {

@@ -109,8 +109,13 @@ export function ChunkCard({
   selectLabel,
   plain = false,
   highlightLabel = "Matched",
+  placeLabel,
 }: {
   chunk: ChunkLike;
+  /** The reader's name for where this chunk sits when the caller knows it
+   *  better than the page numbers do (a web section's heading). A chunk's own
+   *  time still wins. Plain cards only. */
+  placeLabel?: string | null;
   /** A reader's view (a citation opened from a card): only where it sits and
    *  the text — no index, kind, token or embedding badges. */
   plain?: boolean;
@@ -126,7 +131,13 @@ export function ChunkCard({
   /** Provenance for the per-chunk copy payload. Omit to hide the pair. */
   scope?: ChunkScope;
 }) {
-  const pageLabel = plain ? chunkPlaceLabel(chunk) : formatPages(chunk.page_numbers);
+  const ownTime = (() => {
+    const f = citedChunkFacts(chunk);
+    return timeRangeLabel(f.t0Ms, f.t1Ms);
+  })();
+  const pageLabel = plain
+    ? (ownTime ?? (placeLabel !== undefined ? placeLabel : chunkPlaceLabel(chunk)))
+    : formatPages(chunk.page_numbers);
   return (
     <div
       className={cn(
@@ -387,7 +398,10 @@ export function ChunksOnPage({
   highlightChunkId = null,
   plain = false,
   highlightLabel,
+  placeLabel,
 }: {
+  /** Where these chunks sit, named by the citation's place (see ChunkCard). */
+  placeLabel?: string | null;
   documentId: string;
   pageNumber: number;
   /** Reader's view of every card (see ChunkCard `plain`). */
@@ -488,6 +502,7 @@ export function ChunksOnPage({
               scope={scope}
               plain={plain}
               highlightLabel={highlightLabel}
+              placeLabel={placeLabel}
               highlighted={highlightChunkId != null && c.id === highlightChunkId}
             />
           ))}

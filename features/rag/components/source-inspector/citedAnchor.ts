@@ -20,6 +20,38 @@ export interface CitedChunkFacts {
   /** Transcript segments carry their time (ms) — a video has no pages. */
   t0Ms: number | null;
   t1Ms: number | null;
+  /**
+   * The portion the cited text sits in (`docproc.processed_document_pages`):
+   * its kind (`page` / `section` / `segment`) and locator (a web section's
+   * `heading_path`, a transcript segment's `t0_ms`…). What the place is CALLED
+   * comes from here — a web section is never "Page N".
+   */
+  portion?: CitedPortion | null;
+  /** The cited chunk's processed document (when read from its chunk row). */
+  documentId?: string | null;
+}
+
+/** One `processed_document_pages` row, as far as naming a place needs it. */
+export interface CitedPortion {
+  portionKind: string | null;
+  locator: Record<string, unknown> | null;
+  pageNumber: number | null;
+}
+
+/** A portion row → its naming facts. */
+export function citedPortion(row: {
+  portion_kind?: string | null;
+  locator?: unknown;
+  page_number?: number | null;
+}): CitedPortion {
+  return {
+    portionKind: row.portion_kind ?? null,
+    locator:
+      row.locator && typeof row.locator === "object" && !Array.isArray(row.locator)
+        ? (row.locator as Record<string, unknown>)
+        : null,
+    pageNumber: row.page_number ?? null,
+  };
 }
 
 /** The chunk row's facts, from `rag.kg_chunks` (`page_numbers`, `metadata`). */
@@ -108,4 +140,54 @@ export function timeRangeLabel(t0Ms: number | null, t1Ms: number | null): string
 export function pagesLabel(pages: readonly number[]): string | null {
   if (!pages.length) return null;
   return pages.length === 1 ? `Page ${pages[0]}` : `Pages ${pages[0]}–${pages[pages.length - 1]}`;
+}
+
+/** Where inside a Source a citation points — named for what the Source is. */
+export interface CitedPlace {
+  /** `page` (a PDF/file page), `section` (a web page heading), `time` (a recording), `none`. */
+  kind: "page" | "section" | "time" | "none";
+  /** "Page 36", "Mechanism › Substrate binding", "2:50–4:13"; null = nothing honest to say. */
+  label: string | null;
+  /** A recording's start (ms) — the player opens here. */
+  seekMs: number | null;
+  /** The portion's own page_number (opens the Source page on it). */
+  pageNumber: number | null;
+}
+
+function num(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/**
+ * THE one place-naming function for a citation — the popup, the viewer's
+ * header and its cited card all call it with the same inputs, so they always
+ * name the same place. A web section says its heading (the page title, the
+ * root of the path, is dropped — the chip already names the Source); a
+ * recording says its time; only a real page says "Page N". A web page never
+ * gets a page number: its "pages" are section ordinals (verify-5: "Page
+ * 2992" in the popup, "Page 31" in the viewer, for the References section).
+ */
+export function citedPlace(
+  pages: readonly number[],
+  facts: CitedChunkFacts | null | undefined,
+): CitedPlace {
+  const portion = facts?.portion ?? null;
+  const loc = portion?.locator ?? null;
+  const pageNumber = portion?.pageNumber ?? pages[0] ?? null;
+  const t0 = facts?.t0Ms ?? num(loc?.t0_ms);
+  const t1 = facts?.t0Ms != null ? facts.t1Ms : num(loc?.t1_ms);
+  if (t0 != null || portion?.portionKind === "segment") {
+    const label = timeRangeLabel(t0, t1);
+    return { kind: label ? "time" : "none", label, seekMs: t0, pageNumber };
+  }
+  if (portion?.portionKind === "section") {
+    const path = Array.isArray(loc?.heading_path)
+      ? (loc.heading_path as unknown[]).map((h) => String(h ?? "").trim()).filter(Boolean)
+      : [];
+    const shown = path.length > 1 ? path.slice(1) : path;
+    const label = shown.length ? shown.join(" › ") : null;
+    return { kind: label ? "section" : "none", label, seekMs: null, pageNumber };
+  }
+  const label = pagesLabel(pages);
+  return { kind: label ? "page" : "none", label, seekMs: null, pageNumber };
 }

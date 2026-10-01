@@ -50,8 +50,7 @@ import { useCitedChunk } from "./useCitedChunk";
 import {
   citedPages,
   citedTargetPage,
-  pagesLabel,
-  timeRangeLabel,
+  citedPlace,
 } from "./citedAnchor";
 
 // react-pdf is heavy — keep it out of the inspector chunk until a PDF is shown.
@@ -164,11 +163,11 @@ export function SourceInspectorPane({
 
   const [tab, setTab] = useState<TabKey>("match");
 
-  // A timed segment (a video, a recording) is named by its time, never pages.
-  const timeLabel = cited.facts
-    ? timeRangeLabel(cited.facts.t0Ms, cited.facts.t1Ms)
-    : null;
-  const spanLabel = timeLabel ?? pagesLabel(matchPages);
+  // Where the citation points, named by the ONE place function the citation
+  // popup also uses — a web section by its heading, a recording by its time,
+  // only a real page as "Page N" — so popup and viewer always agree.
+  const place = citedPlace(matchPages, cited.facts);
+  const spanLabel = place.label;
   const onMatchPage = matchPages.includes(activePage) || matchPages.length === 0;
 
   // ── Visual pane (the real document) ──────────────────────────────────────
@@ -282,6 +281,7 @@ export function SourceInspectorPane({
                       highlightChunkId={onMatchPage ? chunkId : null}
                       plain
                       highlightLabel={query ? "Matched" : "Cited"}
+                      placeLabel={onMatchPage ? spanLabel : undefined}
                     />
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export function SourceInspectorPane({
               : "bg-muted text-muted-foreground",
           )}
         >
-          {onMatchPage ? spanLabel : `Page ${activePage}`}
+          {onMatchPage ? spanLabel : place.kind === "page" ? `Page ${activePage}` : spanLabel}
         </span>
       ) : null}
       {!onMatchPage ? (

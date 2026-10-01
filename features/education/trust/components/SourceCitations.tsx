@@ -24,11 +24,8 @@ import CitationChip from "@/components/official/citation-chip/CitationChip";
 import type { SourceCitation, TrustEnvelope } from "../types";
 import { citationIsOpenable, openCitationSource } from "../open-source";
 import { openSourceLabel, plainLocator } from "../plainWords";
-import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
-import {
-  inspectorArgsForSourceRef,
-  sourceRefFromCitation,
-} from "../sourceRef";
+import { sourceRefFromCitation } from "../sourceRef";
+import { useCitationPlace } from "../useCitationPlace";
 
 const KIND_ICON = {
   url: LinkIcon,
@@ -55,26 +52,56 @@ export interface SourceCitationsProps {
   label?: string | null;
 }
 
+/**
+ * One chip. A citation that can open a real source names its place through
+ * the ONE place function the viewer uses (`useCitationPlace`) — the agent's
+ * own locator is never shown for it (verify-5: "Page 2992" for a web
+ * section). A citation with no openable source keeps its plain-words locator.
+ */
+function TrustCitationChip({
+  citation: c,
+  index,
+  onOpenSource,
+}: {
+  citation: SourceCitation;
+  index: number;
+  onOpenSource?: (citation: SourceCitation) => void;
+}) {
+  const ref = sourceRefFromCitation(c);
+  const { place, open } = useCitationPlace(ref);
+  const locator = ref ? (place?.label ?? null) : plainLocator(c.locator);
+  const onOpen = onOpenSource
+    ? () => onOpenSource(c)
+    : open
+      ? open
+      : citationIsOpenable(c)
+        ? () => {
+            openCitationSource(c);
+          }
+        : undefined;
+  return (
+    <CitationChip
+      icon={
+        (KIND_ICON as Record<string, typeof FileText>)[c.sourceKind] ??
+        FileText
+      }
+      label={citationLabel(c, index)}
+      locator={locator}
+      excerpt={c.excerpt}
+      onOpen={onOpen}
+      openLabel={place?.kind === "time" ? "Play from here" : openSourceLabel(c.url)}
+    />
+  );
+}
+
 export function SourceCitations({
   trust,
   className,
   onOpenSource,
   label = "Sources",
 }: SourceCitationsProps) {
-  const openRetrievedCitation = useOpenCitation();
   const citations = trust?.citations ?? [];
   if (citations.length === 0) return null;
-
-  const open = (c: SourceCitation) => {
-    if (onOpenSource) {
-      onOpenSource(c);
-      return;
-    }
-    // The ONE citation→inspector mapping (shared with SeeSourceButton).
-    const args = inspectorArgsForSourceRef(sourceRefFromCitation(c));
-    if (args) openRetrievedCitation(args);
-    else openCitationSource(c);
-  };
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
@@ -85,19 +112,11 @@ export function SourceCitations({
       )}
       <div className="flex flex-wrap gap-1">
         {citations.map((c, i) => (
-          <CitationChip
+          <TrustCitationChip
             key={`${c.sourceId}-${i}`}
-            icon={
-              (KIND_ICON as Record<string, typeof FileText>)[c.sourceKind] ??
-              FileText
-            }
-            label={citationLabel(c, i)}
-            locator={plainLocator(c.locator)}
-            excerpt={c.excerpt}
-            onOpen={
-              onOpenSource || citationIsOpenable(c) ? () => open(c) : undefined
-            }
-            openLabel={openSourceLabel(c.url)}
+            citation={c}
+            index={i}
+            onOpenSource={onOpenSource}
           />
         ))}
       </div>

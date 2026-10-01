@@ -11,7 +11,7 @@
 // same one quiz items, summaries, and mind-map nodes mount.
 
 import { plainGroundedIn } from "../plainWords";
-import { ShieldCheck } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readStoredVerification, type TrustEnvelope } from "../types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
@@ -58,9 +58,14 @@ export function CardTrustFooter({
       <div className="flex flex-wrap items-center gap-2">
         <ConfidenceBadge confidence={trust.confidence} />
         {groundedIn && (
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <ShieldCheck className="h-3 w-3" aria-hidden />
-            Grounded in {groundedIn}
+          // The badge already says "Grounded" — this slot is only WHAT it is
+          // grounded in (copy law R9: a word never repeats in one strip).
+          <span
+            className="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+            title={groundedIn}
+          >
+            <BookOpen className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="truncate">{groundedIn}</span>
           </span>
         )}
       </div>
