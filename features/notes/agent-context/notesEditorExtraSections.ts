@@ -233,3 +233,15 @@ export function createNotesEditorExtraSections(
     },
   ];
 }
+
+/**
+ * The same sections, for a component's render. The handlers in `config`
+ * touch refs (pending-save timers, live content); the React Compiler refuses
+ * a component that hands such callbacks to a plain function during render
+ * (it could call them), but trusts a hook not to — so components call this.
+ */
+export function useNotesEditorExtraSections(
+  config: NotesEditorExtraSectionsConfig,
+): ContextMenuExtraSection[] {
+  return createNotesEditorExtraSections(config);
+}

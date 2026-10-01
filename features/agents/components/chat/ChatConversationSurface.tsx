@@ -80,6 +80,21 @@ import {
   selectWorkingDocEntry,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 
+/**
+ * Opens the "open the branch?" prompt, lazily (it is only needed after a
+ * fork). Module scope because the React Compiler cannot lower a dynamic
+ * `import()` inside a component — one there made it skip the whole surface.
+ */
+function promptForkOutcomeLazily(
+  args: Parameters<
+    typeof import("@/features/agents/components/messages-display/message-options/promptForkOutcome").promptForkOutcome
+  >[0],
+): void {
+  void import(
+    "@/features/agents/components/messages-display/message-options/promptForkOutcome"
+  ).then(({ promptForkOutcome }) => promptForkOutcome(args));
+}
+
 interface ChatConversationSurfaceProps {
   /** The conversation this host shows — and therefore owns. */
   conversationId: string;
@@ -463,11 +478,7 @@ export function ChatConversationSurface({
         const newConversationId = result.payload.conversationId;
         // Ask the person whether to open the branch — not awaited, so the
         // agent gets its result while the person decides.
-        void import(
-          "@/features/agents/components/messages-display/message-options/promptForkOutcome"
-        ).then(({ promptForkOutcome }) =>
-          promptForkOutcome({ dispatch, surfaceKey, newConversationId }),
-        );
+        promptForkOutcomeLazily({ dispatch, surfaceKey, newConversationId });
         return {
           summary: `Forked at message ${record.id}: new conversation ${newConversationId} holds every message up to it. The person was asked whether to open it.`,
           data: { conversation_id: newConversationId, forked_at_message_id: record.id },

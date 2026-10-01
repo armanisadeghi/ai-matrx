@@ -9,9 +9,9 @@
 import React, {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useCallback,
-  useMemo,
 } from "react";
 import dynamic from "next/dynamic";
 import { Eye, Loader2 } from "lucide-react";
@@ -90,7 +90,7 @@ const NoteConflictWindow = dynamic(
   { ssr: false },
 );
 
-import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
+import { useNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
@@ -279,19 +279,28 @@ export function NoteContentEditor({
   const flashKeyRef = useRef(0);
 
   // ── Note switch: reset local content from Redux immediately.
-  // Done during render because it must happen before children render with
-  // the wrong noteId's content; the guard makes it strictly one-shot.
-  if (noteId !== noteIdRef.current) {
-    noteIdRef.current = noteId;
-    lastReduxRef.current = reduxContent;
+  // State resets happen during render (the state-from-previous-render
+  // pattern) so children never render with the wrong noteId's content; the
+  // guard makes it strictly one-shot. The refs and the live-content store are
+  // written in a layout effect — before paint and before any passive effect
+  // reads them. A ref read or written during render made the React Compiler
+  // skip this whole editor (no memoisation at all).
+  const [renderedNoteId, setRenderedNoteId] = useState(noteId);
+  if (noteId !== renderedNoteId) {
+    setRenderedNoteId(noteId);
     setLocalContent(reduxContent);
     conflict.resetForNoteSwitch();
-    setNoteLiveContent(noteId, reduxContent);
     setResetGen((n) => n + 1);
     // The recent-change flash is per-note — its range is meaningless once
     // we've swapped to a different document.
     setRecentChange(null);
   }
+  useLayoutEffect(() => {
+    if (noteIdRef.current === noteId) return;
+    noteIdRef.current = noteId;
+    lastReduxRef.current = reduxContent;
+    setNoteLiveContent(noteId, reduxContent);
+  }, [noteId, reduxContent]);
 
   // ── External Redux updates (realtime, undo, fetch completion).
   // Runs in an effect, not during render, to avoid cascading set-state during
@@ -621,7 +630,7 @@ export function NoteContentEditor({
     });
 
   // Notes-specific menu items wired to the REAL handlers above (no stubs).
-  const notesExtras = createNotesEditorExtraSections({
+  const notesExtras = useNotesEditorExtraSections({
     noteActionsFromTab: tabCarriesActions,
     isDirty,
     allFolders: availableFolderReferences.map((folder) => folder.name),
@@ -934,14 +943,15 @@ function NoteFindMatchOverlayRedux({
   // Compute matches directly against the local content (what the user sees
   // in the textarea right now), not the debounced Redux content. Otherwise
   // a freshly-typed character would briefly mis-position every highlight.
-  const matches = useMemo(() => {
-    if (!fr?.query) return [];
-    return computeMatches(content, fr.query, {
-      caseSensitive: fr.caseSensitive,
-      useRegex: fr.useRegex,
-      wholeWord: fr.wholeWord,
-    });
-  }, [content, fr?.query, fr?.caseSensitive, fr?.useRegex, fr?.wholeWord]);
+  // (The React Compiler memoises this; a hand-written useMemo here made it
+  // skip the component.)
+  const matches = fr?.query
+    ? computeMatches(content, fr.query, {
+        caseSensitive: fr.caseSensitive,
+        useRegex: fr.useRegex,
+        wholeWord: fr.wholeWord,
+      })
+    : [];
 
   // Bump a scroll token each time the user navigates so the overlay knows
   // to scroll the active match into view. Content changes alone shouldn't
