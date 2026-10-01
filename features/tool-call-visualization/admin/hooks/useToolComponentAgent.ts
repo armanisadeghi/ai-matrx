@@ -28,7 +28,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { abortConversation } from "@/features/agents/redux/execution-system/thunks/abort-registry";
+import { cancelExecution } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import {
   selectLatestAccumulatedText,
   selectIsStreaming,
@@ -143,11 +143,11 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
   }, [conversationId, dispatch]);
 
   const cancel = useCallback(() => {
-    if (conversationId) {
-      abortConversation(conversationId);
-    }
+    // Stop = the server stops too. A bare read abort left the detached run
+    // generating (and billing) to the end.
+    if (conversationId) void dispatch(cancelExecution(conversationId));
     settleExecuteResolve(resolveRef, null);
-  }, [conversationId]);
+  }, [conversationId, dispatch]);
 
   const execute = useCallback(
     async ({ variables, userInput }: ExecuteParams): Promise<string | null> => {
