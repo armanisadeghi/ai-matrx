@@ -168,7 +168,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                       Queued in order, kept across reloads; sent after this run
                     </p>
                     <p className="text-muted-foreground">
-                      Lightning bolt: deliver at next pause; edit until then
+                      Bolt: deliver at next pause; edit or withdraw until then
                     </p>
                     <p className="text-muted-foreground">
                       Cmd/Ctrl+Enter: next pause; add Shift to stop and redirect

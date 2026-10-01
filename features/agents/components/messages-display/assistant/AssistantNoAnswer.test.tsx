@@ -25,7 +25,7 @@ import {
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
 
 /** The engineer's to-do list, as the box wrote it. */
-const AGENT_INSTRUCTION_ADVICE = "instructions or the model it uses";
+const AGENT_INSTRUCTION_ADVICE = "instructions or model";
 
 describe("AssistantNoAnswer speaks to whoever is reading it", () => {
   let host: HTMLDivElement;
@@ -76,9 +76,9 @@ describe("AssistantNoAnswer speaks to whoever is reading it", () => {
   it("tells the Expert what happened, that nothing was lost, and what to do", () => {
     const text = renderAs(null, { onRetry: () => {} });
     expect(text).toContain("This run finished without writing an answer.");
-    expect(text).toContain("Nothing came back this time");
-    expect(text).toContain("Nothing you wrote was lost");
-    expect(text).toContain("Running it again usually settles it");
+    expect(text).toContain("Nothing came back");
+    expect(text).toContain("your message is safe");
+    expect(text).toContain("run it again");
     // The remedy has a control behind it — never a sentence with no door.
     expect(host.querySelector("button")?.textContent).toBe("Run it again");
   });
