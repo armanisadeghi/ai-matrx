@@ -69,6 +69,13 @@ import {
   clampCardCount,
   useMaxCardsPerRun,
 } from "@/features/flashcards/data/useMaxCardsPerRun";
+import {
+  addMoreRunKey,
+  cardRunRequest,
+  restoreCardRunRequest,
+  type CardRunRequest,
+} from "@/features/flashcards/data/cardRunRequest";
+import { useTabBoundRun, type TabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
 
 /** The top-up never offers "Just a topic": the cards come from material. */
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
@@ -76,6 +83,11 @@ const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k
 /** The Source input key for one deck's top-up — picks survive a reload. */
 export function addMoreSurfaceKey(setId: string): string {
   return `flashcards:add-more:${setId}`;
+}
+
+/** What a top-up that stopped with its page says (toast and dialog). */
+export function addMoreStoppedLine(count: number): string {
+  return `Adding ${count} ${count === 1 ? "card" : "cards"} stopped when the page closed.`;
 }
 
 /** A lineage origin as a ready Source draft (the deck's own material, preselected). */
@@ -122,13 +134,41 @@ export function AddMoreCardsButton({
   onAdded?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  // The top-up runs in this tab (segmented fan-out + save). A reload mid-run
+  // stops it; the run's request is kept so the deck page says so and repeats
+  // the same request in one click (useTabBoundRun).
+  const tabRun = useTabBoundRun(addMoreRunKey(setId), restoreCardRunRequest);
+  const [redo, setRedo] = useState<{ request: CardRunRequest; auto: boolean } | null>(null);
+  const stopped = tabRun.stopped;
+  const toastId = `fc-add-more-stopped:${setId}`;
+  const openRedo = useEffectEvent((auto: boolean) => {
+    if (!stopped) return;
+    setRedo({ request: stopped.request, auto });
+    setOpen(true);
+    toast.dismiss(toastId);
+    tabRun.dismiss();
+  });
+  const dismissStopped = useEffectEvent(() => tabRun.dismiss());
+  const stoppedCount = stopped?.request.count ?? null;
+  useEffect(() => {
+    if (stoppedCount === null || open) return;
+    toast.info(addMoreStoppedLine(stoppedCount), {
+      id: toastId,
+      duration: Infinity,
+      action: { label: "Try again", onClick: () => openRedo(true) },
+      onDismiss: () => dismissStopped(),
+    });
+  }, [stoppedCount, open, toastId]);
   return (
     <>
       <Button
         type="button"
         variant="outline"
         size="sm"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (stopped) openRedo(false);
+          else setOpen(true);
+        }}
         className="gap-1.5"
       >
         <Plus className="h-3.5 w-3.5" />
@@ -140,7 +180,12 @@ export function AddMoreCardsButton({
           deckName={deckName}
           deckOrganizationId={deckOrganizationId}
           existingCards={existingCards}
-          onClose={() => setOpen(false)}
+          tabRun={tabRun}
+          redo={redo}
+          onClose={() => {
+            setOpen(false);
+            setRedo(null);
+          }}
           onAdded={onAdded}
         />
       ) : null}
@@ -153,6 +198,8 @@ function AddMoreCardsDialog({
   deckName,
   deckOrganizationId,
   existingCards,
+  tabRun,
+  redo,
   onClose,
   onAdded,
 }: {
@@ -160,6 +207,9 @@ function AddMoreCardsDialog({
   deckName?: string;
   deckOrganizationId?: string | null;
   existingCards: { front: string; back: string }[];
+  tabRun: TabBoundRun<CardRunRequest>;
+  /** A run that stopped with its page: repeat it (same count, same material). */
+  redo: { request: CardRunRequest; auto: boolean } | null;
   onClose: () => void;
   onAdded?: () => void;
 }) {
@@ -190,6 +240,13 @@ function AddMoreCardsDialog({
     setOrigins(found);
     if (seeded.current) return;
     seeded.current = true;
+    if (redo) {
+      // The stopped run's own request, exactly: its material and its count.
+      for (const s of set.sources) set.remove(s.id);
+      for (const draft of redo.request.drafts) set.addReady(draft);
+      setCount(redo.request.count);
+      return;
+    }
     const lineage = found.map(originToDraft).filter((d): d is SourceDraft => !!d?.ref);
     const start = topUpSeed(saved, lineage);
     setWholeSourcesOnly(start.wholeSourcesOnly);
@@ -227,66 +284,71 @@ function AddMoreCardsDialog({
       setStatus(`Reading ${ready.length} ${ready.length === 1 ? "source" : "sources"}…`);
       const chosen = set.toSourceSet();
       const chosenNames = sourceNamesOf(set.sources);
-      const resolved = await backfillFileIds(await set.resolve());
-      if (resolved.dropped.length) {
-        toast.info(
-          resolved.dropped
-            .map((d) => d.detail ?? `One source was left out (${d.reason.replace("_", " ")}).`)
-            .join(" "),
-        );
-      }
-      setStatus(`Making ${safeCount} new cards…`);
-      const made = await generateCardsFromSources({
-        resolved,
-        count: safeCount,
-        difficulty: "medium",
-        depth: "recall",
-        title: deckName?.trim() || "Your deck",
-        existingCards,
-        ctx: {
-          dispatch,
-          store,
+      // The run lives in this tab: its request is kept until the cards are in
+      // the deck, so a reload mid-run is reported and can be repeated.
+      await tabRun.track(cardRunRequest(safeCount, chosen, chosenNames), async (settle) => {
+        const resolved = await backfillFileIds(await set.resolve());
+        if (resolved.dropped.length) {
+          toast.info(
+            resolved.dropped
+              .map((d) => d.detail ?? `One source was left out (${d.reason.replace("_", " ")}).`)
+              .join(" "),
+          );
+        }
+        setStatus(`Making ${safeCount} new cards…`);
+        const made = await generateCardsFromSources({
+          resolved,
+          count: safeCount,
+          difficulty: "medium",
+          depth: "recall",
+          title: deckName?.trim() || "Your deck",
+          existingCards,
+          ctx: {
+            dispatch,
+            store,
+            orgId,
+            onProgress: (p: ConvertProgress) =>
+              setStatus(cardProgressLine(p, safeCount, "new cards") ?? `Making ${safeCount} new cards…`),
+          },
+        });
+        if (made.cards.length === 0) {
+          throw new Error(
+            made.gapNote ??
+              "Nothing new came out of this material — the deck already covers it. Add other material and try again.",
+          );
+        }
+        setStatus("Adding them to your deck…");
+        const added = await fcService.addCards(setId, made.cards, {
           orgId,
-          onProgress: (p: ConvertProgress) =>
-            setStatus(cardProgressLine(p, safeCount, "new cards") ?? `Making ${safeCount} new cards…`),
-        },
-      });
-      if (made.cards.length === 0) {
-        throw new Error(
-          made.gapNote ??
-            "Nothing new came out of this material — the deck already covers it. Add other material and try again.",
+          startPosition: existingCards.length,
+        });
+        if (added.error) throw new Error(added.error);
+        settle();
+        // Every Source used is linked to the deck (the RPC is idempotent).
+        const result = deckLineageResult(
+          setId,
+          deckName?.trim() || "Your deck",
+          `${made.cards.length} more cards`,
         );
-      }
-      setStatus("Adding them to your deck…");
-      const added = await fcService.addCards(setId, made.cards, {
-        orgId,
-        startPosition: existingCards.length,
-      });
-      if (added.error) throw new Error(added.error);
-      // Every Source used is linked to the deck (the RPC is idempotent).
-      const result = deckLineageResult(
-        setId,
-        deckName?.trim() || "Your deck",
-        `${made.cards.length} more cards`,
-      );
-      await Promise.all(
-        made.sources.map((s) => recordSourceLineage(result, lineageSourceOf(s), orgId)),
-      );
-      // The next top-up starts from what this one used (V2-F #2).
-      const notRecorded = await saveDeckSourceSet(setId, chosen, chosenNames);
-      if (notRecorded)
-        toast.warning(
-          `The cards were added, but the parts they came from could not be saved with the deck (${notRecorded}).`,
+        await Promise.all(
+          made.sources.map((s) => recordSourceLineage(result, lineageSourceOf(s), orgId)),
         );
-      await cardGen.commit();
-      toast.success(
-        `Added ${made.cards.length} new card${made.cards.length === 1 ? "" : "s"}${
-          made.gapNote ? ` — ${made.gapNote}` : ""
-        }.`,
-      );
-      for (const s of set.sources) set.remove(s.id);
-      onAdded?.();
-      onClose();
+        // The next top-up starts from what this one used (V2-F #2).
+        const notRecorded = await saveDeckSourceSet(setId, chosen, chosenNames);
+        if (notRecorded)
+          toast.warning(
+            `The cards were added, but the parts they came from could not be saved with the deck (${notRecorded}).`,
+          );
+        await cardGen.commit();
+        toast.success(
+          `Added ${made.cards.length} new card${made.cards.length === 1 ? "" : "s"}${
+            made.gapNote ? ` — ${made.gapNote}` : ""
+          }.`,
+        );
+        for (const s of set.sources) set.remove(s.id);
+        onAdded?.();
+        onClose();
+      });
     } catch (e) {
       if (isOrganizationSelectionCancelled(e)) return;
       const message = e instanceof Error ? e.message : "More cards could not be made. Try again.";
@@ -307,10 +369,8 @@ function AddMoreCardsDialog({
     origins === null
       ? "Checking this deck's material…"
       : hasMaterial || set.sources.length > 0
-        ? wholeSourcesOnly
-          ? "This deck's material, whole. Existing cards stay."
-          : "This deck's material. Existing cards stay."
-        : "Pick what the new cards come from. Existing cards stay.";
+        ? null
+        : "Pick what the new cards come from.";
 
   const blocked = cardLimit.error
     ? cardLimit.error
@@ -321,6 +381,18 @@ function AddMoreCardsDialog({
     : ready.length === 0
       ? "Pick at least one source."
       : null;
+
+  // "Try again" on a stopped run starts it as soon as its material is back in
+  // the input — one click, the same request.
+  const [armed, setArmed] = useState(redo?.auto ?? false);
+  const fire = useEffectEvent(() => {
+    setArmed(false);
+    void start();
+  });
+  const redoCount = redo?.request.count;
+  useEffect(() => {
+    if (armed && origins !== null && !blocked && !busy && count === redoCount) fire();
+  }, [armed, origins, blocked, busy, count, redoCount]);
 
   const body = (
     <div className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto px-4 pb-4 sm:px-5">
@@ -350,15 +422,15 @@ function AddMoreCardsDialog({
           <p role="alert" className="text-xs text-destructive">
             {cardLimit.error}
           </p>
-        ) : cardLimit.max !== null ? (
-          <p className="text-xs text-muted-foreground">
-            Between {MIN_CARDS_PER_RUN} and {cardLimit.max}.
-          </p>
         ) : null}
       </div>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
+        </p>
+      ) : redo && !busy ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {addMoreStoppedLine(redo.request.count)}
         </p>
       ) : null}
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -399,7 +471,9 @@ function AddMoreCardsDialog({
       <DialogContent className="max-w-3xl gap-0 p-0">
         <DialogHeader className="px-5 py-4">
           <DialogTitle className="text-base">Add more cards</DialogTitle>
-          <DialogDescription className="text-xs">{description}</DialogDescription>
+          <DialogDescription className={description ? "text-xs" : "sr-only"}>
+            {description ?? "Add cards to this deck"}
+          </DialogDescription>
         </DialogHeader>
         {body}
       </DialogContent>

@@ -98,6 +98,13 @@ import { saveDeckSourceSet, sourceNamesOf } from "../../data/deckSourceSet";
 import { useSuppressAmbientAssistant } from "@/features/agents/components/ambient-assistant/ambientAssistantSuppression";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
+import { useTabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
+import { RunStoppedNotice } from "@/lib/wizard-draft/RunStoppedNotice";
+import {
+  CREATE_DECK_RUN_KEY,
+  cardRunRequest,
+  restoreCardRunRequest,
+} from "../../data/cardRunRequest";
 import { cardProgressLine } from "./cardProgressLine";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { DeckFileImport } from "./DeckFileImport";
@@ -203,6 +210,10 @@ export function CreateDeckPage() {
   const [notes, setNotes] = useState<string[]>([]);
   const [runError, setRunError] = useState<string | null>(null);
   const [holding, setHolding] = useState(false);
+  // The run lives in this tab (fan-out + save): a reload mid-run stops it. Its
+  // request is kept so the page says so and repeats it in one click.
+  const tabRun = useTabBoundRun(CREATE_DECK_RUN_KEY, restoreCardRunRequest);
+  const [redoCount, setRedoCount] = useState<number | null>(null);
 
   // ── A Source handed over in the link (old "from a document" links) ───────
   const seeded = useRef(false);
@@ -383,8 +394,13 @@ export function CreateDeckPage() {
     setProgress(null);
     setLiveRequestId(null);
     try {
-      if (hasSources) await runFromSources();
-      else await runFromTopic();
+      await tabRun.track(
+        cardRunRequest(safeCount, set.toSourceSet(), sourceNamesOf(set.sources), topic),
+        async () => {
+          if (hasSources) await runFromSources();
+          else await runFromTopic();
+        },
+      );
     } catch (e) {
       // "Not now" at the organization picker: nothing happened, nothing to say.
       if (isOrganizationSelectionCancelled(e)) return;
@@ -416,6 +432,28 @@ export function CreateDeckPage() {
     }
     void start();
   };
+
+  // ── A run that stopped with its page: the same request, one click ───────
+  const stoppedRun = tabRun.stopped;
+  const redoStopped = () => {
+    const req = stoppedRun?.request;
+    if (!req) return;
+    tabRun.dismiss();
+    for (const s of set.sources) set.remove(s.id);
+    for (const draft of req.drafts) set.addReady(draft);
+    set.setTopic(req.topic);
+    setCount(req.count);
+    keep({ count: req.count });
+    setMode("make");
+    setRedoCount(req.count);
+  };
+  const fireRedo = useEffectEvent(() => {
+    setRedoCount(null);
+    handleGenerate();
+  });
+  useEffect(() => {
+    if (redoCount !== null && canGenerate && count === redoCount) fireRedo();
+  }, [redoCount, canGenerate, count]);
 
   // ── "Wait for the clean version": hold, re-read, start when ready ─────────
   const poll = useEffectEvent(() => void set.manifest());
@@ -518,13 +556,9 @@ export function CreateDeckPage() {
                         <p role="alert" className="text-[11px] text-destructive">
                           {cardLimit.error}
                         </p>
-                      ) : (
-                        <p className="text-[11px] text-muted-foreground">
-                          {countMax === null
-                            ? "Reading the most cards one run may make…"
-                            : `${MIN_CARDS_PER_RUN}–${countMax}`}
-                        </p>
-                      )}
+                      ) : countMax === null ? (
+                        <p className="text-[11px] text-muted-foreground">Reading the most cards one run may make…</p>
+                      ) : null}
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="fc-difficulty">Difficulty</Label>
@@ -605,7 +639,6 @@ export function CreateDeckPage() {
                           setDeckName(e.target.value);
                           keep({ deckName: e.target.value });
                         }}
-                        placeholder="We name it for you if you leave this empty"
                         className="h-11 text-base sm:h-9"
                         disabled={busy}
                       />
@@ -646,11 +679,8 @@ export function CreateDeckPage() {
                                 ? "Opening your deck…"
                                 : "Saving your deck…"
                               : (cardProgressLine(progress, safeCount) ??
-                                `Making ${safeCount} cards${hasSources ? " from your sources" : ` about “${topic}”`}`)}
+                                `Making ${safeCount} cards${hasSources ? "" : ` about “${topic}”`}`)}
                         </p>
-                        {progress && progress.total > 1 ? null : (
-                          <p className="text-xs text-muted-foreground">Cards appear below.</p>
-                        )}
                       </div>
                     </div>
                     {notes.length ? (
@@ -695,6 +725,13 @@ export function CreateDeckPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
+                    {stoppedRun ? (
+                      <RunStoppedNotice
+                        message={`Making ${stoppedRun.request.count} cards stopped when the page closed.`}
+                        onRedo={redoStopped}
+                        onDismiss={tabRun.dismiss}
+                      />
+                    ) : null}
                     {runError ? (
                       <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -706,7 +743,7 @@ export function CreateDeckPage() {
                       {/* read-gate-exempt: counts of the sources the person added to this form and the card count they chose, not a read's rows */}
                       {blockedReason ??
                         (hasSources
-                          ? `${safeCount} cards from ${ready.length} ${ready.length === 1 ? "source" : "sources"}${topic ? `, focused on “${topic}”` : ""}. Every card cites the part it came from.`
+                          ? `${safeCount} cards from ${ready.length} ${ready.length === 1 ? "source" : "sources"}${topic ? `, focused on “${topic}”` : ""}`
                           : `${safeCount} cards about “${topic}”.`)}
                     </p>
                     <div className="flex flex-wrap items-center justify-end gap-2">
