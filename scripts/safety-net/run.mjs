@@ -192,6 +192,9 @@ async function runCheck(c) {
       r = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 20 * 60 * 1000 });
     }
     const skipped = /\bSKIPPED\b/.test(r.out) && r.code === 0;
+    // A suite that prints a verdict instead of exiting non-zero names it: passWhen / failWhen.
+    if (r.code === 0 && c.passWhen && !new RegExp(c.passWhen, "m").test(r.out)) r = { ...r, code: 1 };
+    if (c.failWhen && new RegExp(c.failWhen, "m").test(r.out)) r = { ...r, code: 1 };
     return { code: r.code, ms: r.ms, skip: skipped ? "suite SKIPPED (a dependency it declares is absent)" : null, steps: [], tail: r.out.slice(-1500) };
   }
   if (c.kind === "cmd") {
