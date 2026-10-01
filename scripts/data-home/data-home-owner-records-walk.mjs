@@ -30,8 +30,6 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
 const calls = [];
-page.on('console', (m) => { if (m.text().startsWith('[RC')) console.log('PAGE', m.text().slice(0, 200)); });
-await page.addInitScript(() => { window.__rcdbg = true; });
 const started = new Map();
 page.on("request", (r) => {
   if (r.url().includes("table_row_counts")) {

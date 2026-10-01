@@ -17,8 +17,6 @@ export interface RecordCountStore {
   /** A row on screen wants its count. */
   want: (organizationId: string, tableId: string) => void;
   subscribe: (listener: () => void) => () => void;
-  /** Bumps when any answer lands; for useSyncExternalStore. */
-  version: () => number;
 }
 
 export function createRecordCountStore(
@@ -30,10 +28,8 @@ export function createRecordCountStore(
   const pending = new Map<string, Set<string>>();
   const listeners = new Set<() => void>();
   let timer: ReturnType<typeof setTimeout> | null = null;
-  let version = 0;
 
   const notify = () => {
-    version += 1;
     listeners.forEach((l) => l());
   };
 
@@ -76,6 +72,5 @@ export function createRecordCountStore(
         listeners.delete(listener);
       };
     },
-    version: () => version,
   };
 }

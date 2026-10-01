@@ -153,17 +153,19 @@ export interface DataHomeColumnContext {
  * Table kind: list, scope, form …) are counted; a form, portal or digest row is not a Table.
  */
 export function RecordsCell({ row, store }: { row: DataHomeRow; store: RecordCountStore | undefined }) {
-  useSyncExternalStore(
+  const { organizationId, tableId } = row;
+  // The count is read THROUGH the subscription (a snapshot of this Table's own count), never from
+  // a mutable store read in render: the compiler caches a render-time read on its (unchanged) inputs.
+  const counted = useSyncExternalStore(
     store?.subscribe ?? NO_SUBSCRIBE,
-    store?.version ?? ZERO,
-    store?.version ?? ZERO,
+    () => (store && tableId ? store.get(tableId) : undefined),
+    () => undefined,
   );
-  const asks = Boolean(store) && row.itemId === row.tableId && Boolean(row.organizationId) && Boolean(row.tableId);
+  const asks = Boolean(store) && row.itemId === tableId && Boolean(organizationId) && Boolean(tableId);
   useEffect(() => {
-    if (asks && store && row.organizationId && row.tableId) store.want(row.organizationId, row.tableId);
-  }, [asks, store, row.organizationId, row.tableId]);
-  const known = row.records ?? (row.tableId ? store?.get(row.tableId) : undefined);
-  if (typeof window !== 'undefined' && (window as any).__rcdbg) console.log('[RC r]', row.tableId?.slice(0,6), String(known), store ? store.version() : 'nostore');
+    if (asks && store && organizationId && tableId) store.want(organizationId, tableId);
+  }, [asks, store, organizationId, tableId]);
+  const known = row.records ?? counted;
   if (known === undefined || known === null) {
     return (
       <Tooltip>
@@ -180,7 +182,6 @@ export function RecordsCell({ row, store }: { row: DataHomeRow; store: RecordCou
 }
 
 const NO_SUBSCRIBE = () => () => undefined;
-const ZERO = () => 0;
 
 export function dataHomeColumns(ctx: DataHomeColumnContext): EntityColumnSpec<DataHomeRow>[] {
   return [
