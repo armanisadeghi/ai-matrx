@@ -158,6 +158,7 @@ await check("nothing mints a nonce file inside the checkout", () => {
       "rg",
       [
         "-n",
+        "-F",
         "--glob", "!**/*.md",
         "--glob", "!docs/**",
         "--glob", "!**/.claude/**",

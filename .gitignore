@@ -144,6 +144,8 @@ types/database.types.ts.staging
 # Cross-repo parity tests create Python tempfile bridge modules in the repo root.
 # They are transient inputs and must never be captured by a ship-mode release.
 /tmp*.ts
+# Backstop only. Dev-login nonces are minted under /tmp/matrx-dev-login-<uid>/,
+# never here. A file matching this is a writer that drifted back into the checkout.
 .dev-login-nonce
 .dev-login-nonce.*
 
