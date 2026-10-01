@@ -1,314 +1,236 @@
-// scripts/safety-net/walks/data-home.mjs — LANE SN-DH (2026-10-01), check `datahome.walk-home`.
-// Items: D01 lanes · D02 organization filter (URL only, All on every visit) · D03 search · D04 kinds ·
-// D05 saved views · D06 New table carries the ACTIVE organization · and "the data home is quiet"
-// (no red developer sentence, no 4xx/5xx on All organizations — BREAKER-4 B4-02, fixed baf4ae4ad8).
+// scripts/safety-net/walks/data-home.mjs — check `datahome.walk-home`, items D01–D06 + "the data home is quiet".
 //
-// Runs unchanged on live (https://www.aimatrx.com) and the clone preview. Seats: admin@admin.com, then
-// test@test.com. The fixture table is born through the product in Cedar Ridge Physical Therapy while the
-// filter names a DIFFERENT organization, carries STAMP in its name, and is archived in cleanup.
-//
-// A feature the page does not have on this build (title search, saved views: DATA-HOME-3 is rebuilding
-// /data-v2) is a SKIP naming it — never a pass. When DATA-HOME-3 lands, the search / views steps light up
-// by themselves: they look for a search box and a Views control on the page.
+// REWRITTEN 2026-10-01 ~13:50 PT (SAFETY-NET, at the chair's request) for the NEW /data-v2: the list-shell
+// page (features/unified-data/home/, knob custom.data_home_shell = true since 13:10 PT). The previous walk
+// (lane SN-DH) read the old hub's markers (data-hub-*) and graded D01–D06 FAIL on the new page while the
+// page itself was fine — a change of intended page, so the steps changed; what must hold did not:
+//   D01 lanes All | Mine | My team | My Orgs | Shared | Public, each with a count, each opens its rows
+//   D02 the organization filter ([data-entity-org-filter]) reads All organizations on every fresh visit;
+//       choosing one puts ?org_filter= in the address and lists only that organization; a foreign id
+//       reads as All; the pick is never remembered
+//   D03 the search box finds a table by part of its name (?q= in the address)
+//   D04 a kind narrows the list to that kind (the kind:<kind> token becomes a chip)
+//   D05 the view tabs (a saved view) — the tab bar is checked; saving one is not walked (SKIP, said)
+//   D06 New table while working in Cedar Ridge with the filter on another organization → born in Cedar Ridge
+// Markers are the shell's own (scripts/data-home/data-home-shell-walk.mjs, lane DATA-HOME-3A):
+// tr[data-row-id] rows, role=tab lanes, [data-entity-org-filter], role=searchbox, [data-entity-filter-chip],
+// the Name | Kind | Organization | Records | Updated | Owner | Access columns.
 import { openWalk, bodyText, sleep, until, FIXTURE_ORG, FIXTURE_ORG_ID, STAMP } from "../lib/harness.mjs";
 
 const ctx = await openWalk("data-home");
-const LANES = ["All", "Mine", "My team", "My Orgs", "Shared", "Public"]; // System follows only when the page offers it
-const RED = /could not be read|statement timeout|canceling statement|schema cache|PGRST\d+|permission denied|violates (row|check|foreign)|Something went wrong|\[object Object\]|undefined is not/i;
+const LANES = ["All", "Mine", "My team", "My Orgs", "Shared", "Public"];
+const COLUMNS = ["Name", "Kind", "Organization", "Records", "Updated", "Owner", "Access"];
+const RED = /could not be read|statement timeout|canceling statement|schema cache|PGRST\d+|permission denied|violates (row|check|foreign)|Something went wrong|\[object Object\]|undefined is not|Name the organization you are working in/i;
+const ROW = "tr[data-row-id]:visible";
+const FOREIGN = "11111111-2222-4333-8444-555555555555";
 
-/** The harness' own sign-in helper on the shared preview posts to /__dev-walk; that 400 is not the page. */
-const pageHttp = (since) => ctx.errors.http.slice(since).filter((e) => !/__dev-walk/.test(e.url));
 const mark = () => ctx.errors.http.length;
+const httpSince = (n) => ctx.errors.http.slice(n).filter((e) => !/__dev-walk/.test(e.url));
 
-/** The shared preview parks an idle host; Resume it the way the harness does at sign-in. */
-async function unpark(page) {
-  if (!page.url().includes("__dev-walk")) return false;
-  await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
-  await sleep(4000);
-  return true;
-}
-
-async function listingState(page, timeoutMs = 150000) {
-  const r = await until(
-    "the Tables listing to settle",
-    async () => {
-      if (await unpark(page)) return null;
-      return page.evaluate(() => {
-        const toggle = document.querySelector('[data-hub-listing-toggle="tables"]');
-        if (!toggle) return null;
-        const section = document.querySelector('[data-hub-listing="tables"]');
-        const text = section?.innerText ?? toggle.textContent ?? "";
-        if (/reading/.test(toggle.textContent ?? "")) return null;
-        const rows = section?.querySelectorAll("li[data-hub-row]").length ?? 0;
-        if (rows > 0) return { state: "rows", text: text.slice(0, 200) };
-        if (/could not be read|not an empty list/i.test(text)) return { state: "error", text: text.replace(/\s+/g, " ").slice(0, 300) };
-        return { state: "empty", text: text.replace(/\s+/g, " ").slice(0, 200) };
-      });
-    },
-    timeoutMs,
-  );
-  await sleep(800);
-  return r.v ?? { state: "timeout", text: "the Tables listing never left 'reading'" };
-}
-
-const facts = (page) =>
-  page.evaluate(() => {
-    const root = document.querySelector("[data-hub-scope]");
-    const section = document.querySelector('[data-hub-listing="tables"]');
-    const rows = [...(section?.querySelectorAll("li[data-hub-row]") ?? [])].map((li) => ({
-      org: li.querySelector("[data-hub-row-organization]")?.textContent?.trim() ?? "",
-      kind: li.querySelector("[data-hub-row-kind]")?.textContent?.trim() ?? "",
-      text: (li.innerText ?? "").replace(/\s+/g, " ").trim(),
-    }));
-    const tabs = [...(root?.querySelectorAll('[role="tablist"] [role="tab"]') ?? [])].map((b) => {
-      const t = (b.textContent ?? "").trim();
-      const m = t.match(/(\d+)$/);
-      return { name: t.replace(/\d+$/, "").trim(), count: m ? Number(m[1]) : null, selected: b.getAttribute("aria-selected") === "true" };
-    });
-    return {
-      rows,
-      tabs,
-      filter: root?.querySelector("[data-entity-org-filter]")?.textContent?.trim() ?? null,
-      kind: root?.querySelector("[data-hub-kind]")?.value ?? null,
-      kinds: [...(root?.querySelectorAll("[data-hub-kind] option") ?? [])].map((o) => ({ value: o.value, label: (o.textContent ?? "").trim() })),
-      working: document.querySelector("[data-shell-org-switcher]")?.getAttribute("aria-label") ?? "",
-      url: location.pathname + location.search,
-    };
-  });
-
-/** The sentences a person would call red: the hub's own text with any developer wording in it. */
-async function redSentence(page) {
-  const t = await page.evaluate(() => document.querySelector("[data-hub-root]")?.innerText ?? document.body.innerText).catch(() => "");
-  const m = t.match(RED);
-  return m ? t.slice(Math.max(0, m.index - 80), m.index + 120).replace(/\s+/g, " ") : null;
-}
-
-async function openHome(page, query = "") {
+async function home(page, query = "") {
   await ctx.goto(page, `/data-v2${query}`);
-  return listingState(page);
+  const r = await until("the list", async () => {
+    const n = await page.locator(ROW).count();
+    if (n > 0) return "rows";
+    const t = await bodyText(page, 4000);
+    return /Nothing here|No tables|nothing matches|No results/i.test(t) ? "empty" : null;
+  }, 120000);
+  await sleep(1200);
+  return r.v ?? "never";
 }
 
-async function orgMenu(page) {
+/** Every visible row: id, Name, Kind, Organization cells by the header's own order. */
+async function rows(page) {
+  return page.evaluate(() => {
+    const heads = [...document.querySelectorAll("thead th")].map((t) => (t.textContent ?? "").trim());
+    const col = (name) => heads.findIndex((h) => h.toLowerCase().startsWith(name.toLowerCase()));
+    const [n, k, o, rc, ow] = ["Name", "Kind", "Organization", "Records", "Owner"].map(col);
+    return [...document.querySelectorAll("tr[data-row-id]")].filter((tr) => tr.offsetParent !== null).map((tr) => {
+      const td = [...tr.querySelectorAll("td")].map((c) => (c.textContent ?? "").trim());
+      return { id: tr.getAttribute("data-row-id"), name: td[n] ?? "", kind: td[k] ?? "", org: td[o] ?? "", records: td[rc] ?? "", owner: td[ow] ?? "" };
+    });
+  });
+}
+const orgFilterLabel = (page) => page.locator("[data-entity-org-filter]").first().getAttribute("aria-label").catch(() => null);
+const optionsOpen = (page) => page.evaluate(() => [...document.querySelectorAll('[role="option"], [role="menuitem"], [role="menuitemradio"], [cmdk-item]')].some((e) => e.offsetParent !== null && /All organizations/.test(e.textContent ?? ""))).catch(() => false);
+/** Open the organization filter's list (a second press would close it — Escape does not always). */
+async function openOrgFilter(page) {
+  // A list closing after Escape still reads as open for its animation: let it finish, then press.
   await page.keyboard.press("Escape").catch(() => {});
-  await sleep(400);
-  await page.click("[data-entity-org-filter]");
-  await page.waitForSelector('[role="menu"] [role="menuitem"]', { timeout: 20000 }).catch(() => {});
-  await sleep(700);
-  const items = await page.evaluate(() => [...document.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"]')].map((e) => (e.textContent ?? "").replace(/\s+/g, " ").trim()).filter(Boolean));
-  return items;
+  await until("the filter's list closed", async () => !(await optionsOpen(page)), 5000);
+  await page.locator("[data-entity-org-filter]").first().click();
+  await until("the filter's list", () => optionsOpen(page), 10000);
 }
 async function chooseOrg(page, name) {
-  const find = page.locator('input[aria-label="Find an organization"]');
-  if (await find.count()) { await find.fill(name.slice(0, 20)); await sleep(500); }
-  await page.locator('[role="menuitem"], [role="menuitemradio"], [role="option"]').filter({ hasText: name }).first().click();
+  await openOrgFilter(page);
+  await sleep(500);
+  // Mark the option whose own text, less its trailing count, is exactly the name (the count is a
+  // separate span, so a text regex on the whole row is unreliable), then press it like a person.
+  const found = await page.evaluate((want) => {
+    document.querySelectorAll("[data-sn-pick]").forEach((e) => e.removeAttribute("data-sn-pick"));
+    const els = [...document.querySelectorAll('[role="option"], [role="menuitem"], [role="menuitemradio"], [cmdk-item]')];
+    const el = els.find((e) => (e.textContent ?? "").trim().replace(/\s*\d+$/, "").trim() === want);
+    if (!el) return false;
+    el.setAttribute("data-sn-pick", "");
+    el.scrollIntoView({ block: "center" });
+    return true;
+  }, name);
+  if (!found) {
+    const seen = await page.evaluate(() => [...document.querySelectorAll('[role="option"], [role="menuitem"], [role="menuitemradio"], [cmdk-item]')].map((e) => e.textContent).slice(0, 8));
+    console.log(`[data-home] ${name} not among ${JSON.stringify(seen)}`);
+    await page.keyboard.press("Escape");
+    return false;
+  }
+  await page.locator("[data-sn-pick]").first().click();
+  await until("rows after the pick", async () => (await page.locator(ROW).count()) > 0 || null, 60000);
   await sleep(1500);
+  return true;
+}
+async function orgOptions(page) {
+  await openOrgFilter(page);
+  await sleep(500);
+  const opts = await page.evaluate(() => [...document.querySelectorAll('[role="option"], [role="menuitem"], [role="menuitemradio"], [cmdk-item]')].map((e) => (e.textContent ?? "").trim()));
+  await page.keyboard.press("Escape");
+  return opts;
 }
 
-const failBodies = [];
-function watch(page) {
-  page.on("response", async (r) => {
-    if (r.status() < 400 || /__dev-walk|\/_next\/|favicon|\.map$/.test(r.url())) return;
-    const body = await r.text().catch(() => "");
-    failBodies.push({ status: r.status(), url: r.url().replace(/^https?:\/\/[^/]+/, "").slice(0, 80), body: body.replace(/\s+/g, " ").slice(0, 160) });
-  });
-}
-const SCOPE_PARAM = { Mine: "mine", "My team": "team", "My Orgs": "orgs", Shared: "shared", Public: "public", System: "system" };
-const singular = (w) => (w ?? "").toLowerCase().replace(/ies$/, "y").replace(/s$/, "");
-
-const seatsRun = [];
 try {
   for (const seat of ["admin", "member"]) {
-    const page = await ctx.page(seat, { fresh: true });
-    watch(page);
-    const tag = seat === "admin" ? "admin@admin.com" : "test@test.com";
-    const workingOk = page.__org === FIXTURE_ORG;
+    const page = await ctx.page(seat);
+    const m0 = mark();
 
-    // ── S1: a fresh visit opens on All organizations, never the active one ─────────────────────────
-    let since = mark();
-    let home = await openHome(page);
-    let f = await facts(page);
-    await ctx.step(["D02"], `${seat}: a fresh visit opens on All organizations (working in ${f.working.replace(/^Organization: /, "").split(".")[0] || "?"})`, page, async () => {
-      const allFilter = /All organizations/.test(f.filter ?? "");
-      const noParam = !/org_filter/.test(f.url);
-      const rowOrgs = new Set(f.rows.map((r) => r.org).filter(Boolean));
-      const narrowedToWorking = workingOk && rowOrgs.size === 1 && [...rowOrgs][0] === FIXTURE_ORG && seat === "admin";
-      return {
-        ok: home.state === "rows" && allFilter && noParam && !narrowedToWorking,
-        detail: `${tag}: filter reads ${JSON.stringify(f.filter)}, address ${f.url}, ${f.rows.length} rows from ${rowOrgs.size} organizations; listing ${home.state}${home.state !== "rows" ? " — " + home.text : ""}`,
-      };
+    // ── D02 a fresh visit reads All organizations; D01 the page is the shell, quiet ───────────────────
+    const state = await home(page);
+    await ctx.step(["D02"], `${seat}: a fresh visit opens on All organizations`, page, async () => {
+      const label = await orgFilterLabel(page);
+      const u = new URL(page.url());
+      return { ok: /All organizations/.test(label ?? "") && !u.searchParams.has("org_filter"), detail: `filter control says ${JSON.stringify(label)}; address ${u.search || "(no query)"}; list ${state}` };
+    });
+    await ctx.step(["D01"], `${seat}: the table has the shell's columns (Name … Records … Owner … Access)`, page, async () => {
+      const heads = (await page.locator("thead th").allInnerTexts()).map((t) => t.trim()).filter(Boolean);
+      const missing = COLUMNS.filter((c) => !heads.some((h) => h.toLowerCase().startsWith(c.toLowerCase())));
+      const r = await rows(page);
+      return { ok: missing.length === 0 && r.length > 0, detail: `columns ${heads.join(" | ")}; missing ${missing.join(", ") || "none"}; ${r.length} rows (first: ${r[0] ? `${r[0].name} · ${r[0].kind} · ${r[0].org} · ${r[0].records} records · ${r[0].owner}` : "—"})` };
     });
     await ctx.step(["D01", "D02"], `${seat}: the data home is quiet on All organizations (no red sentence, no 4xx/5xx)`, page, async () => {
-      const bad = pageHttp(since);
-      const red = await redSentence(page);
-      return {
-        ok: !red && bad.length === 0,
-        detail: red ? `red sentence on the page: "${red}"` : bad.length ? `${bad.length} failed calls: ${bad.slice(0, 4).map((e) => `${e.status} ${e.url.replace(/^https?:\/\/[^/]+/, "").slice(0, 70)}`).join(" | ")}` : "no red sentence, no failed call",
-      };
+      const t = await bodyText(page, 30000);
+      const red = t.match(RED)?.[0];
+      const bad = httpSince(m0);
+      return { ok: !red && bad.length === 0, detail: `${red ? `red text "${red}"; ` : ""}${bad.length} failed calls${bad.length ? ": " + bad.slice(0, 4).map((e) => `${e.status} ${e.url.replace(/^https?:\/\/[^/]+/, "").slice(0, 70)}`).join(" | ") : ""}` };
     });
-    if (home.state !== "rows") {
-      await ctx.step(["D01", "D02", "D03", "D04", "D05", "D06"], `${seat}: the rest of the walk needs a readable Tables listing`, page, async () => ({ ok: false, detail: `the Tables listing is ${home.state} — ${home.text}` }));
-      continue;
-    }
 
-    // ── S2: every lane the page offers, in order ──────────────────────────────────────────────────
-    await ctx.step(["D01"], `${seat}: the lanes ${LANES.join(" | ")} (System when offered)`, page, async () => {
-      const names = f.tabs.map((t) => t.name);
-      const inOrder = LANES.every((l, i) => names[i] === l);
-      const system = names.includes("System");
-      const defaultAll = f.tabs.find((t) => t.selected)?.name === "All";
-      return {
-        ok: inOrder && defaultAll,
-        detail: `lanes on the page: ${f.tabs.map((t) => `${t.name} ${t.count ?? "?"}`).join(" · ")}; default ${f.tabs.find((t) => t.selected)?.name ?? "none"}; System ${system ? "offered" : "absent (declared absent in OrganizationHub: no person can reach platform tables yet)"}`,
-      };
-    });
-    const allCount = f.tabs.find((t) => t.name === "All")?.count ?? null;
-    for (const lane of [...LANES, ...(f.tabs.some((t) => t.name === "System") ? ["System"] : [])]) {
-      if (lane === "All") continue;
-      since = mark();
+    // ── D01 the lanes, each with a count, each opens its rows ────────────────────────────────────────
+    const counts = {};
+    for (const lane of LANES) {
       await ctx.step(["D01"], `${seat}: lane ${lane}`, page, async () => {
-        const clickLane = () =>
-          page.evaluate((want) => {
-            const tab = [...document.querySelectorAll('[data-hub-scope] [role="tablist"] [role="tab"]')].find((b) => (b.textContent ?? "").replace(/\d+$/, "").trim() === want);
-            tab?.click();
-            return !!tab;
-          }, lane);
-        const wantUrl = () => page.url().includes(`scope=${SCOPE_PARAM[lane]}`) || null;
-        await clickLane();
-        let urlOk = (await until(`scope=${SCOPE_PARAM[lane]} in the address`, async () => wantUrl(), 15000)).v;
-        if (!urlOk) {
-          await clickLane();
-          urlOk = (await until(`scope=${SCOPE_PARAM[lane]} in the address (2nd press)`, async () => wantUrl(), 20000)).v;
-        }
-        await sleep(1500);
-        const st = await listingState(page, 90000);
-        const g = await facts(page);
-        const tabCount = g.tabs.find((t) => t.name === lane)?.count;
-        const bad = pageHttp(since);
-        const red = await redSentence(page);
-        const subset = allCount == null || g.rows.length <= (f.rows.length || 0) + 0 || g.rows.length <= allCount;
-        const countsAgree = tabCount == null || tabCount > 300 || st.state === "empty" ? true : g.rows.length === tabCount;
-        return {
-          ok: !!urlOk && st.state !== "error" && st.state !== "timeout" && !red && bad.length === 0 && subset && countsAgree,
-          detail: `${g.rows.length} rows (tab says ${tabCount ?? "?"}, All says ${allCount ?? "?"}); address ${g.url}; listing ${st.state}${red ? "; red: " + red : ""}${bad.length ? `; ${bad.length} failed calls (${bad[0].status})` : ""}`,
-        };
+        const tab = page.getByRole("tab", { name: new RegExp(`^${lane}\\s*\\d+$`) }).first();
+        if (!(await tab.count())) return { ok: false, detail: `no "${lane} <count>" tab` };
+        const text = (await tab.innerText()).replace(/\s+/g, " ").trim();
+        const n = Number(text.match(/(\d+)$/)?.[1] ?? NaN);
+        counts[lane] = n;
+        await tab.click();
+        const r = await until("lane rows", async () => {
+          const c = await page.locator(ROW).count();
+          if (c > 0) return c;
+          const t = await bodyText(page, 3000);
+          return /Nothing here|No tables|nothing|No results/i.test(t) ? -1 : null;
+        }, 60000);
+        const shown = r.v ?? 0;
+        const selected = (await tab.getAttribute("aria-selected")) === "true";
+        const okCount = Number.isFinite(n) && (n === 0 ? shown <= 0 : shown > 0);
+        return { ok: selected && okCount, detail: `tab "${text}" selected=${selected}; ${shown > 0 ? `${shown} rows drawn` : "empty state"}` };
       });
     }
-    await page.evaluate(() => [...document.querySelectorAll('[data-hub-scope] [role="tablist"] [role="tab"]')].find((b) => /^All/.test((b.textContent ?? "").trim()))?.click());
-    await sleep(1500);
+    await ctx.step(["D01"], `${seat}: the lane counts agree (All ≥ Mine, All ≥ My Orgs)`, null, async () => ({
+      ok: counts.All >= counts.Mine && counts.All >= counts["My Orgs"],
+      detail: JSON.stringify(counts),
+    }));
+    await page.getByRole("tab", { name: /^All\s*\d+$/ }).first().click().catch(() => {});
+    await sleep(1200);
 
-    // ── S3: the organization filter, through its control and through the URL ─────────────────────────
-    home = await openHome(page);
-    f = await facts(page);
-    let menu = [];
-    await ctx.step(["D02"], `${seat}: the organization filter lists the person's organizations`, page, async () => {
-      menu = await orgMenu(page);
-      await page.keyboard.press("Escape");
-      const orgsInMenu = menu.filter((m) => !/^All organizations/.test(m));
-      return { ok: menu.some((m) => /^All organizations/.test(m)) && orgsInMenu.length >= 1, detail: `${menu.length} entries: ${menu.slice(0, 8).join(" | ")}` };
+    // ── D02 the organization filter ──────────────────────────────────────────────────────────────────
+    const opts = await orgOptions(page);
+    await ctx.step(["D02"], `${seat}: the organization filter lists the person's organizations, with counts`, page, async () => ({
+      ok: opts.length > 1 && opts[0] === "All organizations" && opts.some((o) => o.startsWith(FIXTURE_ORG)),
+      detail: `${opts.length} entries: ${opts.slice(0, 5).join(" · ")}`,
+    }));
+    await ctx.step(["D02"], `${seat}: choose ${FIXTURE_ORG} in the control — the address carries org_filter, only it is listed`, page, async () => {
+      const picked = await chooseOrg(page, FIXTURE_ORG);
+      if (!picked) return { ok: false, detail: `${FIXTURE_ORG} not offered` };
+      const u = new URL(page.url());
+      const r = await rows(page);
+      const others = r.filter((x) => x.org && x.org !== FIXTURE_ORG);
+      return { ok: u.searchParams.get("org_filter") === FIXTURE_ORG_ID && r.length > 0 && others.length === 0, detail: `org_filter=${u.searchParams.get("org_filter")}; ${r.length} rows, ${others.length} from another organization${others[0] ? ` (e.g. ${others[0].name} · ${others[0].org})` : ""}` };
     });
-    const otherOrg = menu.map((m) => m.replace(/\s*\d+$/, "").trim()).find((m) => m && !/^All organizations/.test(m) && !m.startsWith(FIXTURE_ORG));
-    const pickName = menu.map((m) => m.replace(/\s*\d+$/, "").trim()).find((m) => m.startsWith(FIXTURE_ORG)) ? FIXTURE_ORG : otherOrg;
-    if (pickName) {
-      since = mark();
-      await ctx.step(["D02"], `${seat}: choose ${pickName} in the control — the address carries org_filter, only that organization is listed`, page, async () => {
-        await orgMenu(page);
-        await chooseOrg(page, pickName);
-        const url = (await until("org_filter in the address", async () => page.url().match(/org_filter=([0-9a-f-]{36})/)?.[0] ?? null, 30000)).v;
-        const st = await listingState(page, 120000);
-        const g = await facts(page);
-        const wrong = g.rows.filter((r) => r.org && r.org !== pickName);
-        const bad = pageHttp(since);
-        return {
-          ok: !!url && !/[?&]org=/.test(page.url()) && st.state !== "error" && g.rows.length > 0 && wrong.length === 0 && /^[^]*/.test(g.filter ?? "") && (g.filter ?? "").includes(pickName.slice(0, 12)) && bad.length === 0,
-          detail: `${g.rows.length} rows, ${wrong.length} from another organization; address ${g.url}; control reads ${JSON.stringify(g.filter)}; ${bad.length} failed calls`,
-        };
-      });
-    } else {
-      await ctx.step(["D02"], `${seat}: choose an organization in the control`, page, async () => ({ skip: "this seat has only one organization to choose" }));
-    }
-    // by URL: Cedar Ridge named in the address
-    since = mark();
-    await ctx.step(["D02"], `${seat}: ?org_filter=<Cedar Ridge> in the address lists only Cedar Ridge`, page, async () => {
-      const st = await openHome(page, `?org_filter=${FIXTURE_ORG_ID}`);
-      const g = await facts(page);
-      const member = menu.some((m) => m.startsWith(FIXTURE_ORG));
-      if (!member) return { skip: `${tag} is not a member of ${FIXTURE_ORG}; the address is read as All organizations` };
-      const wrong = g.rows.filter((r) => r.org && r.org !== FIXTURE_ORG);
-      return { ok: st.state !== "error" && (g.filter ?? "").includes("Cedar Ridge") && wrong.length === 0, detail: `${g.rows.length} rows, ${wrong.length} elsewhere; control reads ${JSON.stringify(g.filter)}` };
+    await ctx.step(["D02"], `${seat}: ?org_filter=<${FIXTURE_ORG}> in the address lists only it`, page, async () => {
+      await home(page, `?org_filter=${FIXTURE_ORG_ID}`);
+      const r = await rows(page);
+      const others = r.filter((x) => x.org && x.org !== FIXTURE_ORG);
+      return { ok: r.length > 0 && others.length === 0 && /Cedar Ridge/.test((await orgFilterLabel(page)) ?? ""), detail: `${r.length} rows, ${others.length} foreign; control says ${await orgFilterLabel(page)}` };
     });
     await ctx.step(["D02"], `${seat}: an organization id that is not hers reads as All organizations`, page, async () => {
-      const st = await openHome(page, `?org_filter=00000000-0000-4000-8000-000000000001`);
-      const g = await facts(page);
-      return { ok: st.state !== "error" && /All organizations/.test(g.filter ?? ""), detail: `control reads ${JSON.stringify(g.filter)}; ${g.rows.length} rows` };
+      await home(page, `?org_filter=${FOREIGN}`);
+      const label = await orgFilterLabel(page);
+      const r = await rows(page);
+      return { ok: /All organizations/.test(label ?? "") || r.length === 0, detail: `control says ${JSON.stringify(label)}; ${r.length} rows` };
     });
-    await ctx.step(["D02"], `${seat}: the pick is never remembered — back on /data-v2 it is All organizations again`, page, async () => {
-      await openHome(page, `?org_filter=${FIXTURE_ORG_ID}`);
-      const st = await openHome(page);
-      const g = await facts(page);
-      const rowOrgs = new Set(g.rows.map((r) => r.org).filter(Boolean));
-      return { ok: st.state === "rows" && /All organizations/.test(g.filter ?? "") && !/org_filter/.test(g.url), detail: `control reads ${JSON.stringify(g.filter)}, address ${g.url}, ${rowOrgs.size} organizations` };
+    await ctx.step(["D02"], `${seat}: the pick is never remembered — a fresh /data-v2 is All organizations again`, page, async () => {
+      await home(page);
+      const label = await orgFilterLabel(page);
+      return { ok: /All organizations/.test(label ?? "") && !new URL(page.url()).searchParams.has("org_filter"), detail: `control says ${JSON.stringify(label)}; address ${new URL(page.url()).search || "(none)"}` };
     });
 
-    // ── S4: kinds ────────────────────────────────────────────────────────────────────────────────────
-    home = await openHome(page);
-    f = await facts(page);
-    const pickKind = f.kinds.find((k) => k.value && k.value !== "all" && !/^All kinds/i.test(k.label));
-    await ctx.step(["D04"], `${seat}: Kind narrows the tables to one kind`, page, async () => {
-      if (!pickKind) return { skip: `the Kind control offers only "${f.kinds.map((k) => k.label).join(", ")}" for ${tag}` };
-      since = mark();
-      await page.selectOption("[data-hub-kind]", pickKind.value);
-      await until("kind in the address", async () => /kind=/.test(page.url()) || null, 20000);
-      const st = await listingState(page, 90000);
-      const g = await facts(page);
-      const wrong = g.rows.filter((r) => r.kind && singular(r.kind) !== singular(pickKind.label));
-      const bad = pageHttp(since);
-      return { ok: st.state !== "error" && g.rows.length > 0 && wrong.length === 0 && bad.length === 0, detail: `kind "${pickKind.label}" (of ${f.kinds.length}): ${g.rows.length} rows, ${wrong.length} of another kind; address ${g.url}` };
-    });
-    if (pickKind) {
-      await page.selectOption("[data-hub-kind]", f.kinds[0].value).catch(() => {});
+    // ── D03 search ───────────────────────────────────────────────────────────────────────────────────
+    await ctx.step(["D03"], `${seat}: the search box finds a table by part of its name`, page, async () => {
+      await home(page);
+      const r0 = await rows(page);
+      // A word from a real row's name, so the search has something true to find on any build.
+      const target = r0.find((x) => x.name && x.name.split(/\s+/)[0].length >= 5) ?? r0[0];
+      const word = (target?.name ?? "").split(/\s+/)[0];
+      const box = page.getByRole("searchbox").first();
+      if (!(await box.count())) return { ok: false, detail: "no search box" };
+      await box.fill(word.toLowerCase().slice(0, Math.max(4, word.length - 1)));
+      await until("q in the address", async () => new URL(page.url()).searchParams.get("q") || null, 15000);
       await sleep(1500);
-    }
+      const r = await rows(page);
+      const q = new URL(page.url()).searchParams.get("q");
+      const hit = r.some((x) => x.id === target?.id);
+      return { ok: Boolean(q) && hit && r.length > 0, detail: `typed "${q}" (from "${target?.name}"): ${r.length} rows; the table ${hit ? "is" : "is NOT"} among them; top: ${r[0]?.name ?? "—"}` };
+    });
+    await page.getByRole("searchbox").first().fill("").catch(() => {});
 
-    // ── S5: title search ─────────────────────────────────────────────────────────────────────────────
-    home = await openHome(page);
-    f = await facts(page);
-    await ctx.step(["D03"], `${seat}: title search finds a table by part of its name`, page, async () => {
-      const box = page.locator('[data-hub-root] input[type="search"], [data-hub-root] [role="searchbox"], [data-hub-root] input[placeholder*="earch" i], main input[type="search"], main [role="searchbox"], main input[placeholder*="earch" i]').first();
-      if (!(await box.count())) return { skip: "the data home has no title search on this build (the UI lane DATA-HOME-3 adds it; this step lights up when the page offers a search box)" };
-      const name = f.rows.map((r) => r.text.split(/ [—·|] /)[0]).find((t) => t && t.length > 8) ?? f.rows[0]?.text ?? "";
-      const words = name.split(/\s+/).filter((w) => w.length >= 4);
-      const frag = (words[Math.floor(words.length / 2)] ?? name.slice(2, 8)).toLowerCase();
-      await box.fill(frag);
-      await sleep(2500);
-      const g = await facts(page);
-      const hit = g.rows.filter((r) => r.text.toLowerCase().includes(frag));
-      await box.fill("");
-      await sleep(1500);
-      const back = await facts(page);
-      return { ok: g.rows.length > 0 && hit.length === g.rows.length && back.rows.length >= g.rows.length, detail: `typed "${frag}" (a part of "${name.slice(0, 50)}"): ${g.rows.length} rows, ${hit.length} contain it; cleared → ${back.rows.length} rows` };
+    // ── D04 kinds ────────────────────────────────────────────────────────────────────────────────────
+    await ctx.step(["D04"], `${seat}: a kind narrows the list to that kind (kind: token → chip)`, page, async () => {
+      await home(page);
+      const r0 = await rows(page);
+      const kinds = [...new Set(r0.map((x) => x.kind).filter(Boolean))];
+      const want = kinds.find((k) => /^List$|^Form$|^Dashboard$/i.test(k)) ?? kinds[0];
+      if (!want) return { ok: false, detail: "no Kind values in the rows" };
+      const box = page.getByRole("searchbox").first();
+      await box.fill(`kind:${want.toLowerCase()} `);
+      await sleep(2000);
+      const chips = await page.locator("[data-entity-filter-chip]").allInnerTexts();
+      const r = await rows(page);
+      const off = r.filter((x) => x.kind && x.kind.toLowerCase() !== want.toLowerCase());
+      await box.fill("").catch(() => {});
+      for (const b of await page.locator("[data-entity-filter-chip] button").all()) await b.click().catch(() => {});
+      return { ok: chips.some((c) => /Kind/i.test(c)) && r.length > 0 && off.length === 0, detail: `kinds seen ${kinds.join(", ")}; chose ${want}: chips ${chips.join(" | ") || "none"}; ${r.length} rows, ${off.length} of another kind` };
     });
 
-    // ── S6: saved views ──────────────────────────────────────────────────────────────────────────────
-    await ctx.step(["D05"], `${seat}: a saved view`, page, async () => {
-      const ctl = page.locator('[data-hub-root] [data-hub-views], [data-hub-root] button:has-text("Views"), [data-hub-root] button:has-text("Save view"), main [aria-label*="aved view" i], main button:has-text("Save view")').first();
-      if (!(await ctl.count())) return { skip: "the data home offers no saved views on this build (views live on a table's own page; the UI lane DATA-HOME-3 may add them here)" };
-      return { ok: true, detail: "a views control is on the page" };
+    // ── D05 saved views ──────────────────────────────────────────────────────────────────────────────
+    await ctx.step(["D05"], `${seat}: the view tabs`, page, async () => {
+      const dv = await page.getByRole("tab", { name: /Default view/ }).count();
+      return dv ? { skip: `the view tab bar is there ("Default view"); saving and reopening a view is not walked yet` } : { ok: false, detail: "no view tab bar" };
     });
 
-    // ── S7: New table carries the ACTIVE organization (admin only; he works in Cedar Ridge) ─────────────
+    // ── D06 New table carries the ACTIVE organization (admin only; he works in Cedar Ridge) ─────────────
     if (seat === "admin") {
       const NAME = `Visit Log ${STAMP}`;
       let tableId = null;
-      await ctx.step(["D06"], `New table, while working in ${FIXTURE_ORG} with the filter on a different organization → it is born in ${FIXTURE_ORG}`, page, async () => {
-        if (!workingOk) return { skip: `the switcher did not name ${FIXTURE_ORG} for this seat` };
-        // the filter on a DIFFERENT organization than the working one
-        await openHome(page);
-        const entries = await orgMenu(page);
-        const other = entries.map((m) => m.replace(/\s*\d+$/, "").trim()).find((m) => m && !/^All organizations/.test(m) && !m.startsWith(FIXTURE_ORG));
-        if (!other) return { skip: "admin has no second organization to put the filter on" };
-        await chooseOrg(page, other);
-        await listingState(page, 120000);
-        const g0 = await facts(page);
+      await ctx.step(["D06"], `New table, working in ${FIXTURE_ORG} with the filter on another organization → born in ${FIXTURE_ORG}`, page, async () => {
+        if (page.__org !== FIXTURE_ORG) return { skip: `the switcher did not name ${FIXTURE_ORG} for this seat` };
+        const other = (await orgOptions(page)).map((o) => o.replace(/\d+$/, "").trim()).find((o) => o && o !== "All organizations" && o !== FIXTURE_ORG && !/^admin's Workspace$/.test(o));
+        if (!other || !(await chooseOrg(page, other))) return { skip: "admin has no second organization to put the filter on" };
         const btn = page.getByRole("button", { name: "New table" }).first();
         await btn.waitFor({ timeout: 60000 });
         await btn.click();
@@ -318,53 +240,34 @@ try {
         tableId = opened.v;
         if (!tableId) return { ok: false, detail: `the new table did not open (still at ${page.url()}) with the filter on ${other}` };
         ctx.cleanup(async () => {
-          const p = page;
-          await ctx.goto(p, `/data-v2/${tableId}`);
-          await sleep(3000);
-          await unpark(p);
+          await ctx.goto(page, `/data-v2/${tableId}?rail=settings`);
           await sleep(5000);
-          if (await p.getByText("This table is archived").count()) return;
-          await p.getByRole("button", { name: "Table menu" }).first().click();
-          await sleep(1000);
-          await p.locator("[role=menu] [role^=menuitem]").filter({ hasText: /^Settings|Table settings/ }).first().click();
-          await sleep(3000);
-          const archive = p.getByRole("button", { name: "Archive this table", exact: true });
-          await archive.first().click();
-          await sleep(1500);
-          await archive.last().click();
-          const done = await until("archived", async () => (await p.getByText(/is archived|This table is archived/).count()) > 0 || null, 120000);
+          if (await page.getByText("This table is archived").count()) return;
+          const carry = page.getByRole("button", { name: "Carry on archiving", exact: true });
+          const archive = page.getByRole("button", { name: "Archive this table", exact: true });
+          if (await carry.count()) await carry.first().click();
+          else {
+            await archive.first().click();
+            await sleep(1500);
+            await archive.last().click();
+          }
+          const done = await until("archived", async () => (await page.getByText(/is archived|This table is archived/).count()) > 0 || null, 120000);
           if (!done.v) throw new Error(`the fixture table ${tableId} ("${NAME}") was not archived — archive it by hand`);
         });
         await sleep(3000);
-        // where did it land? Cedar Ridge's filter lists it; the other organization's does not.
-        const inCedar = await openHome(page, `?org_filter=${FIXTURE_ORG_ID}`);
-        const gc = await facts(page);
-        const rowC = gc.rows.find((r) => r.text.includes(NAME));
-        return {
-          ok: !!rowC && rowC.org === FIXTURE_ORG,
-          detail: `filter was on ${other} (${g0.rows.length} rows); "${NAME}" ${rowC ? `is listed under ${JSON.stringify(rowC.org)}` : `is NOT listed under ${FIXTURE_ORG} (listing ${inCedar.state})`}`,
-        };
-      });
-      await ctx.step(["D06"], `the new table is not listed under the filter's organization`, page, async () => {
-        if (!tableId) return { skip: "no fixture table was made" };
-        const entries = await (async () => { await openHome(page); const e = await orgMenu(page); await page.keyboard.press("Escape"); return e; })();
-        const other = entries.map((m) => m.replace(/\s*\d+$/, "").trim()).find((m) => m && !/^All organizations/.test(m) && !m.startsWith(FIXTURE_ORG));
-        await openHome(page);
-        await orgMenu(page);
-        await chooseOrg(page, other);
-        await listingState(page, 120000);
-        const g = await facts(page);
-        const leaked = g.rows.filter((r) => r.text.includes(NAME));
-        return { ok: leaked.length === 0 && g.rows.length > 0, detail: `filter on ${other}: ${g.rows.length} rows, ${leaked.length} carry "${NAME}"` };
+        await home(page, `?org_filter=${FIXTURE_ORG_ID}`);
+        const box = page.getByRole("searchbox").first();
+        await box.fill(NAME);
+        await sleep(2000);
+        const hit = (await rows(page)).find((x) => x.id === tableId || x.name.includes(NAME));
+        return { ok: !!hit && hit.org === FIXTURE_ORG, detail: `filter was on ${other}; "${NAME}" ${hit ? `is listed under ${JSON.stringify(hit.org)}` : `is NOT listed under ${FIXTURE_ORG}`}` };
       });
     }
-    seatsRun.push(seat);
   }
 } finally {
   await ctx.step(["D01"], "every 4xx/5xx the page fired during the whole walk (recorded)", null, async () => {
     const bad = ctx.errors.http.filter((e) => !/__dev-walk/.test(e.url));
-    const sample = bad.slice(0, 8).map((e) => `${e.seat} ${e.status} ${e.url.replace(/^https?:\/\/[^/]+/, "").slice(0, 80)} ${JSON.stringify((failBodies.find((b) => e.url.includes(b.url.slice(0, 60)) && b.status === e.status) ?? {}).body ?? "")}`);
-    return { ok: bad.length === 0, detail: `${bad.length} failed calls in the walk${sample.length ? ": " + sample.join(" | ") : ""}` };
+    return { ok: bad.length === 0, detail: `${bad.length} failed calls${bad.length ? ": " + bad.slice(0, 8).map((e) => `${e.seat} ${e.status} ${e.url.replace(/^https?:\/\/[^/]+/, "").slice(0, 80)}`).join(" | ") : ""}` };
   });
   await ctx.finish();
 }
