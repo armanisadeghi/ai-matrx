@@ -128,13 +128,13 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "ai.assistants",
     "label": "Default AI model",
-    "description": "Answers chat and drafting unless you pick another",
+    "description": "Answers chat and drafting unless you pick another.",
     "controlId": "settings-control-model-default-ai-model"
   },
   {
     "tabId": "ai.textGeneration",
     "label": "Default AI model",
-    "description": "Answers chat and drafting unless you pick another",
+    "description": "Answers chat and drafting unless you pick another.",
     "controlId": "settings-control-model-style-default-ai-model"
   },
   {
@@ -203,7 +203,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "editor.codeWorkspace",
     "label": "Load per-tab type definitions",
-    "description": "Typings for React, Lucide and shadcn in code tabs.",
+    "description": "Typings for React, Lucide, shadcn and Node in code tabs.",
     "controlId": "settings-control-editor-type-environments-load-per-tab-type-definitions"
   },
   {
@@ -471,7 +471,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "admin.server",
     "label": "Desktop instance",
-    "description": "Desktop app for delegated tools; Auto keeps default routing",
+    "description": "Desktop app for delegated tools; Auto keeps default routing.",
     "controlId": "settings-control-desktop-app-dev-override-desktop-instance"
   },
   {

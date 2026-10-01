@@ -217,7 +217,7 @@ export default function CodeWorkspaceTab() {
               aga-app, tool-ui and sandbox tabs. */}
           <SettingsSwitch
             label="Load per-tab type definitions"
-            description="Typings for React, Lucide and shadcn in code tabs."
+            description="Typings for React, Lucide, shadcn and Node in code tabs."
             helpText="Turn off to see plain TypeScript errors instead."
             checked={monacoEnvironmentsEnabled ?? true}
             onCheckedChange={setMonacoEnvironmentsEnabled}

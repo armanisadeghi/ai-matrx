@@ -78,7 +78,7 @@ export default function VoicesTab() {
     <>
       <SettingsSubHeader
         title="Voices"
-        description="Every voice AI Matrx speaks with, one per kind of listening"
+        description="Every voice AI Matrx speaks with, one per kind of listening."
         icon={AudioLines}
       />
 
@@ -210,7 +210,7 @@ export default function VoicesTab() {
         </SettingsRow>
         <SettingsRow
           label="Chats you share publicly"
-          description="Signed-out viewers of a chat you shared"
+          description="Signed-out viewers of a chat you shared."
           anchorId="voice-public-chat"
           labelFor={null}
         >

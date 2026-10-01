@@ -40,7 +40,7 @@ export default function TextGenerationTab() {
             This row is a door to it instead of a second, dead picker. */}
         <SettingsLink
           label="Default AI model"
-          description="Answers chat and drafting unless you pick another"
+          description="Answers chat and drafting unless you pick another."
           helpText="Your organization can set one for everyone; yours wins for you."
           href={settingDoorHref({
             scope: "user",

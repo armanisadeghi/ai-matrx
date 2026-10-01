@@ -108,7 +108,7 @@ export default function AdminServerTab() {
       <SettingsSection title="Desktop app (dev override)" icon={Monitor}>
         <SettingsSelect<string>
           label="Desktop instance"
-          description="Desktop app for delegated tools; Auto keeps default routing"
+          description="Desktop app for delegated tools; Auto keeps default routing."
           warning={desktopInstancesError}
           badge={{ label: "Admin", variant: "admin" }}
           value={desktopTargetInstanceId ?? "auto"}

@@ -64,7 +64,7 @@ export default function AssistantTab() {
             read — this row is a door to the real one. */}
         <SettingsLink
           label="Default AI model"
-          description="Answers chat and drafting unless you pick another"
+          description="Answers chat and drafting unless you pick another."
           helpText="Your organization can set one for everyone; yours wins for you."
           href={settingDoorHref({
             scope: "user",

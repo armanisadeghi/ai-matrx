@@ -24,12 +24,12 @@ export default function OrganizationsTab() {
           <SettingsSwitch
             icon={Link2}
             label="Switch organization when a link asks"
-            // Links to organizations you are not a member of are always refused.
             description={
               switchWhenALinkAsks
                 ? "On: a link opens in its organization; we say when you move."
                 : "Off: links never move you; we offer the switch as a click."
             }
+            helpText="Links to organizations you are not a member of are always refused."
             checked={switchWhenALinkAsks}
             onCheckedChange={setSwitchWhenALinkAsks}
             last

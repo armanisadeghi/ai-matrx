@@ -65,7 +65,7 @@ export default function ConversationFiltersTab() {
     <>
       <SettingsSubHeader
         title="Conversation filters"
-        description="Which surfaces each history view shows by default"
+        description="Which surfaces each history view shows by default."
         icon={Filter}
       />
 
