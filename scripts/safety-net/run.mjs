@@ -222,7 +222,7 @@ async function runCheck(c) {
       ? // LIVE: the whole SESSION is read-only, so a suite's own begin … commit (the preamble has one)
         // cannot open a writing transaction on production.
         `set session characteristics as transaction read only;\nset default_transaction_read_only = on;\n${vars}\n\\i ${c.file}\n`
-      : `\\set expect '${TARGET === "clone" ? "clone" : "main"}'\n${vars}\n${suiteRef}\n`;
+      : `\\set expect '${TARGET === "clone" ? "clone" : "main"}'\n${vars}\n${c.sessionSql ?? ""}\n${suiteRef}\n`;
     let r = await run(PSQL, [DSN, "-v", "ON_ERROR_STOP=1", "-X", "-f", "-"], { input: wrapped, log, timeoutMs: c.timeoutMs ?? 20 * 60 * 1000 });
     // The clone is shared by many lanes: a lock / statement timeout is the neighbours, not the
     // product. Retry ONCE after a pause, and say so in the log; a second timeout is a FAIL.
