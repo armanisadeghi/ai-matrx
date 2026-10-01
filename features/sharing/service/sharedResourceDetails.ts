@@ -94,33 +94,16 @@ export async function getResourceDetails(
           : null;
       }
 
-      // A TABLE, WHEREVER IT LIVES (lane INTEG-CLIENTS, CUTOVER-PLAN rev 3 F14). The older
-      // screen shares as "dataset", the record-store screen as "record"; a moved table keeps its
-      // id, so the store is asked first and the older store answers only what the store does not
-      // hold. Before this branch both types fell to the default: "Shared dataset" linking
-      // /datasets/<id>, a page that does not exist.
+      // A TABLE OR A RECORD (lane INTEG-CLIENTS, CUTOVER-PLAN rev 3 F14), in the record store.
+      // A grant made before the final switch names a table "dataset"; the store holds it under
+      // the same id.
       case "dataset":
-      case "udt_datasets":
       case "record": {
         const inStore = await sharedStoreItem(supabase, resourceId);
-        if (inStore) {
-          return {
-            title: inStore.title,
-            url: await linkCarriesItsOrganization(`${siteUrl}${inStore.path}`, inStore.organizationId),
-          };
-        }
-        if (resourceType === "record") return null;
-        const { data } = await supabase
-          .schema("workbench")
-          .from("udt_datasets")
-          .select("table_name, organization_id")
-          .eq("id", resourceId)
-          .is("deleted_at", null)
-          .maybeSingle();
-        return data
+        return inStore
           ? {
-              title: data.table_name || "Untitled table",
-              url: await linkCarriesItsOrganization(`${siteUrl}/data/${resourceId}`, data.organization_id ?? null),
+              title: inStore.title,
+              url: await linkCarriesItsOrganization(`${siteUrl}${inStore.path}`, inStore.organizationId),
             }
           : null;
       }

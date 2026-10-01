@@ -63,7 +63,6 @@ One RLS-backed permissions system that shares a record with a named person or wi
 
 - `utils/permissions/service.ts` — all DB calls; every write routes through a `SECURITY DEFINER` RPC
 - `utils/permissions/shareLinks.ts` — no-login link tokens (mint/list/revoke/`resolveShareToken`) + `forkSharedResource` / `isForkable` (duplicate-to-edit fork RPCs)
-- `features/sharing/emailService.ts` — client-side resource-shared notification (legacy; prefer server route)
 - `lib/email/exportService.ts` → `emailShareLink()` — email-link-to-self helper
 
 **API routes**
@@ -188,7 +187,6 @@ Two supported patterns (see README for full snippets):
 
 - **Resource shared with user** — server route `POST /api/sharing/notify` (called fire-and-forget from `shareWithUser()`). Uses `lib/email/client.ts` + `emailTemplates.resourceShared()`. Respects `user_email_preferences.sharing_notifications`.
 - **Email link to self** — server route `POST /api/sharing/email-link`. User-initiated from `ShareModal` header button.
-- `features/sharing/emailService.ts` is a parallel client-side path kept for legacy callers; new code should use the API routes (server owns `RESEND_API_KEY` + `EMAIL_FROM`).
 
 ### 6. Adding a new shareable resource type (the pattern)
 
@@ -421,7 +419,6 @@ and token landing, `acquisition` flag for conversion chrome). Charter + plan:
 
 Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) resolves grants via token-agnostic `iam.has_access` (verified live for `note`, `fc_set` 2026-07-07), so `rls_uses_has_permission=true` for all canonicalized types. The flag now only marks genuinely-legacy rows whose own RLS model doesn't call the grant path (`analysis_recipes`, `auto_ingest_batch`, `file_*` satellites, `scraper_*`) — a known state, not a TODO. Active areas:
 
-- `features/sharing/emailService.ts` is on a slow deprecation path — prefer the `/api/sharing/notify` server route for all new notification paths.
 - The TS registry mirror (`utils/permissions/registry.ts`) is reconciled with the DB and the parity test is green (2026-07-07).
 
 ---

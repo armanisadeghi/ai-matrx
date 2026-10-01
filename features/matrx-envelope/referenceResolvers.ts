@@ -32,10 +32,6 @@ import {
   CATALOG_NOUNS,
 } from "@/features/matrx-envelope/catalog-nouns.generated";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
-import {
-  parseTableMetadata,
-  type TableMetadata,
-} from "@/features/data-tables/types";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 // Static, not `await import()`: this module reaches ~714 entry contexts and the seam adds ~31
 // modules (`pnpm lab:graph`, 2026-09-23) — an async edge here would be a new chunk-group split in
@@ -49,18 +45,14 @@ import {
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
- * IS THIS TABLE IN THE RECORD STORE? (lane INTEG-CLIENTS, CUTOVER-PLAN F10.) A moved table
- * keeps its id and its older copy is ARCHIVED, so every `udt_*` read below would answer a
- * moved table from the archive (or not at all, for a table born in the store). A table the
- * record store holds is read through the data seam instead — the grid's own doors. The table
- * names its OWN organization (`custom.where_id_opens`, inside `locateTable`), never the active
- * one (active-org law, rule 5).
+ * WHERE THIS TABLE OPENS. The table names its OWN organization (`custom.where_id_opens`, inside
+ * `locateTable`), never the active one (active-org law, rule 5); a located table is read through
+ * the data seam — the grid's own doors.
  */
-async function inTheRecordStore(tableId: string | undefined): Promise<boolean> {
+async function located(tableId: string | undefined): Promise<boolean> {
   if (!tableId) return false;
   try {
-    const where = await locateTable(tableId);
-    return where.ok && where.store === "record";
+    return (await locateTable(tableId)).ok;
   } catch {
     return false;
   }
@@ -205,94 +197,35 @@ function createRecordResolver(config: RecordResolverConfig): ReferenceResolver {
 }
 
 /**
- * Live value of a single dataset-row cell: `udt_dataset_rows.data[column]`.
- *
- * A `relation` column stores a RECORD ID, so this used to paste a raw uuid into
- * a prompt wherever somebody wrote `@table_cell` at a customer column — reader 8
- * of OLD-TABLES-CUTOVER rev 2 §3.3. It now resolves through the older store's
- * own words door, the same one the grid uses, so the agent reads the customer's
- * name. Every other column is stringified exactly as before.
+ * Live value of a single table-row cell. A `relation` column stores a RECORD ID, so it resolves
+ * through the store's own words door, the same one the grid uses: the agent reads the customer's
+ * name, never a bare record id. Every other column is stringified.
  */
 async function resolveCell(
-  supabase: SupabaseClient,
   rowId: string | undefined,
   column: string | undefined,
   tableId?: string,
 ): Promise<string | undefined> {
-  if (!rowId || !column) return undefined;
-  if (await inTheRecordStore(tableId)) {
-    // The record store's own row and, for a relation column, its own words door — the
-    // agent reads the customer's name, never a bare record id (rev 2 §3.3, carried).
-    const cells = await storeRow(tableId!, rowId);
-    if (!cells) return undefined;
-    const raw = cells[column];
-    const couldBeRelation =
-      typeof raw === "string" ? isUuidShape(raw.trim()) : Array.isArray(raw);
-    if (!couldBeRelation) return stringify(raw);
-    // The words door names the RECORDS a relation cell points at, by their ids.
-    const ids = (Array.isArray(raw) ? raw : [raw])
-      .filter((v): v is string => typeof v === "string" && isUuidShape(v.trim()))
-      .map((v) => v.trim());
-    const words = await readRelationWords({ tableId: tableId!, fieldName: column, rowIds: ids });
-    return ids.map((id) => words.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
-  }
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_dataset_rows")
-    .select("data, table_id, organization_id")
-    .eq("id", rowId)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (error || !data) return undefined;
-  const row = data as {
-    data?: Record<string, unknown> | null;
-    table_id?: string | null;
-    organization_id?: string | null;
-  };
-  const cells = row.data;
-  if (!cells || typeof cells !== "object") return undefined;
+  if (!rowId || !column || !tableId) return undefined;
+  if (!(await located(tableId))) return undefined;
+  const cells = await storeRow(tableId, rowId);
+  if (!cells) return undefined;
   const raw = cells[column];
-
-  // Is this column a relation? The format lives on the field row, so it is one
-  // read, and only for a cell that could be one (a uuid, or a list of them).
   const couldBeRelation =
     typeof raw === "string" ? isUuidShape(raw.trim()) : Array.isArray(raw);
-  if (!couldBeRelation || !row.table_id || !row.organization_id) return stringify(raw);
-
-  const { data: field } = await supabase
-    .schema("workbench")
-    .from("udt_dataset_fields")
-    .select("metadata")
-    .eq("table_id", row.table_id)
-    .eq("field_name", column)
-    .is("deleted_at", null)
-    .maybeSingle();
-  const format = (field as { metadata?: { format?: { id?: string; options?: Record<string, unknown> } } } | null)
-    ?.metadata?.format;
-  if (format?.id !== "relation") return stringify(raw);
-
+  if (!couldBeRelation) return stringify(raw);
+  // The words door names the RECORDS a relation cell points at, by their ids.
   const ids = (Array.isArray(raw) ? raw : [raw])
     .filter((v): v is string => typeof v === "string" && isUuidShape(v.trim()))
     .map((v) => v.trim());
-  const { data: words } = await supabase
-    .schema("workbench")
-    .rpc("udt_row_words_many", {
-      p_organization_id: row.organization_id,
-      p_display: format.options?.display ?? null,
-      p_row_ids: ids,
-    });
-  const byId = new Map<string, string>();
-  for (const w of (Array.isArray(words) ? words : []) as { row_id?: string; words?: string | null }[]) {
-    if (w?.row_id && typeof w.words === "string") byId.set(w.row_id, w.words);
-  }
-  // An id nothing resolved keeps its identifier rather than vanishing: a prompt
-  // that silently dropped a reference would be worse than one that says the
-  // reference did not resolve.
-  return ids.map((id) => byId.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
+  const words = await readRelationWords({ tableId, fieldName: column, rowIds: ids });
+  // An id nothing resolved keeps its identifier rather than vanishing: a prompt that silently
+  // dropped a reference would be worse than one that says the reference did not resolve.
+  return ids.map((id) => words.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
 }
 
 /**
- * The name of a table (the `table` / `dataset` reference), from whichever store holds it.
+ * The name of a table (the `table` / `dataset` reference).
  * The id is `table_id` (canonical), `id` (the catalog's generic ref) or `dataset_id` (legacy).
  */
 function tableNameResolver(): ReferenceResolver {
@@ -300,23 +233,12 @@ function tableNameResolver(): ReferenceResolver {
   return {
     openItemType: "table",
     openId: idOf,
-    resolveValue: async (supabase, ref) => {
+    resolveValue: async (_supabase, ref) => {
       const tableId = idOf(ref);
       if (!tableId) return stringify(ref.label);
-      if (await inTheRecordStore(tableId)) {
-        const details = await readTableDetails(tableId);
-        return details.success ? (stringify(details.table?.name) ?? stringify(details.table?.description)) : undefined;
-      }
-      const { data, error } = await supabase
-        .schema("workbench")
-        .from("udt_datasets")
-        .select("table_name, description")
-        .eq("id", tableId)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (error || !data) return undefined;
-      const row = data as { table_name?: string | null; description?: string | null };
-      return stringify(row.table_name) ?? stringify(row.description);
+      if (!(await located(tableId))) return undefined;
+      const details = await readTableDetails(tableId);
+      return details.success ? (stringify(details.table?.name) ?? stringify(details.table?.description)) : undefined;
     },
   };
 }
@@ -335,27 +257,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.list_id) return undefined;
-      const { data, error } = await supabase
-        .schema("workbench")
-        .from("udt_structured_lists")
-        .select("list_name, description")
-        .eq("id", ref.list_id)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (error || !data) {
-        // lane LISTS-AFTER-SWITCH: a list that lives in the new system (its organization
-        // switched its Data tables) has no live older row; the selection door answers it
-        // from its Table of choices, same id.
-        const moved = await supabase.rpc("get_structured_list_for_selection", { p_list_id: ref.list_id });
-        const doc = (moved.data ?? null) as { list_name?: string | null; description?: string | null } | null;
-        if (moved.error || !doc) return undefined;
-        return stringify(doc.list_name) ?? stringify(doc.description);
-      }
-      const row = data as {
-        list_name?: string | null;
-        description?: string | null;
-      };
-      return stringify(row.list_name) ?? stringify(row.description);
+      const read = await supabase.rpc("get_structured_list_for_selection", { p_list_id: ref.list_id });
+      const doc = (read.data ?? null) as { list_name?: string | null; description?: string | null } | null;
+      if (read.error || !doc) return undefined;
+      return stringify(doc.list_name) ?? stringify(doc.description);
     },
   },
 
@@ -374,45 +279,25 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openItemType: "structured_list",
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
-      if (!ref.item_id) return undefined;
-      const { data, error } = await supabase
-        .schema("workbench")
-        .from("udt_structured_list_items")
-        .select("description, label")
-        .eq("id", ref.item_id)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if ((error || !data) && ref.list_id) {
-        // lane LISTS-AFTER-SWITCH: a choice of a list that lives in the new system is read from
-        // its Table of choices through the list door (which shows a description to an editor).
-        const moved = await supabase.rpc("get_user_list_with_items", { p_list_id: ref.list_id });
-        const doc = (moved.data ?? null) as {
-          lives_in?: string;
-          items_grouped?: Record<string, Array<{ id: string; label?: string | null; description?: string | null }>> | null;
-        } | null;
-        if (moved.error || doc?.lives_in !== "record") return undefined;
-        const item = Object.values(doc.items_grouped ?? {}).flat().find((i) => i.id === ref.item_id);
-        if (!item) return undefined;
-        return stringify(item.description) ?? stringify(item.label);
-      }
-      if (error || !data) return undefined;
-      const row = data as {
-        description?: string | null;
-        label?: string | null;
-      };
-      return stringify(row.description) ?? stringify(row.label);
+      if (!ref.item_id || !ref.list_id) return undefined;
+      // The list door shows a choice's description to an editor.
+      const read = await supabase.rpc("get_user_list_with_items", { p_list_id: ref.list_id });
+      const doc = (read.data ?? null) as {
+        items_grouped?: Record<string, Array<{ id: string; label?: string | null; description?: string | null }>> | null;
+      } | null;
+      if (read.error || !doc) return undefined;
+      const item = Object.values(doc.items_grouped ?? {}).flat().find((i) => i.id === ref.item_id);
+      if (!item) return undefined;
+      return stringify(item.description) ?? stringify(item.label);
     },
   },
 
-  // ── Table (udt dataset) family ─────────────────────────────────────────────
+  // ── Table family ───────────────────────────────────────────────────────────
   /**
    * `table` → { table_id }. Live value = the table name.
    *
    * 🚨 `table` is an ALIAS of `dataset` in the server-published catalog
-   * (`CATALOG_ALIASES`), so this key was never reached: every `@table` chip went to the
-   * catalog-derived `dataset` resolver, which reads `ref.id` from `workbench.udt_datasets`
-   * — nothing for a `{ table_id }` ref, and the ARCHIVED copy for a moved table. Both keys
-   * now share one resolver (lane INTEG-CLIENTS, F10).
+   * (`CATALOG_ALIASES`), so both keys share one resolver (lane INTEG-CLIENTS, F10).
    */
   // Both open as the item-presentation `table` type (entity token `dataset`); the derived
   // resolver had cast the noun "dataset", which is not an item type at all.
@@ -423,31 +308,12 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   table_schema: {
     openItemType: "table",
     openId: (ref) => ref.table_id,
-    resolveValue: async (supabase, ref) => {
+    resolveValue: async (_supabase, ref) => {
       if (!ref.table_id) return undefined;
-      // ONE call: get_full_table returns the dataset row plus its columns
-      // already ordered by field_order, and no row data. (This used to be two
-      // parallel queries rebuilding the same thing by hand.)
-      let meta: TableMetadata;
-      if (await inTheRecordStore(ref.table_id)) {
-        const read = await getTableMetadata({ tableId: ref.table_id });
-        if (!read.success) return undefined;
-        meta = read.data;
-      } else {
-        const { data, error } = await supabase.rpc("get_full_table", {
-          ref: { table_id: ref.table_id },
-        });
-        // A resolver's contract is "render the live value or nothing" — it has no
-        // surface to raise into, so an unreachable dataset (P0002) resolves to
-        // undefined exactly like any other failure. It is NOT rewritten into an
-        // absence claim, which is the whole point of the D167 class.
-        if (error) return undefined;
-        try {
-          meta = parseTableMetadata(data);
-        } catch {
-          return undefined;
-        }
-      }
+      if (!(await located(ref.table_id))) return undefined;
+      const read = await getTableMetadata({ tableId: ref.table_id });
+      if (!read.success) return undefined;
+      const meta = read.data;
       const name =
         stringify(meta.table.table_name) ?? stringify(ref.table_name);
       const cols = meta.columns
@@ -476,35 +342,16 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   table_column: {
     openItemType: "table",
     openId: (ref) => ref.table_id,
-    resolveValue: async (supabase, ref) => {
+    resolveValue: async (_supabase, ref) => {
       if (!ref.table_id || !ref.column_name) return undefined;
-      if (await inTheRecordStore(ref.table_id)) {
-        const read = await getTableMetadata({ tableId: ref.table_id });
-        const column = read.success
-          ? (read.data.columns as Array<{ field_name?: string; display_name?: string }>).find(
-              (c) => c.field_name === ref.column_name,
-            )
-          : undefined;
-        return stringify(column?.display_name) ?? stringify(ref.column_name);
-      }
-      const { data, error } = await supabase
-        .schema("workbench")
-        .from("udt_dataset_fields")
-        .select("display_name, field_name")
-        .eq("table_id", ref.table_id)
-        .eq("field_name", ref.column_name)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (error || !data) return stringify(ref.column_name);
-      const row = data as {
-        display_name?: string | null;
-        field_name?: string | null;
-      };
-      return (
-        stringify(row.display_name) ??
-        stringify(row.field_name) ??
-        stringify(ref.column_name)
-      );
+      if (!(await located(ref.table_id))) return stringify(ref.column_name);
+      const read = await getTableMetadata({ tableId: ref.table_id });
+      const column = read.success
+        ? (read.data.columns as Array<{ field_name?: string; display_name?: string }>).find(
+            (c) => c.field_name === ref.column_name,
+          )
+        : undefined;
+      return stringify(column?.display_name) ?? stringify(ref.column_name);
     },
   },
 
@@ -515,22 +362,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   table_row: {
     openItemType: "table",
     openId: (ref) => ref.table_id,
-    resolveValue: async (supabase, ref) => {
+    resolveValue: async (_supabase, ref) => {
       if (!ref.row_id) return undefined;
-      let cells: Record<string, unknown> | null | undefined;
-      if (await inTheRecordStore(ref.table_id)) {
-        cells = await storeRow(ref.table_id!, ref.row_id);
-      } else {
-        const { data, error } = await supabase
-          .schema("workbench")
-          .from("udt_dataset_rows")
-          .select("data")
-          .eq("id", ref.row_id)
-          .is("deleted_at", null)
-          .maybeSingle();
-        if (error || !data) return undefined;
-        cells = (data as { data?: Record<string, unknown> | null }).data;
-      }
+      if (!ref.table_id || !(await located(ref.table_id))) return undefined;
+      const cells = await storeRow(ref.table_id, ref.row_id);
       if (!cells || typeof cells !== "object") return undefined;
       const preview = Object.values(cells)
         .map((v) => stringify(v))
@@ -548,8 +383,8 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   table_cell: {
     openItemType: "table",
     openId: (ref) => ref.table_id,
-    resolveValue: async (supabase, ref) =>
-      resolveCell(supabase, ref.row_id, ref.column_name, ref.table_id),
+    resolveValue: async (_supabase, ref) =>
+      resolveCell(ref.row_id, ref.column_name, ref.table_id),
   },
 
   /**
@@ -560,8 +395,8 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   dataset_cell: {
     openItemType: "table",
     openId: (ref) => ref.dataset_id ?? ref.table_id,
-    resolveValue: async (supabase, ref) =>
-      resolveCell(supabase, ref.row_id, ref.field_name ?? ref.column_name, ref.dataset_id ?? ref.table_id),
+    resolveValue: async (_supabase, ref) =>
+      resolveCell(ref.row_id, ref.field_name ?? ref.column_name, ref.dataset_id ?? ref.table_id),
   },
 
   // ── RecordRef family (atomic Matrx entities) ───────────────────────────────

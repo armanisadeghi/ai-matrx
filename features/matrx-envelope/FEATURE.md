@@ -137,9 +137,10 @@ render through the SAME live chip renderer.
   `resolveValue` fetches the LIVE value from Supabase (never throws; returns `undefined` on miss
   → chip falls back to the item's display hint); `openItemType` is the `item-presentation`
   `KnownItemType` reused for click-to-open, `openId` is the underlying entity (picklist / table,
-  NOT the cell). All 7 record types registered (+ `dataset_cell` alias): `picklist`/`picklist_group`/
-  `picklist_item` over `udt_picklists`/`udt_picklist_items`; `table`/`table_column`/`table_row`/
-  `table_cell` over `udt_datasets`/`udt_dataset_fields`/`udt_dataset_rows`. `url` is registered too
+  NOT the cell). All 7 record types registered (+ `dataset_cell` alias): `structured_list`/`_group`/
+  `_item` through the list doors (`get_structured_list_for_selection`, `get_user_list_with_items`);
+  `table`/`table_schema`/`table_column`/`table_row`/`table_cell` through the record store's data seam
+  (`locateTable` → `features/data-tables/service`). `url` is registered too
   but returns the URL/label as-is (`resolveValue` is a no-op — nothing to look up). Adding a reference
   type = one entry here.
 - `MatrxEnvelopeBlock.tsx` — the ```matrx fence renderer, and **the prefix-DEFAULT

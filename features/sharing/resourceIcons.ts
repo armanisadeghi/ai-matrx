@@ -61,11 +61,10 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   research_template: FlaskConical,
   research_topic: Search,
   skill: FlaskConical,
-  udt_datasets: Table,
   udt_documents: FileText,
   structured_list: ListChecks,
   udt_workbooks: Table,
-  // Registry TOKENS for the same three (the keys above are table names). The
+  // Registry TOKENS for the same (the keys above are table names). The
   // trash surface keys off entity_types.token, so both spellings resolve.
   dataset: Table,
   workbook: Table,
@@ -73,9 +72,6 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   // The record store's token (custom.record): Trash lists its archived Tables and Records under it
   // (lane TRASH-TABLES).
   record: Table,
-  // One archived row of a Data table (workbench.udt_dataset_rows): Trash lists it once the
-  // registry row carries user_artifact_kind 'dataset_row'. Until then nothing renders it.
-  udt_dataset_rows: Table,
   sandbox_instance: Boxes,
   wc_claim: Building2,
   feature_doc: FileText,
