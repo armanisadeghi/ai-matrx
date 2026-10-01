@@ -751,7 +751,7 @@ function ConsentForm({
       <p className="mt-3 text-center text-[11px] text-muted-foreground">
         Revoke access anytime from{" "}
         <a
-          href="/settings"
+          href="/user-settings"
           className="underline underline-offset-2 hover:text-foreground transition-colors"
         >
           AI Matrx settings

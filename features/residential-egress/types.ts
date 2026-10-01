@@ -165,12 +165,10 @@ export const HELPER_DOWNLOADS: ReadonlyArray<{
  * The DURABLE route for "my computers" — the Devices & sync settings tab
  * (registry id `files.devices`) on the route-driven settings surface.
  *
- * 🚨 NOT `/settings?tab=devices`. That URL — the one the helper's tray menu
- * opens — hits `app/(transitional)/settings/page.tsx`, which redirects to
- * `/settings/profile` and drops the whole query string on the way, so neither
- * the tab nor `?computer=` ever reaches this list. Every link WE own points
- * here; the tray's link is matrx-local's to change (recorded in the feature
- * doc and in the cross-repo contract).
+ * Every link WE own points here. The helper tray's `/settings?tab=devices`
+ * (matrx-local's to change) is a config redirect to this same route since
+ * 2026-10-01 (`utils/next-config/legacySettingsRedirects.js`), and Next keeps
+ * the query, so `?computer=` arrives too.
  */
 export const HOME_CONNECTIONS_HREF = "/user-settings/files/devices";
 

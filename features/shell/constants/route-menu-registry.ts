@@ -54,17 +54,6 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     importFn: () => import("@/features/settings/route-menu/SettingsRouteMenu"),
   },
   {
-    // The account pages under /settings (Profile, Connectors, Vault, Sandbox…)
-    // — their menu used to be a second sidebar + a second bottom dock inside
-    // the page.
-    // Two of its rows live outside /settings (Vault, Agent shortcuts); the
-    // menu stays with them so a click never makes it vanish.
-    pathPattern: /^\/(?:settings|vault|agents\/shortcuts)(?:\/|$)/,
-    iconName: "User",
-    label: "Account",
-    importFn: () => import("@/features/settings/route-menu/AccountSettingsRouteMenu"),
-  },
-  {
     pathPattern: AGENT_RUN_PATH_PATTERN,
     iconName: "Webhook",
     label: "Agent Runs",

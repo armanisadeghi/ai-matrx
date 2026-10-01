@@ -359,9 +359,7 @@ function ApprovalCard({ code }: { code: string }) {
           size="sm"
           variant="outline"
           className="mt-3 h-7 text-xs"
-          // The DURABLE devices route. `/settings?tab=devices` (the tray's
-          // link) redirects to the profile page and drops the query on the
-          // way, so it never reaches this list — see the feature doc.
+          // The DURABLE devices route (HOME_CONNECTIONS_HREF).
           onClick={() => router.push(HOME_CONNECTIONS_HREF)}
         >
           See my computers

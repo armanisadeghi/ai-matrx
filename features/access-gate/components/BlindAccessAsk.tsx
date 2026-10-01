@@ -7,7 +7,7 @@
  * A stranger who opens an unshared object and a person who opens a random id see the SAME page:
  * "We couldn't find this <kind>. If someone shared a link with you, you can ask for access." and
  * this one control. Pressing it calls `public.access_request_blind`, which files the ordinary
- * request (the owner's /settings/access-requests inbox and an in-app notice) for a real object and
+ * request (the owner's /user-settings/access-requests inbox and an in-app notice) for a real object and
  * nothing for a missing one. The asker is told the same sentence either way and never who owns it.
  */
 

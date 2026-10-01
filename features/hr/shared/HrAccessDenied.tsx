@@ -143,7 +143,7 @@ function NOOP() {}
  * the ORGANIZATION, not an HR record — so `access_denied_context` names the
  * employer honestly (organizations carry `allow_preview = true`), and
  * `access_request_create` routes the ask to that organization's owners and
- * admins, who land it in their `/settings/access-requests` inbox. No HR record
+ * admins, who land it in their `/user-settings/access-requests` inbox. No HR record
  * is named, asked about, or confirmed to exist anywhere in this path.
  *
  * ⚠️ Granting the ask writes an ordinary `iam.permissions` row on the

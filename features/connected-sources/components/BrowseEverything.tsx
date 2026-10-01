@@ -60,7 +60,7 @@ import {
 } from "../browse/surface";
 import { formatCount } from "@ai-matrx/kit/format";
 
-const INTEGRATIONS_HREF = "/settings/integrations";
+const INTEGRATIONS_HREF = "/user-settings/integrations";
 /** Per-viewer convenience only: the account this browser last looked at. */
 const PICK_STORAGE_KEY = "connected-sources:account";
 

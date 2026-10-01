@@ -85,7 +85,7 @@ export const SEVERAL_ACCOUNTS_UNNAMED_SENTENCE =
   "More than one of your Google accounts can be read here, and we could not tell which ones from the answer. Open Settings → Connectors → Google to see the accounts you have connected, then try again.";
 
 /** Where that sentence sends a person. */
-export const GOOGLE_CONNECTIONS_HREF = "/settings/integrations";
+export const GOOGLE_CONNECTIONS_HREF = "/user-settings/integrations";
 
 /**
  * The email-shaped names in a sentence, de-duplicated, in first-seen order.

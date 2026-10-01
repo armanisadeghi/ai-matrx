@@ -224,7 +224,7 @@ export function PlanUsagePanel({
           looking at.
         </p>
         <Button size="sm" variant="outline" className="mt-2" asChild>
-          <a href="/settings/organizations">Choose an organization</a>
+          <a href="/user-settings/organizations">Choose an organization</a>
         </Button>
       </div>
     );

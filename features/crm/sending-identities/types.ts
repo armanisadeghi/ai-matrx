@@ -90,8 +90,8 @@ export const FIX_COPY: Record<
   // a real destination, not a shrug — a gate a user cannot act on is the dead end
   // this whole map exists to prevent.
   upgrade_plan: { label: "See what unlocks sending", kind: "link", href: "/pricing" },
-  connect_mailbox: { label: "Connect a mailbox", kind: "link", href: "/settings/integrations" },
-  reconnect_mailbox: { label: "Reconnect Google", kind: "link", href: "/settings/integrations" },
+  connect_mailbox: { label: "Connect a mailbox", kind: "link", href: "/user-settings/integrations" },
+  reconnect_mailbox: { label: "Reconnect Google", kind: "link", href: "/user-settings/integrations" },
   publish_dns_record: { label: "Show me the record to publish", kind: "guide" },
   check_domain: { label: "Check the domain now", kind: "action" },
   check_authentication: { label: "Check authentication now", kind: "action" },

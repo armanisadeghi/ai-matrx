@@ -251,7 +251,7 @@ export const NAV_WINDOW_PANEL_ACTIONS: Record<
     tileId: "tile.preferences",
     label: "Preferences Window",
     iconName: NAV_WINDOW_PANEL_ICON,
-    href: "/settings",
+    href: "/user-settings",
   },
   "open-json-truncator-panel": {
     tileId: "tile.json-truncator",

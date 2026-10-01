@@ -207,7 +207,7 @@ export const bringUpChecklist = registerChecklist<BringUpContext>({
               reason: `Not connected yet: ${missing.join("; ")}.`,
               detail:
                 "Sign up, copy the key each service gives you, and save it on the Keys page — Hunter's under the name HUNTER_API_KEY, MillionVerifier's under MILLIONVERIFIER_API_KEY.",
-              fix: { label: "Open the Keys page", href: "/settings/secrets" },
+              fix: { label: "Open the Keys page", href: "/vault" },
             };
           }
           return { status: "pass" };

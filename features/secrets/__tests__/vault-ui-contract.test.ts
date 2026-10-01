@@ -248,13 +248,17 @@ describe("shared vault UI contract", () => {
   });
 
   test("keeps the legacy settings URL on the canonical full Vault", () => {
-    const settingsEntrySource = readFileSync(
-      join(process.cwd(), "app/(transitional)/settings/secrets/page.tsx"),
-      "utf8",
-    );
+    // The page shim became a config redirect when the /settings/* pages were
+    // retired (2026-10-01): one rule, no second Vault presentation.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { legacySettingsRedirects } = require(
+      join(process.cwd(), "utils/next-config/legacySettingsRedirects.js"),
+    ) as { legacySettingsRedirects: { source: string; destination: string; has?: unknown }[] };
 
-    expect(settingsEntrySource).toContain('redirect("/vault")');
-    expect(settingsEntrySource).not.toContain("VaultWorkspace");
+    expect(
+      legacySettingsRedirects.find((rule) => rule.source === "/settings/secrets" && !rule.has)
+        ?.destination,
+    ).toBe("/vault");
   });
 
   test("starts creation with the basic purposes, including protected files", () => {

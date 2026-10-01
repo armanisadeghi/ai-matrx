@@ -293,7 +293,7 @@ export function AcquisitionConsolePage() {
           count={data.connected.length}
           aside={
             <Link
-              href="/settings/integrations"
+              href="/user-settings/integrations"
               className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
             >
               Connections

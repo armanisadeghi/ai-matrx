@@ -6,7 +6,7 @@
  * plus the context we already know. No new message store:
  *
  *   owner = an organization → `setting_access_request_create` — the durable
- *           `iam.access_requests` row (inbox at /settings/access-requests) plus
+ *           `iam.access_requests` row (inbox at /user-settings/access-requests) plus
  *           an actionable DM to that org's owners/admins.
  *   owner = the system      → a `users.user_feedback` item (the platform team's
  *           queue), because nobody in an organization can change it.

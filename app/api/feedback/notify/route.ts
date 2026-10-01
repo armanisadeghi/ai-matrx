@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         }
 
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aimatrx.com';
-        const portalUrl = `${siteUrl}/settings/feedback`;
+        const portalUrl = `${siteUrl}/user-settings/feedback`;
 
         // Prepare email
         const emailContent = emailTemplates.feedbackStatusUpdate(

@@ -6,6 +6,9 @@ const { getHeaders } = require("./utils/next-config/headers");
 const {
   adminLegacyRouteRedirects,
 } = require("./utils/next-config/adminRouteRedirects");
+const {
+  legacySettingsRedirects,
+} = require("./utils/next-config/legacySettingsRedirects");
 // const { remotePatterns } = require("./utils/next-config/imageConfig");
 const { configureWebpack } = require("./utils/next-config/webpackConfig");
 const copyFiles = require("./utils/next-config/copyFiles");
@@ -427,6 +430,9 @@ const nextConfig = {
   async redirects() {
     return [
       ...adminLegacyRouteRedirects,
+      // The retired /settings/* pages → /user-settings (2026-10-01). Links to
+      // them live in sent email and DM rows, so these never go away.
+      ...legacySettingsRedirects,
       // 2026-08-26 (HRB-022): the HR workflow spec built `/hr/inbox` into every
       // deep link before SPEC-UI-IA ruled `/hr/tasks` canonical. There is exactly
       // ONE HR inbox, so the old path is a config redirect rather than a second

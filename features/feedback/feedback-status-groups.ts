@@ -12,7 +12,7 @@ export const FEEDBACK_COUNT_GROUPS = {
 
 export type FeedbackCountGroup = keyof typeof FEEDBACK_COUNT_GROUPS;
 
-export const FEEDBACK_LIST_HREF = "/settings/feedback";
+export const FEEDBACK_LIST_HREF = "/user-settings/feedback";
 
 export function feedbackListHref(group?: FeedbackCountGroup): string {
   return group ? `${FEEDBACK_LIST_HREF}?show=${group}` : FEEDBACK_LIST_HREF;

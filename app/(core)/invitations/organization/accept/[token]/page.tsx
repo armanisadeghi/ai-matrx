@@ -222,7 +222,7 @@ export default function AcceptInvitationPage() {
     setDeclining(true);
     toast.info("Invitation declined");
     setTimeout(() => {
-      router.push("/settings/organizations");
+      router.push("/user-settings/organizations");
     }, 1000);
   };
 
@@ -278,7 +278,7 @@ export default function AcceptInvitationPage() {
                 <ErrorAlchemyMenu error={error} />
               </p>
               <Button
-                onClick={() => router.push("/settings/organizations")}
+                onClick={() => router.push("/user-settings/organizations")}
                 variant="outline"
               >
                 Go to Organizations

@@ -2314,7 +2314,7 @@ export const settingsItem: ShellNavItem = {
     },
     {
       label: "Preferences Window",
-      href: "/settings",
+      href: SETTINGS_BASE,
       iconName: NAV_WINDOW_PANEL_ICON,
       panelAction: "open-preferences-panel",
     },

@@ -14,7 +14,7 @@ test("REGRESSION: a legacy GitHub callback never exchanges a code or exposes a t
   expect(response.status).toBe(307);
   const redirect = new URL(response.headers.get("location") ?? "");
   expect(redirect.pathname).toBe("/api/github/oauth/complete");
-  expect(redirect.searchParams.get("return_url")).toBe("/settings/integrations");
+  expect(redirect.searchParams.get("return_url")).toBe("/user-settings/integrations");
   expect(redirect.searchParams.get("github_error")).toBe(
     "Connect GitHub from AI Matrx Settings.",
   );

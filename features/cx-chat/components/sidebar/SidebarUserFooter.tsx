@@ -57,7 +57,7 @@ export function SidebarUserFooter() {
   return (
     <div className="flex-shrink-0 border-t border-border">
       <Link
-        href="/settings/preferences"
+        href="/user-settings"
         className="flex items-center gap-2.5 px-2.5 py-2.5 hover:bg-accent/40 transition-colors group"
       >
         <Avatar className="h-6 w-6 flex-shrink-0">

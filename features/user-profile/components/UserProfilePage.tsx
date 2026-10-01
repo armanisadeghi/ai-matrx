@@ -840,7 +840,7 @@ function WritingVoiceSection() {
       icon={PenLine}
     >
       <Link
-        href="/settings/profile/voice"
+        href="/user-settings/account/writing-voice"
         className="text-sm font-medium text-primary hover:underline"
       >
         Open your writing voice

@@ -178,7 +178,7 @@ export function parseConnectionRow(entry: unknown, index: number): ConnectedRow 
       `connections[${index}].last_verified_at`,
     ),
     action: connectionAction(status),
-    href: "/settings/integrations",
+    href: "/user-settings/integrations",
     note: r.optStr(row.last_error, `connections[${index}].last_error`),
   };
 }

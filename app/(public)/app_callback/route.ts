@@ -25,7 +25,7 @@ const providerConfig = {
  */
 function githubConnectionRedirect(request: NextRequest): NextResponse {
   const url = new URL("/api/github/oauth/complete", request.url);
-  url.searchParams.set("return_url", "/settings/integrations");
+  url.searchParams.set("return_url", "/user-settings/integrations");
   url.searchParams.set(
     "github_error",
     "Connect GitHub from AI Matrx Settings.",

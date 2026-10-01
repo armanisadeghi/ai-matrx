@@ -150,7 +150,7 @@ export default function AcceptProjectInvitationPage() {
       if (result.success && result.project) {
         toast.success(`Welcome to ${result.project.name}!`);
         // Navigate to the project — need org slug, fall back to settings/projects
-        router.push('/settings/projects');
+        router.push('/projects');
       } else {
         toast.error(result.error ?? 'Failed to accept invitation');
         setError(result.error ?? 'Failed to accept invitation');
@@ -168,7 +168,7 @@ export default function AcceptProjectInvitationPage() {
     setDeclining(true);
     toast.info('Invitation declined');
     setTimeout(() => {
-      router.push('/settings/projects');
+      router.push('/projects');
     }, 1000);
   };
 
@@ -208,7 +208,7 @@ export default function AcceptProjectInvitationPage() {
               <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">Invalid Invitation</h2>
               <p className="text-red-700 dark:text-red-300">{error} <ErrorAlchemyMenu error={error} /></p>
               <div className="flex gap-3 justify-center pt-4">
-                <Button onClick={() => router.push('/settings/projects')} variant="outline">
+                <Button onClick={() => router.push('/projects')} variant="outline">
                   My Projects
                 </Button>
                 <Button onClick={() => router.push('/dashboard')}>Dashboard</Button>

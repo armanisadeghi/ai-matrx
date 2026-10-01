@@ -151,12 +151,12 @@ export async function POST(request: NextRequest) {
         feedback.description,
         storedMessage.content,
         storedMessage.sender_name || "Admin",
-        // /settings is declared organization-free in
+        // /user-settings is declared organization-free in
         // platform.organization_free_link_prefixes() — account settings are about the
         // person — so this comes back unchanged. It goes through the helper anyway, so
         // the day that ruling changes this link follows it without an edit here.
         await linkCarriesItsOrganization(
-          `${siteUrl}/settings/feedback`,
+          `${siteUrl}/user-settings/feedback`,
           feedback.organization_id,
         ),
       );

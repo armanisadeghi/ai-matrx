@@ -179,7 +179,7 @@ export interface AccessRequestCreated {
   delivered?: number;
 }
 
-/** A row in either direction of `/settings/access-requests`. */
+/** A row in either direction of `/user-settings/access-requests`. */
 export interface AccessRequestRow {
   id: string;
   status: AccessRequestStatus;

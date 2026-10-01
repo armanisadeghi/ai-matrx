@@ -58,7 +58,7 @@ import {
 export const NEEDS_YOU_SOURCE_KEY = "capture_ladder.needs_your_browser";
 
 /** Where a person goes to add or connect the extension. A real, existing page. */
-export const EXTENSION_SETUP_ROUTE = "/settings/extension";
+export const EXTENSION_SETUP_ROUTE = "/user-settings/extension";
 
 /**
  * A backstop only. The producer resolves the row the moment the queue empties;

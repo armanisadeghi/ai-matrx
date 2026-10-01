@@ -4,9 +4,9 @@
  * SettingsPresentationContext
  *
  * Lets any component inside the settings surface know *how* it's being
- * rendered — as a standalone route (`/settings/profile`,
- * `/settings/organizations`, …), as the desktop window panel
- * (`userPreferencesWindow`), or as the mobile push-nav drawer.
+ * rendered — on the `/user-settings/*` route, as the desktop window panel
+ * (`userPreferencesWindow`), or as the mobile push-nav drawer. All three
+ * render the SAME settings core (registry + SettingsTabHost).
  *
  * The bug this solves: components like `<SettingsLink>`,
  * `<OrganizationCard>`, and `<UserMessageTemplateManager>` call
@@ -233,13 +233,11 @@ export function useSettingsNavigate() {
  *
  * Pass `fallbackHref` for cases where the route-mode equivalent is a
  * separate page entirely. When no fallback is supplied we route to the
- * tab's own canonical URL under `/user-settings` (`tabIdToHref`) — NOT
- * the legacy `/settings/preferences?tab={id}` redirect, which resolves
- * into the OLD `userPreferencesWindow` overlay (a different, pre-registry
- * settings UI) rather than landing on the tab itself. A door that used
- * the legacy fallback used to silently do nothing useful when clicked
- * from a standalone `/user-settings/*` route (settings-truth-audit,
- * 2026-09-25 — caught via the Voice input → Devices door).
+ * tab's own canonical URL under `/user-settings` (`tabIdToHref`). The
+ * retired `/settings/preferences?tab={id}` address is only a config
+ * redirect to that same URL now (utils/next-config/legacySettingsRedirects.js);
+ * `userPreferencesWindow` is the SAME settings core in a window, not an
+ * older UI.
  */
 export function useSettingsTabNavigate() {
   const router = useRouter();

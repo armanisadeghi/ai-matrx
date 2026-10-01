@@ -17,10 +17,12 @@ describe("route menu registry", () => {
     expect(match("/administration/users")).toBe("Administration");
     expect(match("/user-settings")).toBe("Settings");
     expect(match("/user-settings/appearance")).toBe("Settings");
-    // The Account menu stays with every row it holds, inside /settings or not.
-    expect(match("/settings/integrations")).toBe("Account");
-    expect(match("/vault")).toBe("Account");
-    expect(match("/agents/shortcuts")).toBe("Account");
+    // The retired /settings/* pages had an "Account" menu (deleted 2026-10-01):
+    // their addresses redirect to /user-settings, and Vault and Agent
+    // shortcuts are ordinary pages on the main nav.
+    expect(match("/settings/integrations")).toBeNull();
+    expect(match("/vault")).toBeNull();
+    expect(match("/agents/shortcuts")).toBeNull();
     const topic = "/research/topics/0b6f2c1e-3a4d-4e5f-8a9b-0c1d2e3f4a5b";
     expect(match(topic)).toBe("Research Topic");
     expect(match(`${topic}/intelligence`)).toBe("Research Topic");

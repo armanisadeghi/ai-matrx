@@ -6,10 +6,10 @@
  */
 
 /**
- * Base URL for the new route-driven settings surface. Lives at `/user-settings`
- * during migration so it can coexist with the legacy `/settings/*` standalone
- * pages and the live `userPreferencesWindow` overlay. Once the overlay is
- * retired this should be renamed to `/settings`.
+ * Base URL for the route-driven settings surface. The legacy `/settings/*`
+ * pages are retired (2026-10-01) and their URLs are 307 config redirects here
+ * (utils/next-config/legacySettingsRedirects.js — never 308, so a later rename
+ * of this base back to `/settings` cannot meet a browser-cached loop).
  */
 export const SETTINGS_BASE = "/user-settings";
 
