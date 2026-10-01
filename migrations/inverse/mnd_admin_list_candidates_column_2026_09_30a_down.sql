@@ -1,4 +1,5 @@
 -- Inverse of migrations/mnd_admin_list_candidates_column_2026_09_30.sql:
+-- based-on: mandate._admin_list_read(text, text, text, uuid, text, jsonb, text, text, integer, integer, jsonb) 282aa7531262db472b3256d194ca66287c9cdd2dfe8e222d80eba5d9ce8be853
 -- mandate._admin_list_read gets back its body without the page rows'
 -- `candidate` cell, and the helper goes.
 

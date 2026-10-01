@@ -1,4 +1,5 @@
 -- Inverse of mnd_run_history_excludes_candidate_legs_2026_09_30.sql: the definition before it.
+-- based-on: public.mnd_run_history(text, text, uuid, uuid, text, integer, integer) 3ce033dea34022c1f2e885b02fffb64a243ee339c09621e1f413d1c34dcb98cb
 
 CREATE OR REPLACE FUNCTION public.mnd_run_history(p_mandate_key text, p_view text DEFAULT 'mine'::text, p_org_id uuid DEFAULT NULL::uuid, p_user_id uuid DEFAULT NULL::uuid, p_status text DEFAULT NULL::text, p_limit integer DEFAULT 25, p_offset integer DEFAULT 0)
  RETURNS jsonb
