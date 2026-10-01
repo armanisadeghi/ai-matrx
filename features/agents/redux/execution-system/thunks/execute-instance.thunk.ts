@@ -129,7 +129,12 @@ import {
   clearUserInput,
 } from "../instance-user-input/instance-user-input.slice";
 import { hasAbortController } from "./abort-registry";
-import { isDuplicateSubmittedInput } from "./submit-claims";
+import {
+  claimExecution,
+  isDuplicateSubmittedInput,
+  isExecutionClaimed,
+  releaseExecutionClaim,
+} from "./submit-claims";
 import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
 import {
   selectIsBlockMode,
@@ -187,6 +192,44 @@ export function shouldContinuePersistedConversation(
   isEphemeral: boolean,
 ): boolean {
   return !isEphemeral && (!cacheOnly || hasPriorTurns);
+}
+
+/** True when `user_input` carries nothing a provider can read as a message. */
+export function isEmptyUserInput(userInput: unknown): boolean {
+  if (userInput === undefined || userInput === null) return true;
+  if (typeof userInput === "string") return userInput.trim().length === 0;
+  if (!Array.isArray(userInput)) return false;
+  return userInput.every((part) => {
+    if (!part || typeof part !== "object") return true;
+    const p = part as { type?: unknown; text?: unknown };
+    return p.type === "text" && (typeof p.text !== "string" || p.text.trim() === "");
+  });
+}
+
+/**
+ * THE EMPTY-TURN RULE (W-32). A persisted follow-up turn sends only
+ * `user_input`; empty, it is a request with no message. Turn 1 may be empty
+ * (the agent's own messages and variables build it), and so may a server
+ * conversation that has no turns yet; a retry sends none.
+ */
+export function refusesEmptyTurn(args: {
+  retry: boolean;
+  hasPriorTurns: boolean;
+  cacheOnly: boolean;
+  isEphemeral: boolean;
+  userInput: unknown;
+}): boolean {
+  if (args.retry || !args.hasPriorTurns) return false;
+  if (
+    !shouldContinuePersistedConversation(
+      args.cacheOnly,
+      args.hasPriorTurns,
+      args.isEphemeral,
+    )
+  ) {
+    return false;
+  }
+  return isEmptyUserInput(args.userInput);
 }
 
 // =============================================================================
@@ -515,6 +558,9 @@ export const executeInstance = createAsyncThunk<
 
     let firstTurnSnapshotStamped = false;
     let streamStarted = false;
+    // The door's synchronous claim (W-32) — taken below, before the first
+    // await; released once `status: "running"` is set, or on any exit.
+    let admission: symbol | null = null;
     try {
       // `let`, not `const`: the organization gate below can suspend for human
       // time and commit a new active organization, and everything downstream
@@ -526,6 +572,69 @@ export const executeInstance = createAsyncThunk<
         // access-errors: ok — browser-local Redux lookup; the instance is absent from the loaded store, no record read involved
         throw new Error(`Conversation ${conversationId} not found`);
       }
+
+      // ── Concurrent-turn guard (second layer behind smartExecute) ──────────
+      // A live abort controller means a stream is OPEN on this conversation.
+      // Starting another turn now would corrupt the run: the new controller
+      // evicts the old one from the abort registry (stream #1 becomes
+      // unabortable), both runs share one instance status, and the server
+      // interleaves history writes (the continue endpoint takes no run
+      // claim). The server supports exactly this case via the Turn-Boundary
+      // Inbox — reconcile there instead of killing the request, and scream:
+      // reaching this line means a caller bypassed smartExecute's routing.
+      //
+      // It runs BEFORE the first await (W-32): every await below (the
+      // organization gate, the live-page refresh, the context rules) is a
+      // window in which the conversation still reads idle, so a second
+      // dispatch checked after them was admitted too. `claimExecution` closes
+      // that window synchronously; `status: "running"` takes over once set.
+      const claimHeldElsewhere = isExecutionClaimed(conversationId);
+      if (
+        claimHeldElsewhere ||
+        hasAbortController(conversationId) ||
+        instance.status === "running" ||
+        instance.status === "streaming"
+      ) {
+        const pendingInput =
+          state.instanceUserInput.byConversationId[conversationId];
+        const pendingText = pendingInput?.text ?? "";
+        const duplicateDispatch = isDuplicateSubmittedInput(pendingInput);
+        (claimHeldElsewhere ? console.warn : console.error)(
+          `[execute-instance] refused a concurrent turn on conversation ` +
+            `"${conversationId}" — ` +
+            (claimHeldElsewhere
+              ? "another dispatch is already sending this turn; it sends the composer as it stands, so this one was dropped."
+              : "a stream is already open. ") +
+            (claimHeldElsewhere
+              ? ""
+              : duplicateDispatch
+              ? "The exact already-submitted draft was dropped as a duplicate."
+              : pendingText.trim()
+                ? "Reconciled: the message was QUEUED and delivers when the run finishes."
+                : "No message text to queue; the duplicate dispatch was dropped.") +
+            " Callers must route sends through smartExecute.",
+        );
+        // A held claim means the claiming dispatch has not read the composer
+        // yet — it will send it. Queueing it here would send it twice.
+        if (!claimHeldElsewhere && !duplicateDispatch && pendingText.trim()) {
+          const { enqueueInboxMessage } = await import("../inbox/inbox.thunks");
+          dispatch(
+            enqueueInboxMessage({
+              conversationId,
+              text: pendingText.trim(),
+              mode: "queue",
+            }),
+          );
+          dispatch(clearUserInput(conversationId));
+        }
+        return rejectWithValue(
+          claimHeldElsewhere || duplicateDispatch
+            ? "Duplicate submit refused — the message is already running"
+            : "Concurrent turn refused — message queued until the run finishes",
+        );
+      }
+
+      admission = claimExecution(conversationId);
 
       // Second client-side boundary behind smartExecute. Several internal
       // surfaces invoke this thunk directly; they must not mutate draft or
@@ -551,52 +660,6 @@ export const executeInstance = createAsyncThunk<
       // had just selected one, which is the only case it exists for.
       state = getState() as RootState;
       executionOrganizationForRequest(state, conversationId);
-
-      // ── Concurrent-turn guard (second layer behind smartExecute) ──────────
-      // A live abort controller means a stream is OPEN on this conversation.
-      // Starting another turn now would corrupt the run: the new controller
-      // evicts the old one from the abort registry (stream #1 becomes
-      // unabortable), both runs share one instance status, and the server
-      // interleaves history writes (the continue endpoint takes no run
-      // claim). The server supports exactly this case via the Turn-Boundary
-      // Inbox — reconcile there instead of killing the request, and scream:
-      // reaching this line means a caller bypassed smartExecute's routing.
-      if (
-        hasAbortController(conversationId) ||
-        instance.status === "running" ||
-        instance.status === "streaming"
-      ) {
-        const pendingInput =
-          state.instanceUserInput.byConversationId[conversationId];
-        const pendingText = pendingInput?.text ?? "";
-        const duplicateDispatch = isDuplicateSubmittedInput(pendingInput);
-        console.error(
-          `[execute-instance] refused a concurrent turn on conversation ` +
-            `"${conversationId}" — a stream is already open. ` +
-            (duplicateDispatch
-              ? "The exact already-submitted draft was dropped as a duplicate."
-              : pendingText.trim()
-                ? "Reconciled: the message was QUEUED and delivers when the run finishes."
-                : "No message text to queue; the duplicate dispatch was dropped.") +
-            " Callers must route sends through smartExecute.",
-        );
-        if (!duplicateDispatch && pendingText.trim()) {
-          const { enqueueInboxMessage } = await import("../inbox/inbox.thunks");
-          dispatch(
-            enqueueInboxMessage({
-              conversationId,
-              text: pendingText.trim(),
-              mode: "queue",
-            }),
-          );
-          dispatch(clearUserInput(conversationId));
-        }
-        return rejectWithValue(
-          duplicateDispatch
-            ? "Duplicate submit refused — the message is already running"
-            : "Concurrent turn refused — message queued until the run finishes",
-        );
-      }
 
       // Capture the user's input BEFORE assembling (for history + display).
       // Verbatim — never trim/normalize the user's typed text.
@@ -666,6 +729,29 @@ export const executeInstance = createAsyncThunk<
       });
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
+      }
+      // ── An empty user message never becomes a request (W-32) ──────────────
+      // A turn after the first carries only `user_input` — the agent's own
+      // messages and variables seeded turn 1 and are not re-sent. With no
+      // input there is no message, and the provider answers "at least one
+      // message is required", which the server saves as an error turn. A
+      // retry is the one empty continuation that is real: it re-runs history.
+      if (
+        refusesEmptyTurn({
+          retry,
+          hasPriorTurns: selectMessageCount(conversationId)(state) > 0,
+          cacheOnly: instance.cacheOnly,
+          isEphemeral: instance.isEphemeral === true,
+          userInput: payload.user_input,
+        })
+      ) {
+        console.error(
+          `[execute-instance] refused an empty turn on conversation ` +
+            `"${conversationId}": a follow-up turn with no user input has no ` +
+            "message to send. Nothing was sent. The caller dispatched " +
+            "executeInstance without a message — fix the call site.",
+        );
+        return rejectWithValue("Nothing to send — the message is empty");
       }
       // Freeze the first request's explicit organization onto the local
       // conversation before the server confirmation flips cacheOnly=false.
@@ -856,6 +942,9 @@ export const executeInstance = createAsyncThunk<
         conversationId,
       );
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
+      // `status: "running"` now refuses a second turn; hand the claim back so
+      // the turn-boundary inbox can admit the next message at stream end.
+      releaseExecutionClaim(conversationId, admission);
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
 
       // Publish the id to the caller HERE — the row now exists, so a viewer
@@ -1267,6 +1356,8 @@ export const executeInstance = createAsyncThunk<
         message,
         error instanceof Error ? error.name : undefined,
       );
+    } finally {
+      releaseExecutionClaim(conversationId, admission);
     }
   },
 );

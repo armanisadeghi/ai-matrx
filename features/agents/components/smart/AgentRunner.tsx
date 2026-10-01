@@ -32,6 +32,7 @@ import { selectInstanceStatus } from "@/features/agents/redux/execution-system/c
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectHasUserInput } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { isExecutionClaimed } from "@/features/agents/redux/execution-system/thunks/submit-claims";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { PreExecutionAgentInput } from "../inputs/PreExecutionAgentInput";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
@@ -118,6 +119,11 @@ export function AgentRunner({
     if (needsPreExecution) return;
 
     autoRunFiredRef.current = true;
+    // The launcher that opened this overlay may already be sending the turn
+    // (W-32): its `executeInstance` holds the door's claim while it awaits
+    // its pre-send gates, and status still reads "ready". That send IS this
+    // auto-run — do not fire a second.
+    if (isExecutionClaimed(conversationId)) return;
     dispatch(executeInstance({ conversationId }));
   }, [
     autoRun,
