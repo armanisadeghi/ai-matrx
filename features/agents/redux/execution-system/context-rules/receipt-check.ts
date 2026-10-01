@@ -23,20 +23,6 @@ import type { ContextReceiptData } from "@/types/python-generated/stream-events"
 import { setContextReceipt } from "../instance-context/instance-context.slice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
-import { PLATFORM_CONTEXT_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
-
-/**
- * The surroundings envelopes the server expands into one row per part (`<surface>::<value>`,
- * `window::<title>`). The server now keeps a row for the envelope itself (`consumed_as:
- * "expanded"`, RULES.md §5), so it is compared like any key. A receipt from a server that
- * predates that row has none: only then is the envelope left out, instead of reading as a
- * false `window_forms.missing` (/education/flashcards Add more cards, 2026-10-01).
- * TEMPORARY (2026-10-01): delete once every live server emits the row.
- */
-const SERVER_EXPANDED_KEYS: ReadonlySet<string> = new Set([
-  PLATFORM_CONTEXT_VALUES.surface_chain.name,
-  PLATFORM_CONTEXT_VALUES.window_forms.name,
-]);
 
 /** Normalize the generated wire type (optional fields) to the package's receipt. */
 export function toContextReceipt(data: ContextReceiptData): ContextReceipt {
@@ -104,11 +90,10 @@ export function recordContextReceipt(
     });
   }
   if (expected && checked) {
-    const accounted = new Set(receipt.rows.map((row) => row.key));
-    const comparable = expected.rows.filter(
-      (row) => !SERVER_EXPANDED_KEYS.has(row.key) || accounted.has(row.key),
-    );
-    mismatches = compareReceipt(comparable, receipt).mismatches;
+    // Every key is held to the receipt, the envelopes the server expands
+    // included (`consumed_as: "expanded"`). A server that leaves one out lost
+    // it: the skip that used to hide that hid a dialog the model never saw.
+    mismatches = compareReceipt(expected.rows, receipt).mismatches;
     // A model that reads no context received none of it — that is the truth
     // the chip shows ("This model can't read context"), not a broken promise.
     if (!receipt.model_reads_context) {
