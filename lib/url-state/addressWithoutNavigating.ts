@@ -40,12 +40,33 @@ function resolve(href: string | URL): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
-/** Replace the current history entry's address. No navigation, no RSC fetch. */
+/**
+ * Replace the current history entry's address. No navigation, no RSC fetch.
+ *
+ * A HASH-ONLY change skips Next's patch on purpose: nothing Next exposes
+ * (`usePathname`, `useSearchParams`, `useParams`) reads the hash, yet the
+ * patch's `restore` hands every `useSearchParams` reader a new object, so each
+ * write re-rendered all of them. A canvas writing its camera to `#cam=` while
+ * panning paid that per write — over a second per pointer move on a board of
+ * fifteen heavy tiles, so the board froze while panning (2026-10-01). Forwarding
+ * the entry's own state keeps Next's `__NA` tree on it (Back still works).
+ */
 export function replaceAddressWithoutNavigating(href: string | URL): void {
   if (typeof window === "undefined") return;
   const next = resolve(href);
   if (next === currentHref()) return;
+  const sameDocument = next.split("#")[0] === `${window.location.pathname}${window.location.search}`;
+  const state: unknown = window.history.state;
+  if (sameDocument && isNextEntry(state)) {
+    window.history.replaceState(state, "", next);
+    return;
+  }
   window.history.replaceState(null, "", next);
+}
+
+/** The entry carries Next's own app-router state (its patch passes these through untouched). */
+function isNextEntry(state: unknown): boolean {
+  return typeof state === "object" && state !== null && ("__NA" in state || "_N" in state);
 }
 
 /** Push a new history entry (Back returns to the old address). No navigation, no RSC fetch. */

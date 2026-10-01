@@ -33,6 +33,7 @@ export const recordingRouter = {
 };
 
 function restore(url: string) {
+  restoreCount++;
   const next = new URL(url, window.location.href);
   routerHref = `${next.pathname}${next.search}${next.hash}`;
   listeners.forEach((l) => l());
@@ -89,6 +90,9 @@ export function routerSearch(): URLSearchParams {
 export function routerPathname(): string {
   return new URL(routerHref, "http://x").pathname;
 }
+
+/** How many times Next's patch dispatched `restore` (each one re-renders every useSearchParams reader). */
+export let restoreCount = 0;
 
 function subscribe(l: Listener) {
   listeners.add(l);
