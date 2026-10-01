@@ -231,7 +231,8 @@ export function SpatialTile({
     };
 
     const down = (e: PointerEvent) => {
-      if (e.button !== 0 || store.getFocused() === id) return;
+      // ctrl+click is the macOS right-click: the menu's, never a drag.
+      if (e.button !== 0 || e.ctrlKey || store.getFocused() === id) return;
       const target = e.target as HTMLElement;
       lastPressRef.current = target;
       if (target.closest("[data-spatial-resize]")) return; // the handle owns it
@@ -462,7 +463,7 @@ function ResizeHandles({
   useEffect(() => () => gesture.current?.(), []);
 
   const begin = (handle: ResizeHandle) => (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || e.ctrlKey) return; // ctrl+click is the macOS right-click (the menu)
     e.preventDefault();
     e.stopPropagation();
     gesture.current?.();

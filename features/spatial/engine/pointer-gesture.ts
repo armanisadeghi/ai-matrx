@@ -75,7 +75,8 @@ export function startPointerGesture(
   };
   const onLost = (e: PointerEvent) => {
     // Capture is released implicitly right after pointerup; let the up win.
-    if (e.pointerId === pointerId) queueMicrotask(() => finish("cancel", null));
+    // lostpointercapture bubbles: only the capturer's own loss ends it.
+    if (e.pointerId === pointerId && e.target === capturer) queueMicrotask(() => finish("cancel", null));
   };
   const onBlur = () => finish("cancel", null);
   const onHidden = () => {

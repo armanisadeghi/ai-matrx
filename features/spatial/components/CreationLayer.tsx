@@ -84,7 +84,7 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
       className="absolute inset-0 z-20"
       style={{ cursor: tool === "text" ? "text" : "crosshair" }}
       onPointerDown={(e) => {
-        if (e.button !== 0) return;
+        if (e.button !== 0 || e.ctrlKey) return; // ctrl+click is the macOS right-click
         const layer = e.currentTarget;
         let points = [localTo(layer, e)];
         setDrag({ points });
@@ -98,7 +98,9 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
           onEnd: (how, end) => {
             gesture.current = null;
             setDrag(null);
-            if (how === "escape") return; // Escape drops the drawing
+            // Only a real release makes the shape; Escape, a lost press or a
+            // tool switch mid-draw drops it.
+            if (how !== "up") return;
             if (end) points = tool === "pen" ? [...points, localTo(layer, end)] : [points[0], localTo(layer, end)];
             finish(points);
           },
