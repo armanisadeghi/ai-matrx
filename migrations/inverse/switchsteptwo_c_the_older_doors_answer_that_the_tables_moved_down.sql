@@ -1,5 +1,5 @@
 -- INVERSE of migrations/campaign/switchsteptwo_c_the_older_doors_answer_that_the_tables_moved.sql (lane SWITCH-STEP-TWO): the 40
--- older doors exactly as they were, and the weekly older-history trim scheduled again, paused (as the press left it).
+-- older doors exactly as they were.
 -- based-on: public.add_column_to_user_table(uuid, text, text, text, integer, boolean, jsonb, jsonb) 410d2a27c39a5e0cd85fd72a5a3bf86097e7d05655ffa6b304f743f171a9cb86
 -- based-on: public.add_data_row_to_user_table(uuid, jsonb) c477a566c2497220bf8580b8eb65e4659c7abcb20b5caf2ca33f2fd323d7bc34
 -- based-on: public.append_rows_to_user_table(uuid, jsonb) b152cf58f7facff07f488c8d2e6e7485145a570987b8f03131b5202b325d71a7
@@ -41,10 +41,6 @@
 -- based-on: public.update_user_table_metadata(uuid, text, text, boolean, boolean) 6910e5742c661bcc63e4459c5ec0a76119fe15df3ae3a524e4fdb71ea3aabbe8
 -- based-on: public.update_user_table_row_ordering(uuid, boolean, jsonb, text) ea8349af5580cf298e146b0516627cb3a831d7319dfea26430ef6d5372c92479
 -- lane: SWITCH-STEP-TWO
-
-select cron.schedule('udt_dataset_row_versions_trim_weekly', '0 3 * * 0', 'SELECT public.udt_dataset_row_versions_trim();')
- where not exists (select 1 from cron.job where jobname = 'udt_dataset_row_versions_trim_weekly');
-select cron.alter_job(jobid, active := false) from cron.job where jobname = 'udt_dataset_row_versions_trim_weekly';
 
 CREATE OR REPLACE FUNCTION public.add_column_to_user_table(p_table_id uuid, p_field_name text, p_display_name text, p_data_type text, p_field_order integer DEFAULT NULL::integer, p_is_required boolean DEFAULT false, p_default_value jsonb DEFAULT NULL::jsonb, p_validation_rules jsonb DEFAULT NULL::jsonb)
  RETURNS jsonb

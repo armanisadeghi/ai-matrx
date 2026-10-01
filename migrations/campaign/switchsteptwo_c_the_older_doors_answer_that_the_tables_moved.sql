@@ -5,7 +5,8 @@
 -- (check:old-system-unreachable census), so each is not dropped yet: its body answers the people sentence
 -- "The older tables moved to the archive after the final switch. Tables and lists live in the new system now: open them from /data." (P0001, the door named in the hint). They are dropped with the code that names them (the census
 -- reaches zero). Grants, door rows and signatures are kept; LANGUAGE sql doors become plpgsql (the body raises).
--- Also: the weekly older-history trim (paused by the press) is unscheduled; its function reads only the older tables.
+-- The weekly older-history trim stays scheduled and PAUSED (as the press left it): unscheduling it gives it a new job id on
+-- the way back, and the final switch's undo restores the job by the id it recorded (rehearsal: "Job 13 does not exist").
 -- The four list doors that route to the store (get_user_list_with_items, get_structured_list_for_selection,
 -- get_user_lists_summary, update_user_list) are NOT here: once file b answers `record` they answer from the store.
 -- list_udt_dataset_templates is NOT here: the templates stay in workbench today (PROGRESS-SWITCH-STEP-TWO B10).
@@ -60,8 +61,6 @@ begin
   end if;
 end
 $pre$;
-
-select cron.unschedule(jobid) from cron.job where jobname = 'udt_dataset_row_versions_trim_weekly';
 
 CREATE OR REPLACE FUNCTION public.add_column_to_user_table(p_table_id uuid, p_field_name text, p_display_name text, p_data_type text, p_field_order integer DEFAULT NULL::integer, p_is_required boolean DEFAULT false, p_default_value jsonb DEFAULT NULL::jsonb, p_validation_rules jsonb DEFAULT NULL::jsonb)
  RETURNS jsonb
