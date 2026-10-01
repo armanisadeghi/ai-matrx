@@ -349,6 +349,12 @@ export function ServedFieldControl({
           placeholder={input.placeholder || undefined}
           hideLabel
           compact
+          // A served form sits INSIDE a page — the run box under a result, the
+          // Understudy card on a Rulebook. It never takes focus on mount: every
+          // field asking for it meant the LAST field won and the page jumped
+          // to it (cold walk 23, defect B). Guard:
+          // features/agents/components/inputs/input-components/__tests__/focus-never-moves-the-page.test.tsx
+          autoFocus={false}
         />
       ) : (
         // The kind registers a DB-authored renderer for this variant. Routing

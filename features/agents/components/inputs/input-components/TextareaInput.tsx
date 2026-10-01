@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { variableInputPlaceholder } from "./variablePlaceholder";
@@ -40,6 +40,20 @@ export function TextareaInput({
   placeholder,
 }: TextareaInputProps) {
   const hasSelectedRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // 🚨 FOCUS NEVER MOVES THE PAGE (cold walk 23, defect B, 2026-09-30). The
+  // `autoFocus` attribute focuses on mount WITH the browser's scroll-into-view,
+  // so a field rendered below the fold yanked its page down to itself: a run's
+  // own address (`/masterwork/encore/<id>?run=…`) landed 2,395px below "Your
+  // result", and the Rulebook page at 390px opened on its Understudy form.
+  // Focus is still given when asked for — it just never scrolls.
+  // Guard: __tests__/focus-never-moves-the-page.test.tsx.
+  useEffect(() => {
+    if (autoFocus) textareaRef.current?.focus({ preventScroll: true });
+    // Mount-only, exactly like the attribute it replaces.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isCompact = compact && !wizardMode;
 
@@ -53,13 +67,13 @@ export function TextareaInput({
 
   return (
     <ProTextarea
+      ref={textareaRef}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={handleFocus}
       placeholder={placeholder?.trim() || variableInputPlaceholder()}
       className={isCompact ? "min-h-[60px] text-xs" : "min-h-[160px] text-sm"}
       rows={isCompact ? 2 : undefined}
-      autoFocus={autoFocus}
       appendTranscript={true}
       onEnterKey={onEnterAdvance ? () => onEnterAdvance() : undefined}
       onRequestClose={onRequestClose}

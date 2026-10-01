@@ -48,7 +48,7 @@ export const masterworkResultKindSchema: KindSchema = {
       type: "string",
       nullable: true,
       description:
-        "The finished WORK — what the Expert asked the system to make, as markdown. Null on the edit shape, where the corrected text lives inside the ruling.",
+        "The finished WORK, as markdown: the winning variant (generate) or the full corrected text (edit).",
     },
     approach: {
       type: "string",
