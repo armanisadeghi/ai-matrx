@@ -79,9 +79,28 @@ export function spendAddressAsks(params: URLSearchParams): boolean {
   return [...params.keys()].some((k) => k.startsWith("f."));
 }
 
-/** Does it carry a day or an hour, which are the VIEWER's local calendar (so only the browser can map it)? */
+/**
+ * Does it name a span of the VIEWER's local calendar, so only the browser can map it? A day or an hour,
+ * or no window at all: the Spend Explorer read a missing (or unknown) `win` as Yesterday in the
+ * viewer's own day (`readExplorerUrlState`), so an old link without one opens that day.
+ */
 export function spendAddressNeedsZone(params: URLSearchParams): boolean {
-  return Boolean(params.get("f.day") || params.get("f.hour"));
+  return Boolean(params.get("f.day") || params.get("f.hour")) || spendWindowDefaulted(params);
+}
+
+/** No `win` the Spend Explorer knew (absent or unknown): it showed Yesterday. */
+function spendWindowDefaulted(params: URLSearchParams): boolean {
+  const win = params.get("win");
+  return !win || !(Object.hasOwn(SPEND_WINDOW, win) || win === "custom");
+}
+
+/** `YYYY-MM-DD` of instant `now` on `zone`'s calendar. */
+function zonedDay(now: Date, zone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+
+function previousDay(day: string): string {
+  return new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 }
 
 /**
@@ -92,10 +111,11 @@ export function spendAddressNeedsZone(params: URLSearchParams): boolean {
  * which narrows by every Spend filter. Spend's `f.day` / `f.hour` are the VIEWER's local day and hour
  * (`admin_spend_breakdown` cut them in the browser's zone): `zone` maps them to their real instants; a
  * caller without the viewer's zone (a server redirect) checks `spendAddressNeedsZone` first and lets
- * the browser map them. The slim spend page's organization filter (`org_filter`) narrows by
- * organization. `dropped` names anything that could not be carried, to be said, never silently lost.
+ * the browser map them. No window (absent or unknown `win`) is the Spend Explorer's default,
+ * Yesterday in the viewer's calendar, so it too needs `zone` (lane DRILL-CLOSE, L-a). The slim spend
+ * page's organization filter (`org_filter`) narrows by organization. `dropped` names anything that could not be carried, to be said, never silently lost.
  */
-export function spendAddressToUsage(params: URLSearchParams, zone = "UTC"): { href: string; dropped: string[] } {
+export function spendAddressToUsage(params: URLSearchParams, zone = "UTC", now: Date = new Date()): { href: string; dropped: string[] } {
   const filters: Record<string, string | null> = {};
   const dropped: string[] = [];
   let window: string | undefined;
@@ -133,6 +153,11 @@ export function spendAddressToUsage(params: URLSearchParams, zone = "UTC"): { hr
     const to = params.get("to");
     if (win === "custom" && from && to) window = `${from}..${nextDay(to)}`;
     else if (win && SPEND_WINDOW[win]) window = SPEND_WINDOW[win];
+    else if (spendWindowDefaulted(params)) {
+      // the Spend Explorer's default: Yesterday, the viewer's local calendar day (VERIFY-DRILL-FINAL L-a)
+      const today = zonedDay(now, zone);
+      window = `${zonedMoment(previousDay(today), 0, zone)}..${zonedMoment(today, 0, zone)}`;
+    }
   }
   if (executions) {
     const out = new URLSearchParams();

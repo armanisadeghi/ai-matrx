@@ -65,7 +65,11 @@ function MountedSpendWindowPanels({ refreshKey }: { refreshKey: number }) {
   useSurfaceScopeContribution(ADMIN_BILLING_SPEND_SURFACE_NAME, "SpendWindowPanels", () =>
     buildBillingSpendWindowScope({ urlState, window, windowLabel, windowTooWide }),
   );
-  const usage = spendAddressToUsage(new URLSearchParams(searchParams.toString())).href;
+  // the browser's own zone: a window the page defaulted (no `win`) is the viewer's local Yesterday
+  const usage = spendAddressToUsage(
+    new URLSearchParams(searchParams.toString()),
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+  ).href;
   const orgId = readOrgFilter(new URLSearchParams(searchParams.toString()));
   const setOrgId = (next: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
