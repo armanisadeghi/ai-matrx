@@ -14,9 +14,11 @@
  *
  * Three laws it obeys:
  *
- *  - **One renderer, no fork.** Every emission goes through `DbEmitRenderer`,
- *    which resolves the custom component and falls back to the generic body.
- *    Nothing here inspects a payload shape or draws a second viewer.
+ *  - **One renderer, no fork.** Every emission goes through `EmissionRender`
+ *    (the kind-routing door): a kind-carrying emission renders as its kind
+ *    component, a kindless one through `DbEmitRenderer` (custom component or
+ *    the generic body). Nothing here inspects a payload shape or draws a
+ *    second viewer — a kind is never drawn as raw JSON (Arman, 2026-09-30).
  *  - **The surface only grows.** Emissions render in arrival order, newest at
  *    the bottom, and a new one never displaces what is already on screen.
  *  - **Emit is never load-bearing.** A missing renderer, a compile failure, or
@@ -41,25 +43,9 @@
 import { MonitorUp } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
-
+import { EmissionRender } from "../../kind-emissions/EmissionRender";
 import { selectRunEmissions } from "../../redux/workflow-runs.selectors";
 import type { WorkflowRunEmission } from "../../redux/workflow-runs.slice";
-
-/** The four modes the backend can send; anything else renders as "full". */
-const EMIT_MODES: readonly EmitMode[] = [
-  "confirmation",
-  "summary",
-  "full",
-  "restructured",
-];
-
-function asEmitMode(mode: string): EmitMode {
-  return (EMIT_MODES as readonly string[]).includes(mode)
-    ? (mode as EmitMode)
-    : "full";
-}
 
 /**
  * A stable React key. The durable `seq` is THE identity (it survives refolds
@@ -92,20 +78,7 @@ function EmissionCard({
         </span>
       </header>
       <div className="p-3">
-        <DbEmitRenderer
-          componentRef={emission.componentRef}
-          mode={asEmitMode(emission.mode)}
-          payload={emission.payload}
-          title={emission.title}
-          nodeId={emission.nodeId}
-          runId={runId}
-          seq={emission.seq ?? index}
-          isPersisted={emission.persisted}
-          presentation={emission.presentation}
-          kind={emission.kind}
-          kindOk={emission.kindOk}
-          metadata={emission.metadata}
-        />
+        <EmissionRender runId={runId} emission={emission} index={index} />
       </div>
     </section>
   );

@@ -6,15 +6,14 @@
  * becomes the real delivered artifact — rendered by its canonical kind
  * component via `InvocationBody prefer="persisted"` — the moment the step
  * settles. Mid-run "Show on Screen" emissions render through the canonical
- * `DbEmitRenderer`. Cards only ever fill in; nothing moves.
+ * `EmissionRender`. Cards only ever fill in; nothing moves.
  */
 
 import { Package, PackageCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import DbEmitRenderer from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
+import { EmissionRender } from "@/features/workflow-runtime/kind-emissions/EmissionRender";
 
 import {
   humanizeKind,
@@ -111,15 +110,10 @@ export function DeliveredSection({
           key={`${emission.nodeId}:${emission.seq ?? emission.ts}`}
           className="rounded-xl border border-border bg-card p-4"
         >
-          <DbEmitRenderer
-            mode={emission.mode as EmitMode}
-            payload={emission.payload}
-            title={emission.title}
-            nodeId={emission.nodeId}
+          <EmissionRender
             runId={runId}
-            seq={emission.seq ?? 0}
-            isPersisted={emission.persisted || runOver}
-            componentRef={emission.componentRef}
+            emission={{ ...emission, persisted: emission.persisted || runOver }}
+            index={0}
           />
         </div>
       ))}

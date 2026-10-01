@@ -9,7 +9,7 @@
  *
  * All content renders through the canonical pipeline: InvocationBody
  * (LiveRunDisplay / KindInstanceRender / the platform floor) — zero bespoke
- * stream rendering. Mid-run emissions render below through DbEmitRenderer.
+ * stream rendering. Mid-run emissions render below through EmissionRender.
  */
 
 import { useEffect } from "react";
@@ -18,8 +18,7 @@ import { Crosshair, LocateFixed } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { IconResolver } from "@ai-matrx/icons";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
-import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
+import { EmissionRender } from "@/features/workflow-runtime/kind-emissions/EmissionRender";
 
 import {
   InvocationBody,
@@ -35,13 +34,6 @@ import {
 import { selectRunEmissions } from "../../redux/workflow-runs.selectors";
 import type { UseWorkflowRunResult } from "../../hooks/useWorkflowRun";
 import type { LedgerRow } from "./model";
-
-const EMIT_MODES: ReadonlySet<string> = new Set([
-  "confirmation",
-  "summary",
-  "full",
-  "restructured",
-]);
 
 export function FocusPane({
   runId,
@@ -182,19 +174,10 @@ function EmissionsSection({ runId }: { runId: string }) {
                 {emission.title}
               </p>
             ) : null}
-            <DbEmitRenderer
-              componentRef={emission.componentRef}
-              mode={
-                (EMIT_MODES.has(emission.mode)
-                  ? emission.mode
-                  : "full") as EmitMode
-              }
-              payload={emission.payload}
-              title={emission.title}
-              nodeId={emission.nodeId}
+            <EmissionRender
               runId={runId}
-              seq={emission.seq ?? 0}
-              isPersisted={emission.persisted}
+              emission={emission}
+              index={0}
             />
           </div>
         ))}

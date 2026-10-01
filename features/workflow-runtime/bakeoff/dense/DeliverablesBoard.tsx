@@ -9,15 +9,14 @@
  * it lands (`InvocationBody prefer="persisted"`, the canonical resolution).
  * The panel set is fixed from the definition, so nothing on this board ever
  * moves; panels only fill in. Mid-run emissions append below through the ONE
- * emit renderer (`DbEmitRenderer` — never anything deeper from that feature;
- * its `next/dynamic` boundary keeps Babel out of this bundle).
+ * emission door (`EmissionRender`, which reaches only `DbEmitRenderer` —
+ * whose `next/dynamic` boundary keeps Babel out of this bundle).
  */
 
 import { MonitorUp, Package } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
+import { EmissionRender } from "@/features/workflow-runtime/kind-emissions/EmissionRender";
 import { cn } from "@/lib/utils";
 
 import {
@@ -35,19 +34,6 @@ import {
   humanizeKind,
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
-
-const EMIT_MODES: readonly EmitMode[] = [
-  "confirmation",
-  "summary",
-  "full",
-  "restructured",
-];
-
-function asEmitMode(mode: string): EmitMode {
-  return (EMIT_MODES as readonly string[]).includes(mode)
-    ? (mode as EmitMode)
-    : "full";
-}
 
 /** The durable seq is THE stable identity across refolds; the ring index
  * shifts when the cap drops from the head. */
@@ -178,15 +164,10 @@ export function DeliverablesBoard({
                 </span>
               </header>
               <div className="p-3">
-                <DbEmitRenderer
-                  componentRef={emission.componentRef}
-                  mode={asEmitMode(emission.mode)}
-                  payload={emission.payload}
-                  title={emission.title}
-                  nodeId={emission.nodeId}
+                <EmissionRender
                   runId={runId}
-                  seq={emission.seq ?? index}
-                  isPersisted={emission.persisted}
+                  emission={emission}
+                  index={index}
                 />
               </div>
             </section>

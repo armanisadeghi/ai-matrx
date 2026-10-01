@@ -28,6 +28,7 @@ import { ensureSurfaceFeatureLoaded } from "@/features/surfaces/redux/userStateS
 import { selectPageContextOff } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setPageContextEnabled } from "@/features/agents/redux/execution-system/thunks/page-context.thunk";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { isPageOwnConversation } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   selectContextInlineCap,
   selectResolvedContextRows,
@@ -83,7 +84,8 @@ export function useConversationContextChipShown(conversationId: string): boolean
     (state) => state.conversations.byConversationId[conversationId]?.surfaceName ?? null,
   );
   const off = useAppSelector(selectPageContextOff(conversationId));
-  return rows.length > 0 || Boolean(stamped) || Boolean(off?.previousSurfaceName);
+  const ownPage = isPageOwnConversation(conversationId);
+  return rows.length > 0 || (!ownPage && (Boolean(stamped) || Boolean(off?.previousSurfaceName)));
 }
 
 export function ConversationContextChip({
@@ -117,7 +119,12 @@ export function ConversationContextChip({
     (state) => state.conversations.byConversationId[conversationId]?.surfaceName ?? null,
   );
   const off = useAppSelector(selectPageContextOff(conversationId));
-  const surfaceName = stamped ?? off?.previousSurfaceName ?? null;
+  // The page's OWN conversation never shares the page (it IS the page), so its
+  // chip names no page and offers no page switch — even when an older launch
+  // stamped one on it.
+  const surfaceName = isPageOwnConversation(conversationId)
+    ? null
+    : (stamped ?? off?.previousSurfaceName ?? null);
 
   const mismatches = receiptEntry?.mismatches ?? [];
   const resetAll = () => {

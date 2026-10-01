@@ -6,7 +6,7 @@
  * Two sections:
  *  - "Along the way" — what the workflow deliberately put on screen mid-run
  *    (output.to_frontend emissions), rendered through the canonical
- *    DbEmitRenderer in arrival order.
+ *    EmissionRender in arrival order.
  *  - "What you asked for" — one card per promised deliverable, present as a
  *    named ghost from frame zero and becoming its REAL kind component the
  *    moment its step settles. A workflow that declares no deliverable still
@@ -19,8 +19,7 @@ import { CircleDashed, Gift, Send } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { IconResolver } from "@ai-matrx/icons";
-import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
+import { EmissionRender } from "@/features/workflow-runtime/kind-emissions/EmissionRender";
 
 import { InvocationBody } from "../../components/readout-parts";
 import {
@@ -30,17 +29,6 @@ import {
 } from "../../components/run/node-presentation";
 import type { WorkflowRunEmission } from "../../redux/workflow-runs.slice";
 import type { StepView } from "./plan-view";
-
-const EMIT_MODES: ReadonlySet<string> = new Set([
-  "confirmation",
-  "summary",
-  "full",
-  "restructured",
-]);
-
-function toEmitMode(mode: string): EmitMode {
-  return EMIT_MODES.has(mode) ? (mode as EmitMode) : "full";
-}
 
 export function EmissionRoll({
   runId,
@@ -71,15 +59,10 @@ export function EmissionRoll({
             </span>
           </header>
           <div className="px-3 py-2">
-            <DbEmitRenderer
-              componentRef={emission.componentRef}
-              mode={toEmitMode(emission.mode)}
-              payload={emission.payload}
-              title={emission.title}
-              nodeId={emission.nodeId}
+            <EmissionRender
               runId={runId}
-              seq={emission.seq ?? 0}
-              isPersisted={emission.persisted}
+              emission={emission}
+              index={0}
             />
           </div>
         </article>

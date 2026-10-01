@@ -8,7 +8,7 @@
  * in `Delivered`, where the same promise starts as a ghost placeholder and
  * becomes the real artifact, rendered by its canonical kind component
  * (`InvocationBody` prefer="persisted"). Mid-run "Show on Screen" emissions
- * render below through the canonical `DbEmitRenderer`. Placeholders exist
+ * render below through the canonical `EmissionRender`. Placeholders exist
  * from the first frame, so nothing on this page ever shifts — it only fills.
  */
 
@@ -16,8 +16,7 @@ import { Gift, Hourglass, MonitorUp, XCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import DbEmitRenderer from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
+import { EmissionRender } from "@/features/workflow-runtime/kind-emissions/EmissionRender";
 import {
   selectNodeAggregate,
   selectRunEmissions,
@@ -28,13 +27,6 @@ import {
   humanizeKind,
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
-
-const EMIT_MODES: ReadonlySet<string> = new Set([
-  "confirmation",
-  "summary",
-  "full",
-  "restructured",
-]);
 
 export function promiseAnchor(nodeId: string): string {
   return `sharp2-promise-${nodeId}`;
@@ -176,19 +168,10 @@ export function Delivered({
               key={emission.seq ?? `${emission.nodeId}:${emission.ts}`}
               className="rounded-xl border border-border bg-card p-3"
             >
-              <DbEmitRenderer
-                mode={
-                  EMIT_MODES.has(emission.mode)
-                    ? (emission.mode as EmitMode)
-                    : "full"
-                }
-                payload={emission.payload}
-                title={emission.title}
-                nodeId={emission.nodeId}
+              <EmissionRender
                 runId={runId}
-                seq={emission.seq ?? 0}
-                isPersisted={emission.persisted}
-                componentRef={emission.componentRef}
+                emission={emission}
+                index={0}
               />
             </div>
           ))}

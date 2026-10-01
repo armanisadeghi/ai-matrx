@@ -11,7 +11,11 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
-import { buildRequestContext, selectResolvedContextRows } from "../request-context";
+import {
+  ambientIncluded,
+  buildRequestContext,
+  selectResolvedContextRows,
+} from "../request-context";
 
 jest.mock("@/features/surfaces/manifests/registry", () => ({
   getManifest: (name: string) =>
@@ -239,6 +243,33 @@ describe("an attached file reaches the server as the reference it resolves", () 
     expect(rows[0]).toMatchObject({ key: "attached_file_f1", label: "Reference.pdf", origin: "attached" });
     expect(context?.attached_file_f1).toMatchObject(ref);
     expect((context?.attached_file_f1 as Record<string, unknown>).content).toBeUndefined();
+  });
+});
+
+describe("the table and the send agree on the first turn's system values", () => {
+  function firstTurn(apiEndpointMode: "agent" | "manual"): RootState {
+    const state = makeState({ entries: [] }) as unknown as Record<string, unknown>;
+    state.messages = { byConversationId: { c1: { orderedIds: [], apiEndpointMode } } };
+    state.userAuth = { id: "u1", email: "admin@admin.com" };
+    state.userProfile = {};
+    state.appContext = {};
+    return state as unknown as RootState;
+  }
+
+  it("an agent-door conversation's first turn shows AND sends them", () => {
+    const state = firstTurn("agent");
+    expect(ambientIncluded(state, "c1")).toBe(true);
+    const shown = selectResolvedContextRows("c1")(state).map((r) => r.key);
+    const sent = Object.keys(buildRequestContext(state, "c1").context ?? {});
+    expect(shown).toEqual(expect.arrayContaining(["user", "client", "conversation"]));
+    expect(sent.sort()).toEqual([...shown].sort());
+  });
+
+  it("the builder's manual door shows none and sends none (found live 2026-09-30)", () => {
+    const state = firstTurn("manual");
+    expect(ambientIncluded(state, "c1")).toBe(false);
+    expect(selectResolvedContextRows("c1")(state)).toEqual([]);
+    expect(buildRequestContext(state, "c1").context).toBeUndefined();
   });
 });
 

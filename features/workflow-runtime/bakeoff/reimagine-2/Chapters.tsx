@@ -8,15 +8,14 @@
  * same promise the manifest names, kept in the same place.
  *
  * Mid-run emissions ("Show on Screen" steps) render in arrival order through
- * the canonical `DbEmitRenderer` — never a hand-rolled body.
+ * the canonical `EmissionRender` — never a hand-rolled body.
  */
 
 import { PackageCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
+import { EmissionRender } from "@/features/workflow-runtime/kind-emissions/EmissionRender";
 
 import {
   selectNodeAggregate,
@@ -28,13 +27,6 @@ import {
 } from "../../components/run/node-presentation";
 import { InvocationBody } from "../../components/readout-parts";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-
-/** The slice stores the wire's mode as a string; narrow it honestly. */
-function toEmitMode(raw: string): EmitMode {
-  return raw === "confirmation" || raw === "summary" || raw === "restructured"
-    ? raw
-    : "full";
-}
 
 function Chapter({
   runId,
@@ -120,16 +112,11 @@ export function Chapters({
           </header>
           <div className="space-y-3">
             {emissions.map((emission, index) => (
-              <DbEmitRenderer
+              <EmissionRender
                 key={emission.seq ?? `i${index}`}
-                componentRef={emission.componentRef}
-                mode={toEmitMode(emission.mode)}
-                payload={emission.payload}
-                title={emission.title}
-                nodeId={emission.nodeId}
                 runId={runId}
-                seq={emission.seq ?? index}
-                isPersisted={emission.persisted}
+                emission={emission}
+                index={index}
               />
             ))}
           </div>

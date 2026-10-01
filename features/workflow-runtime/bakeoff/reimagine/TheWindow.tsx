@@ -12,7 +12,7 @@
  *                      component, stacked for keeps.
  *
  * Mid-run emissions ("Show on Screen" steps) append below the stage through
- * the canonical DbEmitRenderer — growth-only, inside this pane's own scroll.
+ * the canonical EmissionRender — growth-only, inside this pane's own scroll.
  */
 
 import { useEffect } from "react";
@@ -21,8 +21,7 @@ import { Crosshair, PackageOpen, Pin, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { IconResolver } from "@ai-matrx/icons";
-import DbEmitRenderer from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
+import { EmissionRender } from "@/features/workflow-runtime/kind-emissions/EmissionRender";
 import {
   InterruptCard,
   InvocationBody,
@@ -48,17 +47,6 @@ import {
 } from "@/features/workflow-runtime/served-form/ServedInputFields";
 import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
 import type { VariantResolvableKind } from "@/features/content-ir/variants/kind-variants";
-
-const EMIT_MODES: ReadonlySet<string> = new Set([
-  "confirmation",
-  "summary",
-  "full",
-  "restructured",
-]);
-
-function toEmitMode(raw: string): EmitMode {
-  return EMIT_MODES.has(raw) ? (raw as EmitMode) : "full";
-}
 
 // ── Act I — the order form ─────────────────────────────────────────────────
 
@@ -420,15 +408,10 @@ export function WatchWindow({
                 key={emission.seq ?? `live:${index}`}
                 className="rounded-xl border border-border bg-card p-3"
               >
-                <DbEmitRenderer
-                  componentRef={emission.componentRef}
-                  mode={toEmitMode(emission.mode)}
-                  payload={emission.payload}
-                  title={emission.title}
-                  nodeId={emission.nodeId}
+                <EmissionRender
                   runId={runId}
-                  seq={emission.seq ?? index}
-                  isPersisted={emission.persisted}
+                  emission={emission}
+                  index={index}
                 />
               </div>
             ))}

@@ -47,8 +47,9 @@ import { selectSavedContextRuleRows } from "./context-rules.thunks";
 export interface RequestContextOptions {
   /**
    * Include the first turn's system values (user, client, route brief,
-   * organization…). Defaults to `isFirstTurn(state, conversationId)` — the
-   * same rule the send path has always used.
+   * organization…). Leave it unset: `ambientIncluded` decides from the
+   * conversation itself, so the table and every send path agree. Only the
+   * resume path forces it on (it re-sends them every resume).
    */
   includeAmbient?: boolean;
   /**
@@ -96,6 +97,18 @@ function attachedFileLabel(state: RootState, conversationId: string, fileId: str
     }
   }
   return "Attached file";
+}
+
+/**
+ * Whether the next turn carries the first turn's system values: on the first
+ * turn of a conversation that sends through the agent door. The builder's
+ * manual door (`apiEndpointMode: "manual"`) never has. ONE answer, read by the
+ * table and the send path alike (a table that showed four system values the
+ * manual send never carried was found live, 2026-09-30).
+ */
+export function ambientIncluded(state: RootState, conversationId: string): boolean {
+  const mode = state.messages?.byConversationId?.[conversationId]?.apiEndpointMode ?? "agent";
+  return mode !== "manual" && isFirstTurn(state, conversationId);
 }
 
 /** Every value this conversation's next turn would carry, before any rule. */
@@ -185,7 +198,7 @@ export function collectContextRowSources(
   }
 
   // 3. The first turn's system values.
-  const includeAmbient = opts.includeAmbient ?? isFirstTurn(state, conversationId);
+  const includeAmbient = opts.includeAmbient ?? ambientIncluded(state, conversationId);
   if (includeAmbient) {
     const ambient = buildAmbientContext(state, conversationId);
     for (const [key, value] of Object.entries(ambient ?? {})) {
@@ -250,7 +263,7 @@ function displayInputs(state: RootState, conversationId: string): readonly unkno
     state.instanceResources?.byConversationId[conversationId],
     selectSavedContextRuleRows(state),
     state.instanceContext?.receiptByConversationId?.[conversationId]?.receipt.cap ?? null,
-    isFirstTurn(state, conversationId),
+    ambientIncluded(state, conversationId),
   ];
 }
 

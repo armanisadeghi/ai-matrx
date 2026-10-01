@@ -385,12 +385,10 @@ export async function assembleManualRequest(
   });
   const variableResourceContext =
     selectRuntimeVariableResourcePolicies(conversationId)(state);
-  // Context — THE ONE DOOR (context-rules/request-context.ts). The builder's
-  // manual run has never carried the first turn's system values; it still
-  // doesn't, and the table shows exactly that.
-  const { rows: contextRows, context } = buildRequestContext(state, conversationId, {
-    includeAmbient: false,
-  });
+  // Context — THE ONE DOOR (context-rules/request-context.ts). Whether the
+  // first turn's system values ride is decided there from the conversation
+  // (`ambientIncluded`) — the same answer the composer's table shows.
+  const { rows: contextRows, context } = buildRequestContext(state, conversationId);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
   // agent.tools (UUID array) becomes seed RegisteredToolSpec entries with
