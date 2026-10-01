@@ -81,7 +81,6 @@ import {
 } from "./CanvasPropertiesPanel";
 import { useCanvasWorkspaceConversation } from "./useCanvasWorkspaceConversation";
 import { ChatPanelTitleMenu, useChatPanelTitle } from "./ChatPanelTitleMenu";
-import { useConversationFollowsPage } from "@/features/surfaces/runtime/useConversationFollowsPage";
 import {
   CANVAS_CHAT_SIZES,
   CANVAS_NAV_SIZES,
@@ -136,12 +135,6 @@ export interface ChatCanvasWorkspaceProps {
   initialLayout?: CanvasWorkspaceLayout;
   /** Whether the chat starts open for someone who has not chosen yet (default true). */
   defaultChatOpen?: boolean;
-  /**
-   * The chat sees the PAGE the person is on and follows them from page to page
-   * (a module hosted in the workspace, e.g. education). Off for a canvas that
-   * publishes its own surface (the spatial board).
-   */
-  followPageSurface?: boolean;
   /** Server-read cookie (`readComposerModeCookie`). */
   initialMode?: ComposerMode | null;
   /** Absent = no close button. */
@@ -195,7 +188,6 @@ export function ChatCanvasWorkspace({
   contextChip,
   initialLayout,
   defaultChatOpen = true,
-  followPageSurface = false,
   initialMode = null,
   onClose,
 }: ChatCanvasWorkspaceProps) {
@@ -280,10 +272,6 @@ export function ChatCanvasWorkspace({
   }, [fullScreen]);
 
   const conversationId = chat.conversationId;
-  // Passing no conversation keeps the hook inert for a host that does not
-  // follow the page. The person turns it off and on from the composer's page
-  // chip (ConversationContextChip), which the hook honours.
-  useConversationFollowsPage(followPageSurface ? conversationId : null, true);
   const chatTitle = useChatPanelTitle(conversationId);
 
   const chatColumn = (

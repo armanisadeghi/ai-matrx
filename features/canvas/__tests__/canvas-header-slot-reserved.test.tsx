@@ -176,6 +176,8 @@ describe("canvas shell header slot", () => {
   it("opening an item closes the canvas home", () => {
     act(() => {
       h.store.dispatch(setCanvasAvailable(true));
+    });
+    act(() => {
       h.slot()!.querySelector("button")!.click();
     });
     expect(h.store.getState().canvas.homeOpen).toBe(true);

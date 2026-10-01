@@ -12,77 +12,72 @@ island stays mounted) and draws its own nav + headers: read
 [`../canvas/workspace/FEATURE.md`](../canvas/workspace/FEATURE.md) before touching
 `ShellChromeMode`, `canvas-chrome-routes.ts`, `canvas-chrome/` or `shell.css` §13c.
 
-## THE HEADER RIGHT SET (owner, 2026-09-19)
+## THE HEADER CONTROL SET (owner, 2026-09-19; re-ruled 2026-09-30)
 
 > *"we need to create a consistent set of things for that top-right section so
 > that desktop has a consistent feel and so does mobile. One critical part of
 > consistency is never hiding things and only disabling when inactive."*
 
-`components/header/Header.tsx` mounts, at every breakpoint and in every auth
-state, in this order:
+`components/header/HeaderControlSet.tsx` is the ONE copy, mounted by the shell
+`Header` and by the canvas workspace's header (`/board`). Left to right:
 
 ```
-[ route-injected actions (#shell-header-right) ] [ Search ] [ Agents ] [ Canvas ] [ Inbox ]
+[ route-injected actions (#shell-header-right) ] [ Search ] [ Intelligence ] [ Canvas ] [ Messages ] [ Notifications ]
 ```
 
 | Control | File | Inactive state |
 |---|---|---|
-| Agents | `features/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → the same button opens the auth gate. |
-| Canvas | `features/canvas/core/CanvasHeaderToggle.tsx` | Empty → `disabled`, tooltip says why. Open → pressed, puts the canvas away. The 44px slot never unmounts (`canvas-header-slot-reserved.test.tsx`). |
-| Inbox | `features/notifications/components/InboxHeaderButton.tsx` | Guest → auth gate. Badge absent at 0; a partially-unknown count says so. |
+| Search | `features/knowledge/command-bar/OpenCommandBarButtons.tsx` | Guest → auth gate. |
+| Intelligence | `features/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → auth gate. |
+| Canvas | `features/canvas/core/CanvasHeaderToggle.tsx` | Never disabled: empty → opens the canvas HOME (`CanvasHomeSheet`: saved items + Board). The 44px slot never unmounts. |
+| Messages | `features/messaging/components/shell/MessagesHeaderButton.tsx` | Guest → auth gate. Own unread-conversation count; toggles the docked messages sheet. |
+| Notifications | `features/notifications/components/InboxHeaderButton.tsx` | Guest → auth gate. Never counts DMs. |
 
-**On a phone (below 640px) the four fold into ONE control** —
-`components/header/HeaderPhoneOverflow.tsx`, a bottom sheet holding Search,
-Agents (its panel opens in the sheet), Canvas (same three states; empty is a
-disabled row that says why) and Inbox (its panel in the sheet; the unread count
-rides the button). The four stay mounted in `.shell-header-secondary`; the swap
-is CSS (`styles/shell.css`), so the server-rendered row never shifts, and the
-phone always shows that one button — consistent per device, nothing removed.
-Why: at 375px the set took the page title down to "C." / "Fla…" (page-pass
-shared defects, 2026-09-27). Guard: `components/header/HeaderPhoneOverflow.test.tsx`.
+Each is a 44px tap target with its spacing built in: **no gap, padding or
+margin between or around them** (guard asserts it). Nothing else is built into
+the header — a route adds controls through `#shell-header-right`.
 
-Rules: a control is never unmounted on state — that is what shifted the row
-(owner, 2026-09-16: *"causes a shift in the top header buttons"*). A control
-with nothing to do is `disabled` **with a tooltip naming the reason and the
-way out**; a control for a genuinely account-only feature (the guest's own
-agent bindings, its inbox) opens the auth gate naming the feature. Never gate
-a feature a guest can use in order to route around a defect — fix the defect
-(`../common-docs/policies/fix-the-defect-never-hide-the-feature.md`). The one conditional element is the organization control: it NAMES the
-active organization on every ordinary page (and opens the picker), asks "Choose
-organization" while none is chosen — tinted primary, never alarm red — and is
-absent on /administration/* (the admin seat never acts as itself). Guards:
+**On a phone (below 768px) the five fold into ONE control** —
+`components/header/HeaderPhoneOverflow.tsx`, a bottom sheet holding the same
+five with the same states. The swap is CSS (`styles/shell.css`), so the
+server-rendered row never shifts. Guard: `HeaderPhoneOverflow.test.tsx`.
+
+Rules: a control is never unmounted on state (owner, 2026-09-16: *"causes a
+shift in the top header buttons"*). Guards:
 `features/shell/__tests__/header-right-set.test.ts` (source),
 `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx` (rendered),
 `features/shell/layout-gate/canvas-one-presentation.spec.ts` (laid out).
 
-## THE USER BLOCK — the person is bottom-left (2026-09-19)
+## THE ACCOUNT RAIL — Settings, Organization, You, bottom-left (2026-09-30)
 
-The profile/avatar menu lives where the sidebar ends
-(`components/user-block/ShellUserBlock.tsx`), as Claude, ChatGPT, Notion,
-Slack and Cursor place it. One copy: the header, canvas-pane and glass-layer
-copies (and every CSS rule that hid one to show another) are gone.
+`components/user-block/ShellUserBlock.tsx` ends the sidebar with three
+always-visible rows, top to bottom: **Settings** (`account-rail/ShellSettingsMenu`
+— Settings page, Preferences, light/dark, Media, Trash), **Organization**
+(`account-rail/ShellOrgSwitcher`), **You** (the avatar → `UserMenuPanel`).
+Each row is a `.shell-nav-item.shell-nav-stable`, so its icon sits in the nav
+rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
+`--shell-user-block-h` reserves the rail's height on the sidebar column.
 
-- **Desktop:** a fixed, rail-width block (`.shell-user-block`, height
-  `--shell-user-block-h`) that widens with the sidebar and shows name + email
-  when expanded; the menu panel opens to its right, bottom-aligned. A route
-  that hides the sidebar keeps the rail-width block. `.shell-sidebar-footer`
-  reserves the block's height so Settings never sits under it.
-- **Mobile:** no rail; the navigation drawer ends in `MobileDrawerUserRow`,
-  which closes the drawer and opens the same menu (bottom-anchored panel).
-- **Guest:** the block shows Sign In / Sign Up; the drawer row is "Sign in".
-- **Mechanism:** unchanged — the shell root's `#shell-user-menu` checkbox;
-  every menu item sits in `MenuItemCloseLabel` (`menuCheckboxId.tsx`), a
-  `<label htmlFor>` that also closes on a click on its button/link — label
-  activation skips interactive descendants, so a bare label left the menu open
-  over the window a button item opened (guard: `menuCheckboxId.test.ts`). The
-  portable `ShellUserMenu` (transitional `ResponsiveLayout`) still drops down
-  from its header (`.shell-user-menu-portable-root` override).
-
-The menu's "things for you" rows (Messages, Notifications, Waiting on you)
-moved to the Inbox — the menu is identity, org, quick access, settings, admin,
-sign out.
+- **`ShellOrgSwitcher` is THE organization control of the chrome.** It draws
+  the active organization's logo or 2–3 letter abbreviation
+  (`organizations/components/OrganizationMark`), asks "Choose organization"
+  with a primary ring while boot answered with none, and lights a dot + a
+  one-click "Switch to …" when the page's object lives in another of the
+  person's organizations (`pageObjectOrganization.ts`). It reads/writes through
+  `useActiveOrganizationPicker` → `chooseActiveOrganization` (cookie + sync
+  engine unchanged) and opens the canonical `OrganizationPickerPanel`. Variants:
+  `rail`, `drawer` (phone navigation drawer), `inline` (canvas nav).
+  Replaced: the header chip, the avatar menu's Organization group, the canvas
+  nav's hand-built drop-up.
+- **Mobile:** no rail; the navigation drawer ends in the same three
+  (Settings and the organization as drawer rows, then `MobileDrawerUserRow`).
+- **The avatar menu** is identity, Intelligence, quick access, feedback,
+  admin, copy short link, sign out. Open state is the shell root's
+  `#shell-user-menu` checkbox; items sit in `MenuItemCloseLabel`.
 
 ## Change log
+
+- `2026-09-30` — **The account rail + the header control set** (owner ruling): Settings, Organization and You are the sidebar's three bottom slots, aligned to the nav's icon column (the avatar was 32px and centred 4px left of it; footer icons were 2px right). `ShellOrgSwitcher` is the one org control; `HeaderChooseOrgButton`, `UserMenuOrgSection`, `CanvasOrgDropUp`, `ThemeToggleMenuItem` and the unused `GuestUserMenuPanel` family are deleted. Theme/Media/Preferences moved from the avatar menu into the Settings slot. The header is `HeaderControlSet` (Search, Intelligence, Canvas, Messages, Notifications), shared by the shell header and `/board`; Messages split from Notifications with its own count; Canvas is never disabled (empty opens `CanvasHomeSheet`). The scope tree's organization read now carries `logo_url`.
 
 - `2026-09-27` — **A menu is never the phone primary**: keeping the last action in the row (c397bcf4a7) put a page's own "…" / record menu beside the shell's ⋮ — two overflow buttons. Below 768px `RouteHeader` now sends every MENU action to the ⋮ sheet and keeps the last NON-menu action as the primary (none when every action is a menu). Menus are known by what they declare, never DOM text — `isMenuAction` in `components/header/route-header-layout.tsx`: identity (`DropdownMenu`, `MoreHorizontalTapButton`), an overflow `icon` (lucide `Ellipsis` / `EllipsisVertical`, i.e. `MoreHorizontal` / `MoreVertical`), a single-child host wrapper around one of those, or the `routeHeaderMenu = true` static (`ItemMenu` carries it; a page's own menu component declares it the same way). Desktop is unchanged. Guard: `route-header-phone-actions.test.tsx` "a menu is never the primary" (3 of 3 red against c397bcf4a7).
 
