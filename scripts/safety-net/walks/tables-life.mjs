@@ -265,17 +265,20 @@ async function addRow(title) {
 
 /** Open a cell's own editor the way a person does: select it, then click it again / Enter / double-click. */
 async function openEditor(row, col) {
-  const overlay = page.locator("[data-radix-popper-content-wrapper], [role=dialog]");
+  const overlay = page.locator("[data-radix-popper-content-wrapper], [role=dialog], [role=listbox]");
   const before = await overlay.count();
   const c = await cellOf(row, col);
+  const inCell = () => c.locator("[data-sheet-relation-editor], input, textarea, button, [role=combobox]").count();
   await c.click();
-  await sleep(600);
-  for (const how of ["click", "Enter", "dblclick"]) {
-    if (how === "click") await c.click();
-    else if (how === "Enter") await page.keyboard.press("Enter");
+  await sleep(800);
+  const inBefore = await inCell();
+  for (const how of ["Enter", "dblclick"]) {
+    if (how === "Enter") await page.keyboard.press("Enter");
     else await c.dblclick();
-    await sleep(1500);
-    if ((await overlay.count()) > before || (await c.locator("input, textarea, button").count()) > 1) return how;
+    for (let k = 0; k < 6; k++) {
+      await sleep(700);
+      if ((await overlay.count()) > before || (await inCell()) > inBefore) return how;
+    }
   }
   return null;
 }
@@ -411,8 +414,9 @@ try {
     await step([item], `edit relation cell "${col}" (pick ${n})`, async () => {
       const how = await openEditor(R1, col);
       await probe(`relation-picker-${col}`);
-      const opts = page.locator("[role=listbox] [role=option], [cmdk-item], [role=dialog] [role=option]");
-      await until("the records to pick", async () => (await opts.count()) > 0, 20000);
+      const opts = page.locator("[role=listbox] [role=option], [cmdk-item], [role=dialog] [role=option], [data-radix-popper-content-wrapper] [role=option]");
+      await until("the records to pick", async () => (await opts.count()) > 0, 25000);
+      if (!(await opts.count())) await probe(`relation-picker-late-${col}`);
       const names = (await opts.allInnerTexts()).map(clean).filter(Boolean);
       if (!names.length) return { ok: false, detail: `no record offered to pick (editor opened by ${how ?? "nothing"})` };
       for (let k = 0; k < n && k < names.length; k++) {
@@ -507,6 +511,15 @@ try {
       if (await offer.count()) await offer.first().click();
       else await page.keyboard.press("Enter");
       await sleep(1500);
+      // A several-choice cell saves when it is left: leave it.
+      if (!(await ask.count())) {
+        await page.keyboard.press("Escape").catch(() => {});
+        await sleep(1500);
+      }
+      if (!(await ask.count())) {
+        await (await cellOf(R3, "Copay")).click().catch(() => {});
+        await sleep(1500);
+      }
     }
     const asked = await until("the ask", async () => (await ask.count()) > 0, 10000);
     if (!asked.v) {
@@ -573,12 +586,13 @@ try {
   await step(["T28"], "type into a cell, click another cell (no Enter): the value is saved", async () => {
     const words = "Band above the knees, 3 x 12";
     await typeInto(R2, "Patient Notes", words, { enter: false });
+    const inEditor = await (await cellOf(R2, "Patient Notes")).locator("textarea, input").first().inputValue().catch(() => "(no editor open)");
     await (await cellOf(R3, "Copay")).click();
     await sleep(3500);
     const shown = await cellText(R2, "Patient Notes");
     await reload();
     const now = await cellText(R2, "Patient Notes");
-    return { ok: now === words, detail: `right after the click-off the cell read "${shown}"; after a reload "${now}"` };
+    return { ok: now === words, detail: `the editor held "${inEditor}"; right after the click-off the cell read "${shown}"; after a reload "${now}"` };
   });
 
   // ── T29 undo a cell edit with Cmd/Ctrl-Z ───────────────────────────────────────────────────────
@@ -598,7 +612,7 @@ try {
   });
 
   // ── T27 sort and filter persist after an edit ──────────────────────────────────────────────────
-  await step(["T27"], "sort by Title Z to A and filter Title contains \"l\", edit a cell, reload: both still applied", async () => {
+  await step(["T27"], "sort by Title Z to A and filter Title to two exercises, edit a cell, reload: both still applied", async () => {
     const menuItem = async (col, node) => {
       const exact = new RegExp(`^\\s*[⚿]?\\s*${esc(col)}\\s*[↑↓]?\\s*$`, "i");
       await page.locator("thead th", { hasText: exact }).first().click({ button: "right" });
@@ -613,13 +627,24 @@ try {
     const sorted = await order();
     await menuItem("Title", "cm:x:grid-col-filter");
     await probe("title-filter");
-    const box = page.locator("[data-radix-popper-content-wrapper] input, [role=dialog] input").filter({ hasNot: page.locator("[type=checkbox]") }).last();
-    if (!(await box.count())) return { ok: false, detail: `sorted ${sorted.join(">")}; "Filter this column…" opened no box to type in` };
-    await box.fill("l");
-    await page.keyboard.press("Enter");
-    await sleep(2500);
+    // The column's value filter: tick the two exercises to keep (Bird dog is left out).
+    const pop = page.locator("[data-radix-popper-content-wrapper]").filter({ hasText: "Filter" }).last();
+    let ticked = 0;
+    for (const v of [R1, R2]) {
+      const box = pop.locator("label", { has: page.locator(`span[title="${v}"]`) }).getByRole("checkbox");
+      if (await box.count()) {
+        await box.first().click();
+        ticked += 1;
+        await sleep(1200);
+      }
+    }
+    if (ticked < 2) {
+      await page.keyboard.press("Escape").catch(() => {});
+      return { ok: false, detail: `sorted ${sorted.join(">")}; "Filter this column…" offered ${ticked} of the two exercises to tick` };
+    }
+    await sleep(1500);
     await page.keyboard.press("Escape").catch(() => {});
-    await sleep(800);
+    await sleep(1200);
     const filtered = await order();
     await typeInto(R1, "Copay", "40");
     const afterEdit = await order();
@@ -627,7 +652,7 @@ try {
     await reload();
     const afterReload = await order();
     const copay = await cellText(R1, "Copay");
-    // Z→A: Wall angels (R2) above Clamshells (R1); "l" keeps both and hides Bird dog (R3).
+    // Z→A: Wall angels (R2) above Clamshells (R1); the filter keeps those two and hides Bird dog (R3).
     const want = "R2,R1";
     const ok = sorted.join() === "R2,R3,R1" && filtered.join() === want && afterEdit.join() === want && afterReload.join() === want && /40/.test(copay);
     return { ok, detail: `sorted ${sorted.join(">")}; filtered ${filtered.join(">")}; after the edit ${afterEdit.join(">")}; after reload ${afterReload.join(">")} (Copay "${copay}", address ${url.slice(0, 160)})` };
@@ -635,6 +660,7 @@ try {
 
   // ── T06 rename a column ────────────────────────────────────────────────────────────────────────
   await step(["T06"], "rename Patient Notes → Patient Comments; values stay", async () => {
+    const was = [await cellText(R1, "Patient Notes"), await cellText(R2, "Patient Notes"), await cellText(R3, "Patient Notes")];
     const d = await columnSettings("Patient Notes");
     await d.locator("#col-name").fill("Patient Comments");
     await d.getByRole("button", { name: "Save", exact: true }).click();
@@ -642,8 +668,8 @@ try {
     await open("?view=sheet", { needRows: true });
     await sheet();
     const hs = await headers();
-    const v = (await colIndex("Patient Comments")) >= 0 ? await cellText(R1, "Patient Comments") : "∅";
-    return { ok: hs.includes("Patient Comments") && !hs.includes("Patient Notes") && /Pain 3\/10/.test(v), detail: `headers ${hs.join(", ").slice(0, 200)}; ${R1} reads "${v}"` };
+    const now = (await colIndex("Patient Comments")) >= 0 ? [await cellText(R1, "Patient Comments"), await cellText(R2, "Patient Comments"), await cellText(R3, "Patient Comments")] : [];
+    return { ok: hs.includes("Patient Comments") && !hs.includes("Patient Notes") && JSON.stringify(now) === JSON.stringify(was), detail: `headers ${hs.join(", ").slice(0, 160)}; values before ${JSON.stringify(was)}, after ${JSON.stringify(now)}` };
   });
 
   // ── T09 recolor a choice ───────────────────────────────────────────────────────────────────────
