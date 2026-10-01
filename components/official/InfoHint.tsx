@@ -26,7 +26,7 @@ import { Info } from "lucide-react";
 import { useState, useSyncExternalStore, type SyntheticEvent } from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -106,6 +106,9 @@ export function InfoHint({ text, label = "More info", className, side = "top" }:
   }
 
   return (
+    // Brings its own provider: an official component works wherever it is imported (a
+    // test, a portal, a page without the app shell) — 2026-09-30, final-switch tests.
+    <TooltipProvider delayDuration={200}>
     <Tooltip>
       <TooltipTrigger asChild>
         <button
@@ -121,6 +124,7 @@ export function InfoHint({ text, label = "More info", className, side = "top" }:
         {text}
       </TooltipContent>
     </Tooltip>
+    </TooltipProvider>
   );
 }
 

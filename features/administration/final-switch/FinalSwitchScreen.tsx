@@ -10,6 +10,7 @@
 // own sentence until everything is green. The undo is present only after a press. Nothing here
 // decides: the readiness answer and the press's refusals are the database's (finalSwitch.ts).
 
+import { InfoHint } from "@/components/official/InfoHint";
 import React from "react";
 import {
   AlertTriangle,
@@ -563,8 +564,6 @@ export function FinalSwitchScreen() {
             <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
               <p className="text-sm font-medium">{board.says}</p>
               <p className="text-xs text-muted-foreground">
-                {/* Listed = anything old, or a switch pressed. "Current" = already
-                    on the new system or nothing old left. */}
                 {counts.listed} organizations listed, measured{" "}
                 {when(board.checkedAt)}:{" "}
                 <span data-testid="final-switch-counts">
@@ -572,7 +571,11 @@ export function FinalSwitchScreen() {
                   {board.totals.need_copy_again} need Copy again ·{" "}
                   {board.totals.need_context_copy ?? 0} need context copy ·{" "}
                   {board.totals.blocked} blocked
-                </span>
+                </span>{" "}
+                <InfoHint
+                  label="What listed and current mean"
+                  text="Listed means anything old or a switch pressed; current means already on the new system or nothing old left."
+                />
                 {board.lastRun &&
                   ` · last run ${board.lastRun.direction === "new" ? "pressed" : "undone"} ${when(board.lastRun.at)}${board.lastRun.by ? ` by ${board.lastRun.by}` : ""}`}
               </p>
