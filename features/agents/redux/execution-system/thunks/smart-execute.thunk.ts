@@ -715,6 +715,28 @@ function latestServerRequestId(
   return null;
 }
 
+/**
+ * The last wire frame the page applied for the request the server knows as
+ * `serverRequestId` — read AFTER the local abort, whose processor commits its
+ * cursor synchronously. Undefined when no frame carried a cursor.
+ */
+function appliedTransportSeq(
+  state: RootState,
+  conversationId: string,
+  serverRequestId: string,
+): number | undefined {
+  const requestIds = state.activeRequests?.byConversationId[conversationId] ?? [];
+  for (let i = requestIds.length - 1; i >= 0; i--) {
+    const req = state.activeRequests.byRequestId[requestIds[i]];
+    if (req?.serverRequestId === serverRequestId) {
+      return typeof req.lastTransportSeq === "number"
+        ? req.lastTransportSeq
+        : undefined;
+    }
+  }
+  return undefined;
+}
+
 export const cancelExecution = createAsyncThunk<
   void,
   string,
@@ -724,15 +746,22 @@ export const cancelExecution = createAsyncThunk<
   async (conversationId, { getState, dispatch }) => {
     const state = getState();
 
-    // Tell the SERVER to stop too — best-effort, before the local abort.
-    // Closing our read alone never stops the run (detach_on_disconnect: the
-    // server loops to completion and bills every remaining iteration). The
-    // cancel signal stops it at its next iteration boundary; the in-flight
-    // provider call finishes by design (its cost is committed either way) and
-    // everything streamed persists server-side.
+    // Stop reading NOW — the aborted processor commits what it applied, so
+    // the store holds the page's exact cursor. Then tell the SERVER to stop
+    // too (closing our read alone never stops a detached run) and where the
+    // page stopped: the server saves the stopped answer only up to that frame,
+    // so the post-Stop re-read never grows the screen (bench 2026-10-01).
     const serverRequestId = latestServerRequestId(state, conversationId);
+    abortConversation(conversationId);
     if (serverRequestId) {
-      void dispatch(cancelAgentRunRequest(serverRequestId)).then((result) => {
+      const seenSeq = appliedTransportSeq(
+        getState(),
+        conversationId,
+        serverRequestId,
+      );
+      void dispatch(
+        cancelAgentRunRequest(serverRequestId, "cancel", seenSeq),
+      ).then((result) => {
         if (result.error) {
           console.warn(
             "[cancel-execution] server cancel failed (best-effort)",
@@ -745,8 +774,6 @@ export const cancelExecution = createAsyncThunk<
         }
       });
     }
-
-    abortConversation(conversationId);
 
     // Only the requests the Stop actually interrupted are settled — never an
     // answer that had already finished earlier in the conversation.
@@ -807,8 +834,17 @@ export const interruptAndSend = createAsyncThunk<
     }
 
     const serverRequestId = latestServerRequestId(initial, conversationId);
+    // Instant local stop first — its processor commits the page's cursor.
+    abortConversation(conversationId);
     if (serverRequestId) {
-      void dispatch(cancelAgentRunRequest(serverRequestId, "interrupt")).then(
+      const seenSeq = appliedTransportSeq(
+        getState(),
+        conversationId,
+        serverRequestId,
+      );
+      void dispatch(
+        cancelAgentRunRequest(serverRequestId, "interrupt", seenSeq),
+      ).then(
         (result) => {
           if (result.error) {
             console.warn(
@@ -820,8 +856,6 @@ export const interruptAndSend = createAsyncThunk<
       );
     }
 
-    // Instant local stop — the user is done watching this run.
-    abortConversation(conversationId);
     dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
     dispatch(resetSubmissionPhase(conversationId));
 

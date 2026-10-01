@@ -708,6 +708,16 @@ export async function processStream({
     }
   };
 
+  // STOP COMMITS NOW. A Stop reads this request's `lastTransportSeq` the
+  // instant it aborts and sends it as `seen_seq` — the server cuts the saved
+  // answer there. Left to the 30 ms tick, the cursor in the store lags the
+  // text this processor already applied (bench 2026-10-01, 6ca03037…).
+  const commitOnAbort = (controller: AbortController | undefined) =>
+    controller?.signal.addEventListener("abort", () => dispatchBatch(), {
+      once: true,
+    });
+  commitOnAbort(activeAbortController);
+
   // ONE shared ~30 fps clock for every live stream in the tab (see
   // stream-flush-scheduler.ts): N concurrent streams flush on the same tick.
   const scheduleBatchEvent = () => {
@@ -780,6 +790,7 @@ export async function processStream({
     let handedToRejoin = false;
     try {
     activeAbortController = nextAbortController;
+    commitOnAbort(nextAbortController);
       // Each transport has its own watchdog observer. Keep all lexical stream
       // state, but never keep the observer that belonged to a dead socket.
       activeOnEvent = nextOnEvent;

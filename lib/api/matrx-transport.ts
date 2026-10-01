@@ -236,6 +236,11 @@ export function createMatrxTransport(
 export function cancelAgentRunRequest(
   requestId: string,
   mode: "cancel" | "interrupt" = "cancel",
+  /**
+   * The last wire `stream_seq` the page APPLIED before Stop. The server cuts
+   * the stopped answer there, so the saved text never outgrows the screen.
+   */
+  seenSeq?: number,
 ): ThunkAction<
   Promise<ApiCallResult<MatrxCancelResponse>>,
   RootState,
@@ -244,7 +249,17 @@ export function cancelAgentRunRequest(
 > {
   return async (_dispatch, getState) => {
     await waitForAuthReady(getState);
-    const transport = createMatrxTransport(getState);
+    const base = createMatrxTransport(getState);
+    const transport =
+      seenSeq === undefined
+        ? base
+        : {
+            fetch: (path: string, init: Parameters<typeof base.fetch>[1]) =>
+              base.fetch(
+                `${path}${path.includes("?") ? "&" : "?"}seen_seq=${seenSeq}`,
+                init,
+              ),
+          };
     try {
       const data = await cancelAgentRun(transport, requestId, { mode });
       return { data, requestId: data.request_id };

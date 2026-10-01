@@ -278,6 +278,25 @@ describe("cancelAgentRunRequest (the moved cancel flow)", () => {
     expect(result.error).toBeUndefined();
   });
 
+  it("carries the page's applied cursor as seen_seq (a Stop saves only what was shown)", async () => {
+    mockedFetch.mockResolvedValue({
+      response: fakeResponse({
+        json: { status: "cancelled", request_id: "srv-req-2", spine_executions_signalled: [] },
+      }),
+      controller: new AbortController(),
+    });
+
+    await cancelAgentRunRequest("srv-req-2", "cancel", 41)(
+      dispatch,
+      stateOf(),
+      undefined,
+    );
+
+    expect(mockedFetch.mock.calls[0][0]).toBe(
+      "https://backend.test/ai/cancel/srv-req-2?seen_seq=41",
+    );
+  });
+
   it("resolves an ApiCallResult error envelope on HTTP failure (never throws)", async () => {
     mockedFetch.mockResolvedValue({
       response: fakeResponse({
