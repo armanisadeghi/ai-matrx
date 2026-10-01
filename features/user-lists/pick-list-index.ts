@@ -1,18 +1,13 @@
 // features/user-lists/pick-list-index.ts — THE LIST INDEX, ONE STORE DOOR (lane HANDOVER, 2026-09-27).
 //
-// Every screen that lists pick lists reads them here: the Lists page (/lists/v3), the organization's
+// Every screen that lists pick lists reads them here: the Picklists page (/lists), the organization's
 // Lists tab and its count, and the list pickers (agent variable binding, choice columns, the floating
 // list workspace). The one door is the store's: `custom.pick_list_index(org)` for one organization
 // (the organization wall first) and `custom.pick_list_index_everywhere()` for every organization the
 // person is a member of. It answers the Tables of choices the store's own access rules lets her open,
-// each with its item count, plus — until the final switch archives them — her own live older lists,
-// marked `livesIn: "older"` so a row opens where the list lives (`/lists/<id>` decides).
-//
-// Nothing here reads `workbench.*` from the browser.
+// each with its item count.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-import type { ListLivesIn } from "./types";
 
 export interface PickListEntry {
   id: string;
@@ -23,7 +18,6 @@ export interface PickListEntry {
   createdBy: string | null;
   organizationId: string | null;
   organizationName: string | null;
-  livesIn: ListLivesIn;
 }
 
 export type PickListIndex =
@@ -45,7 +39,6 @@ function entryOf(raw: Record<string, unknown>): PickListEntry | null {
     createdBy: text(raw.created_by),
     organizationId: text(raw.organization_id),
     organizationName: text(raw.organization_name),
-    livesIn: raw.lives_in === "older" ? "older" : "record",
   };
 }
 

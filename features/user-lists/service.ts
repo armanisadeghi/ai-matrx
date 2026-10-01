@@ -1,62 +1,30 @@
 /**
- * User Lists service — wraps Supabase RPCs and table queries.
- *
- * Client-side functions use the browser Supabase client.
- * Server-side functions are imported by Server Components / Server Actions
- * via the server client factory.
+ * User Lists service — every pick list lives in the record store as a Table of choices
+ * (one Record per choice, same ids). Reads go through THE LIST INDEX and the list doors that
+ * answer from the store; a choice is written through the records client, in the list's own
+ * organization and the person's own seat.
  */
-import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne, writeOneRow } from "@/utils/supabase/writeOne";
+import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
+import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+
+import { createClient, supabase } from "@/utils/supabase/client";
 import type {
   UserList,
-  UserListSummaryRaw,
   UserListWithItems,
   CreateListInput,
   UpdateListInput,
   StructuredListForSelection,
 } from "./types";
-import { normalizeUserList } from "./types";
-import { storeListsOf } from "./where-lists-live";
+import { accessiblePickLists } from "./where-lists-live";
 
-// ─── Summary (index) ──────────────────────────────────────────────────────────
+// ─── Index ────────────────────────────────────────────────────────────────────
 
-/**
- * Returns all lists owned by the given user, with item_count and group_count.
- * Note: this RPC is owner-only. For shared lists, call getAccessibleLists().
- */
-export async function getOwnedListsSummary(
-  userId: string,
-): Promise<UserList[]> {
-  const { data, error } = await supabase.rpc("get_user_lists_summary", {
-    p_user_id: userId,
-  });
-  if (error) throw new Error(`Failed to load lists: ${error.message}`);
-  return ((data as unknown as UserListSummaryRaw[]) ?? []).map(
-    normalizeUserList,
-  );
-}
-
-/**
- * Returns all lists the current user can access (owned + shared via RLS).
- * Uses a direct table query so RLS policies apply automatically.
- */
+/** Every pick list the signed-in person may open, across all their organizations. */
 export async function getAccessibleLists(): Promise<UserList[]> {
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_lists")
-    .select("*")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(`Failed to load lists: ${error.message}`);
-  const older = ((data as UserList[]) ?? []).map((l) => ({ ...l, lives_in: "older" as const }));
-  // lane LISTS-AFTER-SWITCH: the person's lists that live in the new system (their
-  // organization switched its Data tables) sit beside the older ones, marked, same ids.
   const { data: session } = await supabase.auth.getSession();
   const userId = session.session?.user?.id;
-  if (!userId) return older;
-  const seen = new Set(older.map((l) => l.id));
-  const store = (await storeListsOf(supabase, userId)).filter((l) => !seen.has(l.id));
-  return [...store, ...older].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  if (!userId) return [];
+  return accessiblePickLists(supabase, userId);
 }
 
 // ─── Detail ────────────────────────────────────────────────────────────────────
@@ -90,23 +58,33 @@ export async function getStructuredListForSelection(
 
 // ─── Create ────────────────────────────────────────────────────────────────────
 
+/**
+ * A new pick list, born in the record store — a Table of choices marked as a pick list, one Record
+ * per item — through the store's one pick-list birth door, `custom.pick_list_create`. Answers
+ * `{ list_id, list_name, address, organization_id, items, ... }`.
+ */
 export async function createList(input: CreateListInput) {
-  const { data, error } = await supabase.rpc("create_user_list", {
-    p_list_name: input.p_list_name,
-    p_description: input.p_description ?? "",
-    p_user_id: input.p_user_id,
-    p_is_public: input.p_is_public ?? false,
-    p_authenticated_read: false,
-    p_public_read: input.p_public_read ?? true,
-    p_items: input.p_items ?? [],
-    p_organization_id: input.p_organization_id,
-  });
+  const { data, error } = await supabase
+    .schema("custom" as never)
+    .rpc("pick_list_create" as never, {
+      // object-org-exempt: a NEW list has no organization of its own yet; it is born where the person chose to make it
+      p_organization_id: input.p_organization_id,
+      p_list_name: input.p_list_name,
+      p_description: input.p_description ?? null,
+      p_items: (input.p_items ?? []).map((item) => ({
+        label: item.Label,
+        ...(item.Description ? { description: item.Description } : {}),
+        ...(item["Help Text"] ? { help_text: item["Help Text"] } : {}),
+        ...(item.Group ? { group_name: item.Group } : {}),
+      })),
+    } as never);
   if (error) throw new Error(`Failed to create list: ${error.message}`);
-  return data;
+  return data as { list_id?: string } | null;
 }
 
 // ─── Update ────────────────────────────────────────────────────────────────────
 
+/** Rename / re-describe a list (and, with `p_items`, rewrite its choices) through `update_user_list`. */
 export async function updateList(input: UpdateListInput) {
   const { data, error } = await supabase.rpc("update_user_list", {
     p_list_id: input.p_list_id,
@@ -120,135 +98,63 @@ export async function updateList(input: UpdateListInput) {
   return data;
 }
 
-// ─── Delete ────────────────────────────────────────────────────────────────────
+// ─── Choices (Records of the list's Table) ────────────────────────────────────
 
-/**
- * Soft delete. The row is tombstoned, not destroyed — every read path filters
- * `deleted_at is null` (the three list RPCs do it server-side; see aidream
- * migration 0454). Pair with restoreList for undo.
- */
-export async function deleteList(listId: string): Promise<void> {
-  const { error } = await tryWriteOne(
-    supabase
-      .schema("workbench")
-      .from("udt_structured_lists")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", listId)
-      .select("id"),
-    { action: "delete", noun: "list" },
-  );
-  if (error) throw new Error(`Failed to delete list: ${error.message}`);
+/** The records client for one list: its own organization, the person's own seat. */
+async function recordsClientForList(listId: string): Promise<RecordsClient> {
+  const list = await getListWithItems(listId);
+  if (!list?.organization_id) {
+    throw new Error("This list could not be opened, so nothing was written to it.");
+  }
+  const { data: session } = await supabase.auth.getSession();
+  return createRecordsClient({
+    dataSource: recordsDataSource(createClient()),
+    actor: personActor(session.session?.user?.id ?? null),
+    organizationId: list.organization_id,
+  });
 }
 
-export async function restoreList(listId: string): Promise<void> {
-  const { error } = await tryWriteOne(
-    supabase
-      .schema("workbench")
-      .from("udt_structured_lists")
-      .update({ deleted_at: null })
-      .eq("id", listId)
-      .select("id"),
-    { action: "restore", noun: "list" },
-  );
-  if (error) throw new Error(`Failed to restore list: ${error.message}`);
-}
-
-// ─── Item-level mutations (partial, no full replace) ─────────────────────────
-
-export async function addItemToList(params: {
-  listId: string;
-  userId: string;
+export interface NewChoice {
   label: string;
   description?: string;
   helpText?: string;
   groupName?: string;
-  iconName?: string;
-  isPublic?: boolean;
-  publicRead?: boolean;
-}) {
-  // An item lives in its LIST's tenant — never in whatever organization the
-  // person happens to have selected, and never in a database default. Read the
-  // parent's organization and refuse when the list has none.
-  const { data: parentList, error: parentError } = await supabase
-    .schema("workbench")
-    .from("udt_structured_lists")
-    .select("organization_id")
-    .eq("id", params.listId)
-    .single();
-  if (parentError)
-    throw new Error(`Failed to read the list: ${parentError.message}`);
-  if (!parentList.organization_id)
-    throw new Error(
-      "This list isn't filed in an organization, so a new item has no organization to live in. Open the list from an organization workspace and try again.",
-    );
-
-  const { data, error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_list_items")
-    .insert({
-      list_id: params.listId,
-      organization_id: parentList.organization_id,
-      user_id: params.userId,
-      label: params.label,
-      description: params.description ?? null,
-      help_text: params.helpText ?? null,
-      group_name: params.groupName ?? null,
-      icon_name: params.iconName ?? null,
-      is_public: params.isPublic ?? false,
-      public_read: params.publicRead ?? true,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(`Failed to add item: ${error.message}`);
-  return data;
 }
 
-export async function updateItem(
-  itemId: string,
+/** Add choices to a list — one Record each in the list's Table, in order. */
+export async function addChoices(listId: string, choices: NewChoice[]): Promise<void> {
+  const client = await recordsClientForList(listId);
+  for (const choice of choices) {
+    const written = await client.recordWrite({
+      table_id: listId,
+      data: {
+        name: choice.label,
+        ...(choice.description ? { description: choice.description } : {}),
+        ...(choice.helpText ? { help_text: choice.helpText } : {}),
+        ...(choice.groupName ? { group_name: choice.groupName } : {}),
+      },
+    });
+    if (!written.ok) throw new Error(`Failed to add "${choice.label}": ${written.error.message}`);
+  }
+}
+
+/** Change one choice. Absent = leave alone; null = clear. */
+export async function updateChoice(
+  listId: string,
+  choiceId: string,
   patch: {
     label?: string;
     description?: string | null;
-    help_text?: string | null;
-    group_name?: string | null;
-    icon_name?: string | null;
+    helpText?: string | null;
+    groupName?: string | null;
   },
-) {
-  const { data, error } = await writeOneRow(
-    supabase
-      .schema("workbench")
-      .from("udt_structured_list_items")
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq("id", itemId)
-      .select(),
-    { action: "update", noun: "structured list item" },
-  );
-  if (error) throw new Error(`Failed to update item: ${error.message}`);
-  return data;
-}
-
-/** Soft delete — see deleteList. */
-export async function deleteItem(itemId: string): Promise<void> {
-  const { error } = await tryWriteOne(
-    supabase
-      .schema("workbench")
-      .from("udt_structured_list_items")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", itemId)
-      .select("id"),
-    { action: "delete", noun: "list item" },
-  );
-  if (error) throw new Error(`Failed to delete item: ${error.message}`);
-}
-
-export async function restoreItem(itemId: string): Promise<void> {
-  const { error } = await tryWriteOne(
-    supabase
-      .schema("workbench")
-      .from("udt_structured_list_items")
-      .update({ deleted_at: null })
-      .eq("id", itemId)
-      .select("id"),
-    { action: "restore", noun: "list item" },
-  );
-  if (error) throw new Error(`Failed to restore item: ${error.message}`);
+): Promise<void> {
+  const client = await recordsClientForList(listId);
+  const fields: Record<string, unknown> = {};
+  if (patch.label !== undefined) fields.name = patch.label;
+  if (patch.description !== undefined) fields.description = patch.description;
+  if (patch.helpText !== undefined) fields.help_text = patch.helpText;
+  if (patch.groupName !== undefined) fields.group_name = patch.groupName;
+  const updated = await client.recordUpdate({ record_id: choiceId, patch: fields });
+  if (!updated.ok) throw new Error(`Failed to update the choice: ${updated.error.message}`);
 }

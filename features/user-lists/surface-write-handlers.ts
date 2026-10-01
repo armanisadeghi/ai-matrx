@@ -1,15 +1,13 @@
 /**
  * features/user-lists/surface-write-handlers.ts
  *
- * The ONE implementation behind `LIST_SURFACE_WRITE_TARGETS`, shared by both
- * mounts of a user list's editable state:
+ * The ONE implementation behind `LIST_SURFACE_WRITE_TARGETS`, used by the
+ * `matrx-user/list-manager` mount (`ListManagerFloatingWorkspace`).
  *
- *   - `matrx-user/list-manager` — `ListManagerFloatingWorkspace`
- *   - `matrx-user/lists`        — `ListDetailClient` on the `/lists/[id]` route
- *
- * Every handler runs the SAME canonical server action the user's own dialog
- * runs (`updateListAction` for the list, `addItemAction` for items) — never a
- * parallel write path — so an agent write and a human write are the same
+ * Every handler writes where the list lives — `update_user_list` for the list's
+ * name and description, the records client for its choices (one Record each in
+ * the list's Table of choices, `./service`) — the same doors the list's own
+ * table page writes through, so an agent write and a human write are the same
  * database operation. Because there is no draft layer, an applied write is a
  * commit; that is why all three targets are `applyPolicy: "ask"`.
  *
@@ -34,11 +32,7 @@
  */
 
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  addItemAction,
-  updateItemAction,
-  updateListAction,
-} from "./actions/list-actions";
+import { addChoices, updateChoice, updateList } from "./service";
 import { LIST_WRITE_TARGET_NAMES } from "./surface-write-targets";
 
 export interface ListSurfaceWriteOptions {
@@ -95,7 +89,7 @@ export function buildListSurfaceWriteHandlers(
         { allowEmpty: false },
       );
       const listId = resolveListId(LIST_WRITE_TARGET_NAMES.activeListName);
-      await updateListAction({ list_id: listId, list_name: name.trim() });
+      await updateList({ p_list_id: listId, p_list_name: name.trim() });
       await afterWrite(listId);
     },
 
@@ -108,7 +102,7 @@ export function buildListSurfaceWriteHandlers(
       const listId = resolveListId(
         LIST_WRITE_TARGET_NAMES.activeListDescription,
       );
-      await updateListAction({ list_id: listId, description });
+      await updateList({ p_list_id: listId, p_description: description });
       await afterWrite(listId);
     },
 
@@ -160,9 +154,7 @@ export function buildListSurfaceWriteHandlers(
           groupName: optional("group"),
         };
       });
-      for (const item of items) {
-        await addItemAction({ listId, ...item });
-      }
+      await addChoices(listId, items);
       await afterWrite(listId);
     },
 
@@ -226,9 +218,7 @@ export function buildListSurfaceWriteHandlers(
         );
       }
       const listId = resolveListId(target);
-      await updateItemAction({
-        itemId: row.id.trim(),
-        listId,
+      await updateChoice(listId, row.id.trim(), {
         label,
         description,
         helpText,

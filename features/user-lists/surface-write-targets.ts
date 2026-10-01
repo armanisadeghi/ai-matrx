@@ -4,47 +4,34 @@
  * The ONE canonical set of agent write targets for a custom list, shared by
  * every surface that mounts list-editing state.
  *
- * WHY THIS FILE EXISTS. A user list is edited from two different homes:
- *
- *   - `matrx-user/list-manager` — the floating List Manager window
- *     (`ListManagerFloatingWorkspace`), openable anywhere.
- *   - `matrx-user/lists` — the `/lists/[id]` route
- *     (`ListDetailClient asRoute`), the canonical deep link for one list.
- *
- * Both render the SAME `ListDetailClient` over the SAME rows and drive the
- * SAME server actions (`updateListAction`, `addItemAction`). They are two
- * MOUNTS of one editable state, not two different things — so they must offer
+ * WHY THIS FILE EXISTS. Two surface manifests declare list-editing targets —
+ * `matrx-user/list-manager` (the floating List Manager window,
+ * `ListManagerFloatingWorkspace`) and `matrx-user/lists` — and they must offer
  * agents one vocabulary, not two. Defining the targets once here (and the
- * handlers once in `./surface-write-handlers`) makes that identity structural:
- * the two manifests cannot drift apart, because there is only one definition
- * to change.
+ * handlers once in `./surface-write-handlers`) makes that structural.
  *
  * `matrx-user/list-manager` shipped these targets first and its vocabulary
  * WINS — the names, semantics, and prose below are exactly what it already
- * declared, lifted verbatim so the route mount reuses them rather than
- * inventing a competing set.
+ * declared, lifted verbatim.
  *
  * Deliberately kept free of React and of `"use server"` imports: both surface
  * manifests import this module, and the manifest registry is loaded by
  * `scripts/check-surface-drift.ts` outside any React/Next runtime. The
- * handlers live in the sibling `./surface-write-handlers` module, which the
- * two mounting components import instead.
+ * handlers live in the sibling `./surface-write-handlers` module.
  *
  * NOT DECLARED HERE, ON PURPOSE:
  *
  *   - **Anything destructive.** Deleting a list, deleting an item, or
  *     bulk-clearing items is never an agent write target at any policy. There
  *     is no undo behind these actions and no draft to review, so the agent may
- *     stage a proposal in chat and the human presses the button
- *     (`DeleteConfirmDialog`). Adding a delete target later would be a defect,
+ *     stage a proposal in chat and the human acts on the list's own page. Adding a delete target later would be a defect,
  *     not a feature.
  *   - **Visibility** (`is_public` / `public_read`, surfaced as
  *     `list_visibility`). Permission-shaped changes stay human-only by the
  *     same doctrine list-manager set: an agent widening who can read a list is
  *     not a content edit.
  * EDITING AN EXISTING ITEM (`update_list_item`) was that follow-up, and it
- * landed here — in the shared module, so BOTH mounts gained it in the same
- * change, which is the whole point of this file. It is deliberately an
+ * landed here, in the shared module. It is deliberately an
  * IN-PLACE edit of ONE item: it can never create an item (that is
  * `add_list_items`) and can never remove one (removal stays human-only).
  */
@@ -71,9 +58,8 @@ export const LIST_WRITE_TARGET_NAMES = {
 /**
  * Write half of every list-editing surface.
  *
- * There is NO draft layer on a user list: every user-facing edit is a server
- * action that persists on submit (`AddItemDialog` → `addItemAction`,
- * `EditListDialog` → `updateListAction`). So every target is `mode: "entity"`
+ * There is NO draft layer on a user list: every edit persists at once
+ * (`update_user_list`, or a Record of the list's Table of choices). So every target is `mode: "entity"`
  * — an applied write is a database commit, not a staged change — and every one
  * is `applyPolicy: "ask"`. `auto` is deliberately absent and must stay absent:
  * there is nothing to review after the fact and no Save bar to undo it.

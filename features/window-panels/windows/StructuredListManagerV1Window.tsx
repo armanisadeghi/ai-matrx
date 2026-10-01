@@ -7,7 +7,7 @@ import {
   WindowPanel,
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
-import { StructuredListManagerV1Client } from "@/features/structured-lists/StructuredListManagerV1Client";
+import { PicklistWindowBody } from "@/features/user-lists/components/PicklistWindowBody";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface StructuredListManagerV1WindowProps extends Omit<
@@ -35,7 +35,7 @@ export default function StructuredListManagerV1Window({
     dispatch(closeOverlay({ overlayId: "structuredListManagerV1Window" }));
   }, [dispatch]);
 
-  const resolvedTitle = title ?? (forcedListId ? "Picklist" : "Picklists — v1");
+  const resolvedTitle = title ?? (forcedListId ? "Picklist" : "Picklists");
 
   return (
     <WindowPanel
@@ -72,9 +72,7 @@ export default function StructuredListManagerV1Window({
             : undefined
         }
       >
-        <div className="h-full w-full overflow-hidden p-3">
-          <StructuredListManagerV1Client forcedListId={forcedListId} />
-        </div>
+        <PicklistWindowBody forcedListId={forcedListId} />
       </NonEditableContextMenu>
     </WindowPanel>
   );

@@ -7,10 +7,8 @@ import { getAccessibleLists, getListWithItems } from "../service";
 import type { UserList, UserListWithItems } from "../types";
 import { ListsSidebar } from "./ListsSidebar";
 import { ListDetailClient } from "./ListDetailClient";
-import { CreateListDialog } from "./CreateListDialog";
-import { Loader2, ListFilter, Plus } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/slices/userSlice";
+import { Loader2, ListFilter } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createListManagerScope,
@@ -29,8 +27,7 @@ export function ListManagerFloatingWorkspace() {
   const [listsError, setListsError] = useState<unknown>(null);
   const [detailError, setDetailError] = useState<unknown>(null);
   const [detailAttempt, setDetailAttempt] = useState(0);
-  const [createListOpen, setCreateListOpen] = useState(false);
-  const user = useAppSelector(selectUser);
+  const router = useRouter();
 
   const fetchLists = useCallback(async () => {
     try {
@@ -185,7 +182,8 @@ export function ListManagerFloatingWorkspace() {
       <ListsSidebar
         lists={lists}
         activeListId={activeListId}
-        onCreateList={() => setCreateListOpen(true)}
+        // New picklist lives on the Picklists page, the one create control.
+        onCreateList={() => router.push("/lists")}
         onOverrideNavigate={setActiveListId}
       />
       <div className="flex-1 overflow-hidden relative border-l border-border bg-card/30">
@@ -210,17 +208,7 @@ export function ListManagerFloatingWorkspace() {
              <Loader2 className="h-6 w-6 animate-spin text-primary" />
            </div>
         ) : activeListData ? (
-          <ListDetailClient
-            list={activeListData}
-            userId={user?.id ?? null}
-            // The detail pane's context menu belongs to THIS surface, and it
-            // emits THIS surface's scope — the window is the registered
-            // provider here, so the pane must not guess at either.
-            surfaceName="matrx-user/list-manager"
-            getSurfaceScopeOverride={
-              getSurfaceScope as () => Record<string, unknown>
-            }
-          />
+          <ListDetailClient list={activeListData} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center px-6">
             <div className="h-12 w-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/50">
@@ -233,11 +221,6 @@ export function ListManagerFloatingWorkspace() {
           </div>
         )}
       </div>
-
-      <CreateListDialog
-        open={createListOpen}
-        onOpenChange={setCreateListOpen}
-      />
     </div>
     </SurfaceRuntimeProvider>
   );

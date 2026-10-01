@@ -1,18 +1,14 @@
 /**
- * Lane LISTS-AFTER-SWITCH — the Lists pages after Data tables → new system.
- *
- * The switch archives an organization's older pick lists and each one lives on in the record store
- * as a Table of choices under the SAME id. Every Lists screen read only the older table, so after
- * the switch Harbor Dental Group's lists vanished from /lists, and a list handed to the older
- * editor would have been edited into an archived list nobody reads. Now:
+ * Lanes LISTS-AFTER-SWITCH (2026-09-26) and OLD-READERS-REMOVAL (2026-10-01) — every pick list lives
+ * in the record store as a Table of choices under its own id. Harbor Dental Group's front desk:
  *
  *   A. getAccessibleLists (every list picker: agent variable bindings, choice columns, the floating
- *      workspace) lists the person's lists that live in the new system beside the older ones,
- *      marked `lives_in: "record"`;
- *   B. the Picklists page (/lists/v3) lists them from THE LIST INDEX (one store door, lane HANDOVER)
- *      and links each at its own address /lists/<id> (the new table page) — and reads no older table
- *      from the browser;
- *   C. the older list editor, handed a list that lives in the new system, says so and links to it.
+ *      workspace) lists the person's lists from THE LIST INDEX;
+ *   B. the Picklists page (/lists) lists them and links each at its own address /lists/<id> (the
+ *      store's table page) — and reads no `workbench.*` table from the browser;
+ *   C. a host handed a list (the List Manager window, the picklist tool) names it and links to its page;
+ *   D. a NEW picklist is born in the store (`custom.pick_list_create`) in the active organization;
+ *   E. an agent adding and editing choices writes Records of the list's Table, never an older table.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -60,9 +56,9 @@ const index = {
 };
 const olderReads: string[] = [];
 const indexReads: string[] = [];
+const created: Array<Record<string, unknown>> = [];
 const client = {
   rpc: jest.fn(async (fn: string) => {
-    if (fn === "get_user_lists_summary") return { data: summary, error: null };
     throw new Error(`unexpected rpc ${fn}`);
   }),
   // Harbor Dental's older lists were archived by the press: the older table answers none.
@@ -71,7 +67,11 @@ const client = {
       olderReads.push(`${name}.${table}`);
       return builder([]);
     },
-    rpc: async (fn: string) => {
+    rpc: async (fn: string, args?: Record<string, unknown>) => {
+      if (name === "custom" && fn === "pick_list_create") {
+        created.push(args ?? {});
+        return { data: { list_id: STORE_LIST, lives_in: "record", address: `/lists/${STORE_LIST}` }, error: null };
+      }
       if (name === "custom" && (fn === "pick_list_index" || fn === "pick_list_index_everywhere")) {
         indexReads.push(fn);
         return { data: index, error: null };
@@ -85,11 +85,9 @@ const client = {
 jest.mock("@/utils/supabase/client", () => ({ supabase: client, createClient: () => client }));
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: jest.fn() }),
-  usePathname: () => "/lists/v3",
+  usePathname: () => "/lists",
   useSearchParams: () => new URLSearchParams(),
 }));
-// The server actions the older editor imports cannot load in jsdom; the branch under test never calls them.
-jest.mock("../actions/list-actions", () => ({ deleteListAction: jest.fn(), deleteItemAction: jest.fn() }));
 jest.mock("next/link", () => ({
   __esModule: true,
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -116,6 +114,25 @@ jest.mock("@ai-matrx/records-ui", () => ({
   ArchivedDisclosure: () => null,
   RecordsMount: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   personActor: () => ({}),
+  recordsDataSource: () => ({}),
+}));
+const STORE_WRITES: Array<{ door: string; args: unknown }> = [];
+const STORE_CLIENT = {
+  recordWrite: jest.fn(async (args: unknown) => {
+    STORE_WRITES.push({ door: "recordWrite", args });
+    return { ok: true, data: "new-choice" };
+  }),
+  recordUpdate: jest.fn(async (args: unknown) => {
+    STORE_WRITES.push({ door: "recordUpdate", args });
+    return { ok: true, data: 2 };
+  }),
+};
+const CLIENT_CONFIGS: unknown[] = [];
+jest.mock("@ai-matrx/records/core", () => ({
+  createRecordsClient: (config: unknown) => {
+    CLIENT_CONFIGS.push(config);
+    return STORE_CLIENT;
+  },
 }));
 jest.mock("@/features/unified-data/recordsNotify", () => ({ RECORDS_NOTIFY: {} }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ tableKernelId: async () => ({ ok: true, data: "kernel" }) }));
@@ -144,12 +161,11 @@ async function settle() {
   }
 }
 
-test("A. getAccessibleLists lists the person's lists that live in the new system, marked", async () => {
+test("A. getAccessibleLists lists the person's lists from the list index", async () => {
   const { getAccessibleLists } = await import("../service");
   const lists = await getAccessibleLists();
   const found = lists.find((l) => l.id === STORE_LIST);
   expect(found).toBeDefined();
-  expect(found?.lives_in).toBe("record");
   expect(found?.list_name).toBe("Hygiene Visit Types");
 });
 
@@ -177,15 +193,7 @@ test("B. the Picklists page lists a list in the new system at /lists/<id> and re
 });
 
 test("D. a NEW picklist carries the active organization (ensureOrgId), the list read never does", async () => {
-  const created: Array<Record<string, unknown>> = [];
-  (client.rpc as jest.Mock).mockImplementation(async (fn: string, args: Record<string, unknown>) => {
-    if (fn === "create_user_list") {
-      created.push(args);
-      return { data: { list_id: STORE_LIST }, error: null };
-    }
-    if (fn === "get_user_lists_summary") return { data: summary, error: null };
-    throw new Error(`unexpected rpc ${fn}`);
-  });
+  created.length = 0;
   const { PicklistsIndex } = await import("../components/PicklistsIndex");
   await act(async () => {
     root.render(<PicklistsIndex organizationName="Harbor Dental Group" userId={ME} dataSource={{} as never} />);
@@ -205,11 +213,12 @@ test("D. a NEW picklist carries the active organization (ensureOrgId), the list 
   });
   await press("Create");
   await settle();
-  expect(created).toHaveLength(1);
-  expect(created[0].p_organization_id).toBe("active-org");
+  // Born in the store through its own door, in the active organization, then opened at its page.
+  expect(created).toEqual([{ p_organization_id: "active-org", p_list_name: "Recall reasons", p_description: null, p_items: [] }]);
+  expect(push).toHaveBeenCalledWith(`/lists/${STORE_LIST}`);
 });
 
-test("C. the older list editor, handed a list that lives in the new system, links to it instead", async () => {
+test("C. a host handed a list names it and links to its page, never saying it moved", async () => {
   const { ListDetailClient } = await import("../components/ListDetailClient");
   await act(async () => {
     root.render(
@@ -222,14 +231,42 @@ test("C. the older list editor, handed a list that lives in the new system, link
           updated_at: null,
           is_public: false,
           public_read: false,
-          lives_in: "record",
           items_grouped: { Routine: [{ id: "c1", label: "Recall cleaning", description: null, help_text: null }] },
         }}
         userId={ME}
       />,
     );
   });
-  expect(container.textContent).toContain("now lives in the new system");
-  const link = container.querySelector(`a[href="/lists/${STORE_LIST}"]`);
-  expect(link).not.toBeNull();
+  expect(container.textContent).toContain("Hygiene Visit Types");
+  expect(container.textContent).not.toMatch(/moved|new system|older/i);
+  expect(container.querySelector(`a[href="/lists/${STORE_LIST}"]`)).not.toBeNull();
+});
+
+test("E. an agent's choice writes land as Records of the list's Table, in the list's organization", async () => {
+  STORE_WRITES.length = 0;
+  CLIENT_CONFIGS.length = 0;
+  olderReads.length = 0;
+  (client.rpc as jest.Mock).mockImplementation(async (fn: string) => {
+    if (fn === "get_user_list_with_items") {
+      return {
+        data: { list_id: STORE_LIST, list_name: "Hygiene Visit Types", organization_id: "11f4e747-c13a-49c7-81a3-66e6391f8a9b", items_grouped: null },
+        error: null,
+      };
+    }
+    throw new Error(`unexpected rpc ${fn}`);
+  });
+  const { buildListSurfaceWriteHandlers } = await import("../surface-write-handlers");
+  const handlers = buildListSurfaceWriteHandlers({ resolveListId: () => STORE_LIST, afterWrite: () => undefined });
+  const apply = (name: string, value: unknown) => {
+    const handler = handlers[name];
+    return typeof handler === "function" ? handler(value) : handler.apply(value);
+  };
+  await apply("add_list_items", [{ label: "Perio maintenance", group: "Routine" }]);
+  await apply("update_list_item", { id: "c1", label: "Recall cleaning (6 months)", help_text: null });
+  expect(STORE_WRITES).toEqual([
+    { door: "recordWrite", args: { table_id: STORE_LIST, data: { name: "Perio maintenance", group_name: "Routine" } } },
+    { door: "recordUpdate", args: { record_id: "c1", patch: { name: "Recall cleaning (6 months)", help_text: null } } },
+  ]);
+  expect(CLIENT_CONFIGS.every((c) => (c as { organizationId?: string }).organizationId === "11f4e747-c13a-49c7-81a3-66e6391f8a9b")).toBe(true);
+  expect(olderReads).toEqual([]);
 });

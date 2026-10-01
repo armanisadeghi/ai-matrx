@@ -63,10 +63,10 @@ format can never end up on a boolean.
 ## Consumers
 
 **User data tables (`/data/[id]` and every mount of `UserTableViewer`).**
-Persisted at `workbench.udt_dataset_fields.metadata.format = {id, options}`.
+Persisted on the record store's field (the Table's column) as `format = {id, options}`.
 
-- Write: `setFieldFormat()` in `features/data-tables/service.ts` → the
-  `udt_set_field_format` RPC. **The only write path.** Passing `null` clears the
+- Write: `setFieldFormat()` in `features/data-tables/service.ts` → the data
+  seam's record-store half. **The only write path.** Passing `null` clears the
   format and the column reverts to its storage type's identity format.
 - Read: `resolveFieldFormat(field.data_type, field.metadata)` — never read
   `metadata.format` by hand.
@@ -96,13 +96,13 @@ data is how a user FINDS their stray values, not how they lose them. This is
 what makes the format safe to switch on over a populated column.
 
 **Nobody types a list they already have.** `ChoiceOptionsEditor` takes
-`suggestions` (from `udt_column_facets`, ordered by row count) and offers the
+`suggestions` (the data seam's `getTableProfile`, ordered by row count) and offers the
 column's real values for one-click acceptance.
 
 ### Two option sources
 
 | `options.choices` | Inline. Private to this column. |
-| `options.structuredList` | A shared pick list (`workbench.udt_structured_lists`), so "Status" means one thing across every table. |
+| `options.structuredList` | A shared pick list (a Table of choices in the record store), so "Status" means one thing across every table. |
 
 The binding shape is **not ours to invent**: `{ listId, groupName, multiple }`
 is aidream's `PicklistBinding`, already written by the agent-variable system as

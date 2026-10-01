@@ -1,13 +1,9 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  CheckCircle2,
-  Database,
-  FileText,
   Keyboard,
   Layers,
   ListChecks,
-  Rows3,
   ClipboardList,
   Tags,
   Zap,
@@ -16,13 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
- * StructuredListLanding — overview + chooser for the two picklist editor variants.
- *
- * Routes:
- *   /lists       → this landing
- *   /lists/v1    → StructuredListManagerV1 (sidebar + spreadsheet)
- *   /lists/v2    → StructuredListManagerV2 (compact switcher + flat table)
- *   /lists/v3    → PicklistsIndex (every picklist, from the list index; each opens at /lists/<id>) — current primary
+ * StructuredListLanding — the /lists landing a guest sees (a signed-in person gets the Picklists page).
  */
 
 const FEATURES = [
@@ -45,12 +35,6 @@ const FEATURES = [
       "Each item carries a label, description, help text, group, and icon — enough for menus, cards, forms, or in-app guidance.",
   },
   {
-    icon: Database,
-    title: "Real data, not config",
-    description:
-      "Backed by udt_structured_lists / udt_structured_list_items in Postgres. Reusable everywhere a list of options is needed.",
-  },
-  {
     icon: Keyboard,
     title: "Type, don't click",
     description:
@@ -61,73 +45,6 @@ const FEATURES = [
     title: "Optimistic & fast",
     description:
       "Every edit applies instantly. Server errors revert quietly. No save buttons, no spinners.",
-  },
-];
-
-const VARIANTS: Array<{
-  href: string;
-  badge: string;
-  title: string;
-  tagline: string;
-  bullets: string[];
-  icon: typeof ListChecks;
-  primary?: boolean;
-}> = [
-  {
-    href: "/lists/v1",
-    badge: "v1",
-    title: "Sidebar + spreadsheet",
-    tagline:
-      "Picklists in the left rail, a dense editable grid on the right. Familiar table feel.",
-    bullets: [
-      "Persistent sidebar of all picklists",
-      "Spreadsheet body with grouped rows",
-      "Undo via toast on destructive actions",
-      "Created during UX exploration",
-    ],
-    icon: Rows3,
-  },
-  {
-    href: "/lists/v2",
-    badge: "v2",
-    title: "Compact switcher + flat table",
-    tagline:
-      "One screen, one table. List switcher drops down from the top, table fills the rest.",
-    bullets: [
-      "Maximum space for the table",
-      "Inline-editable list name / description / sharing",
-      "Native combobox for the Group cell",
-      "Uses the official curated icon picker window",
-    ],
-    icon: ListChecks,
-  },
-  {
-    href: "/lists/v3",
-    badge: "v3",
-    title: "Your picklists",
-    tagline:
-      "Every picklist of your organization in one list; each one opens as a table of its choices.",
-    bullets: [
-      "Find a picklist by name or description",
-      "New picklist in one step, filed in the organization you are working in",
-      "Each choice is a row: label, description, help text, group and icon",
-      "Archived picklists wait under the list and come back in one click",
-    ],
-    icon: FileText,
-    primary: true,
-  },
-];
-
-const SCHEMA = [
-  {
-    title: "udt_structured_lists",
-    description:
-      "One row per list. Carries name, description, owner, sharing (private / shared / public).",
-  },
-  {
-    title: "udt_structured_list_items",
-    description:
-      "Each row is a selectable option: label, description, help text, group, icon. Cascade-delete with its parent list.",
   },
 ];
 
@@ -155,13 +72,10 @@ export default function StructuredListLanding() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button size="lg" className="gap-2" asChild>
-              <Link href="/lists/v3">
-                Open your picklists
+              <Link href="/sign-up?source=lists-landing">
+                Get started
                 <ArrowRight className="h-4 w-4" />
               </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="#choose">Choose a variant</Link>
             </Button>
           </div>
         </div>
@@ -174,7 +88,7 @@ export default function StructuredListLanding() {
             What a picklist actually is
           </h2>
           <p className="mt-3 text-muted-foreground text-base sm:text-lg max-w-3xl">
-            Not config files, not magic strings — a small Postgres table you
+            Not config files, not magic strings — a table of choices you
             edit like a spreadsheet. The same row that shows up in a dropdown
             can carry help text, an icon, and a group, so the UI stays rich
             without extra plumbing.
@@ -196,107 +110,6 @@ export default function StructuredListLanding() {
               <h3 className="text-sm font-semibold">{f.title}</h3>
               <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
                 {f.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Choose a variant */}
-      <section
-        id="choose"
-        className="bg-card/50 border-y border-border"
-      >
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-14 sm:py-20">
-          <div className="mb-8 sm:mb-12 text-center">
-            <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.25rem)] font-bold tracking-tight">
-              Two editors, same data
-            </h2>
-            <p className="mt-3 text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-              Both edit <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em]">udt_structured_lists</code>{" "}
-              directly. Pick whichever feels faster — they're under live
-              comparison.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {VARIANTS.map((v) => {
-              const Icon = v.icon;
-              return (
-                <Link
-                  key={v.href}
-                  href={v.href}
-                  className={cn(
-                    "group relative flex flex-col rounded-2xl border bg-card p-6 transition-all",
-                    "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
-                    v.primary
-                      ? "border-primary/30 ring-1 ring-primary/10"
-                      : "border-border",
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-                        v.primary
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {v.badge}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold">{v.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                    {v.tagline}
-                  </p>
-                  <ul className="mt-4 space-y-1.5">
-                    {v.bullets.map((b) => (
-                      <li
-                        key={b}
-                        className="flex items-start gap-2 text-sm text-foreground/80"
-                      >
-                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-5 flex items-center gap-1.5 text-sm font-medium text-primary opacity-80 group-hover:opacity-100 transition-opacity">
-                    Open {v.badge}
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Schema */}
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 py-12 sm:py-16">
-        <div className="mb-8">
-          <h2 className="text-[clamp(1.25rem,1rem+1vw,1.875rem)] font-bold tracking-tight">
-            Under the hood
-          </h2>
-          <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-2xl">
-            Two tables, RLS-scoped per user, public-share-aware. Editors write
-            to them directly — no middle tier.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {SCHEMA.map((s) => (
-            <div
-              key={s.title}
-              className="rounded-xl border border-border bg-card p-4"
-            >
-              <code className="block text-xs sm:text-sm font-mono font-semibold text-primary">
-                {s.title}
-              </code>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                {s.description}
               </p>
             </div>
           ))}

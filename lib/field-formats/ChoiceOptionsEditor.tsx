@@ -4,8 +4,7 @@
  * The options editor for a `choice` / `multi_choice` column.
  *
  * NOBODY TYPES A LIST THEY ALREADY HAVE. The column's real values arrive as
- * `suggestions` (the column's top values from the data seam's `getTableProfile` — the older
- * store's profile door or the record store's, by where the table lives — ordered by how many rows carry
+ * `suggestions` (the column's top values from the data seam's `getTableProfile`, ordered by how many rows carry
  * them) and this editor opens with them ready to accept in one click. Declaring
  * options on an existing column should feel like confirming what is already
  * true, because it is.
@@ -13,18 +12,14 @@
  * Two sources, one of which is the interesting one:
  *
  *   Inline        options private to this column.
- *   Shared list   options hydrated from a `workbench.udt_structured_lists`
- *                 row, so "Status" means the same thing in every table — and,
+ *   Shared list   options hydrated from a pick list (a Table of choices in the
+ *                 record store), so "Status" means the same thing in every table — and,
  *                 because list items carry a `group_name`, the column gets
  *                 TIERED options for free. Narrowing to one group of a list is
  *                 a dropdown here, not a second list to maintain.
  *
- * On the older store, options are a display layer: adding, removing, renaming,
- * or clearing them rewrites no cell, and a value that stops matching simply
- * renders in amber.
- *
  * REMOVING A CHOICE RECORDS STILL HOLD ASKS FIRST (lane CHOICE-TAILS, 2026-09-27).
- * On a record-store table the caller hands `usage` (how many records hold each
+ * The caller hands `usage` (how many records hold each
  * choice) and `onRehomeChange`. Removing a choice that records hold asks,
  * Notion-style: "3 records use “X-ray”." — move them to another choice, keep the
  * words as other values (only where the column allows other values), or clear
@@ -86,7 +81,7 @@ export type ChoiceOptionsEditorProps = {
   /**
    * How many records hold each choice, keyed by the option's id (a record-store
    * table's `getChoiceUsage`). With `onRehomeChange`, removing a choice records
-   * hold asks where they go; without them, a removal is immediate (older store).
+   * hold asks where they go; without them, a removal is immediate.
    */
   usage?: Record<string, ChoiceUsage> | null;
   /** Where the records of each removed choice go, keyed by the option's id. */

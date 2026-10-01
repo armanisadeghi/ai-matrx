@@ -7,16 +7,14 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/user-lists/types";
-import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
 import { StoreListPage } from "./StoreListPage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
- * Per-list detail/editor route — the canonical deep link for a picklist
- * (`/lists/<id>`). This is the URL `ListMetaHeader`'s share button copies and
- * the target of every `ListCard` / tree-nav / `CreateListDialog` navigation, so
- * it must resolve. Owner read via the `get_user_list_with_items` RPC; renders
- * the same interactive `ListDetailClient` used everywhere else.
+ * Per-list route — the canonical deep link for a picklist (`/lists/<id>`), the
+ * target of every Picklists row and New picklist. Every list lives in the record
+ * store as a Table of choices under the same id; `get_user_list_with_items`
+ * answers it from there, and the page opens it as the store's table page.
  */
 
 interface PageProps {
@@ -38,55 +36,12 @@ const loadList = cache(
       // get_user_list_with_items returns Json directly (no row schema in
       // database.types.ts to guard against) — this is the sanctioned
       // Json-direct RPC cast per the type-safety skill's supabase-patterns.
-      const list = data as unknown as UserListWithItems;
-      // lane LISTS-AFTER-SWITCH: a list that lives in the new system (a Table of choices, same
-      // id) has no older row to read an owner from — the store's table page decides who edits.
-      if (list.lives_in === "record") return list;
-
-      // The RPC's payload has NO `user_id` (list_id, list_name, description,
-      // created_at, updated_at, is_public, public_read, items_grouped only),
-      // so `ListDetailClient`'s `userId === list.user_id` ownership test was
-      // comparing against undefined and resolving to false for EVERYONE — the
-      // owner included. That silently hid the header's "Edit list" / "Delete
-      // list" actions on this route, and it is the signal the surface's
-      // `list_is_owner` value and every write handler gate on. Read the owner
-      // off the table and attach it.
-      const { data: ownerRow } = await supabase
-        .schema("workbench")
-        .from("udt_structured_lists")
-        .select("user_id")
-        .eq("id", listId)
-        .is("deleted_at", null)
-        .maybeSingle();
-      return { ...list, user_id: ownerRow?.user_id ?? undefined };
+      return data as unknown as UserListWithItems;
     } catch {
       return null;
     }
   },
 );
-
-/**
- * DID THIS STORE LIST MOVE, OR WAS IT BORN THERE? (lane HANDOVER, 2026-09-27) A moved list keeps its
- * older row, archived, with `metadata.moved_to` pointing at the copy; a list born in the new system
- * has no older row. Read as the person (the row is theirs or their organization's); any failure to
- * read answers "not moved", so the page never claims a move it cannot see.
- */
-async function listMovedFromOlderStore(listId: string): Promise<boolean> {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .schema("workbench")
-      .from("udt_structured_lists")
-      .select("id, metadata")
-      .eq("id", listId)
-      .maybeSingle();
-    if (error || !data) return false;
-    const metadata = (data as { metadata?: unknown }).metadata;
-    return typeof metadata === "object" && metadata !== null && "moved_to" in metadata;
-  } catch {
-    return false;
-  }
-}
 
 export async function generateMetadata({
   params,
@@ -147,7 +102,7 @@ export default async function ListDetailPage({ params }: PageProps) {
     return (
       <div className="h-full overflow-hidden">
         <AccessGate
-          token="structured_list"
+          token="record"
           id={id}
           fallbackHref="/lists"
           fallbackLabel="Your picklists"
@@ -156,19 +111,9 @@ export default async function ListDetailPage({ params }: PageProps) {
     );
   }
 
-  // lane LISTS-AFTER-SWITCH: a list that lives in the new system opens here as the new table page.
-  if (list.lives_in === "record") {
-    const moved = await listMovedFromOlderStore(id);
-    return (
-      <div className="h-full overflow-hidden">
-        <StoreListPage listId={id} moved={moved} />
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <ListDetailClient list={list} userId={user?.id ?? null} asRoute />
+    <div className="h-full overflow-hidden">
+      <StoreListPage listId={id} />
     </div>
   );
 }
