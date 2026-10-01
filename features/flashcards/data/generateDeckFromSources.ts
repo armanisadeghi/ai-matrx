@@ -435,10 +435,7 @@ export async function generateDeckFromSources({
       name: setName,
       topic: baseTitle,
       difficulty,
-      description:
-        sources.length === 1
-          ? `Made from ${sources[0].label}`
-          : `Made from ${sources.length} of your sources`,
+      // No "Made from …" description: the deck page's Made-from strip names and opens every Source.
       orgId: ctx.orgId,
     },
     cards,

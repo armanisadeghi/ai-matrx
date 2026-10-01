@@ -161,7 +161,8 @@ export function SourceCard({
             )}
           </div>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-            <span>{sourceKindNoun(card.draft)}</span>
+            {/* The kind, unless the name already says it (a link still landing is named "YouTube video"). */}
+            {sourceKindNoun(card.draft) !== card.draft.label ? <span>{sourceKindNoun(card.draft)}</span> : null}
             {chars !== null ? (
               <span>
                 · {formatChars(chars)}
@@ -175,7 +176,10 @@ export function SourceCard({
               </span>
             ) : null}
             {card.draft.origin && card.draft.origin !== sourceKindNoun(card.draft) ? (
-              <span className="truncate">· {card.draft.origin}</span>
+              <span className="truncate">
+                {sourceKindNoun(card.draft) !== card.draft.label ? "· " : ""}
+                {card.draft.origin}
+              </span>
             ) : null}
           </p>
         </div>

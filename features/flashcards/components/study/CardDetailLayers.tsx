@@ -127,38 +127,32 @@ export function CardDetailLayers({
       )}
     >
       <div className="flex items-center gap-1 p-1">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          disabled={count === 0}
-          aria-expanded={open}
-          className={cn(
-            "flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs transition-colors",
-            count > 0 ? "hover:bg-muted" : "cursor-default opacity-70",
-          )}
-        >
-          <Layers className="h-3.5 w-3.5 shrink-0 text-primary" />
-          <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-            {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
-            {count === 0
-              ? "No extra help on this card yet"
-              : `More on this card`}
-          </span>
-          {count > 0 && (
-            <>
-              <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
-                {count}
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
-                  open && "rotate-180",
-                )}
-              />
-            </>
-          )}
-        </button>
+        {count > 0 ? (
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+              "hover:bg-muted",
+            )}
+          >
+            <Layers className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+              More on this card
+            </span>
+            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+              {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
+              {count}
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
+                open && "rotate-180",
+              )}
+            />
+          </button>
+        ) : null}
         {canEnrich && (
           <Button
             type="button"
@@ -201,7 +195,8 @@ export function CardDetailLayers({
                 {layer.label}
               </div>
               <div className="text-sm leading-relaxed text-foreground">
-                <ConfigurableMarkdownContent imagePolicy="ai"
+                <ConfigurableMarkdownContent
+                  imagePolicy="ai"
                   content={layer.text}
                   isStreamActive={false}
                   showCopyButton={false}

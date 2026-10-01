@@ -78,7 +78,6 @@ export function MadeFromSource({
   // claim a source we cannot open.
   const origin = origins[0];
   if (!origin) return null;
-  const many = origins.length > 1;
 
   return (
     <div
@@ -90,23 +89,11 @@ export function MadeFromSource({
       <div className="flex flex-wrap items-center gap-2">
         <CornerUpLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className="shrink-0 text-xs font-medium text-muted-foreground">
-          Made from your material
+          Made from
         </span>
-        {/* The KIT door. Siblings as chips answer "what else exists"; this
-            answers "take me to the whole thing", which is the page the learner
-            actually wants when they arrive on one piece of it. */}
-        <Link
-          href={kitHref(origin.entityType, origin.entityId)}
-          title="Everything made from this material"
-          data-tap-target
-          className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
-        >
-          <Package className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Everything made from it</span>
-        </Link>
         {origins.map((o) => {
           const OriginIcon = tryGetEntityInfo(o.entityType)?.Icon ?? FileText;
-          const name = many ? o.title || "Source" : "Open the source";
+          const name = o.title || "Source";
           const label = o.href
             ? `Open ${o.title ? `"${o.title}"` : "the material this was made from"}`
             : `${o.title ?? "The material this was made from"}`;
@@ -131,6 +118,18 @@ export function MadeFromSource({
             </span>
           );
         })}
+        {/* The KIT door. Siblings as chips answer "what else exists"; this
+            answers "take me to the whole thing", which is the page the learner
+            actually wants when they arrive on one piece of it. */}
+        <Link
+          href={kitHref(origin.entityType, origin.entityId)}
+          title="Everything made from this material"
+          data-tap-target
+          className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+        >
+          <Package className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">Related</span>
+        </Link>
       </div>
 
       {siblings.length > 0 && (

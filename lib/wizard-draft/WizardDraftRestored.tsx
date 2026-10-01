@@ -13,7 +13,8 @@
 // `prefix + whole sentence + suffix` as its goal.
 //
 // This is the one notice that goes with `useWizardDraft`'s `applyOnce`.
-// One word says what happened ("Restored"); the "Start fresh"
+// One short line says what happened ("Restored from last time" — V5-A:
+// a bare "Restored" said nothing about what or when); the "Start fresh"
 // button and the dismiss are the two things they can do about it. The longer
 // sentence (what was put back) is the accessible name, never a visible line —
 // copy law R9, 2026-09-30: a sentence that restates its own button is noise.
@@ -48,7 +49,7 @@ export function WizardDraftRestored({
     >
       <RotateCcw className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
       <p className="min-w-0 flex-1 truncate text-sm text-foreground">
-        Restored
+        Restored from last time
       </p>
       <Button
         type="button"
