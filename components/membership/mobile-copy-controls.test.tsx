@@ -37,22 +37,38 @@ function source(path: string): string {
 }
 
 /**
- * The size the PACKAGE gives `.matrx-tap-target`, read out of the stylesheet
- * it publishes. Returns px. A package that shrinks the target below a thumb
- * fails here even though nothing in this repo changed.
+ * The box a THUMB gets from the package, read out of the stylesheet it
+ * publishes. Returns px. A package that shrinks it below a thumb fails here
+ * even though nothing in this repo changed.
+ *
+ * From design-system 0.50 the visible box is the pill plus one gap (40px) and
+ * the thumb gets `--matrx-tap-touch-min` through a coarse-pointer `::before`
+ * hit area; older stylesheets sized the box itself to the thumb. The second
+ * branch goes when this repo installs 0.50.
  */
-function packageTapTargetPx(): number {
+function packageTapTouchPx(): number {
   const css = source(
     "node_modules/@ai-matrx/design-system/dist/tap-target.css",
   );
+  const toPx = (value: string, unit: string) =>
+    unit === "rem" ? Number(value) * 16 : Number(value);
+  const touchMin = css.match(/--matrx-tap-touch-min:\s*([\d.]+)(rem|px)/);
+  if (touchMin) {
+    const hitArea = css.match(
+      /@media\s*\(pointer:\s*coarse\)\s*\{\s*\.matrx-tap-target::before\s*\{([^}]*)\}/,
+    );
+    if (!hitArea) throw new Error("--matrx-tap-touch-min is declared but no coarse-pointer hit area uses it");
+    expect(hitArea[1]).toMatch(/width:\s*max\(100%,\s*var\(--matrx-tap-touch-min\)\)/);
+    expect(hitArea[1]).toMatch(/height:\s*max\(100%,\s*var\(--matrx-tap-touch-min\)\)/);
+    return toPx(touchMin[1], touchMin[2]);
+  }
   const rule = css.match(/\.matrx-tap-target\s*\{([^}]*)\}/);
   if (!rule) throw new Error(".matrx-tap-target is not in the package stylesheet");
   const height = rule[1].match(
     /height:\s*var\(--matrx-tap-target-size,\s*([\d.]+)(rem|px)\)/,
   );
   if (!height) throw new Error(`.matrx-tap-target declares no default height: ${rule[1]}`);
-  const value = Number(height[1]);
-  return height[2] === "rem" ? value * 16 : value;
+  return toPx(height[1], height[2]);
 }
 
 /** Every `class="…"` in the markup, split into class lists. */
@@ -69,7 +85,7 @@ function tapTarget(markup: string): string[] | null {
 
 describe("membership copy mobile control contract", () => {
   it("ships a package tap target no smaller than a thumb", () => {
-    expect(packageTapTargetPx()).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
+    expect(packageTapTouchPx()).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
   });
 
   it.each([
