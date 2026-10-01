@@ -25,12 +25,12 @@ const ROOT = rootArg ? resolve(rootArg.slice(7)) : resolve(dirname(fileURLToPath
 
 export const VERDICTS = new Set([
   "author-facing", "restates-obvious", "page-description", "too-long",
-  "definition-to-tooltip", "asymmetric", "primitive", "legit", "unsure",
+  "definition-to-tooltip", "asymmetric", "primitive", "legit", "unsure", "owner",
 ]);
 const BUDGET = { secondary: 60, body: 120, tooltip: 140, placeholder: 60, consequence: 140 };
 const PLACEHOLDER = /\b(rewrite|shorten|shorter|target|split|≤|<=|TBD|todo|condense)\b/i;
 const NEEDS_TEXT = new Set(["too-long"]);
-const NO_FIX = new Set(["legit", "unsure"]);
+const NO_FIX = new Set(["legit", "unsure", "owner"]);
 
 export function validate(units, lines, readFile) {
   const problems = [];
@@ -44,6 +44,7 @@ export function validate(units, lines, readFile) {
     const u = byId.get(id);
     if (!u) { problems.push(`${where}: id "${id}" is not a unit in units.json`); return; }
     seen.set(id, (seen.get(id) ?? 0) + 1);
+    if (u.owner_words && d.verdict !== "owner") problems.push(`${id}: carries owner_words — verdict must be "owner" (Arman's own words are never an agent's call)`);
     if (!VERDICTS.has(d.verdict)) problems.push(`${id}: verdict "${d.verdict}" is not one of ${[...VERDICTS].join(", ")}`);
     if (typeof d.slot !== "string" || d.slot.length < 3) problems.push(`${id}: "slot" missing — name the component slot the text renders in`);
     if (typeof d.siblings !== "string" || d.siblings.length < 3) problems.push(`${id}: "siblings" missing — say what the neighbours carry (or "none")`);
