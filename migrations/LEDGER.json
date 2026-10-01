@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-01T19:52:10.165Z",
+  "generated_at": "2026-10-01T20:13:42.440Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5863,6 +5863,30 @@
       "filename": "switchbackcarries_switch_back_carries_what_the_new_system_wrote.sql",
       "checksum": "b228e84721365adb3107a1d0c9ea851ca17e912888e0d662c1ff24cc465fb913",
       "applied_at": "2026-09-26 15:00:49.180485+00"
+    },
+    "migrations/campaign/switchsteptwo_a_the_undo_is_retired_by_name_before_the_older_tables_leave.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_a_the_undo_is_retired_by_name_before_the_older_tables_leave.sql",
+      "checksum": "24472c250dcba0889081fd245e7e134a0f040d8a8461b66d773f74c324660bbe",
+      "applied_at": "2026-10-01 20:06:29.201799+00"
+    },
+    "migrations/campaign/switchsteptwo_b_the_new_system_stops_asking_the_older_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_b_the_new_system_stops_asking_the_older_tables.sql",
+      "checksum": "1755ee2d2e6262b93922a28fad5db11c4e97e49577786ea54c3e8a15343b5c22",
+      "applied_at": "2026-10-01 20:10:47.954283+00"
+    },
+    "migrations/campaign/switchsteptwo_c2_the_last_two_older_readers_follow.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_c2_the_last_two_older_readers_follow.sql",
+      "checksum": "ecd4cd953b8c238a2c979fc4c81559ae0253e73a50bd726664fd18f0205076bd",
+      "applied_at": "2026-10-01 20:13:41.205607+00"
+    },
+    "migrations/campaign/switchsteptwo_c_the_older_doors_answer_that_the_tables_moved.sql": {
+      "source": "matrx-frontend",
+      "filename": "switchsteptwo_c_the_older_doors_answer_that_the_tables_moved.sql",
+      "checksum": "91ef695ac9151228147d44aecc0b318a81483b3cad12c244196a026273ea1cbd",
+      "applied_at": "2026-10-01 20:13:28.905942+00"
     },
     "migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql": {
       "source": "matrx-frontend",
