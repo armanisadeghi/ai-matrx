@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
-import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
+import { aliasTarget } from "../../../scripts/lib/source-roots.cjs";
 
 /** The census's per-file functions, passed in so this file imports nothing
  * relative (the lint rule loads both through Node's own TypeScript support). */
