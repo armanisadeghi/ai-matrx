@@ -1061,7 +1061,7 @@ function printTriggerVerdict(v: TriggerVerdict): void {
   console.log(
     `  ${C.dim}Each one FILLS A COLUMN on insert that nothing fills on the main database, so the\n` +
       `  rehearsal succeeds and the real write raises. This is the shape that hid the 2026-09-20\n` +
-      `  create-table outage for a day: _stamp_org_default on workbench.udt_datasets.${C.reset}`,
+      `  create-table outage for a day: _stamp_org_default on the older data tables.${C.reset}`,
   );
   for (const t of v.writing.slice(0, 40)) console.log(`  ${C.red}WRITES ${C.reset}${t}`);
   if (v.writing.length > 40) console.log(`  ${C.dim}… and ${v.writing.length - 40} more${C.reset}`);

@@ -11099,7 +11099,7 @@
       "classification": "scalar_generic",
       "kind": null,
       "registered": false,
-      "rationale": "generic markdown table primitive — ratified 2026-07-15: markdown-first + click-to-convert (the Convert Pattern, SHAPE_SYSTEM.md); never auto-kind. Tables stay markdown in message content, render through the rich table component, and become a live udt_datasets table ONLY via the explicit Convert button."
+      "rationale": "generic markdown table primitive — ratified 2026-07-15: markdown-first + click-to-convert (the Convert Pattern, SHAPE_SYSTEM.md); never auto-kind. Tables stay markdown in message content, render through the rich table component, and become a live data table ONLY via the explicit Convert button."
     },
     {
       "name": "table_rows",

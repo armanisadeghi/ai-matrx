@@ -155,7 +155,7 @@ const SCALAR_GENERIC_ITEMS: ReadonlyMap<string, string> = new Map([
   ["code", "generic code primitive"],
   [
     "table",
-    "generic markdown table primitive — ratified 2026-07-15: markdown-first + click-to-convert (the Convert Pattern, SHAPE_SYSTEM.md); never auto-kind. Tables stay markdown in message content, render through the rich table component, and become a live udt_datasets table ONLY via the explicit Convert button.",
+    "generic markdown table primitive — ratified 2026-07-15: markdown-first + click-to-convert (the Convert Pattern, SHAPE_SYSTEM.md); never auto-kind. Tables stay markdown in message content, render through the rich table component, and become a live data table ONLY via the explicit Convert button.",
   ],
   ["image", "generic media primitive"],
   ["video", "generic media primitive"],
