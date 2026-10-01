@@ -641,11 +641,13 @@ export function TryMasterworkBox({
     noSealedCases,
   ]);
 
-  // The Audition judges the WORK, so it wants the deliverable when there is a
-  // separable one (generate) and the ruling when the work and the reasoning
-  // are one document (edit). Both keys are `masterwork_result`'s, declared by
-  // the builder on the terminal step; `report` is the pre-2026-08-26 key and
-  // is read so runs built before that still offer the door.
+  // The Audition judges the WORK: the deliverable whenever the run handed one
+  // over — the winning variant (generate) or the Editor's corrected text (edit,
+  // builder v6 onward; older edit Masterworks are upgraded on load, aidream
+  // `services/masterworks/graph_upgrade.py`). Only a run with no separable work
+  // (an edit run from before v6) falls back to the ruling. Both keys are
+  // `masterwork_result`'s; `report` is the pre-2026-08-26 key and is read so
+  // runs built before that still offer the door.
   //
   // ── W33, 2026-09-12: THE PRESENTED PAYLOAD WINS ─────────────────────────
   // This used to read the terminal step's STORED output and nothing else. A

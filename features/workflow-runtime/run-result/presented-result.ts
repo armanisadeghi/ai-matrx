@@ -27,9 +27,12 @@
 import type { WorkflowRunEmission } from "@/features/workflow-runtime/redux/workflow-runs.slice";
 
 /**
- * The keys a terminal step declares its work under. `deliverable` when the
- * work is separable from the reasoning (generate), `ruling` when they are one
- * document (edit); `report` is the pre-2026-08-26 key, still read so older
+ * The keys a terminal step declares its work under, in the order the Audition
+ * judges them. `deliverable` is the WORK — the winning variant (generate) or
+ * the Editor's corrected text (edit, since builder v6, 2026-09-30) — and wins
+ * whenever present, so the Audition judges the work, never prose about it.
+ * `ruling` is read when a run handed over no separable work (edit runs from
+ * before builder v6); `report` is the pre-2026-08-26 key, still read so older
  * runs keep their door.
  */
 export const RESULT_KEYS = ["deliverable", "ruling", "report"] as const;

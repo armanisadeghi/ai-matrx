@@ -64,9 +64,9 @@ Every stream item below adds its case there.
 - [x] A10. Fence closes on truncated/invalid JSON with `__kind` → should be the kind's broken state, not raw.
       Kind-preserving breaks already routed. A break BEFORE `__kind` (kindless error envelope, or none) now
       settles as that kind with `kindState: "raw"` (`settleBrokenKindRoute`) — the broken-instance floor.
-- [ ] A11. Cold registry at stream end → raw until the registry repaints.
-      BLOCKED on `@ai-matrx/content-ir-react` `ComponentResolver`: settling (`ensureWarm`) and a cold miss never
-      notify per-kind listeners, so a loader would never repaint either. Package fix first, then the host gate.
+- [x] A11. Cold registry at stream end → raw until the registry repaints.
+      `@ai-matrx/content-ir-react` 0.13.0: settling and a single-kind answer repaint every waiting kind. Host: an
+      identified kind still `code` after the route is its loader while the block streams or the registry is cold.
 - [x] A12. Static splitter: ```JSON (capital) gets no envelope (`content-splitter-core.ts` case-sensitive check).
 
 ## B. Rendering-layer fallbacks
