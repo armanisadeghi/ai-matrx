@@ -1,16 +1,12 @@
-import { openWalk, bodyText, sleep } from "../lib/harness.mjs";
+import { openWalk, sleep } from "../lib/harness.mjs";
 const ctx = await openWalk("dh-explore");
 try {
   const page = await ctx.page("admin");
-  await ctx.goto(page, "/data-v2");
-  for (let i=0;i<30;i++){ await sleep(4000); const t = await page.evaluate(()=>document.querySelector('[data-hub-listing-toggle="tables"]')?.textContent??""); console.log(i, t.slice(0,40)); if(!/reading/.test(t)) break; }
-  console.log(await page.evaluate(() => {
-    const l=document.querySelector('[data-hub-listing="tables"]');
-    return l ? l.innerText.slice(0,1500) + "\nROWS " + l.querySelectorAll("li[data-hub-row]").length : "no listing";
-  }));
-  console.log(JSON.stringify(ctx.errors.http.map(e=>e.status+" "+e.url.slice(-60))));
-  await page.getByRole("button",{name:"New table"}).first().click();
-  await sleep(2500);
-  console.log(await page.evaluate(()=>[...document.querySelectorAll("[role=dialog] input, [role=dialog] button, [role=dialog] label")].map(e=>`${e.tagName} ${e.getAttribute("aria-label")||""} ${e.getAttribute("placeholder")||""} :: ${(e.innerText||"").slice(0,50)}`).join("\n")));
-  await ctx.shot(page,"newtable");
+  await ctx.goto(page, "/data-v2?kind=table");
+  await sleep(25000);
+  console.log(await page.evaluate(() => [...document.querySelectorAll('[data-hub-listing="tables"] li[data-hub-row]')].slice(0,4).map(li=>li.innerHTML.slice(0,700)).join("\n----\n")));
+  console.log(await page.evaluate(() => [...document.querySelectorAll("[data-hub-kind] option")].map(o=>o.value+"="+o.textContent).join(" | ")));
+  await page.click("[data-entity-org-filter]"); await sleep(800);
+  console.log(await page.evaluate(()=>{const m=document.querySelector('[role=menu],[role=listbox],[cmdk-root]'); return m? m.outerHTML.slice(0,1500):"none"}));
+  console.log(await page.evaluate(()=>[...document.querySelectorAll('[role=menuitem],[role=option],[cmdk-item]')].map(e=>e.textContent).filter(t=>/Cedar|Harbor/.test(t)).join(" | ")));
 } finally { await ctx.finish(); }
