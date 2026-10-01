@@ -32,11 +32,11 @@ export function contactWriteConnectionForRead(
 function sourceName(value: Record<string, unknown>): Name {
   const names = value.names;
   const first = Array.isArray(names) ? names[0] : null;
-  if (!first || typeof first !== "object") return {};
+  if (!first || typeof first !== "object") return { given_name: null, family_name: null };
   const entry = first as Record<string, unknown>;
   return {
-    given_name: typeof entry.givenName === "string" ? entry.givenName : undefined,
-    family_name: typeof entry.familyName === "string" ? entry.familyName : undefined,
+    given_name: typeof entry.givenName === "string" ? entry.givenName : null,
+    family_name: typeof entry.familyName === "string" ? entry.familyName : null,
   };
 }
 
@@ -61,6 +61,7 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
   const [preview, setPreview] = useState<Preview | null>(null);
   const [reviewedEdits, setReviewedEdits] = useState<Name | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [reverseReview, setReverseReview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestVersion = useRef(0);
@@ -73,6 +74,7 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
     setPreview(null);
     setReviewedEdits(null);
     setResult(null);
+    setReverseReview(false);
     setGivenName("");
     setFamilyName("");
     setError(null);
@@ -97,7 +99,7 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
       if (version !== requestVersion.current) return;
       setPreview(data);
       setReviewedEdits(edits);
-      if (reverse) setResult(null);
+      setReverseReview(reverse);
     } catch (cause) {
       if (version === requestVersion.current) setError(getUserMessage(cause));
     } finally {
@@ -118,7 +120,10 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
         organization_id: organizationId, connection_id: connectionId, resource_name: resourceName,
         edits: { name: edits }, review_receipt: receipt,
       }, { organizationId });
-      if (version === requestVersion.current) setResult(data);
+      if (version === requestVersion.current) {
+        setResult(data);
+        setReverseReview(false);
+      }
     } catch (cause) {
       if (version === requestVersion.current) setError(getUserMessage(cause));
     } finally {
@@ -138,8 +143,8 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
   const confirmed = result ? sourceName(result.after) : null;
   const original = result ? sourceName(result.before) : null;
   const reverse: Name = {
-    ...(original?.given_name ? { given_name: original.given_name } : {}),
-    ...(original?.family_name ? { family_name: original.family_name } : {}),
+    given_name: original?.given_name ?? null,
+    family_name: original?.family_name ?? null,
   };
 
   return <section className="mt-2 space-y-3 rounded-md border p-3" aria-label={`Edit ${displayName} in Google`}>
@@ -155,11 +160,11 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
     </Button>
     {preview && before && after ? <div className="space-y-2 text-sm">
       <p>Google now: {nameText(before)}</p><p>After edit: {nameText(after)}</p>
-      <Button size="sm" disabled={busy} onClick={() => void apply()}>Apply reviewed edit</Button>
+      <Button size="sm" disabled={busy} onClick={() => void apply()}>{reverseReview ? "Restore reviewed name" : "Apply reviewed edit"}</Button>
     </div> : null}
-    {result && confirmed ? <div className="space-y-2 text-sm">
+    {result && confirmed && !preview ? <div className="space-y-2 text-sm">
       <p>Google confirmed: {nameText(confirmed)}</p>
-      {Object.keys(reverse).length ? <Button size="sm" variant="outline" disabled={busy} onClick={() => void review(reverse, true)}>Preview reverse edit</Button> : null}
+      <Button size="sm" variant="outline" disabled={busy} onClick={() => void review(reverse, true)}>Preview reverse edit</Button>
     </div> : null}
     {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
   </section>;

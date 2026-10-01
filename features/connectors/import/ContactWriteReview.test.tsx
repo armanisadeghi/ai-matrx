@@ -82,7 +82,7 @@ test("only an unchanged signed name preview can be applied, then reverse require
   await act(async () => { button("Preview reverse edit").click(); });
   expect(post.mock.calls[2][1].edits.name).toEqual({ given_name: "Ada", family_name: "Lovelace" });
   expect(container.textContent).toContain("After edit: Ada Lovelace");
-  expect(container.textContent).toContain("Apply reviewed edit");
+  expect(container.textContent).toContain("Restore reviewed name");
 });
 
 test("editing the input invalidates the reviewed receipt", async () => {
@@ -138,4 +138,28 @@ test("a failed reverse preview keeps the verified result and offers another fres
   expect(container.textContent).toContain("Google confirmed: Augusta Lovelace");
   expect(container.textContent).toContain("Preview reverse edit");
   expect(container.textContent).not.toContain("Apply reviewed edit");
+});
+
+test("reverse review explicitly clears a name part absent from the original source", async () => {
+  post.mockResolvedValueOnce({ data: {
+    ...preview, before: { ...names("Ada"), names: [{ givenName: "Ada" }] },
+    after: names("Augusta"),
+  }}).mockResolvedValueOnce({ data: {
+    resource_name: props.resourceName, etag: "etag-2", field_mask: ["names"],
+    before: { ...names("Ada"), names: [{ givenName: "Ada" }] }, after: names("Augusta"), verified: true,
+  }}).mockResolvedValueOnce({ data: {
+    ...preview, before: names("Augusta"),
+    after: { ...names("Ada"), names: [{ givenName: "Ada" }] }, receipt: "reverse-review",
+  }});
+  await act(async () => { root.render(<ContactWriteReview {...props} />); });
+  const input = container.querySelector("input")!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Augusta");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => { button("Preview name edit").click(); });
+  await act(async () => { button("Apply reviewed edit").click(); });
+  await act(async () => { button("Preview reverse edit").click(); });
+  expect(post.mock.calls[2][1].edits.name).toEqual({ given_name: "Ada", family_name: null });
+  expect(container.textContent).toContain("Restore reviewed name");
 });
